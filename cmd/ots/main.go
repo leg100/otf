@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultPort               = 8443
+	DefaultAddress            = ":8000"
 	EnvironmentVariablePrefix = "OTS_"
 )
 
@@ -36,9 +36,7 @@ func main() {
 	server.OrganizationService = boltdb.NewOrganizationService(db)
 
 	fs := flag.NewFlagSet("ots", flag.ContinueOnError)
-	fs.StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate")
-	fs.StringVar(&server.KeyFile, "key-file", "", "Path to SSL key")
-	fs.IntVar(&server.Port, "port", DefaultPort, "Port on which to listen")
+	fs.StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 
 	SetFlagsFromEnvVariables(fs)
 

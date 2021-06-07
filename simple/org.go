@@ -4,15 +4,20 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/ots"
 )
 
-type OrganizationService map[string]*tfe.Organization
+type OrganizationService map[string]*ots.Organization
 
-func NewOrganizationService() OrganizationService {
-	return OrganizationService(make(map[string]*tfe.Organization))
+func NewOrganizationService(orgs ...*ots.Organization) OrganizationService {
+	db := make(map[string]*ots.Organization)
+	for _, org := range orgs {
+		db[org.Name] = org
+	}
+	return OrganizationService(db)
 }
 
-func (s OrganizationService) CreateOrganization(name string, org *tfe.Organization) (*tfe.Organization, error) {
+func (s OrganizationService) CreateOrganization(name string, org *ots.Organization) (*ots.Organization, error) {
 	if _, ok := s[name]; ok {
 		return nil, fmt.Errorf("already exists")
 	}
@@ -22,7 +27,7 @@ func (s OrganizationService) CreateOrganization(name string, org *tfe.Organizati
 	return org, nil
 }
 
-func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, error) {
+func (s OrganizationService) GetOrganization(name string) (*ots.Organization, error) {
 	org, ok := s[name]
 	if !ok {
 		return nil, fmt.Errorf("not found")
@@ -31,8 +36,8 @@ func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, er
 	return org, nil
 }
 
-func (s OrganizationService) ListOrganizations() ([]*tfe.Organization, error) {
-	var orgs []*tfe.Organization
+func (s OrganizationService) ListOrganizations() ([]*ots.Organization, error) {
+	var orgs []*ots.Organization
 	for _, o := range s {
 		orgs = append(orgs, o)
 	}
@@ -40,9 +45,15 @@ func (s OrganizationService) ListOrganizations() ([]*tfe.Organization, error) {
 	return orgs, nil
 }
 
-func (s OrganizationService) UpdateOrganization(name string, org *tfe.Organization) (*tfe.Organization, error) {
+func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
+	org := &ots.Organization{}
+
 	if _, ok := s[name]; !ok {
 		return nil, fmt.Errorf("not found")
+	}
+
+	if err := ots.UpdateOrganizationFromOptions(org, opts); err != nil {
+		return nil, err
 	}
 
 	s[name] = org
@@ -61,10 +72,10 @@ func (s OrganizationService) DeleteOrganization(name string) error {
 }
 
 // GetEntitlements currently shows all entitlements as disabled for an org.
-func (s OrganizationService) GetEntitlements(name string) (*tfe.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
 	if _, ok := s[name]; !ok {
 		return nil, fmt.Errorf("not found")
 	}
 
-	return &tfe.Entitlements{}, nil
+	return &ots.Entitlements{}, nil
 }

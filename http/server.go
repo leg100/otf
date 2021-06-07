@@ -2,14 +2,12 @@ package http
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/jsonapi"
 	"github.com/leg100/ots"
 )
 
@@ -22,8 +20,8 @@ type Server struct {
 	ln     net.Listener
 	err    chan error
 
-	CertFile, KeyFile string
-	Port              int
+	// Listening Address in the form <ip>:<port>
+	Addr string
 
 	OrganizationService ots.OrganizationService
 }
@@ -31,47 +29,53 @@ type Server struct {
 func NewServer() *Server {
 	s := &Server{
 		server: &http.Server{},
-		router: mux.NewRouter(),
 		err:    make(chan error),
 	}
 
-	// Filter json-api requests
-	r := s.router.Headers("Accept", jsonapi.MediaType).Subrouter()
-
-	r.HandleFunc("/organizations", s.ListOrganizations).Methods("GET")
-	r.HandleFunc("/organizations/{name}", s.GetOrganization).Methods("GET")
-	r.HandleFunc("/organizations/{name}", s.CreateOrganization).Methods("POST")
-	r.HandleFunc("/organizations/{name}", s.UpdateOrganization).Methods("PATCH")
-	r.HandleFunc("/organizations/{name}", s.DeleteOrganization).Methods("DELETE")
-	r.HandleFunc("/organizations/{name}/entitlement-set", s.GetEntitlements).Methods("GET")
-
-	http.Handle("/", r)
+	http.Handle("/", NewRouter(s))
 
 	return s
 }
 
+func NewRouter(server *Server) *mux.Router {
+	router := mux.NewRouter()
+
+	// Filter json-api requests
+	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
+
+	sub.HandleFunc("/organizations", server.ListOrganizations).Methods("GET")
+	sub.HandleFunc("/organizations/{name}", server.GetOrganization).Methods("GET")
+	sub.HandleFunc("/organizations/{name}", server.CreateOrganization).Methods("POST")
+	sub.HandleFunc("/organizations/{name}", server.UpdateOrganization).Methods("PATCH")
+	sub.HandleFunc("/organizations/{name}", server.DeleteOrganization).Methods("DELETE")
+	sub.HandleFunc("/organizations/{name}/entitlement-set", server.GetEntitlements).Methods("GET")
+
+	return router
+}
+
 // Open validates the server options and begins listening on the bind address.
 func (s *Server) Open() (err error) {
-	if s.CertFile == "" || s.KeyFile == "" {
-		return errors.New("path to certificate and/or key cannot be empty")
-	}
-
-	if s.ln, err = net.Listen("tcp", s.Addr()); err != nil {
+	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
 		return err
 	}
 
-	// Begin serving requests on the listener. We use ServeTLS() instead of
-	// ListenAndServeTLS() because it allows us to check for listen errors (such
-	// as trying to use an already open port) synchronously.
+	// Begin serving requests on the listener. We use Serve() instead of
+	// ListenAndServe() because it allows us to check for listen errors (such as
+	// trying to use an already open port) synchronously.
 	go func() {
-		s.err <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
+		s.err <- s.server.Serve(s.ln)
 	}()
 
 	return nil
 }
 
-func (s *Server) Addr() string {
-	return fmt.Sprintf(":%d", s.Port)
+// Port returns the TCP port for the running server.
+// This is useful in tests where we allocate a random port by using ":0".
+func (s *Server) Port() int {
+	if s.ln == nil {
+		return 0
+	}
+	return s.ln.Addr().(*net.TCPAddr).Port
 }
 
 // Wait blocks until server stops listening or context is cancelled.

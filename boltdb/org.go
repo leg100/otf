@@ -27,12 +27,19 @@ func NewOrganizationService(db *bolt.DB) *OrganizationService {
 	return &OrganizationService{DB: db}
 }
 
-func (s OrganizationService) CreateOrganization(name string, org *tfe.Organization) (*tfe.Organization, error) {
+func (s OrganizationService) CreateOrganization(name string, opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+	org := &ots.Organization{}
+
 	err := s.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("Organizations"))
 
 		if b.Get([]byte(name)) != nil {
 			return fmt.Errorf("already exists")
+		}
+
+		org, err := ots.NewOrganizationFromOptions(opts)
+		if err != nil {
+			return err
 		}
 
 		buf, err := json.Marshal(org)
@@ -52,8 +59,8 @@ func (s OrganizationService) CreateOrganization(name string, org *tfe.Organizati
 	return org, err
 }
 
-func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, error) {
-	org := &tfe.Organization{}
+func (s OrganizationService) GetOrganization(name string) (*ots.Organization, error) {
+	org := &ots.Organization{}
 
 	err := s.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("Organizations"))
@@ -72,14 +79,14 @@ func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, er
 	return org, err
 }
 
-func (s OrganizationService) ListOrganizations() ([]*tfe.Organization, error) {
-	var orgs []*tfe.Organization
+func (s OrganizationService) ListOrganizations() ([]*ots.Organization, error) {
+	var orgs []*ots.Organization
 
 	err := s.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("Organizations"))
 
 		b.ForEach(func(k, v []byte) error {
-			o := &tfe.Organization{}
+			o := &ots.Organization{}
 			if err := json.Unmarshal(v, o); err != nil {
 				return err
 			}
@@ -95,8 +102,8 @@ func (s OrganizationService) ListOrganizations() ([]*tfe.Organization, error) {
 	return orgs, err
 }
 
-func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
-	org := &tfe.Organization{}
+func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
+	org := &ots.Organization{}
 
 	err := s.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("Organizations"))
@@ -154,7 +161,7 @@ func (s OrganizationService) DeleteOrganization(name string) error {
 }
 
 // GetEntitlements currently shows all entitlements as disabled for an org.
-func (s OrganizationService) GetEntitlements(name string) (*tfe.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
 	err := s.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("Organizations"))
 
@@ -168,5 +175,5 @@ func (s OrganizationService) GetEntitlements(name string) (*tfe.Entitlements, er
 		return nil, err
 	}
 
-	return &tfe.Entitlements{}, nil
+	return ots.NewEntitlements(name), nil
 }

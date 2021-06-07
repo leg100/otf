@@ -6,7 +6,6 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-tfe"
-	"github.com/leg100/ots"
 )
 
 func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -45,19 +44,9 @@ func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := ots.NewOrganizationFromOptions(opts)
+	org, err := h.OrganizationService.CreateOrganization(name, opts)
 	if err != nil {
-		ErrUnprocessable(w, err)
-		return
-	}
-
-	org, err = h.OrganizationService.CreateOrganization(name, org)
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
-			Status: "404",
-			Title:  "org already exists",
-		}})
+		ErrNotFound(w)
 		return
 	}
 

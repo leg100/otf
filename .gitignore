@@ -1,3 +1,5 @@
+# local build
+/ots
 # terraform
 /.terraformignore
 .terraform
