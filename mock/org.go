@@ -8,16 +8,16 @@ import (
 var _ ots.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	CreateOrganizationFn func(name string, opts *tfe.OrganizationCreateOptions) (*ots.Organization, error)
+	CreateOrganizationFn func(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error)
 	UpdateOrganizationFn func(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error)
 	GetOrganizationFn    func(name string) (*ots.Organization, error)
-	ListOrganizationFn   func() ([]*ots.Organization, error)
+	ListOrganizationFn   func(opts ots.OrganizationListOptions) (*ots.OrganizationList, error)
 	DeleteOrganizationFn func(name string) error
 	GetEntitlementsFn    func(name string) (*ots.Entitlements, error)
 }
 
-func (s OrganizationService) CreateOrganization(name string, opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
-	return s.CreateOrganizationFn(name, opts)
+func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+	return s.CreateOrganizationFn(opts)
 }
 
 func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
@@ -28,8 +28,8 @@ func (s OrganizationService) GetOrganization(name string) (*ots.Organization, er
 	return s.GetOrganizationFn(name)
 }
 
-func (s OrganizationService) ListOrganizations() ([]*ots.Organization, error) {
-	return s.ListOrganizationFn()
+func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
+	return s.ListOrganizationFn(opts)
 }
 
 func (s OrganizationService) DeleteOrganization(name string) error {
@@ -38,4 +38,25 @@ func (s OrganizationService) DeleteOrganization(name string) error {
 
 func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
 	return s.GetEntitlementsFn(name)
+}
+
+func NewOrganization(name, email string) *ots.Organization {
+	return &ots.Organization{
+		Name:                   name,
+		Email:                  email,
+		Permissions:            &ots.OrganizationPermissions{},
+		SessionTimeout:         ots.DefaultSessionTimeout,
+		SessionRemember:        ots.DefaultSessionExpiration,
+		CollaboratorAuthPolicy: ots.DefaultCollaboratorAuthPolicy,
+		CostEstimationEnabled:  ots.DefaultCostEstimationEnabled,
+	}
+}
+
+func NewOrganizationList(name, email string, opts ots.OrganizationListOptions) *ots.OrganizationList {
+	return &ots.OrganizationList{
+		Items: []*ots.Organization{
+			NewOrganization(name, email),
+		},
+		Pagination: ots.NewPagination("/api/v2/organizations", opts.ListOptions, 1),
+	}
 }

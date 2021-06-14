@@ -3,11 +3,9 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/google/jsonapi"
 	"github.com/hashicorp/go-tfe"
@@ -20,52 +18,23 @@ import (
 func TestOrganization(t *testing.T) {
 	s := &Server{}
 	s.OrganizationService = &mock.OrganizationService{
-		CreateOrganizationFn: func(name string, opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
-			createdAt, err := time.Parse(time.RFC3339, "2021-06-07T08:23:36Z")
-			if err != nil {
-				return nil, err
-			}
-			return ots.NewOrganizationFromOptions(opts, ots.OrgCreatedAt(createdAt))
+		CreateOrganizationFn: func(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 
 		},
 		UpdateOrganizationFn: func(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
-			org := &ots.Organization{
-				Name:  "automatize",
-				Email: "leg100",
-			}
-			if err := ots.UpdateOrganizationFromOptions(org, opts); err != nil {
-				return nil, err
-			}
-			return org, nil
-
+			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 		},
 		GetOrganizationFn: func(name string) (*ots.Organization, error) {
-			if name != "automatize" {
-				return nil, errors.New("not found")
-			}
-			return &ots.Organization{
-				Name:  "automatize",
-				Email: "leg100",
-			}, nil
+			return mock.NewOrganization(name, "leg100@automatize.co.uk"), nil
 		},
-		ListOrganizationFn: func() ([]*ots.Organization, error) {
-			return []*ots.Organization{
-				{
-					Name:  "automatize",
-					Email: "leg100",
-				},
-			}, nil
+		ListOrganizationFn: func(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
+			return mock.NewOrganizationList("automatize", "leg100@automatize.co.uk", opts), nil
 		},
 		DeleteOrganizationFn: func(name string) error {
-			if name != "automatize" {
-				return errors.New("not found")
-			}
 			return nil
 		},
 		GetEntitlementsFn: func(name string) (*ots.Entitlements, error) {
-			if name != "automatize" {
-				return nil, errors.New("not found")
-			}
 			return ots.NewEntitlements(name), nil
 		},
 	}
@@ -81,22 +50,32 @@ func TestOrganization(t *testing.T) {
 		{
 			name:       "get",
 			method:     "GET",
-			path:       "/organizations/automatize",
+			path:       "/api/v2/organizations/automatize",
 			wantStatus: 200,
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{
 					"attributes": map[string]interface{}{
-						"collaborator-auth-policy": "",
-						"cost-estimation-enabled":  false,
-						"email":                    "leg100",
+						"collaborator-auth-policy": "password",
+						"cost-estimation-enabled":  true,
+						"email":                    "leg100@automatize.co.uk",
 						"enterprise-plan":          "",
 						"external-id":              "",
 						"owners-team-saml-role-id": "",
-						"permissions":              interface{}(nil),
-						"saml-enabled":             false,
-						"session-remember":         float64(0),
-						"session-timeout":          float64(0),
-						"two-factor-conformant":    false,
+						"permissions": map[string]interface{}{
+							"can-create-team":                false,
+							"can-create-workspace":           false,
+							"can-create-workspace-migration": false,
+							"can-destroy":                    false,
+							"can-traverse":                   false,
+							"can-update":                     false,
+							"can-update-api-token":           false,
+							"can-update-oauth":               false,
+							"can-update-sentinel":            false,
+						},
+						"saml-enabled":          false,
+						"session-remember":      float64(20160),
+						"session-timeout":       float64(20160),
+						"two-factor-conformant": false,
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
@@ -109,29 +88,51 @@ func TestOrganization(t *testing.T) {
 		{
 			name:       "list",
 			method:     "GET",
-			path:       "/organizations",
+			path:       "/api/v2/organizations",
 			wantStatus: 200,
 			wantResp: map[string]interface{}{
 				"data": []interface{}{
 					map[string]interface{}{
 						"attributes": map[string]interface{}{
-							"collaborator-auth-policy": "",
-							"cost-estimation-enabled":  false,
-							"email":                    "leg100",
+							"collaborator-auth-policy": "password",
+							"cost-estimation-enabled":  true,
+							"email":                    "leg100@automatize.co.uk",
 							"enterprise-plan":          "",
 							"external-id":              "",
 							"owners-team-saml-role-id": "",
-							"permissions":              interface{}(nil),
-							"saml-enabled":             false,
-							"session-remember":         float64(0),
-							"session-timeout":          float64(0),
-							"two-factor-conformant":    false,
+							"permissions": map[string]interface{}{
+								"can-create-team":                false,
+								"can-create-workspace":           false,
+								"can-create-workspace-migration": false,
+								"can-destroy":                    false,
+								"can-traverse":                   false,
+								"can-update":                     false,
+								"can-update-api-token":           false,
+								"can-update-oauth":               false,
+								"can-update-sentinel":            false,
+							},
+							"saml-enabled":          false,
+							"session-remember":      float64(20160),
+							"session-timeout":       float64(20160),
+							"two-factor-conformant": false,
 						},
 						"id": "automatize",
 						"links": map[string]interface{}{
 							"self": "/v2/api/organizations/automatize",
 						},
 						"type": "organizations",
+					},
+				},
+				"links": map[string]interface{}{
+					"first": "/api/v2/organizations?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+					"last":  "/api/v2/organizations?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+					"self":  "/api/v2/organizations?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+				},
+				"meta": map[string]interface{}{
+					"pagination": map[string]interface{}{
+						"current-page": float64(1),
+						"total-count":  float64(1),
+						"total-pages":  float64(1),
 					},
 				},
 			},
@@ -148,14 +149,13 @@ func TestOrganization(t *testing.T) {
 					},
 				},
 			},
-			path:       "/organizations/automatize",
+			path:       "/api/v2/organizations/automatize",
 			wantStatus: 201,
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{
 					"attributes": map[string]interface{}{
 						"collaborator-auth-policy": "password",
 						"cost-estimation-enabled":  true,
-						"created-at":               "2021-06-07T08:23:36Z",
 						"email":                    "leg100@automatize.co.uk",
 						"enterprise-plan":          "",
 						"external-id":              "",
@@ -187,7 +187,7 @@ func TestOrganization(t *testing.T) {
 		{
 			name:   "update",
 			method: "PATCH",
-			path:   "/organizations/automatize",
+			path:   "/api/v2/organizations/automatize",
 			payload: map[string]interface{}{
 				"data": map[string]interface{}{
 					"type": "organizations",
@@ -201,17 +201,27 @@ func TestOrganization(t *testing.T) {
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{
 					"attributes": map[string]interface{}{
-						"collaborator-auth-policy": "",
-						"cost-estimation-enabled":  false,
+						"collaborator-auth-policy": "password",
+						"cost-estimation-enabled":  true,
 						"email":                    "leg101@automatize.co.uk",
 						"enterprise-plan":          "",
 						"external-id":              "",
 						"owners-team-saml-role-id": "",
-						"permissions":              interface{}(nil),
-						"saml-enabled":             false,
-						"session-remember":         float64(0),
-						"session-timeout":          float64(0),
-						"two-factor-conformant":    false,
+						"permissions": map[string]interface{}{
+							"can-create-team":                false,
+							"can-create-workspace":           false,
+							"can-create-workspace-migration": false,
+							"can-destroy":                    false,
+							"can-traverse":                   false,
+							"can-update":                     false,
+							"can-update-api-token":           false,
+							"can-update-oauth":               false,
+							"can-update-sentinel":            false,
+						},
+						"saml-enabled":          false,
+						"session-remember":      float64(20160),
+						"session-timeout":       float64(20160),
+						"two-factor-conformant": false,
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
@@ -224,13 +234,13 @@ func TestOrganization(t *testing.T) {
 		{
 			name:       "delete",
 			method:     "DELETE",
-			path:       "/organizations/automatize",
+			path:       "/api/v2/organizations/automatize",
 			wantStatus: 204,
 		},
 		{
 			name:       "get entitlements",
 			method:     "GET",
-			path:       "/organizations/automatize/entitlement-set",
+			path:       "/api/v2/organizations/automatize/entitlement-set",
 			wantStatus: 200,
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{

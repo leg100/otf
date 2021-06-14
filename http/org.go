@@ -6,77 +6,41 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/ots"
 )
 
 func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	orgs, err := h.OrganizationService.ListOrganizations()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayload(w, orgs); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
-
-	org, err := h.OrganizationService.GetOrganization(name)
-	if err != nil {
-		ErrNotFound(w)
-		return
-	}
-
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayload(w, org); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["name"]
-
-	opts := &tfe.OrganizationCreateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+	var opts ots.OrganizationListOptions
+	if err := DecodeAndSanitize(&opts, r.URL.Query()); err != nil {
 		ErrUnprocessable(w, err)
 		return
 	}
 
-	org, err := h.OrganizationService.CreateOrganization(name, opts)
-	if err != nil {
-		ErrNotFound(w)
-		return
-	}
+	ListObjects(w, r, func() (interface{}, error) {
+		return h.OrganizationService.ListOrganizations(opts)
+	})
+}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayload(w, org); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	GetObject(w, r, func() (interface{}, error) {
+		return h.OrganizationService.GetOrganization(vars["name"])
+	})
+}
+
+func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	CreateObject(w, r, &tfe.OrganizationCreateOptions{}, func(opts interface{}) (interface{}, error) {
+		return h.OrganizationService.CreateOrganization(opts.(*tfe.OrganizationCreateOptions))
+	})
 }
 
 func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	opts := &tfe.OrganizationUpdateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
-		return
-	}
-
-	org, err := h.OrganizationService.UpdateOrganization(name, opts)
-	if err != nil {
-		ErrNotFound(w, WithDetail(err.Error()))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayload(w, org); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	UpdateObject(w, r, &tfe.OrganizationUpdateOptions{}, func(opts interface{}) (interface{}, error) {
+		return h.OrganizationService.UpdateOrganization(name, opts.(*tfe.OrganizationUpdateOptions))
+	})
 }
 
 func (h *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -104,37 +68,4 @@ func (h *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	if err := jsonapi.MarshalPayload(w, entitlements); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-type ErrOption func(*jsonapi.ErrorObject)
-
-func WithDetail(detail string) ErrOption {
-	return func(err *jsonapi.ErrorObject) {
-		err.Detail = detail
-	}
-}
-
-func ErrNotFound(w http.ResponseWriter, opts ...ErrOption) {
-	err := &jsonapi.ErrorObject{
-		Status: "404",
-		Title:  "not found",
-	}
-
-	for _, o := range opts {
-		o(err)
-	}
-
-	w.WriteHeader(http.StatusNotFound)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
-		err,
-	})
-}
-
-func ErrUnprocessable(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusUnprocessableEntity)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
-		Status: "422",
-		Title:  "unable to process payload",
-		Detail: err.Error(),
-	}})
 }

@@ -7,12 +7,16 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/hashicorp/jsonapi"
 	"github.com/leg100/ots"
 )
 
 // ShutdownTimeout is the time given for outstanding requests to finish before shutdown.
 const ShutdownTimeout = 1 * time.Second
+
+// Query schema decoder, caches structs, and safe for sharing
+var decoder = schema.NewDecoder()
 
 type Server struct {
 	server *http.Server
@@ -24,6 +28,7 @@ type Server struct {
 	Addr string
 
 	OrganizationService ots.OrganizationService
+	WorkspaceService    ots.WorkspaceService
 }
 
 func NewServer() *Server {
@@ -43,12 +48,28 @@ func NewRouter(server *Server) *mux.Router {
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
 
+	// Filter api v2 requests
+	sub = sub.PathPrefix("/api/v2").Subrouter()
+
+	sub.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	sub.HandleFunc("/organizations", server.ListOrganizations).Methods("GET")
 	sub.HandleFunc("/organizations/{name}", server.GetOrganization).Methods("GET")
 	sub.HandleFunc("/organizations/{name}", server.CreateOrganization).Methods("POST")
 	sub.HandleFunc("/organizations/{name}", server.UpdateOrganization).Methods("PATCH")
 	sub.HandleFunc("/organizations/{name}", server.DeleteOrganization).Methods("DELETE")
 	sub.HandleFunc("/organizations/{name}/entitlement-set", server.GetEntitlements).Methods("GET")
+
+	sub.HandleFunc("/organizations/{org}/workspaces", server.ListWorkspaces).Methods("GET")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.GetWorkspace).Methods("GET")
+	sub.HandleFunc("/organizations/{org}/workspaces", server.CreateWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.UpdateWorkspace).Methods("PATCH")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.DeleteWorkspace).Methods("DELETE")
+	sub.HandleFunc("/workspaces/{id}", server.UpdateWorkspaceByID).Methods("PATCH")
+	sub.HandleFunc("/workspaces/{id}", server.GetWorkspaceByID).Methods("GET")
+	sub.HandleFunc("/workspaces/{id}", server.DeleteWorkspaceByID).Methods("DELETE")
 
 	return router
 }

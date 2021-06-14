@@ -34,6 +34,26 @@ type Organization struct {
 	TwoFactorConformant    bool                     `jsonapi:"attr,two-factor-conformant"`
 }
 
+type OrganizationList struct {
+	*Pagination
+	Items []*Organization
+}
+
+// OrganizationListOptions represents the options for listing organizations.
+type OrganizationListOptions struct {
+	ListOptions
+}
+
+var _ Paginated = (*OrganizationList)(nil)
+
+func (l *OrganizationList) GetItems() interface{} {
+	return l.Items
+}
+
+func (l *OrganizationList) GetPath() string {
+	return "/v2/api/organizations"
+}
+
 // OrganizationPermissions represents the organization permissions.
 type OrganizationPermissions struct {
 	CanCreateTeam               bool `json:"can-create-team"`
@@ -54,9 +74,9 @@ func (org *Organization) JSONAPILinks() *jsonapi.Links {
 }
 
 type OrganizationService interface {
-	CreateOrganization(name string, opts *tfe.OrganizationCreateOptions) (*Organization, error)
+	CreateOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error)
 	GetOrganization(name string) (*Organization, error)
-	ListOrganizations() ([]*Organization, error)
+	ListOrganizations(opts OrganizationListOptions) (*OrganizationList, error)
 	UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*Organization, error)
 	DeleteOrganization(name string) error
 	GetEntitlements(name string) (*Entitlements, error)
@@ -81,7 +101,6 @@ func NewOrganizationFromOptions(opts *tfe.OrganizationCreateOptions, overrides .
 		SessionRemember:        DefaultSessionExpiration,
 		CollaboratorAuthPolicy: DefaultCollaboratorAuthPolicy,
 		CostEstimationEnabled:  DefaultCostEstimationEnabled,
-		CreatedAt:              time.Now(),
 	}
 
 	for _, or := range overrides {
@@ -105,13 +124,6 @@ func NewOrganizationFromOptions(opts *tfe.OrganizationCreateOptions, overrides .
 	}
 
 	return org, nil
-}
-
-// Override org's created at field - expressly for the purpose of testing
-func OrgCreatedAt(createdAt time.Time) func(*Organization) {
-	return func(org *Organization) {
-		org.CreatedAt = createdAt
-	}
 }
 
 func UpdateOrganizationFromOptions(org *Organization, opts *tfe.OrganizationUpdateOptions) error {

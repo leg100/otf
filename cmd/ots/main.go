@@ -8,9 +8,10 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/leg100/ots/boltdb"
 	"github.com/leg100/ots/http"
-	bolt "go.etcd.io/bbolt"
+	"github.com/leg100/ots/sqlite"
+	driver "gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 const (
@@ -25,15 +26,14 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-	db, err := bolt.Open("ots.db", 0600, nil)
+	db, err := gorm.Open(driver.Open("test.db"), &gorm.Config{})
 	if err != nil {
 		panic(err.Error())
 	}
-	defer db.Close()
 
 	server := http.NewServer()
 
-	server.OrganizationService = boltdb.NewOrganizationService(db)
+	server.OrganizationService = sqlite.NewOrganizationService(db)
 
 	fs := flag.NewFlagSet("ots", flag.ContinueOnError)
 	fs.StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
