@@ -71,6 +71,11 @@ func NewRouter(server *Server) *mux.Router {
 	sub.HandleFunc("/workspaces/{id}", server.GetWorkspaceByID).Methods("GET")
 	sub.HandleFunc("/workspaces/{id}", server.DeleteWorkspaceByID).Methods("DELETE")
 
+	sub.HandleFunc("/workspaces/{id}/state-versions", server.CreateStateVersion).Methods("POST")
+	sub.HandleFunc("/state-versions", server.ListStateVersions).Methods("GET")
+	sub.HandleFunc("/workspaces/{id}/current-state-version", server.CurrentStateVersion).Methods("GET")
+	sub.HandleFunc("/state-versions/{id}", server.GetStateVersion).Methods("GET")
+
 	return router
 }
 

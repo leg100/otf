@@ -43,18 +43,21 @@ type ListOptions struct {
 	PageSize int `schema:"page[size]"`
 }
 
+// Sanitize list options' values, setting defaults and ensuring they adhere to
+// mins/maxs.
 func (o *ListOptions) Sanitize() {
-	if o.PageNumber == 0 {
+	if o.PageNumber <= 0 {
 		o.PageNumber = DefaultPageNumber
 	}
 
-	if o.PageSize == 0 {
+	if o.PageSize <= 0 {
 		o.PageSize = DefaultPageSize
 	} else if o.PageSize > 100 {
 		o.PageSize = MaxPageSize
 	}
 }
 
+// NewPagination constructs a Pagination obj.
 func NewPagination(path string, opts ListOptions, count int) *Pagination {
 	pagination := &Pagination{
 		CurrentPage: opts.PageNumber,
