@@ -165,29 +165,25 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 		return nil, result.Error
 	}
 
-	workspaces := &ots.WorkspaceList{}
+	workspaces := &ots.WorkspaceList{
+		Organization:         orgName,
+		WorkspaceListOptions: opts,
+	}
+
 	for _, m := range models {
 		workspaces.Items = append(workspaces.Items, NewWorkspaceFromModel(&m))
 	}
-
-	workspaces.Pagination = ots.NewPagination(workspaces.GetPath(orgName), opts.ListOptions, len(workspaces.Items))
 
 	return workspaces, nil
 }
 
 func (s WorkspaceService) GetWorkspace(name, orgName string) (*ots.Workspace, error) {
-	var model WorkspaceModel
-
-	org, err := getOrganizationByName(s.DB, orgName)
+	model, err := getWorkspaceByName(s.DB, name, orgName)
 	if err != nil {
 		return nil, err
 	}
 
-	if result := s.DB.Preload(clause.Associations).Where("name = ? AND organization_id = ?", name, org.ID).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewWorkspaceFromModel(&model), nil
+	return NewWorkspaceFromModel(model), nil
 }
 
 func (s WorkspaceService) GetWorkspaceByID(id string) (*ots.Workspace, error) {
@@ -231,4 +227,29 @@ func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
 	}
 
 	return nil
+}
+
+func getWorkspaceByID(db *gorm.DB, id string) (*WorkspaceModel, error) {
+	var model WorkspaceModel
+
+	if result := db.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &model, nil
+}
+
+func getWorkspaceByName(db *gorm.DB, name, orgName string) (*WorkspaceModel, error) {
+	var model WorkspaceModel
+
+	org, err := getOrganizationByName(db, orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	if result := db.Preload(clause.Associations).Where("name = ? AND organization_id = ?", name, org.ID).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &model, nil
 }

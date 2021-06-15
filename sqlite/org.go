@@ -110,12 +110,14 @@ func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions)
 		return nil, result.Error
 	}
 
-	orgs := &ots.OrganizationList{}
+	orgs := &ots.OrganizationList{
+		OrganizationListOptions: ots.OrganizationListOptions{
+			ListOptions: opts.ListOptions,
+		},
+	}
 	for _, m := range models {
 		orgs.Items = append(orgs.Items, NewOrganizationFromModel(&m))
 	}
-
-	orgs.Pagination = ots.NewPagination(orgs.GetPath(), opts.ListOptions, len(orgs.Items))
 
 	return orgs, nil
 }

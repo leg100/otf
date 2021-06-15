@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
 )
 
 // StateVersion represents a Terraform Enterprise state version.
@@ -18,25 +17,9 @@ type StateVersion struct {
 	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
 
 	// Relations
-	Run     *Run                  `jsonapi:"relation,run"`
+	// Run     *Run                  `jsonapi:"relation,run"`
 	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
 }
-
-type StateVersionList struct {
-	*Pagination
-	Items     []*StateVersion
-	Workspace string
-}
-
-// StateVersionListOptions represents the options for listing state versions.
-type StateVersionListOptions struct {
-	ListOptions
-
-	Organization *string `url:"filter[organization][name]"`
-	Workspace    *string `url:"filter[workspace][name]"`
-}
-
-var _ Paginated = (*StateVersionList)(nil)
 
 // StateVersionCreateOptions represents the options for creating a state
 // version.
@@ -68,24 +51,16 @@ type StateVersionCreateOptions struct {
 }
 
 type StateVersionService interface {
-	CreateStateVersion(id string, opts *tfe.StateVersionCreateOptions) (*StateVersion, error)
-	CurrentStateVersion(id string) (*StateVersion, error)
+	CreateStateVersion(workspaceID string, opts *StateVersionCreateOptions) (*StateVersion, error)
+	ListStateVersions(orgName, workspaceName string, opts StateVersionListOptions) (*StateVersionList, error)
+	CurrentStateVersion(workspaceID string) (*StateVersion, error)
 	GetStateVersion(id string) (*StateVersion, error)
-	ListStateVersions() (*StateVersionList, error)
 }
 
-func (ws *StateVersion) JSONAPILinks() *jsonapi.Links {
+func (sv *StateVersion) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("/v2/api/organizations/%s/workspaces/%s", ws.Organization.Name, ws.Name),
+		"self": fmt.Sprintf("/api/v2/state-versions/%s", sv.ID),
 	}
-}
-
-func (l *StateVersionList) GetItems() interface{} {
-	return l.Items
-}
-
-func (l *StateVersionList) GetPath(org string) string {
-	return fmt.Sprintf("/v2/api/organizations/%s/workspaces", org)
 }
 
 func NewStateVersionID() string {

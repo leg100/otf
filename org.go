@@ -35,8 +35,8 @@ type Organization struct {
 }
 
 type OrganizationList struct {
-	*Pagination
 	Items []*Organization
+	OrganizationListOptions
 }
 
 // OrganizationListOptions represents the options for listing organizations.
@@ -48,6 +48,10 @@ var _ Paginated = (*OrganizationList)(nil)
 
 func (l *OrganizationList) GetItems() interface{} {
 	return l.Items
+}
+
+func (l *OrganizationList) GetListOptions() ListOptions {
+	return l.ListOptions
 }
 
 func (l *OrganizationList) GetPath() string {

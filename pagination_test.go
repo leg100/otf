@@ -4,33 +4,19 @@ import (
 	"testing"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPagination(t *testing.T) {
 	tests := []struct {
 		name      string
-		opts      *tfe.ListOptions
-		count     int
-		want      *Pagination
+		paginated Paginated
 		wantLinks *jsonapi.Links
 		wantMeta  *jsonapi.Meta
 	}{
 		{
-			name: "one page",
-			opts: &tfe.ListOptions{
-				PageNumber: 1,
-				PageSize:   20,
-			},
-			count: 5,
-			want: &Pagination{
-				CurrentPage: 1,
-				TotalPages:  1,
-				TotalCount:  5,
-				PageSize:    20,
-				path:        "/v2/api/foobar",
-			},
+			name:      "one page",
+			paginated: NewPaginatedMock("/v2/api/foobar", 5, 1, 20),
 			wantLinks: &jsonapi.Links{
 				"first": "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
 				"last":  "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
@@ -38,28 +24,17 @@ func TestPagination(t *testing.T) {
 			},
 			wantMeta: &jsonapi.Meta{
 				"pagination": map[string]interface{}{
+					"prev-page":    (*int)(nil),
 					"current-page": 1,
+					"next-page":    (*int)(nil),
 					"total-count":  5,
 					"total-pages":  1,
 				},
 			},
 		},
 		{
-			name: "multiple pages",
-			opts: &tfe.ListOptions{
-				PageNumber: 3,
-				PageSize:   20,
-			},
-			count: 101,
-			want: &Pagination{
-				CurrentPage:  3,
-				PreviousPage: Int(2),
-				NextPage:     Int(4),
-				TotalPages:   6,
-				TotalCount:   101,
-				PageSize:     20,
-				path:         "/v2/api/foobar",
-			},
+			name:      "multiple pages",
+			paginated: NewPaginatedMock("/v2/api/foobar", 101, 3, 20),
 			wantLinks: &jsonapi.Links{
 				"first": "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
 				"last":  "/v2/api/foobar?page%5Bnumber%5D=6&page%5Bsize%5D=20",
@@ -81,10 +56,9 @@ func TestPagination(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPagination("/v2/api/foobar", tt.opts, tt.count)
-			assert.Equal(t, tt.want, p)
-			assert.Equal(t, tt.wantLinks, p.JSONAPIPaginationLinks())
-			assert.Equal(t, tt.wantMeta, p.JSONAPIPaginationMeta())
+			pagination := NewPagination(tt.paginated)
+			assert.Equal(t, tt.wantLinks, pagination.JSONAPIPaginationLinks())
+			assert.Equal(t, tt.wantMeta, pagination.JSONAPIPaginationMeta())
 		})
 	}
 }

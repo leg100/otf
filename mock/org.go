@@ -57,6 +57,6 @@ func NewOrganizationList(name, email string, opts ots.OrganizationListOptions) *
 		Items: []*ots.Organization{
 			NewOrganization(name, email),
 		},
-		Pagination: ots.NewPagination("/api/v2/organizations", opts.ListOptions, 1),
+		OrganizationListOptions: opts,
 	}
 }

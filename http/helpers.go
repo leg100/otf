@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/jsonapi"
+	"github.com/leg100/ots"
 )
 
 // Sanitizable implementations can sanitize their values
@@ -40,7 +41,7 @@ func ListObjects(w http.ResponseWriter, r *http.Request, lister func() (interfac
 	}
 
 	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := MarshalPayload(w, obj, include...); err != nil {
+	if err := MarshalPayload(w, obj.(ots.Paginated), include...); err != nil {
 		ErrServerFailure(w, err)
 	}
 }

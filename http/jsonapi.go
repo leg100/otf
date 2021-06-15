@@ -17,8 +17,10 @@ func MarshalPayload(w io.Writer, models interface{}, include ...string) (err err
 		if err != nil {
 			return err
 		}
-		payload.(*jsonapi.ManyPayload).Links = paginated.JSONAPIPaginationLinks()
-		payload.(*jsonapi.ManyPayload).Meta = paginated.JSONAPIPaginationMeta()
+
+		pagination := ots.NewPagination(paginated)
+		payload.(*jsonapi.ManyPayload).Links = pagination.JSONAPIPaginationLinks()
+		payload.(*jsonapi.ManyPayload).Meta = pagination.JSONAPIPaginationMeta()
 	} else {
 		payload, err = jsonapi.Marshal(models)
 		if err != nil {

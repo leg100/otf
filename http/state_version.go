@@ -8,8 +8,6 @@ import (
 )
 
 func (h *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	var opts ots.StateVersionListOptions
 	if err := DecodeAndSanitize(&opts, r.URL.Query()); err != nil {
 		ErrUnprocessable(w, err)
@@ -17,7 +15,7 @@ func (h *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ListObjects(w, r, func() (interface{}, error) {
-		return h.StateVersionService.ListStateVersions(vars["org"], opts)
+		return h.StateVersionService.ListStateVersions(*opts.Organization, *opts.Workspace, opts)
 	})
 }
 
@@ -25,7 +23,7 @@ func (h *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	GetObject(w, r, func() (interface{}, error) {
-		return h.StateVersionService.GetStateVersion(vars["name"], vars["org"])
+		return h.StateVersionService.GetStateVersion(vars["workspace_id"])
 	})
 }
 
@@ -33,7 +31,7 @@ func (h *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	GetObject(w, r, func() (interface{}, error) {
-		return h.StateVersionService.GetStateVersion(vars["name"], vars["org"])
+		return h.StateVersionService.GetStateVersion(vars["id"])
 	})
 }
 
@@ -41,6 +39,6 @@ func (h *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	CreateObject(w, r, &ots.StateVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.StateVersionService.CreateStateVersion(vars["org"], opts.(*ots.StateVersionCreateOptions))
+		return h.StateVersionService.CreateStateVersion(vars["workspace_id"], opts.(*ots.StateVersionCreateOptions))
 	})
 }
