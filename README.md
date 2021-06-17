@@ -11,7 +11,7 @@ A terraform server compatible with the terraform cloud API.
     openssl req -x509 -newkey rsa:4096 -sha256 -keyout key.pem -out cert.crt -days 365 -nodes -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost'
     ```
     
-1. Ensure your systems trusts the generated cert. For example, on Linux:
+1. Ensure your system trusts the generated cert. For example, on Linux:
 
     ```bash
     sudo cp cert.crt /usr/local/share/ca-certificates
