@@ -83,7 +83,7 @@ A terraform server compatible with the terraform cloud API.
 
 OTS is a mere prototype but a roadmap of further features could be:
 
-* User Authorization
+* User AuthN/Z
 * Remote execution mode (only local is currently supported)
 * Agents
 * Github integration
