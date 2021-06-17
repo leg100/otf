@@ -15,6 +15,11 @@ const (
 	DefaultTerraformVersion    = "0.15.4"
 )
 
+var (
+	ErrWorkspaceAlreadyLocked   = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyUnlocked = errors.New("workspace already unlocked")
+)
+
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
 	ID                   string                `jsonapi:"primary,workspaces"`
@@ -104,7 +109,7 @@ func (l *WorkspaceList) GetItems() interface{} {
 }
 
 func (l *WorkspaceList) GetPath() string {
-	return fmt.Sprintf("/v2/api/organizations/%s/workspaces", l.Organization)
+	return fmt.Sprintf("/api/v2/organizations/%s/workspaces", l.Organization)
 }
 
 func (l *WorkspaceList) GetListOptions() ListOptions {
@@ -192,6 +197,12 @@ type WorkspaceCreateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
+// WorkspaceLockOptions represents the options for locking a workspace.
+type WorkspaceLockOptions struct {
+	// Specifies the reason for locking the workspace.
+	Reason *string `jsonapi:"attr,reason,omitempty"`
+}
+
 type WorkspaceService interface {
 	CreateWorkspace(org string, opts *WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(name, org string) (*Workspace, error)
@@ -201,11 +212,13 @@ type WorkspaceService interface {
 	UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
 	DeleteWorkspace(name, org string) error
 	DeleteWorkspaceByID(id string) error
+	LockWorkspace(id string, opts WorkspaceLockOptions) (*Workspace, error)
+	UnlockWorkspace(id string) (*Workspace, error)
 }
 
 func (ws *Workspace) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("/v2/api/organizations/%s/workspaces/%s", ws.Organization.Name, ws.Name),
+		"self": fmt.Sprintf("/api/v2/organizations/%s/workspaces/%s", ws.Organization.Name, ws.Name),
 	}
 }
 

@@ -1,0 +1,26 @@
+before:
+  hooks:
+    - make unit
+builds:
+  - id: ots
+    ldflags:
+    - '-X ".Version={{ .Version }}"'
+    - '-X ".Commit={{ .Commit }}"'
+    main: ./cmd/ots
+    targets:
+    - linux_amd64
+    - darwin_amd64
+archives:
+- format: zip
+  files:
+  - none*
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'

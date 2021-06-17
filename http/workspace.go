@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
@@ -82,4 +83,42 @@ func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	opts := ots.WorkspaceLockOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	obj, err := h.WorkspaceService.LockWorkspace(vars["id"], opts)
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	obj, err := h.WorkspaceService.UnlockWorkspace(vars["id"])
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

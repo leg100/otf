@@ -16,6 +16,8 @@ type WorkspaceService struct {
 	ListWorkspaceFn       func(org string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error)
 	DeleteWorkspaceFn     func(name, org string) error
 	DeleteWorkspaceByIDFn func(id string) error
+	LockWorkspaceFn       func(id string, opts ots.WorkspaceLockOptions) (*ots.Workspace, error)
+	UnlockWorkspaceFn     func(id string) (*ots.Workspace, error)
 }
 
 func (s WorkspaceService) CreateWorkspace(org string, opts *ots.WorkspaceCreateOptions) (*ots.Workspace, error) {
@@ -50,6 +52,14 @@ func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
 	return s.DeleteWorkspaceByIDFn(id)
 }
 
+func (s WorkspaceService) LockWorkspace(id string, opts ots.WorkspaceLockOptions) (*ots.Workspace, error) {
+	return s.LockWorkspaceFn(id, opts)
+}
+
+func (s WorkspaceService) UnlockWorkspace(id string) (*ots.Workspace, error) {
+	return s.UnlockWorkspaceFn(id)
+}
+
 func NewWorkspace(name, id, org string) *ots.Workspace {
 	return &ots.Workspace{
 		Actions: &ots.WorkspaceActions{},
@@ -69,5 +79,7 @@ func NewWorkspaceList(name, id, org string, opts ots.WorkspaceListOptions) *ots.
 		Items: []*ots.Workspace{
 			NewWorkspace(name, id, org),
 		},
+		Organization:         org,
+		WorkspaceListOptions: opts,
 	}
 }

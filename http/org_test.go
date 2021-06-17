@@ -79,7 +79,7 @@ func TestOrganization(t *testing.T) {
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize",
+						"self": "/api/v2/organizations/automatize",
 					},
 					"type": "organizations",
 				},
@@ -118,7 +118,7 @@ func TestOrganization(t *testing.T) {
 						},
 						"id": "automatize",
 						"links": map[string]interface{}{
-							"self": "/v2/api/organizations/automatize",
+							"self": "/api/v2/organizations/automatize",
 						},
 						"type": "organizations",
 					},
@@ -130,7 +130,9 @@ func TestOrganization(t *testing.T) {
 				},
 				"meta": map[string]interface{}{
 					"pagination": map[string]interface{}{
+						"prev-page":    nil,
 						"current-page": float64(1),
+						"next-page":    (interface{})(nil),
 						"total-count":  float64(1),
 						"total-pages":  float64(1),
 					},
@@ -149,7 +151,7 @@ func TestOrganization(t *testing.T) {
 					},
 				},
 			},
-			path:       "/api/v2/organizations/automatize",
+			path:       "/api/v2/organizations",
 			wantStatus: 201,
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{
@@ -178,7 +180,7 @@ func TestOrganization(t *testing.T) {
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize",
+						"self": "/api/v2/organizations/automatize",
 					},
 					"type": "organizations",
 				},
@@ -225,7 +227,7 @@ func TestOrganization(t *testing.T) {
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize",
+						"self": "/api/v2/organizations/automatize",
 					},
 					"type": "organizations",
 				},
@@ -258,7 +260,7 @@ func TestOrganization(t *testing.T) {
 					},
 					"id": "automatize",
 					"links": map[string]interface{}{
-						"self": "/v2/api/entitlement-set/automatize",
+						"self": "/api/v2/entitlement-set/automatize",
 					},
 					"type": "entitlement-sets",
 				},

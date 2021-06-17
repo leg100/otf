@@ -110,7 +110,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/dev",
+						"self": "/api/v2/organizations/automatize/workspaces/dev",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{
@@ -182,7 +182,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/dev",
+						"self": "/api/v2/organizations/automatize/workspaces/dev",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{
@@ -254,7 +254,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/dev",
+						"self": "/api/v2/organizations/automatize/workspaces/dev",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{
@@ -283,7 +283,7 @@ func TestWorkspace(t *testing.T) {
 						},
 						"id": "automatize",
 						"links": map[string]interface{}{
-							"self": "/v2/api/organizations/automatize",
+							"self": "/api/v2/organizations/automatize",
 						},
 						"type": "organizations",
 					},
@@ -349,7 +349,7 @@ func TestWorkspace(t *testing.T) {
 						},
 						"id": "ws-123",
 						"links": map[string]interface{}{
-							"self": "/v2/api/organizations/automatize/workspaces/dev",
+							"self": "/api/v2/organizations/automatize/workspaces/dev",
 						},
 						"relationships": map[string]interface{}{
 							"organization": map[string]interface{}{
@@ -369,7 +369,9 @@ func TestWorkspace(t *testing.T) {
 				},
 				"meta": map[string]interface{}{
 					"pagination": map[string]interface{}{
+						"prev-page":    (interface{})(nil),
 						"current-page": float64(1),
+						"next-page":    (interface{})(nil),
 						"total-count":  float64(1),
 						"total-pages":  float64(1),
 					},
@@ -442,7 +444,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/dev",
+						"self": "/api/v2/organizations/automatize/workspaces/dev",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{
@@ -522,7 +524,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/staging",
+						"self": "/api/v2/organizations/automatize/workspaces/staging",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{
@@ -602,7 +604,7 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"links": map[string]interface{}{
-						"self": "/v2/api/organizations/automatize/workspaces/staging",
+						"self": "/api/v2/organizations/automatize/workspaces/staging",
 					},
 					"relationships": map[string]interface{}{
 						"organization": map[string]interface{}{

@@ -55,7 +55,7 @@ func (l *OrganizationList) GetListOptions() ListOptions {
 }
 
 func (l *OrganizationList) GetPath() string {
-	return "/v2/api/organizations"
+	return "/api/v2/organizations"
 }
 
 // OrganizationPermissions represents the organization permissions.
@@ -73,7 +73,7 @@ type OrganizationPermissions struct {
 
 func (org *Organization) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("/v2/api/organizations/%s", org.Name),
+		"self": fmt.Sprintf("/api/v2/organizations/%s", org.Name),
 	}
 }
 
@@ -182,6 +182,6 @@ func NewEntitlements(orgName string) *Entitlements {
 
 func (e *Entitlements) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("/v2/api/entitlement-set/%s", e.ID),
+		"self": fmt.Sprintf("/api/v2/entitlement-set/%s", e.ID),
 	}
 }

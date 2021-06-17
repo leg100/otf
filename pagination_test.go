@@ -16,11 +16,11 @@ func TestPagination(t *testing.T) {
 	}{
 		{
 			name:      "one page",
-			paginated: NewPaginatedMock("/v2/api/foobar", 5, 1, 20),
+			paginated: NewPaginatedMock("/api/v2/foobar", 5, 1, 20),
 			wantLinks: &jsonapi.Links{
-				"first": "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-				"last":  "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-				"self":  "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+				"first": "/api/v2/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+				"last":  "/api/v2/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+				"self":  "/api/v2/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
 			},
 			wantMeta: &jsonapi.Meta{
 				"pagination": map[string]interface{}{
@@ -34,13 +34,13 @@ func TestPagination(t *testing.T) {
 		},
 		{
 			name:      "multiple pages",
-			paginated: NewPaginatedMock("/v2/api/foobar", 101, 3, 20),
+			paginated: NewPaginatedMock("/api/v2/foobar", 101, 3, 20),
 			wantLinks: &jsonapi.Links{
-				"first": "/v2/api/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-				"last":  "/v2/api/foobar?page%5Bnumber%5D=6&page%5Bsize%5D=20",
-				"prev":  "/v2/api/foobar?page%5Bnumber%5D=2&page%5Bsize%5D=20",
-				"next":  "/v2/api/foobar?page%5Bnumber%5D=4&page%5Bsize%5D=20",
-				"self":  "/v2/api/foobar?page%5Bnumber%5D=3&page%5Bsize%5D=20",
+				"first": "/api/v2/foobar?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+				"last":  "/api/v2/foobar?page%5Bnumber%5D=6&page%5Bsize%5D=20",
+				"prev":  "/api/v2/foobar?page%5Bnumber%5D=2&page%5Bsize%5D=20",
+				"next":  "/api/v2/foobar?page%5Bnumber%5D=4&page%5Bsize%5D=20",
+				"self":  "/api/v2/foobar?page%5Bnumber%5D=3&page%5Bsize%5D=20",
 			},
 			wantMeta: &jsonapi.Meta{
 				"pagination": map[string]interface{}{

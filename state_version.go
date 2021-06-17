@@ -55,6 +55,7 @@ type StateVersionService interface {
 	ListStateVersions(orgName, workspaceName string, opts StateVersionListOptions) (*StateVersionList, error)
 	CurrentStateVersion(workspaceID string) (*StateVersion, error)
 	GetStateVersion(id string) (*StateVersion, error)
+	DownloadStateVersion(id string) ([]byte, error)
 }
 
 func (sv *StateVersion) JSONAPILinks() *jsonapi.Links {

@@ -22,6 +22,7 @@ type WorkspaceModel struct {
 	ExecutionMode       string
 	FileTriggersEnabled bool
 	GlobalRemoteState   bool
+	Locked              bool
 	TerraformVersion    string
 
 	OrganizationID uint
@@ -42,9 +43,11 @@ func NewWorkspaceService(db *gorm.DB) *WorkspaceService {
 
 func NewWorkspaceFromModel(model *WorkspaceModel) *ots.Workspace {
 	return &ots.Workspace{
-		Name:        model.Name,
-		ID:          model.ExternalID,
-		Permissions: &ots.WorkspacePermissions{},
+		Name:         model.Name,
+		ID:           model.ExternalID,
+		Permissions:  &ots.WorkspacePermissions{},
+		Locked:       model.Locked,
+		Organization: NewOrganizationFromModel(&model.Organization),
 	}
 }
 
@@ -70,6 +73,7 @@ func (s WorkspaceService) CreateWorkspace(orgName string, opts *ots.WorkspaceCre
 		FileTriggersEnabled: ots.DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    ots.DefaultTerraformVersion,
+		Organization:        *org,
 	}
 
 	if opts.AllowDestroyPlan != nil {
@@ -227,6 +231,35 @@ func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
 	}
 
 	return nil
+}
+
+func (s WorkspaceService) LockWorkspace(id string, opts ots.WorkspaceLockOptions) (*ots.Workspace, error) {
+	return toggleWorkspaceLock(s.DB, id, true)
+}
+
+func (s WorkspaceService) UnlockWorkspace(id string) (*ots.Workspace, error) {
+	return toggleWorkspaceLock(s.DB, id, false)
+}
+
+func toggleWorkspaceLock(db *gorm.DB, id string, lock bool) (*ots.Workspace, error) {
+	var model WorkspaceModel
+
+	if result := db.Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	if lock && model.Locked {
+		return nil, ots.ErrWorkspaceAlreadyLocked
+	}
+	if !lock && !model.Locked {
+		return nil, ots.ErrWorkspaceAlreadyUnlocked
+	}
+
+	if result := db.Model(&model).Update("locked", lock); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return NewWorkspaceFromModel(&model), nil
 }
 
 func getWorkspaceByID(db *gorm.DB, id string) (*WorkspaceModel, error) {

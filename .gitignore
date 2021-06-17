@@ -1,5 +1,8 @@
-# local build
-/ots
+# keys,certs
+*.pem
+# sqlite db
+*.db
+/_build
 # terraform
 /.terraformignore
 .terraform

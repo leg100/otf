@@ -12,11 +12,17 @@ import (
 	"github.com/leg100/ots/sqlite"
 	driver "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (
-	DefaultAddress            = ":8000"
+	DefaultAddress            = ":8080"
 	EnvironmentVariablePrefix = "OTS_"
+	DefaultDBPath             = "ots.db"
+)
+
+var (
+	DBPath string
 )
 
 func main() {
@@ -26,23 +32,38 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { <-c; cancel() }()
 
-	db, err := gorm.Open(driver.Open("test.db"), &gorm.Config{})
-	if err != nil {
-		panic(err.Error())
-	}
-
 	server := http.NewServer()
-
-	server.OrganizationService = sqlite.NewOrganizationService(db)
 
 	fs := flag.NewFlagSet("ots", flag.ContinueOnError)
 	fs.StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
+	fs.BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
+	fs.StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL")
+	fs.StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL")
+	fs.StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 
 	SetFlagsFromEnvVariables(fs)
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		panic(err.Error())
 	}
+
+	if server.SSL {
+		if server.CertFile == "" || server.KeyFile == "" {
+			fmt.Fprintf(os.Stderr, "must provide both -cert-file and -key-file")
+			os.Exit(1)
+		}
+	}
+
+	db, err := gorm.Open(driver.Open(DBPath), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	server.OrganizationService = sqlite.NewOrganizationService(db)
+	server.WorkspaceService = sqlite.NewWorkspaceService(db)
+	server.StateVersionService = sqlite.NewStateVersionService(db)
 
 	if err := server.Open(); err != nil {
 		server.Close()

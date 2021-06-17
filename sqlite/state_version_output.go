@@ -17,7 +17,6 @@ type StateVersionOutputModel struct {
 	Value      string
 
 	StateVersionID uint
-	StateVersion   StateVersionModel
 }
 
 type StateVersionOutputService struct {

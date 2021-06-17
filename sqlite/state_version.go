@@ -1,6 +1,9 @@
 package sqlite
 
 import (
+	"encoding/base64"
+	"fmt"
+
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -20,7 +23,7 @@ type StateVersionModel struct {
 	Workspace   WorkspaceModel
 
 	// State version has many outputs
-	StateVersionOutputs []StateVersionOutputModel
+	StateVersionOutputs []StateVersionOutputModel `gorm:"foreignKey:StateVersionID"`
 }
 
 type StateVersionService struct {
@@ -37,8 +40,9 @@ func NewStateVersionService(db *gorm.DB) *StateVersionService {
 
 func NewStateVersionFromModel(model *StateVersionModel) *ots.StateVersion {
 	return &ots.StateVersion{
-		ID:     model.ExternalID,
-		Serial: model.Serial,
+		ID:          model.ExternalID,
+		Serial:      model.Serial,
+		DownloadURL: fmt.Sprintf("/state-versions/%s/download", model.ExternalID),
 	}
 }
 
@@ -56,6 +60,7 @@ func (s StateVersionService) CreateStateVersion(workspaceID string, opts *ots.St
 		Serial:      *opts.Serial,
 		ExternalID:  ots.NewStateVersionID(),
 		WorkspaceID: workspace.ID,
+		State:       *opts.State,
 	}
 
 	if result := s.DB.Omit(clause.Associations).Create(&model); result.Error != nil {
@@ -106,9 +111,29 @@ func (s StateVersionService) GetStateVersion(id string) (*ots.StateVersion, erro
 func (s StateVersionService) CurrentStateVersion(workspaceID string) (*ots.StateVersion, error) {
 	var model StateVersionModel
 
-	if result := s.DB.Preload(clause.Associations).Where("workspace_id = ?", workspaceID).First(&model); result.Error != nil {
+	workspace, err := getWorkspaceByID(s.DB, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if result := s.DB.Where("workspace_id = ?", workspace.ID).Order("serial desc, created_at desc").First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
 	return NewStateVersionFromModel(&model), nil
+}
+
+func (s StateVersionService) DownloadStateVersion(id string) ([]byte, error) {
+	var model StateVersionModel
+
+	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	data, err := base64.StdEncoding.DecodeString(model.State)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

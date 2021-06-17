@@ -23,7 +23,7 @@ func (h *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	GetObject(w, r, func() (interface{}, error) {
-		return h.StateVersionService.GetStateVersion(vars["workspace_id"])
+		return h.StateVersionService.CurrentStateVersion(vars["workspace_id"])
 	})
 }
 
@@ -41,4 +41,16 @@ func (h *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	CreateObject(w, r, &ots.StateVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
 		return h.StateVersionService.CreateStateVersion(vars["workspace_id"], opts.(*ots.StateVersionCreateOptions))
 	})
+}
+
+func (h *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	resp, err := h.StateVersionService.DownloadStateVersion(vars["id"])
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.Write(resp)
 }

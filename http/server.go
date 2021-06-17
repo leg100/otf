@@ -10,10 +10,16 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/hashicorp/jsonapi"
 	"github.com/leg100/ots"
+	"github.com/urfave/negroni"
 )
 
-// ShutdownTimeout is the time given for outstanding requests to finish before shutdown.
-const ShutdownTimeout = 1 * time.Second
+const (
+	// ShutdownTimeout is the time given for outstanding requests to finish
+	// before shutdown.
+	ShutdownTimeout = 1 * time.Second
+
+	jsonApplication = "application/json"
+)
 
 // Query schema decoder, caches structs, and safe for sharing
 var decoder = schema.NewDecoder()
@@ -23,6 +29,9 @@ type Server struct {
 	router *mux.Router
 	ln     net.Listener
 	err    chan error
+
+	SSL               bool
+	CertFile, KeyFile string
 
 	// Listening Address in the form <ip>:<port>
 	Addr string
@@ -43,8 +52,12 @@ func NewServer() *Server {
 	return s
 }
 
-func NewRouter(server *Server) *mux.Router {
+func NewRouter(server *Server) *negroni.Negroni {
 	router := mux.NewRouter()
+
+	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
+
+	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
@@ -57,8 +70,8 @@ func NewRouter(server *Server) *mux.Router {
 	})
 
 	sub.HandleFunc("/organizations", server.ListOrganizations).Methods("GET")
+	sub.HandleFunc("/organizations", server.CreateOrganization).Methods("POST")
 	sub.HandleFunc("/organizations/{name}", server.GetOrganization).Methods("GET")
-	sub.HandleFunc("/organizations/{name}", server.CreateOrganization).Methods("POST")
 	sub.HandleFunc("/organizations/{name}", server.UpdateOrganization).Methods("PATCH")
 	sub.HandleFunc("/organizations/{name}", server.DeleteOrganization).Methods("DELETE")
 	sub.HandleFunc("/organizations/{name}/entitlement-set", server.GetEntitlements).Methods("GET")
@@ -71,13 +84,20 @@ func NewRouter(server *Server) *mux.Router {
 	sub.HandleFunc("/workspaces/{id}", server.UpdateWorkspaceByID).Methods("PATCH")
 	sub.HandleFunc("/workspaces/{id}", server.GetWorkspaceByID).Methods("GET")
 	sub.HandleFunc("/workspaces/{id}", server.DeleteWorkspaceByID).Methods("DELETE")
+	sub.HandleFunc("/workspaces/{id}/actions/lock", server.LockWorkspace).Methods("POST")
+	sub.HandleFunc("/workspaces/{id}/actions/unlock", server.UnlockWorkspace).Methods("POST")
 
 	sub.HandleFunc("/workspaces/{workspace_id}/state-versions", server.CreateStateVersion).Methods("POST")
 	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", server.CurrentStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions/{id}", server.GetStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions", server.ListStateVersions).Methods("GET")
 
-	return router
+	n := negroni.Classic()
+	// Or use a middleware with the Use() function
+	//n.Use() router goes last
+	n.UseHandler(router)
+
+	return n
 }
 
 // Open validates the server options and begins listening on the bind address.
@@ -90,7 +110,11 @@ func (s *Server) Open() (err error) {
 	// ListenAndServe() because it allows us to check for listen errors (such as
 	// trying to use an already open port) synchronously.
 	go func() {
-		s.err <- s.server.Serve(s.ln)
+		if s.SSL {
+			s.err <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
+		} else {
+			s.err <- s.server.Serve(s.ln)
+		}
 	}()
 
 	return nil
