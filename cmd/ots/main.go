@@ -37,8 +37,8 @@ func main() {
 	fs := flag.NewFlagSet("ots", flag.ContinueOnError)
 	fs.StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 	fs.BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
-	fs.StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL")
-	fs.StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL")
+	fs.StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
+	fs.StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	fs.StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 
 	SetFlagsFromEnvVariables(fs)

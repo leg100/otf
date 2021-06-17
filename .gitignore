@@ -1,3 +1,5 @@
+# logs
+*.log
 # keys,certs
 *.pem
 # sqlite db
