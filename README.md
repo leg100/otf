@@ -41,7 +41,7 @@ A terraform server compatible with the terraform cloud API.
 1. Enter some dummy credentials (this is necessary otherwise terraform will complain):
 
    ```bash
-   cat > ~/.terraform.d/credentials.tfrc.json <EOF
+   cat > ~/.terraform.d/credentials.tfrc.json <<EOF
    {
      "credentials": {
        "localhost:8080": {
@@ -54,7 +54,7 @@ A terraform server compatible with the terraform cloud API.
 1. Configure the terraform backend and define a resource:
 
     ```bash
-    cat > main.tf <EOF
+    cat > main.tf <<EOF
     terraform {
       backend "remote" {
         hostname = "localhost:8080"
