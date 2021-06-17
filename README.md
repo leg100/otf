@@ -49,6 +49,7 @@ A terraform server compatible with the terraform cloud API.
        }
      }
    }
+   EOF
    ```
     
 1. Configure the terraform backend and define a resource:
