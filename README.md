@@ -66,4 +66,11 @@ A terraform server compatible with the terraform cloud API.
    terraform apply
    ```
 
-    
+## Next Steps
+
+OTS is a mere prototype but a roadmap of further features could be:
+
+* Remote execution mode (only local is currently supported)
+* Agents
+* Github integration
+* Policies (OPA?)
