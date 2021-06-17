@@ -38,6 +38,18 @@ A terraform server compatible with the terraform cloud API.
      }
    }'
    ```   
+1. Enter some dummy credentials (this is necessary otherwise terraform will complain):
+
+   ```bash
+   cat > ~/.terraform.d/credentials.tfrc.json <EOF
+   {
+     "credentials": {
+       "localhost:8080": {
+         "token": "dummy"
+       }
+     }
+   }
+   ```
     
 1. Configure the terraform backend and define a resource:
 
@@ -70,6 +82,7 @@ A terraform server compatible with the terraform cloud API.
 
 OTS is a mere prototype but a roadmap of further features could be:
 
+* User Authorization
 * Remote execution mode (only local is currently supported)
 * Agents
 * Github integration
