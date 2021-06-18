@@ -20,7 +20,7 @@ A terraform server compatible with the terraform cloud API.
 1. Run the OTS daemon:
 
     ```bash
-    ./ots -ssl -cert-file cert.crt -key-file key.pem
+    ./otsd -ssl -cert-file cert.crt -key-file key.pem
     ```
    
    The daemon runs in the foreground and can be left to run.

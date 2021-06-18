@@ -34,7 +34,7 @@ func main() {
 
 	server := http.NewServer()
 
-	fs := flag.NewFlagSet("ots", flag.ContinueOnError)
+	fs := flag.NewFlagSet("otsd", flag.ContinueOnError)
 	fs.StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 	fs.BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
 	fs.StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")

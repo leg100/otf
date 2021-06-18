@@ -1,7 +1,5 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
-GOMODULE = github.com/leg100/ots
-BUILD_BIN ?= ./_build/ots
 LD_FLAGS = " \
 	-X '.Version=$(VERSION)'	\
 	-X '.Commit=$(GIT_COMMIT)'	\
@@ -24,12 +22,12 @@ unit:
 
 .PHONY: build
 build:
-	go build -o $(BUILD_BIN) -ldflags $(LD_FLAGS) $(GOMODULE)/cmd/ots
-	chmod +x $(BUILD_BIN)
+	go build -o _build/ -ldflags $(LD_FLAGS) ./...
+	chmod -R +x _build/*
 
 .PHONY: install
 install:
-	go install -ldflags $(LD_FLAGS) $(GOMODULE)
+	go install -ldflags $(LD_FLAGS) ./...
 
 .PHONY: install-latest-release
 install-latest-release:
