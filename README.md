@@ -10,8 +10,6 @@ Functionality is currently limited:
 
 ## Getting Started
 
-Note to mac users: the darwin release is broken. You'll need to [build a binary](#building).
-
 These steps will get you started with running everything on your local system. You'll setup the server, configure SSL so that terraform trusts the server, and then configure terraform. You'll then be able to run terraform commands using the server as a remote backend.
 
 ![demo](https://user-images.githubusercontent.com/75728/122572684-e21ffc80-d045-11eb-91a7-927d18eb7e62.gif)
