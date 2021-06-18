@@ -13,11 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: OSXCross for CGO Support
-        run: |
-          mkdir ../../osxcross
-          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
-      -
         name: Checkout
         uses: actions/checkout@v2
         with:
