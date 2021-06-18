@@ -2,6 +2,12 @@
 
 A prototype open source alternative to terraform enterprise.
 
+Functionality is currently limited:
+
+* State backend (state stored in a sqlite database)
+* Workspace management (supports `terraform workspace` commands)
+* Local execution mode (plans and applies run locally)
+
 ## Getting Started
 
 These steps will get you started with running everything on your local system. You'll setup the server, configure SSL so that terraform trusts the server, and then configure terraform. You'll then be able to run terraform commands using the server as a remote backend.
@@ -88,7 +94,8 @@ These steps will get you started with running everything on your local system. Y
 OTS is a mere prototype but a roadmap of further features could be:
 
 * User AuthN/Z
-* Remote execution mode (only local is currently supported)
+* Remote execution mode
 * Agents
 * Github integration
 * Policies (OPA?)
+* Web frontend
