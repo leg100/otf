@@ -10,6 +10,7 @@ builds:
     binary: otsd
     targets:
     - linux_amd64
+    - darwin_amd64
 archives:
 - format: zip
   files:
