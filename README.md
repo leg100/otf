@@ -1,6 +1,6 @@
 # OTS: Open Terraforming Server
 
-A terraform server compatible with the terraform cloud API.
+A prototype open source alternative to terraform enterprise.
 
 ## Getting Started
 
