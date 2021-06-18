@@ -2,11 +2,12 @@ before:
   hooks:
     - make unit
 builds:
-  - id: ots
+  - id: otsd
     ldflags:
     - '-X ".Version={{ .Version }}"'
     - '-X ".Commit={{ .Commit }}"'
-    main: ./cmd/ots
+    main: ./cmd/otsd
+    binary: otsd
     targets:
     - linux_amd64
     - darwin_amd64
