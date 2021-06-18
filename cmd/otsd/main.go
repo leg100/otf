@@ -71,6 +71,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Server listening on %s\n", server.Addr)
+
 	// Block until Ctrl-C received.
 	if err := server.Wait(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
