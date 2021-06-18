@@ -2,15 +2,36 @@ before:
   hooks:
     - make unit
 builds:
-  - id: otsd
+  - id: linux-build
+    env:
+    - CGO_ENABLED=1
     ldflags:
     - '-X ".Version={{ .Version }}"'
     - '-X ".Commit={{ .Commit }}"'
     main: ./cmd/otsd
     binary: otsd
-    targets:
-    - linux_amd64
-    - darwin_amd64
+    goos:
+    - linux
+    ignore:
+    - goos: linux
+      goarch: 386
+    - goos: linux
+      goarch: arm64
+  - id: darwin-build
+    ldflags:
+    - '-X ".Version={{ .Version }}"'
+    - '-X ".Commit={{ .Commit }}"'
+    env:
+    - CGO_ENABLED=1
+    - CC=/home/runner/work/osxcross/target/bin/o64-clang
+    - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
+    main: ./cmd/otsd
+    binary: otsd
+    goos:
+    - darwin
+    ignore:
+    - goos: darwin
+      goarch: 386
 archives:
 - format: zip
   files:
