@@ -10,7 +10,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
-	"github.com/leg100/ots/mock"
+	"github.com/leg100/ots/test/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

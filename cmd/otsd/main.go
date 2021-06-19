@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/leg100/ots/http"
-	"github.com/leg100/ots/sqlite"
+	"github.com/leg100/ots/pkg/http"
+	"github.com/leg100/ots/pkg/sqlite"
 	driver "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
