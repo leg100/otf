@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	build  = "../_build/otsd"
+	build  = "../../_build/otsd"
 	config = `
 terraform {
   backend "remote" {
