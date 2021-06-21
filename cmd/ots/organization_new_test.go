@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"testing"
 
-	"github.com/hashicorp/go-tfe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,15 +25,4 @@ func TestOrganizationCommandMissingEmail(t *testing.T) {
 	cmd.SetArgs([]string{"automatize"})
 	err := cmd.Execute()
 	assert.EqualError(t, err, "required flag(s) \"email\" not set")
-}
-
-type FakeOrganizationsClient struct {
-	tfe.Organizations
-}
-
-func (f *FakeOrganizationsClient) Create(ctx context.Context, opts tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
-	return &tfe.Organization{
-		Name:  *opts.Name,
-		Email: *opts.Email,
-	}, nil
 }
