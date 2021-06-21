@@ -7,6 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type FakeClientConfig struct{}
+
+func (f FakeClientConfig) NewClient() (Client, error) { return &FakeClient{}, nil }
+
+type FakeClient struct {
+	Client
+}
+
+func (f FakeClient) Organizations() tfe.Organizations { return &FakeOrganizationsClient{} }
+
 func TestClientSanitizeAddress(t *testing.T) {
 	tests := []struct {
 		name    string
