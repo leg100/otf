@@ -21,6 +21,7 @@ type clientConfig struct {
 
 type Client interface {
 	Organizations() tfe.Organizations
+	Workspaces() tfe.Workspaces
 }
 
 type client struct {
@@ -29,6 +30,10 @@ type client struct {
 
 func (c *client) Organizations() tfe.Organizations {
 	return c.Client.Organizations
+}
+
+func (c *client) Workspaces() tfe.Workspaces {
+	return c.Client.Workspaces
 }
 
 func (c *clientConfig) NewClient() (Client, error) {
