@@ -49,7 +49,7 @@ func TestOTS(t *testing.T) {
 
 	// Run OTS daemon
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath)
+	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath, "--ssl", "--cert-file", "fixtures/cert.crt", "--key-file", "fixtures/key.pem")
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	defer cancel()
