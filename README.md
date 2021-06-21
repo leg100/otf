@@ -35,19 +35,19 @@ These steps will get you started with running everything on your local system. Y
     ```
    
    The daemon runs in the foreground and can be left to run.
-   
-1. In another terminal create an organization:
-
-   ```bash
-   ots organizations new mycorp --email=sysadmin@mycorp.co
-   ```   
-
+      
 1. Login to your OTS server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
 
    ```bash
    ots login
    ```
-    
+   
+1. In another terminal create an organization:
+
+   ```bash
+   ots organizations new mycorp --email=sysadmin@mycorp.co
+   ```
+
 1. Configure the terraform backend and define a resource:
 
     ```bash
