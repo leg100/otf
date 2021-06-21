@@ -67,32 +67,32 @@ func TestOTS(t *testing.T) {
 	t.Run("create organization", func(t *testing.T) {
 		cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "init", "-no-color")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform plan", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "plan", "-no-color")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform apply", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 }
 
