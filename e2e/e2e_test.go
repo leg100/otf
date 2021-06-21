@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -10,14 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/jsonapi"
-	"github.com/hashicorp/go-tfe"
-	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	build  = "../_build/otsd"
+	daemon = "../_build/otsd"
+	client = "../_build/ots"
 	config = `
 terraform {
   backend "remote" {
@@ -52,7 +49,7 @@ func TestOTS(t *testing.T) {
 
 	// Run OTS daemon
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, build, "-db-path", dbPath)
+	cmd := exec.CommandContext(ctx, daemon, "-db-path", dbPath)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	defer cancel()
@@ -60,7 +57,7 @@ func TestOTS(t *testing.T) {
 	wait(t)
 
 	// Create org
-	createOrg(t)
+	createOrg(t, logFile)
 
 	// Create TF config
 	root := t.TempDir()
@@ -112,19 +109,11 @@ func wait(t *testing.T) {
 }
 
 // Seed DB with organization
-func createOrg(t *testing.T) {
-	opts := tfe.OrganizationCreateOptions{
-		Name:  ots.String("automatize"),
-		Email: ots.String("e2e@automatize.co"),
-	}
-	buf := new(bytes.Buffer)
-	require.NoError(t, jsonapi.MarshalPayload(buf, &opts))
-
-	req, err := http.NewRequest("POST", "https://localhost:8080/api/v2/organizations", buf)
-	req.Header.Add("Accept", "application/vnd.api+json")
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, 201, resp.StatusCode)
+func createOrg(t *testing.T, logFile *os.File) {
+	cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+	require.NoError(t, cmd.Run())
 }
 
 // Chdir changes current directory to this temp directory.
