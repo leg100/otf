@@ -2,7 +2,7 @@ before:
   hooks:
     - make unit
 builds:
-  - id: linux-build
+  - id: linux-build-daemon
     env:
     - CGO_ENABLED=1
     ldflags:
@@ -13,7 +13,18 @@ builds:
     binary: otsd
     targets:
     - linux_amd64
-  - id: darwin-build
+  - id: linux-build-client
+    env:
+    - CGO_ENABLED=1
+    ldflags:
+    - -s
+    - '-X ".Version={{ .Version }}"'
+    - '-X ".Commit={{ .Commit }}"'
+    main: ./cmd/ots
+    binary: ots
+    targets:
+    - linux_amd64
+  - id: darwin-build-daemon
     ldflags:
     - -s
     - '-X ".Version={{ .Version }}"'
@@ -24,6 +35,20 @@ builds:
     - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
     main: ./cmd/otsd
     binary: otsd
+    targets:
+    - darwin_amd64
+    - darwin_arm64
+  - id: darwin-build-client
+    ldflags:
+    - -s
+    - '-X ".Version={{ .Version }}"'
+    - '-X ".Commit={{ .Commit }}"'
+    env:
+    - CGO_ENABLED=1
+    - CC=/home/runner/work/osxcross/target/bin/o64-clang
+    - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
+    main: ./cmd/ots
+    binary: ots
     targets:
     - darwin_amd64
     - darwin_arm64
