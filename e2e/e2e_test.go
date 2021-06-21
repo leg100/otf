@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -39,8 +40,6 @@ credentials "localhost:8080" {
 func TestOTS(t *testing.T) {
 	tmpdir := t.TempDir()
 	dbPath := filepath.Join(tmpdir, "e2e.db")
-	logFile, err := os.Create("e2e.log")
-	require.NoError(t, err)
 
 	// Write TF config file
 	rcPath := filepath.Join(tmpdir, ".terraformrc")
@@ -48,10 +47,15 @@ func TestOTS(t *testing.T) {
 	os.Setenv("TF_CLI_CONFIG_FILE", rcPath)
 
 	// Run OTS daemon
+	out := new(bytes.Buffer)
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath, "--ssl", "--cert-file", "fixtures/cert.crt", "--key-file", "fixtures/key.pem")
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
+	cmd.Stdout = out
+	cmd.Stderr = out
+	defer func() {
+		t.Log("--- daemon output ---")
+		t.Log(out.String())
+	}()
 	defer cancel()
 	require.NoError(t, cmd.Start())
 	wait(t)
