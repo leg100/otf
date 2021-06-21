@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -29,29 +30,22 @@ terraform {
 
 resource "null_resource" "e2e" {}
 `
-	rc = `
-credentials "localhost:8080" {
-  token = "xxxxxx.atlasv1.zzzzzzzzzzzzz"
-}
-`
 )
 
 func TestOTS(t *testing.T) {
 	tmpdir := t.TempDir()
 	dbPath := filepath.Join(tmpdir, "e2e.db")
-	logFile, err := os.Create("e2e.log")
-	require.NoError(t, err)
-
-	// Write TF config file
-	rcPath := filepath.Join(tmpdir, ".terraformrc")
-	require.NoError(t, os.WriteFile(rcPath, []byte(rc), 0600))
-	os.Setenv("TF_CLI_CONFIG_FILE", rcPath)
 
 	// Run OTS daemon
+	out := new(bytes.Buffer)
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath)
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
+	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath, "--ssl", "--cert-file", "fixtures/cert.crt", "--key-file", "fixtures/key.pem")
+	cmd.Stdout = out
+	cmd.Stderr = out
+	defer func() {
+		t.Log("--- daemon output ---")
+		t.Log(out.String())
+	}()
 	defer cancel()
 	require.NoError(t, cmd.Start())
 	wait(t)
@@ -60,35 +54,42 @@ func TestOTS(t *testing.T) {
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0600))
 
+	t.Run("login", func(t *testing.T) {
+		cmd := exec.Command(client, "login")
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+	})
+
 	t.Run("create organization", func(t *testing.T) {
 		cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "init", "-no-color")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform plan", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "plan", "-no-color")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 
 	t.Run("terraform apply", func(t *testing.T) {
 		chdir(t, root)
 		cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 	})
 }
 
