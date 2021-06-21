@@ -49,19 +49,23 @@ func TestOTS(t *testing.T) {
 
 	// Run OTS daemon
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, daemon, "-db-path", dbPath)
+	cmd := exec.CommandContext(ctx, daemon, "--db-path", dbPath)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	defer cancel()
 	require.NoError(t, cmd.Start())
 	wait(t)
 
-	// Create org
-	createOrg(t, logFile)
-
 	// Create TF config
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0600))
+
+	t.Run("create organization", func(t *testing.T) {
+		cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		t.Log(string(out))
+	})
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
@@ -106,14 +110,6 @@ func wait(t *testing.T) {
 		t.Logf("received error: %s", err.Error())
 	}
 	t.Error("daemon failed to start")
-}
-
-// Seed DB with organization
-func createOrg(t *testing.T, logFile *os.File) {
-	cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-	require.NoError(t, cmd.Run())
 }
 
 // Chdir changes current directory to this temp directory.
