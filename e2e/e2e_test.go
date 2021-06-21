@@ -30,21 +30,11 @@ terraform {
 
 resource "null_resource" "e2e" {}
 `
-	rc = `
-credentials "localhost:8080" {
-  token = "xxxxxx.atlasv1.zzzzzzzzzzzzz"
-}
-`
 )
 
 func TestOTS(t *testing.T) {
 	tmpdir := t.TempDir()
 	dbPath := filepath.Join(tmpdir, "e2e.db")
-
-	// Write TF config file
-	rcPath := filepath.Join(tmpdir, ".terraformrc")
-	require.NoError(t, os.WriteFile(rcPath, []byte(rc), 0600))
-	os.Setenv("TF_CLI_CONFIG_FILE", rcPath)
 
 	// Run OTS daemon
 	out := new(bytes.Buffer)
@@ -63,6 +53,13 @@ func TestOTS(t *testing.T) {
 	// Create TF config
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0600))
+
+	t.Run("login", func(t *testing.T) {
+		cmd := exec.Command(client, "login")
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+	})
 
 	t.Run("create organization", func(t *testing.T) {
 		cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
