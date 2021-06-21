@@ -42,6 +42,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       -
+        name: E2E tests
+        run: |
+          make e2e
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
