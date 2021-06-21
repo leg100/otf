@@ -4,6 +4,7 @@
 *.pem
 # sqlite db
 *.db
+# bins
 /_build
 # terraform
 /.terraformignore
