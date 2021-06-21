@@ -24,6 +24,7 @@ const (
 // Query schema decoder, caches structs, and safe for sharing
 var decoder = schema.NewDecoder()
 
+// The HTTP/S server
 type Server struct {
 	server *http.Server
 	router *mux.Router
@@ -41,6 +42,7 @@ type Server struct {
 	StateVersionService ots.StateVersionService
 }
 
+// NewServer is the contructor for Server
 func NewServer() *Server {
 	s := &Server{
 		server: &http.Server{},
@@ -52,6 +54,7 @@ func NewServer() *Server {
 	return s
 }
 
+// NewRouter constructs a negroni-wrapped HTTP router
 func NewRouter(server *Server) *negroni.Negroni {
 	router := mux.NewRouter()
 
@@ -69,6 +72,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
+	// Organization routes
 	sub.HandleFunc("/organizations", server.ListOrganizations).Methods("GET")
 	sub.HandleFunc("/organizations", server.CreateOrganization).Methods("POST")
 	sub.HandleFunc("/organizations/{name}", server.GetOrganization).Methods("GET")
@@ -76,6 +80,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/organizations/{name}", server.DeleteOrganization).Methods("DELETE")
 	sub.HandleFunc("/organizations/{name}/entitlement-set", server.GetEntitlements).Methods("GET")
 
+	// Workspace routes
 	sub.HandleFunc("/organizations/{org}/workspaces", server.ListWorkspaces).Methods("GET")
 	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.GetWorkspace).Methods("GET")
 	sub.HandleFunc("/organizations/{org}/workspaces", server.CreateWorkspace).Methods("POST")
@@ -87,14 +92,15 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/workspaces/{id}/actions/lock", server.LockWorkspace).Methods("POST")
 	sub.HandleFunc("/workspaces/{id}/actions/unlock", server.UnlockWorkspace).Methods("POST")
 
+	// StateVersion routes
 	sub.HandleFunc("/workspaces/{workspace_id}/state-versions", server.CreateStateVersion).Methods("POST")
 	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", server.CurrentStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions/{id}", server.GetStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions", server.ListStateVersions).Methods("GET")
 
+	// Add default set of negroni middleware to routes: (i) Logging (ii)
+	// Recovery (iii) Static File serving (we don't use this one...)
 	n := negroni.Classic()
-	// Or use a middleware with the Use() function
-	//n.Use() router goes last
 	n.UseHandler(router)
 
 	return n
