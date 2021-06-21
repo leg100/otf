@@ -12,7 +12,7 @@ Functionality is currently limited:
 
 These steps will get you started with running everything on your local system. You'll setup the server, configure SSL so that terraform trusts the server, and then configure terraform. You'll then be able to run terraform commands using the server as a remote backend.
 
-![demo](https://user-images.githubusercontent.com/75728/122572684-e21ffc80-d045-11eb-91a7-927d18eb7e62.gif)
+![demo](https://user-images.githubusercontent.com/75728/122782051-49d58200-d2a8-11eb-93d4-87ba353033e1.gif)
 
 1. Download a [release](https://github.com/leg100/ots/releases). The zip file contains two binaries: a daemon and a client, `otsd` and `ots`. Extract them to a directory in your `PATH`, e.g. `/usr/local/bin`.
 1. Generate SSL cert and key. For example, to generate a self-signed cert and key for localhost:
@@ -36,13 +36,13 @@ These steps will get you started with running everything on your local system. Y
    
    The daemon runs in the foreground and can be left to run.
       
-1. Login to your OTS server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
+1. In another terminal, login to your OTS server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
 
    ```bash
    ots login
    ```
    
-1. In another terminal create an organization:
+1. Create an organization:
 
    ```bash
    ots organizations new mycorp --email=sysadmin@mycorp.co
