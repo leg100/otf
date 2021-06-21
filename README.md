@@ -26,11 +26,12 @@ These steps will get you started with running everything on your local system. Y
     ```bash
     sudo cp cert.crt /usr/local/share/ca-certificates
     sudo update-ca-certificates
+    ```
     
 1. Run the OTS daemon:
 
     ```bash
-    ./otsd -ssl -cert-file cert.crt -key-file key.pem
+    ./otsd --ssl --cert-file=cert.crt --key-file=key.pem
     ```
    
    The daemon runs in the foreground and can be left to run.
@@ -38,28 +39,13 @@ These steps will get you started with running everything on your local system. Y
 1. In another terminal create an organization:
 
    ```bash
-   curl -H"Accept: application/vnd.api+json" https://localhost:8080/api/v2/organizations -d'{
-     "data": {
-       "type": "organizations",
-       "attributes": {
-         "name": "mycorp",
-         "email": "sysadmin@mycorp.co"
-       }
-     }
-   }'
+   ./ots organizations new mycorp --email=sysadmin@mycorp.co
    ```   
-1. Enter some dummy credentials (this is necessary otherwise terraform will complain):
+
+1. Login to your OTS server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
 
    ```bash
-   cat > ~/.terraform.d/credentials.tfrc.json <<EOF
-   {
-     "credentials": {
-       "localhost:8080": {
-         "token": "dummy"
-       }
-     }
-   }
-   EOF
+   ./ots login
    ```
     
 1. Configure the terraform backend and define a resource:

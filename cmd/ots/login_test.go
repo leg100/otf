@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,70 +11,28 @@ import (
 func TestLoginCommand(t *testing.T) {
 	tmpdir := t.TempDir()
 
-	cmd := LoginCommand(FakeHomeDir(tmpdir))
-	cmd.SetArgs([]string{"--hostname", "ots.dev:9898"})
+	cmd := LoginCommand(FakeDirectories(tmpdir))
 	require.NoError(t, cmd.Execute())
 
-	got, err := os.ReadFile(filepath.Join(tmpdir, CredentialsPath))
+	store, err := NewCredentialsStore(FakeDirectories(tmpdir))
 	require.NoError(t, err)
-
-	want := `{
-  "credentials": {
-    "ots.dev:9898": {
-      "token": "dummy"
-    }
-  }
-}`
-
-	assert.Equal(t, want, string(got))
+	token, err := store.Load("localhost:8080")
+	require.NoError(t, err)
+	assert.Equal(t, "dummy", token)
 }
 
-// Test login command doesn't overwrite any existing credentials for TFE etc
-func TestLoginCommandWithExistingCredentials(t *testing.T) {
-	// Write a config file with existing creds
-	existing := `{
-     "credentials": {
-       "app.terraform.io": {
-         "token": "secret"
-       }
-     }
-   }
-`
+func TestLoginCommandWithExplicitAddress(t *testing.T) {
+	// Ensure env var doesn't interfere with test
+	os.Unsetenv("OTS_ADDRESS")
+
 	tmpdir := t.TempDir()
 
-	path := filepath.Join(tmpdir, CredentialsPath)
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
-	require.NoError(t, os.WriteFile(path, []byte(existing), 0600))
-
-	cmd := LoginCommand(FakeHomeDir(tmpdir))
-	cmd.SetArgs([]string{"--hostname", "ots.dev:9898"})
+	cmd := LoginCommand(FakeDirectories(tmpdir))
+	cmd.SetArgs([]string{"--address", "ots.dev:8080"})
 	require.NoError(t, cmd.Execute())
 
-	got, err := os.ReadFile(path)
+	store, err := NewCredentialsStore(FakeDirectories(tmpdir))
 	require.NoError(t, err)
-
-	want := `{
-  "credentials": {
-    "app.terraform.io": {
-      "token": "secret"
-    },
-    "ots.dev:9898": {
-      "token": "dummy"
-    }
-  }
-}`
-
-	assert.Equal(t, want, string(got))
+	_, err = store.Load("ots.dev:8080")
+	require.NoError(t, err)
 }
-
-func TestLoginCommandNoHostname(t *testing.T) {
-	// Ensure env var doesn't interfere with test
-	os.Unsetenv("OTS_HOSTNAME")
-
-	cmd := LoginCommand(nil)
-	require.Equal(t, ErrMissingHostname, cmd.Execute())
-}
-
-type FakeHomeDir string
-
-func (f FakeHomeDir) UserHomeDir() (string, error) { return string(f), nil }
