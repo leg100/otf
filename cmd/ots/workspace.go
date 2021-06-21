@@ -39,3 +39,9 @@ func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts tfe.Wor
 		ID: "ws-123",
 	}, nil
 }
+
+func (f *FakeWorkspacesClient) Unlock(ctx context.Context, id string) (*tfe.Workspace, error) {
+	return &tfe.Workspace{
+		ID: "ws-123",
+	}, nil
+}
