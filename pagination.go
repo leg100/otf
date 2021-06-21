@@ -10,7 +10,8 @@ import (
 
 type Paginated interface {
 	GetItems() interface{}
-	GetListOptions() ListOptions
+	GetPageSize() int
+	GetPageNumber() int
 	GetPath() string
 }
 
@@ -35,8 +36,8 @@ func NewPagination(p Paginated) *Pagination {
 	totalItems := len(convertToSliceInterface(&items))
 
 	return &Pagination{
-		current:    p.GetListOptions().PageNumber,
-		pageSize:   p.GetListOptions().PageSize,
+		current:    p.GetPageNumber(),
+		pageSize:   p.GetPageSize(),
 		totalItems: totalItems,
 		path:       p.GetPath(),
 	}

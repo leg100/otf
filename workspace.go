@@ -112,10 +112,6 @@ func (l *WorkspaceList) GetPath() string {
 	return fmt.Sprintf("/api/v2/organizations/%s/workspaces", l.Organization)
 }
 
-func (l *WorkspaceList) GetListOptions() ListOptions {
-	return l.ListOptions
-}
-
 var _ Paginated = (*WorkspaceList)(nil)
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

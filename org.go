@@ -50,10 +50,6 @@ func (l *OrganizationList) GetItems() interface{} {
 	return l.Items
 }
 
-func (l *OrganizationList) GetListOptions() ListOptions {
-	return l.ListOptions
-}
-
 func (l *OrganizationList) GetPath() string {
 	return "/api/v2/organizations"
 }

@@ -22,11 +22,12 @@ func (p *PaginatedMock) GetItems() interface{} {
 	return make([]int, p.items)
 }
 
-func (p *PaginatedMock) GetListOptions() ListOptions {
-	return ListOptions{
-		PageNumber: p.current,
-		PageSize:   p.size,
-	}
+func (p *PaginatedMock) GetPageNumber() int {
+	return p.current
+}
+
+func (p *PaginatedMock) GetPageSize() int {
+	return p.size
 }
 
 func (p *PaginatedMock) GetPath() string {
