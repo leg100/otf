@@ -44,6 +44,10 @@ func main() {
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
+	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
+		panic(err.Error())
+	}
+
 	if server.SSL {
 		if server.CertFile == "" || server.KeyFile == "" {
 			fmt.Fprintf(os.Stderr, "must provide both --cert-file and --key-file")
