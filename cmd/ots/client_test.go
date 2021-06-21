@@ -17,6 +17,8 @@ type FakeClient struct {
 
 func (f FakeClient) Organizations() tfe.Organizations { return &FakeOrganizationsClient{} }
 
+func (f FakeClient) Workspaces() tfe.Workspaces { return &FakeWorkspacesClient{} }
+
 func TestClientSanitizeAddress(t *testing.T) {
 	tests := []struct {
 		name    string

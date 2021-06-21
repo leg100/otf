@@ -40,6 +40,7 @@ func WorkspaceLockCommand(config ClientConfig) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	cmd.MarkFlagRequired("organization")
 
 	return cmd
 }

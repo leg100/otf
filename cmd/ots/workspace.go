@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
 
+	"github.com/hashicorp/go-tfe"
 	"github.com/spf13/cobra"
 )
 
@@ -20,4 +22,20 @@ func WorkspaceCommand() *cobra.Command {
 	//cmd.AddCommand(WorkspaceUnlockCommand(&cfg))
 
 	return cmd
+}
+
+type FakeWorkspacesClient struct {
+	tfe.Workspaces
+}
+
+func (f *FakeWorkspacesClient) Read(ctx context.Context, org string, ws string) (*tfe.Workspace, error) {
+	return &tfe.Workspace{
+		ID: "ws-123",
+	}, nil
+}
+
+func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error) {
+	return &tfe.Workspace{
+		ID: "ws-123",
+	}, nil
 }

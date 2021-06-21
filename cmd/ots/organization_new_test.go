@@ -29,14 +29,6 @@ func TestOrganizationCommandMissingEmail(t *testing.T) {
 	assert.EqualError(t, err, "required flag(s) \"email\" not set")
 }
 
-type FakeClientConfig struct{}
-
-func (f FakeClientConfig) NewClient() (Client, error) { return &FakeClient{}, nil }
-
-type FakeClient struct{}
-
-func (f FakeClient) Organizations() tfe.Organizations { return &FakeOrganizationsClient{} }
-
 type FakeOrganizationsClient struct {
 	tfe.Organizations
 }
