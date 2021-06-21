@@ -11,7 +11,7 @@ func WorkspaceUnlockCommand(config ClientConfig) *cobra.Command {
 	var workspace string
 
 	cmd := &cobra.Command{
-		Use:   "lock [name]",
+		Use:   "unlock [name]",
 		Short: "Unlock a workspace",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

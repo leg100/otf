@@ -91,6 +91,20 @@ func TestOTS(t *testing.T) {
 		t.Log(string(out))
 		require.NoError(t, err)
 	})
+
+	t.Run("lock workspace", func(t *testing.T) {
+		cmd := exec.Command(client, "workspaces", "lock", "dev", "--organization", "automatize")
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+	})
+
+	t.Run("unlock workspace", func(t *testing.T) {
+		cmd := exec.Command(client, "workspaces", "unlock", "dev", "--organization", "automatize")
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+	})
 }
 
 // Wait for OTS to start
