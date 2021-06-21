@@ -41,8 +41,9 @@ jobs:
       -
         name: E2E tests
         run: |
+          sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
+          sudo update-ca-certificates
           make e2e
-          cat e2e/e2e.log
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
