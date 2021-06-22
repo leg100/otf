@@ -37,9 +37,10 @@ type Server struct {
 	// Listening Address in the form <ip>:<port>
 	Addr string
 
-	OrganizationService ots.OrganizationService
-	WorkspaceService    ots.WorkspaceService
-	StateVersionService ots.StateVersionService
+	OrganizationService         ots.OrganizationService
+	WorkspaceService            ots.WorkspaceService
+	StateVersionService         ots.StateVersionService
+	ConfigurationVersionService ots.ConfigurationVersionService
 }
 
 // NewServer is the contructor for Server
@@ -61,6 +62,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
 
 	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
+	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
@@ -97,6 +99,11 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", server.CurrentStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions/{id}", server.GetStateVersion).Methods("GET")
 	sub.HandleFunc("/state-versions", server.ListStateVersions).Methods("GET")
+
+	// ConfigurationVersion routes
+	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.CreateConfigurationVersion).Methods("POST")
+	sub.HandleFunc("/configuration-versions/{id}", server.GetConfigurationVersion).Methods("GET")
+	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.ListConfigurationVersions).Methods("GET")
 
 	// Add default set of negroni middleware to routes: (i) Logging (ii)
 	// Recovery (iii) Static File serving (we don't use this one...)
