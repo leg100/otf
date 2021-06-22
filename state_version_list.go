@@ -25,10 +25,6 @@ func (l *StateVersionList) GetItems() interface{} {
 	return l.Items
 }
 
-func (l *StateVersionList) GetListOptions() ListOptions {
-	return l.ListOptions
-}
-
 func (l *StateVersionList) GetPath() string {
 	query := url.Values{}
 	if err := encoder.Encode(l.StateVersionListFilters, query); err != nil {

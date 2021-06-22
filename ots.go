@@ -41,6 +41,16 @@ type ListOptions struct {
 	PageSize int `schema:"page[size]"`
 }
 
+// GetPageNumber partially implements the Paginated interface
+func (o *ListOptions) GetPageNumber() int {
+	return o.PageNumber
+}
+
+// GetPageSize partially implements the Paginated interface
+func (o *ListOptions) GetPageSize() int {
+	return o.PageSize
+}
+
 // Sanitize list options' values, setting defaults and ensuring they adhere to
 // mins/maxs.
 func (o *ListOptions) Sanitize() {
