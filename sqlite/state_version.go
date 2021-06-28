@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -38,8 +39,8 @@ func NewStateVersionService(db *gorm.DB) *StateVersionService {
 	}
 }
 
-func NewStateVersionFromModel(model *StateVersionModel) *ots.StateVersion {
-	return &ots.StateVersion{
+func NewStateVersionFromModel(model *StateVersionModel) *tfe.StateVersion {
+	return &tfe.StateVersion{
 		ID:          model.ExternalID,
 		Serial:      model.Serial,
 		DownloadURL: fmt.Sprintf("/state-versions/%s/download", model.ExternalID),
@@ -50,7 +51,7 @@ func (StateVersionModel) TableName() string {
 	return "state_versions"
 }
 
-func (s StateVersionService) CreateStateVersion(workspaceID string, opts *ots.StateVersionCreateOptions) (*ots.StateVersion, error) {
+func (s StateVersionService) CreateStateVersion(workspaceID string, opts *tfe.StateVersionCreateOptions) (*tfe.StateVersion, error) {
 	workspace, err := getWorkspaceByID(s.DB, workspaceID)
 	if err != nil {
 		return nil, err
@@ -91,7 +92,7 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 		return nil, result.Error
 	}
 
-	var items []*ots.StateVersion
+	var items []*tfe.StateVersion
 	for _, m := range models {
 		items = append(items, NewStateVersionFromModel(&m))
 	}
@@ -102,7 +103,7 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 	}, nil
 }
 
-func (s StateVersionService) GetStateVersion(id string) (*ots.StateVersion, error) {
+func (s StateVersionService) GetStateVersion(id string) (*tfe.StateVersion, error) {
 	var model StateVersionModel
 
 	if result := s.DB.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
@@ -112,7 +113,7 @@ func (s StateVersionService) GetStateVersion(id string) (*ots.StateVersion, erro
 	return NewStateVersionFromModel(&model), nil
 }
 
-func (s StateVersionService) CurrentStateVersion(workspaceID string) (*ots.StateVersion, error) {
+func (s StateVersionService) CurrentStateVersion(workspaceID string) (*tfe.StateVersion, error) {
 	var model StateVersionModel
 
 	workspace, err := getWorkspaceByID(s.DB, workspaceID)

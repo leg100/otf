@@ -18,7 +18,7 @@ import (
 func TestWorkspace(t *testing.T) {
 	s := &Server{}
 	s.WorkspaceService = &mock.WorkspaceService{
-		CreateWorkspaceFn: func(org string, opts *ots.WorkspaceCreateOptions) (*ots.Workspace, error) {
+		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
 		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {

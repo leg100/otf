@@ -45,8 +45,8 @@ func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	CreateObject(w, r, &ots.WorkspaceCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.WorkspaceService.CreateWorkspace(vars["org"], opts.(*ots.WorkspaceCreateOptions))
+	CreateObject(w, r, &tfe.WorkspaceCreateOptions{}, func(opts interface{}) (interface{}, error) {
+		return h.WorkspaceService.CreateWorkspace(vars["org"], opts.(*tfe.WorkspaceCreateOptions))
 	})
 }
 

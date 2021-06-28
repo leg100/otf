@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -41,8 +42,8 @@ func (h *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 func (h *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	CreateObject(w, r, &ots.StateVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.StateVersionService.CreateStateVersion(vars["workspace_id"], opts.(*ots.StateVersionCreateOptions))
+	CreateObject(w, r, &tfe.StateVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
+		return h.StateVersionService.CreateStateVersion(vars["workspace_id"], opts.(*tfe.StateVersionCreateOptions))
 	})
 }
 

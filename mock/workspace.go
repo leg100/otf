@@ -8,7 +8,7 @@ import (
 var _ ots.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	CreateWorkspaceFn     func(org string, opts *ots.WorkspaceCreateOptions) (*ots.Workspace, error)
+	CreateWorkspaceFn     func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error)
 	UpdateWorkspaceFn     func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error)
 	UpdateWorkspaceByIDFn func(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error)
 	GetWorkspaceFn        func(name, org string) (*ots.Workspace, error)
@@ -20,7 +20,7 @@ type WorkspaceService struct {
 	UnlockWorkspaceFn     func(id string) (*ots.Workspace, error)
 }
 
-func (s WorkspaceService) CreateWorkspace(org string, opts *ots.WorkspaceCreateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) CreateWorkspace(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 	return s.CreateWorkspaceFn(org, opts)
 }
 

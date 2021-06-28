@@ -1,8 +1,10 @@
 package ots
 
+import tfe "github.com/hashicorp/go-tfe"
+
 type StateVersionList struct {
 	*Pagination
-	Items []*StateVersion
+	Items []*tfe.StateVersion
 }
 
 // StateVersionListOptions represents the options for listing state versions.

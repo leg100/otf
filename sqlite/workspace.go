@@ -55,11 +55,7 @@ func (WorkspaceModel) TableName() string {
 	return "workspaces"
 }
 
-func (s WorkspaceService) CreateWorkspace(orgName string, opts *ots.WorkspaceCreateOptions) (*ots.Workspace, error) {
-	if err := opts.Validate(); err != nil {
-		return nil, err
-	}
-
+func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 	org, err := getOrganizationByName(s.DB, orgName)
 	if err != nil {
 		return nil, err
