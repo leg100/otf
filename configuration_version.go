@@ -3,6 +3,7 @@ package ots
 import (
 	"fmt"
 
+	"github.com/google/jsonapi"
 	tfe "github.com/hashicorp/go-tfe"
 )
 

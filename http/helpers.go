@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/google/jsonapi"
@@ -13,10 +12,6 @@ const (
 	DefaultPageSize   = 20
 	MaxPageSize       = 100
 )
-
-type Sanitizable interface {
-	Sanitize()
-}
 
 // GetObject is a helper for getting an object and marshalling back to JSON-API
 func GetObject(w http.ResponseWriter, r *http.Request, getter func() (interface{}, error)) {
@@ -86,17 +81,6 @@ func UpdateObject(w http.ResponseWriter, r *http.Request, opts interface{}, upda
 	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-// Decode query string into a struct and sanitize the struct values
-func DecodeAndSanitize(dst Sanitizable, src map[string][]string) error {
-	if err := decoder.Decode(dst, src); err != nil {
-		return fmt.Errorf("unable to decode query string: %w", err)
-	}
-
-	dst.Sanitize()
-
-	return nil
 }
 
 func SanitizeListOptions(o *ots.ListOptions) {
