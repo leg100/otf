@@ -153,6 +153,11 @@ func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpda
 
 func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
 	var models []WorkspaceModel
+	var count int64
+
+	if result := s.DB.Table("workspaces").Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
 
 	_, err := getOrganizationByName(s.DB, orgName)
 	if err != nil {
@@ -169,16 +174,15 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 		return nil, result.Error
 	}
 
-	workspaces := &ots.WorkspaceList{
-		Organization:         orgName,
-		WorkspaceListOptions: opts,
-	}
-
+	var items []*ots.Workspace
 	for _, m := range models {
-		workspaces.Items = append(workspaces.Items, NewWorkspaceFromModel(&m))
+		items = append(items, NewWorkspaceFromModel(&m))
 	}
 
-	return workspaces, nil
+	return &ots.WorkspaceList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
 func (s WorkspaceService) GetWorkspace(name, orgName string) (*ots.Workspace, error) {

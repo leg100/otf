@@ -362,11 +362,6 @@ func TestWorkspace(t *testing.T) {
 						"type": "workspaces",
 					},
 				},
-				"links": map[string]interface{}{
-					"first": "/api/v2/organizations/automatize/workspaces?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-					"last":  "/api/v2/organizations/automatize/workspaces?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-					"self":  "/api/v2/organizations/automatize/workspaces?page%5Bnumber%5D=1&page%5Bsize%5D=20",
-				},
 				"meta": map[string]interface{}{
 					"pagination": map[string]interface{}{
 						"prev-page":    (interface{})(nil),

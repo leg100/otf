@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/jsonapi"
+	"github.com/hashicorp/go-tfe"
 )
 
 // StateVersion represents a Terraform Enterprise state version.
@@ -18,7 +18,7 @@ type StateVersion struct {
 
 	// Relations
 	// Run     *Run                  `jsonapi:"relation,run"`
-	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
+	Outputs []*tfe.StateVersionOutput `jsonapi:"relation,outputs"`
 }
 
 // StateVersionCreateOptions represents the options for creating a state
@@ -56,12 +56,6 @@ type StateVersionService interface {
 	CurrentStateVersion(workspaceID string) (*StateVersion, error)
 	GetStateVersion(id string) (*StateVersion, error)
 	DownloadStateVersion(id string) ([]byte, error)
-}
-
-func (sv *StateVersion) JSONAPILinks() *jsonapi.Links {
-	return &jsonapi.Links{
-		"self": fmt.Sprintf("/api/v2/state-versions/%s", sv.ID),
-	}
 }
 
 func NewStateVersionID() string {

@@ -78,21 +78,25 @@ func (s ConfigurationVersionService) CreateConfigurationVersion(opts *tfe.Config
 
 func (s ConfigurationVersionService) ListConfigurationVersions(opts ots.ConfigurationVersionListOptions) (*ots.ConfigurationVersionList, error) {
 	var models []ConfigurationVersionModel
+	var count int64
+
+	if result := s.DB.Table("configuration_versions").Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
 
 	if result := s.DB.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	orgs := &ots.ConfigurationVersionList{
-		ConfigurationVersionListOptions: ots.ConfigurationVersionListOptions{
-			ListOptions: opts.ListOptions,
-		},
-	}
+	var items []*ots.ConfigurationVersion
 	for _, m := range models {
-		orgs.Items = append(orgs.Items, NewConfigurationVersionFromModel(&m))
+		items = append(items, NewConfigurationVersionFromModel(&m))
 	}
 
-	return orgs, nil
+	return &ots.ConfigurationVersionList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
 func (s ConfigurationVersionService) GetConfigurationVersion(id string) (*ots.ConfigurationVersion, error) {
