@@ -35,23 +35,13 @@ type Organization struct {
 }
 
 type OrganizationList struct {
+	*Pagination
 	Items []*Organization
-	OrganizationListOptions
 }
 
 // OrganizationListOptions represents the options for listing organizations.
 type OrganizationListOptions struct {
 	ListOptions
-}
-
-var _ Paginated = (*OrganizationList)(nil)
-
-func (l *OrganizationList) GetItems() interface{} {
-	return l.Items
-}
-
-func (l *OrganizationList) GetPath() string {
-	return "/api/v2/organizations"
 }
 
 // OrganizationPermissions represents the organization permissions.

@@ -1,12 +1,8 @@
 package ots
 
-import "net/url"
-
-var _ Paginated = (*StateVersionList)(nil)
-
 type StateVersionList struct {
+	*Pagination
 	Items []*StateVersion
-	StateVersionListOptions
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -23,13 +19,4 @@ type StateVersionListFilters struct {
 
 func (l *StateVersionList) GetItems() interface{} {
 	return l.Items
-}
-
-func (l *StateVersionList) GetPath() string {
-	query := url.Values{}
-	if err := encoder.Encode(l.StateVersionListFilters, query); err != nil {
-		panic(err.Error())
-	}
-
-	return (&url.URL{Path: "/api/v2/state-versions", RawQuery: query.Encode()}).String()
 }

@@ -2,40 +2,73 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/google/jsonapi"
-	"github.com/leg100/ots"
 )
 
-func MarshalPayload(w io.Writer, models interface{}, include ...string) (err error) {
-	var payload interface{}
+// Marshal a JSON-API response.
+func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
+	include := strings.Split(r.URL.Query().Get("include"), ",")
 
-	// Handle pagination links
-	if paginated, ok := models.(ots.Paginated); ok {
-		payload, err = jsonapi.Marshal(paginated.GetItems())
-		if err != nil {
-			return err
-		}
+	// Get the value of models so we can test if it's a struct.
+	dst := reflect.Indirect(reflect.ValueOf(models))
 
-		pagination := ots.NewPagination(paginated)
-		payload.(*jsonapi.ManyPayload).Links = pagination.JSONAPIPaginationLinks()
-		payload.(*jsonapi.ManyPayload).Meta = pagination.JSONAPIPaginationMeta()
-	} else {
-		payload, err = jsonapi.Marshal(models)
-		if err != nil {
-			return err
-		}
+	// Return an error if model is not a struct or an io.Writer.
+	if dst.Kind() != reflect.Struct {
+		return fmt.Errorf("v must be a struct or an io.Writer")
 	}
 
-	switch payload := payload.(type) {
-	case *jsonapi.ManyPayload:
-		payload.Included = filterIncluded(payload.Included, include...)
-	case *jsonapi.OnePayload:
-		payload.Included = filterIncluded(payload.Included, include...)
+	// Try to get the Items and Pagination struct fields.
+	items := dst.FieldByName("Items")
+	pagination := dst.FieldByName("Pagination")
+
+	// Marshal a single value if v does not contain the Items and Pagination
+	// struct fields.
+	if !items.IsValid() || !pagination.IsValid() {
+		return marshalSinglePayload(w, models, include...)
 	}
+
+	// Return an error if v.Items is not a slice.
+	if items.Type().Kind() != reflect.Slice {
+		return fmt.Errorf("v.Items must be a slice")
+	}
+
+	payload, err := jsonapi.Marshal(items.Interface())
+	if err != nil {
+		return fmt.Errorf("unable to marshal payload: %w", err)
+	}
+
+	manyPayload, ok := payload.(*jsonapi.ManyPayload)
+	if !ok {
+		return fmt.Errorf("unable to extract concrete value")
+	}
+
+	manyPayload.Included = filterIncluded(manyPayload.Included, include...)
+
+	manyPayload.Meta = &jsonapi.Meta{"pagination": pagination.Interface()}
 
 	return json.NewEncoder(w).Encode(payload)
+}
+
+func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {
+	payload, err := jsonapi.Marshal(model)
+	if err != nil {
+		return fmt.Errorf("unable to marshal payload: %w", err)
+	}
+
+	onePayload, ok := payload.(*jsonapi.OnePayload)
+	if !ok {
+		return fmt.Errorf("unable to extract concrete value")
+	}
+
+	onePayload.Included = filterIncluded(onePayload.Included, include...)
+
+	return json.NewEncoder(w).Encode(onePayload)
 }
 
 func filterIncluded(included []*jsonapi.Node, filters ...string) (filtered []*jsonapi.Node) {

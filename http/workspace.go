@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/jsonapi"
@@ -13,10 +14,12 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var opts ots.WorkspaceListOptions
-	if err := DecodeAndSanitize(&opts, r.URL.Query()); err != nil {
-		ErrUnprocessable(w, err)
+	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
+		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
 		return
 	}
+
+	SanitizeListOptions(&opts.ListOptions)
 
 	ListObjects(w, r, func() (interface{}, error) {
 		return h.WorkspaceService.ListWorkspaces(vars["org"], opts)

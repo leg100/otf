@@ -72,6 +72,11 @@ func (s StateVersionService) CreateStateVersion(workspaceID string, opts *ots.St
 
 func (s StateVersionService) ListStateVersions(orgName, workspaceName string, opts ots.StateVersionListOptions) (*ots.StateVersionList, error) {
 	var models []StateVersionModel
+	var count int64
+
+	if result := s.DB.Table("state_versions").Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
 
 	workspace, err := getWorkspaceByName(s.DB, workspaceName, orgName)
 	if err != nil {
@@ -86,16 +91,15 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 		return nil, result.Error
 	}
 
-	workspaces := &ots.StateVersionList{
-		StateVersionListOptions: ots.StateVersionListOptions{
-			ListOptions: opts.ListOptions,
-		},
-	}
+	var items []*ots.StateVersion
 	for _, m := range models {
-		workspaces.Items = append(workspaces.Items, NewStateVersionFromModel(&m))
+		items = append(items, NewStateVersionFromModel(&m))
 	}
 
-	return workspaces, nil
+	return &ots.StateVersionList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
 func (s StateVersionService) GetStateVersion(id string) (*ots.StateVersion, error) {

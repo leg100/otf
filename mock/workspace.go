@@ -79,7 +79,6 @@ func NewWorkspaceList(name, id, org string, opts ots.WorkspaceListOptions) *ots.
 		Items: []*ots.Workspace{
 			NewWorkspace(name, id, org),
 		},
-		Organization:         org,
-		WorkspaceListOptions: opts,
+		Pagination: ots.NewPagination(opts.ListOptions, 1),
 	}
 }

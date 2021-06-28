@@ -105,21 +105,25 @@ func (s OrganizationService) UpdateOrganization(name string, opts *tfe.Organizat
 
 func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
 	var models []OrganizationModel
+	var count int64
+
+	if result := s.DB.Table("organizations").Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
 
 	if result := s.DB.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	orgs := &ots.OrganizationList{
-		OrganizationListOptions: ots.OrganizationListOptions{
-			ListOptions: opts.ListOptions,
-		},
-	}
+	var items []*ots.Organization
 	for _, m := range models {
-		orgs.Items = append(orgs.Items, NewOrganizationFromModel(&m))
+		items = append(items, NewOrganizationFromModel(&m))
 	}
 
-	return orgs, nil
+	return &ots.OrganizationList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
 func (s OrganizationService) GetOrganization(name string) (*ots.Organization, error) {

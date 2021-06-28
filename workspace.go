@@ -88,9 +88,8 @@ type VCSRepo struct {
 }
 
 type WorkspaceList struct {
-	Items        []*Workspace
-	Organization string
-	WorkspaceListOptions
+	*Pagination
+	Items []*Workspace
 }
 
 // WorkspaceListOptions represents the options for listing workspaces.
@@ -103,16 +102,6 @@ type WorkspaceListOptions struct {
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
 }
-
-func (l *WorkspaceList) GetItems() interface{} {
-	return l.Items
-}
-
-func (l *WorkspaceList) GetPath() string {
-	return fmt.Sprintf("/api/v2/organizations/%s/workspaces", l.Organization)
-}
-
-var _ Paginated = (*WorkspaceList)(nil)
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
 type WorkspaceCreateOptions struct {

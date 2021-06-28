@@ -1,23 +1,20 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/google/jsonapi"
 	"github.com/leg100/ots"
 )
 
-// Sanitizable implementations can sanitize their values
-type Sanitizable interface {
-	Sanitize()
-}
+const (
+	DefaultPageNumber = 1
+	DefaultPageSize   = 20
+	MaxPageSize       = 100
+)
 
 // GetObject is a helper for getting an object and marshalling back to JSON-API
 func GetObject(w http.ResponseWriter, r *http.Request, getter func() (interface{}, error)) {
-	include := strings.Split(r.URL.Query().Get("include"), ",")
-
 	obj, err := getter()
 	if err != nil {
 		ErrNotFound(w)
@@ -25,15 +22,13 @@ func GetObject(w http.ResponseWriter, r *http.Request, getter func() (interface{
 	}
 
 	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := MarshalPayload(w, obj, include...); err != nil {
+	if err := MarshalPayload(w, r, obj); err != nil {
 		ErrServerFailure(w, err)
 	}
 }
 
 // ListObjects is a helper for listing objects and marshalling back to JSON-API
 func ListObjects(w http.ResponseWriter, r *http.Request, lister func() (interface{}, error)) {
-	include := strings.Split(r.URL.Query().Get("include"), ",")
-
 	obj, err := lister()
 	if err != nil {
 		ErrNotFound(w)
@@ -41,7 +36,7 @@ func ListObjects(w http.ResponseWriter, r *http.Request, lister func() (interfac
 	}
 
 	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := MarshalPayload(w, obj.(ots.Paginated), include...); err != nil {
+	if err := MarshalPayload(w, r, obj); err != nil {
 		ErrServerFailure(w, err)
 	}
 }
@@ -88,15 +83,16 @@ func UpdateObject(w http.ResponseWriter, r *http.Request, opts interface{}, upda
 	}
 }
 
-// Decode query string into a struct and sanitize the struct values
-func DecodeAndSanitize(dst Sanitizable, src map[string][]string) error {
-	if err := decoder.Decode(dst, src); err != nil {
-		return fmt.Errorf("unable to decode query string: %w", err)
+func SanitizeListOptions(o *ots.ListOptions) {
+	if o.PageNumber <= 0 {
+		o.PageNumber = DefaultPageNumber
 	}
 
-	dst.Sanitize()
-
-	return nil
+	if o.PageSize <= 0 {
+		o.PageSize = DefaultPageSize
+	} else if o.PageSize > 100 {
+		o.PageSize = MaxPageSize
+	}
 }
 
 type ErrOption func(*jsonapi.ErrorObject)
