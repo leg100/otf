@@ -103,85 +103,6 @@ type WorkspaceListOptions struct {
 	Include *string `schema:"include"`
 }
 
-// WorkspaceCreateOptions represents the options for creating a new workspace.
-type WorkspaceCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,workspaces"`
-
-	// Required when execution-mode is set to agent. The ID of the agent pool
-	// belonging to the workspace's organization. This value must not be specified
-	// if execution-mode is set to remote or local or if operations is set to true.
-	AgentPoolID *string `jsonapi:"attr,agent-pool-id,omitempty"`
-
-	// Whether destroy plans can be queued on the workspace.
-	AllowDestroyPlan *bool `jsonapi:"attr,allow-destroy-plan,omitempty"`
-
-	// Whether to automatically apply changes when a Terraform plan is successful.
-	AutoApply *bool `jsonapi:"attr,auto-apply,omitempty"`
-
-	// A description for the workspace.
-	Description *string `jsonapi:"attr,description,omitempty"`
-
-	// Which execution mode to use. Valid values are remote, local, and agent.
-	// When set to local, the workspace will be used for state storage only.
-	// This value must not be specified if operations is specified.
-	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty"`
-
-	// Whether to filter runs based on the changed files in a VCS push. If
-	// enabled, the working directory and trigger prefixes describe a set of
-	// paths which must contain changes for a VCS push to trigger a run. If
-	// disabled, any push will trigger a run.
-	FileTriggersEnabled *bool `jsonapi:"attr,file-triggers-enabled,omitempty"`
-
-	GlobalRemoteState *bool `jsonapi:"attr,global-remote-state,omitempty"`
-
-	// The legacy TFE environment to use as the source of the migration, in the
-	// form organization/environment. Omit this unless you are migrating a legacy
-	// environment.
-	MigrationEnvironment *string `jsonapi:"attr,migration-environment,omitempty"`
-
-	// The name of the workspace, which can only include letters, numbers, -,
-	// and _. This will be used as an identifier and must be unique in the
-	// organization.
-	Name *string `jsonapi:"attr,name"`
-
-	// DEPRECATED. Whether the workspace will use remote or local execution mode.
-	// Use ExecutionMode instead.
-	Operations *bool `jsonapi:"attr,operations,omitempty"`
-
-	// Whether to queue all runs. Unless this is set to true, runs triggered by
-	// a webhook will not be queued until at least one run is manually queued.
-	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
-
-	// Whether this workspace allows speculative plans. Setting this to false
-	// prevents Terraform Cloud or the Terraform Enterprise instance from
-	// running plans on pull requests, which can improve security if the VCS
-	// repository is public or includes untrusted contributors.
-	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
-
-	// The version of Terraform to use for this workspace. Upon creating a
-	// workspace, the latest version is selected unless otherwise specified.
-	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
-
-	// List of repository-root-relative paths which list all locations to be
-	// tracked for changes. See FileTriggersEnabled above for more details.
-	TriggerPrefixes []string `jsonapi:"attr,trigger-prefixes,omitempty"`
-
-	// Settings for the workspace's VCS repository. If omitted, the workspace is
-	// created without a VCS repo. If included, you must specify at least the
-	// oauth-token-id and identifier keys below.
-	VCSRepo *tfe.VCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
-
-	// A relative path that Terraform will execute within. This defaults to the
-	// root of your repository and is typically set to a subdirectory matching the
-	// environment when multiple environments exist within the same repository.
-	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
-}
-
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
@@ -189,7 +110,7 @@ type WorkspaceLockOptions struct {
 }
 
 type WorkspaceService interface {
-	CreateWorkspace(org string, opts *WorkspaceCreateOptions) (*Workspace, error)
+	CreateWorkspace(org string, opts *tfe.WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(name, org string) (*Workspace, error)
 	GetWorkspaceByID(id string) (*Workspace, error)
 	ListWorkspaces(org string, opts WorkspaceListOptions) (*WorkspaceList, error)
@@ -205,20 +126,6 @@ func (ws *Workspace) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
 		"self": fmt.Sprintf("/api/v2/organizations/%s/workspaces/%s", ws.Organization.Name, ws.Name),
 	}
-}
-
-func (opts *WorkspaceCreateOptions) Validate() error {
-	if !validString(opts.Name) {
-		return tfe.ErrRequiredName
-	}
-	if !validStringID(opts.Name) {
-		return tfe.ErrInvalidName
-	}
-	if opts.AgentPoolID != nil {
-		return errors.New("unsupported")
-	}
-
-	return nil
 }
 
 func NewWorkspaceID() string {

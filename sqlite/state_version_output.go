@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 )
@@ -31,8 +32,8 @@ func NewStateVersionOutputService(db *gorm.DB) *StateVersionOutputService {
 	}
 }
 
-func NewStateVersionOutputFromModel(model *StateVersionOutputModel) *ots.StateVersionOutput {
-	return &ots.StateVersionOutput{
+func NewStateVersionOutputFromModel(model *StateVersionOutputModel) *tfe.StateVersionOutput {
+	return &tfe.StateVersionOutput{
 		ID:        model.ExternalID,
 		Name:      model.Name,
 		Sensitive: model.Sensitive,
@@ -45,7 +46,7 @@ func (StateVersionOutputModel) TableName() string {
 	return "state_version_outputs"
 }
 
-func (s StateVersionOutputService) GetStateVersionOutput(id string) (*ots.StateVersionOutput, error) {
+func (s StateVersionOutputService) GetStateVersionOutput(id string) (*tfe.StateVersionOutput, error) {
 	var model StateVersionOutputModel
 
 	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {

@@ -26,7 +26,7 @@ func TestWorkspace(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := svc.CreateWorkspace("automatize", &ots.WorkspaceCreateOptions{
+		ws, err := svc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
 			Name: ots.String(name),
 		})
 		require.NoError(t, err)
@@ -84,7 +84,7 @@ func TestWorkspace(t *testing.T) {
 
 	// Re-create
 
-	ws, err = svc.CreateWorkspace("automatize", &ots.WorkspaceCreateOptions{
+	ws, err = svc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
 		Name: ots.String("dev"),
 	})
 	require.NoError(t, err)
