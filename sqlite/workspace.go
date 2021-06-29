@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
@@ -21,9 +22,16 @@ type WorkspaceModel struct {
 	Description         string
 	ExecutionMode       string
 	FileTriggersEnabled bool
+	Operations          bool
+	QueueAllRuns        bool
+	SpeculativeEnabled  bool
 	GlobalRemoteState   bool
 	Locked              bool
+	SourceName          string
+	SourceURL           string
 	TerraformVersion    string
+	TriggerPrefixes     string
+	WorkingDirectory    string
 
 	OrganizationID uint
 	Organization   OrganizationModel
@@ -43,11 +51,20 @@ func NewWorkspaceService(db *gorm.DB) *WorkspaceService {
 
 func NewWorkspaceFromModel(model *WorkspaceModel) *ots.Workspace {
 	return &ots.Workspace{
-		Name:         model.Name,
-		ID:           model.ExternalID,
-		Permissions:  &ots.WorkspacePermissions{},
-		Locked:       model.Locked,
-		Organization: NewOrganizationFromModel(&model.Organization),
+		Name:                model.Name,
+		ID:                  model.ExternalID,
+		Description:         model.Description,
+		FileTriggersEnabled: model.FileTriggersEnabled,
+		AutoApply:           model.AutoApply,
+		Operations:          model.Operations,
+		QueueAllRuns:        model.QueueAllRuns,
+		SpeculativeEnabled:  model.SpeculativeEnabled,
+		TerraformVersion:    model.TerraformVersion,
+		WorkingDirectory:    model.WorkingDirectory,
+		Locked:              model.Locked,
+		TriggerPrefixes:     strings.Split(model.TriggerPrefixes, ","),
+		Permissions:         &ots.WorkspacePermissions{},
+		Organization:        NewOrganizationFromModel(&model.Organization),
 	}
 }
 
@@ -81,8 +98,26 @@ func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCre
 	if opts.Description != nil {
 		model.Description = *opts.Description
 	}
+	if opts.FileTriggersEnabled != nil {
+		model.FileTriggersEnabled = *opts.FileTriggersEnabled
+	}
+	if opts.Operations != nil {
+		model.Operations = *opts.Operations
+	}
+	if opts.QueueAllRuns != nil {
+		model.QueueAllRuns = *opts.QueueAllRuns
+	}
+	if opts.SpeculativeEnabled != nil {
+		model.SpeculativeEnabled = *opts.SpeculativeEnabled
+	}
 	if opts.TerraformVersion != nil {
 		model.TerraformVersion = *opts.TerraformVersion
+	}
+	if opts.TriggerPrefixes != nil {
+		model.TriggerPrefixes = strings.Join(opts.TriggerPrefixes, ",")
+	}
+	if opts.WorkingDirectory != nil {
+		model.WorkingDirectory = *opts.WorkingDirectory
 	}
 
 	if result := s.DB.Omit(clause.Associations).Create(&model); result.Error != nil {
