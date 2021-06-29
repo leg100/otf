@@ -280,10 +280,7 @@ func TestWorkspace(t *testing.T) {
 							"session-timeout":          float64(0),
 							"two-factor-conformant":    false,
 						},
-						"id": "automatize",
-						"links": map[string]interface{}{
-							"self": "/api/v2/organizations/automatize",
-						},
+						"id":   "automatize",
 						"type": "organizations",
 					},
 				},

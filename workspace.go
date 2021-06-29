@@ -54,7 +54,7 @@ type Workspace struct {
 	RunsCount            int                   `jsonapi:"attr,workspace-kpis-runs-count"`
 
 	// Relations
-	Organization *Organization `jsonapi:"relation,organization"`
+	Organization *tfe.Organization `jsonapi:"relation,organization"`
 }
 
 // WorkspaceActions represents the workspace actions.

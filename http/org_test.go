@@ -18,14 +18,14 @@ import (
 func TestOrganization(t *testing.T) {
 	s := &Server{}
 	s.OrganizationService = &mock.OrganizationService{
-		CreateOrganizationFn: func(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+		CreateOrganizationFn: func(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 
 		},
-		UpdateOrganizationFn: func(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
+		UpdateOrganizationFn: func(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 		},
-		GetOrganizationFn: func(name string) (*ots.Organization, error) {
+		GetOrganizationFn: func(name string) (*tfe.Organization, error) {
 			return mock.NewOrganization(name, "leg100@automatize.co.uk"), nil
 		},
 		ListOrganizationFn: func(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
@@ -34,7 +34,7 @@ func TestOrganization(t *testing.T) {
 		DeleteOrganizationFn: func(name string) error {
 			return nil
 		},
-		GetEntitlementsFn: func(name string) (*ots.Entitlements, error) {
+		GetEntitlementsFn: func(name string) (*tfe.Entitlements, error) {
 			return ots.DefaultEntitlements("org-123"), nil
 		},
 	}
@@ -76,10 +76,7 @@ func TestOrganization(t *testing.T) {
 						"session-timeout":       float64(20160),
 						"two-factor-conformant": false,
 					},
-					"id": "automatize",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize",
-					},
+					"id":   "automatize",
 					"type": "organizations",
 				},
 			},
@@ -114,10 +111,7 @@ func TestOrganization(t *testing.T) {
 							"session-timeout":       float64(20160),
 							"two-factor-conformant": false,
 						},
-						"id": "automatize",
-						"links": map[string]interface{}{
-							"self": "/api/v2/organizations/automatize",
-						},
+						"id":   "automatize",
 						"type": "organizations",
 					},
 				},
@@ -170,10 +164,7 @@ func TestOrganization(t *testing.T) {
 						"session-timeout":       float64(20160),
 						"two-factor-conformant": false,
 					},
-					"id": "automatize",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize",
-					},
+					"id":   "automatize",
 					"type": "organizations",
 				},
 			},
@@ -216,10 +207,7 @@ func TestOrganization(t *testing.T) {
 						"session-timeout":       float64(20160),
 						"two-factor-conformant": false,
 					},
-					"id": "automatize",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize",
-					},
+					"id":   "automatize",
 					"type": "organizations",
 				},
 			},

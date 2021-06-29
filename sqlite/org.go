@@ -33,12 +33,12 @@ func NewOrganizationService(db *gorm.DB) *OrganizationService {
 	}
 }
 
-func NewOrganizationFromModel(model *OrganizationModel) *ots.Organization {
-	return &ots.Organization{
+func NewOrganizationFromModel(model *OrganizationModel) *tfe.Organization {
+	return &tfe.Organization{
 		Name:                   model.Name,
 		ExternalID:             model.ExternalID,
 		Email:                  model.Email,
-		Permissions:            &ots.OrganizationPermissions{},
+		Permissions:            &tfe.OrganizationPermissions{},
 		SessionTimeout:         model.SessionTimeout,
 		SessionRemember:        model.SessionRemember,
 		CollaboratorAuthPolicy: tfe.AuthPolicyType(model.CollaboratorAuthPolicy),
@@ -50,7 +50,7 @@ func (OrganizationModel) TableName() string {
 	return "organizations"
 }
 
-func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
 	org, err := ots.NewOrganizationFromOptions(opts)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOpti
 	return NewOrganizationFromModel(&model), nil
 }
 
-func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
+func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
 	var model OrganizationModel
 
 	if result := s.DB.Where("name = ?", name).First(&model); result.Error != nil {
@@ -119,7 +119,7 @@ func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions)
 		return nil, result.Error
 	}
 
-	var items []*ots.Organization
+	var items []*tfe.Organization
 	for _, m := range models {
 		items = append(items, NewOrganizationFromModel(&m))
 	}
@@ -130,7 +130,7 @@ func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions)
 	}, nil
 }
 
-func (s OrganizationService) GetOrganization(name string) (*ots.Organization, error) {
+func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, error) {
 	model, err := getOrganizationByName(s.DB, name)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (s OrganizationService) DeleteOrganization(name string) error {
 	return nil
 }
 
-func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(name string) (*tfe.Entitlements, error) {
 	model, err := getOrganizationByName(s.DB, name)
 	if err != nil {
 		return nil, err

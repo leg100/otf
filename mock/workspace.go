@@ -65,7 +65,7 @@ func NewWorkspace(name, id, org string) *ots.Workspace {
 		Actions: &ots.WorkspaceActions{},
 		ID:      id,
 		Name:    name,
-		Organization: &ots.Organization{
+		Organization: &tfe.Organization{
 			Name: org,
 		},
 		Permissions:     &ots.WorkspacePermissions{},

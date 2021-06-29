@@ -16,3 +16,5 @@ require (
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.10
 )
+
+//replace github.com/leg100/go-tfe => ../go-tfe
