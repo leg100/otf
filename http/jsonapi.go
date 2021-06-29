@@ -72,8 +72,14 @@ func marshalSinglePayload(w io.Writer, model interface{}, include ...string) err
 }
 
 func filterIncluded(included []*jsonapi.Node, filters ...string) (filtered []*jsonapi.Node) {
-	for _, inc := range included {
-		for _, f := range filters {
+	for _, f := range filters {
+		// Filter should always be pural but sometimes the client (go-tfe)
+		// neglects to do this
+		if !strings.HasSuffix(f, "s") {
+			f = f + "s"
+		}
+
+		for _, inc := range included {
 			if inc.Type == f {
 				filtered = append(filtered, inc)
 			}
