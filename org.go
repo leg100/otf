@@ -160,14 +160,14 @@ type Entitlements struct {
 	VCSIntegrations       bool   `jsonapi:"attr,vcs-integrations"`
 }
 
-func NewEntitlements(orgName string) *Entitlements {
+// We currently only support State Storage...
+func DefaultEntitlements(orgID string) *Entitlements {
 	return &Entitlements{
-		ID: orgName,
+		ID:           orgID,
+		StateStorage: true,
 	}
 }
 
-func (e *Entitlements) JSONAPILinks() *jsonapi.Links {
-	return &jsonapi.Links{
-		"self": fmt.Sprintf("/api/v2/entitlement-set/%s", e.ID),
-	}
+func NewOrganizationID() string {
+	return fmt.Sprintf("org-%s", GenerateRandomString(16))
 }

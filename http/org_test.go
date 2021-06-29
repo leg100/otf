@@ -35,7 +35,7 @@ func TestOrganization(t *testing.T) {
 			return nil
 		},
 		GetEntitlementsFn: func(name string) (*ots.Entitlements, error) {
-			return ots.NewEntitlements(name), nil
+			return ots.DefaultEntitlements("org-123"), nil
 		},
 	}
 
@@ -249,14 +249,11 @@ func TestOrganization(t *testing.T) {
 						"private-module-registry": false,
 						"sentinel":                false,
 						"sso":                     false,
-						"state-storage":           false,
+						"state-storage":           true,
 						"teams":                   false,
 						"vcs-integrations":        false,
 					},
-					"id": "automatize",
-					"links": map[string]interface{}{
-						"self": "/api/v2/entitlement-set/automatize",
-					},
+					"id":   "org-123",
 					"type": "entitlement-sets",
 				},
 			},
