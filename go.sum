@@ -208,6 +208,8 @@ github.com/leg100/go-tfe v0.17.1-0.20210626082821-2d8f3345bdda h1:SuMKzZUWOwnJ65
 github.com/leg100/go-tfe v0.17.1-0.20210626082821-2d8f3345bdda/go.mod h1:5ICcSoFwdJtRhfrWm6YvvaW6Q38mxqo54IeBPu7k6v0=
 github.com/leg100/go-tfe v0.17.1-0.20210629190638-7ca6caad4615 h1:NlbbxGsu6KknAP/k7Fz9P/bE2pSK5wtVYN3ZvFBeQvI=
 github.com/leg100/go-tfe v0.17.1-0.20210629190638-7ca6caad4615/go.mod h1:5ICcSoFwdJtRhfrWm6YvvaW6Q38mxqo54IeBPu7k6v0=
+github.com/leg100/go-tfe v0.17.1-0.20210629200342-4db4819358f1 h1:I7cz1kjI/LhMsVONTE2WyrLI9v5fLTgRl3IZ9VXBRsM=
+github.com/leg100/go-tfe v0.17.1-0.20210629200342-4db4819358f1/go.mod h1:5ICcSoFwdJtRhfrWm6YvvaW6Q38mxqo54IeBPu7k6v0=
 github.com/magiconair/properties v1.8.1 h1:ZC2Vc7/ZFkGmsVC9KvOjumD+G5lXy2RtTKyzRKO2BQ4=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/mattn/go-colorable v0.0.9 h1:UVL0vNpWh04HeJXV0KLcaT7r06gOH2l4OW6ddYRUIY4=

@@ -37,8 +37,8 @@ func NewConfigurationVersionService(db *gorm.DB) *ConfigurationVersionService {
 	}
 }
 
-func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *ots.ConfigurationVersion {
-	return &ots.ConfigurationVersion{
+func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *tfe.ConfigurationVersion {
+	return &tfe.ConfigurationVersion{
 		ID:            model.ExternalID,
 		AutoQueueRuns: model.AutoQueueRuns,
 		Error:         model.Error,
@@ -54,7 +54,7 @@ func (ConfigurationVersionModel) TableName() string {
 	return "configuration_versions"
 }
 
-func (s ConfigurationVersionService) CreateConfigurationVersion(opts *tfe.ConfigurationVersionCreateOptions) (*ots.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) CreateConfigurationVersion(opts *tfe.ConfigurationVersionCreateOptions) (*tfe.ConfigurationVersion, error) {
 	model := ConfigurationVersionModel{
 		ExternalID:    ots.NewConfigurationVersionID(),
 		AutoQueueRuns: ots.DefaultAutoQueueRuns,
@@ -88,7 +88,7 @@ func (s ConfigurationVersionService) ListConfigurationVersions(opts ots.Configur
 		return nil, result.Error
 	}
 
-	var items []*ots.ConfigurationVersion
+	var items []*tfe.ConfigurationVersion
 	for _, m := range models {
 		items = append(items, NewConfigurationVersionFromModel(&m))
 	}
@@ -99,7 +99,7 @@ func (s ConfigurationVersionService) ListConfigurationVersions(opts ots.Configur
 	}, nil
 }
 
-func (s ConfigurationVersionService) GetConfigurationVersion(id string) (*ots.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) GetConfigurationVersion(id string) (*tfe.ConfigurationVersion, error) {
 	model, err := getConfigurationVersionByID(s.DB, id)
 	if err != nil {
 		return nil, err

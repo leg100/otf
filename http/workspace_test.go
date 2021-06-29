@@ -18,19 +18,19 @@ import (
 func TestWorkspace(t *testing.T) {
 	s := &Server{}
 	s.WorkspaceService = &mock.WorkspaceService{
-		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
+		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceByIDFn: func(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+		UpdateWorkspaceByIDFn: func(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", "automatize"), nil
 		},
-		GetWorkspaceFn: func(name, org string) (*ots.Workspace, error) {
+		GetWorkspaceFn: func(name, org string) (*tfe.Workspace, error) {
 			return mock.NewWorkspace(name, "ws-123", org), nil
 		},
-		GetWorkspaceByIDFn: func(id string) (*ots.Workspace, error) {
+		GetWorkspaceByIDFn: func(id string) (*tfe.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
 		ListWorkspaceFn: func(org string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
@@ -89,14 +89,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -109,15 +112,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/dev",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -161,14 +170,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -181,15 +193,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/dev",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -233,14 +251,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -253,15 +274,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/dev",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -324,14 +351,17 @@ func TestWorkspace(t *testing.T) {
 								"can-update":          false,
 								"can-update-variable": false,
 							},
-							"plan-duration-average": float64(0),
-							"policy-check-failures": float64(0),
-							"queue-all-runs":        false,
-							"resource-count":        float64(0),
-							"run-failures":          float64(0),
-							"speculative-enabled":   false,
-							"terraform-version":     "",
-							"trigger-prefixes":      []interface{}{},
+							"plan-duration-average":         float64(0),
+							"policy-check-failures":         float64(0),
+							"queue-all-runs":                false,
+							"resource-count":                float64(0),
+							"run-failures":                  float64(0),
+							"source-name":                   "",
+							"source-url":                    "",
+							"speculative-enabled":           false,
+							"structured-run-output-enabled": false,
+							"terraform-version":             "",
+							"trigger-prefixes":              []interface{}{},
 							"vcs-repo": map[string]interface{}{"branch": "",
 								"display-identifier":  "",
 								"identifier":          "",
@@ -344,15 +374,21 @@ func TestWorkspace(t *testing.T) {
 							"workspace-kpis-runs-count": float64(0),
 						},
 						"id": "ws-123",
-						"links": map[string]interface{}{
-							"self": "/api/v2/organizations/automatize/workspaces/dev",
-						},
 						"relationships": map[string]interface{}{
+							"agent-pool": map[string]interface{}{
+								"data": interface{}(nil),
+							},
+							"current-run": map[string]interface{}{
+								"data": interface{}(nil),
+							},
 							"organization": map[string]interface{}{
 								"data": map[string]interface{}{
 									"id":   "automatize",
 									"type": "organizations",
 								},
+							},
+							"ssh-key": map[string]interface{}{
+								"data": interface{}(nil),
 							},
 						},
 						"type": "workspaces",
@@ -414,14 +450,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -434,15 +473,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/dev",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -494,14 +539,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -514,15 +562,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/staging",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -574,14 +628,17 @@ func TestWorkspace(t *testing.T) {
 							"can-update":          false,
 							"can-update-variable": false,
 						},
-						"plan-duration-average": float64(0),
-						"policy-check-failures": float64(0),
-						"queue-all-runs":        false,
-						"resource-count":        float64(0),
-						"run-failures":          float64(0),
-						"speculative-enabled":   false,
-						"terraform-version":     "",
-						"trigger-prefixes":      []interface{}{},
+						"plan-duration-average":         float64(0),
+						"policy-check-failures":         float64(0),
+						"queue-all-runs":                false,
+						"resource-count":                float64(0),
+						"run-failures":                  float64(0),
+						"source-name":                   "",
+						"source-url":                    "",
+						"speculative-enabled":           false,
+						"structured-run-output-enabled": false,
+						"terraform-version":             "",
+						"trigger-prefixes":              []interface{}{},
 						"vcs-repo": map[string]interface{}{"branch": "",
 							"display-identifier":  "",
 							"identifier":          "",
@@ -594,15 +651,21 @@ func TestWorkspace(t *testing.T) {
 						"workspace-kpis-runs-count": float64(0),
 					},
 					"id": "ws-123",
-					"links": map[string]interface{}{
-						"self": "/api/v2/organizations/automatize/workspaces/staging",
-					},
 					"relationships": map[string]interface{}{
+						"agent-pool": map[string]interface{}{
+							"data": interface{}(nil),
+						},
+						"current-run": map[string]interface{}{
+							"data": interface{}(nil),
+						},
 						"organization": map[string]interface{}{
 							"data": map[string]interface{}{
 								"id":   "automatize",
 								"type": "organizations",
 							},
+						},
+						"ssh-key": map[string]interface{}{
+							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",

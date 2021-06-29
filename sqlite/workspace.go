@@ -49,8 +49,8 @@ func NewWorkspaceService(db *gorm.DB) *WorkspaceService {
 	}
 }
 
-func NewWorkspaceFromModel(model *WorkspaceModel) *ots.Workspace {
-	return &ots.Workspace{
+func NewWorkspaceFromModel(model *WorkspaceModel) *tfe.Workspace {
+	return &tfe.Workspace{
 		Name:                model.Name,
 		ID:                  model.ExternalID,
 		Description:         model.Description,
@@ -63,7 +63,7 @@ func NewWorkspaceFromModel(model *WorkspaceModel) *ots.Workspace {
 		WorkingDirectory:    model.WorkingDirectory,
 		Locked:              model.Locked,
 		TriggerPrefixes:     strings.Split(model.TriggerPrefixes, ","),
-		Permissions:         &ots.WorkspacePermissions{},
+		Permissions:         &tfe.WorkspacePermissions{},
 		Organization:        NewOrganizationFromModel(&model.Organization),
 	}
 }
@@ -72,7 +72,7 @@ func (WorkspaceModel) TableName() string {
 	return "workspaces"
 }
 
-func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error) {
 	org, err := getOrganizationByName(s.DB, orgName)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCre
 	return NewWorkspaceFromModel(&model), nil
 }
 
-func (s WorkspaceService) UpdateWorkspace(name, orgName string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) UpdateWorkspace(name, orgName string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
 	var model WorkspaceModel
 
 	org, err := getOrganizationByName(s.DB, orgName)
@@ -163,7 +163,7 @@ func (s WorkspaceService) UpdateWorkspace(name, orgName string, opts *tfe.Worksp
 	return NewWorkspaceFromModel(&model), nil
 }
 
-func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
 	var model WorkspaceModel
 
 	update := make(map[string]interface{})
@@ -205,7 +205,7 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 		return nil, result.Error
 	}
 
-	var items []*ots.Workspace
+	var items []*tfe.Workspace
 	for _, m := range models {
 		items = append(items, NewWorkspaceFromModel(&m))
 	}
@@ -216,7 +216,7 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 	}, nil
 }
 
-func (s WorkspaceService) GetWorkspace(name, orgName string) (*ots.Workspace, error) {
+func (s WorkspaceService) GetWorkspace(name, orgName string) (*tfe.Workspace, error) {
 	model, err := getWorkspaceByName(s.DB, name, orgName)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (s WorkspaceService) GetWorkspace(name, orgName string) (*ots.Workspace, er
 	return NewWorkspaceFromModel(model), nil
 }
 
-func (s WorkspaceService) GetWorkspaceByID(id string) (*ots.Workspace, error) {
+func (s WorkspaceService) GetWorkspaceByID(id string) (*tfe.Workspace, error) {
 	var model WorkspaceModel
 
 	if result := s.DB.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
@@ -268,15 +268,15 @@ func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
 	return nil
 }
 
-func (s WorkspaceService) LockWorkspace(id string, opts ots.WorkspaceLockOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) LockWorkspace(id string, opts ots.WorkspaceLockOptions) (*tfe.Workspace, error) {
 	return toggleWorkspaceLock(s.DB, id, true)
 }
 
-func (s WorkspaceService) UnlockWorkspace(id string) (*ots.Workspace, error) {
+func (s WorkspaceService) UnlockWorkspace(id string) (*tfe.Workspace, error) {
 	return toggleWorkspaceLock(s.DB, id, false)
 }
 
-func toggleWorkspaceLock(db *gorm.DB, id string, lock bool) (*ots.Workspace, error) {
+func toggleWorkspaceLock(db *gorm.DB, id string, lock bool) (*tfe.Workspace, error) {
 	var model WorkspaceModel
 
 	if result := db.Where("external_id = ?", id).First(&model); result.Error != nil {
