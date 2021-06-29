@@ -12,6 +12,7 @@ type OrganizationModel struct {
 	gorm.Model
 
 	Name                   string
+	ExternalID             string
 	Email                  string
 	CollaboratorAuthPolicy string
 	CostEstimationEnabled  bool
@@ -34,6 +35,7 @@ func NewOrganizationService(db *gorm.DB) *OrganizationService {
 func NewOrganizationFromModel(model *OrganizationModel) *ots.Organization {
 	return &ots.Organization{
 		Name:                   model.Name,
+		ExternalID:             model.ExternalID,
 		Email:                  model.Email,
 		Permissions:            &ots.OrganizationPermissions{},
 		SessionTimeout:         model.SessionTimeout,
@@ -55,6 +57,7 @@ func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOpti
 
 	model := OrganizationModel{
 		Name:                   org.Name,
+		ExternalID:             ots.NewOrganizationID(),
 		Email:                  org.Email,
 		SessionTimeout:         org.SessionTimeout,
 		SessionRemember:        org.SessionRemember,
@@ -149,7 +152,11 @@ func (s OrganizationService) DeleteOrganization(name string) error {
 }
 
 func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
-	return &ots.Entitlements{}, nil
+	model, err := getOrganizationByName(s.DB, name)
+	if err != nil {
+		return nil, err
+	}
+	return ots.DefaultEntitlements(model.ExternalID), nil
 }
 
 func getOrganizationByName(db *gorm.DB, name string) (*OrganizationModel, error) {
