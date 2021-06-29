@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 

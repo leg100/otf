@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

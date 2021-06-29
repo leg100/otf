@@ -1,6 +1,6 @@
 package ots
 
-import tfe "github.com/hashicorp/go-tfe"
+import tfe "github.com/leg100/go-tfe"
 
 type StateVersionList struct {
 	*Pagination

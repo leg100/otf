@@ -3,7 +3,7 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
+	tfe "github.com/leg100/go-tfe"
 )
 
 const (

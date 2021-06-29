@@ -1,7 +1,10 @@
+# modd
+modd.conf
 # logs
 *.log
 # keys,certs
 *.pem
+*.crt
 # sqlite db
 *.db
 # bins

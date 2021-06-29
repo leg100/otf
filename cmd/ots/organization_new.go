@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/spf13/cobra"
 )

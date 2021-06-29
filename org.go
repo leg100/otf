@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/jsonapi"
-	tfe "github.com/hashicorp/go-tfe"
+	tfe "github.com/leg100/go-tfe"
 )
 
 const (
@@ -23,7 +23,6 @@ type Organization struct {
 	CostEstimationEnabled  bool                     `jsonapi:"attr,cost-estimation-enabled"`
 	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
 	Email                  string                   `jsonapi:"attr,email"`
-	EnterprisePlan         tfe.EnterprisePlanType   `jsonapi:"attr,enterprise-plan"`
 	ExternalID             string                   `jsonapi:"attr,external-id"`
 	OwnersTeamSAMLRoleID   string                   `jsonapi:"attr,owners-team-saml-role-id"`
 	Permissions            *OrganizationPermissions `jsonapi:"attr,permissions"`

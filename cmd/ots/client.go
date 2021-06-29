@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 )
 
 const (

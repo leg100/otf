@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/jsonapi"
-	"github.com/hashicorp/go-tfe"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +58,6 @@ func TestOrganization(t *testing.T) {
 						"collaborator-auth-policy": "password",
 						"cost-estimation-enabled":  true,
 						"email":                    "leg100@automatize.co.uk",
-						"enterprise-plan":          "",
 						"external-id":              "",
 						"owners-team-saml-role-id": "",
 						"permissions": map[string]interface{}{
@@ -97,7 +96,6 @@ func TestOrganization(t *testing.T) {
 							"collaborator-auth-policy": "password",
 							"cost-estimation-enabled":  true,
 							"email":                    "leg100@automatize.co.uk",
-							"enterprise-plan":          "",
 							"external-id":              "",
 							"owners-team-saml-role-id": "",
 							"permissions": map[string]interface{}{
@@ -154,7 +152,6 @@ func TestOrganization(t *testing.T) {
 						"collaborator-auth-policy": "password",
 						"cost-estimation-enabled":  true,
 						"email":                    "leg100@automatize.co.uk",
-						"enterprise-plan":          "",
 						"external-id":              "",
 						"owners-team-saml-role-id": "",
 						"permissions": map[string]interface{}{
@@ -201,7 +198,6 @@ func TestOrganization(t *testing.T) {
 						"collaborator-auth-policy": "password",
 						"cost-estimation-enabled":  true,
 						"email":                    "leg101@automatize.co.uk",
-						"enterprise-plan":          "",
 						"external-id":              "",
 						"owners-team-saml-role-id": "",
 						"permissions": map[string]interface{}{
