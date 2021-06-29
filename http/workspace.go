@@ -98,8 +98,11 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	obj, err := h.WorkspaceService.LockWorkspace(vars["id"], opts)
-	if err != nil {
-		ErrNotFound(w)
+	if err == ots.ErrWorkspaceAlreadyLocked {
+		WriteError(w, http.StatusConflict)
+		return
+	} else if err != nil {
+		WriteError(w, http.StatusNotFound)
 		return
 	}
 
@@ -114,8 +117,11 @@ func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	obj, err := h.WorkspaceService.UnlockWorkspace(vars["id"])
-	if err != nil {
-		ErrNotFound(w)
+	if err == ots.ErrWorkspaceAlreadyUnlocked {
+		WriteError(w, http.StatusConflict)
+		return
+	} else if err != nil {
+		WriteError(w, http.StatusNotFound)
 		return
 	}
 

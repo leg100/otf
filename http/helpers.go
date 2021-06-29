@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/google/jsonapi"
 	"github.com/leg100/ots"
@@ -116,6 +117,17 @@ func ErrNotFound(w http.ResponseWriter, opts ...ErrOption) {
 	w.WriteHeader(http.StatusNotFound)
 	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
 		err,
+	})
+}
+
+func WriteError(w http.ResponseWriter, code int) {
+	w.Header().Set("Content-type", jsonapi.MediaType)
+
+	w.WriteHeader(code)
+	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
+		{
+			Status: strconv.Itoa(code),
+		},
 	})
 }
 
