@@ -69,7 +69,7 @@ func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if err := h.WorkspaceService.DeleteWorkspace(vars["org"], vars["name"]); err != nil {
+	if err := h.WorkspaceService.DeleteWorkspace(vars["name"], vars["org"]); err != nil {
 		ErrNotFound(w)
 		return
 	}
