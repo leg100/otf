@@ -186,22 +186,22 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 	var models []WorkspaceModel
 	var count int64
 
-	if result := s.DB.Table("workspaces").Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
 	_, err := getOrganizationByName(s.DB, orgName)
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize)
+	query := s.DB.Preload(clause.Associations)
 
 	if opts.Search != nil {
 		query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Search))
 	}
 
-	if result := query.Find(&models); result.Error != nil {
+	if result := query.Model(&models).Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
+
+	if result := query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 

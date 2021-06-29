@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ ots.OrganizationService = (*OrganizationService)(nil)
@@ -114,7 +115,7 @@ func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions)
 		return nil, result.Error
 	}
 
-	if result := s.DB.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := s.DB.Preload(clause.Associations).Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 

@@ -75,20 +75,20 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 	var models []StateVersionModel
 	var count int64
 
-	if result := s.DB.Table("state_versions").Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
 	workspace, err := getWorkspaceByName(s.DB, workspaceName, orgName)
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB
-	query = query.Where("workspace_id = ?", workspace.ID)
-	query = query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize)
+	query := s.DB.
+		Preload(clause.Associations).
+		Where("workspace_id = ?", workspace.ID)
 
-	if result := query.Find(&models); result.Error != nil {
+	if result := query.Model(&models).Count(&count); result.Error != nil {
+		return nil, result.Error
+	}
+
+	if result := query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
