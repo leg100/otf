@@ -14,7 +14,7 @@ endif
 
 .PHONY: e2e
 e2e: build
-	go test ./e2e -failfast
+	./hack/e2e.bash
 
 .PHONY: unit
 unit:
