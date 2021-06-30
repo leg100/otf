@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -37,7 +36,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	// List
 
-	cvs, err := svc.ListConfigurationVersions(ots.ConfigurationVersionListOptions{})
+	cvs, err := svc.ListConfigurationVersions(tfe.ConfigurationVersionListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(cvs.Items))

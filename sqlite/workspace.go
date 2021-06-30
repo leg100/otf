@@ -182,7 +182,7 @@ func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpda
 	return NewWorkspaceFromModel(&model), nil
 }
 
-func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+func (s WorkspaceService) ListWorkspaces(orgName string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
 	var models []WorkspaceModel
 	var count int64
 
@@ -210,7 +210,7 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts ots.WorkspaceListO
 		items = append(items, NewWorkspaceFromModel(&m))
 	}
 
-	return &ots.WorkspaceList{
+	return &tfe.WorkspaceList{
 		Items:      items,
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil
@@ -268,7 +268,7 @@ func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
 	return nil
 }
 
-func (s WorkspaceService) LockWorkspace(id string, opts ots.WorkspaceLockOptions) (*tfe.Workspace, error) {
+func (s WorkspaceService) LockWorkspace(id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error) {
 	return toggleWorkspaceLock(s.DB, id, true)
 }
 

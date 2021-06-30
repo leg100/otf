@@ -3,36 +3,37 @@ package ots
 import (
 	"testing"
 
+	tfe "github.com/leg100/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPagination(t *testing.T) {
 	tests := []struct {
 		name  string
-		opts  ListOptions
+		opts  tfe.ListOptions
 		count int
-		want  Pagination
+		want  tfe.Pagination
 	}{
 		{
 			name:  "one page",
-			opts:  ListOptions{PageNumber: 1, PageSize: 20},
+			opts:  tfe.ListOptions{PageNumber: 1, PageSize: 20},
 			count: 5,
-			want: Pagination{
+			want: tfe.Pagination{
 				CurrentPage:  1,
-				PreviousPage: (*int)(nil),
-				NextPage:     (*int)(nil),
+				PreviousPage: 1,
+				NextPage:     1,
 				TotalCount:   5,
 				TotalPages:   1,
 			},
 		},
 		{
 			name:  "multiple pages",
-			opts:  ListOptions{PageNumber: 3, PageSize: 20},
+			opts:  tfe.ListOptions{PageNumber: 3, PageSize: 20},
 			count: 101,
-			want: Pagination{
+			want: tfe.Pagination{
 				CurrentPage:  3,
-				PreviousPage: Int(2),
-				NextPage:     Int(4),
+				PreviousPage: 2,
+				NextPage:     4,
 				TotalCount:   101,
 				TotalPages:   6,
 			},

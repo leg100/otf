@@ -13,7 +13,7 @@ import (
 func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.WorkspaceListOptions
+	var opts tfe.WorkspaceListOptions
 	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
 		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
 		return
@@ -91,7 +91,7 @@ func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := ots.WorkspaceLockOptions{}
+	opts := tfe.WorkspaceLockOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		ErrUnprocessable(w, err)
 		return

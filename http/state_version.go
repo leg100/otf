@@ -6,11 +6,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
 )
 
 func (h *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
-	var opts ots.StateVersionListOptions
+	var opts tfe.StateVersionListOptions
 	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
 		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
 		return

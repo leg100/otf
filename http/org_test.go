@@ -28,7 +28,7 @@ func TestOrganization(t *testing.T) {
 		GetOrganizationFn: func(name string) (*tfe.Organization, error) {
 			return mock.NewOrganization(name, "leg100@automatize.co.uk"), nil
 		},
-		ListOrganizationFn: func(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
+		ListOrganizationFn: func(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error) {
 			return mock.NewOrganizationList("automatize", "leg100@automatize.co.uk", opts), nil
 		},
 		DeleteOrganizationFn: func(name string) error {
@@ -117,9 +117,9 @@ func TestOrganization(t *testing.T) {
 				},
 				"meta": map[string]interface{}{
 					"pagination": map[string]interface{}{
-						"prev-page":    nil,
+						"prev-page":    float64(1),
 						"current-page": float64(1),
-						"next-page":    (interface{})(nil),
+						"next-page":    float64(1),
 						"total-count":  float64(1),
 						"total-pages":  float64(1),
 					},

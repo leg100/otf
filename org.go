@@ -14,20 +14,10 @@ const (
 	DefaultCostEstimationEnabled  = true
 )
 
-type OrganizationList struct {
-	*Pagination
-	Items []*tfe.Organization
-}
-
-// OrganizationListOptions represents the options for listing organizations.
-type OrganizationListOptions struct {
-	ListOptions
-}
-
 type OrganizationService interface {
 	CreateOrganization(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error)
 	GetOrganization(name string) (*tfe.Organization, error)
-	ListOrganizations(opts OrganizationListOptions) (*OrganizationList, error)
+	ListOrganizations(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error)
 	UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error)
 	DeleteOrganization(name string) error
 	GetEntitlements(name string) (*tfe.Entitlements, error)

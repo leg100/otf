@@ -71,7 +71,7 @@ func (s StateVersionService) CreateStateVersion(workspaceID string, opts *tfe.St
 	return NewStateVersionFromModel(&model), nil
 }
 
-func (s StateVersionService) ListStateVersions(orgName, workspaceName string, opts ots.StateVersionListOptions) (*ots.StateVersionList, error) {
+func (s StateVersionService) ListStateVersions(orgName, workspaceName string, opts tfe.StateVersionListOptions) (*tfe.StateVersionList, error) {
 	var models []StateVersionModel
 	var count int64
 
@@ -97,7 +97,7 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 		items = append(items, NewStateVersionFromModel(&m))
 	}
 
-	return &ots.StateVersionList{
+	return &tfe.StateVersionList{
 		Items:      items,
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil

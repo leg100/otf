@@ -56,19 +56,19 @@ func TestOrganization(t *testing.T) {
 
 	// List
 
-	orgs, err := svc.ListOrganizations(ots.OrganizationListOptions{})
+	orgs, err := svc.ListOrganizations(tfe.OrganizationListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(orgs.Items))
 
 	// List with pagination
 
-	orgs, err = svc.ListOrganizations(ots.OrganizationListOptions{ListOptions: ots.ListOptions{PageNumber: 1, PageSize: 1}})
+	orgs, err = svc.ListOrganizations(tfe.OrganizationListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 1}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(orgs.Items))
 
-	orgs, err = svc.ListOrganizations(ots.OrganizationListOptions{ListOptions: ots.ListOptions{PageNumber: 2, PageSize: 1}})
+	orgs, err = svc.ListOrganizations(tfe.OrganizationListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 1}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(orgs.Items))

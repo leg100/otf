@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/jsonapi"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestWorkspace(t *testing.T) {
 		GetWorkspaceByIDFn: func(id string) (*tfe.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
-		ListWorkspaceFn: func(org string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+		ListWorkspaceFn: func(org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
 			return mock.NewWorkspaceList("dev", "ws-123", org, opts), nil
 		},
 		DeleteWorkspaceFn: func(name, org string) error {

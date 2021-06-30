@@ -76,7 +76,7 @@ func (s ConfigurationVersionService) CreateConfigurationVersion(opts *tfe.Config
 	return NewConfigurationVersionFromModel(&model), nil
 }
 
-func (s ConfigurationVersionService) ListConfigurationVersions(opts ots.ConfigurationVersionListOptions) (*ots.ConfigurationVersionList, error) {
+func (s ConfigurationVersionService) ListConfigurationVersions(opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error) {
 	var models []ConfigurationVersionModel
 	var count int64
 
@@ -93,7 +93,7 @@ func (s ConfigurationVersionService) ListConfigurationVersions(opts ots.Configur
 		items = append(items, NewConfigurationVersionFromModel(&m))
 	}
 
-	return &ots.ConfigurationVersionList{
+	return &tfe.ConfigurationVersionList{
 		Items:      items,
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil

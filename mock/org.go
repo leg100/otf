@@ -11,7 +11,7 @@ type OrganizationService struct {
 	CreateOrganizationFn func(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error)
 	UpdateOrganizationFn func(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error)
 	GetOrganizationFn    func(name string) (*tfe.Organization, error)
-	ListOrganizationFn   func(opts ots.OrganizationListOptions) (*ots.OrganizationList, error)
+	ListOrganizationFn   func(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error)
 	DeleteOrganizationFn func(name string) error
 	GetEntitlementsFn    func(name string) (*tfe.Entitlements, error)
 }
@@ -28,7 +28,7 @@ func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, er
 	return s.GetOrganizationFn(name)
 }
 
-func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
+func (s OrganizationService) ListOrganizations(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error) {
 	return s.ListOrganizationFn(opts)
 }
 
@@ -52,8 +52,8 @@ func NewOrganization(name, email string) *tfe.Organization {
 	}
 }
 
-func NewOrganizationList(name, email string, opts ots.OrganizationListOptions) *ots.OrganizationList {
-	return &ots.OrganizationList{
+func NewOrganizationList(name, email string, opts tfe.OrganizationListOptions) *tfe.OrganizationList {
+	return &tfe.OrganizationList{
 		Items: []*tfe.Organization{
 			NewOrganization(name, email),
 		},

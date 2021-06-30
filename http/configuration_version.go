@@ -8,11 +8,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
 )
 
 func (h *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
-	var opts ots.ConfigurationVersionListOptions
+	var opts tfe.ConfigurationVersionListOptions
 	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
 		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
 		return

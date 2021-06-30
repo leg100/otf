@@ -8,7 +8,7 @@ import (
 
 type StateVersionService interface {
 	CreateStateVersion(workspaceID string, opts *tfe.StateVersionCreateOptions) (*tfe.StateVersion, error)
-	ListStateVersions(orgName, workspaceName string, opts StateVersionListOptions) (*StateVersionList, error)
+	ListStateVersions(orgName, workspaceName string, opts tfe.StateVersionListOptions) (*tfe.StateVersionList, error)
 	CurrentStateVersion(workspaceID string) (*tfe.StateVersion, error)
 	GetStateVersion(id string) (*tfe.StateVersion, error)
 	DownloadStateVersion(id string) ([]byte, error)

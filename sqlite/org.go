@@ -107,7 +107,7 @@ func (s OrganizationService) UpdateOrganization(name string, opts *tfe.Organizat
 	return NewOrganizationFromModel(&model), nil
 }
 
-func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions) (*ots.OrganizationList, error) {
+func (s OrganizationService) ListOrganizations(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error) {
 	var models []OrganizationModel
 	var count int64
 
@@ -124,7 +124,7 @@ func (s OrganizationService) ListOrganizations(opts ots.OrganizationListOptions)
 		items = append(items, NewOrganizationFromModel(&m))
 	}
 
-	return &ots.OrganizationList{
+	return &tfe.OrganizationList{
 		Items:      items,
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil

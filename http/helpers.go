@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/google/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/go-tfe"
 )
 
 const (
@@ -84,7 +84,7 @@ func UpdateObject(w http.ResponseWriter, r *http.Request, opts interface{}, upda
 	}
 }
 
-func SanitizeListOptions(o *ots.ListOptions) {
+func SanitizeListOptions(o *tfe.ListOptions) {
 	if o.PageNumber <= 0 {
 		o.PageNumber = DefaultPageNumber
 	}
