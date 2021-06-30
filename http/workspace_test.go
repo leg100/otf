@@ -395,9 +395,9 @@ func TestWorkspace(t *testing.T) {
 				},
 				"meta": map[string]interface{}{
 					"pagination": map[string]interface{}{
-						"prev-page":    (interface{})(nil),
+						"prev-page":    float64(1),
 						"current-page": float64(1),
-						"next-page":    (interface{})(nil),
+						"next-page":    float64(1),
 						"total-count":  float64(1),
 						"total-pages":  float64(1),
 					},
