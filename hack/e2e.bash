@@ -2,7 +2,8 @@
 
 # Run e2e tests. It'll first check if otsd is running. If it
 # is not running it'll start otsd before the tests, and terminate
-# it afterwards.
+# it afterwards (Often a developer instead runs otsd in another
+# terminal...).
 
 set -x
 
@@ -25,12 +26,15 @@ function cleanup()
 }
 trap cleanup EXIT
 
-# Upon error, print out otsd logs and exit
+# Upon error, print out otsd logs (...but only if this script started it),
+# and exit
 function print_logs()
 {
-    echo "--- otsd output ---"
-    echo
-    cat otsd.log
+    if [[ $started -eq 1 ]]; then
+        echo "--- otsd output ---"
+        echo
+        cat otsd.log
+    fi
 }
 trap print_logs ERR
 
