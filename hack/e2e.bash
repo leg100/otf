@@ -12,7 +12,7 @@ export PATH=$PWD/_build:$PATH
 export OTS_SSL=true
 export OTS_CERT_FILE=./e2e/fixtures/cert.crt
 export OTS_KEY_FILE=./e2e/fixtures/key.pem
-export OTS_DB_PATH=$(mktemp)
+export OTS_DB_PATH=":memory:"
 
 # Track whether this script started otsd
 started=0
