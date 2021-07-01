@@ -12,9 +12,13 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+.PHONY: go-tfe-tests
+go-tfe-tests: build
+	./hack/harness.bash ./hack/go-tfe-tests.bash
+
 .PHONY: e2e
 e2e: build
-	./hack/e2e.bash
+	./hack/harness.bash go test ./e2e -failfast
 
 .PHONY: unit
 unit:
