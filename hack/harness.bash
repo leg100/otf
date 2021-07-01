@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-# Run e2e tests. It'll first check if otsd is running. If it
+# A test harness for otsd. It'll first check if otsd is running. If it
 # is not running it'll start otsd before the tests, and terminate
 # it afterwards (Often a developer instead runs otsd in another
 # terminal...).
+
 
 set -x
 
@@ -52,4 +53,4 @@ curl \
     https://localhost:8080/api/v2/ping
 
 # Run tests...
-go test ./e2e -failfast
+$@
