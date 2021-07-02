@@ -32,9 +32,29 @@ func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	CreateObject(w, r, &tfe.OrganizationCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.OrganizationService.CreateOrganization(opts.(*tfe.OrganizationCreateOptions))
-	})
+	opts := tfe.OrganizationCreateOptions{}
+
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	if err := opts.Valid(); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	org, err := h.OrganizationService.CreateOrganization(&opts)
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, org); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
