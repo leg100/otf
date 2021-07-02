@@ -43,6 +43,7 @@ func NewOrganizationFromModel(model *OrganizationModel) *tfe.Organization {
 		SessionRemember:        model.SessionRemember,
 		CollaboratorAuthPolicy: tfe.AuthPolicyType(model.CollaboratorAuthPolicy),
 		CostEstimationEnabled:  model.CostEstimationEnabled,
+		CreatedAt:              model.CreatedAt,
 	}
 }
 
@@ -51,60 +52,70 @@ func (OrganizationModel) TableName() string {
 }
 
 func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
-	org, err := ots.NewOrganizationFromOptions(opts)
+	org := OrganizationModel{
+		Name:                   *opts.Name,
+		Email:                  *opts.Email,
+		ExternalID:             ots.NewOrganizationID(),
+		SessionTimeout:         ots.DefaultSessionTimeout,
+		SessionRemember:        ots.DefaultSessionExpiration,
+		CollaboratorAuthPolicy: ots.DefaultCollaboratorAuthPolicy,
+		CostEstimationEnabled:  ots.DefaultCostEstimationEnabled,
+	}
+
+	if opts.SessionTimeout != nil {
+		org.SessionTimeout = *opts.SessionTimeout
+	}
+
+	if opts.SessionRemember != nil {
+		org.SessionRemember = *opts.SessionRemember
+	}
+
+	if opts.CollaboratorAuthPolicy != nil {
+		org.CollaboratorAuthPolicy = string(*opts.CollaboratorAuthPolicy)
+	}
+
+	if opts.CostEstimationEnabled != nil {
+		org.CostEstimationEnabled = *opts.CostEstimationEnabled
+	}
+
+	if result := s.DB.Create(&org); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return NewOrganizationFromModel(&org), nil
+}
+
+func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
+	org, err := getOrganizationByName(s.DB, name)
 	if err != nil {
 		return nil, err
 	}
 
-	model := OrganizationModel{
-		Name:                   org.Name,
-		ExternalID:             ots.NewOrganizationID(),
-		Email:                  org.Email,
-		SessionTimeout:         org.SessionTimeout,
-		SessionRemember:        org.SessionRemember,
-		CollaboratorAuthPolicy: string(org.CollaboratorAuthPolicy),
-		CostEstimationEnabled:  org.CostEstimationEnabled,
-	}
-
-	if result := s.DB.Create(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewOrganizationFromModel(&model), nil
-}
-
-func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
-	var model OrganizationModel
-
-	if result := s.DB.Where("name = ?", name).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	update := make(map[string]interface{})
-	if opts.Name != nil {
-		update["name"] = *opts.Name
-	}
 	if opts.Email != nil {
-		update["email"] = *opts.Email
-	}
-	if opts.SessionTimeout != nil {
-		update["session_timeout"] = *opts.SessionTimeout
-	}
-	if opts.SessionRemember != nil {
-		update["session_remember"] = *opts.SessionRemember
-	}
-	if opts.CollaboratorAuthPolicy != nil {
-		update["collaborator_auth_policy"] = *opts.CollaboratorAuthPolicy
-	}
-	if opts.CostEstimationEnabled != nil {
-		update["cost_estimation_enabled"] = *opts.CostEstimationEnabled
+		org.Email = *opts.Email
 	}
 
-	if result := s.DB.Model(&model).Updates(update); result.Error != nil {
+	if opts.SessionTimeout != nil {
+		org.SessionTimeout = *opts.SessionTimeout
+	}
+
+	if opts.SessionRemember != nil {
+		org.SessionRemember = *opts.SessionRemember
+	}
+
+	if opts.CollaboratorAuthPolicy != nil {
+		org.CollaboratorAuthPolicy = string(*opts.CollaboratorAuthPolicy)
+	}
+
+	if opts.CostEstimationEnabled != nil {
+		org.CostEstimationEnabled = *opts.CostEstimationEnabled
+	}
+
+	if result := s.DB.Save(org); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewOrganizationFromModel(&model), nil
+	return NewOrganizationFromModel(org), nil
 }
 
 func (s OrganizationService) ListOrganizations(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error) {

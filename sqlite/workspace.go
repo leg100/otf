@@ -15,23 +15,24 @@ var _ ots.WorkspaceService = (*WorkspaceService)(nil)
 type WorkspaceModel struct {
 	gorm.Model
 
-	Name                string
-	ExternalID          string
-	AllowDestroyPlan    bool
-	AutoApply           bool
-	Description         string
-	ExecutionMode       string
-	FileTriggersEnabled bool
-	Operations          bool
-	QueueAllRuns        bool
-	SpeculativeEnabled  bool
-	GlobalRemoteState   bool
-	Locked              bool
-	SourceName          string
-	SourceURL           string
-	TerraformVersion    string
-	TriggerPrefixes     string
-	WorkingDirectory    string
+	Name                       string
+	ExternalID                 string
+	AllowDestroyPlan           bool
+	AutoApply                  bool
+	Description                string
+	ExecutionMode              string
+	FileTriggersEnabled        bool
+	Operations                 bool
+	QueueAllRuns               bool
+	SpeculativeEnabled         bool
+	GlobalRemoteState          bool
+	Locked                     bool
+	SourceName                 string
+	SourceURL                  string
+	StructuredRunOutputEnabled bool
+	TerraformVersion           string
+	TriggerPrefixes            string
+	WorkingDirectory           string
 
 	OrganizationID uint
 	Organization   OrganizationModel
@@ -51,20 +52,29 @@ func NewWorkspaceService(db *gorm.DB) *WorkspaceService {
 
 func NewWorkspaceFromModel(model *WorkspaceModel) *tfe.Workspace {
 	return &tfe.Workspace{
-		Name:                model.Name,
-		ID:                  model.ExternalID,
-		Description:         model.Description,
-		FileTriggersEnabled: model.FileTriggersEnabled,
-		AutoApply:           model.AutoApply,
-		Operations:          model.Operations,
-		QueueAllRuns:        model.QueueAllRuns,
-		SpeculativeEnabled:  model.SpeculativeEnabled,
-		TerraformVersion:    model.TerraformVersion,
-		WorkingDirectory:    model.WorkingDirectory,
-		Locked:              model.Locked,
-		TriggerPrefixes:     strings.Split(model.TriggerPrefixes, ","),
-		Permissions:         &tfe.WorkspacePermissions{},
-		Organization:        NewOrganizationFromModel(&model.Organization),
+		Name: model.Name,
+		ID:   model.ExternalID,
+		Actions: &tfe.WorkspaceActions{
+			IsDestroyable: true,
+		},
+		CreatedAt:                  model.CreatedAt,
+		Description:                model.Description,
+		FileTriggersEnabled:        model.FileTriggersEnabled,
+		AutoApply:                  model.AutoApply,
+		Operations:                 model.Operations,
+		QueueAllRuns:               model.QueueAllRuns,
+		SourceName:                 model.SourceName,
+		SourceURL:                  model.SourceURL,
+		SpeculativeEnabled:         model.SpeculativeEnabled,
+		StructuredRunOutputEnabled: model.StructuredRunOutputEnabled,
+		TerraformVersion:           model.TerraformVersion,
+		WorkingDirectory:           model.WorkingDirectory,
+		Locked:                     model.Locked,
+		TriggerPrefixes:            strings.Split(model.TriggerPrefixes, ","),
+		Permissions: &tfe.WorkspacePermissions{
+			CanDestroy: true,
+		},
+		Organization: NewOrganizationFromModel(&model.Organization),
 	}
 }
 
@@ -78,120 +88,92 @@ func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCre
 		return nil, err
 	}
 
-	model := WorkspaceModel{
+	ws := &WorkspaceModel{
 		Name:                *opts.Name,
 		ExternalID:          ots.NewWorkspaceID(),
-		OrganizationID:      org.ID,
 		ExecutionMode:       "local", // Only local execution mode is supported
 		FileTriggersEnabled: ots.DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    ots.DefaultTerraformVersion,
 		Organization:        *org,
+		OrganizationID:      org.ID,
 	}
 
 	if opts.AllowDestroyPlan != nil {
-		model.AllowDestroyPlan = *opts.AllowDestroyPlan
+		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
 	}
 	if opts.AutoApply != nil {
-		model.AutoApply = *opts.AutoApply
+		ws.AutoApply = *opts.AutoApply
 	}
 	if opts.Description != nil {
-		model.Description = *opts.Description
+		ws.Description = *opts.Description
 	}
 	if opts.FileTriggersEnabled != nil {
-		model.FileTriggersEnabled = *opts.FileTriggersEnabled
+		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
 	}
 	if opts.Operations != nil {
-		model.Operations = *opts.Operations
+		ws.Operations = *opts.Operations
 	}
 	if opts.QueueAllRuns != nil {
-		model.QueueAllRuns = *opts.QueueAllRuns
+		ws.QueueAllRuns = *opts.QueueAllRuns
+	}
+	if opts.SourceName != nil {
+		ws.SourceName = *opts.SourceName
+	}
+	if opts.SourceURL != nil {
+		ws.SourceURL = *opts.SourceURL
 	}
 	if opts.SpeculativeEnabled != nil {
-		model.SpeculativeEnabled = *opts.SpeculativeEnabled
+		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+	}
+	if opts.StructuredRunOutputEnabled != nil {
+		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
-		model.TerraformVersion = *opts.TerraformVersion
+		ws.TerraformVersion = *opts.TerraformVersion
 	}
 	if opts.TriggerPrefixes != nil {
-		model.TriggerPrefixes = strings.Join(opts.TriggerPrefixes, ",")
+		ws.TriggerPrefixes = strings.Join(opts.TriggerPrefixes, ",")
 	}
 	if opts.WorkingDirectory != nil {
-		model.WorkingDirectory = *opts.WorkingDirectory
+		ws.WorkingDirectory = *opts.WorkingDirectory
 	}
 
-	if result := s.DB.Omit(clause.Associations).Create(&model); result.Error != nil {
+	if result := s.DB.Omit(clause.Associations).Create(ws); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewWorkspaceFromModel(&model), nil
+	return NewWorkspaceFromModel(ws), nil
 }
 
 func (s WorkspaceService) UpdateWorkspace(name, orgName string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
-	var model WorkspaceModel
-
-	org, err := getOrganizationByName(s.DB, orgName)
+	ws, err := getWorkspaceByName(s.DB, name, orgName)
 	if err != nil {
 		return nil, err
 	}
 
-	update := make(map[string]interface{})
-	if opts.Name != nil {
-		update["name"] = *opts.Name
-	}
-	if opts.AllowDestroyPlan != nil {
-		update["allow_destroy_plan"] = *opts.AllowDestroyPlan
-	}
-	if opts.AutoApply != nil {
-		update["auto_apply"] = *opts.AutoApply
-	}
-	if opts.Description != nil {
-		update["description"] = *opts.Description
-	}
-	if opts.TerraformVersion != nil {
-		update["terraform_version"] = *opts.TerraformVersion
-	}
-
-	if result := s.DB.Where("name = ? AND organization_id = ?", name, org.ID).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := s.DB.Model(&model).Updates(update); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewWorkspaceFromModel(&model), nil
+	return updateWorkspace(s.DB, ws, opts)
 }
 
 func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
-	var model WorkspaceModel
-
-	update := make(map[string]interface{})
-	if opts.Name != nil {
-		update["name"] = *opts.Name
+	ws, err := getWorkspaceByID(s.DB, id)
+	if err != nil {
+		return nil, err
 	}
 
-	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := s.DB.Model(&model).Updates(update); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewWorkspaceFromModel(&model), nil
+	return updateWorkspace(s.DB, ws, opts)
 }
 
 func (s WorkspaceService) ListWorkspaces(orgName string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
 	var models []WorkspaceModel
 	var count int64
 
-	_, err := getOrganizationByName(s.DB, orgName)
+	org, err := getOrganizationByName(s.DB, orgName)
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB.Preload(clause.Associations)
+	query := s.DB.Preload(clause.Associations).Where("organization_id = ?", org.ID)
 
 	if opts.Search != nil {
 		query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Search))
@@ -221,33 +203,24 @@ func (s WorkspaceService) GetWorkspace(name, orgName string) (*tfe.Workspace, er
 	if err != nil {
 		return nil, err
 	}
-
-	return NewWorkspaceFromModel(model), nil
+	return NewWorkspaceFromModel(model), err
 }
 
 func (s WorkspaceService) GetWorkspaceByID(id string) (*tfe.Workspace, error) {
-	var model WorkspaceModel
-
-	if result := s.DB.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
+	model, err := getWorkspaceByID(s.DB, id)
+	if err != nil {
+		return nil, err
 	}
-
-	return NewWorkspaceFromModel(&model), nil
+	return NewWorkspaceFromModel(model), err
 }
 
 func (s WorkspaceService) DeleteWorkspace(name, orgName string) error {
-	var model WorkspaceModel
-
-	_, err := getOrganizationByName(s.DB, orgName)
+	model, err := getWorkspaceByName(s.DB, name, orgName)
 	if err != nil {
 		return err
 	}
 
-	if result := s.DB.Where("name = ?", name).First(&model); result.Error != nil {
-		return result.Error
-	}
-
-	if result := s.DB.Delete(&model); result.Error != nil {
+	if result := s.DB.Delete(model); result.Error != nil {
 		return result.Error
 	}
 
@@ -255,10 +228,9 @@ func (s WorkspaceService) DeleteWorkspace(name, orgName string) error {
 }
 
 func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
-	var model WorkspaceModel
-
-	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return result.Error
+	model, err := getWorkspaceByID(s.DB, id)
+	if err != nil {
+		return err
 	}
 
 	if result := s.DB.Delete(&model); result.Error != nil {
@@ -277,10 +249,9 @@ func (s WorkspaceService) UnlockWorkspace(id string) (*tfe.Workspace, error) {
 }
 
 func toggleWorkspaceLock(db *gorm.DB, id string, lock bool) (*tfe.Workspace, error) {
-	var model WorkspaceModel
-
-	if result := db.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
+	model, err := getWorkspaceByID(db, id)
+	if err != nil {
+		return nil, err
 	}
 
 	if lock && model.Locked {
@@ -290,11 +261,13 @@ func toggleWorkspaceLock(db *gorm.DB, id string, lock bool) (*tfe.Workspace, err
 		return nil, ots.ErrWorkspaceAlreadyUnlocked
 	}
 
-	if result := db.Model(&model).Update("locked", lock); result.Error != nil {
+	model.Locked = lock
+
+	if result := db.Save(model); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewWorkspaceFromModel(&model), nil
+	return NewWorkspaceFromModel(model), nil
 }
 
 func getWorkspaceByID(db *gorm.DB, id string) (*WorkspaceModel, error) {
@@ -310,14 +283,52 @@ func getWorkspaceByID(db *gorm.DB, id string) (*WorkspaceModel, error) {
 func getWorkspaceByName(db *gorm.DB, name, orgName string) (*WorkspaceModel, error) {
 	var model WorkspaceModel
 
-	org, err := getOrganizationByName(db, orgName)
-	if err != nil {
-		return nil, err
-	}
-
-	if result := db.Preload(clause.Associations).Where("name = ? AND organization_id = ?", name, org.ID).First(&model); result.Error != nil {
+	if result := db.Preload(clause.Associations).Joins("JOIN organizations ON organizations.id = workspaces.organization_id").First(&model, "workspaces.name = ? AND organizations.name = ?", name, orgName); result.Error != nil {
 		return nil, result.Error
 	}
 
 	return &model, nil
+}
+
+func updateWorkspace(db *gorm.DB, ws *WorkspaceModel, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+	if opts.Name != nil {
+		ws.Name = *opts.Name
+	}
+
+	if opts.AllowDestroyPlan != nil {
+		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+	}
+	if opts.AutoApply != nil {
+		ws.AutoApply = *opts.AutoApply
+	}
+	if opts.Description != nil {
+		ws.Description = *opts.Description
+	}
+	if opts.FileTriggersEnabled != nil {
+		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+	}
+	if opts.Operations != nil {
+		ws.Operations = *opts.Operations
+	}
+	if opts.QueueAllRuns != nil {
+		ws.QueueAllRuns = *opts.QueueAllRuns
+	}
+	if opts.SpeculativeEnabled != nil {
+		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+	}
+	if opts.TerraformVersion != nil {
+		ws.TerraformVersion = *opts.TerraformVersion
+	}
+	if opts.TriggerPrefixes != nil {
+		ws.TriggerPrefixes = strings.Join(opts.TriggerPrefixes, ",")
+	}
+	if opts.WorkingDirectory != nil {
+		ws.WorkingDirectory = *opts.WorkingDirectory
+	}
+
+	if result := db.Save(ws); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return NewWorkspaceFromModel(ws), nil
 }

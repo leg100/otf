@@ -60,8 +60,9 @@ func (s StateVersionService) CreateStateVersion(workspaceID string, opts *tfe.St
 	model := StateVersionModel{
 		Serial:      *opts.Serial,
 		ExternalID:  ots.NewStateVersionID(),
-		WorkspaceID: workspace.ID,
 		State:       *opts.State,
+		Workspace:   *workspace,
+		WorkspaceID: workspace.ID,
 	}
 
 	if result := s.DB.Omit(clause.Associations).Create(&model); result.Error != nil {
@@ -104,13 +105,11 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 }
 
 func (s StateVersionService) GetStateVersion(id string) (*tfe.StateVersion, error) {
-	var model StateVersionModel
-
-	if result := s.DB.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
+	sv, err := getStateVersionByID(s.DB, id)
+	if err != nil {
+		return nil, err
 	}
-
-	return NewStateVersionFromModel(&model), nil
+	return NewStateVersionFromModel(sv), err
 }
 
 func (s StateVersionService) CurrentStateVersion(workspaceID string) (*tfe.StateVersion, error) {
@@ -129,16 +128,20 @@ func (s StateVersionService) CurrentStateVersion(workspaceID string) (*tfe.State
 }
 
 func (s StateVersionService) DownloadStateVersion(id string) ([]byte, error) {
-	var model StateVersionModel
-
-	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	data, err := base64.StdEncoding.DecodeString(model.State)
+	sv, err := getStateVersionByID(s.DB, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	return base64.StdEncoding.DecodeString(sv.State)
+}
+
+func getStateVersionByID(db *gorm.DB, id string) (*StateVersionModel, error) {
+	var model StateVersionModel
+
+	if result := db.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &model, nil
 }
