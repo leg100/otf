@@ -28,7 +28,7 @@ func (h *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 
 	GetObject(w, r, func() (interface{}, error) {
-		return h.ConfigurationVersionService.GetConfigurationVersion(vars["name"])
+		return h.ConfigurationVersionService.GetConfigurationVersion(vars["id"])
 	})
 }
 
