@@ -70,19 +70,57 @@ func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
+	opts := tfe.WorkspaceUpdateOptions{}
 	vars := mux.Vars(r)
 
-	UpdateObject(w, r, &tfe.WorkspaceUpdateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.WorkspaceService.UpdateWorkspace(vars["name"], vars["org"], opts.(*tfe.WorkspaceUpdateOptions))
-	})
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	if err := opts.Valid(); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	ws, err := h.WorkspaceService.UpdateWorkspace(vars["name"], vars["org"], &opts)
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, ws); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
+	opts := tfe.WorkspaceUpdateOptions{}
 	vars := mux.Vars(r)
 
-	UpdateObject(w, r, &tfe.WorkspaceUpdateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.WorkspaceService.UpdateWorkspaceByID(vars["id"], opts.(*tfe.WorkspaceUpdateOptions))
-	})
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	if err := opts.Valid(); err != nil {
+		ErrUnprocessable(w, err)
+		return
+	}
+
+	ws, err := h.WorkspaceService.UpdateWorkspaceByID(vars["id"], &opts)
+	if err != nil {
+		ErrNotFound(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-type", jsonapi.MediaType)
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, ws); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {

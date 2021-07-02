@@ -61,6 +61,7 @@ func NewWorkspaceFromModel(model *WorkspaceModel) *tfe.Workspace {
 		Description:                model.Description,
 		FileTriggersEnabled:        model.FileTriggersEnabled,
 		AutoApply:                  model.AutoApply,
+		AllowDestroyPlan:           model.AllowDestroyPlan,
 		Operations:                 model.Operations,
 		QueueAllRuns:               model.QueueAllRuns,
 		SourceName:                 model.SourceName,
@@ -91,6 +92,7 @@ func (s WorkspaceService) CreateWorkspace(orgName string, opts *tfe.WorkspaceCre
 	ws := &WorkspaceModel{
 		Name:                *opts.Name,
 		ExternalID:          ots.NewWorkspaceID(),
+		AllowDestroyPlan:    ots.DefaultAllowDestroyPlan,
 		ExecutionMode:       "local", // Only local execution mode is supported
 		FileTriggersEnabled: ots.DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
@@ -315,6 +317,9 @@ func updateWorkspace(db *gorm.DB, ws *WorkspaceModel, opts *tfe.WorkspaceUpdateO
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+	}
+	if opts.StructuredRunOutputEnabled != nil {
+		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion
