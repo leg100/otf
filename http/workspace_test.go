@@ -216,7 +216,7 @@ func TestWorkspace(t *testing.T) {
 		{
 			name:       "get with included org",
 			method:     "GET",
-			url:        "/api/v2/workspaces/ws-123?include=organizations",
+			url:        "/api/v2/workspaces/ws-123?include=organization",
 			wantStatus: 200,
 			wantResp: map[string]interface{}{
 				"data": map[string]interface{}{
