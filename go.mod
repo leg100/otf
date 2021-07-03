@@ -3,11 +3,10 @@ module github.com/leg100/ots
 go 1.16
 
 require (
-	github.com/google/jsonapi v1.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
-	github.com/hashicorp/jsonapi v0.0.0-20210518035559-1e50d74c8db3
-	github.com/leg100/go-tfe v0.17.1-0.20210703102129-1c98fb1be3cd
+	github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913
+	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5

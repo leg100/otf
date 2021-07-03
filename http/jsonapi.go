@@ -8,12 +8,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/google/jsonapi"
+	"github.com/leg100/jsonapi"
 )
 
 // Marshal a JSON-API response.
 func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
 	include := strings.Split(r.URL.Query().Get("include"), ",")
+	include = sanitizeIncludes(include)
 
 	// Get the value of models so we can test if it's a struct.
 	dst := reflect.Indirect(reflect.ValueOf(models))
@@ -38,7 +39,7 @@ func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
 		return fmt.Errorf("v.Items must be a slice")
 	}
 
-	payload, err := jsonapi.Marshal(items.Interface())
+	payload, err := jsonapi.Marshal(items.Interface(), include)
 	if err != nil {
 		return fmt.Errorf("unable to marshal payload: %w", err)
 	}
@@ -48,42 +49,21 @@ func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
 		return fmt.Errorf("unable to extract concrete value")
 	}
 
-	manyPayload.Included = filterIncluded(manyPayload.Included, include...)
-
 	manyPayload.Meta = &jsonapi.Meta{"pagination": pagination.Interface()}
 
 	return json.NewEncoder(w).Encode(payload)
 }
 
 func marshalSinglePayload(w io.Writer, model interface{}, include ...string) error {
-	payload, err := jsonapi.Marshal(model)
-	if err != nil {
+	if err := jsonapi.MarshalPayload(w, model, include); err != nil {
 		return fmt.Errorf("unable to marshal payload: %w", err)
 	}
-
-	onePayload, ok := payload.(*jsonapi.OnePayload)
-	if !ok {
-		return fmt.Errorf("unable to extract concrete value")
-	}
-
-	onePayload.Included = filterIncluded(onePayload.Included, include...)
-
-	return json.NewEncoder(w).Encode(onePayload)
+	return nil
 }
 
-func filterIncluded(included []*jsonapi.Node, filters ...string) (filtered []*jsonapi.Node) {
-	for _, f := range filters {
-		// Filter should always be pural but sometimes the client (go-tfe)
-		// neglects to do this
-		if !strings.HasSuffix(f, "s") {
-			f = f + "s"
-		}
-
-		for _, inc := range included {
-			if inc.Type == f {
-				filtered = append(filtered, inc)
-			}
-		}
+func sanitizeIncludes(includes []string) (sanitized []string) {
+	for _, i := range includes {
+		sanitized = append(sanitized, strings.ReplaceAll(i, "_", "-"))
 	}
-	return filtered
+	return
 }

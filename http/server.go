@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
-	"github.com/hashicorp/jsonapi"
+	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
 	"github.com/urfave/negroni"
 )
@@ -42,6 +42,9 @@ type Server struct {
 	StateVersionService         ots.StateVersionService
 	StateVersionOutputService   ots.StateVersionOutputService
 	ConfigurationVersionService ots.ConfigurationVersionService
+	RunService                  ots.RunService
+	PlanService                 ots.PlanService
+	ApplyService                ots.ApplyService
 }
 
 // NewServer is the contructor for Server
@@ -64,6 +67,8 @@ func NewRouter(server *Server) *negroni.Negroni {
 
 	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
+	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
+	router.HandleFunc("/plans/{id}/logs", server.UploadPlanLogs).Methods("POST")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
@@ -105,6 +110,21 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.CreateConfigurationVersion).Methods("POST")
 	sub.HandleFunc("/configuration-versions/{id}", server.GetConfigurationVersion).Methods("GET")
 	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.ListConfigurationVersions).Methods("GET")
+
+	// Run routes
+	sub.HandleFunc("/runs", server.CreateRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/apply", server.ApplyRun).Methods("POST")
+	sub.HandleFunc("/workspaces/{workspace_id}/runs", server.ListRuns).Methods("GET")
+	sub.HandleFunc("/runs/{id}", server.GetRun).Methods("GET")
+	sub.HandleFunc("/runs/{id}/actions/discard", server.DiscardRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/cancel", server.CancelRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/force-cancel", server.ForceCancelRun).Methods("POST")
+
+	// Plan routes
+	sub.HandleFunc("/plans/{id}", server.GetPlan).Methods("GET")
+
+	// Apply routes
+	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
 	// Add default set of negroni middleware to routes: (i) Logging (ii)
 	// Recovery (iii) Static File serving (we don't use this one...)

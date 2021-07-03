@@ -131,8 +131,12 @@ github.com/leg100/go-tfe v0.17.1-0.20210702211340-dae2585de0d6 h1:klpQjzsErTduhZ
 github.com/leg100/go-tfe v0.17.1-0.20210702211340-dae2585de0d6/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
 github.com/leg100/go-tfe v0.17.1-0.20210703102129-1c98fb1be3cd h1:vQLNKpLyjecKjL7MsVP24zkeYY/YMbAqpvZmpnzAo/c=
 github.com/leg100/go-tfe v0.17.1-0.20210703102129-1c98fb1be3cd/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
+github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913 h1:JKF27GfrzDRnHn5fSOZd0wq9fFgkouNC2UroNh9z3yM=
+github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
 github.com/leg100/jsonapi v1.0.1-0.20210702195956-33ced97bb77e h1:QEXgXy/uDx3uxMzL9BYAhCxbkBXbn3xLWFlN4AC6S6Q=
 github.com/leg100/jsonapi v1.0.1-0.20210702195956-33ced97bb77e/go.mod h1:bxfK4GybcsXRZYxs4FWVlOe3vK5MN3midIRDqJxVoH0=
+github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f h1:B6cjxBElIm1uvJj0go33EfQnkW0mvmVaHVVsXn81od8=
+github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f/go.mod h1:bxfK4GybcsXRZYxs4FWVlOe3vK5MN3midIRDqJxVoH0=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-isatty v0.0.3/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNxMWT7Zi4=

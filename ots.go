@@ -12,6 +12,9 @@ const (
 	DefaultPageSize   = 20
 	MaxPageSize       = 100
 
+	DefaultUserID   = "user-123"
+	DefaultUsername = "ots"
+
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
 )
 

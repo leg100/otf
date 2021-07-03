@@ -33,8 +33,10 @@ func (h *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
 	CreateObject(w, r, &tfe.ConfigurationVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.ConfigurationVersionService.CreateConfigurationVersion(opts.(*tfe.ConfigurationVersionCreateOptions))
+		return h.ConfigurationVersionService.CreateConfigurationVersion(vars["workspace_id"], opts.(*tfe.ConfigurationVersionCreateOptions))
 	})
 }
 

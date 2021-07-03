@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/google/jsonapi"
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/jsonapi"
 )
 
 const (

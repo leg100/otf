@@ -11,7 +11,7 @@ const (
 )
 
 type ConfigurationVersionService interface {
-	CreateConfigurationVersion(opts *tfe.ConfigurationVersionCreateOptions) (*tfe.ConfigurationVersion, error)
+	CreateConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*tfe.ConfigurationVersion, error)
 	GetConfigurationVersion(id string) (*tfe.ConfigurationVersion, error)
 	ListConfigurationVersions(opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error)
 	UploadConfigurationVersion(id string, payload []byte) error

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -14,10 +15,23 @@ func TestConfigurationVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	svc := NewConfigurationVersionService(db)
+	wsSvc := NewWorkspaceService(db)
+	orgService := NewOrganizationService(db)
 
-	// Create
+	// Create 1 org, 1 ws, 1 cv
 
-	cv, err := svc.CreateConfigurationVersion(&tfe.ConfigurationVersionCreateOptions{})
+	_, err = orgService.CreateOrganization(&tfe.OrganizationCreateOptions{
+		Name:  ots.String("automatize"),
+		Email: ots.String("sysadmin@automatize.co.uk"),
+	})
+	require.NoError(t, err)
+
+	ws, err := wsSvc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
+		Name: ots.String("dev"),
+	})
+	require.NoError(t, err)
+
+	cv, err := svc.CreateConfigurationVersion(ws.ID, &tfe.ConfigurationVersionCreateOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, tfe.ConfigurationPending, cv.Status)

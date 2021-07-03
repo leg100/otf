@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/jsonapi"
 )
 
 func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func (h *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayload(w, entitlements); err != nil {
+	if err := jsonapi.MarshalPayloadWithoutIncluded(w, entitlements); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
