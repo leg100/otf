@@ -32,6 +32,14 @@ func NewStateVersionOutputService(db *gorm.DB) *StateVersionOutputService {
 	}
 }
 
+func NewStateVersionOutputsFromModels(models []StateVersionOutputModel) []*tfe.StateVersionOutput {
+	var svol []*tfe.StateVersionOutput
+	for _, m := range models {
+		svol = append(svol, NewStateVersionOutputFromModel(&m))
+	}
+	return svol
+}
+
 func NewStateVersionOutputFromModel(model *StateVersionOutputModel) *tfe.StateVersionOutput {
 	return &tfe.StateVersionOutput{
 		ID:        model.ExternalID,

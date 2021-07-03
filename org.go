@@ -13,6 +13,14 @@ const (
 	DefaultCostEstimationEnabled  = true
 )
 
+var (
+	DefaultOrganizationPermissions = tfe.OrganizationPermissions{
+		CanCreateWorkspace: true,
+		CanUpdate:          true,
+		CanDestroy:         true,
+	}
+)
+
 type OrganizationService interface {
 	CreateOrganization(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error)
 	GetOrganization(name string) (*tfe.Organization, error)

@@ -38,7 +38,7 @@ func NewOrganizationFromModel(model *OrganizationModel) *tfe.Organization {
 		Name:                   model.Name,
 		ExternalID:             model.ExternalID,
 		Email:                  model.Email,
-		Permissions:            &tfe.OrganizationPermissions{},
+		Permissions:            &ots.DefaultOrganizationPermissions,
 		SessionTimeout:         model.SessionTimeout,
 		SessionRemember:        model.SessionRemember,
 		CollaboratorAuthPolicy: tfe.AuthPolicyType(model.CollaboratorAuthPolicy),
@@ -89,6 +89,10 @@ func (s OrganizationService) UpdateOrganization(name string, opts *tfe.Organizat
 	org, err := getOrganizationByName(s.DB, name)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.Name != nil {
+		org.Name = *opts.Name
 	}
 
 	if opts.Email != nil {

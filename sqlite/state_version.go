@@ -44,6 +44,8 @@ func NewStateVersionFromModel(model *StateVersionModel) *tfe.StateVersion {
 		ID:          model.ExternalID,
 		Serial:      model.Serial,
 		DownloadURL: fmt.Sprintf("/state-versions/%s/download", model.ExternalID),
+		Outputs:     NewStateVersionOutputsFromModels(model.StateVersionOutputs),
+		CreatedAt:   model.CreatedAt,
 	}
 }
 
@@ -65,7 +67,26 @@ func (s StateVersionService) CreateStateVersion(workspaceID string, opts *tfe.St
 		WorkspaceID: workspace.ID,
 	}
 
-	if result := s.DB.Omit(clause.Associations).Create(&model); result.Error != nil {
+	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := ots.Parse(decoded)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range state.Outputs {
+		model.StateVersionOutputs = append(model.StateVersionOutputs, StateVersionOutputModel{
+			ExternalID: ots.NewStateVersionOutputID(),
+			Name:       k,
+			Type:       v.Type,
+			Value:      v.Value,
+		})
+	}
+
+	if result := s.DB.Omit("Workspaces").Create(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -120,7 +141,7 @@ func (s StateVersionService) CurrentStateVersion(workspaceID string) (*tfe.State
 		return nil, err
 	}
 
-	if result := s.DB.Where("workspace_id = ?", workspace.ID).Order("serial desc, created_at desc").First(&model); result.Error != nil {
+	if result := s.DB.Preload(clause.Associations).Where("workspace_id = ?", workspace.ID).Order("serial desc, created_at desc").First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
