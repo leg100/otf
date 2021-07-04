@@ -225,19 +225,17 @@ func (s RunService) GetQueuedRuns(opts tfe.RunListOptions) (*tfe.RunList, error)
 	var models []RunModel
 	var count int64
 
-	if result := s.DB.Where("status = ?", tfe.RunPlanQueued).Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	query := s.DB.Where("status = ?", tfe.RunPlanQueued)
+
+	if result := query.Model(models).Count(&count); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.Run
-	for _, m := range models {
-		items = append(items, NewRunFromModel(&m))
+	if result := query.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
+		return nil, result.Error
 	}
 
-	return &tfe.RunList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewRunListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s RunService) DiscardRun(id string, opts *tfe.RunDiscardOptions) error {
