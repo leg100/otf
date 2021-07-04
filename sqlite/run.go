@@ -19,7 +19,7 @@ type RunModel struct {
 	ExternalID string
 	Refresh    bool
 	Message    string
-	Status     string
+	Status     tfe.RunStatus
 
 	ReplaceAddrs string
 	TargetAddrs  string
@@ -75,7 +75,7 @@ func NewRunFromModel(model *RunModel) *tfe.Run {
 		ReplaceAddrs:           strings.Split(model.ReplaceAddrs, ","),
 		TargetAddrs:            strings.Split(model.TargetAddrs, ","),
 		ForceCancelAvailableAt: model.ForceCancelAvailableAt,
-		Status:                 tfe.RunStatus(model.Status),
+		Status:                 model.Status,
 		Actions:                &model.RunActions,
 		Permissions:            &model.RunPermissions,
 		StatusTimestamps:       &model.RunStatusTimestamps,
@@ -141,7 +141,7 @@ func (s RunService) CreateRun(opts *tfe.RunCreateOptions) (*tfe.Run, error) {
 			PlanQueueableAt: time.Now(),
 		},
 		// Simulate run having been immediately planned
-		Status:                 string(tfe.RunPlanned),
+		Status:                 tfe.RunPlanned,
 		ConfigurationVersionID: cv.ID,
 		ConfigurationVersion:   *cv,
 		WorkspaceID:            ws.ID,
@@ -170,7 +170,7 @@ func (s RunService) ApplyRun(id string, opts *tfe.RunApplyOptions) error {
 		return err
 	}
 
-	model.Status = string(tfe.RunApplying)
+	model.Status = tfe.RunApplying
 	if result := s.DB.Save(&model); result.Error != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (s RunService) ApplyRun(id string, opts *tfe.RunApplyOptions) error {
 	// Simulate run being applied...
 	go func() {
 		time.Sleep(time.Second)
-		model.Status = string(tfe.RunApplied)
+		model.Status = tfe.RunApplied
 		if result := s.DB.Save(&model); result.Error != nil {
 			log.Printf("unable to update status on run: %s", result.Error.Error())
 		}
@@ -252,7 +252,7 @@ func (s RunService) DiscardRun(id string, opts *tfe.RunDiscardOptions) error {
 		return ots.ErrRunDiscardNotAllowed
 	}
 
-	model.Status = string(tfe.RunDiscarded)
+	model.Status = tfe.RunDiscarded
 	if result := s.DB.Save(&model); result.Error != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (s RunService) CancelRun(id string, opts *tfe.RunCancelOptions) error {
 	}
 
 	model.ForceCancelAvailableAt = time.Now()
-	model.Status = string(tfe.RunCanceled)
+	model.Status = tfe.RunCanceled
 
 	if result := s.DB.Save(&model); result.Error != nil {
 		return err
@@ -294,7 +294,7 @@ func (s RunService) ForceCancelRun(id string, opts *tfe.RunForceCancelOptions) e
 		return ots.ErrRunForceCancelNotAllowed
 	}
 
-	model.Status = string(tfe.RunCanceled)
+	model.Status = tfe.RunCanceled
 	if result := s.DB.Save(&model); result.Error != nil {
 		return err
 	}

@@ -14,7 +14,7 @@ type OrganizationModel struct {
 	Name                   string
 	ExternalID             string
 	Email                  string
-	CollaboratorAuthPolicy string
+	CollaboratorAuthPolicy tfe.AuthPolicyType
 	CostEstimationEnabled  bool
 	SessionRemember        int
 	SessionTimeout         int
@@ -52,7 +52,7 @@ func NewOrganizationFromModel(model *OrganizationModel) *tfe.Organization {
 		Permissions:            &ots.DefaultOrganizationPermissions,
 		SessionTimeout:         model.SessionTimeout,
 		SessionRemember:        model.SessionRemember,
-		CollaboratorAuthPolicy: tfe.AuthPolicyType(model.CollaboratorAuthPolicy),
+		CollaboratorAuthPolicy: model.CollaboratorAuthPolicy,
 		CostEstimationEnabled:  model.CostEstimationEnabled,
 		CreatedAt:              model.CreatedAt,
 	}
@@ -82,7 +82,7 @@ func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOpti
 	}
 
 	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = string(*opts.CollaboratorAuthPolicy)
+		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
 	}
 
 	if opts.CostEstimationEnabled != nil {
@@ -119,7 +119,7 @@ func (s OrganizationService) UpdateOrganization(name string, opts *tfe.Organizat
 	}
 
 	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = string(*opts.CollaboratorAuthPolicy)
+		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
 	}
 
 	if opts.CostEstimationEnabled != nil {

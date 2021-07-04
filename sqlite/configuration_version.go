@@ -17,9 +17,9 @@ type ConfigurationVersionModel struct {
 	AutoQueueRuns bool
 	Error         string
 	ErrorMessage  string
-	Source        string
+	Source        tfe.ConfigurationSource
 	Speculative   bool
-	Status        string
+	Status        tfe.ConfigurationStatus
 	UploadURL     string
 
 	Configuration []byte
@@ -58,9 +58,9 @@ func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *tfe.Con
 		AutoQueueRuns: model.AutoQueueRuns,
 		Error:         model.Error,
 		ErrorMessage:  model.ErrorMessage,
-		Source:        tfe.ConfigurationSource(model.Source),
+		Source:        model.Source,
 		Speculative:   model.Speculative,
-		Status:        tfe.ConfigurationStatus(model.Status),
+		Status:        model.Status,
 		UploadURL:     fmt.Sprintf("/configuration-versions/%s/upload", model.ExternalID),
 	}
 }
@@ -79,7 +79,7 @@ func (s ConfigurationVersionService) CreateConfigurationVersion(workspaceID stri
 		ExternalID:    ots.NewConfigurationVersionID(),
 		WorkspaceID:   ws.ID,
 		AutoQueueRuns: ots.DefaultAutoQueueRuns,
-		Status:        string(tfe.ConfigurationPending),
+		Status:        tfe.ConfigurationPending,
 	}
 
 	if opts.AutoQueueRuns != nil {
