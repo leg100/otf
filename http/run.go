@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,9 +10,19 @@ import (
 )
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
-	CreateObject(w, r, &tfe.RunCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return s.RunService.CreateRun(opts.(*tfe.RunCreateOptions))
-	})
+	opts := tfe.RunCreateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	obj, err := s.RunService.CreateRun(&opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -21,41 +30,48 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 
 	opts := &tfe.RunApplyOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if err := s.RunService.ApplyRun(vars["id"], opts); err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-type", jsonapi.MediaType)
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	GetObject(w, r, func() (interface{}, error) {
-		return s.RunService.GetRun(vars["id"])
-	})
+	obj, err := s.RunService.GetRun(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var opts tfe.RunListOptions
-	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
-		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	SanitizeListOptions(&opts.ListOptions)
 
-	ListObjects(w, r, func() (interface{}, error) {
-		return s.RunService.ListRuns(vars["workspace_id"], opts)
-	})
+	obj, err := s.RunService.ListRuns(vars["workspace_id"], opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
@@ -63,21 +79,20 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 
 	opts := &tfe.RunDiscardOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	err := s.RunService.DiscardRun(vars["id"], opts)
 	if err == ots.ErrRunDiscardNotAllowed {
-		WriteError(w, http.StatusConflict)
+		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-type", jsonapi.MediaType)
 }
 
 func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
@@ -85,21 +100,20 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 
 	opts := &tfe.RunCancelOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	err := s.RunService.CancelRun(vars["id"], opts)
 	if err == ots.ErrRunCancelNotAllowed {
-		WriteError(w, http.StatusConflict)
+		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-type", jsonapi.MediaType)
 }
 
 func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
@@ -107,19 +121,18 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 
 	opts := &tfe.RunForceCancelOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	err := s.RunService.ForceCancelRun(vars["id"], opts)
 	if err == ots.ErrRunForceCancelNotAllowed {
-		WriteError(w, http.StatusConflict)
+		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-type", jsonapi.MediaType)
 }

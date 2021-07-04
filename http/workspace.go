@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -14,120 +13,120 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var opts tfe.WorkspaceListOptions
-	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
-		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	SanitizeListOptions(&opts.ListOptions)
 
-	ListObjects(w, r, func() (interface{}, error) {
-		return h.WorkspaceService.ListWorkspaces(vars["org"], opts)
-	})
+	obj, err := h.WorkspaceService.ListWorkspaces(vars["org"], opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	GetObject(w, r, func() (interface{}, error) {
-		return h.WorkspaceService.GetWorkspace(vars["name"], vars["org"])
-	})
+	obj, err := h.WorkspaceService.GetWorkspace(vars["name"], vars["org"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	GetObject(w, r, func() (interface{}, error) {
-		return h.WorkspaceService.GetWorkspaceByID(vars["id"])
-	})
+	obj, err := h.WorkspaceService.GetWorkspaceByID(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	opts := tfe.WorkspaceCreateOptions{}
 
+	opts := tfe.WorkspaceCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if err := opts.Valid(); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	org, err := h.WorkspaceService.CreateWorkspace(vars["org"], &opts)
+	obj, err := h.WorkspaceService.CreateWorkspace(vars["org"], &opts)
 	if err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, org); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
 }
 
 func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
-	opts := tfe.WorkspaceUpdateOptions{}
 	vars := mux.Vars(r)
 
+	opts := tfe.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if err := opts.Valid(); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := h.WorkspaceService.UpdateWorkspace(vars["name"], vars["org"], &opts)
+	obj, err := h.WorkspaceService.UpdateWorkspace(vars["name"], vars["org"], &opts)
 	if err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, ws); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	opts := tfe.WorkspaceUpdateOptions{}
 	vars := mux.Vars(r)
 
+	opts := tfe.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if err := opts.Valid(); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	ws, err := h.WorkspaceService.UpdateWorkspaceByID(vars["id"], &opts)
+	obj, err := h.WorkspaceService.UpdateWorkspaceByID(vars["id"], &opts)
 	if err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, ws); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if err := h.WorkspaceService.DeleteWorkspace(vars["name"], vars["org"]); err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
@@ -138,7 +137,7 @@ func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if err := h.WorkspaceService.DeleteWorkspaceByID(vars["id"]); err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
@@ -150,24 +149,20 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	opts := tfe.WorkspaceLockOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	obj, err := h.WorkspaceService.LockWorkspace(vars["id"], opts)
 	if err == ots.ErrWorkspaceAlreadyLocked {
-		WriteError(w, http.StatusConflict)
+		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -175,16 +170,12 @@ func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := h.WorkspaceService.UnlockWorkspace(vars["id"])
 	if err == ots.ErrWorkspaceAlreadyUnlocked {
-		WriteError(w, http.StatusConflict)
+		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
-		WriteError(w, http.StatusNotFound)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj)
 }

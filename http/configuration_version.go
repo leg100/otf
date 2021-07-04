@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -10,47 +9,59 @@ import (
 	"github.com/leg100/go-tfe"
 )
 
-func (h *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
 	var opts tfe.ConfigurationVersionListOptions
-	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
-		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	SanitizeListOptions(&opts.ListOptions)
+	obj, err := s.ConfigurationVersionService.ListConfigurationVersions(opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
 
-	ListObjects(w, r, func() (interface{}, error) {
-		return h.ConfigurationVersionService.ListConfigurationVersions(opts)
-	})
+	WriteResponse(w, r, obj)
 }
 
-func (h *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	GetObject(w, r, func() (interface{}, error) {
-		return h.ConfigurationVersionService.GetConfigurationVersion(vars["id"])
-	})
+	obj, err := s.ConfigurationVersionService.GetConfigurationVersion(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
-func (h *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	CreateObject(w, r, &tfe.ConfigurationVersionCreateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.ConfigurationVersionService.CreateConfigurationVersion(vars["workspace_id"], opts.(*tfe.ConfigurationVersionCreateOptions))
-	})
+	opts := &tfe.ConfigurationVersionCreateOptions{}
+	obj, err := s.ConfigurationVersionService.CreateConfigurationVersion(vars["workspace_id"], opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
 }
 
-func (h *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := h.ConfigurationVersionService.UploadConfigurationVersion(vars["id"], buf.Bytes()); err != nil {
-		ErrNotFound(w)
+	if err := s.ConfigurationVersionService.UploadConfigurationVersion(vars["id"], buf.Bytes()); err != nil {
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 }

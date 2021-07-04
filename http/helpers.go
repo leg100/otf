@@ -1,7 +1,9 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/leg100/go-tfe"
@@ -14,74 +16,11 @@ const (
 	MaxPageSize       = 100
 )
 
-// GetObject is a helper for getting an object and marshalling back to JSON-API
-func GetObject(w http.ResponseWriter, r *http.Request, getter func() (interface{}, error)) {
-	obj, err := getter()
-	if err != nil {
-		ErrNotFound(w)
-		return
+func DecodeQuery(opts interface{}, query url.Values) error {
+	if err := decoder.Decode(opts, query); err != nil {
+		return fmt.Errorf("unable to decode query string: %w", err)
 	}
-
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := MarshalPayload(w, r, obj); err != nil {
-		ErrServerFailure(w, err)
-	}
-}
-
-// ListObjects is a helper for listing objects and marshalling back to JSON-API
-func ListObjects(w http.ResponseWriter, r *http.Request, lister func() (interface{}, error)) {
-	obj, err := lister()
-	if err != nil {
-		ErrNotFound(w)
-		return
-	}
-
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := MarshalPayload(w, r, obj); err != nil {
-		ErrServerFailure(w, err)
-	}
-}
-
-// CreateObject is a helper for creating an object, unmarshalling and
-// marshalling the request and response from/to JSON-API.
-func CreateObject(w http.ResponseWriter, r *http.Request, opts interface{}, creator func(opts interface{}) (interface{}, error)) {
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
-		return
-	}
-
-	obj, err := creator(opts)
-	if err != nil {
-		ErrNotFound(w)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-// UpdateObject is a helper for updating an object, unmarshalling and
-// marshalling the request and response from/to JSON-API.
-func UpdateObject(w http.ResponseWriter, r *http.Request, opts interface{}, updater func(opts interface{}) (interface{}, error)) {
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		ErrUnprocessable(w, err)
-		return
-	}
-
-	obj, err := updater(opts)
-	if err != nil {
-		ErrNotFound(w)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, obj); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	return nil
 }
 
 func SanitizeListOptions(o *tfe.ListOptions) {
@@ -96,55 +35,42 @@ func SanitizeListOptions(o *tfe.ListOptions) {
 	}
 }
 
-type ErrOption func(*jsonapi.ErrorObject)
-
-func WithDetail(detail string) ErrOption {
-	return func(err *jsonapi.ErrorObject) {
-		err.Detail = detail
+func WithCode(code int) func(w http.ResponseWriter) {
+	return func(w http.ResponseWriter) {
+		w.WriteHeader(code)
 	}
 }
 
-func ErrNotFound(w http.ResponseWriter, opts ...ErrOption) {
-	err := &jsonapi.ErrorObject{
-		Status: "404",
-		Title:  "not found",
-	}
+// Write an HTTP response with a JSON-API marshalled payload.
+func WriteResponse(w http.ResponseWriter, r *http.Request, obj interface{}, opts ...func(http.ResponseWriter)) {
+	w.Header().Set("Content-type", jsonapi.MediaType)
 
 	for _, o := range opts {
-		o(err)
+		o(w)
 	}
 
-	w.WriteHeader(http.StatusNotFound)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
-		err,
-	})
+	// Only sideline relationships for responses to GET requests
+	var err error
+	if r.Method == "GET" {
+		err = MarshalPayload(w, r, obj)
+	} else {
+		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj)
+	}
+
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, err)
+	}
 }
 
-func WriteError(w http.ResponseWriter, code int) {
+func WriteError(w http.ResponseWriter, code int, err error) {
 	w.Header().Set("Content-type", jsonapi.MediaType)
 
 	w.WriteHeader(code)
 	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{
 		{
 			Status: strconv.Itoa(code),
+			Title:  http.StatusText(code),
+			Detail: err.Error(),
 		},
 	})
-}
-
-func ErrUnprocessable(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusUnprocessableEntity)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
-		Status: "422",
-		Title:  "unable to process payload",
-		Detail: err.Error(),
-	}})
-}
-
-func ErrServerFailure(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
-	jsonapi.MarshalErrors(w, []*jsonapi.ErrorObject{{
-		Status: "500",
-		Title:  "internal server failure",
-		Detail: err.Error(),
-	}})
 }

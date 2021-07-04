@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -11,65 +10,80 @@ import (
 
 func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts tfe.OrganizationListOptions
-	if err := decoder.Decode(&opts, r.URL.Query()); err != nil {
-		ErrUnprocessable(w, fmt.Errorf("unable to decode query string: %w", err))
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	SanitizeListOptions(&opts.ListOptions)
 
-	ListObjects(w, r, func() (interface{}, error) {
-		return h.OrganizationService.ListOrganizations(opts)
-	})
+	obj, err := h.OrganizationService.ListOrganizations(opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	GetObject(w, r, func() (interface{}, error) {
-		return h.OrganizationService.GetOrganization(vars["name"])
-	})
+	obj, err := h.OrganizationService.GetOrganization(vars["name"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := tfe.OrganizationCreateOptions{}
 
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	if err := opts.Valid(); err != nil {
-		ErrUnprocessable(w, err)
+		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	org, err := h.OrganizationService.CreateOrganization(&opts)
+	obj, err := h.OrganizationService.CreateOrganization(&opts)
 	if err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, org); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
 }
 
 func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	UpdateObject(w, r, &tfe.OrganizationUpdateOptions{}, func(opts interface{}) (interface{}, error) {
-		return h.OrganizationService.UpdateOrganization(name, opts.(*tfe.OrganizationUpdateOptions))
-	})
+	opts := tfe.OrganizationUpdateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	obj, err := h.OrganizationService.UpdateOrganization(name, &opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
 	if err := h.OrganizationService.DeleteOrganization(name); err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
@@ -79,15 +93,11 @@ func (h *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	entitlements, err := h.OrganizationService.GetEntitlements(name)
+	obj, err := h.OrganizationService.GetEntitlements(name)
 	if err != nil {
-		ErrNotFound(w)
+		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-type", jsonapi.MediaType)
-	if err := jsonapi.MarshalPayloadWithoutIncluded(w, entitlements); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	WriteResponse(w, r, obj)
 }
