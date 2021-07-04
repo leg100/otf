@@ -4,7 +4,6 @@ import (
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var _ ots.OrganizationService = (*OrganizationService)(nil)
@@ -30,6 +29,18 @@ func NewOrganizationService(db *gorm.DB) *OrganizationService {
 
 	return &OrganizationService{
 		DB: db,
+	}
+}
+
+func NewOrganizationListFromModels(models []OrganizationModel, opts tfe.ListOptions, totalCount int) *tfe.OrganizationList {
+	var items []*tfe.Organization
+	for _, m := range models {
+		items = append(items, NewOrganizationFromModel(&m))
+	}
+
+	return &tfe.OrganizationList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts, totalCount),
 	}
 }
 
@@ -130,19 +141,11 @@ func (s OrganizationService) ListOrganizations(opts tfe.OrganizationListOptions)
 		return nil, result.Error
 	}
 
-	if result := s.DB.Preload(clause.Associations).Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := s.DB.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.Organization
-	for _, m := range models {
-		items = append(items, NewOrganizationFromModel(&m))
-	}
-
-	return &tfe.OrganizationList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewOrganizationListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, error) {

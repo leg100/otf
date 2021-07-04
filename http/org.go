@@ -16,8 +16,6 @@ func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SanitizeListOptions(&opts.ListOptions)
-
 	obj, err := h.OrganizationService.ListOrganizations(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)

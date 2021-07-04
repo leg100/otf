@@ -40,6 +40,18 @@ func NewConfigurationVersionService(db *gorm.DB) *ConfigurationVersionService {
 	}
 }
 
+func NewConfigurationVersionListFromModels(models []ConfigurationVersionModel, opts tfe.ListOptions, totalCount int) *tfe.ConfigurationVersionList {
+	var items []*tfe.ConfigurationVersion
+	for _, m := range models {
+		items = append(items, NewConfigurationVersionFromModel(&m))
+	}
+
+	return &tfe.ConfigurationVersionList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts, totalCount),
+	}
+}
+
 func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *tfe.ConfigurationVersion {
 	return &tfe.ConfigurationVersion{
 		ID:            model.ExternalID,
@@ -93,19 +105,11 @@ func (s ConfigurationVersionService) ListConfigurationVersions(opts tfe.Configur
 		return nil, result.Error
 	}
 
-	if result := s.DB.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := s.DB.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.ConfigurationVersion
-	for _, m := range models {
-		items = append(items, NewConfigurationVersionFromModel(&m))
-	}
-
-	return &tfe.ConfigurationVersionList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewConfigurationVersionListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s ConfigurationVersionService) GetConfigurationVersion(id string) (*tfe.ConfigurationVersion, error) {

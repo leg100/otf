@@ -63,8 +63,6 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SanitizeListOptions(&opts.ListOptions)
-
 	obj, err := s.RunService.ListRuns(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)

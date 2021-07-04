@@ -15,8 +15,6 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SanitizeListOptions(&opts.ListOptions)
-
 	obj, err := s.StateVersionService.ListStateVersions(*opts.Organization, *opts.Workspace, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)

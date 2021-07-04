@@ -39,6 +39,18 @@ func NewStateVersionService(db *gorm.DB) *StateVersionService {
 	}
 }
 
+func NewStateVersionListFromModels(models []StateVersionModel, opts tfe.ListOptions, totalCount int) *tfe.StateVersionList {
+	var items []*tfe.StateVersion
+	for _, m := range models {
+		items = append(items, NewStateVersionFromModel(&m))
+	}
+
+	return &tfe.StateVersionList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts, totalCount),
+	}
+}
+
 func NewStateVersionFromModel(model *StateVersionModel) *tfe.StateVersion {
 	return &tfe.StateVersion{
 		ID:          model.ExternalID,
@@ -102,27 +114,17 @@ func (s StateVersionService) ListStateVersions(orgName, workspaceName string, op
 		return nil, err
 	}
 
-	query := s.DB.
-		Preload(clause.Associations).
-		Where("workspace_id = ?", workspace.ID)
+	query := s.DB.Where("workspace_id = ?", workspace.ID)
 
 	if result := query.Model(&models).Count(&count); result.Error != nil {
 		return nil, result.Error
 	}
 
-	if result := query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.StateVersion
-	for _, m := range models {
-		items = append(items, NewStateVersionFromModel(&m))
-	}
-
-	return &tfe.StateVersionList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewStateVersionListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s StateVersionService) GetStateVersion(id string) (*tfe.StateVersion, error) {

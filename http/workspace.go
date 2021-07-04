@@ -18,8 +18,6 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SanitizeListOptions(&opts.ListOptions)
-
 	obj, err := h.WorkspaceService.ListWorkspaces(vars["org"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)

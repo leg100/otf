@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 )
 
@@ -21,18 +20,6 @@ func DecodeQuery(opts interface{}, query url.Values) error {
 		return fmt.Errorf("unable to decode query string: %w", err)
 	}
 	return nil
-}
-
-func SanitizeListOptions(o *tfe.ListOptions) {
-	if o.PageNumber <= 0 {
-		o.PageNumber = DefaultPageNumber
-	}
-
-	if o.PageSize <= 0 {
-		o.PageSize = DefaultPageSize
-	} else if o.PageSize > 100 {
-		o.PageSize = MaxPageSize
-	}
 }
 
 func WithCode(code int) func(w http.ResponseWriter) {

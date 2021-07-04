@@ -50,6 +50,18 @@ func NewWorkspaceService(db *gorm.DB) *WorkspaceService {
 	}
 }
 
+func NewWorkspaceListFromModels(models []WorkspaceModel, opts tfe.ListOptions, totalCount int) *tfe.WorkspaceList {
+	var items []*tfe.Workspace
+	for _, m := range models {
+		items = append(items, NewWorkspaceFromModel(&m))
+	}
+
+	return &tfe.WorkspaceList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts, totalCount),
+	}
+}
+
 func NewWorkspaceFromModel(model *WorkspaceModel) *tfe.Workspace {
 	return &tfe.Workspace{
 		Name: model.Name,
@@ -175,7 +187,7 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts tfe.WorkspaceListO
 		return nil, err
 	}
 
-	query := s.DB.Preload(clause.Associations).Where("organization_id = ?", org.ID)
+	query := s.DB.Where("organization_id = ?", org.ID)
 
 	if opts.Search != nil {
 		query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Search))
@@ -185,19 +197,11 @@ func (s WorkspaceService) ListWorkspaces(orgName string, opts tfe.WorkspaceListO
 		return nil, result.Error
 	}
 
-	if result := query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.Workspace
-	for _, m := range models {
-		items = append(items, NewWorkspaceFromModel(&m))
-	}
-
-	return &tfe.WorkspaceList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewWorkspaceListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s WorkspaceService) GetWorkspace(name, orgName string) (*tfe.Workspace, error) {

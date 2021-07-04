@@ -55,6 +55,18 @@ func NewRunService(db *gorm.DB) *RunService {
 	}
 }
 
+func NewRunListFromModels(models []RunModel, opts tfe.ListOptions, totalCount int) *tfe.RunList {
+	var items []*tfe.Run
+	for _, m := range models {
+		items = append(items, NewRunFromModel(&m))
+	}
+
+	return &tfe.RunList{
+		Items:      items,
+		Pagination: ots.NewPagination(opts, totalCount),
+	}
+}
+
 func NewRunFromModel(model *RunModel) *tfe.Run {
 	return &tfe.Run{
 		ID:                     model.ExternalID,
@@ -186,23 +198,19 @@ func (s RunService) ListRuns(workspaceID string, opts tfe.RunListOptions) (*tfe.
 
 	query := s.DB.Preload(clause.Associations).Where("workspace_id = ?", ws.ID)
 
-	if result := query.Model(&models).Count(&count); result.Error != nil {
+	if result := query.Model(models).Count(&count); result.Error != nil {
 		return nil, result.Error
 	}
 
-	if result := query.Limit(opts.PageSize).Offset((opts.PageNumber - 1) * opts.PageSize).Find(&models); result.Error != nil {
+	if result := query.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 
-	var items []*tfe.Run
-	for _, m := range models {
-		items = append(items, NewRunFromModel(&m))
+	if err != nil {
+		return nil, err
 	}
 
-	return &tfe.RunList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	return NewRunListFromModels(models, opts.ListOptions, int(count)), nil
 }
 
 func (s RunService) GetRun(id string) (*tfe.Run, error) {
