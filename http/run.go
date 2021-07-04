@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
+	"github.com/leg100/ots"
 )
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +67,12 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.DiscardRun(vars["id"], opts); err != nil {
-		ErrNotFound(w)
+	err := s.RunService.DiscardRun(vars["id"], opts)
+	if err == ots.ErrRunDiscardNotAllowed {
+		WriteError(w, http.StatusConflict)
+		return
+	} else if err != nil {
+		WriteError(w, http.StatusNotFound)
 		return
 	}
 
@@ -84,8 +89,12 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.CancelRun(vars["id"], opts); err != nil {
-		ErrNotFound(w)
+	err := s.RunService.CancelRun(vars["id"], opts)
+	if err == ots.ErrRunCancelNotAllowed {
+		WriteError(w, http.StatusConflict)
+		return
+	} else if err != nil {
+		WriteError(w, http.StatusNotFound)
 		return
 	}
 
@@ -102,8 +111,12 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.ForceCancelRun(vars["id"], opts); err != nil {
-		ErrNotFound(w)
+	err := s.RunService.ForceCancelRun(vars["id"], opts)
+	if err == ots.ErrRunForceCancelNotAllowed {
+		WriteError(w, http.StatusConflict)
+		return
+	} else if err != nil {
+		WriteError(w, http.StatusNotFound)
 		return
 	}
 
