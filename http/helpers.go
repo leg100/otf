@@ -9,12 +9,6 @@ import (
 	"github.com/leg100/jsonapi"
 )
 
-const (
-	DefaultPageNumber = 1
-	DefaultPageSize   = 20
-	MaxPageSize       = 100
-)
-
 func DecodeQuery(opts interface{}, query url.Values) error {
 	if err := decoder.Decode(opts, query); err != nil {
 		return fmt.Errorf("unable to decode query string: %w", err)
