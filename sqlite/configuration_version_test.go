@@ -50,7 +50,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	// List
 
-	cvs, err := svc.ListConfigurationVersions(tfe.ConfigurationVersionListOptions{})
+	cvs, err := svc.ListConfigurationVersions(ws.ID, tfe.ConfigurationVersionListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(cvs.Items))

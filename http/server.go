@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/schema"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
 	"github.com/urfave/negroni"
@@ -20,9 +19,6 @@ const (
 
 	jsonApplication = "application/json"
 )
-
-// Query schema decoder, caches structs, and safe for sharing
-var decoder = schema.NewDecoder()
 
 // The HTTP/S server
 type Server struct {

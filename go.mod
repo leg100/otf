@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
-	github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913
+	github.com/leg100/go-tfe v0.17.1-0.20210705093717-194f976c0090
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/spf13/cobra v1.1.3

@@ -6,6 +6,7 @@ import (
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
@@ -17,7 +18,6 @@ type ConfigurationVersionModel struct {
 	AutoQueueRuns bool
 	Error         string
 	ErrorMessage  string
-	Source        tfe.ConfigurationSource
 	Speculative   bool
 	Status        tfe.ConfigurationStatus
 	UploadURL     string
@@ -58,7 +58,7 @@ func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *tfe.Con
 		AutoQueueRuns: model.AutoQueueRuns,
 		Error:         model.Error,
 		ErrorMessage:  model.ErrorMessage,
-		Source:        model.Source,
+		Source:        ots.DefaultConfigurationSource,
 		Speculative:   model.Speculative,
 		Status:        model.Status,
 		UploadURL:     fmt.Sprintf("/configuration-versions/%s/upload", model.ExternalID),
@@ -97,15 +97,22 @@ func (s ConfigurationVersionService) CreateConfigurationVersion(workspaceID stri
 	return NewConfigurationVersionFromModel(&model), nil
 }
 
-func (s ConfigurationVersionService) ListConfigurationVersions(opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error) {
+func (s ConfigurationVersionService) ListConfigurationVersions(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error) {
 	var models []ConfigurationVersionModel
 	var count int64
 
-	if result := s.DB.Table("configuration_versions").Count(&count); result.Error != nil {
+	ws, err := getWorkspaceByID(s.DB, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	query := s.DB.Where("workspace_id = ?", ws.ID)
+
+	if result := query.Table("configuration_versions").Count(&count); result.Error != nil {
 		return nil, result.Error
 	}
 
-	if result := s.DB.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
+	if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
 		return nil, result.Error
 	}
 

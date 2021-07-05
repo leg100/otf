@@ -10,14 +10,15 @@ import (
 )
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
-	var opts tfe.ConfigurationVersionListOptions
+	vars := mux.Vars(r)
 
+	var opts tfe.ConfigurationVersionListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.ConfigurationVersionService.ListConfigurationVersions(opts)
+	obj, err := s.ConfigurationVersionService.ListConfigurationVersions(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

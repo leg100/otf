@@ -7,13 +7,14 @@ import (
 )
 
 const (
-	DefaultAutoQueueRuns = true
+	DefaultAutoQueueRuns       = true
+	DefaultConfigurationSource = "tfe-api"
 )
 
 type ConfigurationVersionService interface {
 	CreateConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*tfe.ConfigurationVersion, error)
 	GetConfigurationVersion(id string) (*tfe.ConfigurationVersion, error)
-	ListConfigurationVersions(opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error)
+	ListConfigurationVersions(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error)
 	UploadConfigurationVersion(id string, payload []byte) error
 }
 

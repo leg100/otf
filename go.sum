@@ -133,6 +133,8 @@ github.com/leg100/go-tfe v0.17.1-0.20210703102129-1c98fb1be3cd h1:vQLNKpLyjecKjL
 github.com/leg100/go-tfe v0.17.1-0.20210703102129-1c98fb1be3cd/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
 github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913 h1:JKF27GfrzDRnHn5fSOZd0wq9fFgkouNC2UroNh9z3yM=
 github.com/leg100/go-tfe v0.17.1-0.20210703184046-dc4eef41e913/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
+github.com/leg100/go-tfe v0.17.1-0.20210705093717-194f976c0090 h1:KvjF9ThsQlGzJ8/3/1nU3MvkSkI8zusFjXPsv7EhnDM=
+github.com/leg100/go-tfe v0.17.1-0.20210705093717-194f976c0090/go.mod h1:z+bE4pvhXbeWvUujs99cqQzWjqGFtwPBqLCwwQk/rOY=
 github.com/leg100/jsonapi v1.0.1-0.20210702195956-33ced97bb77e h1:QEXgXy/uDx3uxMzL9BYAhCxbkBXbn3xLWFlN4AC6S6Q=
 github.com/leg100/jsonapi v1.0.1-0.20210702195956-33ced97bb77e/go.mod h1:bxfK4GybcsXRZYxs4FWVlOe3vK5MN3midIRDqJxVoH0=
 github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f h1:B6cjxBElIm1uvJj0go33EfQnkW0mvmVaHVVsXn81od8=
