@@ -1,311 +1,135 @@
 package sqlite
 
 import (
-	"log"
-	"strings"
-	"time"
-
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.RunService = (*RunService)(nil)
+var _ ots.RunStore = (*RunDB)(nil)
 
-type RunModel struct {
-	gorm.Model
-
-	ExternalID string
-	Refresh    bool
-	Message    string
-	Status     tfe.RunStatus
-
-	ReplaceAddrs string
-	TargetAddrs  string
-
-	ForceCancelAvailableAt time.Time
-
-	tfe.RunActions          `gorm:"embedded;embeddedPrefix:action_"`
-	tfe.RunPermissions      `gorm:"embedded;embeddedPrefix:permission_"`
-	tfe.RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
-
-	WorkspaceID uint
-	Workspace   WorkspaceModel
-
-	ConfigurationVersionID uint
-	ConfigurationVersion   ConfigurationVersionModel
-
-	PlanID uint
-	Plan   PlanModel
-
-	ApplyID uint
-	Apply   ApplyModel
-}
-
-type RunService struct {
+type RunDB struct {
 	*gorm.DB
 }
 
-func NewRunService(db *gorm.DB) *RunService {
-	db.AutoMigrate(&RunModel{})
+func NewRunDB(db *gorm.DB) *RunDB {
+	db.AutoMigrate(&ots.Run{}, &ots.Apply{}, &ots.Plan{})
 
-	return &RunService{
+	return &RunDB{
 		DB: db,
 	}
 }
 
-func NewRunListFromModels(models []RunModel, opts tfe.ListOptions, totalCount int) *tfe.RunList {
-	var items []*tfe.Run
-	for _, m := range models {
-		items = append(items, NewRunFromModel(&m))
-	}
-
-	return &tfe.RunList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts, totalCount),
-	}
-}
-
-func NewRunFromModel(model *RunModel) *tfe.Run {
-	return &tfe.Run{
-		ID:                     model.ExternalID,
-		Refresh:                model.Refresh,
-		Message:                model.Message,
-		ReplaceAddrs:           strings.Split(model.ReplaceAddrs, ","),
-		TargetAddrs:            strings.Split(model.TargetAddrs, ","),
-		ForceCancelAvailableAt: model.ForceCancelAvailableAt,
-		Status:                 model.Status,
-		Actions:                &model.RunActions,
-		Permissions:            &model.RunPermissions,
-		StatusTimestamps:       &model.RunStatusTimestamps,
-		Plan:                   NewPlanFromModel(&model.Plan),
-		Apply:                  NewApplyFromModel(&model.Apply),
-		CreatedBy: &tfe.User{
-			ID:       ots.DefaultUserID,
-			Username: ots.DefaultUsername,
-		},
-		Workspace:            NewWorkspaceFromModel(&model.Workspace),
-		ConfigurationVersion: NewConfigurationVersionFromModel(&model.ConfigurationVersion),
-	}
-}
-
-func (RunModel) TableName() string {
-	return "runs"
-}
-
-func (s RunService) CreateRun(opts *tfe.RunCreateOptions) (*tfe.Run, error) {
-	ws, err := getWorkspaceByID(s.DB, opts.Workspace.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// If CV ID not provided then get workspace's latest CV
-	var cv *ConfigurationVersionModel
-	if opts.ConfigurationVersion != nil {
-		cv, err = getConfigurationVersionByID(s.DB, opts.ConfigurationVersion.ID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		cv, err = getMostRecentConfigurationVersion(s.DB, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// TODO: wrap in TX
-	plan, err := createPlan(s.DB)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: wrap in TX
-	apply, err := createApply(s.DB)
-	if err != nil {
-		return nil, err
-	}
-
-	model := RunModel{
-		ExternalID:   ots.NewRunID(),
-		Refresh:      ots.DefaultRefresh,
-		ReplaceAddrs: strings.Join(opts.ReplaceAddrs, ","),
-		TargetAddrs:  strings.Join(opts.TargetAddrs, ","),
-		RunPermissions: tfe.RunPermissions{
-			CanApply:       true,
-			CanCancel:      true,
-			CanDiscard:     true,
-			CanForceCancel: true,
-		},
-		RunStatusTimestamps: tfe.RunStatusTimestamps{
-			PlanQueueableAt: time.Now(),
-		},
-		// Simulate run having been immediately planned
-		Status:                 tfe.RunPlanned,
-		ConfigurationVersionID: cv.ID,
-		ConfigurationVersion:   *cv,
-		WorkspaceID:            ws.ID,
-		Plan:                   *plan,
-		Apply:                  *apply,
-	}
-
-	if opts.Message != nil {
-		model.Message = *opts.Message
-	}
-
-	if opts.Refresh != nil {
-		model.Refresh = *opts.Refresh
-	}
-
-	if result := s.DB.Create(&model); result.Error != nil {
+// CreateRun persists a Run to the DB.
+func (db RunDB) Create(run *ots.Run) (*ots.Run, error) {
+	if result := db.Omit("Workspace", "ConfigurationVersion").Create(run); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewRunFromModel(&model), nil
+	return run, nil
 }
 
-func (s RunService) ApplyRun(id string, opts *tfe.RunApplyOptions) error {
-	model, err := getRunByID(s.DB, id)
-	if err != nil {
-		return err
-	}
+// UpdateRun persists an updated Run to the DB. The existing run is fetched from
+// the DB, the supplied func is invoked on the run, and the updated run is
+// persisted back to the DB. The returned Run includes any changes, including a
+// new UpdatedAt value.
+func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
+	var run *ots.Run
 
-	model.Status = tfe.RunApplying
-	if result := s.DB.Save(&model); result.Error != nil {
-		return err
-	}
-
-	// Simulate run being applied...
-	go func() {
-		time.Sleep(time.Second)
-		model.Status = tfe.RunApplied
-		if result := s.DB.Save(&model); result.Error != nil {
-			log.Printf("unable to update status on run: %s", result.Error.Error())
+	err := db.Transaction(func(tx *gorm.DB) (err error) {
+		// Get existing model obj from DB
+		run, err = getRun(tx, ots.RunGetOptions{ID: &id})
+		if err != nil {
+			return err
 		}
-	}()
 
-	return nil
+		// Update obj using client-supplied fn
+		if err := fn(run); err != nil {
+			return err
+		}
+
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(run); result.Error != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return run, nil
 }
 
-func (s RunService) ListRuns(workspaceID string, opts tfe.RunListOptions) (*tfe.RunList, error) {
-	var models []RunModel
+func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
+	var models []ots.Run
 	var count int64
 
-	ws, err := getWorkspaceByID(s.DB, workspaceID)
+	err := db.Transaction(func(tx *gorm.DB) error {
+		query := tx
+
+		// Optionally filter by workspace
+		if opts.WorkspaceID != nil {
+			ws, err := getWorkspace(tx, ots.WorkspaceSpecifier{ID: opts.WorkspaceID})
+			if err != nil {
+				return err
+			}
+
+			query = query.Where("workspace_id = ?", ws.InternalID)
+		}
+
+		if result := query.Model(&models).Count(&count); result.Error != nil {
+			return result.Error
+		}
+
+		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB.Preload(clause.Associations).Where("workspace_id = ?", ws.ID)
+	return &ots.RunList{
+		Items:      runListToPointerList(models),
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
+}
 
-	if result := query.Model(models).Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := query.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-		return nil, result.Error
-	}
-
+func (db RunDB) Get(opts ots.RunGetOptions) (*ots.Run, error) {
+	run, err := getRun(db.DB, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	return NewRunListFromModels(models, opts.ListOptions, int(count)), nil
+	return run, nil
 }
 
-func (s RunService) GetRun(id string) (*tfe.Run, error) {
-	model, err := getRunByID(s.DB, id)
-	if err != nil {
-		return nil, err
-	}
-	return NewRunFromModel(model), nil
-}
+func getRun(db *gorm.DB, opts ots.RunGetOptions) (*ots.Run, error) {
+	var model ots.Run
 
-func (s RunService) GetQueuedRuns(opts tfe.RunListOptions) (*tfe.RunList, error) {
-	var models []RunModel
-	var count int64
+	query := db.Preload(clause.Associations)
 
-	query := s.DB.Where("status = ?", tfe.RunPlanQueued)
-
-	if result := query.Model(models).Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := query.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewRunListFromModels(models, opts.ListOptions, int(count)), nil
-}
-
-func (s RunService) DiscardRun(id string, opts *tfe.RunDiscardOptions) error {
-	model, err := getRunByID(s.DB, id)
-	if err != nil {
-		return err
-	}
-
-	switch tfe.RunStatus(model.Status) {
-	case tfe.RunPending, tfe.RunPolicyChecked, tfe.RunPolicyOverride:
+	switch {
+	case opts.ID != nil:
+		query = query.Where("external_id = ?", opts.ID)
+	case opts.ApplyID != nil:
+		query = query.Joins("JOIN applies ON applies.id = runs.apply_id").Where("applies.external_id = ?", opts.ApplyID)
 	default:
-		return ots.ErrRunDiscardNotAllowed
+		return nil, ots.ErrInvalidRunGetOptions
 	}
 
-	model.Status = tfe.RunDiscarded
-	if result := s.DB.Save(&model); result.Error != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s RunService) CancelRun(id string, opts *tfe.RunCancelOptions) error {
-	model, err := getRunByID(s.DB, id)
-	if err != nil {
-		return err
-	}
-
-	switch tfe.RunStatus(model.Status) {
-	case tfe.RunPlanQueued, tfe.RunPending, tfe.RunPlanning, tfe.RunApplying:
-	default:
-		return ots.ErrRunCancelNotAllowed
-	}
-
-	model.ForceCancelAvailableAt = time.Now()
-	model.Status = tfe.RunCanceled
-
-	if result := s.DB.Save(&model); result.Error != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s RunService) ForceCancelRun(id string, opts *tfe.RunForceCancelOptions) error {
-	model, err := getRunByID(s.DB, id)
-	if err != nil {
-		return err
-	}
-
-	switch tfe.RunStatus(model.Status) {
-	case tfe.RunPlanning, tfe.RunApplying:
-	default:
-		return ots.ErrRunForceCancelNotAllowed
-	}
-
-	model.Status = tfe.RunCanceled
-	if result := s.DB.Save(&model); result.Error != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getRunByID(db *gorm.DB, id string) (*RunModel, error) {
-	var model RunModel
-
-	if result := db.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
+	if result := query.Find(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
 	return &model, nil
+}
+
+func runListToPointerList(rl []ots.Run) (pl []*ots.Run) {
+	for i := range rl {
+		pl = append(pl, &rl[i])
+	}
+	return
 }

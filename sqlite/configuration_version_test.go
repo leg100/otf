@@ -14,43 +14,56 @@ func TestConfigurationVersion(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"))
 	require.NoError(t, err)
 
-	svc := NewConfigurationVersionService(db)
-	wsSvc := NewWorkspaceService(db)
-	orgService := NewOrganizationService(db)
+	cvDB := NewConfigurationVersionDB(db)
+	wsDB := NewWorkspaceDB(db)
+	orgDB := NewOrganizationDB(db)
 
 	// Create 1 org, 1 ws, 1 cv
 
-	_, err = orgService.CreateOrganization(&tfe.OrganizationCreateOptions{
-		Name:  ots.String("automatize"),
-		Email: ots.String("sysadmin@automatize.co.uk"),
+	org, err := orgDB.Create(&ots.Organization{
+		ExternalID: "org-123",
+		Name:       "automatize",
+		Email:      "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
-	ws, err := wsSvc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
-		Name: ots.String("dev"),
+	ws, err := wsDB.Create(&ots.Workspace{
+		Name:           "dev",
+		ExternalID:     "ws-123",
+		OrganizationID: org.InternalID,
+		Organization:   org,
 	})
 	require.NoError(t, err)
 
-	cv, err := svc.CreateConfigurationVersion(ws.ID, &tfe.ConfigurationVersionCreateOptions{})
+	cv, err := cvDB.Create(&ots.ConfigurationVersion{
+		ExternalID:  "cv-123",
+		Status:      tfe.ConfigurationPending,
+		WorkspaceID: ws.InternalID,
+		Workspace:   ws,
+	})
 	require.NoError(t, err)
 
 	require.Equal(t, tfe.ConfigurationPending, cv.Status)
 
-	// Upload
+	// Update
 
-	err = svc.UploadConfigurationVersion(cv.ID, []byte("testdata"))
+	cv, err = cvDB.Update(cv.ExternalID, func(cv *ots.ConfigurationVersion) error {
+		cv.Configuration = []byte("testdata")
+		cv.Status = tfe.ConfigurationUploaded
+		return nil
+	})
 	require.NoError(t, err)
 
 	// Get
 
-	cv, err = svc.GetConfigurationVersion(cv.ID)
+	cv, err = cvDB.Get(ots.ConfigurationVersionGetOptions{ID: &cv.ExternalID})
 	require.NoError(t, err)
 
 	require.Equal(t, tfe.ConfigurationUploaded, cv.Status)
 
 	// List
 
-	cvs, err := svc.ListConfigurationVersions(ws.ID, tfe.ConfigurationVersionListOptions{})
+	cvs, err := cvDB.List(ws.ExternalID, ots.ConfigurationVersionListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(cvs.Items))

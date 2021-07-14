@@ -1,177 +1,134 @@
 package sqlite
 
 import (
-	"fmt"
-
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
+var _ ots.ConfigurationVersionRepository = (*ConfigurationVersionDB)(nil)
 
-type ConfigurationVersionModel struct {
-	gorm.Model
-
-	ExternalID    string
-	AutoQueueRuns bool
-	Error         string
-	ErrorMessage  string
-	Speculative   bool
-	Status        tfe.ConfigurationStatus
-	UploadURL     string
-
-	Configuration []byte
-
-	WorkspaceID uint
-	Workspace   WorkspaceModel
-}
-
-type ConfigurationVersionService struct {
+type ConfigurationVersionDB struct {
 	*gorm.DB
 }
 
-func NewConfigurationVersionService(db *gorm.DB) *ConfigurationVersionService {
-	db.AutoMigrate(&ConfigurationVersionModel{})
+func NewConfigurationVersionDB(db *gorm.DB) *ConfigurationVersionDB {
+	db.AutoMigrate(&ots.ConfigurationVersion{})
 
-	return &ConfigurationVersionService{
+	return &ConfigurationVersionDB{
 		DB: db,
 	}
 }
 
-func NewConfigurationVersionListFromModels(models []ConfigurationVersionModel, opts tfe.ListOptions, totalCount int) *tfe.ConfigurationVersionList {
-	var items []*tfe.ConfigurationVersion
-	for _, m := range models {
-		items = append(items, NewConfigurationVersionFromModel(&m))
+func (db ConfigurationVersionDB) Create(cv *ots.ConfigurationVersion) (*ots.ConfigurationVersion, error) {
+	if result := db.DB.Create(cv); result.Error != nil {
+		return nil, result.Error
 	}
 
-	return &tfe.ConfigurationVersionList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts, totalCount),
-	}
+	return cv, nil
 }
 
-func NewConfigurationVersionFromModel(model *ConfigurationVersionModel) *tfe.ConfigurationVersion {
-	return &tfe.ConfigurationVersion{
-		ID:            model.ExternalID,
-		AutoQueueRuns: model.AutoQueueRuns,
-		Error:         model.Error,
-		ErrorMessage:  model.ErrorMessage,
-		Source:        ots.DefaultConfigurationSource,
-		Speculative:   model.Speculative,
-		Status:        model.Status,
-		UploadURL:     fmt.Sprintf("/configuration-versions/%s/upload", model.ExternalID),
-	}
-}
+// Update persists an updated ConfigurationVersion to the DB. The existing run
+// is fetched from the DB, the supplied func is invoked on the run, and the
+// updated run is persisted back to the DB. The returned ConfigurationVersion
+// includes any changes, including a new UpdatedAt value.
+func (db ConfigurationVersionDB) Update(id string, fn func(*ots.ConfigurationVersion) error) (*ots.ConfigurationVersion, error) {
+	var cv *ots.ConfigurationVersion
 
-func (ConfigurationVersionModel) TableName() string {
-	return "configuration_versions"
-}
+	err := db.Transaction(func(tx *gorm.DB) (err error) {
+		// Get existing model obj from DB
+		cv, err = getConfigurationVersion(tx, ots.ConfigurationVersionGetOptions{ID: &id})
+		if err != nil {
+			return err
+		}
 
-func (s ConfigurationVersionService) CreateConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*tfe.ConfigurationVersion, error) {
-	ws, err := getWorkspaceByID(s.DB, workspaceID)
+		// Update domain obj using client-supplied fn
+		if err := fn(cv); err != nil {
+			return err
+		}
+
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(&cv); result.Error != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	model := ConfigurationVersionModel{
-		ExternalID:    ots.NewConfigurationVersionID(),
-		WorkspaceID:   ws.ID,
-		AutoQueueRuns: ots.DefaultAutoQueueRuns,
-		Status:        tfe.ConfigurationPending,
-	}
-
-	if opts.AutoQueueRuns != nil {
-		model.AutoQueueRuns = *opts.AutoQueueRuns
-	}
-
-	if opts.Speculative != nil {
-		model.Speculative = *opts.Speculative
-	}
-
-	if result := s.DB.Create(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewConfigurationVersionFromModel(&model), nil
+	return cv, nil
 }
 
-func (s ConfigurationVersionService) ListConfigurationVersions(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*tfe.ConfigurationVersionList, error) {
-	var models []ConfigurationVersionModel
+func (db ConfigurationVersionDB) List(workspaceID string, opts ots.ConfigurationVersionListOptions) (*ots.ConfigurationVersionList, error) {
+	var models []ots.ConfigurationVersion
 	var count int64
 
-	ws, err := getWorkspaceByID(s.DB, workspaceID)
+	err := db.Transaction(func(tx *gorm.DB) error {
+		ws, err := getWorkspace(tx, ots.WorkspaceSpecifier{ID: &workspaceID})
+		if err != nil {
+			return err
+		}
+
+		query := tx.Where("workspace_id = ?", ws.InternalID)
+
+		if result := query.Model(&models).Count(&count); result.Error != nil {
+			return result.Error
+		}
+
+		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB.Where("workspace_id = ?", ws.ID)
-
-	if result := query.Table("configuration_versions").Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewConfigurationVersionListFromModels(models, opts.ListOptions, int(count)), nil
+	return &ots.ConfigurationVersionList{
+		Items:      configurationVersionListToPointerList(models),
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
-func (s ConfigurationVersionService) GetConfigurationVersion(id string) (*tfe.ConfigurationVersion, error) {
-	model, err := getConfigurationVersionByID(s.DB, id)
+func (db ConfigurationVersionDB) Get(opts ots.ConfigurationVersionGetOptions) (*ots.ConfigurationVersion, error) {
+	cv, err := getConfigurationVersion(db.DB, opts)
 	if err != nil {
 		return nil, err
 	}
-	return NewConfigurationVersionFromModel(model), nil
+	return cv, nil
 }
 
-func (s ConfigurationVersionService) UploadConfigurationVersion(id string, configuration []byte) error {
-	var model ConfigurationVersionModel
+func getConfigurationVersion(db *gorm.DB, opts ots.ConfigurationVersionGetOptions) (*ots.ConfigurationVersion, error) {
+	var model ots.ConfigurationVersion
+	var query *gorm.DB
 
-	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return result.Error
+	switch {
+	case opts.ID != nil:
+		// Get config version by ID
+		query = db.Where("external_id = ?", *opts.ID)
+	case opts.WorkspaceID != nil:
+		// Get latest config version for given workspace
+		ws, err := getWorkspace(db, ots.WorkspaceSpecifier{ID: opts.WorkspaceID})
+		if err != nil {
+			return nil, err
+		}
+		query = db.Where("workspace_id = ?", ws.InternalID).Order("created_at desc")
+	default:
+		return nil, ots.ErrInvalidConfigurationVersionGetOptions
 	}
 
-	update := map[string]interface{}{
-		"configuration": configuration,
-		"status":        string(tfe.ConfigurationUploaded),
-	}
-
-	if result := s.DB.Model(&model).Updates(update); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-func (s ConfigurationVersionService) DownloadConfigurationVersion(id string) ([]byte, error) {
-	var model ConfigurationVersionModel
-
-	if result := s.DB.Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return model.Configuration, nil
-}
-
-func getConfigurationVersionByID(db *gorm.DB, id string) (*ConfigurationVersionModel, error) {
-	var model ConfigurationVersionModel
-
-	if result := db.Where("external_id = ?", id).First(&model); result.Error != nil {
+	if result := query.Preload(clause.Associations).First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
 	return &model, nil
 }
 
-func getMostRecentConfigurationVersion(db *gorm.DB, workspaceID uint) (*ConfigurationVersionModel, error) {
-	var model ConfigurationVersionModel
-
-	if result := db.Where("workspace_id = ?", workspaceID).Order("created_at desc").First(&model); result.Error != nil {
-		return nil, result.Error
+func configurationVersionListToPointerList(cvl []ots.ConfigurationVersion) (pl []*ots.ConfigurationVersion) {
+	for i := range cvl {
+		pl = append(pl, &cvl[i])
 	}
-
-	return &model, nil
+	return
 }

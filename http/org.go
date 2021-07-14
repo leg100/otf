@@ -8,35 +8,6 @@ import (
 	"github.com/leg100/jsonapi"
 )
 
-func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts tfe.OrganizationListOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	obj, err := h.OrganizationService.ListOrganizations(opts)
-	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	WriteResponse(w, r, obj)
-}
-
-func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	obj, err := h.OrganizationService.GetOrganization(vars["name"])
-	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	WriteResponse(w, r, obj)
-}
-
 func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := tfe.OrganizationCreateOptions{}
 
@@ -50,13 +21,42 @@ func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.OrganizationService.CreateOrganization(&opts)
+	obj, err := h.OrganizationService.Create(&opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+}
+
+func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	obj, err := h.OrganizationService.Get(vars["name"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
+}
+
+func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
+	var opts tfe.OrganizationListOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	obj, err := h.OrganizationService.List(opts)
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	WriteResponse(w, r, obj)
 }
 
 func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.OrganizationService.UpdateOrganization(name, &opts)
+	obj, err := h.OrganizationService.Update(name, &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -80,7 +80,7 @@ func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 func (h *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	if err := h.OrganizationService.DeleteOrganization(name); err != nil {
+	if err := h.OrganizationService.Delete(name); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

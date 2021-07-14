@@ -38,6 +38,18 @@ func TestPagination(t *testing.T) {
 				TotalPages:   6,
 			},
 		},
+		{
+			name:  "no results",
+			opts:  tfe.ListOptions{PageNumber: 1, PageSize: 20},
+			count: 0,
+			want: tfe.Pagination{
+				CurrentPage:  1,
+				PreviousPage: 1,
+				NextPage:     1,
+				TotalCount:   0,
+				TotalPages:   1,
+			},
+		},
 	}
 
 	for _, tt := range tests {

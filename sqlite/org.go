@@ -4,186 +4,117 @@ import (
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-var _ ots.OrganizationService = (*OrganizationService)(nil)
+var _ ots.OrganizationRepository = (*OrganizationDB)(nil)
 
-type OrganizationModel struct {
-	gorm.Model
-
-	Name                   string
-	ExternalID             string
-	Email                  string
-	CollaboratorAuthPolicy tfe.AuthPolicyType
-	CostEstimationEnabled  bool
-	SessionRemember        int
-	SessionTimeout         int
-}
-
-type OrganizationService struct {
+type OrganizationDB struct {
 	*gorm.DB
 }
 
-func NewOrganizationService(db *gorm.DB) *OrganizationService {
-	db.AutoMigrate(&OrganizationModel{})
+func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
+	db.AutoMigrate(&ots.Organization{})
 
-	return &OrganizationService{
+	return &OrganizationDB{
 		DB: db,
 	}
 }
 
-func NewOrganizationListFromModels(models []OrganizationModel, opts tfe.ListOptions, totalCount int) *tfe.OrganizationList {
-	var items []*tfe.Organization
-	for _, m := range models {
-		items = append(items, NewOrganizationFromModel(&m))
-	}
-
-	return &tfe.OrganizationList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts, totalCount),
-	}
-}
-
-func NewOrganizationFromModel(model *OrganizationModel) *tfe.Organization {
-	return &tfe.Organization{
-		Name:                   model.Name,
-		ExternalID:             model.ExternalID,
-		Email:                  model.Email,
-		Permissions:            &ots.DefaultOrganizationPermissions,
-		SessionTimeout:         model.SessionTimeout,
-		SessionRemember:        model.SessionRemember,
-		CollaboratorAuthPolicy: model.CollaboratorAuthPolicy,
-		CostEstimationEnabled:  model.CostEstimationEnabled,
-		CreatedAt:              model.CreatedAt,
-	}
-}
-
-func (OrganizationModel) TableName() string {
-	return "organizations"
-}
-
-func (s OrganizationService) CreateOrganization(opts *tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
-	org := OrganizationModel{
-		Name:                   *opts.Name,
-		Email:                  *opts.Email,
-		ExternalID:             ots.NewOrganizationID(),
-		SessionTimeout:         ots.DefaultSessionTimeout,
-		SessionRemember:        ots.DefaultSessionExpiration,
-		CollaboratorAuthPolicy: ots.DefaultCollaboratorAuthPolicy,
-		CostEstimationEnabled:  ots.DefaultCostEstimationEnabled,
-	}
-
-	if opts.SessionTimeout != nil {
-		org.SessionTimeout = *opts.SessionTimeout
-	}
-
-	if opts.SessionRemember != nil {
-		org.SessionRemember = *opts.SessionRemember
-	}
-
-	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
-	}
-
-	if opts.CostEstimationEnabled != nil {
-		org.CostEstimationEnabled = *opts.CostEstimationEnabled
-	}
-
-	if result := s.DB.Create(&org); result.Error != nil {
+// CreateOrganization persists a Organization to the DB.
+func (db OrganizationDB) Create(org *ots.Organization) (*ots.Organization, error) {
+	if result := db.DB.Create(org); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewOrganizationFromModel(&org), nil
+	return org, nil
 }
 
-func (s OrganizationService) UpdateOrganization(name string, opts *tfe.OrganizationUpdateOptions) (*tfe.Organization, error) {
-	org, err := getOrganizationByName(s.DB, name)
+// UpdateOrganization persists an updated Organization to the DB. The existing
+// org is fetched from the DB, the supplied func is invoked on the org, and the
+// updated org is persisted back to the DB.
+func (db OrganizationDB) Update(name string, fn func(*ots.Organization) error) (*ots.Organization, error) {
+	var org *ots.Organization
+
+	err := db.Transaction(func(tx *gorm.DB) (err error) {
+		// Get existing model obj from DB
+		org, err = getOrganization(tx, name)
+		if err != nil {
+			return err
+		}
+
+		// Update domain obj using client-supplied fn
+		if err := fn(org); err != nil {
+			return err
+		}
+
+		if result := tx.Save(org); result.Error != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if opts.Name != nil {
-		org.Name = *opts.Name
-	}
-
-	if opts.Email != nil {
-		org.Email = *opts.Email
-	}
-
-	if opts.SessionTimeout != nil {
-		org.SessionTimeout = *opts.SessionTimeout
-	}
-
-	if opts.SessionRemember != nil {
-		org.SessionRemember = *opts.SessionRemember
-	}
-
-	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
-	}
-
-	if opts.CostEstimationEnabled != nil {
-		org.CostEstimationEnabled = *opts.CostEstimationEnabled
-	}
-
-	if result := s.DB.Save(org); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewOrganizationFromModel(org), nil
+	return org, nil
 }
 
-func (s OrganizationService) ListOrganizations(opts tfe.OrganizationListOptions) (*tfe.OrganizationList, error) {
-	var models []OrganizationModel
+func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*ots.OrganizationList, error) {
 	var count int64
+	var orgs []ots.Organization
 
-	if result := s.DB.Table("organizations").Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if result := tx.Model(orgs).Count(&count); result.Error != nil {
+			return result.Error
+		}
 
-	if result := s.DB.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-		return nil, result.Error
-	}
+		if result := tx.Scopes(paginate(opts.ListOptions)).Find(&orgs); result.Error != nil {
+			return result.Error
+		}
 
-	return NewOrganizationListFromModels(models, opts.ListOptions, int(count)), nil
-}
-
-func (s OrganizationService) GetOrganization(name string) (*tfe.Organization, error) {
-	model, err := getOrganizationByName(s.DB, name)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return NewOrganizationFromModel(model), err
+
+	return &ots.OrganizationList{
+		Items:      orgListToPointerList(orgs),
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
-func (s OrganizationService) DeleteOrganization(name string) error {
-	var model OrganizationModel
-
-	if result := s.DB.Where("name = ?", name).First(&model); result.Error != nil {
-		return result.Error
+func (db OrganizationDB) Get(name string) (*ots.Organization, error) {
+	run, err := getOrganization(db.DB, name)
+	if err != nil {
+		return nil, err
 	}
+	return run, nil
+}
 
-	if result := s.DB.Delete(&model); result.Error != nil {
+func (db OrganizationDB) Delete(name string) error {
+	if result := db.Where("name = ?", name).Delete(&ots.Organization{}); result.Error != nil {
 		return result.Error
 	}
 
 	return nil
 }
 
-func (s OrganizationService) GetEntitlements(name string) (*tfe.Entitlements, error) {
-	model, err := getOrganizationByName(s.DB, name)
-	if err != nil {
-		return nil, err
-	}
-	return ots.DefaultEntitlements(model.ExternalID), nil
-}
+func getOrganization(db *gorm.DB, name string) (*ots.Organization, error) {
+	var model ots.Organization
 
-func getOrganizationByName(db *gorm.DB, name string) (*OrganizationModel, error) {
-	var model OrganizationModel
-
-	if result := db.Where("name = ?", name).First(&model); result.Error != nil {
+	if result := db.Preload(clause.Associations).Where("name = ?", name).First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
 	return &model, nil
+}
+
+func orgListToPointerList(orgs []ots.Organization) (pl []*ots.Organization) {
+	for i := range orgs {
+		pl = append(pl, &orgs[i])
+	}
+	return
 }

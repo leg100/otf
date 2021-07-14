@@ -16,7 +16,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.RunService.CreateRun(&opts)
+	obj, err := s.RunService.Create(&opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -25,27 +25,10 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
 }
 
-func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	opts := &tfe.RunApplyOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	if err := s.RunService.ApplyRun(vars["id"], opts); err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusAccepted)
-}
-
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.RunService.GetRun(vars["id"])
+	obj, err := s.RunService.Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -63,13 +46,30 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.RunService.ListRuns(vars["workspace_id"], opts)
+	obj, err := s.RunService.List(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
 	WriteResponse(w, r, obj)
+}
+
+func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	opts := &tfe.RunApplyOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.Apply(vars["id"], opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.DiscardRun(vars["id"], opts)
+	err := s.RunService.Discard(vars["id"], opts)
 	if err == ots.ErrRunDiscardNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -102,7 +102,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.CancelRun(vars["id"], opts)
+	err := s.RunService.Cancel(vars["id"], opts)
 	if err == ots.ErrRunCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -123,7 +123,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.ForceCancelRun(vars["id"], opts)
+	err := s.RunService.ForceCancel(vars["id"], opts)
 	if err == ots.ErrRunForceCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return

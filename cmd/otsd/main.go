@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
 	"github.com/spf13/cobra"
-	driver "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -55,21 +55,35 @@ func main() {
 		}
 	}
 
-	db, err := gorm.Open(driver.Open(DBPath), &gorm.Config{
+	db, err := sqlite.New(DBPath, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		panic(err.Error())
 	}
 
-	server.OrganizationService = sqlite.NewOrganizationService(db)
-	server.WorkspaceService = sqlite.NewWorkspaceService(db)
-	server.StateVersionService = sqlite.NewStateVersionService(db)
-	server.StateVersionOutputService = sqlite.NewStateVersionOutputService(db)
-	server.ConfigurationVersionService = sqlite.NewConfigurationVersionService(db)
-	server.RunService = sqlite.NewRunService(db)
-	server.PlanService = sqlite.NewPlanService(db)
-	server.ApplyService = sqlite.NewApplyService(db)
+	organizationStore := sqlite.NewOrganizationDB(db)
+	workspaceStore := sqlite.NewWorkspaceDB(db)
+	stateVersionStore := sqlite.NewStateVersionDB(db)
+	runStore := sqlite.NewRunDB(db)
+	configurationVersionStore := sqlite.NewConfigurationVersionDB(db)
+
+	server.OrganizationService = app.NewOrganizationService(organizationStore)
+	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService)
+	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService)
+	server.PlanService = app.NewPlanService(runStore)
+	server.ApplyService = app.NewApplyService(runStore)
+
+	// Run poller in background
+	// agent := agent.NewAgent(
+	// 	server.ConfigurationVersionService,
+	// 	server.StateVersionService,
+	// 	server.PlanService,
+	// 	server.RunService,
+	// )
+	// go agent.Poller(ctx)
 
 	if err := server.Open(); err != nil {
 		server.Close()

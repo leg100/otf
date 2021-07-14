@@ -1,170 +1,135 @@
 package sqlite
 
 import (
-	"encoding/base64"
-	"fmt"
-
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.StateVersionService = (*StateVersionService)(nil)
-
-type StateVersionModel struct {
-	gorm.Model
-
-	Serial     int64
-	ExternalID string
-	State      string
-
-	// State version belongs to a workspace
-	WorkspaceID uint
-	Workspace   WorkspaceModel
-
-	// State version has many outputs
-	StateVersionOutputs []StateVersionOutputModel `gorm:"foreignKey:StateVersionID"`
-}
+var _ ots.StateVersionStore = (*StateVersionService)(nil)
 
 type StateVersionService struct {
 	*gorm.DB
 }
 
-func NewStateVersionService(db *gorm.DB) *StateVersionService {
-	db.AutoMigrate(&StateVersionModel{})
+func NewStateVersionDB(db *gorm.DB) *StateVersionService {
+	db.AutoMigrate(&ots.StateVersion{}, &ots.StateVersionOutput{})
 
 	return &StateVersionService{
 		DB: db,
 	}
 }
 
-func NewStateVersionListFromModels(models []StateVersionModel, opts tfe.ListOptions, totalCount int) *tfe.StateVersionList {
-	var items []*tfe.StateVersion
-	for _, m := range models {
-		items = append(items, NewStateVersionFromModel(&m))
-	}
-
-	return &tfe.StateVersionList{
-		Items:      items,
-		Pagination: ots.NewPagination(opts, totalCount),
-	}
-}
-
-func NewStateVersionFromModel(model *StateVersionModel) *tfe.StateVersion {
-	return &tfe.StateVersion{
-		ID:          model.ExternalID,
-		Serial:      model.Serial,
-		DownloadURL: fmt.Sprintf("/state-versions/%s/download", model.ExternalID),
-		Outputs:     NewStateVersionOutputsFromModels(model.StateVersionOutputs),
-		CreatedAt:   model.CreatedAt,
-	}
-}
-
-func (StateVersionModel) TableName() string {
-	return "state_versions"
-}
-
-func (s StateVersionService) CreateStateVersion(workspaceID string, opts *tfe.StateVersionCreateOptions) (*tfe.StateVersion, error) {
-	workspace, err := getWorkspaceByID(s.DB, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	model := StateVersionModel{
-		Serial:      *opts.Serial,
-		ExternalID:  ots.NewStateVersionID(),
-		State:       *opts.State,
-		Workspace:   *workspace,
-		WorkspaceID: workspace.ID,
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
-	if err != nil {
-		return nil, err
-	}
-
-	state, err := ots.Parse(decoded)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range state.Outputs {
-		model.StateVersionOutputs = append(model.StateVersionOutputs, StateVersionOutputModel{
-			ExternalID: ots.NewStateVersionOutputID(),
-			Name:       k,
-			Type:       v.Type,
-			Value:      v.Value,
-		})
-	}
-
-	if result := s.DB.Omit("Workspaces").Create(&model); result.Error != nil {
+// CreateStateVersion persists a StateVersion to the DB.
+func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, error) {
+	if result := s.DB.Omit("Workspaces").Create(sv); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewStateVersionFromModel(&model), nil
+	return sv, nil
 }
 
-func (s StateVersionService) ListStateVersions(orgName, workspaceName string, opts tfe.StateVersionListOptions) (*tfe.StateVersionList, error) {
-	var models []StateVersionModel
+// UpdateStateVersion persists an updated StateVersion to the DB. The existing run is fetched from
+// the DB, the supplied func is invoked on the run, and the updated run is
+// persisted back to the DB. The returned StateVersion includes any changes, including a
+// new UpdatedAt value.
+func (s StateVersionService) Update(id string, fn func(*ots.StateVersion) error) (*ots.StateVersion, error) {
+	var sv *ots.StateVersion
+
+	err := s.DB.Transaction(func(tx *gorm.DB) (err error) {
+		// Get existing model obj from DB
+		sv, err = getStateVersion(tx, ots.StateVersionGetOptions{ID: &id})
+		if err != nil {
+			return err
+		}
+
+		// Update domain obj using client-supplied fn
+		if err := fn(sv); err != nil {
+			return err
+		}
+
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(sv); result.Error != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return sv, nil
+}
+
+func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateVersionList, error) {
+	var models []ots.StateVersion
 	var count int64
 
-	workspace, err := getWorkspaceByName(s.DB, workspaceName, orgName)
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		ws, err := getWorkspace(tx, ots.WorkspaceSpecifier{Name: opts.Workspace, OrganizationName: opts.Organization})
+		if err != nil {
+			return err
+		}
+
+		query := tx.Where("workspace_id = ?", ws.InternalID)
+
+		if result := query.Model(&models).Count(&count); result.Error != nil {
+			return result.Error
+		}
+
+		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	query := s.DB.Where("workspace_id = ?", workspace.ID)
-
-	if result := query.Model(&models).Count(&count); result.Error != nil {
-		return nil, result.Error
-	}
-
-	if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return NewStateVersionListFromModels(models, opts.ListOptions, int(count)), nil
+	return &ots.StateVersionList{
+		Items:      stateVersionListToPointerList(models),
+		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+	}, nil
 }
 
-func (s StateVersionService) GetStateVersion(id string) (*tfe.StateVersion, error) {
-	sv, err := getStateVersionByID(s.DB, id)
+func (s StateVersionService) Get(opts ots.StateVersionGetOptions) (*ots.StateVersion, error) {
+	sv, err := getStateVersion(s.DB, opts)
 	if err != nil {
 		return nil, err
 	}
-	return NewStateVersionFromModel(sv), err
+	return sv, nil
 }
 
-func (s StateVersionService) CurrentStateVersion(workspaceID string) (*tfe.StateVersion, error) {
-	var model StateVersionModel
+func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*ots.StateVersion, error) {
+	var sv ots.StateVersion
 
-	workspace, err := getWorkspaceByID(s.DB, workspaceID)
-	if err != nil {
-		return nil, err
+	query := db.Preload(clause.Associations)
+
+	switch {
+	case opts.ID != nil:
+		// Get state version by ID
+		query = query.Where("external_id = ?", *opts.ID)
+	case opts.WorkspaceID != nil:
+		// Get most recent state version belonging to workspace
+		query = query.Joins("JOIN workspaces ON workspaces.id = state_versions.workspace_id").
+			Order("state_versions.serial desc, state_versions.created_at desc").
+			Where("workspaces.external_id = ?", *opts.WorkspaceID)
+	default:
+		return nil, ots.ErrInvalidStateVersionGetOptions
 	}
 
-	if result := s.DB.Preload(clause.Associations).Where("workspace_id = ?", workspace.ID).Order("serial desc, created_at desc").First(&model); result.Error != nil {
+	if result := query.First(&sv); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return NewStateVersionFromModel(&model), nil
+	return &sv, nil
 }
 
-func (s StateVersionService) DownloadStateVersion(id string) ([]byte, error) {
-	sv, err := getStateVersionByID(s.DB, id)
-	if err != nil {
-		return nil, err
+func stateVersionListToPointerList(svl []ots.StateVersion) (pl []*ots.StateVersion) {
+	for i := range svl {
+		pl = append(pl, &svl[i])
 	}
-
-	return base64.StdEncoding.DecodeString(sv.State)
-}
-
-func getStateVersionByID(db *gorm.DB, id string) (*StateVersionModel, error) {
-	var model StateVersionModel
-
-	if result := db.Preload(clause.Associations).Where("external_id = ?", id).First(&model); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return &model, nil
+	return
 }

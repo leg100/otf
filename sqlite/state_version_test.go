@@ -16,30 +16,32 @@ func TestStateVersion(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"))
 	require.NoError(t, err)
 
-	orgService := NewOrganizationService(db)
-	wsSvc := NewWorkspaceService(db)
-	_ = NewStateVersionOutputService(db)
-	svc := NewStateVersionService(db)
+	orgDB := NewOrganizationDB(db)
+	wsDB := NewWorkspaceDB(db)
+	svDB := NewStateVersionDB(db)
 
 	// Create one org and three workspaces
 
-	_, err = orgService.CreateOrganization(&tfe.OrganizationCreateOptions{
-		Name:  ots.String("automatize"),
-		Email: ots.String("sysadmin@automatize.co.uk"),
+	org, err := orgDB.Create(&ots.Organization{
+		Name:  "automatize",
+		Email: "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
-	var workspaceIDs []string
+	var workspaces []*ots.Workspace
 	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := wsSvc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
-			Name: ots.String(name),
+		ws, err := wsDB.Create(&ots.Workspace{
+			Name:           name,
+			ExternalID:     ots.NewWorkspaceID(),
+			Organization:   org,
+			OrganizationID: org.InternalID,
 		})
 		require.NoError(t, err)
 
 		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ID, "ws-")
+		require.Contains(t, ws.ExternalID, "ws-")
 
-		workspaceIDs = append(workspaceIDs, ws.ID)
+		workspaces = append(workspaces, ws)
 	}
 
 	// Create state versions (3 WSs, 3 SVs per WS)
@@ -49,42 +51,47 @@ func TestStateVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	var stateVersionIDs []string
-	for _, ws := range workspaceIDs {
+	for _, ws := range workspaces {
 		for _, j := range []int{1, 2, 3} {
-			sv, err := svc.CreateStateVersion(ws, &tfe.StateVersionCreateOptions{
-				Serial: tfe.Int64(int64(j)),
-				State:  ots.String(base64.StdEncoding.EncodeToString(data)),
+			sv, err := svDB.Create(&ots.StateVersion{
+				ExternalID:  ots.NewStateVersionID(),
+				Serial:      int64(j),
+				State:       base64.StdEncoding.EncodeToString(data),
+				Workspace:   ws,
+				WorkspaceID: ws.InternalID,
 			})
 			require.NoError(t, err)
 
-			require.Contains(t, sv.ID, "sv-")
+			require.Contains(t, sv.ExternalID, "sv-")
 
-			stateVersionIDs = append(stateVersionIDs, sv.ID)
+			stateVersionIDs = append(stateVersionIDs, sv.ExternalID)
 		}
 	}
 
 	// List
 
-	svl, err := svc.ListStateVersions("automatize", "dev", tfe.StateVersionListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 20}})
+	svl, err := svDB.List(tfe.StateVersionListOptions{
+		ListOptions:  tfe.ListOptions{PageNumber: 1, PageSize: 20},
+		Organization: ots.String("automatize"),
+		Workspace:    ots.String("dev"),
+	})
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(svl.Items))
 
 	// Get
 
-	_, err = svc.GetStateVersion(stateVersionIDs[0])
+	_, err = svDB.Get(ots.StateVersionGetOptions{ID: &stateVersionIDs[0]})
 	require.NoError(t, err)
-
 	// Current
 
-	sv, err := svc.CurrentStateVersion(workspaceIDs[0])
+	sv, err := svDB.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaces[0].ExternalID})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), sv.Serial)
-	// Current
 
-	data, err = svc.DownloadStateVersion(stateVersionIDs[0])
+	// Download
+	data, err = base64.StdEncoding.DecodeString(sv.State)
 	require.NoError(t, err)
-
 	_, err = ots.Parse(data)
 	require.NoError(t, err)
 }

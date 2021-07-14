@@ -8,64 +8,63 @@ import (
 var _ ots.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	CreateWorkspaceFn     func(org string, opts *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error)
-	UpdateWorkspaceFn     func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error)
-	UpdateWorkspaceByIDFn func(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error)
-	GetWorkspaceFn        func(name, org string) (*tfe.Workspace, error)
-	GetWorkspaceByIDFn    func(id string) (*tfe.Workspace, error)
-	ListWorkspaceFn       func(org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error)
+	CreateWorkspaceFn     func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error)
+	UpdateWorkspaceFn     func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error)
+	UpdateWorkspaceByIDFn func(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error)
+	GetWorkspaceFn        func(name, org string) (*ots.Workspace, error)
+	GetWorkspaceByIDFn    func(id string) (*ots.Workspace, error)
+	ListWorkspaceFn       func(org string, opts tfe.WorkspaceListOptions) (*ots.WorkspaceList, error)
 	DeleteWorkspaceFn     func(name, org string) error
 	DeleteWorkspaceByIDFn func(id string) error
-	LockWorkspaceFn       func(id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error)
-	UnlockWorkspaceFn     func(id string) (*tfe.Workspace, error)
+	LockWorkspaceFn       func(id string, opts tfe.WorkspaceLockOptions) (*ots.Workspace, error)
+	UnlockWorkspaceFn     func(id string) (*ots.Workspace, error)
 }
 
-func (s WorkspaceService) CreateWorkspace(org string, opts *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error) {
+func (s WorkspaceService) Create(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 	return s.CreateWorkspaceFn(org, opts)
 }
 
-func (s WorkspaceService) UpdateWorkspace(name, org string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+func (s WorkspaceService) Update(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 	return s.UpdateWorkspaceFn(name, org, opts)
 }
 
-func (s WorkspaceService) UpdateWorkspaceByID(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+func (s WorkspaceService) UpdateByID(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 	return s.UpdateWorkspaceByIDFn(id, opts)
 }
 
-func (s WorkspaceService) GetWorkspace(name, org string) (*tfe.Workspace, error) {
+func (s WorkspaceService) Get(name, org string) (*ots.Workspace, error) {
 	return s.GetWorkspaceFn(name, org)
 }
 
-func (s WorkspaceService) GetWorkspaceByID(id string) (*tfe.Workspace, error) {
+func (s WorkspaceService) GetByID(id string) (*ots.Workspace, error) {
 	return s.GetWorkspaceByIDFn(id)
 }
 
-func (s WorkspaceService) ListWorkspaces(org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
+func (s WorkspaceService) List(org string, opts tfe.WorkspaceListOptions) (*ots.WorkspaceList, error) {
 	return s.ListWorkspaceFn(org, opts)
 }
 
-func (s WorkspaceService) DeleteWorkspace(name, org string) error {
+func (s WorkspaceService) Delete(name, org string) error {
 	return s.DeleteWorkspaceFn(name, org)
 }
 
-func (s WorkspaceService) DeleteWorkspaceByID(id string) error {
+func (s WorkspaceService) DeleteByID(id string) error {
 	return s.DeleteWorkspaceByIDFn(id)
 }
 
-func (s WorkspaceService) LockWorkspace(id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error) {
+func (s WorkspaceService) Lock(id string, opts tfe.WorkspaceLockOptions) (*ots.Workspace, error) {
 	return s.LockWorkspaceFn(id, opts)
 }
 
-func (s WorkspaceService) UnlockWorkspace(id string) (*tfe.Workspace, error) {
+func (s WorkspaceService) Unlock(id string) (*ots.Workspace, error) {
 	return s.UnlockWorkspaceFn(id)
 }
 
-func NewWorkspace(name, id, org string) *tfe.Workspace {
-	return &tfe.Workspace{
-		Actions: &tfe.WorkspaceActions{},
-		ID:      id,
-		Name:    name,
-		Organization: &tfe.Organization{
+func NewWorkspace(name, id, org string) *ots.Workspace {
+	return &ots.Workspace{
+		ExternalID: id,
+		Name:       name,
+		Organization: &ots.Organization{
 			Name: org,
 		},
 		Permissions:     &tfe.WorkspacePermissions{},
@@ -74,9 +73,9 @@ func NewWorkspace(name, id, org string) *tfe.Workspace {
 	}
 }
 
-func NewWorkspaceList(name, id, org string, opts tfe.WorkspaceListOptions) *tfe.WorkspaceList {
-	return &tfe.WorkspaceList{
-		Items: []*tfe.Workspace{
+func NewWorkspaceList(name, id, org string, opts tfe.WorkspaceListOptions) *ots.WorkspaceList {
+	return &ots.WorkspaceList{
+		Items: []*ots.Workspace{
 			NewWorkspace(name, id, org),
 		},
 		Pagination: ots.NewPagination(opts.ListOptions, 1),

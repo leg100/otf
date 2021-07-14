@@ -10,6 +10,10 @@ import (
 	"github.com/leg100/jsonapi"
 )
 
+type DTOConverter interface {
+	DTO() interface{}
+}
+
 // Query schema decoder: caches structs, and safe for sharing.
 var decoder = schema.NewDecoder()
 
@@ -29,7 +33,7 @@ func WithCode(code int) func(w http.ResponseWriter) {
 }
 
 // Write an HTTP response with a JSON-API marshalled payload.
-func WriteResponse(w http.ResponseWriter, r *http.Request, obj interface{}, opts ...func(http.ResponseWriter)) {
+func WriteResponse(w http.ResponseWriter, r *http.Request, obj DTOConverter, opts ...func(http.ResponseWriter)) {
 	w.Header().Set("Content-type", jsonapi.MediaType)
 
 	for _, o := range opts {
@@ -39,9 +43,9 @@ func WriteResponse(w http.ResponseWriter, r *http.Request, obj interface{}, opts
 	// Only sideline relationships for responses to GET requests
 	var err error
 	if r.Method == "GET" {
-		err = MarshalPayload(w, r, obj)
+		err = MarshalPayload(w, r, obj.DTO())
 	} else {
-		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj)
+		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj.DTO())
 	}
 
 	if err != nil {

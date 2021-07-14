@@ -34,7 +34,7 @@ func NewPagination(opts tfe.ListOptions, count int) *tfe.Pagination {
 }
 
 func totalPages(totalCount, pageSize int) int {
-	return int(math.Ceil(float64(totalCount) / float64(pageSize)))
+	return int(math.Max(1, math.Ceil(float64(totalCount)/float64(pageSize))))
 }
 
 func previousPage(currentPage int) int {

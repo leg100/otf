@@ -9,6 +9,7 @@ import (
 
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
+	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,22 +18,22 @@ import (
 func TestWorkspace(t *testing.T) {
 	s := &Server{}
 	s.WorkspaceService = &mock.WorkspaceService{
-		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error) {
+		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceByIDFn: func(id string, opts *tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+		UpdateWorkspaceByIDFn: func(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", "automatize"), nil
 		},
-		GetWorkspaceFn: func(name, org string) (*tfe.Workspace, error) {
+		GetWorkspaceFn: func(name, org string) (*ots.Workspace, error) {
 			return mock.NewWorkspace(name, "ws-123", org), nil
 		},
-		GetWorkspaceByIDFn: func(id string) (*tfe.Workspace, error) {
+		GetWorkspaceByIDFn: func(id string) (*ots.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
-		ListWorkspaceFn: func(org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
+		ListWorkspaceFn: func(org string, opts tfe.WorkspaceListOptions) (*ots.WorkspaceList, error) {
 			return mock.NewWorkspaceList("dev", "ws-123", org, opts), nil
 		},
 		DeleteWorkspaceFn: func(name, org string) error {

@@ -2,6 +2,7 @@ package ots
 
 import (
 	"fmt"
+	"time"
 
 	tfe "github.com/leg100/go-tfe"
 )
@@ -10,12 +11,43 @@ const (
 	MaxPlanLogsLimit = 65536
 )
 
+// Plan represents a Terraform Enterprise plan.
+type Plan struct {
+	ExternalID string `gorm:"uniqueIndex"`
+	InternalID uint   `gorm:"primaryKey;column:id"`
+
+	HasChanges           bool
+	LogReadURL           string
+	ResourceAdditions    int
+	ResourceChanges      int
+	ResourceDestructions int
+	Status               tfe.PlanStatus
+	StatusTimestamps     *tfe.PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+
+	Logs []byte
+
+	RunID uint
+}
+
+func (a *Plan) DTO() interface{} {
+	return &tfe.Plan{
+		ID:                   a.ExternalID,
+		HasChanges:           a.HasChanges,
+		LogReadURL:           a.LogReadURL,
+		ResourceAdditions:    a.ResourceAdditions,
+		ResourceChanges:      a.ResourceChanges,
+		ResourceDestructions: a.ResourceDestructions,
+		Status:               a.Status,
+		StatusTimestamps:     a.StatusTimestamps,
+	}
+}
+
 type PlanService interface {
-	GetPlan(id string) (*tfe.Plan, error)
-	UpdatePlanStatus(id string, status tfe.PlanStatus) (*tfe.Plan, error)
-	FinishPlan(id string, opts *PlanFinishOptions) (*tfe.Plan, error)
-	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte) error
+	Get(id string) (*Plan, error)
+	GetLogs(id string, opts PlanLogOptions) ([]byte, error)
+	UpdateStatus(id string, status tfe.PlanStatus) (*Plan, error)
+	UploadLogs(id string, logs []byte) error
+	Finish(id string, opts PlanFinishOptions) (*Plan, error)
 }
 
 type PlanLogOptions struct {
@@ -38,6 +70,42 @@ type PlanFinishOptions struct {
 	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
 }
 
+func newPlan() *Plan {
+	return &Plan{
+		ExternalID: NewPlanID(),
+	}
+}
+
 func NewPlanID() string {
 	return fmt.Sprintf("plan-%s", GenerateRandomString(16))
+}
+
+// UpdateStatus updates the status of the plan. It'll also update the
+// appropriate timestamp and set any other appropriate fields for the given
+// status.
+func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
+	// Copy timestamps from plan
+	timestamps := &tfe.PlanStatusTimestamps{}
+	if p.StatusTimestamps != nil {
+		timestamps = p.StatusTimestamps
+	}
+
+	switch status {
+	case tfe.PlanQueued:
+		timestamps.QueuedAt = time.Now()
+	case tfe.PlanCanceled:
+		timestamps.CanceledAt = time.Now()
+	case tfe.PlanErrored:
+		timestamps.ErroredAt = time.Now()
+	case tfe.PlanFinished:
+		timestamps.FinishedAt = time.Now()
+	default:
+		// Don't set a timestamp
+		return
+	}
+
+	p.Status = status
+
+	// Set timestamps on plan
+	p.StatusTimestamps = timestamps
 }

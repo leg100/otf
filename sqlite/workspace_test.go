@@ -14,31 +14,37 @@ func TestWorkspace(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"))
 	require.NoError(t, err)
 
-	orgService := NewOrganizationService(db)
-	svc := NewWorkspaceService(db)
+	orgDB := NewOrganizationDB(db)
+	wsDB := NewWorkspaceDB(db)
 
 	// Create one org and three workspaces
 
-	_, err = orgService.CreateOrganization(&tfe.OrganizationCreateOptions{
-		Name:  ots.String("automatize"),
-		Email: ots.String("sysadmin@automatize.co.uk"),
+	org, err := orgDB.Create(&ots.Organization{
+		ExternalID: "org-123",
+		Name:       "automatize",
+		Email:      "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
 	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := svc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
-			Name: ots.String(name),
+		ws, err := wsDB.Create(&ots.Workspace{
+			Name:           name,
+			ExternalID:     ots.NewWorkspaceID(),
+			Organization:   org,
+			OrganizationID: org.InternalID,
 		})
 		require.NoError(t, err)
 
 		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ID, "ws-")
+		require.Contains(t, ws.ExternalID, "ws-")
 	}
 
 	// Update
 
-	ws, err := svc.UpdateWorkspace("dev", "automatize", &tfe.WorkspaceUpdateOptions{
-		Name: ots.String("newdev"),
+	spec := ots.WorkspaceSpecifier{Name: ots.String("dev"), OrganizationName: ots.String("automatize")}
+	ws, err := wsDB.Update(spec, func(ws *ots.Workspace) error {
+		ws.Name = "newdev"
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -46,33 +52,33 @@ func TestWorkspace(t *testing.T) {
 
 	// Get
 
-	ws, err = svc.GetWorkspace("newdev", "automatize")
+	ws, err = wsDB.Get(ots.WorkspaceSpecifier{Name: ots.String("newdev"), OrganizationName: ots.String("automatize")})
 	require.NoError(t, err)
 
 	require.Equal(t, "newdev", ws.Name)
 
 	// List
 
-	workspaces, err := svc.ListWorkspaces("automatize", tfe.WorkspaceListOptions{})
+	workspaces, err := wsDB.List("automatize", ots.WorkspaceListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(workspaces.Items))
 
 	// List with pagination
 
-	workspaces, err = svc.ListWorkspaces("automatize", tfe.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
+	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(workspaces.Items))
 
-	workspaces, err = svc.ListWorkspaces("automatize", tfe.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
+	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
 
 	// List with search
 
-	workspaces, err = svc.ListWorkspaces("automatize", tfe.WorkspaceListOptions{Search: ots.String("new")})
+	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{Prefix: ots.String("new")})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
@@ -80,12 +86,13 @@ func TestWorkspace(t *testing.T) {
 
 	// Delete
 
-	require.NoError(t, svc.DeleteWorkspace("newdev", "automatize"))
+	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{Name: ots.String("newdev"), OrganizationName: ots.String("automatize")}))
 
 	// Re-create
 
-	ws, err = svc.CreateWorkspace("automatize", &tfe.WorkspaceCreateOptions{
-		Name: ots.String("dev"),
+	ws, err = wsDB.Create(&ots.Workspace{
+		Name:         "dev",
+		Organization: org,
 	})
 	require.NoError(t, err)
 
@@ -93,8 +100,9 @@ func TestWorkspace(t *testing.T) {
 
 	// Update by ID
 
-	ws, err = svc.UpdateWorkspaceByID(ws.ID, &tfe.WorkspaceUpdateOptions{
-		Name: ots.String("staging"),
+	ws, err = wsDB.Update(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)}, func(ws *ots.Workspace) error {
+		ws.Name = "staging"
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -102,12 +110,12 @@ func TestWorkspace(t *testing.T) {
 
 	// Get by ID
 
-	ws, err = svc.GetWorkspaceByID(ws.ID)
+	ws, err = wsDB.Get(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)})
 	require.NoError(t, err)
 
 	require.Equal(t, "staging", ws.Name)
 
 	// Delete by ID
 
-	require.NoError(t, svc.DeleteWorkspaceByID(ws.ID))
+	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)}))
 }

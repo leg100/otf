@@ -18,6 +18,8 @@ const (
 
 func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
+func Int64(i int64) *int64      { return &i }
+func UInt(i uint) *uint         { return &i }
 
 func GenerateRandomString(size int) string {
 	// Without this, Go would generate the same random sequence each run.

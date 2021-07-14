@@ -4,7 +4,8 @@ import "encoding/json"
 
 type State struct {
 	Version int
-	Serial  int
+	Serial  int64
+	Lineage string
 	Outputs map[string]StateOutput
 }
 

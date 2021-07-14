@@ -36,7 +36,6 @@ type Server struct {
 	OrganizationService         ots.OrganizationService
 	WorkspaceService            ots.WorkspaceService
 	StateVersionService         ots.StateVersionService
-	StateVersionOutputService   ots.StateVersionOutputService
 	ConfigurationVersionService ots.ConfigurationVersionService
 	RunService                  ots.RunService
 	PlanService                 ots.PlanService
