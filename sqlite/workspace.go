@@ -109,27 +109,58 @@ func (db WorkspaceDB) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
 	return ws, nil
 }
 
+// Delete deletes a specific workspace, along with its associated records (runs
+// etc).
 func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
-	query := db.DB
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var ws ots.Workspace
+		query := tx
 
-	switch {
-	case spec.ID != nil:
-		// Delete workspace by ID
-		query = query.Where("external_id = ?", *spec.ID)
-	case spec.Name != nil && spec.OrganizationName != nil:
-		// Delete workspace by name and organization name
-		org, err := getOrganization(db.DB, *spec.OrganizationName)
-		if err != nil {
-			return err
+		switch {
+		case spec.ID != nil:
+			// Get workspace by ID
+			query = query.Where("external_id = ?", *spec.ID)
+		case spec.Name != nil && spec.OrganizationName != nil:
+			// Get workspace by name and organization name
+			org, err := getOrganization(tx, *spec.OrganizationName)
+			if err != nil {
+				return err
+			}
+
+			query = query.Where("organization_id = ? AND workspaces.name = ?", org.InternalID, spec.Name)
+		default:
+			return ots.ErrInvalidWorkspaceSpecifier
 		}
 
-		query = query.Where("organization_id = ? AND workspaces.name = ?", org.InternalID, spec.Name)
-	default:
-		return ots.ErrInvalidWorkspaceDeleteOptions
-	}
+		// Retrieve workspace
+		if result := query.First(&ws); result.Error != nil {
+			return result.Error
+		}
 
-	if result := query.Delete(&ots.Workspace{}); result.Error != nil {
-		return result.Error
+		// Delete workspace
+		if result := query.Delete(&ws); result.Error != nil {
+			return result.Error
+		}
+
+		// Delete associated runs
+		if result := tx.Delete(&ots.Run{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+			return result.Error
+		}
+
+		// Delete associated state versions
+		if result := tx.Delete(&ots.StateVersion{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+			return result.Error
+		}
+
+		// Delete associated configuration versions
+		if result := tx.Delete(&ots.ConfigurationVersion{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -149,7 +180,7 @@ func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*ots.Workspace, err
 		query = query.Joins("JOIN organizations ON organizations.id = workspaces.organization_id").
 			Where("workspaces.name = ? AND organizations.name = ?", spec.Name, spec.OrganizationName)
 	default:
-		return nil, ots.ErrInvalidWorkspaceGetOptions
+		return nil, ots.ErrInvalidWorkspaceSpecifier
 	}
 
 	if result := query.First(&model); result.Error != nil {

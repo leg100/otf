@@ -17,10 +17,9 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked        = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked      = errors.New("workspace already unlocked")
-	ErrInvalidWorkspaceGetOptions    = errors.New("invalid workspace get options")
-	ErrInvalidWorkspaceDeleteOptions = errors.New("invalid workspace delete options")
+	ErrWorkspaceAlreadyLocked    = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyUnlocked  = errors.New("workspace already unlocked")
+	ErrInvalidWorkspaceSpecifier = errors.New("invalid workspace specifier options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.

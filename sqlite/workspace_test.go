@@ -16,6 +16,9 @@ func TestWorkspace(t *testing.T) {
 
 	orgDB := NewOrganizationDB(db)
 	wsDB := NewWorkspaceDB(db)
+	_ = NewRunDB(db)
+	_ = NewStateVersionDB(db)
+	_ = NewConfigurationVersionDB(db)
 
 	// Create one org and three workspaces
 
