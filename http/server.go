@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
+	"github.com/rs/zerolog"
 	"github.com/urfave/negroni"
 )
 
@@ -26,6 +27,8 @@ type Server struct {
 	router *mux.Router
 	ln     net.Listener
 	err    chan error
+
+	zerolog.Logger
 
 	SSL               bool
 	CertFile, KeyFile string
@@ -121,9 +124,26 @@ func NewRouter(server *Server) *negroni.Negroni {
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
-	// Add default set of negroni middleware to routes: (i) Logging (ii)
-	// Recovery (iii) Static File serving (we don't use this one...)
-	n := negroni.Classic()
+	// Setup negroni and middleware
+	n := negroni.New()
+	// Catch panics and return 500s
+	n.Use(negroni.NewRecovery())
+
+	// Log requests
+	n.UseFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		start := time.Now()
+
+		next(rw, r)
+
+		res := rw.(negroni.ResponseWriter)
+		server.Info().
+			Dur("duration", time.Since(start)).
+			Int("status", res.Status()).
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("request")
+	})
+
 	n.UseHandler(router)
 
 	return n

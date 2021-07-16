@@ -9,6 +9,7 @@ import (
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -47,6 +48,14 @@ func main() {
 	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
 		panic(err.Error())
 	}
+
+	// Setup logger
+	consoleWriter := zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.RFC3339,
+	}
+	zerolog.DurationFieldInteger = true
+	server.Logger = zerolog.New(consoleWriter).With().Timestamp().Logger()
 
 	if server.SSL {
 		if server.CertFile == "" || server.KeyFile == "" {

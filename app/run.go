@@ -36,8 +36,6 @@ func (s RunService) Get(id string) (*ots.Run, error) {
 	return s.db.Get(ots.RunGetOptions{ID: &id})
 }
 
-// GetQueuedRuns retrieves a list of runs with current status of RunPlanQueued
-// or RunApplyQueued.
 func (s RunService) List(workspaceID string, opts tfe.RunListOptions) (*ots.RunList, error) {
 	dopts := ots.RunListOptions{
 		ListOptions: opts.ListOptions,
