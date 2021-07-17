@@ -78,6 +78,11 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 			query = query.Where("workspace_id = ?", ws.InternalID)
 		}
 
+		// Optionally filter by statuses
+		if len(opts.Statuses) > 0 {
+			query = query.Where("status IN ?", opts.Statuses)
+		}
+
 		if result := query.Model(&models).Count(&count); result.Error != nil {
 			return result.Error
 		}
@@ -120,7 +125,7 @@ func getRun(db *gorm.DB, opts ots.RunGetOptions) (*ots.Run, error) {
 		return nil, ots.ErrInvalidRunGetOptions
 	}
 
-	if result := query.Find(&model); result.Error != nil {
+	if result := query.First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 

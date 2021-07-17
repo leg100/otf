@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/http"
@@ -86,13 +88,14 @@ func main() {
 	server.ApplyService = app.NewApplyService(runStore)
 
 	// Run poller in background
-	// agent := agent.NewAgent(
-	// 	server.ConfigurationVersionService,
-	// 	server.StateVersionService,
-	// 	server.PlanService,
-	// 	server.RunService,
-	// )
-	// go agent.Poller(ctx)
+	agent := agent.NewAgent(
+		&server.Logger,
+		server.ConfigurationVersionService,
+		server.StateVersionService,
+		server.PlanService,
+		server.RunService,
+	)
+	go agent.Poller(ctx)
 
 	if err := server.Open(); err != nil {
 		server.Close()

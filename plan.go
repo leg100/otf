@@ -44,10 +44,6 @@ func (a *Plan) DTO() interface{} {
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
-	GetLogs(id string, opts PlanLogOptions) ([]byte, error)
-	UpdateStatus(id string, status tfe.PlanStatus) (*Plan, error)
-	UploadLogs(id string, logs []byte) error
-	Finish(id string, opts PlanFinishOptions) (*Plan, error)
 }
 
 type PlanLogOptions struct {

@@ -137,6 +137,11 @@ type RunService interface {
 	Discard(id string, opts *tfe.RunDiscardOptions) error
 	Cancel(id string, opts *tfe.RunCancelOptions) error
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
+	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
+	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
+	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
+	UploadPlanLogs(id string, logs []byte) error
+	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 }
 
 type RunStore interface {
@@ -190,7 +195,7 @@ func (r *Run) QueueApply() {
 }
 
 // PlanFinished updates the state of a run to reflect its plan having finished
-func (r *Run) PlanFinished() error {
+func (r *Run) FinishPlan() error {
 	if r.ConfigurationVersion.Speculative {
 		r.Status = tfe.RunPlannedAndFinished
 		r.StatusTimestamps.PlannedAndFinishedAt = time.Now()
@@ -282,7 +287,7 @@ func (r *Run) IsConfirmable() bool {
 
 func (r *Run) IsDiscardable() bool {
 	switch r.Status {
-	case tfe.RunPending, tfe.RunPolicyChecked, tfe.RunPolicyOverride:
+	case tfe.RunPending, tfe.RunPolicyChecked, tfe.RunPolicyOverride, tfe.RunPlanned:
 		return true
 	default:
 		return false
@@ -290,7 +295,7 @@ func (r *Run) IsDiscardable() bool {
 }
 
 func (r *Run) IsForceCancelable() bool {
-	return !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
+	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
 }
 
 func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
@@ -299,11 +304,14 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	}
 
 	run := Run{
-		ExternalID:   NewRunID(),
+		ExternalID: NewRunID(),
+		Permissions: &tfe.RunPermissions{
+			CanForceCancel: true,
+		},
 		Refresh:      DefaultRefresh,
 		ReplaceAddrs: opts.ReplaceAddrs,
 		TargetAddrs:  opts.TargetAddrs,
-		Status:       tfe.RunPending,
+		Status:       tfe.RunPlanQueued,
 		StatusTimestamps: &tfe.RunStatusTimestamps{
 			PlanQueueableAt: time.Now(),
 		},

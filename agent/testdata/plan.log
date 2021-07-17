@@ -1,0 +1,54 @@
+Running plan in the remote backend. Output will stream here. Pressing Ctrl-C
+will stop streaming the logs, but will not stop the plan running remotely.
+
+Preparing the remote plan...
+
+The remote workspace is configured to work with configuration at
+cloud relative to the target repository.
+
+Terraform will upload the contents of the following directory,
+excluding files or directories as defined by a .terraformignore file
+at /home/louis/co/etok-example/.terraformignore (if it is present),
+in order to capture the filesystem context the remote workspace expects:
+    /home/louis/co/etok-example
+
+To view this run in a browser, visit:
+https://app.terraform.io/app/automatize/etok-something-new-123/runs/run-mCW6Zopdt7vi5UPx
+
+Waiting for the plan to start...
+
+Terraform v0.15.4
+on linux_amd64
+Configuring remote state backend...
+Initializing Terraform configuration...
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # null_resource.example will be created
+  + resource "null_resource" "example" {
+      + id = (known after apply)
+    }
+
+  # null_resource.example2 will be created
+  + resource "null_resource" "example2" {
+      + id = (known after apply)
+    }
+
+  # module.random.random_id.test will be created
+  + resource "random_id" "test" {
+      + b64_std     = (known after apply)
+      + b64_url     = (known after apply)
+      + byte_length = 2
+      + dec         = (known after apply)
+      + hex         = (known after apply)
+      + id          = (known after apply)
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + random_string = (known after apply)

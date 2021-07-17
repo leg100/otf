@@ -7,8 +7,9 @@ set -ex
 
 export TFE_TOKEN=dummy
 export TFE_ADDRESS=https://localhost:8080
+export SKIP_PAID=1
 
-TESTS="${@:-Test(Workspaces(Create|List|Update|Delete|Unlock|Lock)|Organizations(Create|List|Read|Update)|StateVersions|Runs(List|Create|ReadWithOptions)|ConfigurationVersions)}"
+TESTS="${@:-Test(Workspaces(Create|List|Update|Delete|Unlock|Lock)|Organizations(Create|List|Read|Update)|StateVersions|Runs|ConfigurationVersions)}"
 
 cd $(go list -f '{{.Dir}}' github.com/leg100/go-tfe)
 go test -v -run $TESTS
