@@ -49,6 +49,8 @@ func TestAgentPoller(t *testing.T) {
 // Test poller error handling. The processor returns an error and the poller
 // should update the plan with an error status.
 func TestAgentPollerError(t *testing.T) {
+	// Mock run service and capture the plan status it receives
+	got := make(chan tfe.PlanStatus)
 	runService := &mock.RunService{
 		GetQueuedFn: func(opts tfe.RunListOptions) (*ots.RunList, error) {
 			return &ots.RunList{Items: []*ots.Run{
@@ -60,6 +62,10 @@ func TestAgentPollerError(t *testing.T) {
 				},
 			}}, nil
 		},
+		UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) {
+			got <- status
+			return nil, nil
+		},
 	}
 
 	// Mock processor returning an error
@@ -69,19 +75,10 @@ func TestAgentPollerError(t *testing.T) {
 		},
 	}
 
-	// Mock plan service and capture the plan status it receives
-	got := make(chan tfe.PlanStatus)
-	planService := mock.PlanService{
-		UpdateStatusFn: func(id string, status tfe.PlanStatus) (*ots.Plan, error) {
-			got <- status
-			return nil, nil
-		},
-	}
-
 	agent := &Agent{
 		ConfigurationVersionService: &mock.ConfigurationVersionService{},
 		StateVersionService:         &mock.StateVersionService{},
-		PlanService:                 planService,
+		PlanService:                 &mock.PlanService{},
 		RunService:                  runService,
 		Processor:                   &processor,
 	}

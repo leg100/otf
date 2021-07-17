@@ -47,10 +47,10 @@ func TestProcessor(t *testing.T) {
 				return os.ReadFile("testdata/terraform.tfstate")
 			},
 		},
-		PlanService: &mock.PlanService{
-			UploadLogsFn:   func(id string, logs []byte) error { return nil },
-			UpdateStatusFn: func(id string, status tfe.PlanStatus) (*ots.Plan, error) { return nil, nil },
-			FinishFn:       func(id string, opts ots.PlanFinishOptions) (*ots.Plan, error) { return nil, nil },
+		RunService: &mock.RunService{
+			UploadPlanLogsFn:   func(id string, logs []byte) error { return nil },
+			UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) { return nil, nil },
+			FinishPlanFn:       func(id string, opts ots.PlanFinishOptions) (*ots.Run, error) { return nil, nil },
 		},
 		TerraformRunner: &MockRunner{},
 	}
