@@ -1,0 +1,35 @@
+Initializing modules...
+- random in ../modules/random
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding latest version of hashicorp/null...
+- Finding latest version of hashicorp/random...
+- Using hashicorp/random v3.1.0 from the shared cache directory
+- Using hashicorp/null v3.1.0 from the shared cache directory
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+null_resource.example: Creating...
+null_resource.example: Creation complete after 0s [id=2813919197987920618]
+module.random.random_id.test: Creating...
+module.random.random_id.test: Creation complete after 0s [id=02Q]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+random_string = "d364-foo"

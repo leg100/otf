@@ -17,11 +17,15 @@ type RunService struct {
 	ForceCancelFn       func(id string, opts *tfe.RunForceCancelOptions) error
 	GetQueuedFn         func(opts tfe.RunListOptions) (*ots.RunList, error)
 	GetPlanLogsFn       func(id string, opts ots.PlanLogOptions) ([]byte, error)
+	GetApplyLogsFn      func(id string, opts ots.ApplyLogOptions) ([]byte, error)
 	UpdatePlanStatusFn  func(id string, status tfe.PlanStatus) (*ots.Run, error)
 	UpdateApplyStatusFn func(id string, status tfe.ApplyStatus) (*ots.Run, error)
 	UploadPlanLogsFn    func(id string, logs []byte) error
+	UploadApplyLogsFn   func(id string, logs []byte) error
 	FinishPlanFn        func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
+	FinishApplyFn       func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
 	GetPlanJSONFn       func(id string) ([]byte, error)
+	GetPlanFileFn       func(id string) ([]byte, error)
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
@@ -60,6 +64,10 @@ func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, err
 	return s.GetPlanLogsFn(id, opts)
 }
 
+func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
+	return s.GetApplyLogsFn(id, opts)
+}
+
 func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
 	return s.UpdatePlanStatusFn(id, status)
 }
@@ -72,10 +80,22 @@ func (s RunService) UploadPlanLogs(id string, logs []byte) error {
 	return s.UploadPlanLogsFn(id, logs)
 }
 
+func (s RunService) UploadApplyLogs(id string, logs []byte) error {
+	return s.UploadApplyLogsFn(id, logs)
+}
+
 func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
 	return s.FinishPlanFn(id, opts)
 }
 
+func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
+	return s.FinishApplyFn(id, opts)
+}
+
 func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 	return s.GetPlanJSONFn(id)
+}
+
+func (s RunService) GetPlanFile(id string) ([]byte, error) {
+	return s.GetPlanFileFn(id)
 }

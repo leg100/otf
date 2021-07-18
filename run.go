@@ -141,8 +141,12 @@ type RunService interface {
 	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
 	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
 	UploadPlanLogs(id string, logs []byte) error
+	GetApplyLogs(id string, opts ApplyLogOptions) ([]byte, error)
+	UploadApplyLogs(id string, logs []byte) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
+	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
+	GetPlanFile(id string) ([]byte, error)
 }
 
 type RunStore interface {
@@ -206,6 +210,16 @@ func (r *Run) FinishPlan() error {
 	}
 
 	r.Plan.UpdateStatus(tfe.PlanFinished)
+
+	return nil
+}
+
+// ApplyFinished updates the state of a run to reflect its plan having finished
+func (r *Run) FinishApply() error {
+	r.Status = tfe.RunApplied
+	r.StatusTimestamps.AppliedAt = time.Now()
+
+	r.Apply.UpdateStatus(tfe.ApplyFinished)
 
 	return nil
 }

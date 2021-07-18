@@ -16,10 +16,12 @@ import (
 
 const (
 	LocalStateFilename = "terraform.tfstate"
+	PlanFilename       = "plan.out"
 )
 
 type Processor interface {
-	Process(ctx context.Context, run *ots.Run, path string) error
+	Plan(ctx context.Context, run *ots.Run, path string) error
+	Apply(ctx context.Context, run *ots.Run, path string) error
 }
 
 type processor struct {
@@ -29,16 +31,14 @@ type processor struct {
 
 	TerraformRunner TerraformRunner
 
-	Path string
-
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
 	PlanService                 ots.PlanService
 	RunService                  ots.RunService
 }
 
-// Process processes a run
-func (p *processor) Process(ctx context.Context, run *ots.Run, path string) error {
+// Plan processes a run plan
+func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	// Download config
 	if err := p.downloadConfig(ctx, run, path); err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
@@ -104,6 +104,76 @@ func (p *processor) Process(ctx context.Context, run *ots.Run, path string) erro
 	return nil
 }
 
+// Apply processes a run apply
+func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error {
+	// Download config
+	if err := p.downloadConfig(ctx, run, path); err != nil {
+		return fmt.Errorf("unable to download config: %w", err)
+	}
+
+	// Delete backend config
+	if err := deleteBackendConfigFromDirectory(ctx, path); err != nil {
+		return fmt.Errorf("unable to delete backend config: %w", err)
+	}
+
+	// Download state
+	if err := p.downloadState(ctx, run, path); err != nil {
+		return fmt.Errorf("unable to download state: %w", err)
+	}
+
+	// Download plan file
+	if err := p.downloadPlanFile(ctx, run, path); err != nil {
+		return fmt.Errorf("unable to download plan file: %w", err)
+	}
+
+	// Update status
+	_, err := p.RunService.UpdateApplyStatus(run.ExternalID, tfe.ApplyRunning)
+	if err != nil {
+		return fmt.Errorf("unable to update apply status: %w", err)
+	}
+
+	// Run terraform init then apply
+	out, err := p.TerraformRunner.Apply(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	// Upload logs
+	if err := p.RunService.UploadApplyLogs(run.ExternalID, out); err != nil {
+		return fmt.Errorf("unable to upload apply logs: %w", err)
+	}
+
+	// Parse apply output
+	info, err := parseApplyOutput(string(out))
+	if err != nil {
+		return fmt.Errorf("unable to parse apply output: %w", err)
+	}
+
+	// Update status
+	_, err = p.RunService.FinishApply(run.ExternalID, ots.ApplyFinishOptions{
+		ResourceAdditions:    info.adds,
+		ResourceChanges:      info.changes,
+		ResourceDestructions: info.deletions,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to finish apply: %w", err)
+	}
+
+	// Upload state if there are changes
+	if err := p.uploadState(ctx, run, path); err != nil {
+		return err
+	}
+
+	p.Info().
+		Str("run", run.ExternalID).
+		Int("additions", info.adds).
+		Int("changes", info.changes).
+		Int("deletions", info.deletions).
+		Msg("job completed")
+
+	return nil
+}
+
 func (p *processor) downloadConfig(ctx context.Context, run *ots.Run, path string) error {
 	// Download config
 	cv, err := p.ConfigurationVersionService.Download(run.ConfigurationVersion.ExternalID)
@@ -135,6 +205,20 @@ func (p *processor) downloadState(ctx context.Context, run *ots.Run, path string
 	}
 
 	if err := os.WriteFile(filepath.Join(path, LocalStateFilename), statefile, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// downloadPlanFile downloads a plan file, for use with terraform apply.
+func (p *processor) downloadPlanFile(ctx context.Context, run *ots.Run, path string) error {
+	plan, err := p.RunService.GetPlanFile(run.ExternalID)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(path, PlanFilename), plan, 0644); err != nil {
 		return err
 	}
 

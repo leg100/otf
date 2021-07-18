@@ -14,3 +14,11 @@ func GetPlanLogsUrl(id string) string {
 		Path:   fmt.Sprintf("/plans/%s/logs", id),
 	}).String()
 }
+
+func GetApplyLogsUrl(id string) string {
+	return (&url.URL{
+		Scheme: "https",
+		Host:   DefaultArchiveHost,
+		Path:   fmt.Sprintf("/applies/%s/logs", id),
+	}).String()
+}

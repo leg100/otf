@@ -154,6 +154,22 @@ func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run,
 	return run, nil
 }
 
+func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
+	run, err := s.db.Update(id, func(run *ots.Run) error {
+		run.FinishApply()
+
+		run.Apply.ResourceAdditions = opts.ResourceAdditions
+		run.Apply.ResourceChanges = opts.ResourceChanges
+		run.Apply.ResourceDestructions = opts.ResourceDestructions
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return run, nil
+}
+
 // GetPlanJSON returns the JSON formatted plan file for the run.
 func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
@@ -161,6 +177,15 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 		return nil, err
 	}
 	return run.Plan.PlanJSON, nil
+}
+
+// GetPlanFile returns the binary plan file for the run.
+func (s RunService) GetPlanFile(id string) ([]byte, error) {
+	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	if err != nil {
+		return nil, err
+	}
+	return run.Plan.Plan, nil
 }
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
@@ -196,9 +221,50 @@ func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, err
 	return resp, nil
 }
 
+// GetApplyLogs returns logs from the apply of the run identified by id. The
+// options specifies the limit and offset bytes of the logs to retrieve.
+func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
+	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
+	if err != nil {
+		return nil, err
+	}
+	logs := run.Apply.Logs
+
+	// Add start marker
+	logs = append([]byte{byte(2)}, logs...)
+
+	// Add end marker
+	logs = append(logs, byte(3))
+
+	if opts.Offset > len(logs) {
+		return nil, fmt.Errorf("offset cannot be bigger than total logs")
+	}
+
+	if opts.Limit > ots.MaxApplyLogsLimit {
+		opts.Limit = ots.MaxApplyLogsLimit
+	}
+
+	// Ensure specified chunk does not exceed slice length
+	if (opts.Offset + opts.Limit) > len(logs) {
+		opts.Limit = len(logs) - opts.Offset
+	}
+
+	resp := logs[opts.Offset:(opts.Offset + opts.Limit)]
+
+	return resp, nil
+}
+
 func (s RunService) UploadPlanLogs(id string, logs []byte) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
 		run.Plan.Logs = logs
+
+		return nil
+	})
+	return err
+}
+func (s RunService) UploadApplyLogs(id string, logs []byte) error {
+	_, err := s.db.Update(id, func(run *ots.Run) error {
+		run.Apply.Logs = logs
 
 		return nil
 	})

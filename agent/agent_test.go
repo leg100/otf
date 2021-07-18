@@ -16,14 +16,14 @@ func TestAgentPoller(t *testing.T) {
 	// Have the run service return a run when polled
 	runService := &mock.RunService{
 		GetQueuedFn: func(opts tfe.RunListOptions) (*ots.RunList, error) {
-			return &ots.RunList{Items: []*ots.Run{{ExternalID: "run-123"}}}, nil
+			return &ots.RunList{Items: []*ots.Run{{ExternalID: "run-123", Status: tfe.RunPlanQueued}}}, nil
 		},
 	}
 
 	// Mock the processor and capture the run ID that is passed
 	got := make(chan string)
 	processor := mockProcessor{
-		ProcessFn: func(ctx context.Context, run *ots.Run, path string) error {
+		PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
 			got <- run.ExternalID
 			return nil
 		},
@@ -59,6 +59,7 @@ func TestAgentPollerError(t *testing.T) {
 					Plan: &ots.Plan{
 						ExternalID: "plan-123",
 					},
+					Status: tfe.RunPlanQueued,
 				},
 			}}, nil
 		},
@@ -70,7 +71,7 @@ func TestAgentPollerError(t *testing.T) {
 
 	// Mock processor returning an error
 	processor := mockProcessor{
-		ProcessFn: func(ctx context.Context, run *ots.Run, path string) error {
+		PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
 			return errors.New("mock process error")
 		},
 	}

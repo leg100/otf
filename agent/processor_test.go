@@ -27,6 +27,18 @@ func (r *MockRunner) Plan(ctx context.Context, path string) ([]byte, []byte, []b
 	return append(initOut, planOut...), []byte("plan_file"), []byte("{ \"plan_file\": \"true\"}"), nil
 }
 
+func (r *MockRunner) Apply(ctx context.Context, path string) ([]byte, error) {
+	initOut, err := os.ReadFile("testdata/init.log")
+	if err != nil {
+		return nil, err
+	}
+	applyOut, err := os.ReadFile("testdata/apply.log")
+	if err != nil {
+		return nil, err
+	}
+	return append(initOut, applyOut...), nil
+}
+
 func TestProcessor(t *testing.T) {
 	path := t.TempDir()
 
@@ -48,14 +60,19 @@ func TestProcessor(t *testing.T) {
 			},
 		},
 		RunService: &mock.RunService{
-			UploadPlanLogsFn:   func(id string, logs []byte) error { return nil },
-			UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) { return nil, nil },
-			FinishPlanFn:       func(id string, opts ots.PlanFinishOptions) (*ots.Run, error) { return nil, nil },
+			UploadPlanLogsFn:    func(id string, logs []byte) error { return nil },
+			UploadApplyLogsFn:   func(id string, logs []byte) error { return nil },
+			UpdatePlanStatusFn:  func(id string, status tfe.PlanStatus) (*ots.Run, error) { return nil, nil },
+			FinishPlanFn:        func(id string, opts ots.PlanFinishOptions) (*ots.Run, error) { return nil, nil },
+			FinishApplyFn:       func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) { return nil, nil },
+			GetPlanFileFn:       func(id string) ([]byte, error) { return []byte("plan-file-contents"), nil },
+			UpdateApplyStatusFn: func(id string, status tfe.ApplyStatus) (*ots.Run, error) { return nil, nil },
 		},
 		TerraformRunner: &MockRunner{},
 	}
 
-	require.NoError(t, p.Process(context.Background(), &ots.Run{
+	// Run a plan
+	require.NoError(t, p.Plan(context.Background(), &ots.Run{
 		Plan: &ots.Plan{
 			ExternalID: "plan-123",
 		},
@@ -82,4 +99,19 @@ func TestProcessor(t *testing.T) {
 		"file",
 		"terraform.tfstate",
 	}, got)
+
+	// Run an apply
+	applyPath := t.TempDir()
+	require.NoError(t, p.Apply(context.Background(), &ots.Run{
+		Plan: &ots.Plan{
+			ExternalID: "plan-123",
+		},
+		ConfigurationVersion: &ots.ConfigurationVersion{
+			ExternalID: "cv-123",
+		},
+		Workspace: &ots.Workspace{
+			ExternalID: "ws-123",
+		},
+	}, applyPath))
+
 }

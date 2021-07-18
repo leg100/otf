@@ -74,6 +74,7 @@ func (a *Agent) Poller(ctx context.Context) {
 
 		a.Info().
 			Str("run", runs.Items[0].ExternalID).
+			Str("status", string(runs.Items[0].Status)).
 			Msg("job received")
 
 		path, err := os.MkdirTemp("", "ots-plan")
@@ -82,13 +83,27 @@ func (a *Agent) Poller(ctx context.Context) {
 			continue
 		}
 
-		if err := a.Process(ctx, runs.Items[0], path); err != nil {
-			a.Error().Msgf("unable to process run: %s", err.Error())
+		switch runs.Items[0].Status {
+		case tfe.RunPlanQueued:
+			if err := a.Plan(ctx, runs.Items[0], path); err != nil {
+				a.Error().Msgf("unable to process run: %s", err.Error())
 
-			_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ExternalID, tfe.PlanErrored)
-			if err != nil {
-				a.Error().Msgf("unable to update plan status: %s", err.Error())
+				_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ExternalID, tfe.PlanErrored)
+				if err != nil {
+					a.Error().Msgf("unable to update plan status: %s", err.Error())
+				}
 			}
+		case tfe.RunApplyQueued:
+			if err := a.Apply(ctx, runs.Items[0], path); err != nil {
+				a.Error().Msgf("unable to process run: %s", err.Error())
+
+				_, err := a.RunService.UpdateApplyStatus(runs.Items[0].ExternalID, tfe.ApplyErrored)
+				if err != nil {
+					a.Error().Msgf("unable to update apply status: %s", err.Error())
+				}
+			}
+		default:
+			a.Error().Msgf("unexpected run status: %s", runs.Items[0].Status)
 		}
 	}
 }
