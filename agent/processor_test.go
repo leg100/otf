@@ -15,16 +15,16 @@ import (
 
 type MockRunner struct{}
 
-func (r *MockRunner) Plan(ctx context.Context, path string) ([]byte, error) {
+func (r *MockRunner) Plan(ctx context.Context, path string) ([]byte, []byte, []byte, error) {
 	initOut, err := os.ReadFile("testdata/init.log")
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	planOut, err := os.ReadFile("testdata/plan.log")
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	return append(initOut, planOut...), nil
+	return append(initOut, planOut...), []byte("plan_file"), []byte("{ \"plan_file\": \"true\"}"), nil
 }
 
 func TestProcessor(t *testing.T) {

@@ -16,8 +16,6 @@ type Plan struct {
 	ExternalID string `gorm:"uniqueIndex"`
 	InternalID uint   `gorm:"primaryKey;column:id"`
 
-	HasChanges           bool
-	LogReadURL           string
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int
@@ -27,23 +25,30 @@ type Plan struct {
 	Logs []byte
 
 	RunID uint
+
+	// The execution plan file
+	Plan []byte `jsonapi:"attr,plan"`
+
+	// The execution plan file in json format
+	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
-func (a *Plan) DTO() interface{} {
+func (p *Plan) DTO() interface{} {
 	return &tfe.Plan{
-		ID:                   a.ExternalID,
-		HasChanges:           a.HasChanges,
-		LogReadURL:           a.LogReadURL,
-		ResourceAdditions:    a.ResourceAdditions,
-		ResourceChanges:      a.ResourceChanges,
-		ResourceDestructions: a.ResourceDestructions,
-		Status:               a.Status,
-		StatusTimestamps:     a.StatusTimestamps,
+		ID:                   p.ExternalID,
+		HasChanges:           p.HasChanges(),
+		LogReadURL:           GetPlanLogsUrl(p.ExternalID),
+		ResourceAdditions:    p.ResourceAdditions,
+		ResourceChanges:      p.ResourceChanges,
+		ResourceDestructions: p.ResourceDestructions,
+		Status:               p.Status,
+		StatusTimestamps:     p.StatusTimestamps,
 	}
 }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
+	GetPlanJSON(id string) ([]byte, error)
 }
 
 type PlanLogOptions struct {
@@ -64,6 +69,12 @@ type PlanFinishOptions struct {
 	ResourceAdditions    int `jsonapi:"attr,resource-additions"`
 	ResourceChanges      int `jsonapi:"attr,resource-changes"`
 	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
+
+	// The execution plan file
+	Plan []byte `jsonapi:"attr,plan"`
+
+	// The execution plan file in json format
+	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
 func newPlan() *Plan {
@@ -104,4 +115,12 @@ func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
 
 	// Set timestamps on plan
 	p.StatusTimestamps = timestamps
+}
+
+// HasChanges determines whether plan has any changes (adds/changes/deletions).
+func (p *Plan) HasChanges() bool {
+	if p.ResourceAdditions > 0 || p.ResourceChanges > 0 || p.ResourceDestructions > 0 {
+		return true
+	}
+	return false
 }

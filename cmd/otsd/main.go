@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
@@ -14,7 +15,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 const (
@@ -57,7 +57,7 @@ func main() {
 		TimeFormat: time.RFC3339,
 	}
 	zerolog.DurationFieldInteger = true
-	server.Logger = zerolog.New(consoleWriter).With().Timestamp().Logger()
+	server.Logger = zerolog.New(consoleWriter).Level(zerolog.InfoLevel).With().Timestamp().Logger()
 
 	if server.SSL {
 		if server.CertFile == "" || server.KeyFile == "" {
@@ -66,8 +66,9 @@ func main() {
 		}
 	}
 
+	// Setup sqlite db
 	db, err := sqlite.New(DBPath, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: &gormzerolog.Logger{Zlog: server.Logger},
 	})
 	if err != nil {
 		panic(err.Error())

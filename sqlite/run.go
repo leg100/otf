@@ -119,8 +119,10 @@ func getRun(db *gorm.DB, opts ots.RunGetOptions) (*ots.Run, error) {
 	switch {
 	case opts.ID != nil:
 		query = query.Where("external_id = ?", opts.ID)
+	case opts.PlanID != nil:
+		query = query.Joins("JOIN plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
 	case opts.ApplyID != nil:
-		query = query.Joins("JOIN applies ON applies.id = runs.apply_id").Where("applies.external_id = ?", opts.ApplyID)
+		query = query.Joins("JOIN applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
 	default:
 		return nil, ots.ErrInvalidRunGetOptions
 	}

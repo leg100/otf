@@ -61,7 +61,7 @@ func (p *processor) Process(ctx context.Context, run *ots.Run, path string) erro
 	}
 
 	// Run terraform init then plan
-	out, err := p.TerraformRunner.Plan(ctx, path)
+	out, plan, planJSON, err := p.TerraformRunner.Plan(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -77,16 +77,18 @@ func (p *processor) Process(ctx context.Context, run *ots.Run, path string) erro
 	//}
 
 	// Parse plan output
-	plan, err := parsePlanOutput(string(out))
+	info, err := parsePlanOutput(string(out))
 	if err != nil {
 		return fmt.Errorf("unable to parse plan output: %w", err)
 	}
 
 	// Update status
 	_, err = p.RunService.FinishPlan(run.ExternalID, ots.PlanFinishOptions{
-		ResourceAdditions:    plan.adds,
-		ResourceChanges:      plan.changes,
-		ResourceDestructions: plan.deletions,
+		ResourceAdditions:    info.adds,
+		ResourceChanges:      info.changes,
+		ResourceDestructions: info.deletions,
+		Plan:                 plan,
+		PlanJSON:             planJSON,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to finish plan: %w", err)
@@ -94,9 +96,9 @@ func (p *processor) Process(ctx context.Context, run *ots.Run, path string) erro
 
 	p.Info().
 		Str("run", run.ExternalID).
-		Int("additions", plan.adds).
-		Int("changes", plan.changes).
-		Int("deletions", plan.deletions).
+		Int("additions", info.adds).
+		Int("changes", info.changes).
+		Int("deletions", info.deletions).
 		Msg("job completed")
 
 	return nil

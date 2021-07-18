@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/leg100/go-tfe v0.17.1-0.20210705093717-194f976c0090
+	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/rs/zerolog v1.23.0

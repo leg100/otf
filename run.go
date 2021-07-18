@@ -142,6 +142,7 @@ type RunService interface {
 	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
 	UploadPlanLogs(id string, logs []byte) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
+	GetPlanJSON(id string) ([]byte, error)
 }
 
 type RunStore interface {

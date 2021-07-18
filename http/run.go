@@ -134,3 +134,25 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 }
+
+func (s *Server) GetRunPlanJSON(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	var opts ots.PlanLogOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	json, err := s.RunService.GetPlanJSON(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	if _, err := w.Write(json); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

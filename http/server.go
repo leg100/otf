@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -117,9 +118,11 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/runs/{id}/actions/discard", server.DiscardRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/cancel", server.CancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/force-cancel", server.ForceCancelRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/plan/json-output", server.GetRunPlanJSON).Methods("GET")
 
 	// Plan routes
 	sub.HandleFunc("/plans/{id}", server.GetPlan).Methods("GET")
+	sub.HandleFunc("/plans/{id}/json-output", server.GetPlanJSON).Methods("GET")
 
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
@@ -140,7 +143,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 			Dur("duration", time.Since(start)).
 			Int("status", res.Status()).
 			Str("method", r.Method).
-			Str("path", r.URL.Path).
+			Str("path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery)).
 			Msg("request")
 	})
 

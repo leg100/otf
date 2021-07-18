@@ -143,6 +143,9 @@ func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run,
 		run.Plan.ResourceChanges = opts.ResourceChanges
 		run.Plan.ResourceDestructions = opts.ResourceDestructions
 
+		run.Plan.Plan = opts.Plan
+		run.Plan.PlanJSON = opts.PlanJSON
+
 		return nil
 	})
 	if err != nil {
@@ -151,6 +154,17 @@ func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run,
 	return run, nil
 }
 
+// GetPlanJSON returns the JSON formatted plan file for the run.
+func (s RunService) GetPlanJSON(id string) ([]byte, error) {
+	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	if err != nil {
+		return nil, err
+	}
+	return run.Plan.PlanJSON, nil
+}
+
+// GetPlanLogs returns logs from the plan of the run identified by id. The
+// options specifies the limit and offset bytes of the logs to retrieve.
 func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
 	if err != nil {
@@ -158,17 +172,28 @@ func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, err
 	}
 	logs := run.Plan.Logs
 
+	// Add start marker
+	logs = append([]byte{byte(2)}, logs...)
+
+	// Add end marker
+	logs = append(logs, byte(3))
+
 	if opts.Offset > len(logs) {
-		return nil, fmt.Errorf("offset too high")
+		return nil, fmt.Errorf("offset cannot be bigger than total logs")
 	}
+
 	if opts.Limit > ots.MaxPlanLogsLimit {
 		opts.Limit = ots.MaxPlanLogsLimit
 	}
+
+	// Ensure specified chunk does not exceed slice length
 	if (opts.Offset + opts.Limit) > len(logs) {
 		opts.Limit = len(logs) - opts.Offset
 	}
 
-	return logs[opts.Offset:opts.Limit], nil
+	resp := logs[opts.Offset:(opts.Offset + opts.Limit)]
+
+	return resp, nil
 }
 
 func (s RunService) UploadPlanLogs(id string, logs []byte) error {
