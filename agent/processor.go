@@ -61,20 +61,17 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	}
 
 	// Run terraform init then plan
-	out, plan, planJSON, err := p.TerraformRunner.Plan(ctx, path)
-	if err != nil {
-		return err
-	}
+	out, plan, planJSON, planErr := p.TerraformRunner.Plan(ctx, path)
 
-	// Upload logs
+	// Upload logs regardless of whether plan errored
 	if err := p.RunService.UploadPlanLogs(run.ExternalID, out); err != nil {
 		return fmt.Errorf("unable to upload plan logs: %w", err)
 	}
 
-	// Upload state
-	//if err := p.uploadState(ctx, run, path); err != nil {
-	//	return err
-	//}
+	// Go no further if plan errored
+	if planErr != nil {
+		return planErr
+	}
 
 	// Parse plan output
 	info, err := parsePlanOutput(string(out))
@@ -133,20 +130,27 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	}
 
 	// Run terraform init then apply
-	out, err := p.TerraformRunner.Apply(ctx, path)
-	if err != nil {
-		return err
-	}
+	out, applyErr := p.TerraformRunner.Apply(ctx, path)
 
-	// Upload logs
+	// Upload logs regardless of whether apply failed
 	if err := p.RunService.UploadApplyLogs(run.ExternalID, out); err != nil {
 		return fmt.Errorf("unable to upload apply logs: %w", err)
+	}
+
+	// Go no further if apply errored
+	if applyErr != nil {
+		return applyErr
 	}
 
 	// Parse apply output
 	info, err := parseApplyOutput(string(out))
 	if err != nil {
 		return fmt.Errorf("unable to parse apply output: %w", err)
+	}
+
+	// Upload state if there are changes
+	if err := p.uploadState(ctx, run, path); err != nil {
+		return err
 	}
 
 	// Update status
@@ -157,11 +161,6 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	})
 	if err != nil {
 		return fmt.Errorf("unable to finish apply: %w", err)
-	}
-
-	// Upload state if there are changes
-	if err := p.uploadState(ctx, run, path); err != nil {
-		return err
 	}
 
 	p.Info().

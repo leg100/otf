@@ -61,7 +61,7 @@ func (s RunService) GetQueued(opts tfe.RunListOptions) (*ots.RunList, error) {
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
-		run.QueueApply()
+		run.UpdateApplyStatus(tfe.ApplyQueued)
 
 		return nil
 	})
@@ -113,7 +113,7 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 
 func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Plan.UpdateStatus(status)
+		run.UpdatePlanStatus(status)
 
 		return nil
 	})
@@ -125,7 +125,7 @@ func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run
 
 func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.Run, error) {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Apply.UpdateStatus(status)
+		run.UpdateApplyStatus(status)
 
 		return nil
 	})
@@ -137,14 +137,7 @@ func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.R
 
 func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishPlan()
-
-		run.Plan.ResourceAdditions = opts.ResourceAdditions
-		run.Plan.ResourceChanges = opts.ResourceChanges
-		run.Plan.ResourceDestructions = opts.ResourceDestructions
-
-		run.Plan.Plan = opts.Plan
-		run.Plan.PlanJSON = opts.PlanJSON
+		run.FinishPlan(opts)
 
 		return nil
 	})
@@ -156,11 +149,7 @@ func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run,
 
 func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishApply()
-
-		run.Apply.ResourceAdditions = opts.ResourceAdditions
-		run.Apply.ResourceChanges = opts.ResourceChanges
-		run.Apply.ResourceDestructions = opts.ResourceDestructions
+		run.FinishApply(opts)
 
 		return nil
 	})

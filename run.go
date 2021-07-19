@@ -90,7 +90,7 @@ func (r *Run) DTO() interface{} {
 		Actions:                r.Actions(),
 		CreatedAt:              r.CreatedAt,
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
-		HasChanges:             false,
+		HasChanges:             r.Plan.HasChanges(),
 		IsDestroy:              r.IsDestroy,
 		Message:                r.Message,
 		Permissions:            r.Permissions,
@@ -191,35 +191,26 @@ func NewRunID() string {
 	return fmt.Sprintf("run-%s", GenerateRandomString(16))
 }
 
-func (r *Run) QueueApply() {
-	r.Status = tfe.RunApplyQueued
-	r.StatusTimestamps.ApplyQueuedAt = time.Now()
-
-	r.Apply.Status = tfe.ApplyQueued
-	r.Apply.StatusTimestamps.QueuedAt = time.Now()
-}
-
 // PlanFinished updates the state of a run to reflect its plan having finished
-func (r *Run) FinishPlan() error {
-	if r.ConfigurationVersion.Speculative {
-		r.Status = tfe.RunPlannedAndFinished
-		r.StatusTimestamps.PlannedAndFinishedAt = time.Now()
-	} else {
-		r.Status = tfe.RunPlanned
-		r.StatusTimestamps.PlannedAt = time.Now()
-	}
+func (r *Run) FinishPlan(opts PlanFinishOptions) error {
+	r.Plan.ResourceAdditions = opts.ResourceAdditions
+	r.Plan.ResourceChanges = opts.ResourceChanges
+	r.Plan.ResourceDestructions = opts.ResourceDestructions
+	r.Plan.Plan = opts.Plan
+	r.Plan.PlanJSON = opts.PlanJSON
 
-	r.Plan.UpdateStatus(tfe.PlanFinished)
+	r.UpdatePlanStatus(tfe.PlanFinished)
 
 	return nil
 }
 
 // ApplyFinished updates the state of a run to reflect its plan having finished
-func (r *Run) FinishApply() error {
-	r.Status = tfe.RunApplied
-	r.StatusTimestamps.AppliedAt = time.Now()
+func (r *Run) FinishApply(opts ApplyFinishOptions) error {
+	r.Apply.ResourceAdditions = opts.ResourceAdditions
+	r.Apply.ResourceChanges = opts.ResourceChanges
+	r.Apply.ResourceDestructions = opts.ResourceDestructions
 
-	r.Apply.UpdateStatus(tfe.ApplyFinished)
+	r.UpdateApplyStatus(tfe.ApplyFinished)
 
 	return nil
 }
@@ -230,8 +221,7 @@ func (r *Run) Discard() error {
 		return ErrRunDiscardNotAllowed
 	}
 
-	r.Status = tfe.RunDiscarded
-	r.StatusTimestamps.DiscardedAt = time.Now()
+	r.UpdateStatus(tfe.RunDiscarded)
 
 	return nil
 }
@@ -313,6 +303,118 @@ func (r *Run) IsForceCancelable() bool {
 	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
 }
 
+// IsPlanOnly determines if this run only invokes a plan
+func (r *Run) IsPlanOnly() bool {
+	if r.ConfigurationVersion.Speculative {
+		return true
+	}
+	return false
+}
+
+// UpdateStatus updates the status of the run.
+func (r *Run) UpdateStatus(status tfe.RunStatus) {
+	timestamps := &tfe.RunStatusTimestamps{}
+	if r.StatusTimestamps != nil {
+		timestamps = r.StatusTimestamps
+	}
+
+	switch status {
+	case tfe.RunDiscarded:
+		timestamps.DiscardedAt = time.Now()
+		r.UpdateApplyStatus(tfe.ApplyUnreachable)
+	case tfe.RunPlanQueued:
+		timestamps.PlanQueuedAt = time.Now()
+	case tfe.RunApplyQueued:
+		timestamps.ApplyQueuedAt = time.Now()
+	case tfe.RunApplied:
+		timestamps.AppliedAt = time.Now()
+	case tfe.RunErrored:
+		timestamps.ErroredAt = time.Now()
+	default:
+		// Don't set a status or timestamp
+		return
+	}
+
+	r.Status = status
+	r.StatusTimestamps = timestamps
+}
+
+// UpdateStatus updates the status of the plan. It'll also update the
+// appropriate timestamp and set any other appropriate fields for the given
+// status.
+func (r *Run) UpdatePlanStatus(status tfe.PlanStatus) {
+	// Copy timestamps from plan
+	timestamps := &tfe.PlanStatusTimestamps{}
+	if r.StatusTimestamps != nil {
+		timestamps = r.Plan.StatusTimestamps
+	}
+
+	switch status {
+	case tfe.PlanQueued:
+		timestamps.QueuedAt = time.Now()
+		r.UpdateStatus(tfe.RunPlanQueued)
+	case tfe.PlanCanceled:
+		timestamps.CanceledAt = time.Now()
+	case tfe.PlanErrored:
+		timestamps.ErroredAt = time.Now()
+		r.UpdateStatus(tfe.RunErrored)
+	case tfe.PlanFinished:
+		timestamps.FinishedAt = time.Now()
+
+		if r.ConfigurationVersion.Speculative {
+			r.Status = tfe.RunPlannedAndFinished
+			r.StatusTimestamps.PlannedAndFinishedAt = time.Now()
+		} else {
+			r.Status = tfe.RunPlanned
+			r.StatusTimestamps.PlannedAt = time.Now()
+		}
+	default:
+		// Don't set a timestamp
+		return
+	}
+
+	r.Plan.Status = status
+
+	// Set timestamps on plan
+	r.Plan.StatusTimestamps = timestamps
+}
+
+// UpdateStatus updates the status of the apply. It'll also update the
+// appropriate timestamp and set any other appropriate fields for the given
+// status.
+func (r *Run) UpdateApplyStatus(status tfe.ApplyStatus) {
+	// Copy timestamps from apply
+	timestamps := &tfe.ApplyStatusTimestamps{}
+	if r.StatusTimestamps != nil {
+		timestamps = r.Apply.StatusTimestamps
+	}
+
+	switch status {
+	case tfe.ApplyFinished:
+		timestamps.FinishedAt = time.Now()
+		r.UpdateStatus(tfe.RunApplied)
+	case tfe.ApplyRunning:
+		timestamps.StartedAt = time.Now()
+		r.UpdateStatus(tfe.RunApplying)
+	case tfe.ApplyQueued:
+		timestamps.QueuedAt = time.Now()
+		r.UpdateStatus(tfe.RunApplyQueued)
+	case tfe.ApplyCanceled:
+		timestamps.CanceledAt = time.Now()
+	case tfe.ApplyErrored:
+		timestamps.ErroredAt = time.Now()
+		r.UpdateStatus(tfe.RunErrored)
+	default:
+		// Don't set a timestamp
+		return
+	}
+
+	r.Apply.Status = status
+
+	// Set timestamps on apply
+	r.Apply.StatusTimestamps = timestamps
+}
+
 func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	if opts.Workspace == nil {
 		return nil, errors.New("workspace is required")
@@ -321,7 +423,11 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	run := Run{
 		ExternalID: NewRunID(),
 		Permissions: &tfe.RunPermissions{
-			CanForceCancel: true,
+			CanForceCancel:  true,
+			CanApply:        true,
+			CanCancel:       true,
+			CanDiscard:      true,
+			CanForceExecute: true,
 		},
 		Refresh:      DefaultRefresh,
 		ReplaceAddrs: opts.ReplaceAddrs,

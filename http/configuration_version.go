@@ -7,13 +7,19 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/jsonapi"
 )
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := &tfe.ConfigurationVersionCreateOptions{}
-	obj, err := s.ConfigurationVersionService.Create(vars["workspace_id"], opts)
+	opts := tfe.ConfigurationVersionCreateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	obj, err := s.ConfigurationVersionService.Create(vars["workspace_id"], &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

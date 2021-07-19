@@ -2,7 +2,6 @@ package ots
 
 import (
 	"fmt"
-	"time"
 
 	tfe "github.com/leg100/go-tfe"
 )
@@ -70,36 +69,4 @@ func newApply() *Apply {
 	return &Apply{
 		ExternalID: NewApplyID(),
 	}
-}
-
-// UpdateStatus updates the status of the apply. It'll also update the
-// appropriate timestamp and set any other appropriate fields for the given
-// status.
-func (a *Apply) UpdateStatus(status tfe.ApplyStatus) {
-	// Copy timestamps from apply
-	timestamps := &tfe.ApplyStatusTimestamps{}
-	if a.StatusTimestamps != nil {
-		timestamps = a.StatusTimestamps
-	}
-
-	switch status {
-	case tfe.ApplyFinished:
-		timestamps.FinishedAt = time.Now()
-	case tfe.ApplyRunning:
-		timestamps.StartedAt = time.Now()
-	case tfe.ApplyQueued:
-		timestamps.QueuedAt = time.Now()
-	case tfe.ApplyCanceled:
-		timestamps.CanceledAt = time.Now()
-	case tfe.ApplyErrored:
-		timestamps.ErroredAt = time.Now()
-	default:
-		// Don't set a timestamp
-		return
-	}
-
-	a.Status = status
-
-	// Set timestamps on apply
-	a.StatusTimestamps = timestamps
 }

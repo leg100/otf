@@ -17,6 +17,7 @@ func DefaultEntitlements(organizationID string) *Entitlements {
 		Entitlements: &tfe.Entitlements{
 			ID:           organizationID,
 			StateStorage: true,
+			Operations:   true,
 		},
 	}
 }

@@ -17,38 +17,38 @@ type TerraformRunner interface {
 type runner struct{}
 
 func (r *runner) Plan(ctx context.Context, path string) ([]byte, []byte, []byte, error) {
-	initOut, err := r.run(ctx, path, "init", "-no-color")
+	initOut, err := r.run(ctx, path, "init")
 	if err != nil {
-		return nil, nil, nil, err
+		return initOut, nil, nil, fmt.Errorf("terraform init failed: %w", err)
 	}
 
-	out, err := r.run(ctx, path, "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename))
+	out, err := r.run(ctx, path, "plan", fmt.Sprintf("-out=%s", PlanFilename))
 	if err != nil {
-		return nil, nil, nil, err
+		return out, nil, nil, fmt.Errorf("terraform plan failed: %w", err)
 	}
 
-	json, err := r.run(ctx, path, "show", "-no-color", "-json", PlanFilename)
+	json, err := r.run(ctx, path, "show", "-json", PlanFilename)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("terraform show failed: %w", err)
 	}
 
 	file, err := os.ReadFile(filepath.Join(path, PlanFilename))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("unable to read plan file: %w", err)
 	}
 
 	return append(initOut, out...), file, json, nil
 }
 
 func (r *runner) Apply(ctx context.Context, path string) ([]byte, error) {
-	initOut, err := r.run(ctx, path, "init", "-no-color")
+	initOut, err := r.run(ctx, path, "init")
 	if err != nil {
-		return nil, err
+		return initOut, fmt.Errorf("terraform init failed: %w", err)
 	}
 
-	out, err := r.run(ctx, path, "apply", "-no-color", PlanFilename)
+	out, err := r.run(ctx, path, "apply", PlanFilename)
 	if err != nil {
-		return nil, err
+		return out, fmt.Errorf("terraform apply failed: %w", err)
 	}
 
 	return append(initOut, out...), nil
@@ -61,7 +61,7 @@ func (r *runner) run(ctx context.Context, path, command string, args ...string) 
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return buf.Bytes(), err
 	}
 	return buf.Bytes(), nil
 }

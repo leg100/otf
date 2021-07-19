@@ -2,7 +2,6 @@ package ots
 
 import (
 	"fmt"
-	"time"
 
 	tfe "github.com/leg100/go-tfe"
 )
@@ -85,36 +84,6 @@ func newPlan() *Plan {
 
 func NewPlanID() string {
 	return fmt.Sprintf("plan-%s", GenerateRandomString(16))
-}
-
-// UpdateStatus updates the status of the plan. It'll also update the
-// appropriate timestamp and set any other appropriate fields for the given
-// status.
-func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
-	// Copy timestamps from plan
-	timestamps := &tfe.PlanStatusTimestamps{}
-	if p.StatusTimestamps != nil {
-		timestamps = p.StatusTimestamps
-	}
-
-	switch status {
-	case tfe.PlanQueued:
-		timestamps.QueuedAt = time.Now()
-	case tfe.PlanCanceled:
-		timestamps.CanceledAt = time.Now()
-	case tfe.PlanErrored:
-		timestamps.ErroredAt = time.Now()
-	case tfe.PlanFinished:
-		timestamps.FinishedAt = time.Now()
-	default:
-		// Don't set a timestamp
-		return
-	}
-
-	p.Status = status
-
-	// Set timestamps on plan
-	p.StatusTimestamps = timestamps
 }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).

@@ -185,9 +185,22 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
-		Permissions:         &tfe.WorkspacePermissions{},
-		Organization:        org,
-		OrganizationID:      org.InternalID,
+		Permissions: &tfe.WorkspacePermissions{
+			CanDestroy:        true,
+			CanForceUnlock:    true,
+			CanLock:           true,
+			CanUnlock:         true,
+			CanQueueApply:     true,
+			CanQueueDestroy:   true,
+			CanQueueRun:       true,
+			CanReadSettings:   true,
+			CanUpdate:         true,
+			CanUpdateVariable: true,
+		},
+		SpeculativeEnabled: true,
+		Operations:         true,
+		Organization:       org,
+		OrganizationID:     org.InternalID,
 	}
 
 	if opts.AllowDestroyPlan != nil {
