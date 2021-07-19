@@ -229,7 +229,7 @@ func TestOrganization(t *testing.T) {
 						"agents":                  false,
 						"audit-logging":           false,
 						"cost-estimation":         false,
-						"operations":              false,
+						"operations":              true,
 						"private-module-registry": false,
 						"sentinel":                false,
 						"sso":                     false,
