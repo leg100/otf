@@ -16,15 +16,15 @@ func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
 			return nil
 		}
 
-		if info.IsDir() {
+		if dir != path && info.IsDir() {
 			return filepath.SkipDir
 		}
 
-		if filepath.Ext(path) != "tf" {
+		if filepath.Ext(path) != ".tf" {
 			return nil
 		}
 
-		in, err := os.ReadFile(filepath.Join(path, path))
+		in, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}
@@ -35,7 +35,7 @@ func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
 		}
 
 		if deleted {
-			if err := os.WriteFile(filepath.Join(path, path), out, 0644); err != nil {
+			if err := os.WriteFile(path, out, 0644); err != nil {
 				return err
 			}
 		}
