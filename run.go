@@ -303,14 +303,6 @@ func (r *Run) IsForceCancelable() bool {
 	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
 }
 
-// IsPlanOnly determines if this run only invokes a plan
-func (r *Run) IsPlanOnly() bool {
-	if r.ConfigurationVersion.Speculative {
-		return true
-	}
-	return false
-}
-
 // UpdateStatus updates the status of the run.
 func (r *Run) UpdateStatus(status tfe.RunStatus) {
 	timestamps := &tfe.RunStatusTimestamps{}
