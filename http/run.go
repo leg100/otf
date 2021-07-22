@@ -22,7 +22,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+	WriteResponse(w, r, s.RunJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.RunJSONAPIObject(obj))
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.RunListJSONAPIObject(obj))
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -155,4 +155,49 @@ func (s *Server) GetRunPlanJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// RunJSONAPIObject converts a Run to a struct
+// that can be marshalled into a JSON-API object
+func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
+	obj := &tfe.Run{
+		ID:                     r.ExternalID,
+		Actions:                r.Actions(),
+		CreatedAt:              r.CreatedAt,
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
+		HasChanges:             r.Plan.HasChanges(),
+		IsDestroy:              r.IsDestroy,
+		Message:                r.Message,
+		Permissions:            r.Permissions,
+		PositionInQueue:        0,
+		Refresh:                r.Refresh,
+		RefreshOnly:            r.RefreshOnly,
+		ReplaceAddrs:           r.ReplaceAddrs,
+		Source:                 ots.DefaultConfigurationSource,
+		Status:                 r.Status,
+		StatusTimestamps:       r.StatusTimestamps,
+		TargetAddrs:            r.TargetAddrs,
+
+		// Relations
+		Apply:                s.ApplyJSONAPIObject(r.Apply),
+		ConfigurationVersion: s.ConfigurationVersionJSONAPIObject(r.ConfigurationVersion),
+		CreatedBy:            r.CreatedBy,
+		Plan:                 s.PlanJSONAPIObject(r.Plan),
+		Workspace:            s.WorkspaceJSONAPIObject(r.Workspace),
+	}
+
+	return obj
+}
+
+// RunListJSONAPIObject converts a RunList to
+// a struct that can be marshalled into a JSON-API object
+func (s *Server) RunListJSONAPIObject(cvl *ots.RunList) *tfe.RunList {
+	obj := &tfe.RunList{
+		Pagination: cvl.Pagination,
+	}
+	for _, item := range cvl.Items {
+		obj.Items = append(obj.Items, s.RunJSONAPIObject(item))
+	}
+
+	return obj
 }

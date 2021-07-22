@@ -7,10 +7,6 @@ type Entitlements struct {
 	*tfe.Entitlements
 }
 
-func (e *Entitlements) DTO() interface{} {
-	return e.Entitlements
-}
-
 // We currently only support State Storage...
 func DefaultEntitlements(organizationID string) *Entitlements {
 	return &Entitlements{

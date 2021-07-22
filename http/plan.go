@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -18,7 +19,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.PlanJSONAPIObject(obj))
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
@@ -78,4 +79,21 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
+}
+
+// PlanJSONAPIObject converts a Plan to a struct that can be
+// marshalled into a JSON-API object
+func (s *Server) PlanJSONAPIObject(p *ots.Plan) *tfe.Plan {
+	obj := &tfe.Plan{
+		ID:                   p.ExternalID,
+		HasChanges:           p.HasChanges(),
+		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ExternalID),
+		ResourceAdditions:    p.ResourceAdditions,
+		ResourceChanges:      p.ResourceChanges,
+		ResourceDestructions: p.ResourceDestructions,
+		Status:               p.Status,
+		StatusTimestamps:     p.StatusTimestamps,
+	}
+
+	return obj
 }

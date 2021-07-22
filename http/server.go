@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -20,7 +21,13 @@ const (
 	ShutdownTimeout = 1 * time.Second
 
 	jsonApplication = "application/json"
+
+	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/uploads"
+	GetPlanLogsRoute                WebRoute = "/plans/%v/logs"
+	GetApplyLogsRoute               WebRoute = "/applies/%v/logs"
 )
+
+type WebRoute string
 
 // The HTTP/S server
 type Server struct {
@@ -36,6 +43,9 @@ type Server struct {
 
 	// Listening Address in the form <ip>:<port>
 	Addr string
+
+	// Hostname, used within absolute URL links, defaults to localhost
+	Hostname string
 
 	OrganizationService         ots.OrganizationService
 	WorkspaceService            ots.WorkspaceService
@@ -154,6 +164,17 @@ func NewRouter(server *Server) *negroni.Negroni {
 	return n
 }
 
+// GetURL returns an absolute URL corresponding to the given route and params
+func (s *Server) GetURL(route WebRoute, param ...interface{}) string {
+	url := &url.URL{
+		Scheme: "https",
+		Host:   s.Addr,
+		Path:   fmt.Sprintf(string(route), param),
+	}
+
+	return url.String()
+}
+
 // Open validates the server options and begins listening on the bind address.
 func (s *Server) Open() (err error) {
 	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
@@ -174,8 +195,8 @@ func (s *Server) Open() (err error) {
 	return nil
 }
 
-// Port returns the TCP port for the running server.
-// This is useful in tests where we allocate a random port by using ":0".
+// Port returns the TCP port for the running server.  This is useful in tests
+// where we allocate a random port by using ":0".
 func (s *Server) Port() int {
 	if s.ln == nil {
 		return 0

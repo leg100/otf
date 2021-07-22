@@ -32,19 +32,6 @@ type Plan struct {
 	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
-func (p *Plan) DTO() interface{} {
-	return &tfe.Plan{
-		ID:                   p.ExternalID,
-		HasChanges:           p.HasChanges(),
-		LogReadURL:           GetPlanLogsUrl(p.ExternalID),
-		ResourceAdditions:    p.ResourceAdditions,
-		ResourceChanges:      p.ResourceChanges,
-		ResourceDestructions: p.ResourceDestructions,
-		Status:               p.Status,
-		StatusTimestamps:     p.StatusTimestamps,
-	}
-}
-
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)

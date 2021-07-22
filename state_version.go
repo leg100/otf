@@ -118,28 +118,6 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 	return &sv, nil
 }
 
-func (r *StateVersion) DTO() interface{} {
-	return &tfe.StateVersion{
-		ID:          r.ExternalID,
-		CreatedAt:   r.CreatedAt,
-		DownloadURL: r.DownloadURL(),
-		Serial:      r.Serial,
-		Outputs:     StateVersionOutputList(r.Outputs).DTO().([]*tfe.StateVersionOutput),
-		// Run:         r.Run.DTO(),
-	}
-}
-
 func (r *StateVersion) DownloadURL() string {
 	return fmt.Sprintf("/state-versions/%s/download", r.ExternalID)
-}
-
-func (svl *StateVersionList) DTO() interface{} {
-	dtol := &tfe.StateVersionList{
-		Pagination: svl.Pagination,
-	}
-	for _, item := range svl.Items {
-		dtol.Items = append(dtol.Items, item.DTO().(*tfe.StateVersion))
-	}
-
-	return dtol
 }

@@ -3,7 +3,6 @@ package ots
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -89,10 +88,12 @@ type ConfigurationVersionListOptions struct {
 	WorkspaceID *string
 }
 
+// ConfigurationVersionFactory creates ConfigurationVersion objects
 type ConfigurationVersionFactory struct {
 	WorkspaceService WorkspaceService
 }
 
+// NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ExternalID:    NewConfigurationVersionID(),
@@ -121,38 +122,4 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 
 func NewConfigurationVersionID() string {
 	return fmt.Sprintf("cv-%s", GenerateRandomString(16))
-}
-
-func (cv *ConfigurationVersion) UploadURL() string {
-	return fmt.Sprintf("/configuration-versions/%s/upload", cv.ExternalID)
-}
-
-func (cv *ConfigurationVersion) DTO() interface{} {
-	dto := &tfe.ConfigurationVersion{
-		ID:            cv.ExternalID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Error:         cv.Error,
-		ErrorMessage:  cv.ErrorMessage,
-		Speculative:   cv.Speculative,
-		Source:        cv.Source,
-		Status:        cv.Status,
-		UploadURL:     cv.UploadURL(),
-	}
-
-	if cv.StatusTimestamps != nil && !reflect.ValueOf(cv.StatusTimestamps).Elem().IsZero() {
-		dto.StatusTimestamps = cv.StatusTimestamps
-	}
-
-	return dto
-}
-
-func (cvl *ConfigurationVersionList) DTO() interface{} {
-	l := &tfe.ConfigurationVersionList{
-		Pagination: cvl.Pagination,
-	}
-	for _, item := range cvl.Items {
-		l.Items = append(l.Items, item.DTO().(*tfe.ConfigurationVersion))
-	}
-
-	return l
 }

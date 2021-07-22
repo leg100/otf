@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -56,4 +57,20 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
+}
+
+// ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
+// JSON-API object
+func (s *Server) ApplyJSONAPIObject(a *ots.Apply) *tfe.Apply {
+	obj := &tfe.Apply{
+		ID:                   a.ExternalID,
+		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ExternalID),
+		ResourceAdditions:    a.ResourceAdditions,
+		ResourceChanges:      a.ResourceChanges,
+		ResourceDestructions: a.ResourceDestructions,
+		Status:               a.Status,
+		StatusTimestamps:     a.StatusTimestamps,
+	}
+
+	return obj
 }
