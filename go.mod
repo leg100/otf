@@ -11,6 +11,7 @@ require (
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.23.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5

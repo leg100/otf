@@ -27,7 +27,13 @@ func NewFilestore(path string) (*FileStore, error) {
 	}
 
 	// Ensure path exists
-	if err := os.MkdirAll(path, 0644); err != nil {
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return nil, err
+	}
+
+	// Ensure path is accessible (MkdirAll won't set perms if path already
+	// exists)
+	if err := os.Chmod(path, 0755); err != nil {
 		return nil, err
 	}
 

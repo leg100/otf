@@ -13,6 +13,7 @@ import (
 	"github.com/leg100/ots/filestore"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
+	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
@@ -22,10 +23,14 @@ const (
 	DefaultAddress  = ":8080"
 	DefaultHostname = "localhost:8080"
 	DefaultDBPath   = "ots.db"
+	DefaultDataDir  = "~/.ots-data"
 )
 
 var (
+	// DBPath is the path to the sqlite database file
 	DBPath string
+	// DataDir is the path to the directory used for storing OTS-related data
+	DataDir string
 )
 
 func main() {
@@ -47,12 +52,29 @@ func main() {
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
+	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTS related data")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
 	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
 		panic(err.Error())
 	}
+
+	// DataDir: Expand ~ to home dir
+	var err error
+	DataDir, err = homedir.Expand(DataDir)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Setup filestore
+	fs, err := filestore.NewFilestore(DataDir)
+	if err != nil {
+		panic(err.Error())
+	}
+	server.Logger.Info().
+		Str("path", fs.Path()).
+		Msg("filestore started")
 
 	// Setup logger
 	consoleWriter := zerolog.ConsoleWriter{
@@ -76,15 +98,6 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-
-	// Setup filestore
-	fs, err := filestore.NewFilestore("")
-	if err != nil {
-		panic(err.Error())
-	}
-	server.Logger.Info().
-		Str("path", fs.Path()).
-		Msg("filestore started")
 
 	organizationStore := sqlite.NewOrganizationDB(db)
 	workspaceStore := sqlite.NewWorkspaceDB(db)
