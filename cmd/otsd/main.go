@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
+	"github.com/leg100/ots/filestore"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
 	"github.com/rs/zerolog"
@@ -74,6 +75,15 @@ func main() {
 		panic(err.Error())
 	}
 
+	// Setup filestore
+	fs, err := filestore.NewFilestore("")
+	if err != nil {
+		panic(err.Error())
+	}
+	server.Logger.Info().
+		Str("path", fs.Path()).
+		Msg("filestore started")
+
 	organizationStore := sqlite.NewOrganizationDB(db)
 	workspaceStore := sqlite.NewWorkspaceDB(db)
 	stateVersionStore := sqlite.NewStateVersionDB(db)
@@ -83,7 +93,7 @@ func main() {
 	server.OrganizationService = app.NewOrganizationService(organizationStore)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService)
 	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService, fs)
 	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService)
 	server.PlanService = app.NewPlanService(runStore)
 	server.ApplyService = app.NewApplyService(runStore)

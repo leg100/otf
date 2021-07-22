@@ -8,14 +8,16 @@ import (
 var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 
 type ConfigurationVersionService struct {
-	db ots.ConfigurationVersionRepository
+	db      ots.ConfigurationVersionRepository
+	archive ots.Archivist
 
 	*ots.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db ots.ConfigurationVersionRepository, wss ots.WorkspaceService) *ConfigurationVersionService {
+func NewConfigurationVersionService(db ots.ConfigurationVersionRepository, wss ots.WorkspaceService, archive ots.Archivist) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
-		db: db,
+		archive: archive,
+		db:      db,
 		ConfigurationVersionFactory: &ots.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
@@ -43,9 +45,15 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*ots.Configu
 	return s.db.Get(ots.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 }
 
+// Upload a configuration version blob
 func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
-	_, err := s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
-		cv.Configuration = configuration
+	blobID, err := s.archive.Put(configuration)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
+		cv.BlobID = blobID
 		cv.Status = tfe.ConfigurationUploaded
 
 		return nil
@@ -59,5 +67,6 @@ func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cv.Configuration, nil
+
+	return s.archive.Get(cv.BlobID)
 }
