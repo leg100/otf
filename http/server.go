@@ -22,7 +22,7 @@ const (
 
 	jsonApplication = "application/json"
 
-	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/uploads"
+	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/upload"
 	GetPlanLogsRoute                WebRoute = "/plans/%v/logs"
 	GetApplyLogsRoute               WebRoute = "/applies/%v/logs"
 )
@@ -169,7 +169,7 @@ func (s *Server) GetURL(route WebRoute, param ...interface{}) string {
 	url := &url.URL{
 		Scheme: "https",
 		Host:   s.Hostname,
-		Path:   fmt.Sprintf(string(route), param),
+		Path:   fmt.Sprintf(string(route), param...),
 	}
 
 	return url.String()

@@ -19,7 +19,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.ApplyJSONAPIObject(obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {

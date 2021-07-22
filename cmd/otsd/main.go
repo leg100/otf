@@ -19,7 +19,7 @@ import (
 
 const (
 	DefaultAddress  = ":8080"
-	DefaultHostname = "localhost"
+	DefaultHostname = "localhost:8080"
 	DefaultDBPath   = "ots.db"
 )
 
