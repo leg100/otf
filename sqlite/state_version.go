@@ -14,8 +14,6 @@ type StateVersionService struct {
 }
 
 func NewStateVersionDB(db *gorm.DB) *StateVersionService {
-	db.AutoMigrate(&ots.StateVersion{}, &ots.StateVersionOutput{})
-
 	return &StateVersionService{
 		DB: db,
 	}

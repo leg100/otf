@@ -14,8 +14,6 @@ type OrganizationDB struct {
 }
 
 func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
-	db.AutoMigrate(&ots.Organization{})
-
 	return &OrganizationDB{
 		DB: db,
 	}

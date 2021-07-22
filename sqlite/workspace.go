@@ -15,8 +15,6 @@ type WorkspaceDB struct {
 }
 
 func NewWorkspaceDB(db *gorm.DB) *WorkspaceDB {
-	db.AutoMigrate(&ots.Workspace{})
-
 	return &WorkspaceDB{
 		DB: db,
 	}

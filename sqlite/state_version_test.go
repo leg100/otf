@@ -8,12 +8,11 @@ import (
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func TestStateVersion(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"))
+	db, err := New(":memory:", &gorm.Config{})
 	require.NoError(t, err)
 
 	orgDB := NewOrganizationDB(db)

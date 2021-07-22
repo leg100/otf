@@ -13,8 +13,6 @@ type ConfigurationVersionDB struct {
 }
 
 func NewConfigurationVersionDB(db *gorm.DB) *ConfigurationVersionDB {
-	db.AutoMigrate(&ots.ConfigurationVersion{})
-
 	return &ConfigurationVersionDB{
 		DB: db,
 	}

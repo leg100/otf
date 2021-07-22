@@ -13,8 +13,6 @@ type RunDB struct {
 }
 
 func NewRunDB(db *gorm.DB) *RunDB {
-	db.AutoMigrate(&ots.Run{}, &ots.Apply{}, &ots.Plan{})
-
 	return &RunDB{
 		DB: db,
 	}
