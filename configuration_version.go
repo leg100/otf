@@ -43,7 +43,7 @@ type ConfigurationVersion struct {
 	Status           tfe.ConfigurationStatus
 	StatusTimestamps *tfe.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Configuration []byte
+	Configuration []byte `gorm:"-"`
 	BlobID        string
 
 	// Configuration Version belongs to a Workspace

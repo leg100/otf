@@ -83,15 +83,10 @@ func TestStateVersion(t *testing.T) {
 
 	_, err = svDB.Get(ots.StateVersionGetOptions{ID: &stateVersionIDs[0]})
 	require.NoError(t, err)
+
 	// Current
 
 	sv, err := svDB.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaces[0].ExternalID})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), sv.Serial)
-
-	// Download
-	data, err = base64.StdEncoding.DecodeString(sv.State)
-	require.NoError(t, err)
-	_, err = ots.Parse(data)
-	require.NoError(t, err)
 }

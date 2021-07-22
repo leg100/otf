@@ -1,8 +1,8 @@
 package ots
 
-// Archivist implementations provide a persistent store from and to which binary
+// BlobStore implementations provide a persistent store from and to which binary
 // objects can be fetched and uploaded.
-type Archivist interface {
+type BlobStore interface {
 	// Get fetches a blob with the given ID
 	Get(id string) ([]byte, error)
 

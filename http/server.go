@@ -54,7 +54,6 @@ type Server struct {
 	RunService                  ots.RunService
 	PlanService                 ots.PlanService
 	ApplyService                ots.ApplyService
-	BlobService                 ots.Archivist
 }
 
 // NewServer is the contructor for Server
@@ -81,9 +80,6 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/plans/{id}/logs", server.UploadPlanLogs).Methods("POST")
 	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
 	router.HandleFunc("/applies/{id}/logs", server.UploadApplyLogs).Methods("POST")
-
-	router.HandleFunc("/archivist/{id}", server.GetBlob).Methods("GET")
-	router.HandleFunc("/archivist", server.PutBlob).Methods("POST")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()

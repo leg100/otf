@@ -94,7 +94,7 @@ func main() {
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService, fs)
 	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService, fs)
 	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService)
 	server.PlanService = app.NewPlanService(runStore)

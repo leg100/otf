@@ -27,8 +27,8 @@ type StateVersion struct {
 	VCSCommitSHA string `gorm:"-"`
 	VCSCommitURL string `gorm:"-"`
 
-	// Base64-encoded state file
-	State string
+	State  string `gorm:"-"`
+	BlobID string
 
 	// State version belongs to a workspace
 	WorkspaceID uint
@@ -76,6 +76,7 @@ type StateVersionGetOptions struct {
 
 type StateVersionFactory struct {
 	WorkspaceService WorkspaceService
+	BlobStore        BlobStore
 }
 
 func NewStateVersionID() string {
@@ -100,6 +101,12 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 	if err != nil {
 		return nil, err
 	}
+
+	blobID, err := f.BlobStore.Put(decoded)
+	if err != nil {
+		return nil, err
+	}
+	sv.BlobID = blobID
 
 	state, err := Parse(decoded)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/ots"
 )
 
-var _ ots.Archivist = (*FileStore)(nil)
+var _ ots.BlobStore = (*FileStore)(nil)
 
 // FileStore is a filesystem based blob database
 type FileStore struct {

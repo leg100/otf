@@ -1,8 +1,6 @@
 package app
 
 import (
-	"encoding/base64"
-
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -11,13 +9,16 @@ var _ ots.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
 	db ots.StateVersionStore
+	bs ots.BlobStore
 	*ots.StateVersionFactory
 }
 
-func NewStateVersionService(db ots.StateVersionStore, wss ots.WorkspaceService) *StateVersionService {
+func NewStateVersionService(db ots.StateVersionStore, wss ots.WorkspaceService, bs ots.BlobStore) *StateVersionService {
 	return &StateVersionService{
+		bs: bs,
 		db: db,
 		StateVersionFactory: &ots.StateVersionFactory{
+			BlobStore:        bs,
 			WorkspaceService: wss,
 		},
 	}
@@ -49,5 +50,6 @@ func (s StateVersionService) Download(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return base64.StdEncoding.DecodeString(sv.State)
+
+	return s.bs.Get(sv.BlobID)
 }

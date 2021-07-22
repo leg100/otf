@@ -8,16 +8,16 @@ import (
 var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 
 type ConfigurationVersionService struct {
-	db      ots.ConfigurationVersionRepository
-	archive ots.Archivist
+	db ots.ConfigurationVersionRepository
+	bs ots.BlobStore
 
 	*ots.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db ots.ConfigurationVersionRepository, wss ots.WorkspaceService, archive ots.Archivist) *ConfigurationVersionService {
+func NewConfigurationVersionService(db ots.ConfigurationVersionRepository, wss ots.WorkspaceService, bs ots.BlobStore) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
-		archive: archive,
-		db:      db,
+		bs: bs,
+		db: db,
 		ConfigurationVersionFactory: &ots.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
@@ -47,7 +47,7 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*ots.Configu
 
 // Upload a configuration version blob
 func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
-	blobID, err := s.archive.Put(configuration)
+	blobID, err := s.bs.Put(configuration)
 	if err != nil {
 		return err
 	}
@@ -68,5 +68,5 @@ func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return s.archive.Get(cv.BlobID)
+	return s.bs.Get(cv.BlobID)
 }
