@@ -168,7 +168,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 func (s *Server) GetURL(route WebRoute, param ...interface{}) string {
 	url := &url.URL{
 		Scheme: "https",
-		Host:   s.Addr,
+		Host:   s.Hostname,
 		Path:   fmt.Sprintf(string(route), param),
 	}
 

@@ -28,7 +28,7 @@ func (h *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+	WriteResponse(w, r, h.OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func (h *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.OrganizationJSONAPIObject(obj))
 }
 
 func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (h *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.OrganizationListJSONAPIObject(obj))
 }
 
 func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +75,7 @@ func (h *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.OrganizationJSONAPIObject(obj))
 }
 
 func (h *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {

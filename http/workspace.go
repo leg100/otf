@@ -29,7 +29,7 @@ func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +41,7 @@ func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +53,7 @@ func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceListJSONAPIObject(obj))
 }
 
 func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +94,7 @@ func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,7 @@ func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +138,7 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +153,7 @@ func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
