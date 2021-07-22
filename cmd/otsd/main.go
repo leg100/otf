@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	DefaultAddress = ":8080"
-	DefaultDBPath  = "ots.db"
+	DefaultAddress  = ":8080"
+	DefaultHostname = "localhost:8080"
+	DefaultDBPath   = "ots.db"
 )
 
 var (
@@ -45,6 +46,7 @@ func main() {
 	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
+	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 

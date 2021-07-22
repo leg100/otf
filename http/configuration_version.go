@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
+	"github.com/leg100/ots"
 )
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +27,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+	WriteResponse(w, r, s.ConfigurationVersionJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +39,7 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.ConfigurationVersionJSONAPIObject(obj))
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +57,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, s.ConfigurationVersionListJSONAPIObject(obj))
 }
 
 func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -71,4 +73,38 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
+}
+
+// ConfigurationVersionJSONAPIObject converts a ConfigurationVersion to a struct
+// that can be marshalled into a JSON-API object
+func (s *Server) ConfigurationVersionJSONAPIObject(cv *ots.ConfigurationVersion) *tfe.ConfigurationVersion {
+	obj := &tfe.ConfigurationVersion{
+		ID:            cv.ExternalID,
+		AutoQueueRuns: cv.AutoQueueRuns,
+		Error:         cv.Error,
+		ErrorMessage:  cv.ErrorMessage,
+		Speculative:   cv.Speculative,
+		Source:        cv.Source,
+		Status:        cv.Status,
+		UploadURL:     s.GetURL(UploadConfigurationVersionRoute, cv.ExternalID),
+	}
+
+	if cv.StatusTimestamps != nil && !reflect.ValueOf(cv.StatusTimestamps).Elem().IsZero() {
+		obj.StatusTimestamps = cv.StatusTimestamps
+	}
+
+	return obj
+}
+
+// ConfigurationVersionListJSONAPIObject converts a ConfigurationVersionList to
+// a struct that can be marshalled into a JSON-API object
+func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *ots.ConfigurationVersionList) *tfe.ConfigurationVersionList {
+	obj := &tfe.ConfigurationVersionList{
+		Pagination: cvl.Pagination,
+	}
+	for _, item := range cvl.Items {
+		obj.Items = append(obj.Items, s.ConfigurationVersionJSONAPIObject(item))
+	}
+
+	return obj
 }

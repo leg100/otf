@@ -49,18 +49,6 @@ type ApplyLogOptions struct {
 	Offset int `schema:"offset"`
 }
 
-func (a *Apply) DTO() interface{} {
-	return &tfe.Apply{
-		ID:                   a.ExternalID,
-		LogReadURL:           GetApplyLogsUrl(a.ExternalID),
-		ResourceAdditions:    a.ResourceAdditions,
-		ResourceChanges:      a.ResourceChanges,
-		ResourceDestructions: a.ResourceDestructions,
-		Status:               a.Status,
-		StatusTimestamps:     a.StatusTimestamps,
-	}
-}
-
 func NewApplyID() string {
 	return fmt.Sprintf("apply-%s", GenerateRandomString(16))
 }

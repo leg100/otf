@@ -86,49 +86,6 @@ func (ws *Workspace) AfterFind(tx *gorm.DB) (err error) { ws.Unwrap(tx); return 
 func (ws *Workspace) BeforeSave(tx *gorm.DB) (err error) { ws.Wrap(tx); return }
 func (ws *Workspace) AfterSave(tx *gorm.DB) (err error)  { ws.Unwrap(tx); return }
 
-func (ws *Workspace) DTO() interface{} {
-	dto := &tfe.Workspace{
-		ID:                         ws.ExternalID,
-		Actions:                    ws.Actions(),
-		AllowDestroyPlan:           ws.AllowDestroyPlan,
-		AutoApply:                  ws.AutoApply,
-		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
-		CreatedAt:                  ws.CreatedAt,
-		Description:                ws.Description,
-		Environment:                ws.Environment,
-		ExecutionMode:              ws.ExecutionMode,
-		FileTriggersEnabled:        ws.FileTriggersEnabled,
-		GlobalRemoteState:          ws.GlobalRemoteState,
-		Locked:                     ws.Locked,
-		MigrationEnvironment:       ws.MigrationEnvironment,
-		Name:                       ws.Name,
-		Operations:                 ws.Operations,
-		Permissions:                ws.Permissions,
-		QueueAllRuns:               ws.QueueAllRuns,
-		SpeculativeEnabled:         ws.SpeculativeEnabled,
-		SourceName:                 ws.SourceName,
-		SourceURL:                  ws.SourceURL,
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
-		TerraformVersion:           ws.TerraformVersion,
-		TriggerPrefixes:            ws.TriggerPrefixes,
-		VCSRepo:                    ws.VCSRepo,
-		WorkingDirectory:           ws.WorkingDirectory,
-		UpdatedAt:                  ws.UpdatedAt,
-		ResourceCount:              ws.ResourceCount,
-		ApplyDurationAverage:       ws.ApplyDurationAverage,
-		PlanDurationAverage:        ws.PlanDurationAverage,
-		PolicyCheckFailures:        ws.PolicyCheckFailures,
-		RunFailures:                ws.RunFailures,
-		RunsCount:                  ws.RunsCount,
-	}
-
-	if ws.Organization != nil {
-		dto.Organization = ws.Organization.DTO().(*tfe.Organization)
-	}
-
-	return dto
-}
-
 // WorkspaceList represents a list of Workspaces.
 type WorkspaceList struct {
 	*tfe.Pagination
@@ -309,15 +266,4 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	ws.Locked = lock
 
 	return nil
-}
-
-func (wsl *WorkspaceList) DTO() interface{} {
-	l := &tfe.WorkspaceList{
-		Pagination: wsl.Pagination,
-	}
-	for _, item := range wsl.Items {
-		l.Items = append(l.Items, item.DTO().(*tfe.Workspace))
-	}
-
-	return l
 }

@@ -45,24 +45,6 @@ type Organization struct {
 	TwoFactorConformant    bool
 }
 
-func (org *Organization) DTO() interface{} {
-	return &tfe.Organization{
-		Name:                   org.Name,
-		CollaboratorAuthPolicy: org.CollaboratorAuthPolicy,
-		CostEstimationEnabled:  org.CostEstimationEnabled,
-		CreatedAt:              org.CreatedAt,
-		Email:                  org.Email,
-		ExternalID:             org.ExternalID,
-		OwnersTeamSAMLRoleID:   org.OwnersTeamSAMLRoleID,
-		Permissions:            org.Permissions,
-		SAMLEnabled:            org.SAMLEnabled,
-		SessionRemember:        org.SessionRemember,
-		SessionTimeout:         org.SessionTimeout,
-		TrialExpiresAt:         org.TrialExpiresAt,
-		TwoFactorConformant:    org.TwoFactorConformant,
-	}
-}
-
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
 	*tfe.Pagination
@@ -147,15 +129,4 @@ func UpdateOrganization(org *Organization, opts *tfe.OrganizationUpdateOptions) 
 	}
 
 	return org, nil
-}
-
-func (ol *OrganizationList) DTO() interface{} {
-	l := &tfe.OrganizationList{
-		Pagination: ol.Pagination,
-	}
-	for _, item := range ol.Items {
-		l.Items = append(l.Items, item.DTO().(*tfe.Organization))
-	}
-
-	return l
 }

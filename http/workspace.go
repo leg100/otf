@@ -29,7 +29,7 @@ func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj, WithCode(http.StatusCreated))
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +41,7 @@ func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +53,7 @@ func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceListJSONAPIObject(obj))
 }
 
 func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +94,7 @@ func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,7 @@ func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +138,7 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +153,7 @@ func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj)
+	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
 }
 
 func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -176,4 +176,62 @@ func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// WorkspaceJSONAPIObject converts a Workspace to a struct that can be marshalled into a
+// JSON-API object
+func (s *Server) WorkspaceJSONAPIObject(ws *ots.Workspace) *tfe.Workspace {
+	obj := &tfe.Workspace{
+		ID:                         ws.ExternalID,
+		Actions:                    ws.Actions(),
+		AllowDestroyPlan:           ws.AllowDestroyPlan,
+		AutoApply:                  ws.AutoApply,
+		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
+		CreatedAt:                  ws.CreatedAt,
+		Description:                ws.Description,
+		Environment:                ws.Environment,
+		ExecutionMode:              ws.ExecutionMode,
+		FileTriggersEnabled:        ws.FileTriggersEnabled,
+		GlobalRemoteState:          ws.GlobalRemoteState,
+		Locked:                     ws.Locked,
+		MigrationEnvironment:       ws.MigrationEnvironment,
+		Name:                       ws.Name,
+		Operations:                 ws.Operations,
+		Permissions:                ws.Permissions,
+		QueueAllRuns:               ws.QueueAllRuns,
+		SpeculativeEnabled:         ws.SpeculativeEnabled,
+		SourceName:                 ws.SourceName,
+		SourceURL:                  ws.SourceURL,
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+		TerraformVersion:           ws.TerraformVersion,
+		TriggerPrefixes:            ws.TriggerPrefixes,
+		VCSRepo:                    ws.VCSRepo,
+		WorkingDirectory:           ws.WorkingDirectory,
+		UpdatedAt:                  ws.UpdatedAt,
+		ResourceCount:              ws.ResourceCount,
+		ApplyDurationAverage:       ws.ApplyDurationAverage,
+		PlanDurationAverage:        ws.PlanDurationAverage,
+		PolicyCheckFailures:        ws.PolicyCheckFailures,
+		RunFailures:                ws.RunFailures,
+		RunsCount:                  ws.RunsCount,
+	}
+
+	if ws.Organization != nil {
+		obj.Organization = s.OrganizationJSONAPIObject(ws.Organization)
+	}
+
+	return obj
+}
+
+// WorkspaceListJSONAPIObject converts a WorkspaceList to
+// a struct that can be marshalled into a JSON-API object
+func (s *Server) WorkspaceListJSONAPIObject(cvl *ots.WorkspaceList) *tfe.WorkspaceList {
+	obj := &tfe.WorkspaceList{
+		Pagination: cvl.Pagination,
+	}
+	for _, item := range cvl.Items {
+		obj.Items = append(obj.Items, s.WorkspaceJSONAPIObject(item))
+	}
+
+	return obj
 }

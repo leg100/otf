@@ -84,45 +84,6 @@ func (run *Run) AfterFind(tx *gorm.DB) (err error) { run.Unwrap(tx); return }
 func (run *Run) BeforeSave(tx *gorm.DB) (err error) { run.Wrap(tx); return }
 func (run *Run) AfterSave(tx *gorm.DB) (err error)  { run.Unwrap(tx); return }
 
-func (r *Run) DTO() interface{} {
-	return &tfe.Run{
-		ID:                     r.ExternalID,
-		Actions:                r.Actions(),
-		CreatedAt:              r.CreatedAt,
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
-		HasChanges:             r.Plan.HasChanges(),
-		IsDestroy:              r.IsDestroy,
-		Message:                r.Message,
-		Permissions:            r.Permissions,
-		PositionInQueue:        0,
-		Refresh:                r.Refresh,
-		RefreshOnly:            r.RefreshOnly,
-		ReplaceAddrs:           r.ReplaceAddrs,
-		Source:                 DefaultConfigurationSource,
-		Status:                 r.Status,
-		StatusTimestamps:       r.StatusTimestamps,
-		TargetAddrs:            r.TargetAddrs,
-
-		// Relations
-		Apply:                r.Apply.DTO().(*tfe.Apply),
-		ConfigurationVersion: r.ConfigurationVersion.DTO().(*tfe.ConfigurationVersion),
-		CreatedBy:            r.CreatedBy,
-		Plan:                 r.Plan.DTO().(*tfe.Plan),
-		Workspace:            r.Workspace.DTO().(*tfe.Workspace),
-	}
-}
-
-func (rl *RunList) DTO() interface{} {
-	l := &tfe.RunList{
-		Pagination: rl.Pagination,
-	}
-	for _, item := range rl.Items {
-		l.Items = append(l.Items, item.DTO().(*tfe.Run))
-	}
-
-	return l
-}
-
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
 	WorkspaceService            WorkspaceService
