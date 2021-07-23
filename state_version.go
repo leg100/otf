@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/leg100/go-tfe"
 	"gorm.io/gorm"
@@ -16,18 +15,15 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	Serial       int64
-	VCSCommitSHA string `gorm:"-"`
-	VCSCommitURL string `gorm:"-"`
+	VCSCommitSHA string
+	VCSCommitURL string
 
-	State  string `gorm:"-"`
+	State  string
 	BlobID string
 
 	// State version belongs to a workspace
@@ -85,17 +81,16 @@ func NewStateVersionID() string {
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
-		Serial:     *opts.Serial,
-		ExternalID: NewStateVersionID(),
-		State:      *opts.State,
+		Serial: *opts.Serial,
+		ID:     NewStateVersionID(),
+		State:  *opts.State,
 	}
 
 	ws, err := f.WorkspaceService.GetByID(workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	sv.Workspace = ws
-	sv.WorkspaceID = ws.InternalID
+	sv.Workspace, sv.WorkspaceID = ws, ws.Model.ID
 
 	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
@@ -115,10 +110,10 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 
 	for k, v := range state.Outputs {
 		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			ExternalID: NewStateVersionOutputID(),
-			Name:       k,
-			Type:       v.Type,
-			Value:      v.Value,
+			ID:    NewStateVersionOutputID(),
+			Name:  k,
+			Type:  v.Type,
+			Value: v.Value,
 		})
 	}
 
@@ -126,5 +121,5 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 }
 
 func (r *StateVersion) DownloadURL() string {
-	return fmt.Sprintf("/state-versions/%s/download", r.ExternalID)
+	return fmt.Sprintf("/state-versions/%s/download", r.ID)
 }

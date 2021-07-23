@@ -73,7 +73,7 @@ func (a *Agent) Poller(ctx context.Context) {
 		}
 
 		a.Info().
-			Str("run", runs.Items[0].ExternalID).
+			Str("run", runs.Items[0].ID).
 			Str("status", string(runs.Items[0].Status)).
 			Msg("job received")
 
@@ -88,7 +88,7 @@ func (a *Agent) Poller(ctx context.Context) {
 			if err := a.Plan(ctx, runs.Items[0], path); err != nil {
 				a.Error().Msgf("unable to process run: %s", err.Error())
 
-				_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ExternalID, tfe.PlanErrored)
+				_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ID, tfe.PlanErrored)
 				if err != nil {
 					a.Error().Msgf("unable to update plan status: %s", err.Error())
 				}
@@ -97,7 +97,7 @@ func (a *Agent) Poller(ctx context.Context) {
 			if err := a.Apply(ctx, runs.Items[0], path); err != nil {
 				a.Error().Msgf("unable to process run: %s", err.Error())
 
-				_, err := a.RunService.UpdateApplyStatus(runs.Items[0].ExternalID, tfe.ApplyErrored)
+				_, err := a.RunService.UpdateApplyStatus(runs.Items[0].ID, tfe.ApplyErrored)
 				if err != nil {
 					a.Error().Msgf("unable to update apply status: %s", err.Error())
 				}

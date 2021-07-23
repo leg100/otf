@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tfe "github.com/leg100/go-tfe"
+	"gorm.io/gorm"
 )
 
 const (
@@ -15,8 +16,9 @@ type ApplyService interface {
 }
 
 type Apply struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
+
+	gorm.Model
 
 	ResourceAdditions    int
 	ResourceChanges      int
@@ -55,6 +57,6 @@ func NewApplyID() string {
 
 func newApply() *Apply {
 	return &Apply{
-		ExternalID: NewApplyID(),
+		ID: NewApplyID(),
 	}
 }

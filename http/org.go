@@ -110,7 +110,7 @@ func (s *Server) OrganizationJSONAPIObject(org *ots.Organization) *tfe.Organizat
 		CostEstimationEnabled:  org.CostEstimationEnabled,
 		CreatedAt:              org.CreatedAt,
 		Email:                  org.Email,
-		ExternalID:             org.ExternalID,
+		ExternalID:             org.ID,
 		OwnersTeamSAMLRoleID:   org.OwnersTeamSAMLRoleID,
 		Permissions:            org.Permissions,
 		SAMLEnabled:            org.SAMLEnabled,

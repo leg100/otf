@@ -19,12 +19,15 @@ func NewRunDB(db *gorm.DB) *RunDB {
 }
 
 // CreateRun persists a Run to the DB.
-func (db RunDB) Create(run *ots.Run) (*ots.Run, error) {
-	if result := db.Omit("Workspace", "ConfigurationVersion").Create(run); result.Error != nil {
+func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
+	model := &Run{}
+	model.FromDomain(domain)
+
+	if result := db.Omit("Workspace", "ConfigurationVersion").Create(model); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return run, nil
+	return model.ToDomain(), nil
 }
 
 // UpdateRun persists an updated Run to the DB. The existing run is fetched from
@@ -32,21 +35,21 @@ func (db RunDB) Create(run *ots.Run) (*ots.Run, error) {
 // persisted back to the DB. The returned Run includes any changes, including a
 // new UpdatedAt value.
 func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
-	var run *ots.Run
+	var model *Run
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
-		// Get existing model obj from DB
-		run, err = getRun(tx, ots.RunGetOptions{ID: &id})
+		// DB -> model
+		model, err := getRun(tx, ots.RunGetOptions{ID: &id})
 		if err != nil {
 			return err
 		}
 
 		// Update obj using client-supplied fn
-		if err := fn(run); err != nil {
+		if err := model.Update(fn); err != nil {
 			return err
 		}
 
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(run); result.Error != nil {
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
 			return err
 		}
 
@@ -56,11 +59,11 @@ func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
 		return nil, err
 	}
 
-	return run, nil
+	return model.ToDomain(), nil
 }
 
 func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
-	var models []ots.Run
+	var models RunList
 	var count int64
 
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -96,21 +99,22 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 	}
 
 	return &ots.RunList{
-		Items:      runListToPointerList(models),
+		Items:      models.ToDomain(),
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
 
+// Get retrieves a Run domain obj
 func (db RunDB) Get(opts ots.RunGetOptions) (*ots.Run, error) {
 	run, err := getRun(db.DB, opts)
 	if err != nil {
 		return nil, err
 	}
-	return run, nil
+	return run.ToDomain(), nil
 }
 
-func getRun(db *gorm.DB, opts ots.RunGetOptions) (*ots.Run, error) {
-	var model ots.Run
+func getRun(db *gorm.DB, opts ots.RunGetOptions) (*Run, error) {
+	var model Run
 
 	query := db.Preload(clause.Associations)
 
@@ -130,11 +134,4 @@ func getRun(db *gorm.DB, opts ots.RunGetOptions) (*ots.Run, error) {
 	}
 
 	return &model, nil
-}
-
-func runListToPointerList(rl []ots.Run) (pl []*ots.Run) {
-	for i := range rl {
-		pl = append(pl, &rl[i])
-	}
-	return
 }

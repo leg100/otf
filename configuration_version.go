@@ -3,7 +3,6 @@ package ots
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
@@ -28,12 +27,9 @@ type ConfigurationVersionList struct {
 // Terraform configuration in TFE. A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	AutoQueueRuns    bool
 	Error            string
@@ -97,7 +93,7 @@ type ConfigurationVersionFactory struct {
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ExternalID:    NewConfigurationVersionID(),
+		ID:            NewConfigurationVersionID(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        tfe.ConfigurationPending,
 		Source:        DefaultConfigurationSource,
@@ -115,8 +111,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 	if err != nil {
 		return nil, err
 	}
-	cv.Workspace = ws
-	cv.WorkspaceID = ws.InternalID
+	cv.Workspace, cv.WorkspaceID = ws, ws.Model.ID
 
 	return &cv, nil
 }

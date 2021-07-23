@@ -85,9 +85,9 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func (s *Server) PlanJSONAPIObject(p *ots.Plan) *tfe.Plan {
 	obj := &tfe.Plan{
-		ID:                   p.ExternalID,
+		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
-		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ExternalID),
+		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ID),
 		ResourceAdditions:    p.ResourceAdditions,
 		ResourceChanges:      p.ResourceChanges,
 		ResourceDestructions: p.ResourceDestructions,
