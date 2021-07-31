@@ -114,6 +114,14 @@ func (r *Run) FromDomain(domain *ots.Run) {
 	r.ReplaceAddrs = strings.Join(domain.ReplaceAddrs, ",")
 
 	r.Plan.FromDomain(domain.Plan)
+
+	r.Workspace = &Workspace{}
+	r.Workspace.FromDomain(domain.Workspace)
+	r.WorkspaceID = domain.Workspace.Model.ID
+
+	r.ConfigurationVersion = &ConfigurationVersion{}
+	r.ConfigurationVersion.FromDomain(domain.ConfigurationVersion)
+	r.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
 }
 
 func (l RunList) ToDomain() (dl []*ots.Run) {

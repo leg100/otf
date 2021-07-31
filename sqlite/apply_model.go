@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Plan models a row in a runs table.
-type Plan struct {
+// Apply models a row in a runs table.
+type Apply struct {
 	gorm.Model
 
 	ExternalID string `gorm:"uniqueIndex"`
@@ -15,27 +15,27 @@ type Plan struct {
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int
-	Status               tfe.PlanStatus
-	StatusTimestamps     tfe.PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	Status               tfe.ApplyStatus
+	StatusTimestamps     tfe.ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	Logs []byte
 
-	// Plan belongs to a run
+	// Apply belongs to a run
 	RunID uint
 
 	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
+	Apply []byte `jsonapi:"attr,plan"`
 
 	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
+	ApplyJSON []byte `jsonapi:"attr,plan-json"`
 }
 
-// PlanList is a list of run models
-type PlanList []Plan
+// ApplyList is a list of run models
+type ApplyList []Apply
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (r *Plan) Update(fn func(*ots.Plan) error) error {
+func (r *Apply) Update(fn func(*ots.Apply) error) error {
 	// model -> domain
 	domain := r.ToDomain()
 
@@ -50,8 +50,8 @@ func (r *Plan) Update(fn func(*ots.Plan) error) error {
 	return nil
 }
 
-func (r *Plan) ToDomain() *ots.Plan {
-	domain := ots.Plan{
+func (r *Apply) ToDomain() *ots.Apply {
+	domain := ots.Apply{
 		ID:                   r.ExternalID,
 		ResourceAdditions:    r.ResourceAdditions,
 		ResourceChanges:      r.ResourceChanges,
@@ -64,7 +64,7 @@ func (r *Plan) ToDomain() *ots.Plan {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (r *Plan) FromDomain(domain *ots.Plan) {
+func (r *Apply) FromDomain(domain *ots.Apply) {
 	r.ExternalID = domain.ID
 	r.ResourceAdditions = domain.ResourceAdditions
 	r.ResourceChanges = domain.ResourceChanges
@@ -73,7 +73,7 @@ func (r *Plan) FromDomain(domain *ots.Plan) {
 	r.StatusTimestamps = *domain.StatusTimestamps
 }
 
-func (l PlanList) ToDomain() (dl []*ots.Plan) {
+func (l ApplyList) ToDomain() (dl []*ots.Apply) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

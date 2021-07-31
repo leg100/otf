@@ -43,8 +43,7 @@ type ConfigurationVersion struct {
 	BlobID        string
 
 	// Configuration Version belongs to a Workspace
-	WorkspaceID uint
-	Workspace   *Workspace
+	Workspace *Workspace
 }
 
 type ConfigurationVersionService interface {
@@ -111,7 +110,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 	if err != nil {
 		return nil, err
 	}
-	cv.Workspace, cv.WorkspaceID = ws, ws.Model.ID
+	cv.Workspace = ws
 
 	return &cv, nil
 }

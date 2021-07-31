@@ -20,14 +20,17 @@ func NewWorkspaceDB(db *gorm.DB) *WorkspaceDB {
 	}
 }
 
-// CreateWorkspace persists a Workspace to the DB. The returned Workspace is adorned with
+// Create persists a Workspace to the DB. The returned Workspace is adorned with
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
-func (db WorkspaceDB) Create(ws *ots.Workspace) (*ots.Workspace, error) {
-	if result := db.Omit("Organization").Create(ws); result.Error != nil {
+func (db WorkspaceDB) Create(domain *ots.Workspace) (*ots.Workspace, error) {
+	model := &Workspace{}
+	model.FromDomain(domain)
+
+	if result := db.Omit("Organization").Create(model); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return ws, nil
+	return model.ToDomain(), nil
 }
 
 // UpdateWorkspace persists an updated Workspace to the DB. The existing run is fetched from
@@ -35,21 +38,21 @@ func (db WorkspaceDB) Create(ws *ots.Workspace) (*ots.Workspace, error) {
 // persisted back to the DB. The returned Workspace includes any changes, including a
 // new UpdatedAt value.
 func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace) error) (*ots.Workspace, error) {
-	var ws *ots.Workspace
+	var model *Workspace
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
 		// Get existing model obj from DB
-		ws, err = getWorkspace(tx, spec)
+		model, err = getWorkspace(tx, spec)
 		if err != nil {
 			return err
 		}
 
 		// Update domain obj using client-supplied fn
-		if err := fn(ws); err != nil {
+		if err := model.Update(fn); err != nil {
 			return err
 		}
 
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(ws); result.Error != nil {
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
 			return err
 		}
 
@@ -60,11 +63,11 @@ func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace
 	}
 
 	// Convert back to domain obj
-	return ws, nil
+	return model.ToDomain(), nil
 }
 
 func (db WorkspaceDB) List(organizationName string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
-	var models []ots.Workspace
+	var models WorkspaceList
 	var count int64
 
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -73,7 +76,7 @@ func (db WorkspaceDB) List(organizationName string, opts ots.WorkspaceListOption
 			return err
 		}
 
-		query := tx.Where("organization_id = ?", org.InternalID)
+		query := tx.Where("organization_id = ?", org.Model.ID)
 
 		if opts.Prefix != nil {
 			query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Prefix))
@@ -94,7 +97,7 @@ func (db WorkspaceDB) List(organizationName string, opts ots.WorkspaceListOption
 	}
 
 	return &ots.WorkspaceList{
-		Items:      workspaceListToPointerList(models),
+		Items:      models.ToDomain(),
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
@@ -104,14 +107,14 @@ func (db WorkspaceDB) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ws, nil
+	return ws.ToDomain(), nil
 }
 
 // Delete deletes a specific workspace, along with its associated records (runs
 // etc).
 func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
-		var ws ots.Workspace
+		var ws Workspace
 		query := tx
 
 		switch {
@@ -125,7 +128,7 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 				return err
 			}
 
-			query = query.Where("organization_id = ? AND workspaces.name = ?", org.InternalID, spec.Name)
+			query = query.Where("organization_id = ? AND name = ?", org.ID, spec.Name)
 		default:
 			return ots.ErrInvalidWorkspaceSpecifier
 		}
@@ -141,17 +144,17 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 		}
 
 		// Delete associated runs
-		if result := tx.Delete(&ots.Run{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+		if result := tx.Delete(&Run{}, "workspace_id = ?", ws.ID); result.Error != nil {
 			return result.Error
 		}
 
 		// Delete associated state versions
-		if result := tx.Delete(&ots.StateVersion{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+		if result := tx.Delete(&StateVersion{}, "workspace_id = ?", ws.ID); result.Error != nil {
 			return result.Error
 		}
 
 		// Delete associated configuration versions
-		if result := tx.Delete(&ots.ConfigurationVersion{}, "workspace_id = ?", ws.InternalID); result.Error != nil {
+		if result := tx.Delete(&ConfigurationVersion{}, "workspace_id = ?", ws.ID); result.Error != nil {
 			return result.Error
 		}
 
@@ -164,8 +167,8 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 	return nil
 }
 
-func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
-	var model ots.Workspace
+func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*Workspace, error) {
+	var model Workspace
 
 	query := db.Preload(clause.Associations)
 
@@ -186,11 +189,4 @@ func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*ots.Workspace, err
 	}
 
 	return &model, nil
-}
-
-func workspaceListToPointerList(workspaces []ots.Workspace) (pl []*ots.Workspace) {
-	for i := range workspaces {
-		pl = append(pl, &workspaces[i])
-	}
-	return
 }

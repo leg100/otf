@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// StateVersion models a row in a runs table.
+// StateVersion models a row in a state versions table.
 type StateVersion struct {
 	gorm.Model
 
@@ -48,27 +48,36 @@ func (r *StateVersion) Update(fn func(*ots.StateVersion) error) error {
 	return nil
 }
 
-func (r *StateVersion) ToDomain() *ots.StateVersion {
+func (model *StateVersion) ToDomain() *ots.StateVersion {
 	domain := ots.StateVersion{
-		ID:           r.ExternalID,
-		Serial:       r.Serial,
-		VCSCommitSHA: r.VCSCommitSHA,
-		VCSCommitURL: r.VCSCommitURL,
-		BlobID:       r.BlobID,
-		Workspace:    r.Workspace.ToDomain(),
+		ID:           model.ExternalID,
+		Serial:       model.Serial,
+		VCSCommitSHA: model.VCSCommitSHA,
+		VCSCommitURL: model.VCSCommitURL,
+		BlobID:       model.BlobID,
+	}
+
+	if model.Workspace != nil {
+		domain.Workspace = model.Workspace.ToDomain()
 	}
 
 	return &domain
 }
 
-// FromDomain updates run model fields with a run domain object's fields
-func (r *StateVersion) FromDomain(domain *ots.StateVersion) {
-	r.ExternalID = domain.ID
-	r.Serial = domain.Serial
-	r.VCSCommitSHA = domain.VCSCommitSHA
-	r.VCSCommitURL = domain.VCSCommitURL
-	r.BlobID = domain.BlobID
-	r.Workspace.FromDomain(domain.Workspace)
+// FromDomain updates state version model fields with a state version domain
+// object's fields
+func (model *StateVersion) FromDomain(domain *ots.StateVersion) {
+	model.ExternalID = domain.ID
+	model.Serial = domain.Serial
+	model.VCSCommitSHA = domain.VCSCommitSHA
+	model.VCSCommitURL = domain.VCSCommitURL
+	model.BlobID = domain.BlobID
+
+	if domain.Workspace != nil {
+		model.Workspace = &Workspace{}
+		model.Workspace.FromDomain(domain.Workspace)
+		model.WorkspaceID = domain.Workspace.Model.ID
+	}
 }
 
 func (l StateVersionList) ToDomain() (dl []*ots.StateVersion) {

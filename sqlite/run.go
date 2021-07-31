@@ -76,7 +76,7 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 				return err
 			}
 
-			query = query.Where("workspace_id = ?", ws.InternalID)
+			query = query.Where("workspace_id = ?", ws.Model.ID)
 		}
 
 		// Optionally filter by statuses

@@ -20,25 +20,23 @@ func TestConfigurationVersion(t *testing.T) {
 	// Create 1 org, 1 ws, 1 cv
 
 	org, err := orgDB.Create(&ots.Organization{
-		ExternalID: "org-123",
-		Name:       "automatize",
-		Email:      "sysadmin@automatize.co.uk",
+		ID:    "org-123",
+		Name:  "automatize",
+		Email: "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
 	ws, err := wsDB.Create(&ots.Workspace{
-		Name:           "dev",
-		ExternalID:     "ws-123",
-		OrganizationID: org.InternalID,
-		Organization:   org,
+		Name:         "dev",
+		ID:           "ws-123",
+		Organization: org,
 	})
 	require.NoError(t, err)
 
 	cv, err := cvDB.Create(&ots.ConfigurationVersion{
-		ExternalID:  "cv-123",
-		Status:      tfe.ConfigurationPending,
-		WorkspaceID: ws.InternalID,
-		Workspace:   ws,
+		ID:        "cv-123",
+		Status:    tfe.ConfigurationPending,
+		Workspace: ws,
 	})
 	require.NoError(t, err)
 
@@ -46,7 +44,7 @@ func TestConfigurationVersion(t *testing.T) {
 
 	// Update
 
-	cv, err = cvDB.Update(cv.ExternalID, func(cv *ots.ConfigurationVersion) error {
+	cv, err = cvDB.Update(cv.ID, func(cv *ots.ConfigurationVersion) error {
 		cv.Configuration = []byte("testdata")
 		cv.Status = tfe.ConfigurationUploaded
 		return nil
@@ -55,14 +53,14 @@ func TestConfigurationVersion(t *testing.T) {
 
 	// Get
 
-	cv, err = cvDB.Get(ots.ConfigurationVersionGetOptions{ID: &cv.ExternalID})
+	cv, err = cvDB.Get(ots.ConfigurationVersionGetOptions{ID: &cv.ID})
 	require.NoError(t, err)
 
 	require.Equal(t, tfe.ConfigurationUploaded, cv.Status)
 
 	// List
 
-	cvs, err := cvDB.List(ws.ExternalID, ots.ConfigurationVersionListOptions{})
+	cvs, err := cvDB.List(ws.ID, ots.ConfigurationVersionListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(cvs.Items))

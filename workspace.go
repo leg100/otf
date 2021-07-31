@@ -60,8 +60,7 @@ type Workspace struct {
 	// Relations AgentPool  *tfe.AgentPool CurrentRun *Run
 
 	// Workspace belongs to an organization
-	OrganizationID uint
-	Organization   *Organization
+	Organization *Organization
 
 	//SSHKey *tfe.SSHKey
 }
@@ -137,7 +136,6 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		SpeculativeEnabled: true,
 		Operations:         true,
 		Organization:       org,
-		OrganizationID:     org.Model.ID,
 	}
 
 	if opts.AllowDestroyPlan != nil {

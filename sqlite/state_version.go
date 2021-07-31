@@ -21,11 +21,14 @@ func NewStateVersionDB(db *gorm.DB) *StateVersionService {
 
 // CreateStateVersion persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, error) {
-	if result := s.DB.Omit("Workspaces").Create(sv); result.Error != nil {
+	model := &StateVersion{}
+	model.FromDomain(sv)
+
+	if result := s.DB.Omit("Workspace").Create(model); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return sv, nil
+	return model.ToDomain(), nil
 }
 
 // UpdateStateVersion persists an updated StateVersion to the DB. The existing run is fetched from
@@ -33,21 +36,21 @@ func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, er
 // persisted back to the DB. The returned StateVersion includes any changes, including a
 // new UpdatedAt value.
 func (s StateVersionService) Update(id string, fn func(*ots.StateVersion) error) (*ots.StateVersion, error) {
-	var sv *ots.StateVersion
+	var model *StateVersion
 
 	err := s.DB.Transaction(func(tx *gorm.DB) (err error) {
 		// Get existing model obj from DB
-		sv, err = getStateVersion(tx, ots.StateVersionGetOptions{ID: &id})
+		model, err = getStateVersion(tx, ots.StateVersionGetOptions{ID: &id})
 		if err != nil {
 			return err
 		}
 
 		// Update domain obj using client-supplied fn
-		if err := fn(sv); err != nil {
+		if err := model.Update(fn); err != nil {
 			return err
 		}
 
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(sv); result.Error != nil {
+		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
 			return err
 		}
 
@@ -57,11 +60,11 @@ func (s StateVersionService) Update(id string, fn func(*ots.StateVersion) error)
 		return nil, err
 	}
 
-	return sv, nil
+	return model.ToDomain(), nil
 }
 
 func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateVersionList, error) {
-	var models []ots.StateVersion
+	var models StateVersionList
 	var count int64
 
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
@@ -70,7 +73,7 @@ func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateV
 			return err
 		}
 
-		query := tx.Where("workspace_id = ?", ws.InternalID)
+		query := tx.Where("workspace_id = ?", ws.ID)
 
 		if result := query.Model(&models).Count(&count); result.Error != nil {
 			return result.Error
@@ -87,7 +90,7 @@ func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateV
 	}
 
 	return &ots.StateVersionList{
-		Items:      stateVersionListToPointerList(models),
+		Items:      models.ToDomain(),
 		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
@@ -97,11 +100,11 @@ func (s StateVersionService) Get(opts ots.StateVersionGetOptions) (*ots.StateVer
 	if err != nil {
 		return nil, err
 	}
-	return sv, nil
+	return sv.ToDomain(), nil
 }
 
-func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*ots.StateVersion, error) {
-	var sv ots.StateVersion
+func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*StateVersion, error) {
+	var model StateVersion
 
 	query := db.Preload(clause.Associations)
 
@@ -118,16 +121,9 @@ func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*ots.StateVe
 		return nil, ots.ErrInvalidStateVersionGetOptions
 	}
 
-	if result := query.First(&sv); result.Error != nil {
+	if result := query.First(&model); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return &sv, nil
-}
-
-func stateVersionListToPointerList(svl []ots.StateVersion) (pl []*ots.StateVersion) {
-	for i := range svl {
-		pl = append(pl, &svl[i])
-	}
-	return
+	return &model, nil
 }
