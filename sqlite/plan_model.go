@@ -50,27 +50,28 @@ func (r *Plan) Update(fn func(*ots.Plan) error) error {
 	return nil
 }
 
-func (r *Plan) ToDomain() *ots.Plan {
+func (model *Plan) ToDomain() *ots.Plan {
 	domain := ots.Plan{
-		ID:                   r.ExternalID,
-		ResourceAdditions:    r.ResourceAdditions,
-		ResourceChanges:      r.ResourceChanges,
-		ResourceDestructions: r.ResourceDestructions,
-		Status:               r.Status,
-		StatusTimestamps:     &r.StatusTimestamps,
+		ID:                   model.ExternalID,
+		ResourceAdditions:    model.ResourceAdditions,
+		ResourceChanges:      model.ResourceChanges,
+		ResourceDestructions: model.ResourceDestructions,
+		Status:               model.Status,
+		StatusTimestamps:     &model.StatusTimestamps,
 	}
 
 	return &domain
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (r *Plan) FromDomain(domain *ots.Plan) {
-	r.ExternalID = domain.ID
-	r.ResourceAdditions = domain.ResourceAdditions
-	r.ResourceChanges = domain.ResourceChanges
-	r.ResourceDestructions = domain.ResourceDestructions
-	r.Status = domain.Status
-	r.StatusTimestamps = *domain.StatusTimestamps
+func (model *Plan) FromDomain(domain *ots.Plan) {
+	model.ExternalID = domain.ID
+	model.Model = domain.Model
+	model.ResourceAdditions = domain.ResourceAdditions
+	model.ResourceChanges = domain.ResourceChanges
+	model.ResourceDestructions = domain.ResourceDestructions
+	model.Status = domain.Status
+	model.StatusTimestamps = *domain.StatusTimestamps
 }
 
 func (l PlanList) ToDomain() (dl []*ots.Plan) {

@@ -65,7 +65,8 @@ type PlanFinishOptions struct {
 
 func newPlan() *Plan {
 	return &Plan{
-		ID: NewPlanID(),
+		ID:               NewPlanID(),
+		StatusTimestamps: &tfe.PlanStatusTimestamps{},
 	}
 }
 

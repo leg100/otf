@@ -90,7 +90,10 @@ func (r *Run) ToDomain() *ots.Run {
 	domain := ots.Run{
 		ID:      r.ExternalID,
 		Refresh: r.Refresh,
-		Plan:    r.Plan.ToDomain(),
+	}
+
+	if r.Plan != nil {
+		domain.Plan = r.Plan.ToDomain()
 	}
 
 	if r.ReplaceAddrs != "" {
@@ -105,23 +108,27 @@ func (r *Run) ToDomain() *ots.Run {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (r *Run) FromDomain(domain *ots.Run) {
-	r.ExternalID = domain.ID
-	r.Status = domain.Status
-	r.Message = domain.Message
-	r.Refresh = domain.Refresh
-	r.RefreshOnly = domain.RefreshOnly
-	r.ReplaceAddrs = strings.Join(domain.ReplaceAddrs, ",")
+func (model *Run) FromDomain(domain *ots.Run) {
+	model.ExternalID = domain.ID
+	model.Status = domain.Status
+	model.Message = domain.Message
+	model.Refresh = domain.Refresh
+	model.RefreshOnly = domain.RefreshOnly
+	model.ReplaceAddrs = strings.Join(domain.ReplaceAddrs, ",")
+	model.TargetAddrs = strings.Join(domain.TargetAddrs, ",")
 
-	r.Plan.FromDomain(domain.Plan)
+	if domain.Plan != nil {
+		model.Plan = &Plan{}
+		model.Plan.FromDomain(domain.Plan)
+	}
 
-	r.Workspace = &Workspace{}
-	r.Workspace.FromDomain(domain.Workspace)
-	r.WorkspaceID = domain.Workspace.Model.ID
+	model.Workspace = &Workspace{}
+	model.Workspace.FromDomain(domain.Workspace)
+	model.WorkspaceID = domain.Workspace.Model.ID
 
-	r.ConfigurationVersion = &ConfigurationVersion{}
-	r.ConfigurationVersion.FromDomain(domain.ConfigurationVersion)
-	r.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
+	model.ConfigurationVersion = &ConfigurationVersion{}
+	model.ConfigurationVersion.FromDomain(domain.ConfigurationVersion)
+	model.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
 }
 
 func (l RunList) ToDomain() (dl []*ots.Run) {

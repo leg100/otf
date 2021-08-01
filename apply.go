@@ -57,6 +57,7 @@ func NewApplyID() string {
 
 func newApply() *Apply {
 	return &Apply{
-		ID: NewApplyID(),
+		ID:               NewApplyID(),
+		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
 	}
 }
