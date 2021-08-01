@@ -53,7 +53,7 @@ func TestProcessor(t *testing.T) {
 				return nil, nil
 			},
 			CurrentFn: func(workspaceID string) (*ots.StateVersion, error) {
-				return &ots.StateVersion{ExternalID: "sv-123"}, nil
+				return &ots.StateVersion{ID: "sv-123"}, nil
 			},
 			DownloadFn: func(id string) ([]byte, error) {
 				return os.ReadFile("testdata/terraform.tfstate")
@@ -74,13 +74,13 @@ func TestProcessor(t *testing.T) {
 	// Run a plan
 	require.NoError(t, p.Plan(context.Background(), &ots.Run{
 		Plan: &ots.Plan{
-			ExternalID: "plan-123",
+			ID: "plan-123",
 		},
 		ConfigurationVersion: &ots.ConfigurationVersion{
-			ExternalID: "cv-123",
+			ID: "cv-123",
 		},
 		Workspace: &ots.Workspace{
-			ExternalID: "ws-123",
+			ID: "ws-123",
 		},
 	}, path))
 
@@ -104,13 +104,13 @@ func TestProcessor(t *testing.T) {
 	applyPath := t.TempDir()
 	require.NoError(t, p.Apply(context.Background(), &ots.Run{
 		Plan: &ots.Plan{
-			ExternalID: "plan-123",
+			ID: "plan-123",
 		},
 		ConfigurationVersion: &ots.ConfigurationVersion{
-			ExternalID: "cv-123",
+			ID: "cv-123",
 		},
 		Workspace: &ots.Workspace{
-			ExternalID: "ws-123",
+			ID: "ws-123",
 		},
 	}, applyPath))
 

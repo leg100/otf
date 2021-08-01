@@ -57,7 +57,7 @@ func TestAgentPollerError(t *testing.T) {
 				{
 					ID: "run-123",
 					Plan: &ots.Plan{
-						ExternalID: "plan-123",
+						ID: "plan-123",
 					},
 					Status: tfe.RunPlanQueued,
 				},
