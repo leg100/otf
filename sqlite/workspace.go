@@ -52,7 +52,7 @@ func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace
 			return err
 		}
 
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
+		if result := tx.Save(model); result.Error != nil {
 			return err
 		}
 
@@ -115,12 +115,12 @@ func (db WorkspaceDB) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
 func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var ws Workspace
-		query := tx
+		var query *gorm.DB
 
 		switch {
 		case spec.ID != nil:
 			// Get workspace by ID
-			query = query.Where("external_id = ?", *spec.ID)
+			query = tx.Where("external_id = ?", *spec.ID)
 		case spec.Name != nil && spec.OrganizationName != nil:
 			// Get workspace by name and organization name
 			org, err := getOrganization(tx, *spec.OrganizationName)
@@ -128,7 +128,7 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 				return err
 			}
 
-			query = query.Where("organization_id = ? AND name = ?", org.ID, spec.Name)
+			query = tx.Where("organization_id = ? AND name = ?", org.ID, spec.Name)
 		default:
 			return ots.ErrInvalidWorkspaceSpecifier
 		}

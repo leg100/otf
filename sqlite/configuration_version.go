@@ -48,7 +48,7 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*ots.ConfigurationVer
 			return err
 		}
 
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(&model); result.Error != nil {
+		if result := tx.Save(&model); result.Error != nil {
 			return err
 		}
 

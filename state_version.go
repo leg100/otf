@@ -57,7 +57,6 @@ type StateVersionStore interface {
 	Create(sv *StateVersion) (*StateVersion, error)
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
 	List(opts tfe.StateVersionListOptions) (*StateVersionList, error)
-	Update(id string, fn func(*StateVersion) error) (*StateVersion, error)
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.

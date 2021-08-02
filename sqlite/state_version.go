@@ -31,38 +31,6 @@ func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, er
 	return model.ToDomain(), nil
 }
 
-// UpdateStateVersion persists an updated StateVersion to the DB. The existing run is fetched from
-// the DB, the supplied func is invoked on the run, and the updated run is
-// persisted back to the DB. The returned StateVersion includes any changes, including a
-// new UpdatedAt value.
-func (s StateVersionService) Update(id string, fn func(*ots.StateVersion) error) (*ots.StateVersion, error) {
-	var model *StateVersion
-
-	err := s.DB.Transaction(func(tx *gorm.DB) (err error) {
-		// Get existing model obj from DB
-		model, err = getStateVersion(tx, ots.StateVersionGetOptions{ID: &id})
-		if err != nil {
-			return err
-		}
-
-		// Update domain obj using client-supplied fn
-		if err := model.Update(fn); err != nil {
-			return err
-		}
-
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return model.ToDomain(), nil
-}
-
 func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateVersionList, error) {
 	var models StateVersionList
 	var count int64

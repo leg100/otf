@@ -20,8 +20,7 @@ func NewRunDB(db *gorm.DB) *RunDB {
 
 // CreateRun persists a Run to the DB.
 func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
-	model := &Run{}
-	model.FromDomain(domain)
+	model := NewFromDomain(domain)
 
 	if result := db.Omit("Workspace", "ConfigurationVersion").Create(model); result.Error != nil {
 		return nil, result.Error
@@ -39,7 +38,7 @@ func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
 		// DB -> model
-		model, err := getRun(tx, ots.RunGetOptions{ID: &id})
+		model, err = getRun(tx, ots.RunGetOptions{ID: &id})
 		if err != nil {
 			return err
 		}
@@ -49,6 +48,7 @@ func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
 			return err
 		}
 
+		// Save changes to fields of relations (plan, apply) too
 		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
 			return err
 		}

@@ -20,8 +20,7 @@ type ConfigurationVersion struct {
 	Status           tfe.ConfigurationStatus
 	StatusTimestamps *tfe.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Configuration []byte `gorm:"-"`
-	BlobID        string
+	BlobID string
 
 	// Configuration Version belongs to a Workspace
 	WorkspaceID uint
@@ -58,7 +57,11 @@ func (cv *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
 		Speculative:   cv.Speculative,
 		Source:        cv.Source,
 		Status:        cv.Status,
-		Workspace:     cv.Workspace.ToDomain(),
+		BlobID:        cv.BlobID,
+	}
+
+	if cv.Workspace != nil {
+		domain.Workspace = cv.Workspace.ToDomain()
 	}
 
 	return &domain
@@ -74,10 +77,13 @@ func (cv *ConfigurationVersion) FromDomain(domain *ots.ConfigurationVersion) {
 	cv.Speculative = domain.Speculative
 	cv.Source = domain.Source
 	cv.Status = domain.Status
+	cv.BlobID = domain.BlobID
 
-	cv.Workspace = &Workspace{}
-	cv.Workspace.FromDomain(domain.Workspace)
-	cv.WorkspaceID = domain.Workspace.Model.ID
+	if domain.Workspace != nil {
+		cv.Workspace = &Workspace{}
+		cv.Workspace.FromDomain(domain.Workspace)
+		cv.WorkspaceID = domain.Workspace.Model.ID
+	}
 }
 
 func (l ConfigurationVersionList) ToDomain() (dl []*ots.ConfigurationVersion) {

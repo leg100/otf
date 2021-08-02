@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Apply models a row in a runs table.
+// Apply models a row in an applies table.
 type Apply struct {
 	gorm.Model
 
@@ -22,12 +22,6 @@ type Apply struct {
 
 	// Apply belongs to a run
 	RunID uint
-
-	// The execution plan file
-	Apply []byte `jsonapi:"attr,plan"`
-
-	// The execution plan file in json format
-	ApplyJSON []byte `jsonapi:"attr,plan-json"`
 }
 
 // ApplyList is a list of run models
@@ -53,11 +47,13 @@ func (r *Apply) Update(fn func(*ots.Apply) error) error {
 func (r *Apply) ToDomain() *ots.Apply {
 	domain := ots.Apply{
 		ID:                   r.ExternalID,
+		Model:                r.Model,
 		ResourceAdditions:    r.ResourceAdditions,
 		ResourceChanges:      r.ResourceChanges,
 		ResourceDestructions: r.ResourceDestructions,
 		Status:               r.Status,
 		StatusTimestamps:     &r.StatusTimestamps,
+		Logs:                 r.Logs,
 	}
 
 	return &domain
@@ -66,11 +62,13 @@ func (r *Apply) ToDomain() *ots.Apply {
 // FromDomain updates run model fields with a run domain object's fields
 func (r *Apply) FromDomain(domain *ots.Apply) {
 	r.ExternalID = domain.ID
+	r.Model = domain.Model
 	r.ResourceAdditions = domain.ResourceAdditions
 	r.ResourceChanges = domain.ResourceChanges
 	r.ResourceDestructions = domain.ResourceDestructions
 	r.Status = domain.Status
 	r.StatusTimestamps = *domain.StatusTimestamps
+	r.Logs = domain.Logs
 }
 
 func (l ApplyList) ToDomain() (dl []*ots.Apply) {

@@ -29,12 +29,12 @@ type Run struct {
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
-	Permissions            *tfe.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *tfe.RunPermissions
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 tfe.RunStatus
-	StatusTimestamps       *tfe.RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps       *tfe.RunStatusTimestamps
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 

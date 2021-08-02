@@ -27,7 +27,7 @@ func (s WorkspaceService) Create(orgName string, opts *tfe.WorkspaceCreateOption
 
 	ws := ots.NewWorkspace(opts, org)
 
-	_, err = s.db.Create(ws)
+	ws, err = s.db.Create(ws)
 	if err != nil {
 		return nil, err
 	}

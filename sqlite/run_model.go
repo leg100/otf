@@ -1,8 +1,8 @@
 package sqlite
 
 import (
-	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
@@ -15,7 +15,7 @@ type Run struct {
 
 	ExternalID string `gorm:"uniqueIndex"`
 
-	ForceCancelAvailableAt sql.NullTime
+	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
 	Permissions            *tfe.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
@@ -23,7 +23,7 @@ type Run struct {
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 tfe.RunStatus
-	StatusTimestamps       RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps       *tfe.RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	// Comma separated list of replace addresses
 	ReplaceAddrs string
@@ -43,27 +43,6 @@ type Run struct {
 	// Run belongs to a configuration version
 	ConfigurationVersionID uint
 	ConfigurationVersion   *ConfigurationVersion
-}
-
-// RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
-	AppliedAt            sql.NullTime
-	ApplyQueuedAt        sql.NullTime
-	ApplyingAt           sql.NullTime
-	CanceledAt           sql.NullTime
-	ConfirmedAt          sql.NullTime
-	CostEstimatedAt      sql.NullTime
-	CostEstimatingAt     sql.NullTime
-	DiscardedAt          sql.NullTime
-	ErroredAt            sql.NullTime
-	ForceCanceledAt      sql.NullTime
-	PlanQueueableAt      sql.NullTime
-	PlanQueuedAt         sql.NullTime
-	PlannedAndFinishedAt sql.NullTime
-	PlannedAt            sql.NullTime
-	PlanningAt           sql.NullTime
-	PolicyCheckedAt      sql.NullTime
-	PolicySoftFailedAt   sql.NullTime
 }
 
 // RunList is a list of run models
@@ -86,47 +65,78 @@ func (r *Run) Update(fn func(*ots.Run) error) error {
 	return nil
 }
 
-func (r *Run) ToDomain() *ots.Run {
+func (model *Run) ToDomain() *ots.Run {
 	domain := ots.Run{
-		ID:      r.ExternalID,
-		Refresh: r.Refresh,
+		ID:                     model.ExternalID,
+		ForceCancelAvailableAt: model.ForceCancelAvailableAt,
+		Message:                model.Message,
+		Permissions:            model.Permissions,
+		Refresh:                model.Refresh,
+		RefreshOnly:            model.RefreshOnly,
+		Status:                 model.Status,
+		StatusTimestamps:       model.StatusTimestamps,
 	}
 
-	if r.Plan != nil {
-		domain.Plan = r.Plan.ToDomain()
+	if model.Apply != nil {
+		domain.Apply = model.Apply.ToDomain()
 	}
 
-	if r.ReplaceAddrs != "" {
-		domain.ReplaceAddrs = strings.Split(r.ReplaceAddrs, ",")
+	if model.ConfigurationVersion != nil {
+		domain.ConfigurationVersion = model.ConfigurationVersion.ToDomain()
 	}
 
-	if r.TargetAddrs != "" {
-		domain.TargetAddrs = strings.Split(r.TargetAddrs, ",")
+	if model.Plan != nil {
+		domain.Plan = model.Plan.ToDomain()
+	}
+
+	if model.Workspace != nil {
+		domain.Workspace = model.Workspace.ToDomain()
+	}
+
+	if model.ReplaceAddrs != "" {
+		domain.ReplaceAddrs = strings.Split(model.ReplaceAddrs, ",")
+	}
+
+	if model.TargetAddrs != "" {
+		domain.TargetAddrs = strings.Split(model.TargetAddrs, ",")
 	}
 
 	return &domain
 }
 
+// NewFromDomain constructs a model obj from a domain obj
+func NewFromDomain(domain *ots.Run) *Run {
+	model := &Run{
+		Apply:                &Apply{},
+		ConfigurationVersion: &ConfigurationVersion{},
+		Plan:                 &Plan{},
+		Workspace:            &Workspace{},
+	}
+	model.FromDomain(domain)
+
+	return model
+}
+
 // FromDomain updates run model fields with a run domain object's fields
 func (model *Run) FromDomain(domain *ots.Run) {
 	model.ExternalID = domain.ID
+	model.ForceCancelAvailableAt = domain.ForceCancelAvailableAt
 	model.Status = domain.Status
 	model.Message = domain.Message
+	model.Permissions = domain.Permissions
 	model.Refresh = domain.Refresh
 	model.RefreshOnly = domain.RefreshOnly
 	model.ReplaceAddrs = strings.Join(domain.ReplaceAddrs, ",")
 	model.TargetAddrs = strings.Join(domain.TargetAddrs, ",")
+	model.StatusTimestamps = domain.StatusTimestamps
 
-	if domain.Plan != nil {
-		model.Plan = &Plan{}
-		model.Plan.FromDomain(domain.Plan)
-	}
+	model.Apply.FromDomain(domain.Apply)
 
-	model.Workspace = &Workspace{}
+	model.Plan.FromDomain(domain.Plan)
+
 	model.Workspace.FromDomain(domain.Workspace)
 	model.WorkspaceID = domain.Workspace.Model.ID
 
-	model.ConfigurationVersion = &ConfigurationVersion{}
 	model.ConfigurationVersion.FromDomain(domain.ConfigurationVersion)
 	model.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
 }

@@ -177,12 +177,12 @@ func (p *processor) downloadConfig(ctx context.Context, run *ots.Run, path strin
 	// Download config
 	cv, err := p.ConfigurationVersionService.Download(run.ConfigurationVersion.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to download config: %w", err)
 	}
 
 	// Decompress and untar config
 	if err := Unpack(bytes.NewBuffer(cv), path); err != nil {
-		return err
+		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 
 	return nil

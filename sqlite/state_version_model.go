@@ -25,36 +25,24 @@ type StateVersion struct {
 	// Run that created this state version. Optional.
 	// Run     *Run
 
+	// StateVersion has many StateVersionOutput
 	Outputs []*StateVersionOutput
 }
 
-// StateVersionList is a list of run models
 type StateVersionList []StateVersion
-
-// Update updates the model with the supplied fn. The fn operates on the domain
-// obj, so Update handles converting to and from a domain obj.
-func (r *StateVersion) Update(fn func(*ots.StateVersion) error) error {
-	// model -> domain
-	domain := r.ToDomain()
-
-	// invoke user fn
-	if err := fn(domain); err != nil {
-		return err
-	}
-
-	// domain -> model
-	r.FromDomain(domain)
-
-	return nil
-}
 
 func (model *StateVersion) ToDomain() *ots.StateVersion {
 	domain := ots.StateVersion{
 		ID:           model.ExternalID,
+		Model:        model.Model,
 		Serial:       model.Serial,
 		VCSCommitSHA: model.VCSCommitSHA,
 		VCSCommitURL: model.VCSCommitURL,
 		BlobID:       model.BlobID,
+	}
+
+	for _, out := range model.Outputs {
+		domain.Outputs = append(domain.Outputs, out.ToDomain())
 	}
 
 	if model.Workspace != nil {
@@ -67,11 +55,16 @@ func (model *StateVersion) ToDomain() *ots.StateVersion {
 // FromDomain updates state version model fields with a state version domain
 // object's fields
 func (model *StateVersion) FromDomain(domain *ots.StateVersion) {
+	model.Model = domain.Model
 	model.ExternalID = domain.ID
 	model.Serial = domain.Serial
 	model.VCSCommitSHA = domain.VCSCommitSHA
 	model.VCSCommitURL = domain.VCSCommitURL
 	model.BlobID = domain.BlobID
+
+	for _, out := range domain.Outputs {
+		model.Outputs = append(model.Outputs, NewStateVersionOutputFromDomain(out))
+	}
 
 	if domain.Workspace != nil {
 		model.Workspace = &Workspace{}

@@ -39,14 +39,14 @@ type Workspace struct {
 	MigrationEnvironment       string
 	Name                       string
 	Operations                 bool
-	Permissions                *tfe.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions                *tfe.WorkspacePermissions
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	SourceName                 string
 	SourceURL                  string
 	StructuredRunOutputEnabled bool
 	TerraformVersion           string
-	VCSRepo                    *tfe.VCSRepo `gorm:"-"`
+	VCSRepo                    *tfe.VCSRepo
 	WorkingDirectory           string
 	ResourceCount              int
 	ApplyDurationAverage       time.Duration

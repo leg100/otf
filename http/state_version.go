@@ -84,7 +84,7 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 func (s *Server) StateVersionJSONAPIObject(r *ots.StateVersion) *tfe.StateVersion {
 	obj := &tfe.StateVersion{
 		ID:          r.ID,
-		CreatedAt:   r.CreatedAt,
+		CreatedAt:   r.Model.CreatedAt,
 		DownloadURL: r.DownloadURL(),
 		Serial:      r.Serial,
 		Outputs:     s.StateVersionOutputListJSONAPIObject(r.Outputs),
