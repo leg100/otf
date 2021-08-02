@@ -24,7 +24,7 @@ type Apply struct {
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.ApplyStatus
-	StatusTimestamps     *tfe.ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
 	Logs []byte
 

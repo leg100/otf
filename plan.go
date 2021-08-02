@@ -21,15 +21,15 @@ type Plan struct {
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.PlanStatus
-	StatusTimestamps     *tfe.PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *tfe.PlanStatusTimestamps
 
 	Logs []byte
 
 	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
+	Plan []byte
 
 	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
+	PlanJSON []byte
 }
 
 type PlanService interface {

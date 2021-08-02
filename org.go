@@ -34,7 +34,7 @@ type Organization struct {
 	CostEstimationEnabled  bool
 	Email                  string
 	OwnersTeamSAMLRoleID   string
-	Permissions            *tfe.OrganizationPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *tfe.OrganizationPermissions
 	SAMLEnabled            bool
 	SessionRemember        int
 	SessionTimeout         int
