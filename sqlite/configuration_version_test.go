@@ -45,7 +45,6 @@ func TestConfigurationVersion(t *testing.T) {
 	// Update
 
 	cv, err = cvDB.Update(cv.ID, func(cv *ots.ConfigurationVersion) error {
-		cv.Configuration = []byte("testdata")
 		cv.Status = tfe.ConfigurationUploaded
 		return nil
 	})

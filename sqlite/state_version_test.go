@@ -1,8 +1,6 @@
 package sqlite
 
 import (
-	"encoding/base64"
-	"os"
 	"testing"
 
 	"github.com/leg100/go-tfe"
@@ -44,17 +42,12 @@ func TestStateVersion(t *testing.T) {
 
 	// Create state versions (3 WSs, 3 SVs per WS)
 
-	// ...first get a state file to upload
-	data, err := os.ReadFile("../testdata/terraform.tfstate")
-	require.NoError(t, err)
-
 	var stateVersionIDs []string
 	for _, ws := range workspaces {
 		for _, j := range []int{1, 2, 3} {
 			sv, err := svDB.Create(&ots.StateVersion{
 				ID:        ots.NewStateVersionID(),
 				Serial:    int64(j),
-				State:     base64.StdEncoding.EncodeToString(data),
 				Workspace: ws,
 			})
 			require.NoError(t, err)

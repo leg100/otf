@@ -15,7 +15,6 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	State  string
 	BlobID string
 
 	// State version belongs to a workspace

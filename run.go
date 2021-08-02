@@ -38,15 +38,11 @@ type Run struct {
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 
-	Plan *Plan
-
-	Apply *Apply
-
-	WorkspaceID uint
-	Workspace   *Workspace
-
-	ConfigurationVersionID uint
-	ConfigurationVersion   *ConfigurationVersion
+	// Relations
+	Plan                 *Plan
+	Apply                *Apply
+	Workspace            *Workspace
+	ConfigurationVersion *ConfigurationVersion
 }
 
 type RunFactory struct {
@@ -362,13 +358,13 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	run.Workspace, run.WorkspaceID = ws, ws.Model.ID
+	run.Workspace = ws
 
 	cv, err := f.getConfigurationVersion(opts)
 	if err != nil {
 		return nil, err
 	}
-	run.ConfigurationVersion, run.ConfigurationVersionID = cv, cv.Model.ID
+	run.ConfigurationVersion = cv
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy

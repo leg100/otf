@@ -27,8 +27,6 @@ type Apply struct {
 	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
 	Logs []byte
-
-	RunID uint
 }
 
 // ApplyFinishOptions represents the options for finishing an apply.

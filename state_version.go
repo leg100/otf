@@ -23,12 +23,10 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	State  string
 	BlobID string
 
 	// State version belongs to a workspace
-	WorkspaceID uint
-	Workspace   *Workspace
+	Workspace *Workspace
 
 	// Run that created this state version. Optional.
 	// Run     *Run
@@ -82,14 +80,13 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 	sv := StateVersion{
 		Serial: *opts.Serial,
 		ID:     NewStateVersionID(),
-		State:  *opts.State,
 	}
 
 	ws, err := f.WorkspaceService.GetByID(workspaceID)
 	if err != nil {
 		return nil, err
 	}
-	sv.Workspace, sv.WorkspaceID = ws, ws.Model.ID
+	sv.Workspace = ws
 
 	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
