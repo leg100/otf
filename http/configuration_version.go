@@ -79,14 +79,14 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 // that can be marshalled into a JSON-API object
 func (s *Server) ConfigurationVersionJSONAPIObject(cv *ots.ConfigurationVersion) *tfe.ConfigurationVersion {
 	obj := &tfe.ConfigurationVersion{
-		ID:            cv.ExternalID,
+		ID:            cv.ID,
 		AutoQueueRuns: cv.AutoQueueRuns,
 		Error:         cv.Error,
 		ErrorMessage:  cv.ErrorMessage,
 		Speculative:   cv.Speculative,
 		Source:        cv.Source,
 		Status:        cv.Status,
-		UploadURL:     s.GetURL(UploadConfigurationVersionRoute, cv.ExternalID),
+		UploadURL:     s.GetURL(UploadConfigurationVersionRoute, cv.ID),
 	}
 
 	if cv.StatusTimestamps != nil && !reflect.ValueOf(cv.StatusTimestamps).Elem().IsZero() {

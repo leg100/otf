@@ -161,7 +161,7 @@ func (s *Server) GetRunPlanJSON(w http.ResponseWriter, r *http.Request) {
 // that can be marshalled into a JSON-API object
 func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
 	obj := &tfe.Run{
-		ID:                     r.ExternalID,
+		ID:                     r.ID,
 		Actions:                r.Actions(),
 		CreatedAt:              r.CreatedAt,
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
@@ -181,9 +181,14 @@ func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
 		// Relations
 		Apply:                s.ApplyJSONAPIObject(r.Apply),
 		ConfigurationVersion: s.ConfigurationVersionJSONAPIObject(r.ConfigurationVersion),
-		CreatedBy:            r.CreatedBy,
 		Plan:                 s.PlanJSONAPIObject(r.Plan),
 		Workspace:            s.WorkspaceJSONAPIObject(r.Workspace),
+
+		// Hardcoded anonymous user until authorization is introduced
+		CreatedBy: &tfe.User{
+			ID:       ots.DefaultUserID,
+			Username: ots.DefaultUsername,
+		},
 	}
 
 	return obj

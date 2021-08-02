@@ -22,23 +22,22 @@ func TestWorkspace(t *testing.T) {
 	// Create one org and three workspaces
 
 	org, err := orgDB.Create(&ots.Organization{
-		ExternalID: "org-123",
-		Name:       "automatize",
-		Email:      "sysadmin@automatize.co.uk",
+		ID:    "org-123",
+		Name:  "automatize",
+		Email: "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
 	for _, name := range []string{"dev", "staging", "prod"} {
 		ws, err := wsDB.Create(&ots.Workspace{
-			Name:           name,
-			ExternalID:     ots.NewWorkspaceID(),
-			Organization:   org,
-			OrganizationID: org.InternalID,
+			Name:         name,
+			ID:           ots.NewWorkspaceID(),
+			Organization: org,
 		})
 		require.NoError(t, err)
 
 		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ExternalID, "ws-")
+		require.Contains(t, ws.ID, "ws-")
 	}
 
 	// Update
@@ -102,7 +101,7 @@ func TestWorkspace(t *testing.T) {
 
 	// Update by ID
 
-	ws, err = wsDB.Update(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)}, func(ws *ots.Workspace) error {
+	ws, err = wsDB.Update(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)}, func(ws *ots.Workspace) error {
 		ws.Name = "staging"
 		return nil
 	})
@@ -112,12 +111,12 @@ func TestWorkspace(t *testing.T) {
 
 	// Get by ID
 
-	ws, err = wsDB.Get(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)})
+	ws, err = wsDB.Get(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)})
 	require.NoError(t, err)
 
 	require.Equal(t, "staging", ws.Name)
 
 	// Delete by ID
 
-	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{ID: ots.String(ws.ExternalID)}))
+	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)}))
 }

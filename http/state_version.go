@@ -83,8 +83,8 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func (s *Server) StateVersionJSONAPIObject(r *ots.StateVersion) *tfe.StateVersion {
 	obj := &tfe.StateVersion{
-		ID:          r.ExternalID,
-		CreatedAt:   r.CreatedAt,
+		ID:          r.ID,
+		CreatedAt:   r.Model.CreatedAt,
 		DownloadURL: r.DownloadURL(),
 		Serial:      r.Serial,
 		Outputs:     s.StateVersionOutputListJSONAPIObject(r.Outputs),
@@ -110,7 +110,7 @@ func (s *Server) StateVersionListJSONAPIObject(cvl *ots.StateVersionList) *tfe.S
 // JSON-API object
 func (s *Server) StateVersionOutputJSONAPIObject(svo *ots.StateVersionOutput) *tfe.StateVersionOutput {
 	obj := &tfe.StateVersionOutput{
-		ID:        svo.ExternalID,
+		ID:        svo.ID,
 		Name:      svo.Name,
 		Sensitive: svo.Sensitive,
 		Type:      svo.Type,

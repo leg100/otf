@@ -30,15 +30,14 @@ func TestStateVersion(t *testing.T) {
 	var workspaces []*ots.Workspace
 	for _, name := range []string{"dev", "staging", "prod"} {
 		ws, err := wsDB.Create(&ots.Workspace{
-			Name:           name,
-			ExternalID:     ots.NewWorkspaceID(),
-			Organization:   org,
-			OrganizationID: org.InternalID,
+			Name:         name,
+			ID:           ots.NewWorkspaceID(),
+			Organization: org,
 		})
 		require.NoError(t, err)
 
 		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ExternalID, "ws-")
+		require.Contains(t, ws.ID, "ws-")
 
 		workspaces = append(workspaces, ws)
 	}
@@ -53,17 +52,16 @@ func TestStateVersion(t *testing.T) {
 	for _, ws := range workspaces {
 		for _, j := range []int{1, 2, 3} {
 			sv, err := svDB.Create(&ots.StateVersion{
-				ExternalID:  ots.NewStateVersionID(),
-				Serial:      int64(j),
-				State:       base64.StdEncoding.EncodeToString(data),
-				Workspace:   ws,
-				WorkspaceID: ws.InternalID,
+				ID:        ots.NewStateVersionID(),
+				Serial:    int64(j),
+				State:     base64.StdEncoding.EncodeToString(data),
+				Workspace: ws,
 			})
 			require.NoError(t, err)
 
-			require.Contains(t, sv.ExternalID, "sv-")
+			require.Contains(t, sv.ID, "sv-")
 
-			stateVersionIDs = append(stateVersionIDs, sv.ExternalID)
+			stateVersionIDs = append(stateVersionIDs, sv.ID)
 		}
 	}
 
@@ -85,7 +83,7 @@ func TestStateVersion(t *testing.T) {
 
 	// Current
 
-	sv, err := svDB.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaces[0].ExternalID})
+	sv, err := svDB.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaces[0].ID})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), sv.Serial)
 }

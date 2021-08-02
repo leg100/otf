@@ -2,18 +2,14 @@ package ots
 
 import (
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 )
 
 type StateVersionOutput struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	Name      string
 	Sensitive bool

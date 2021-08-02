@@ -3,7 +3,6 @@ package ots
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -23,66 +22,32 @@ var (
 )
 
 type Run struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
-	Permissions            *tfe.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *tfe.RunPermissions
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 tfe.RunStatus
-	StatusTimestamps       *tfe.RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps       *tfe.RunStatusTimestamps
+	ReplaceAddrs           []string
+	TargetAddrs            []string
 
-	ReplaceAddrs         []string `gorm:"-"`
-	InternalReplaceAddrs string   `gorm:"column:replace_addrs"`
-
-	TargetAddrs         []string `gorm:"-"`
-	InternalTargetAddrs string   `gorm:"column:target_addrs"`
-
-	CreatedBy *tfe.User `gorm:"-"`
-
-	// Run has one plan
 	Plan *Plan
 
-	// Run has one apply
 	Apply *Apply
 
 	WorkspaceID uint
 	Workspace   *Workspace
 
-	// Run belongs to a configuration version
 	ConfigurationVersionID uint
 	ConfigurationVersion   *ConfigurationVersion
 }
-
-func (run *Run) Unwrap(tx *gorm.DB) (err error) {
-	run.ReplaceAddrs = strings.Split(run.InternalReplaceAddrs, ",")
-	run.TargetAddrs = strings.Split(run.InternalTargetAddrs, ",")
-	run.CreatedBy = &tfe.User{
-		ID:       DefaultUserID,
-		Username: DefaultUsername,
-	}
-
-	return
-}
-
-func (run *Run) Wrap(tx *gorm.DB) (err error) {
-	run.InternalReplaceAddrs = strings.Join(run.ReplaceAddrs, ",")
-	run.InternalTargetAddrs = strings.Join(run.TargetAddrs, ",")
-	return
-}
-
-func (run *Run) AfterFind(tx *gorm.DB) (err error) { run.Unwrap(tx); return }
-
-func (run *Run) BeforeSave(tx *gorm.DB) (err error) { run.Wrap(tx); return }
-func (run *Run) AfterSave(tx *gorm.DB) (err error)  { run.Unwrap(tx); return }
 
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
@@ -374,7 +339,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	}
 
 	run := Run{
-		ExternalID: NewRunID(),
+		ID: NewRunID(),
 		Permissions: &tfe.RunPermissions{
 			CanForceCancel:  true,
 			CanApply:        true,
@@ -397,15 +362,13 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	run.Workspace = ws
-	run.WorkspaceID = ws.InternalID
+	run.Workspace, run.WorkspaceID = ws, ws.Model.ID
 
 	cv, err := f.getConfigurationVersion(opts)
 	if err != nil {
 		return nil, err
 	}
-	run.ConfigurationVersion = cv
-	run.ConfigurationVersionID = cv.InternalID
+	run.ConfigurationVersion, run.ConfigurationVersionID = cv, cv.Model.ID
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy

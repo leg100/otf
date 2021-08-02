@@ -63,8 +63,8 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func (s *Server) ApplyJSONAPIObject(a *ots.Apply) *tfe.Apply {
 	obj := &tfe.Apply{
-		ID:                   a.ExternalID,
-		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ExternalID),
+		ID:                   a.ID,
+		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ID),
 		ResourceAdditions:    a.ResourceAdditions,
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,

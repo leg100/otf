@@ -182,12 +182,12 @@ func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func (s *Server) WorkspaceJSONAPIObject(ws *ots.Workspace) *tfe.Workspace {
 	obj := &tfe.Workspace{
-		ID:                         ws.ExternalID,
+		ID:                         ws.ID,
 		Actions:                    ws.Actions(),
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		AutoApply:                  ws.AutoApply,
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
-		CreatedAt:                  ws.CreatedAt,
+		CreatedAt:                  ws.Model.CreatedAt,
 		Description:                ws.Description,
 		Environment:                ws.Environment,
 		ExecutionMode:              ws.ExecutionMode,
@@ -207,7 +207,7 @@ func (s *Server) WorkspaceJSONAPIObject(ws *ots.Workspace) *tfe.Workspace {
 		TriggerPrefixes:            ws.TriggerPrefixes,
 		VCSRepo:                    ws.VCSRepo,
 		WorkingDirectory:           ws.WorkingDirectory,
-		UpdatedAt:                  ws.UpdatedAt,
+		UpdatedAt:                  ws.Model.UpdatedAt,
 		ResourceCount:              ws.ResourceCount,
 		ApplyDurationAverage:       ws.ApplyDurationAverage,
 		PlanDurationAverage:        ws.PlanDurationAverage,

@@ -18,26 +18,26 @@ func TestOrganization(t *testing.T) {
 	// Create
 
 	org, err := svc.Create(&ots.Organization{
-		Name:       "automatize",
-		ExternalID: "org-123",
-		Email:      "sysadmin@automatize.co.uk",
+		Name:  "automatize",
+		ID:    "org-123",
+		Email: "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), org.InternalID)
+	require.Equal(t, uint(1), org.Model.ID)
 	require.Equal(t, "automatize", org.Name)
 	require.Equal(t, "sysadmin@automatize.co.uk", org.Email)
 
 	// Create second org
 
 	org, err = svc.Create(&ots.Organization{
-		Name:       "second",
-		ExternalID: "org-456",
-		Email:      "sysadmin@second.org",
+		Name:  "second",
+		ID:    "org-456",
+		Email: "sysadmin@second.org",
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, uint(2), org.InternalID)
+	require.Equal(t, uint(2), org.Model.ID)
 	require.Equal(t, "second", org.Name)
 	require.Equal(t, "sysadmin@second.org", org.Email)
 

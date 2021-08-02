@@ -25,19 +25,16 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	Name                   string
 	CollaboratorAuthPolicy tfe.AuthPolicyType
 	CostEstimationEnabled  bool
 	Email                  string
 	OwnersTeamSAMLRoleID   string
-	Permissions            *tfe.OrganizationPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *tfe.OrganizationPermissions
 	SAMLEnabled            bool
 	SessionRemember        int
 	SessionTimeout         int
@@ -76,7 +73,7 @@ func NewOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error)
 	org := Organization{
 		Name:                   *opts.Name,
 		Email:                  *opts.Email,
-		ExternalID:             NewOrganizationID(),
+		ID:                     NewOrganizationID(),
 		SessionTimeout:         DefaultSessionTimeout,
 		SessionRemember:        DefaultSessionExpiration,
 		CollaboratorAuthPolicy: DefaultCollaboratorAuthPolicy,

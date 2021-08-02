@@ -8,14 +8,14 @@ import (
 )
 
 var models = []interface{}{
-	&ots.Run{},
-	&ots.Apply{},
-	&ots.Plan{},
-	&ots.ConfigurationVersion{},
-	&ots.Organization{},
-	&ots.StateVersion{},
-	&ots.StateVersionOutput{},
-	&ots.Workspace{},
+	&Run{},
+	&Apply{},
+	&Plan{},
+	&ConfigurationVersion{},
+	&Organization{},
+	&StateVersion{},
+	&StateVersionOutput{},
+	&Workspace{},
 }
 
 func New(path string, cfg *gorm.Config) (*gorm.DB, error) {

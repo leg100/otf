@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tfe "github.com/leg100/go-tfe"
+	"gorm.io/gorm"
 )
 
 const (
@@ -12,24 +13,23 @@ const (
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
+
+	gorm.Model
 
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.PlanStatus
-	StatusTimestamps     *tfe.PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *tfe.PlanStatusTimestamps
 
 	Logs []byte
 
-	RunID uint
-
 	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
+	Plan []byte
 
 	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
+	PlanJSON []byte
 }
 
 type PlanService interface {
@@ -65,7 +65,8 @@ type PlanFinishOptions struct {
 
 func newPlan() *Plan {
 	return &Plan{
-		ExternalID: NewPlanID(),
+		ID:               NewPlanID(),
+		StatusTimestamps: &tfe.PlanStatusTimestamps{},
 	}
 }
 

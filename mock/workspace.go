@@ -62,8 +62,8 @@ func (s WorkspaceService) Unlock(id string) (*ots.Workspace, error) {
 
 func NewWorkspace(name, id, org string) *ots.Workspace {
 	return &ots.Workspace{
-		ExternalID: id,
-		Name:       name,
+		ID:   id,
+		Name: name,
 		Organization: &ots.Organization{
 			Name: org,
 		},

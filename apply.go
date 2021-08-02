@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tfe "github.com/leg100/go-tfe"
+	"gorm.io/gorm"
 )
 
 const (
@@ -15,14 +16,15 @@ type ApplyService interface {
 }
 
 type Apply struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
+
+	gorm.Model
 
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.ApplyStatus
-	StatusTimestamps     *tfe.ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
 	Logs []byte
 
@@ -55,6 +57,7 @@ func NewApplyID() string {
 
 func newApply() *Apply {
 	return &Apply{
-		ExternalID: NewApplyID(),
+		ID:               NewApplyID(),
+		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
 	}
 }

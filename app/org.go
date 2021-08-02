@@ -55,5 +55,5 @@ func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, er
 		return nil, err
 	}
 
-	return ots.DefaultEntitlements(org.ExternalID), nil
+	return ots.DefaultEntitlements(org.ID), nil
 }

@@ -3,7 +3,6 @@ package ots
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -24,12 +23,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ExternalID string `gorm:"uniqueIndex"`
-	InternalID uint   `gorm:"primaryKey;column:id"`
+	ID string
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	gorm.Model
 
 	AllowDestroyPlan           bool
 	AutoApply                  bool
@@ -43,14 +39,14 @@ type Workspace struct {
 	MigrationEnvironment       string
 	Name                       string
 	Operations                 bool
-	Permissions                *tfe.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions                *tfe.WorkspacePermissions
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	SourceName                 string
 	SourceURL                  string
 	StructuredRunOutputEnabled bool
 	TerraformVersion           string
-	VCSRepo                    *tfe.VCSRepo `gorm:"-"`
+	VCSRepo                    *tfe.VCSRepo
 	WorkingDirectory           string
 	ResourceCount              int
 	ApplyDurationAverage       time.Duration
@@ -59,32 +55,15 @@ type Workspace struct {
 	RunFailures                int
 	RunsCount                  int
 
-	TriggerPrefixes         []string `gorm:"-"`
-	InternalTriggerPrefixes string
+	TriggerPrefixes []string
 
 	// Relations AgentPool  *tfe.AgentPool CurrentRun *Run
 
 	// Workspace belongs to an organization
-	OrganizationID uint
-	Organization   *Organization
+	Organization *Organization
 
 	//SSHKey *tfe.SSHKey
 }
-
-func (ws *Workspace) Unwrap(tx *gorm.DB) (err error) {
-	ws.TriggerPrefixes = strings.Split(ws.InternalTriggerPrefixes, ",")
-	return
-}
-
-func (ws *Workspace) Wrap(tx *gorm.DB) (err error) {
-	ws.InternalTriggerPrefixes = strings.Join(ws.TriggerPrefixes, ",")
-	return
-}
-
-func (ws *Workspace) AfterFind(tx *gorm.DB) (err error) { ws.Unwrap(tx); return }
-
-func (ws *Workspace) BeforeSave(tx *gorm.DB) (err error) { ws.Wrap(tx); return }
-func (ws *Workspace) AfterSave(tx *gorm.DB) (err error)  { ws.Unwrap(tx); return }
 
 // WorkspaceList represents a list of Workspaces.
 type WorkspaceList struct {
@@ -135,7 +114,7 @@ type WorkspaceListOptions struct {
 
 func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
-		ExternalID:          NewWorkspaceID(),
+		ID:                  NewWorkspaceID(),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       "local", // Only local execution mode is supported
@@ -157,7 +136,6 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		SpeculativeEnabled: true,
 		Operations:         true,
 		Organization:       org,
-		OrganizationID:     org.InternalID,
 	}
 
 	if opts.AllowDestroyPlan != nil {

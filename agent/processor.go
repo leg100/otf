@@ -55,7 +55,7 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	}
 
 	// Update status
-	_, err := p.RunService.UpdatePlanStatus(run.ExternalID, tfe.PlanRunning)
+	_, err := p.RunService.UpdatePlanStatus(run.ID, tfe.PlanRunning)
 	if err != nil {
 		return fmt.Errorf("unable to update plan status: %w", err)
 	}
@@ -64,7 +64,7 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	out, plan, planJSON, planErr := p.TerraformRunner.Plan(ctx, path)
 
 	// Upload logs regardless of whether plan errored
-	if err := p.RunService.UploadPlanLogs(run.ExternalID, out); err != nil {
+	if err := p.RunService.UploadPlanLogs(run.ID, out); err != nil {
 		return fmt.Errorf("unable to upload plan logs: %w", err)
 	}
 
@@ -80,7 +80,7 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	}
 
 	// Update status
-	_, err = p.RunService.FinishPlan(run.ExternalID, ots.PlanFinishOptions{
+	_, err = p.RunService.FinishPlan(run.ID, ots.PlanFinishOptions{
 		ResourceAdditions:    info.adds,
 		ResourceChanges:      info.changes,
 		ResourceDestructions: info.deletions,
@@ -92,7 +92,7 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	}
 
 	p.Info().
-		Str("run", run.ExternalID).
+		Str("run", run.ID).
 		Int("additions", info.adds).
 		Int("changes", info.changes).
 		Int("deletions", info.deletions).
@@ -124,7 +124,7 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	}
 
 	// Update status
-	_, err := p.RunService.UpdateApplyStatus(run.ExternalID, tfe.ApplyRunning)
+	_, err := p.RunService.UpdateApplyStatus(run.ID, tfe.ApplyRunning)
 	if err != nil {
 		return fmt.Errorf("unable to update apply status: %w", err)
 	}
@@ -133,7 +133,7 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	out, applyErr := p.TerraformRunner.Apply(ctx, path)
 
 	// Upload logs regardless of whether apply failed
-	if err := p.RunService.UploadApplyLogs(run.ExternalID, out); err != nil {
+	if err := p.RunService.UploadApplyLogs(run.ID, out); err != nil {
 		return fmt.Errorf("unable to upload apply logs: %w", err)
 	}
 
@@ -154,7 +154,7 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	}
 
 	// Update status
-	_, err = p.RunService.FinishApply(run.ExternalID, ots.ApplyFinishOptions{
+	_, err = p.RunService.FinishApply(run.ID, ots.ApplyFinishOptions{
 		ResourceAdditions:    info.adds,
 		ResourceChanges:      info.changes,
 		ResourceDestructions: info.deletions,
@@ -164,7 +164,7 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 	}
 
 	p.Info().
-		Str("run", run.ExternalID).
+		Str("run", run.ID).
 		Int("additions", info.adds).
 		Int("changes", info.changes).
 		Int("deletions", info.deletions).
@@ -175,14 +175,14 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 
 func (p *processor) downloadConfig(ctx context.Context, run *ots.Run, path string) error {
 	// Download config
-	cv, err := p.ConfigurationVersionService.Download(run.ConfigurationVersion.ExternalID)
+	cv, err := p.ConfigurationVersionService.Download(run.ConfigurationVersion.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to download config: %w", err)
 	}
 
 	// Decompress and untar config
 	if err := Unpack(bytes.NewBuffer(cv), path); err != nil {
-		return err
+		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 
 	return nil
@@ -191,14 +191,14 @@ func (p *processor) downloadConfig(ctx context.Context, run *ots.Run, path strin
 // Download current state to disk. If there is no state yet nothing will be
 // downloaded and no error will be reported.
 func (p *processor) downloadState(ctx context.Context, run *ots.Run, path string) error {
-	state, err := p.StateVersionService.Current(run.Workspace.ExternalID)
+	state, err := p.StateVersionService.Current(run.Workspace.ID)
 	if ots.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	statefile, err := p.StateVersionService.Download(state.ExternalID)
+	statefile, err := p.StateVersionService.Download(state.ID)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (p *processor) downloadState(ctx context.Context, run *ots.Run, path string
 
 // downloadPlanFile downloads a plan file, for use with terraform apply.
 func (p *processor) downloadPlanFile(ctx context.Context, run *ots.Run, path string) error {
-	plan, err := p.RunService.GetPlanFile(run.ExternalID)
+	plan, err := p.RunService.GetPlanFile(run.ID)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (p *processor) uploadState(ctx context.Context, run *ots.Run, path string) 
 		return err
 	}
 
-	_, err = p.StateVersionService.Create(run.Workspace.ExternalID, tfe.StateVersionCreateOptions{
+	_, err = p.StateVersionService.Create(run.Workspace.ID, tfe.StateVersionCreateOptions{
 		State:   ots.String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     ots.String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,
