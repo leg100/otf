@@ -7,11 +7,13 @@ import (
 var _ ots.PlanService = (*PlanService)(nil)
 
 type PlanService struct {
+	bs ots.BlobStore
 	db ots.RunStore
 }
 
-func NewPlanService(db ots.RunStore) *PlanService {
+func NewPlanService(db ots.RunStore, bs ots.BlobStore) *PlanService {
 	return &PlanService{
+		bs: bs,
 		db: db,
 	}
 }
@@ -30,5 +32,5 @@ func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return run.Plan.PlanJSON, nil
+	return s.bs.Get(run.Plan.PlanJSONBlobID)
 }

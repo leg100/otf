@@ -118,8 +118,6 @@ func (r *Run) FinishPlan(opts PlanFinishOptions) error {
 	r.Plan.ResourceAdditions = opts.ResourceAdditions
 	r.Plan.ResourceChanges = opts.ResourceChanges
 	r.Plan.ResourceDestructions = opts.ResourceDestructions
-	r.Plan.Plan = opts.Plan
-	r.Plan.PlanJSON = opts.PlanJSON
 
 	r.UpdatePlanStatus(tfe.PlanFinished)
 

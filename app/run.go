@@ -12,12 +12,14 @@ var _ ots.RunService = (*RunService)(nil)
 
 type RunService struct {
 	db ots.RunStore
+	bs ots.BlobStore
 
 	*ots.RunFactory
 }
 
-func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService) *RunService {
+func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore) *RunService {
 	return &RunService{
+		bs: bs,
 		db: db,
 		RunFactory: &ots.RunFactory{
 			WorkspaceService:            wss,
@@ -136,8 +138,20 @@ func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.R
 }
 
 func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
+	planFileBlobID, err := s.bs.Put(opts.Plan)
+	if err != nil {
+		return nil, err
+	}
+
+	planJSONBlobID, err := s.bs.Put(opts.PlanJSON)
+	if err != nil {
+		return nil, err
+	}
+
 	run, err := s.db.Update(id, func(run *ots.Run) error {
 		run.FinishPlan(opts)
+		run.Plan.PlanFileBlobID = planFileBlobID
+		run.Plan.PlanJSONBlobID = planJSONBlobID
 
 		return nil
 	})
@@ -165,7 +179,7 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return run.Plan.PlanJSON, nil
+	return s.bs.Get(run.Plan.PlanJSONBlobID)
 }
 
 // GetPlanFile returns the binary plan file for the run.
@@ -174,7 +188,7 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return run.Plan.Plan, nil
+	return s.bs.Get(run.Plan.PlanFileBlobID)
 }
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The

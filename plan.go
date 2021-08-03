@@ -25,11 +25,11 @@ type Plan struct {
 
 	Logs []byte
 
-	// The execution plan file
-	Plan []byte
+	// The blob ID of the execution plan file
+	PlanFileBlobID string
 
-	// The execution plan file in json format
-	PlanJSON []byte
+	// The blob ID of the execution plan file in json format
+	PlanJSONBlobID string
 }
 
 type PlanService interface {

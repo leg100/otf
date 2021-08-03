@@ -20,14 +20,14 @@ type Plan struct {
 
 	Logs []byte
 
+	// The blob ID of the execution plan file
+	PlanFileBlobID string
+
+	// The blob ID of the execution plan file in json format
+	PlanJSONBlobID string
+
 	// Plan belongs to a run
 	RunID uint
-
-	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
-
-	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
 // PlanList is a list of run models
@@ -60,8 +60,8 @@ func (model *Plan) ToDomain() *ots.Plan {
 		Status:               model.Status,
 		StatusTimestamps:     &model.StatusTimestamps,
 		Logs:                 model.Logs,
-		Plan:                 model.Plan,
-		PlanJSON:             model.PlanJSON,
+		PlanFileBlobID:       model.PlanFileBlobID,
+		PlanJSONBlobID:       model.PlanJSONBlobID,
 	}
 
 	return &domain
@@ -77,8 +77,8 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	model.Status = domain.Status
 	model.StatusTimestamps = *domain.StatusTimestamps
 	model.Logs = domain.Logs
-	model.Plan = domain.Plan
-	model.PlanJSON = domain.PlanJSON
+	model.PlanFileBlobID = domain.PlanFileBlobID
+	model.PlanJSONBlobID = domain.PlanJSONBlobID
 }
 
 func (l PlanList) ToDomain() (dl []*ots.Plan) {
