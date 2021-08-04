@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -20,7 +20,7 @@ type Agent struct {
 	// ID uniquely identifies the agent.
 	ID string
 
-	zerolog.Logger
+	logr.Logger
 
 	// DataDir stores artefacts relating to runs, i.e. downloaded plugins,
 	// modules (?), configuration versions, state, etc.
@@ -38,13 +38,13 @@ type Agent struct {
 	Processor
 }
 
-func NewAgent(logger *zerolog.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, ps ots.PlanService, rs ots.RunService) *Agent {
+func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, ps ots.PlanService, rs ots.RunService) *Agent {
 	return &Agent{
-		Logger:      logger.With().Str("component", "agent").Logger(),
+		Logger:      logger.WithValues("component", "agent"),
 		RunService:  rs,
 		PlanService: ps,
 		Processor: &processor{
-			Logger:                      logger.With().Str("component", "agent").Logger(),
+			Logger:                      logger.WithValues("component", "agent"),
 			ConfigurationVersionService: cvs,
 			StateVersionService:         svs,
 			PlanService:                 ps,
@@ -65,45 +65,42 @@ func (a *Agent) Poller(ctx context.Context) {
 
 		runs, err := a.RunService.GetQueued(tfe.RunListOptions{})
 		if err != nil {
-			a.Error().Msgf("unable to poll daemon: %s", err.Error())
+			a.Error(err, "unable to poll daemon")
 			continue
 		}
 		if len(runs.Items) == 0 {
 			continue
 		}
 
-		a.Info().
-			Str("run", runs.Items[0].ID).
-			Str("status", string(runs.Items[0].Status)).
-			Msg("job received")
+		a.Info("job received", "run", runs.Items[0].ID, "status", runs.Items[0].Status)
 
 		path, err := os.MkdirTemp("", "ots-plan")
 		if err != nil {
-			a.Error().Msgf("unable to create temp path: %s", err.Error())
+			a.Error(err, "unable to create temp path")
 			continue
 		}
 
 		switch runs.Items[0].Status {
 		case tfe.RunPlanQueued:
 			if err := a.Plan(ctx, runs.Items[0], path); err != nil {
-				a.Error().Msgf("unable to process run: %s", err.Error())
+				a.Error(err, "unable to process run")
 
 				_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ID, tfe.PlanErrored)
 				if err != nil {
-					a.Error().Msgf("unable to update plan status: %s", err.Error())
+					a.Error(err, "unable to update plan status")
 				}
 			}
 		case tfe.RunApplyQueued:
 			if err := a.Apply(ctx, runs.Items[0], path); err != nil {
-				a.Error().Msgf("unable to process run: %s", err.Error())
+				a.Error(err, "unable to process run")
 
 				_, err := a.RunService.UpdateApplyStatus(runs.Items[0].ID, tfe.ApplyErrored)
 				if err != nil {
-					a.Error().Msgf("unable to update apply status: %s", err.Error())
+					a.Error(err, "unable to update apply status")
 				}
 			}
 		default:
-			a.Error().Msgf("unexpected run status: %s", runs.Items[0].Status)
+			a.Error(nil, "unexpected run status", "status", runs.Items[0].Status)
 		}
 	}
 }

@@ -3,6 +3,8 @@ module github.com/leg100/ots
 go 1.16
 
 require (
+	github.com/butonic/zerologr v0.0.0-20191210074216-d798ee237d84
+	github.com/go-logr/logr v0.1.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0

@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
-	"github.com/rs/zerolog"
 	"github.com/urfave/negroni"
 )
 
@@ -36,7 +36,7 @@ type Server struct {
 	ln     net.Listener
 	err    chan error
 
-	zerolog.Logger
+	logr.Logger
 
 	SSL               bool
 	CertFile, KeyFile string
@@ -151,12 +151,11 @@ func NewRouter(server *Server) *negroni.Negroni {
 		next(rw, r)
 
 		res := rw.(negroni.ResponseWriter)
-		server.Info().
-			Dur("duration", time.Since(start)).
-			Int("status", res.Status()).
-			Str("method", r.Method).
-			Str("path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery)).
-			Msg("request")
+		server.Info("request",
+			"duration", time.Since(start),
+			"status", res.Status(),
+			"method", r.Method,
+			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
 	})
 
 	n.UseHandler(router)

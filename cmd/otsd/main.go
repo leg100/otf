@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	gormzerolog "github.com/leg100/gorm-zerolog"
+	"github.com/butonic/zerologr"
 	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
@@ -16,7 +16,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
 )
 
 const (
@@ -67,23 +66,12 @@ func main() {
 		panic(err.Error())
 	}
 
-	// Setup filestore
-	fs, err := filestore.NewFilestore(DataDir)
-	if err != nil {
-		panic(err.Error())
-	}
-	server.Logger.Info().
-		Str("path", fs.Path()).
-		Msg("filestore started")
-
 	// Setup logger
-	consoleWriter := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
-	}
-	zerolog.DurationFieldInteger = true
-	server.Logger = zerolog.New(consoleWriter).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+	zerologger := newLogger()
+	logger := zerologr.NewWithOptions(zerologr.Options{Logger: zerologger})
+	server.Logger = logger
 
+	// Validate SSL params
 	if server.SSL {
 		if server.CertFile == "" || server.KeyFile == "" {
 			fmt.Fprintf(os.Stderr, "must provide both --cert-file and --key-file")
@@ -91,10 +79,15 @@ func main() {
 		}
 	}
 
+	// Setup filestore
+	fs, err := filestore.NewFilestore(DataDir)
+	if err != nil {
+		panic(err.Error())
+	}
+	logger.Info("filestore started", "path", fs.Path())
+
 	// Setup sqlite db
-	db, err := sqlite.New(DBPath, &gorm.Config{
-		Logger: &gormzerolog.Logger{Zlog: server.Logger},
-	})
+	db, err := sqlite.New(DBPath, sqlite.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -115,7 +108,7 @@ func main() {
 
 	// Run poller in background
 	agent := agent.NewAgent(
-		&server.Logger,
+		logger,
 		server.ConfigurationVersionService,
 		server.StateVersionService,
 		server.PlanService,
@@ -129,11 +122,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Server listening on %s\n", server.Addr)
+	logger.Info("server started", "address", server.Addr, "ssl", server.SSL)
 
 	// Block until Ctrl-C received.
 	if err := server.Wait(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func newLogger() *zerolog.Logger {
+	// Setup logger
+	consoleWriter := zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.RFC3339,
+	}
+	zerolog.DurationFieldInteger = true
+
+	logger := zerolog.New(consoleWriter).Level(zerolog.InfoLevel).With().Timestamp().Logger()
+	return &logger
 }
