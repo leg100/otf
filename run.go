@@ -170,15 +170,15 @@ func (r *Run) ForceCancel() error {
 	switch r.Status {
 	case tfe.RunPlanQueued, tfe.RunPlanning:
 		r.Plan.Status = tfe.PlanCanceled
-		r.Plan.StatusTimestamps.CanceledAt = time.Now()
+		r.Plan.StatusTimestamps.CanceledAt = TimeNow()
 	case tfe.RunApplyQueued, tfe.RunApplying:
 		r.Apply.Status = tfe.ApplyCanceled
-		r.Apply.StatusTimestamps.CanceledAt = time.Now()
+		r.Apply.StatusTimestamps.CanceledAt = TimeNow()
 	}
 
 	// Put run into a cancel state
 	r.Status = tfe.RunCanceled
-	r.StatusTimestamps.CanceledAt = time.Now()
+	r.StatusTimestamps.CanceledAt = TimeNow()
 
 	return nil
 }
@@ -232,16 +232,16 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) {
 
 	switch status {
 	case tfe.RunDiscarded:
-		timestamps.DiscardedAt = time.Now()
+		timestamps.DiscardedAt = TimeNow()
 		r.UpdateApplyStatus(tfe.ApplyUnreachable)
 	case tfe.RunPlanQueued:
-		timestamps.PlanQueuedAt = time.Now()
+		timestamps.PlanQueuedAt = TimeNow()
 	case tfe.RunApplyQueued:
-		timestamps.ApplyQueuedAt = time.Now()
+		timestamps.ApplyQueuedAt = TimeNow()
 	case tfe.RunApplied:
-		timestamps.AppliedAt = time.Now()
+		timestamps.AppliedAt = TimeNow()
 	case tfe.RunErrored:
-		timestamps.ErroredAt = time.Now()
+		timestamps.ErroredAt = TimeNow()
 	default:
 		// Don't set a status or timestamp
 		return
@@ -263,22 +263,25 @@ func (r *Run) UpdatePlanStatus(status tfe.PlanStatus) {
 
 	switch status {
 	case tfe.PlanQueued:
-		timestamps.QueuedAt = time.Now()
+		timestamps.QueuedAt = TimeNow()
 		r.UpdateStatus(tfe.RunPlanQueued)
+	case tfe.PlanRunning:
+		timestamps.StartedAt = TimeNow()
+		r.UpdateStatus(tfe.RunPlanning)
 	case tfe.PlanCanceled:
-		timestamps.CanceledAt = time.Now()
+		timestamps.CanceledAt = TimeNow()
 	case tfe.PlanErrored:
-		timestamps.ErroredAt = time.Now()
 		r.UpdateStatus(tfe.RunErrored)
+		timestamps.ErroredAt = TimeNow()
 	case tfe.PlanFinished:
-		timestamps.FinishedAt = time.Now()
 
 		if r.ConfigurationVersion.Speculative {
 			r.Status = tfe.RunPlannedAndFinished
-			r.StatusTimestamps.PlannedAndFinishedAt = time.Now()
+			r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
+			timestamps.FinishedAt = TimeNow()
 		} else {
 			r.Status = tfe.RunPlanned
-			r.StatusTimestamps.PlannedAt = time.Now()
+			timestamps.FinishedAt = TimeNow()
 		}
 	default:
 		// Don't set a timestamp
@@ -303,18 +306,18 @@ func (r *Run) UpdateApplyStatus(status tfe.ApplyStatus) {
 
 	switch status {
 	case tfe.ApplyFinished:
-		timestamps.FinishedAt = time.Now()
+		timestamps.FinishedAt = TimeNow()
 		r.UpdateStatus(tfe.RunApplied)
 	case tfe.ApplyRunning:
-		timestamps.StartedAt = time.Now()
+		timestamps.StartedAt = TimeNow()
 		r.UpdateStatus(tfe.RunApplying)
 	case tfe.ApplyQueued:
-		timestamps.QueuedAt = time.Now()
+		timestamps.QueuedAt = TimeNow()
 		r.UpdateStatus(tfe.RunApplyQueued)
 	case tfe.ApplyCanceled:
-		timestamps.CanceledAt = time.Now()
+		timestamps.CanceledAt = TimeNow()
 	case tfe.ApplyErrored:
-		timestamps.ErroredAt = time.Now()
+		timestamps.ErroredAt = TimeNow()
 		r.UpdateStatus(tfe.RunErrored)
 	default:
 		// Don't set a timestamp
@@ -346,7 +349,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 		TargetAddrs:  opts.TargetAddrs,
 		Status:       tfe.RunPlanQueued,
 		StatusTimestamps: &tfe.RunStatusTimestamps{
-			PlanQueueableAt: time.Now(),
+			PlanQueueableAt: TimeNow(),
 		},
 		Plan:  newPlan(),
 		Apply: newApply(),

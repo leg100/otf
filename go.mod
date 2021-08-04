@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/hashicorp/hcl/v2 v2.10.0
-	github.com/leg100/go-tfe v0.17.1-0.20210803171427-cb58627d3505
+	github.com/leg100/go-tfe v0.17.1-0.20210804135856-d05f7109100e
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect

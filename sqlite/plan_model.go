@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"database/sql"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
@@ -16,7 +18,7 @@ type Plan struct {
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.PlanStatus
-	StatusTimestamps     tfe.PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	Logs []byte
 
@@ -28,6 +30,16 @@ type Plan struct {
 
 	// Plan belongs to a run
 	RunID uint
+}
+
+// PlanStatusTimestamps holds the timestamps for individual plan statuses.
+type PlanStatusTimestamps struct {
+	CanceledAt      sql.NullTime
+	ErroredAt       sql.NullTime
+	FinishedAt      sql.NullTime
+	ForceCanceledAt sql.NullTime
+	QueuedAt        sql.NullTime
+	StartedAt       sql.NullTime
 }
 
 // PlanList is a list of run models
@@ -58,10 +70,34 @@ func (model *Plan) ToDomain() *ots.Plan {
 		ResourceChanges:      model.ResourceChanges,
 		ResourceDestructions: model.ResourceDestructions,
 		Status:               model.Status,
-		StatusTimestamps:     &model.StatusTimestamps,
+		StatusTimestamps:     &tfe.PlanStatusTimestamps{},
 		Logs:                 model.Logs,
 		PlanFileBlobID:       model.PlanFileBlobID,
 		PlanJSONBlobID:       model.PlanJSONBlobID,
+	}
+
+	if model.StatusTimestamps.CanceledAt.Valid {
+		domain.StatusTimestamps.CanceledAt = &model.StatusTimestamps.CanceledAt.Time
+	}
+
+	if model.StatusTimestamps.ErroredAt.Valid {
+		domain.StatusTimestamps.ErroredAt = &model.StatusTimestamps.ErroredAt.Time
+	}
+
+	if model.StatusTimestamps.FinishedAt.Valid {
+		domain.StatusTimestamps.FinishedAt = &model.StatusTimestamps.FinishedAt.Time
+	}
+
+	if model.StatusTimestamps.ForceCanceledAt.Valid {
+		domain.StatusTimestamps.ForceCanceledAt = &model.StatusTimestamps.ForceCanceledAt.Time
+	}
+
+	if model.StatusTimestamps.QueuedAt.Valid {
+		domain.StatusTimestamps.QueuedAt = &model.StatusTimestamps.QueuedAt.Time
+	}
+
+	if model.StatusTimestamps.StartedAt.Valid {
+		domain.StatusTimestamps.StartedAt = &model.StatusTimestamps.StartedAt.Time
 	}
 
 	return &domain
@@ -75,10 +111,39 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	model.ResourceChanges = domain.ResourceChanges
 	model.ResourceDestructions = domain.ResourceDestructions
 	model.Status = domain.Status
-	model.StatusTimestamps = *domain.StatusTimestamps
 	model.Logs = domain.Logs
 	model.PlanFileBlobID = domain.PlanFileBlobID
 	model.PlanJSONBlobID = domain.PlanJSONBlobID
+
+	if domain.StatusTimestamps.CanceledAt != nil {
+		model.StatusTimestamps.CanceledAt.Time = *domain.StatusTimestamps.CanceledAt
+		model.StatusTimestamps.CanceledAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.ErroredAt != nil {
+		model.StatusTimestamps.ErroredAt.Time = *domain.StatusTimestamps.ErroredAt
+		model.StatusTimestamps.ErroredAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.FinishedAt != nil {
+		model.StatusTimestamps.FinishedAt.Time = *domain.StatusTimestamps.FinishedAt
+		model.StatusTimestamps.FinishedAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.ForceCanceledAt != nil {
+		model.StatusTimestamps.ForceCanceledAt.Time = *domain.StatusTimestamps.ForceCanceledAt
+		model.StatusTimestamps.ForceCanceledAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.QueuedAt != nil {
+		model.StatusTimestamps.QueuedAt.Time = *domain.StatusTimestamps.QueuedAt
+		model.StatusTimestamps.QueuedAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.StartedAt != nil {
+		model.StatusTimestamps.StartedAt.Time = *domain.StatusTimestamps.StartedAt
+		model.StatusTimestamps.StartedAt.Valid = true
+	}
 }
 
 func (l PlanList) ToDomain() (dl []*ots.Plan) {

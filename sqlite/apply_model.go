@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"database/sql"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"gorm.io/gorm"
@@ -16,7 +18,7 @@ type Apply struct {
 	ResourceChanges      int
 	ResourceDestructions int
 	Status               tfe.ApplyStatus
-	StatusTimestamps     tfe.ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	StatusTimestamps     *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	Logs []byte
 
@@ -26,6 +28,16 @@ type Apply struct {
 
 // ApplyList is a list of run models
 type ApplyList []Apply
+
+// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
+type ApplyStatusTimestamps struct {
+	CanceledAt      sql.NullTime
+	ErroredAt       sql.NullTime
+	FinishedAt      sql.NullTime
+	ForceCanceledAt sql.NullTime
+	QueuedAt        sql.NullTime
+	StartedAt       sql.NullTime
+}
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
@@ -44,31 +56,84 @@ func (r *Apply) Update(fn func(*ots.Apply) error) error {
 	return nil
 }
 
-func (r *Apply) ToDomain() *ots.Apply {
+func (model *Apply) ToDomain() *ots.Apply {
 	domain := ots.Apply{
-		ID:                   r.ExternalID,
-		Model:                r.Model,
-		ResourceAdditions:    r.ResourceAdditions,
-		ResourceChanges:      r.ResourceChanges,
-		ResourceDestructions: r.ResourceDestructions,
-		Status:               r.Status,
-		StatusTimestamps:     &r.StatusTimestamps,
-		Logs:                 r.Logs,
+		ID:                   model.ExternalID,
+		Model:                model.Model,
+		ResourceAdditions:    model.ResourceAdditions,
+		ResourceChanges:      model.ResourceChanges,
+		ResourceDestructions: model.ResourceDestructions,
+		Status:               model.Status,
+		StatusTimestamps:     &tfe.ApplyStatusTimestamps{},
+		Logs:                 model.Logs,
+	}
+
+	if model.StatusTimestamps.CanceledAt.Valid {
+		domain.StatusTimestamps.CanceledAt = &model.StatusTimestamps.CanceledAt.Time
+	}
+
+	if model.StatusTimestamps.ErroredAt.Valid {
+		domain.StatusTimestamps.ErroredAt = &model.StatusTimestamps.ErroredAt.Time
+	}
+
+	if model.StatusTimestamps.FinishedAt.Valid {
+		domain.StatusTimestamps.FinishedAt = &model.StatusTimestamps.FinishedAt.Time
+	}
+
+	if model.StatusTimestamps.ForceCanceledAt.Valid {
+		domain.StatusTimestamps.ForceCanceledAt = &model.StatusTimestamps.ForceCanceledAt.Time
+	}
+
+	if model.StatusTimestamps.QueuedAt.Valid {
+		domain.StatusTimestamps.QueuedAt = &model.StatusTimestamps.QueuedAt.Time
+	}
+
+	if model.StatusTimestamps.StartedAt.Valid {
+		domain.StatusTimestamps.StartedAt = &model.StatusTimestamps.StartedAt.Time
 	}
 
 	return &domain
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (r *Apply) FromDomain(domain *ots.Apply) {
-	r.ExternalID = domain.ID
-	r.Model = domain.Model
-	r.ResourceAdditions = domain.ResourceAdditions
-	r.ResourceChanges = domain.ResourceChanges
-	r.ResourceDestructions = domain.ResourceDestructions
-	r.Status = domain.Status
-	r.StatusTimestamps = *domain.StatusTimestamps
-	r.Logs = domain.Logs
+func (model *Apply) FromDomain(domain *ots.Apply) {
+	model.ExternalID = domain.ID
+	model.Model = domain.Model
+	model.ResourceAdditions = domain.ResourceAdditions
+	model.ResourceChanges = domain.ResourceChanges
+	model.ResourceDestructions = domain.ResourceDestructions
+	model.Status = domain.Status
+	model.Logs = domain.Logs
+
+	if domain.StatusTimestamps.CanceledAt != nil {
+		model.StatusTimestamps.CanceledAt.Time = *domain.StatusTimestamps.CanceledAt
+		model.StatusTimestamps.CanceledAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.ErroredAt != nil {
+		model.StatusTimestamps.ErroredAt.Time = *domain.StatusTimestamps.ErroredAt
+		model.StatusTimestamps.ErroredAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.FinishedAt != nil {
+		model.StatusTimestamps.FinishedAt.Time = *domain.StatusTimestamps.FinishedAt
+		model.StatusTimestamps.FinishedAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.ForceCanceledAt != nil {
+		model.StatusTimestamps.ForceCanceledAt.Time = *domain.StatusTimestamps.ForceCanceledAt
+		model.StatusTimestamps.ForceCanceledAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.QueuedAt != nil {
+		model.StatusTimestamps.QueuedAt.Time = *domain.StatusTimestamps.QueuedAt
+		model.StatusTimestamps.QueuedAt.Valid = true
+	}
+
+	if domain.StatusTimestamps.StartedAt != nil {
+		model.StatusTimestamps.StartedAt.Time = *domain.StatusTimestamps.StartedAt
+		model.StatusTimestamps.StartedAt.Valid = true
+	}
 }
 
 func (l ApplyList) ToDomain() (dl []*ots.Apply) {

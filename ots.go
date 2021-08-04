@@ -21,6 +21,12 @@ func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
 func UInt(i uint) *uint         { return &i }
 
+// TimeNow is a convenience func to return the pointer of the current time
+func TimeNow() *time.Time {
+	t := time.Now()
+	return &t
+}
+
 func GenerateRandomString(size int) string {
 	// Without this, Go would generate the same random sequence each run.
 	rand.Seed(time.Now().UnixNano())
