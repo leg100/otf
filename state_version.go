@@ -72,14 +72,10 @@ type StateVersionFactory struct {
 	BlobStore        BlobStore
 }
 
-func NewStateVersionID() string {
-	return fmt.Sprintf("sv-%s", GenerateRandomString(16))
-}
-
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
 		Serial: *opts.Serial,
-		ID:     NewStateVersionID(),
+		ID:     GenerateID("sv"),
 	}
 
 	ws, err := f.WorkspaceService.GetByID(workspaceID)
@@ -106,7 +102,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 
 	for k, v := range state.Outputs {
 		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			ID:    NewStateVersionOutputID(),
+			ID:    GenerateID("wsout"),
 			Name:  k,
 			Type:  v.Type,
 			Value: v.Value,

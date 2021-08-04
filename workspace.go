@@ -2,7 +2,6 @@ package ots
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -114,7 +113,7 @@ type WorkspaceListOptions struct {
 
 func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
-		ID:                  NewWorkspaceID(),
+		ID:                  GenerateID("ws"),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       "local", // Only local execution mode is supported
@@ -179,10 +178,6 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 	}
 
 	return &ws
-}
-
-func NewWorkspaceID() string {
-	return fmt.Sprintf("ws-%s", GenerateRandomString(16))
 }
 
 func UpdateWorkspace(ws *Workspace, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error) {

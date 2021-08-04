@@ -1,8 +1,6 @@
 package ots
 
 import (
-	"fmt"
-
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
@@ -65,13 +63,9 @@ type PlanFinishOptions struct {
 
 func newPlan() *Plan {
 	return &Plan{
-		ID:               NewPlanID(),
+		ID:               GenerateID("plan"),
 		StatusTimestamps: &tfe.PlanStatusTimestamps{},
 	}
-}
-
-func NewPlanID() string {
-	return fmt.Sprintf("plan-%s", GenerateRandomString(16))
 }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).

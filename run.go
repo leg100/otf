@@ -2,7 +2,6 @@ package ots
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -107,10 +106,6 @@ type RunListOptions struct {
 
 	// Filter by workspace ID
 	WorkspaceID *string
-}
-
-func NewRunID() string {
-	return fmt.Sprintf("run-%s", GenerateRandomString(16))
 }
 
 // PlanFinished updates the state of a run to reflect its plan having finished
@@ -336,7 +331,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	}
 
 	run := Run{
-		ID: NewRunID(),
+		ID: GenerateID("run"),
 		Permissions: &tfe.RunPermissions{
 			CanForceCancel:  true,
 			CanApply:        true,

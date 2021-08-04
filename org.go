@@ -1,7 +1,6 @@
 package ots
 
 import (
-	"fmt"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -65,15 +64,11 @@ type OrganizationRepository interface {
 	Delete(name string) error
 }
 
-func NewOrganizationID() string {
-	return fmt.Sprintf("org-%s", GenerateRandomString(16))
-}
-
 func NewOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		Name:                   *opts.Name,
 		Email:                  *opts.Email,
-		ID:                     NewOrganizationID(),
+		ID:                     GenerateID("org"),
 		SessionTimeout:         DefaultSessionTimeout,
 		SessionRemember:        DefaultSessionExpiration,
 		CollaboratorAuthPolicy: DefaultCollaboratorAuthPolicy,

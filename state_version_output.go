@@ -1,8 +1,6 @@
 package ots
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -21,7 +19,3 @@ type StateVersionOutput struct {
 }
 
 type StateVersionOutputList []*StateVersionOutput
-
-func NewStateVersionOutputID() string {
-	return fmt.Sprintf("wsout-%s", GenerateRandomString(16))
-}

@@ -1,6 +1,7 @@
 package ots
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -25,6 +26,11 @@ func UInt(i uint) *uint         { return &i }
 func TimeNow() *time.Time {
 	t := time.Now()
 	return &t
+}
+
+// GenerateID generates a unique identifier with the given prefix
+func GenerateID(prefix string) string {
+	return fmt.Sprintf("%s-%s", prefix, GenerateRandomString(16))
 }
 
 func GenerateRandomString(size int) string {

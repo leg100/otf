@@ -2,7 +2,6 @@ package ots
 
 import (
 	"errors"
-	"fmt"
 
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
@@ -91,7 +90,7 @@ type ConfigurationVersionFactory struct {
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            NewConfigurationVersionID(),
+		ID:            GenerateID("cv"),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        tfe.ConfigurationPending,
 		Source:        DefaultConfigurationSource,
@@ -112,8 +111,4 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 	cv.Workspace = ws
 
 	return &cv, nil
-}
-
-func NewConfigurationVersionID() string {
-	return fmt.Sprintf("cv-%s", GenerateRandomString(16))
 }

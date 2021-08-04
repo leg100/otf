@@ -1,8 +1,6 @@
 package ots
 
 import (
-	"fmt"
-
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
@@ -49,13 +47,9 @@ type ApplyLogOptions struct {
 	Offset int `schema:"offset"`
 }
 
-func NewApplyID() string {
-	return fmt.Sprintf("apply-%s", GenerateRandomString(16))
-}
-
 func newApply() *Apply {
 	return &Apply{
-		ID:               NewApplyID(),
+		ID:               GenerateID("apply"),
 		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
 	}
 }
