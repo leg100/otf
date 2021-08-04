@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/leg100/go-tfe"
@@ -29,7 +30,7 @@ func TestStateVersion(t *testing.T) {
 	for _, name := range []string{"dev", "staging", "prod"} {
 		ws, err := wsDB.Create(&ots.Workspace{
 			Name:         name,
-			ID:           ots.NewWorkspaceID(),
+			ID:           ots.GenerateID("ws"),
 			Organization: org,
 		})
 		require.NoError(t, err)
@@ -46,7 +47,7 @@ func TestStateVersion(t *testing.T) {
 	for _, ws := range workspaces {
 		for _, j := range []int{1, 2, 3} {
 			sv, err := svDB.Create(&ots.StateVersion{
-				ID:        ots.NewStateVersionID(),
+				ID:        ots.GenerateID("sv"),
 				Serial:    int64(j),
 				Workspace: ws,
 			})

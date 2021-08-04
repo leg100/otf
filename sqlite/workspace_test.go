@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/leg100/go-tfe"
@@ -31,7 +32,7 @@ func TestWorkspace(t *testing.T) {
 	for _, name := range []string{"dev", "staging", "prod"} {
 		ws, err := wsDB.Create(&ots.Workspace{
 			Name:         name,
-			ID:           ots.NewWorkspaceID(),
+			ID:           ots.GenerateID("ws"),
 			Organization: org,
 		})
 		require.NoError(t, err)
