@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
@@ -16,7 +17,9 @@ import (
 )
 
 func TestWorkspace(t *testing.T) {
-	s := &Server{}
+	s := &Server{
+		Logger: logr.Discard(),
+	}
 	s.WorkspaceService = &mock.WorkspaceService{
 		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil

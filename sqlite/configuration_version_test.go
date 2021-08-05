@@ -6,11 +6,10 @@ import (
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 func TestConfigurationVersion(t *testing.T) {
-	db, err := New(":memory:", &gorm.Config{})
+	db, err := New(":memory:")
 	require.NoError(t, err)
 
 	cvDB := NewConfigurationVersionDB(db)

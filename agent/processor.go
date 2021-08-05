@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -27,7 +27,7 @@ type Processor interface {
 type processor struct {
 	Run *ots.Run
 
-	zerolog.Logger
+	logr.Logger
 
 	TerraformRunner TerraformRunner
 
@@ -91,12 +91,10 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 		return fmt.Errorf("unable to finish plan: %w", err)
 	}
 
-	p.Info().
-		Str("run", run.ID).
-		Int("additions", info.adds).
-		Int("changes", info.changes).
-		Int("deletions", info.deletions).
-		Msg("job completed")
+	p.Info("job completed", "run", run.ID,
+		"additions", info.adds,
+		"changes", info.changes,
+		"deletions", info.deletions)
 
 	return nil
 }
@@ -163,12 +161,10 @@ func (p *processor) Apply(ctx context.Context, run *ots.Run, path string) error 
 		return fmt.Errorf("unable to finish apply: %w", err)
 	}
 
-	p.Info().
-		Str("run", run.ID).
-		Int("additions", info.adds).
-		Int("changes", info.changes).
-		Int("deletions", info.deletions).
-		Msg("job completed")
+	p.Info("job completed", "run", run.ID,
+		"additions", info.adds,
+		"changes", info.changes,
+		"deletions", info.deletions)
 
 	return nil
 }

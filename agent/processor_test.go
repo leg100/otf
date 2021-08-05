@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
@@ -43,6 +44,7 @@ func TestProcessor(t *testing.T) {
 	path := t.TempDir()
 
 	p := &processor{
+		Logger: logr.Discard(),
 		ConfigurationVersionService: &mock.ConfigurationVersionService{
 			DownloadFn: func(id string) ([]byte, error) {
 				return os.ReadFile("testdata/unpack.tar.gz")

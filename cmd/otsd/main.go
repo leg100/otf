@@ -6,17 +6,16 @@ import (
 	"os"
 	"time"
 
-	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/filestore"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
+	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
 )
 
 const (
@@ -24,6 +23,7 @@ const (
 	DefaultHostname = "localhost:8080"
 	DefaultDBPath   = "ots.db"
 	DefaultDataDir  = "~/.ots-data"
+	DefaultLogLevel = "info"
 )
 
 var (
@@ -53,6 +53,7 @@ func main() {
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTS related data")
+	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -67,23 +68,15 @@ func main() {
 		panic(err.Error())
 	}
 
-	// Setup filestore
-	fs, err := filestore.NewFilestore(DataDir)
+	// Setup logger
+	zerologger, err := newLogger(*logLevel)
 	if err != nil {
 		panic(err.Error())
 	}
-	server.Logger.Info().
-		Str("path", fs.Path()).
-		Msg("filestore started")
+	logger := zerologr.NewLogger(zerologger)
+	server.Logger = logger
 
-	// Setup logger
-	consoleWriter := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
-	}
-	zerolog.DurationFieldInteger = true
-	server.Logger = zerolog.New(consoleWriter).Level(zerolog.InfoLevel).With().Timestamp().Logger()
-
+	// Validate SSL params
 	if server.SSL {
 		if server.CertFile == "" || server.KeyFile == "" {
 			fmt.Fprintf(os.Stderr, "must provide both --cert-file and --key-file")
@@ -91,10 +84,15 @@ func main() {
 		}
 	}
 
+	// Setup filestore
+	fs, err := filestore.NewFilestore(DataDir)
+	if err != nil {
+		panic(err.Error())
+	}
+	logger.Info("filestore started", "path", fs.Path())
+
 	// Setup sqlite db
-	db, err := sqlite.New(DBPath, &gorm.Config{
-		Logger: &gormzerolog.Logger{Zlog: server.Logger},
-	})
+	db, err := sqlite.New(DBPath, sqlite.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -115,7 +113,7 @@ func main() {
 
 	// Run poller in background
 	agent := agent.NewAgent(
-		&server.Logger,
+		logger,
 		server.ConfigurationVersionService,
 		server.StateVersionService,
 		server.PlanService,
@@ -129,11 +127,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Server listening on %s\n", server.Addr)
+	logger.Info("server started", "address", server.Addr, "ssl", server.SSL)
 
 	// Block until Ctrl-C received.
 	if err := server.Wait(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func newLogger(lvl string) (*zerolog.Logger, error) {
+	zlvl, err := zerolog.ParseLevel(lvl)
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup logger
+	consoleWriter := zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.RFC3339,
+	}
+	zerolog.DurationFieldInteger = true
+
+	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
+
+	if logger.GetLevel() < zerolog.InfoLevel {
+		// Inform the user that logging lower than INFO threshold has been
+		// enabled
+		logger.WithLevel(logger.GetLevel()).Msg("custom log level enabled")
+	}
+
+	return &logger, nil
 }
