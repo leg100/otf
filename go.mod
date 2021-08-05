@@ -3,8 +3,7 @@ module github.com/leg100/ots
 go 1.16
 
 require (
-	github.com/butonic/zerologr v0.0.0-20191210074216-d798ee237d84
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
@@ -12,6 +11,7 @@ require (
 	github.com/leg100/go-tfe v0.17.1-0.20210804135856-d05f7109100e
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
+	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.23.0

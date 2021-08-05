@@ -6,13 +6,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/butonic/zerologr"
 	"github.com/leg100/ots/agent"
 	"github.com/leg100/ots/app"
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/filestore"
 	"github.com/leg100/ots/http"
 	"github.com/leg100/ots/sqlite"
+	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -68,7 +68,7 @@ func main() {
 
 	// Setup logger
 	zerologger := newLogger()
-	logger := zerologr.NewWithOptions(zerologr.Options{Logger: zerologger})
+	logger := zerologr.NewLogger(zerologger)
 	server.Logger = logger
 
 	// Validate SSL params
