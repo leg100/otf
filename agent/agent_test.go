@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 	"github.com/leg100/ots/mock"
@@ -30,6 +31,7 @@ func TestAgentPoller(t *testing.T) {
 	}
 
 	agent := &Agent{
+		Logger:                      logr.Discard(),
 		ConfigurationVersionService: &mock.ConfigurationVersionService{},
 		StateVersionService:         &mock.StateVersionService{},
 		PlanService:                 &mock.PlanService{},
@@ -77,6 +79,7 @@ func TestAgentPollerError(t *testing.T) {
 	}
 
 	agent := &Agent{
+		Logger:                      logr.Discard(),
 		ConfigurationVersionService: &mock.ConfigurationVersionService{},
 		StateVersionService:         &mock.StateVersionService{},
 		PlanService:                 &mock.PlanService{},

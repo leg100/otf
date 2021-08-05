@@ -23,6 +23,7 @@ const (
 	DefaultHostname = "localhost:8080"
 	DefaultDBPath   = "ots.db"
 	DefaultDataDir  = "~/.ots-data"
+	DefaultLogLevel = "info"
 )
 
 var (
@@ -52,6 +53,7 @@ func main() {
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTS related data")
+	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -67,7 +69,10 @@ func main() {
 	}
 
 	// Setup logger
-	zerologger := newLogger()
+	zerologger, err := newLogger(*logLevel)
+	if err != nil {
+		panic(err.Error())
+	}
 	logger := zerologr.NewLogger(zerologger)
 	server.Logger = logger
 
@@ -131,7 +136,12 @@ func main() {
 	}
 }
 
-func newLogger() *zerolog.Logger {
+func newLogger(lvl string) (*zerolog.Logger, error) {
+	zlvl, err := zerolog.ParseLevel(lvl)
+	if err != nil {
+		return nil, err
+	}
+
 	// Setup logger
 	consoleWriter := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
@@ -139,6 +149,13 @@ func newLogger() *zerolog.Logger {
 	}
 	zerolog.DurationFieldInteger = true
 
-	logger := zerolog.New(consoleWriter).Level(zerolog.InfoLevel).With().Timestamp().Logger()
-	return &logger
+	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
+
+	if logger.GetLevel() < zerolog.InfoLevel {
+		// Inform the user that logging lower than INFO threshold has been
+		// enabled
+		logger.WithLevel(logger.GetLevel()).Msg("custom log level enabled")
+	}
+
+	return &logger, nil
 }

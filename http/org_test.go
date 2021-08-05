@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/ots"
@@ -16,7 +17,9 @@ import (
 )
 
 func TestOrganization(t *testing.T) {
-	s := &Server{}
+	s := &Server{
+		Logger: logr.Discard(),
+	}
 	s.OrganizationService = &mock.OrganizationService{
 		CreateOrganizationFn: func(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
