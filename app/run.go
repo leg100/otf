@@ -49,8 +49,8 @@ func (s RunService) List(workspaceID string, opts tfe.RunListOptions) (*ots.RunL
 	return s.db.List(dopts)
 }
 
-// GetQueuedRuns retrieves a list of runs with current status of RunPlanQueued
-// or RunApplyQueued.
+// GetQueued retrieves a list of runs with current status of RunPlanQueued or
+// RunApplyQueued.
 func (s RunService) GetQueued(opts tfe.RunListOptions) (*ots.RunList, error) {
 	dopts := ots.RunListOptions{
 		ListOptions: opts.ListOptions,
@@ -76,8 +76,8 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 	return err
 }
 
-// CancelRun enqueues a cancel request to cancel a currently queued or active
-// plan or apply.
+// Cancel enqueues a cancel request to cancel a currently queued or active plan
+// or apply.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
 		if err := run.IssueCancel(); err != nil {

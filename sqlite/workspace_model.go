@@ -53,9 +53,9 @@ type WorkspaceList []Workspace
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (r *Workspace) Update(fn func(*ots.Workspace) error) error {
+func (model *Workspace) Update(fn func(*ots.Workspace) error) error {
 	// model -> domain
-	domain := r.ToDomain()
+	domain := model.ToDomain()
 
 	// invoke user fn
 	if err := fn(domain); err != nil {
@@ -63,7 +63,7 @@ func (r *Workspace) Update(fn func(*ots.Workspace) error) error {
 	}
 
 	// domain -> model
-	r.FromDomain(domain)
+	model.FromDomain(domain)
 
 	return nil
 }

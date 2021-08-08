@@ -18,8 +18,8 @@ func TestUnpack(t *testing.T) {
 	require.NoError(t, Unpack(tarball, dst))
 
 	var got []string
-	filepath.Walk(dst, func(path string, info os.FileInfo, err error) error {
-		path, err = filepath.Rel(dst, path)
+	filepath.Walk(dst, func(path string, info os.FileInfo, _ error) error {
+		path, err := filepath.Rel(dst, path)
 		require.NoError(t, err)
 		got = append(got, path)
 		return nil

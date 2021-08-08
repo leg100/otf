@@ -15,10 +15,6 @@ type plan struct {
 	adds, changes, deletions int
 }
 
-func (p *plan) hasNoChanges() bool {
-	return p.adds == 0 && p.changes == 0 && p.deletions == 0
-}
-
 func parsePlanOutput(output string) (*plan, error) {
 	if planNoChangesRegex.MatchString(output) {
 		return &plan{}, nil

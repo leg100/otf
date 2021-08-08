@@ -87,8 +87,8 @@ func TestProcessor(t *testing.T) {
 	}, path))
 
 	var got []string
-	filepath.Walk(path, func(lpath string, info os.FileInfo, err error) error {
-		lpath, err = filepath.Rel(path, lpath)
+	filepath.Walk(path, func(lpath string, info os.FileInfo, _ error) error {
+		lpath, err := filepath.Rel(path, lpath)
 		require.NoError(t, err)
 		got = append(got, lpath)
 		return nil

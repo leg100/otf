@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/ots"
 )
 
-func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	opts := tfe.WorkspaceCreateOptions{}
@@ -23,40 +23,40 @@ func (h *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.WorkspaceService.Create(vars["org"], &opts)
+	obj, err := s.WorkspaceService.Create(vars["org"], &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
-func (h *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := h.WorkspaceService.Get(vars["name"], vars["org"])
+	obj, err := s.WorkspaceService.Get(vars["name"], vars["org"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := h.WorkspaceService.GetByID(vars["id"])
+	obj, err := s.WorkspaceService.GetByID(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var opts tfe.WorkspaceListOptions
@@ -65,16 +65,16 @@ func (h *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.WorkspaceService.List(vars["org"], opts)
+	obj, err := s.WorkspaceService.List(vars["org"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceListJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceListJSONAPIObject(obj))
 }
 
-func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	opts := tfe.WorkspaceUpdateOptions{}
@@ -88,16 +88,16 @@ func (h *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.WorkspaceService.Update(vars["name"], vars["org"], &opts)
+	obj, err := s.WorkspaceService.Update(vars["name"], vars["org"], &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	opts := tfe.WorkspaceUpdateOptions{}
@@ -111,16 +111,16 @@ func (h *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.WorkspaceService.UpdateByID(vars["id"], &opts)
+	obj, err := s.WorkspaceService.UpdateByID(vars["id"], &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	opts := tfe.WorkspaceLockOptions{}
@@ -129,7 +129,7 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.WorkspaceService.Lock(vars["id"], opts)
+	obj, err := s.WorkspaceService.Lock(vars["id"], opts)
 	if err == ots.ErrWorkspaceAlreadyLocked {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -138,13 +138,13 @@ func (h *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := h.WorkspaceService.Unlock(vars["id"])
+	obj, err := s.WorkspaceService.Unlock(vars["id"])
 	if err == ots.ErrWorkspaceAlreadyUnlocked {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -153,13 +153,13 @@ func (h *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, h.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
 }
 
-func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if err := h.WorkspaceService.Delete(vars["name"], vars["org"]); err != nil {
+	if err := s.WorkspaceService.Delete(vars["name"], vars["org"]); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -167,10 +167,10 @@ func (h *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if err := h.WorkspaceService.DeleteByID(vars["id"]); err != nil {
+	if err := s.WorkspaceService.DeleteByID(vars["id"]); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

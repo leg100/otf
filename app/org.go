@@ -35,13 +35,8 @@ func (s OrganizationService) List(opts tfe.OrganizationListOptions) (*ots.Organi
 }
 
 func (s OrganizationService) Update(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
-	return s.db.Update(name, func(org *ots.Organization) (err error) {
-		org, err = ots.UpdateOrganization(org, opts)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	return s.db.Update(name, func(org *ots.Organization) error {
+		return ots.UpdateOrganization(org, opts)
 	})
 }
 

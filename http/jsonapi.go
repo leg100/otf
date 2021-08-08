@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/jsonapi"
 )
 
-// Marshal a JSON-API response.
+// MarshalPayload marshals the models object into a JSON-API response.
 func MarshalPayload(w io.Writer, r *http.Request, models interface{}) error {
 	include := strings.Split(r.URL.Query().Get("include"), ",")
 	include = sanitizeIncludes(include)

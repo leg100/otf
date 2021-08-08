@@ -21,14 +21,15 @@ func DecodeQuery(opts interface{}, query url.Values) error {
 	return nil
 }
 
-// Write an HTTP response code to the response stream
+// WithCode is a helper func for writing an HTTP status code to a response
+// stream.  For use with WriteResponse.
 func WithCode(code int) func(w http.ResponseWriter) {
 	return func(w http.ResponseWriter) {
 		w.WriteHeader(code)
 	}
 }
 
-// Write an HTTP response with a JSON-API marshalled payload.
+// WriteResponse writes an HTTP response with a JSON-API marshalled payload.
 func WriteResponse(w http.ResponseWriter, r *http.Request, obj interface{}, opts ...func(http.ResponseWriter)) {
 	w.Header().Set("Content-type", jsonapi.MediaType)
 
