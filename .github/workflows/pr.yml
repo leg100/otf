@@ -6,6 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.4
       - uses: reviewdog/action-staticcheck@v1
         with:
           github_token: ${{ secrets.github_token }}
@@ -15,6 +18,3 @@ jobs:
           filter_mode: nofilter
           # Exit with 1 when it find at least one finding.
           fail_on_error: true
-          # By default staticcheck targets the version of Go it was compiled with, but we
-          # want to target the version that *our project* is compiled with.
-          staticcheck_flags: '-go 1.16'
