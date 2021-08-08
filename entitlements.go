@@ -2,12 +2,15 @@ package ots
 
 import tfe "github.com/leg100/go-tfe"
 
-// Entitlements represents the entitlements of an organization.
+// Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
+// OTS is free and therefore the user is entitled to all currently supported
+// services.
 type Entitlements struct {
 	*tfe.Entitlements
 }
 
-// We currently only support State Storage...
+// DefaultEntitlements constructs an Entitlements struct with currently
+// supported entitlements.
 func DefaultEntitlements(organizationID string) *Entitlements {
 	return &Entitlements{
 		Entitlements: &tfe.Entitlements{
