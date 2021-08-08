@@ -62,7 +62,7 @@ func (a *Agent) Poller(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			return
 		case <-time.After(time.Second):
 		}
 
