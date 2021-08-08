@@ -1,3 +1,6 @@
+/*
+Package agent provides a daemon capable of running remote operations on behalf of a user.
+*/
 package agent
 
 import (
