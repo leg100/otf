@@ -1,3 +1,6 @@
+/*
+Package filestore provides filesystem storage for binary objects (blobs).
+*/
 package filestore
 
 import (

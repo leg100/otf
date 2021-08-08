@@ -2,13 +2,13 @@ package main
 
 import "os"
 
-// Abstraction around methods that retrieve system directories - expressly for
-// the purpose of substituting with fakes
+// Directories implementations provide access to system directories. Can be used
+// for implementating a fake for testing purposes.
 type Directories interface {
 	UserHomeDir() (string, error)
 }
 
-// Wrapper around os.* funcs
+// SystemDirectories implements Directories, wrapping os.* funcs
 type SystemDirectories struct{}
 
 var _ Directories = (*SystemDirectories)(nil)

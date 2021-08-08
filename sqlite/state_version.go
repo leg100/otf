@@ -19,7 +19,7 @@ func NewStateVersionDB(db *gorm.DB) *StateVersionService {
 	}
 }
 
-// CreateStateVersion persists a StateVersion to the DB.
+// Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, error) {
 	model := &StateVersion{}
 	model.FromDomain(sv)

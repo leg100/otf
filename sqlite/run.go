@@ -18,7 +18,7 @@ func NewRunDB(db *gorm.DB) *RunDB {
 	}
 }
 
-// CreateRun persists a Run to the DB.
+// Create persists a Run to the DB.
 func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
 	model := NewFromDomain(domain)
 
@@ -29,7 +29,7 @@ func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
 	return model.ToDomain(), nil
 }
 
-// UpdateRun persists an updated Run to the DB. The existing run is fetched from
+// Update persists an updated Run to the DB. The existing run is fetched from
 // the DB, the supplied func is invoked on the run, and the updated run is
 // persisted back to the DB. The returned Run includes any changes, including a
 // new UpdatedAt value.

@@ -33,10 +33,10 @@ func (db WorkspaceDB) Create(domain *ots.Workspace) (*ots.Workspace, error) {
 	return model.ToDomain(), nil
 }
 
-// UpdateWorkspace persists an updated Workspace to the DB. The existing run is fetched from
-// the DB, the supplied func is invoked on the run, and the updated run is
-// persisted back to the DB. The returned Workspace includes any changes, including a
-// new UpdatedAt value.
+// Update persists an updated Workspace to the DB. The existing run is fetched
+// from the DB, the supplied func is invoked on the run, and the updated run is
+// persisted back to the DB. The returned Workspace includes any changes,
+// including a new UpdatedAt value.
 func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace) error) (*ots.Workspace, error) {
 	var model *Workspace
 

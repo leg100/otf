@@ -32,9 +32,9 @@ type ConfigurationVersionList []ConfigurationVersion
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (cv *ConfigurationVersion) Update(fn func(*ots.ConfigurationVersion) error) error {
+func (model *ConfigurationVersion) Update(fn func(*ots.ConfigurationVersion) error) error {
 	// model -> domain
-	domain := cv.ToDomain()
+	domain := model.ToDomain()
 
 	// invoke user fn
 	if err := fn(domain); err != nil {
@@ -42,47 +42,47 @@ func (cv *ConfigurationVersion) Update(fn func(*ots.ConfigurationVersion) error)
 	}
 
 	// domain -> model
-	cv.FromDomain(domain)
+	model.FromDomain(domain)
 
 	return nil
 }
 
-func (cv *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
+func (model *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
 	domain := ots.ConfigurationVersion{
-		ID:            cv.ExternalID,
-		Model:         cv.Model,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Error:         cv.Error,
-		ErrorMessage:  cv.ErrorMessage,
-		Speculative:   cv.Speculative,
-		Source:        cv.Source,
-		Status:        cv.Status,
-		BlobID:        cv.BlobID,
+		ID:            model.ExternalID,
+		Model:         model.Model,
+		AutoQueueRuns: model.AutoQueueRuns,
+		Error:         model.Error,
+		ErrorMessage:  model.ErrorMessage,
+		Speculative:   model.Speculative,
+		Source:        model.Source,
+		Status:        model.Status,
+		BlobID:        model.BlobID,
 	}
 
-	if cv.Workspace != nil {
-		domain.Workspace = cv.Workspace.ToDomain()
+	if model.Workspace != nil {
+		domain.Workspace = model.Workspace.ToDomain()
 	}
 
 	return &domain
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (cv *ConfigurationVersion) FromDomain(domain *ots.ConfigurationVersion) {
-	cv.ExternalID = domain.ID
-	cv.Model = domain.Model
-	cv.AutoQueueRuns = domain.AutoQueueRuns
-	cv.Error = domain.Error
-	cv.ErrorMessage = domain.ErrorMessage
-	cv.Speculative = domain.Speculative
-	cv.Source = domain.Source
-	cv.Status = domain.Status
-	cv.BlobID = domain.BlobID
+func (model *ConfigurationVersion) FromDomain(domain *ots.ConfigurationVersion) {
+	model.ExternalID = domain.ID
+	model.Model = domain.Model
+	model.AutoQueueRuns = domain.AutoQueueRuns
+	model.Error = domain.Error
+	model.ErrorMessage = domain.ErrorMessage
+	model.Speculative = domain.Speculative
+	model.Source = domain.Source
+	model.Status = domain.Status
+	model.BlobID = domain.BlobID
 
 	if domain.Workspace != nil {
-		cv.Workspace = &Workspace{}
-		cv.Workspace.FromDomain(domain.Workspace)
-		cv.WorkspaceID = domain.Workspace.Model.ID
+		model.Workspace = &Workspace{}
+		model.Workspace.FromDomain(domain.Workspace)
+		model.WorkspaceID = domain.Workspace.Model.ID
 	}
 }
 

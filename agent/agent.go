@@ -1,3 +1,6 @@
+/*
+Package agent provides a daemon capable of running remote operations on behalf of a user.
+*/
 package agent
 
 import (
@@ -59,7 +62,7 @@ func (a *Agent) Poller(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			return
 		case <-time.After(time.Second):
 		}
 

@@ -23,13 +23,13 @@ type StateVersionOutput struct {
 // StateVersionOutputList is a list of run models
 type StateVersionOutputList []StateVersionOutput
 
-func (svo *StateVersionOutput) ToDomain() *ots.StateVersionOutput {
+func (model *StateVersionOutput) ToDomain() *ots.StateVersionOutput {
 	domain := ots.StateVersionOutput{
-		ID:        svo.ExternalID,
-		Name:      svo.Name,
-		Sensitive: svo.Sensitive,
-		Type:      svo.Type,
-		Value:     svo.Value,
+		ID:        model.ExternalID,
+		Name:      model.Name,
+		Sensitive: model.Sensitive,
+		Type:      model.Type,
+		Value:     model.Value,
 	}
 
 	return &domain

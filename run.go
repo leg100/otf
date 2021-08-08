@@ -2,6 +2,7 @@ package ots
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -9,6 +10,8 @@ import (
 )
 
 const (
+	// DefaultRefresh specifies that the state be refreshed prior to running a
+	// plan
 	DefaultRefresh = true
 )
 
@@ -44,11 +47,13 @@ type Run struct {
 	ConfigurationVersion *ConfigurationVersion
 }
 
+// RunFactory is a factory for constructing Run objects.
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
 	WorkspaceService            WorkspaceService
 }
 
+// RunService implementations allow interactions with runs
 type RunService interface {
 	Create(opts *tfe.RunCreateOptions) (*Run, error)
 	Get(id string) (*Run, error)
@@ -70,6 +75,7 @@ type RunService interface {
 	GetPlanFile(id string) ([]byte, error)
 }
 
+// RunStore implementations persist Run objects.
 type RunStore interface {
 	Create(run *Run) (*Run, error)
 	Get(opts RunGetOptions) (*Run, error)
@@ -108,7 +114,7 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
-// PlanFinished updates the state of a run to reflect its plan having finished
+// FinishPlan updates the state of a run to reflect its plan having finished
 func (r *Run) FinishPlan(opts PlanFinishOptions) error {
 	r.Plan.ResourceAdditions = opts.ResourceAdditions
 	r.Plan.ResourceChanges = opts.ResourceChanges
@@ -116,10 +122,12 @@ func (r *Run) FinishPlan(opts PlanFinishOptions) error {
 
 	r.UpdatePlanStatus(tfe.PlanFinished)
 
+	fmt.Printf("hello!\n")
+
 	return nil
 }
 
-// ApplyFinished updates the state of a run to reflect its plan having finished
+// FinishApply updates the state of a run to reflect its plan having finished
 func (r *Run) FinishApply(opts ApplyFinishOptions) error {
 	r.Apply.ResourceAdditions = opts.ResourceAdditions
 	r.Apply.ResourceChanges = opts.ResourceChanges
@@ -178,6 +186,7 @@ func (r *Run) ForceCancel() error {
 	return nil
 }
 
+// Actions lists which actions are currently invokable.
 func (r *Run) Actions() *tfe.RunActions {
 	return &tfe.RunActions{
 		IsCancelable:      r.IsCancelable(),
@@ -187,6 +196,7 @@ func (r *Run) Actions() *tfe.RunActions {
 	}
 }
 
+// IsCancelable determines whether run can be cancelled.
 func (r *Run) IsCancelable() bool {
 	switch r.Status {
 	case tfe.RunPending, tfe.RunPlanQueued, tfe.RunPlanning, tfe.RunApplyQueued, tfe.RunApplying:
@@ -196,6 +206,7 @@ func (r *Run) IsCancelable() bool {
 	}
 }
 
+// IsConfirmable determines whether run can be confirmed.
 func (r *Run) IsConfirmable() bool {
 	switch r.Status {
 	case tfe.RunPlanned:
@@ -205,6 +216,7 @@ func (r *Run) IsConfirmable() bool {
 	}
 }
 
+// IsDiscardable determines whether run can be discarded.
 func (r *Run) IsDiscardable() bool {
 	switch r.Status {
 	case tfe.RunPending, tfe.RunPolicyChecked, tfe.RunPolicyOverride, tfe.RunPlanned:
@@ -214,6 +226,7 @@ func (r *Run) IsDiscardable() bool {
 	}
 }
 
+// IsForceCancelable determines whether a run can be forcibly cancelled.
 func (r *Run) IsForceCancelable() bool {
 	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
 }
@@ -246,7 +259,7 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) {
 	r.StatusTimestamps = timestamps
 }
 
-// UpdateStatus updates the status of the plan. It'll also update the
+// UpdatePlanStatus updates the status of the plan. It'll also update the
 // appropriate timestamp and set any other appropriate fields for the given
 // status.
 func (r *Run) UpdatePlanStatus(status tfe.PlanStatus) {
@@ -289,7 +302,7 @@ func (r *Run) UpdatePlanStatus(status tfe.PlanStatus) {
 	r.Plan.StatusTimestamps = timestamps
 }
 
-// UpdateStatus updates the status of the apply. It'll also update the
+// UpdateApplyStatus updates the status of the apply. It'll also update the
 // appropriate timestamp and set any other appropriate fields for the given
 // status.
 func (r *Run) UpdateApplyStatus(status tfe.ApplyStatus) {
@@ -325,6 +338,7 @@ func (r *Run) UpdateApplyStatus(status tfe.ApplyStatus) {
 	r.Apply.StatusTimestamps = timestamps
 }
 
+// NewRun constructs a run object.
 func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	if opts.Workspace == nil {
 		return nil, errors.New("workspace is required")

@@ -1,3 +1,6 @@
+/*
+Package ots is responsible for domain logic.
+*/
 package ots
 
 import (
@@ -33,6 +36,8 @@ func GenerateID(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, GenerateRandomString(16))
 }
 
+// GenerateRandomString generates a random string composed of alphanumeric
+// characters of length size.
 func GenerateRandomString(size int) string {
 	// Without this, Go would generate the same random sequence each run.
 	rand.Seed(time.Now().UnixNano())

@@ -19,7 +19,7 @@ func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
 	}
 }
 
-// CreateOrganization persists a Organization to the DB.
+// Create persists a Organization to the DB.
 func (db OrganizationDB) Create(domain *ots.Organization) (*ots.Organization, error) {
 	model := &Organization{}
 	model.FromDomain(domain)
@@ -31,9 +31,9 @@ func (db OrganizationDB) Create(domain *ots.Organization) (*ots.Organization, er
 	return model.ToDomain(), nil
 }
 
-// UpdateOrganization persists an updated Organization to the DB. The existing
-// org is fetched from the DB, the supplied func is invoked on the org, and the
-// updated org is persisted back to the DB.
+// Update persists an updated Organization to the DB. The existing org is
+// fetched from the DB, the supplied func is invoked on the org, and the updated
+// org is persisted back to the DB.
 func (db OrganizationDB) Update(name string, fn func(*ots.Organization) error) (*ots.Organization, error) {
 	var model *Organization
 

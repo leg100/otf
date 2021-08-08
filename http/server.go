@@ -29,10 +29,9 @@ const (
 
 type WebRoute string
 
-// The HTTP/S server
+// Server provides an HTTP/S server
 type Server struct {
 	server *http.Server
-	router *mux.Router
 	ln     net.Listener
 	err    chan error
 

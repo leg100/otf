@@ -32,9 +32,9 @@ type OrganizationList []Organization
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (r *Organization) Update(fn func(*ots.Organization) error) error {
+func (model *Organization) Update(fn func(*ots.Organization) error) error {
 	// model -> domain
-	domain := r.ToDomain()
+	domain := model.ToDomain()
 
 	// invoke user fn
 	if err := fn(domain); err != nil {
@@ -42,7 +42,7 @@ func (r *Organization) Update(fn func(*ots.Organization) error) error {
 	}
 
 	// domain -> model
-	r.FromDomain(domain)
+	model.FromDomain(domain)
 
 	return nil
 }
@@ -68,20 +68,20 @@ func (model *Organization) ToDomain() *ots.Organization {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (r *Organization) FromDomain(org *ots.Organization) {
-	r.ExternalID = org.ID
-	r.Model = org.Model
-	r.Name = org.Name
-	r.CollaboratorAuthPolicy = org.CollaboratorAuthPolicy
-	r.CostEstimationEnabled = org.CostEstimationEnabled
-	r.Email = org.Email
-	r.OwnersTeamSAMLRoleID = org.OwnersTeamSAMLRoleID
-	r.Permissions = org.Permissions
-	r.SAMLEnabled = org.SAMLEnabled
-	r.SessionRemember = org.SessionRemember
-	r.SessionTimeout = org.SessionTimeout
-	r.TrialExpiresAt = org.TrialExpiresAt
-	r.TwoFactorConformant = org.TwoFactorConformant
+func (model *Organization) FromDomain(org *ots.Organization) {
+	model.ExternalID = org.ID
+	model.Model = org.Model
+	model.Name = org.Name
+	model.CollaboratorAuthPolicy = org.CollaboratorAuthPolicy
+	model.CostEstimationEnabled = org.CostEstimationEnabled
+	model.Email = org.Email
+	model.OwnersTeamSAMLRoleID = org.OwnersTeamSAMLRoleID
+	model.Permissions = org.Permissions
+	model.SAMLEnabled = org.SAMLEnabled
+	model.SessionRemember = org.SessionRemember
+	model.SessionTimeout = org.SessionTimeout
+	model.TrialExpiresAt = org.TrialExpiresAt
+	model.TwoFactorConformant = org.TwoFactorConformant
 }
 
 func (l OrganizationList) ToDomain() (dl []*ots.Organization) {

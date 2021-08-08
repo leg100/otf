@@ -95,7 +95,7 @@ func NewOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error)
 	return &org, nil
 }
 
-func UpdateOrganization(org *Organization, opts *tfe.OrganizationUpdateOptions) (*Organization, error) {
+func UpdateOrganization(org *Organization, opts *tfe.OrganizationUpdateOptions) error {
 	if opts.Name != nil {
 		org.Name = *opts.Name
 	}
@@ -120,5 +120,5 @@ func UpdateOrganization(org *Organization, opts *tfe.OrganizationUpdateOptions) 
 		org.CostEstimationEnabled = *opts.CostEstimationEnabled
 	}
 
-	return org, nil
+	return nil
 }

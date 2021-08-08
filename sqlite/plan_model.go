@@ -47,9 +47,9 @@ type PlanList []Plan
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (r *Plan) Update(fn func(*ots.Plan) error) error {
+func (model *Plan) Update(fn func(*ots.Plan) error) error {
 	// model -> domain
-	domain := r.ToDomain()
+	domain := model.ToDomain()
 
 	// invoke user fn
 	if err := fn(domain); err != nil {
@@ -57,7 +57,7 @@ func (r *Plan) Update(fn func(*ots.Plan) error) error {
 	}
 
 	// domain -> model
-	r.FromDomain(domain)
+	model.FromDomain(domain)
 
 	return nil
 }

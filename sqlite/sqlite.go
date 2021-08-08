@@ -1,3 +1,6 @@
+/*
+Package sqlite implements persistent storage using the sqlite database.
+*/
 package sqlite
 
 import (

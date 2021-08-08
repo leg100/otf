@@ -14,10 +14,6 @@ type apply struct {
 	adds, changes, deletions int
 }
 
-func (p *apply) hasNoChanges() bool {
-	return p.adds == 0 && p.changes == 0 && p.deletions == 0
-}
-
 func parseApplyOutput(output string) (*apply, error) {
 	matches := applyChangesRegex.FindStringSubmatch(output)
 	if matches == nil {
