@@ -20,6 +20,18 @@ var (
 	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
 
 	ErrInvalidRunGetOptions = errors.New("invalid run get options")
+
+	// ActiveRunStatuses are those run statuses that deem a run to be active.
+	// There can only be at most one active run for a workspace.
+	ActiveRunStatuses = []tfe.RunStatus{
+		tfe.RunApplyQueued,
+		tfe.RunApplying,
+		tfe.RunConfirmed,
+		tfe.RunPending,
+		tfe.RunPlanQueued,
+		tfe.RunPlanned,
+		tfe.RunPlanning,
+	}
 )
 
 type Run struct {
@@ -56,12 +68,13 @@ type RunFactory struct {
 type RunService interface {
 	Create(opts *tfe.RunCreateOptions) (*Run, error)
 	Get(id string) (*Run, error)
-	List(workspaceID string, opts tfe.RunListOptions) (*RunList, error)
+	List(workspaceID string, opts RunListOptions) (*RunList, error)
 	GetQueued(opts tfe.RunListOptions) (*RunList, error)
 	Apply(id string, opts *tfe.RunApplyOptions) error
 	Discard(id string, opts *tfe.RunDiscardOptions) error
 	Cancel(id string, opts *tfe.RunCancelOptions) error
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
+	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
 	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
 	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
@@ -79,6 +92,8 @@ type RunStore interface {
 	Create(run *Run) (*Run, error)
 	Get(opts RunGetOptions) (*Run, error)
 	List(opts RunListOptions) (*RunList, error)
+	// TODO: add support for a special error type that tells update to skip
+	// updates - useful when fn checks current fields and decides not to update
 	Update(id string, fn func(*Run) error) (*Run, error)
 }
 
@@ -101,10 +116,9 @@ type RunGetOptions struct {
 	PlanID *string
 }
 
-// RunListOptions are options for paginating and filtering the list of runs to
-// retrieve from the RunRepository ListRuns endpoint
+// RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
-	tfe.ListOptions
+	tfe.RunListOptions
 
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []tfe.RunStatus
@@ -135,13 +149,28 @@ func (r *Run) FinishApply(opts ApplyFinishOptions) error {
 	return nil
 }
 
+// UpdateStatusToPlanQueued updates a run's status to indicate its plan has been
+// queued.
+func (r *Run) UpdateStatusToPlanQueued() {
+	r.Status = tfe.RunPlanQueued
+	r.StatusTimestamps.PlanQueuedAt = TimeNow()
+	r.Plan.Status = tfe.PlanQueued
+	r.Plan.StatusTimestamps.QueuedAt = TimeNow()
+}
+
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
 		return ErrRunDiscardNotAllowed
 	}
 
-	r.UpdateStatus(tfe.RunDiscarded)
+	r.Status = tfe.RunDiscarded
+	r.StatusTimestamps.DiscardedAt = TimeNow()
+
+	// TODO: update plan status
+
+	r.Apply.Status = tfe.ApplyUnreachable
+	r.Apply.StatusTimestamps.CanceledAt = TimeNow()
 
 	return nil
 }
@@ -228,32 +257,74 @@ func (r *Run) IsForceCancelable() bool {
 	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
 }
 
-// UpdateStatus updates the status of the run.
-func (r *Run) UpdateStatus(status tfe.RunStatus) {
-	timestamps := &tfe.RunStatusTimestamps{}
-	if r.StatusTimestamps != nil {
-		timestamps = r.StatusTimestamps
+// IsActive determines whether run is currently the active run on a workspace,
+// i.e. it is neither finished nor pending
+func (r *Run) IsActive() bool {
+	if r.IsDone() || r.Status == tfe.RunPending {
+		return false
 	}
+	return true
+}
 
-	switch status {
-	case tfe.RunDiscarded:
-		timestamps.DiscardedAt = TimeNow()
-		r.UpdateApplyStatus(tfe.ApplyUnreachable)
-	case tfe.RunPlanQueued:
-		timestamps.PlanQueuedAt = TimeNow()
-	case tfe.RunApplyQueued:
-		timestamps.ApplyQueuedAt = TimeNow()
-	case tfe.RunApplied:
-		timestamps.AppliedAt = TimeNow()
-	case tfe.RunErrored:
-		timestamps.ErroredAt = TimeNow()
+// IsDone determines whether run has reached an end state, e.g. applied,
+// discarded, etc.
+func (r *Run) IsDone() bool {
+	switch r.Status {
+	case tfe.RunApplied, tfe.RunPlannedAndFinished, tfe.RunDiscarded, tfe.RunCanceled, tfe.RunErrored:
+		return true
 	default:
+		return false
+	}
+}
+
+type ErrInvalidRunStatusTransition struct {
+	From tfe.RunStatus
+	To   tfe.RunStatus
+}
+
+func (e ErrInvalidRunStatusTransition) Error() string {
+	return fmt.Sprintf("invalid run status transition from %s to %s", e.From, e.To)
+}
+
+// UpdateStatus updates the status of the run.
+func (r *Run) UpdateStatus(status tfe.RunStatus) error {
+	switch status {
+	case tfe.RunPlanQueued:
+		if r.Status != tfe.RunPending {
+			return ErrInvalidRunStatusTransition{From: r.Status, To: status}
+		}
+		r.UpdateStatusToPlanQueued()
+	case tfe.RunDiscarded:
+		return r.Discard()
+	case tfe.RunApplyQueued:
+		r.Status = tfe.RunApplyQueued
+		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
+
+		r.Apply.Status = tfe.ApplyQueued
+		r.Apply.StatusTimestamps.QueuedAt = TimeNow()
+	case tfe.RunApplied:
+		r.Status = tfe.RunApplied
+		r.StatusTimestamps.AppliedAt = TimeNow()
+
+		r.Apply.Status = tfe.ApplyFinished
+		r.Apply.StatusTimestamps.FinishedAt = TimeNow()
+	case tfe.RunErrored:
+		r.Status = tfe.RunErrored
+		r.StatusTimestamps.ErroredAt = TimeNow()
+
+		// TODO: determine whether to set status to errored on plan or apply
+	default:
+		// TODO: log no matching status
+
 		// Don't set a status or timestamp
-		return
+		return nil
 	}
 
-	r.Status = status
-	r.StatusTimestamps = timestamps
+	return nil
+}
+
+func (r *Run) IsSpeculative() bool {
+	return r.ConfigurationVersion.Speculative
 }
 
 // UpdatePlanStatus updates the status of the plan. It'll also update the
@@ -353,7 +424,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 		Refresh:      DefaultRefresh,
 		ReplaceAddrs: opts.ReplaceAddrs,
 		TargetAddrs:  opts.TargetAddrs,
-		Status:       tfe.RunPlanQueued,
+		Status:       tfe.RunPending,
 		StatusTimestamps: &tfe.RunStatusTimestamps{
 			PlanQueueableAt: TimeNow(),
 		},
