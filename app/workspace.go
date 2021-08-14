@@ -8,11 +8,15 @@ import (
 var _ ots.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	db ots.WorkspaceRepository
-	os ots.OrganizationService
+	db         ots.WorkspaceRepository
+	os         ots.OrganizationService
+	schedulers map[string]*ots.Scheduler
 }
 
 func NewWorkspaceService(db ots.WorkspaceRepository, os ots.OrganizationService) *WorkspaceService {
+	// TODO: populate schedulers on startup. Retrieve list of incomplete runs
+	// for each and every workspace. Call workspace#list, then run#list on each
+	// result (filtered by incomplete statuses).
 	return &WorkspaceService{
 		db: db,
 		os: os,
