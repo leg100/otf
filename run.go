@@ -28,7 +28,6 @@ var (
 		tfe.RunApplyQueued,
 		tfe.RunApplying,
 		tfe.RunConfirmed,
-		tfe.RunPending,
 		tfe.RunPlanQueued,
 		tfe.RunPlanned,
 		tfe.RunPlanning,
