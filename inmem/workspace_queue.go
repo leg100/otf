@@ -1,40 +1,47 @@
-package ots
+package inmem
 
 import (
 	"github.com/go-logr/logr"
 	tfe "github.com/leg100/go-tfe"
+	"github.com/leg100/ots"
 )
 
 type WorkspaceQueue struct {
-	active  *Run
-	pending []*Run
+	active  *ots.Run
+	pending []*ots.Run
 	// RunService retrieves and updates runs
-	RunService
+	ots.RunService
 	logr.Logger
 }
 
 type WorkspaceQueueOption func(*WorkspaceQueue)
 
-func NewWorkspaceQueue(rs RunService, logger logr.Logger, workspaceID string, opts ...WorkspaceQueueOption) *WorkspaceQueue {
-	return &WorkspaceQueue{
+func NewWorkspaceQueue(rs ots.RunService, logger logr.Logger, workspaceID string, opts ...WorkspaceQueueOption) *WorkspaceQueue {
+	q := &WorkspaceQueue{
 		RunService: rs,
 		Logger:     logger.WithValues("workspace", workspaceID),
 	}
+
+	for _, o := range opts {
+		o(q)
+	}
+
+	return q
 }
 
-func WithActive(run *Run) WorkspaceQueueOption {
+func WithActive(run *ots.Run) WorkspaceQueueOption {
 	return func(q *WorkspaceQueue) {
 		q.active = run
 	}
 }
 
-func WithPending(runs []*Run) WorkspaceQueueOption {
+func WithPending(runs []*ots.Run) WorkspaceQueueOption {
 	return func(q *WorkspaceQueue) {
 		q.pending = runs
 	}
 }
 
-func (q *WorkspaceQueue) addRun(run *Run) {
+func (q *WorkspaceQueue) addRun(run *ots.Run) {
 	// Enqueue speculative runs but don't make them active because they do not
 	// block pending runs
 	if run.IsSpeculative() {
@@ -61,7 +68,7 @@ func (q *WorkspaceQueue) addRun(run *Run) {
 	q.pending = append(q.pending, run)
 }
 
-func (q *WorkspaceQueue) removeRun(run *Run) {
+func (q *WorkspaceQueue) removeRun(run *ots.Run) {
 	// Speculative runs are never added to the queue in the first place so they
 	// do not need to be removed
 	if run.IsSpeculative() {

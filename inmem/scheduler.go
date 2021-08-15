@@ -1,4 +1,4 @@
-package ots
+package inmem
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	tfe "github.com/leg100/go-tfe"
+	"github.com/leg100/ots"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 )
 
 type RunLister interface {
-	List(string, RunListOptions) (*RunList, error)
+	List(ots.RunListOptions) (*ots.RunList, error)
 }
 
 // Scheduler schedules workspace's incomplete runs.
@@ -23,15 +24,15 @@ type Scheduler struct {
 	// Queues is a mapping of org ID to workspace ID to workspace queue of runs
 	Queues map[string]map[string]*WorkspaceQueue
 	// RunService retrieves and updates runs
-	RunService
+	ots.RunService
 	// EventService permits scheduler to subscribe to a stream of events
-	EventService
+	ots.EventService
 	// Logger for logging various events
 	log logr.Logger
 }
 
 // NewScheduler constructs a Scheduler
-func NewScheduler(os OrganizationService, rs RunService, ws WorkspaceService, es EventService, logger logr.Logger) (*Scheduler, error) {
+func NewScheduler(os ots.OrganizationService, rs ots.RunService, ws ots.WorkspaceService, es ots.EventService, logger logr.Logger) (*Scheduler, error) {
 	queues := make(map[string]map[string]*WorkspaceQueue)
 
 	// Get organizations
@@ -94,38 +95,39 @@ func (s *Scheduler) Start(ctx context.Context) {
 	}
 }
 
-func (s *Scheduler) handleEvent(ev Event) {
+func (s *Scheduler) handleEvent(ev ots.Event) {
 	switch obj := ev.Payload.(type) {
-	case *Organization:
+	case *ots.Organization:
 		switch ev.Type {
-		case OrganizationCreated:
+		case ots.OrganizationCreated:
 			s.Queues[obj.ID] = make(map[string]*WorkspaceQueue)
-		case OrganizationDeleted:
+		case ots.OrganizationDeleted:
 			delete(s.Queues, obj.ID)
 		}
-	case *Workspace:
+	case *ots.Workspace:
 		switch ev.Type {
-		case WorkspaceCreated:
+		case ots.WorkspaceCreated:
 			s.Queues[obj.Organization.ID][obj.ID] = &WorkspaceQueue{}
-		case WorkspaceDeleted:
+		case ots.WorkspaceDeleted:
 			delete(s.Queues[obj.Organization.ID], obj.ID)
 		}
-	case *Run:
+	case *ots.Run:
 		switch ev.Type {
-		case RunCreated:
+		case ots.RunCreated:
 			s.Queues[obj.Workspace.Organization.ID][obj.Workspace.ID].addRun(obj)
-		case RunCompleted:
+		case ots.RunCompleted:
 			s.Queues[obj.Workspace.Organization.ID][obj.Workspace.ID].removeRun(obj)
 		}
 	}
 }
 
 // getActiveRun retrieves the active (non-speculative) run for the workspace
-func getActiveRun(workspaceID string, rl RunLister) (*Run, error) {
-	opts := RunListOptions{
-		Statuses: ActiveRunStatuses,
+func getActiveRun(workspaceID string, rl RunLister) (*ots.Run, error) {
+	opts := ots.RunListOptions{
+		WorkspaceID: &workspaceID,
+		Statuses:    ots.ActiveRunStatuses,
 	}
-	active, err := rl.List(workspaceID, opts)
+	active, err := rl.List(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +144,7 @@ func getActiveRun(workspaceID string, rl RunLister) (*Run, error) {
 
 }
 
-func filterNonSpeculativeRuns(runs []*Run) (nonSpeculative []*Run) {
+func filterNonSpeculativeRuns(runs []*ots.Run) (nonSpeculative []*ots.Run) {
 	for _, r := range runs {
 		if !r.IsSpeculative() {
 			nonSpeculative = append(nonSpeculative, r)
@@ -152,11 +154,12 @@ func filterNonSpeculativeRuns(runs []*Run) (nonSpeculative []*Run) {
 }
 
 // getPendingRuns retrieves pending runs for a workspace
-func getPendingRuns(workspaceID string, rl RunLister) ([]*Run, error) {
-	opts := RunListOptions{
-		Statuses: []tfe.RunStatus{tfe.RunPending},
+func getPendingRuns(workspaceID string, rl RunLister) ([]*ots.Run, error) {
+	opts := ots.RunListOptions{
+		WorkspaceID: &workspaceID,
+		Statuses:    []tfe.RunStatus{tfe.RunPending},
 	}
-	pending, err := rl.List(workspaceID, opts)
+	pending, err := rl.List(opts)
 	if err != nil {
 		return nil, err
 	}

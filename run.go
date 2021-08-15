@@ -68,7 +68,7 @@ type RunFactory struct {
 type RunService interface {
 	Create(opts *tfe.RunCreateOptions) (*Run, error)
 	Get(id string) (*Run, error)
-	List(workspaceID string, opts RunListOptions) (*RunList, error)
+	List(opts RunListOptions) (*RunList, error)
 	GetQueued(opts tfe.RunListOptions) (*RunList, error)
 	Apply(id string, opts *tfe.RunApplyOptions) error
 	Discard(id string, opts *tfe.RunDiscardOptions) error
