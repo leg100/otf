@@ -10,7 +10,7 @@ var _ ots.RunService = (*RunService)(nil)
 type RunService struct {
 	CreateFn            func(opts *tfe.RunCreateOptions) (*ots.Run, error)
 	GetFn               func(id string) (*ots.Run, error)
-	ListFn              func(workspaceID string, opts tfe.RunListOptions) (*ots.RunList, error)
+	ListFn              func(opts ots.RunListOptions) (*ots.RunList, error)
 	ApplyFn             func(id string, opts *tfe.RunApplyOptions) error
 	DiscardFn           func(id string, opts *tfe.RunDiscardOptions) error
 	CancelFn            func(id string, opts *tfe.RunCancelOptions) error
@@ -18,6 +18,7 @@ type RunService struct {
 	GetQueuedFn         func(opts tfe.RunListOptions) (*ots.RunList, error)
 	GetPlanLogsFn       func(id string, opts ots.PlanLogOptions) ([]byte, error)
 	GetApplyLogsFn      func(id string, opts ots.ApplyLogOptions) ([]byte, error)
+	UpdateStatusFn      func(id string, status tfe.RunStatus) (*ots.Run, error)
 	UpdatePlanStatusFn  func(id string, status tfe.PlanStatus) (*ots.Run, error)
 	UpdateApplyStatusFn func(id string, status tfe.ApplyStatus) (*ots.Run, error)
 	UploadPlanLogsFn    func(id string, logs []byte) error
@@ -36,8 +37,8 @@ func (s RunService) Get(id string) (*ots.Run, error) {
 	return s.GetFn(id)
 }
 
-func (s RunService) List(workspaceID string, opts tfe.RunListOptions) (*ots.RunList, error) {
-	return s.ListFn(workspaceID, opts)
+func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
+	return s.ListFn(opts)
 }
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
@@ -66,6 +67,10 @@ func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, err
 
 func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
 	return s.GetApplyLogsFn(id, opts)
+}
+
+func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
+	return s.UpdateStatusFn(id, status)
 }
 
 func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
