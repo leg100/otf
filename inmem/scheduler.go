@@ -152,6 +152,7 @@ func getActiveRun(workspaceID string, rl RunLister) (*ots.Run, error) {
 
 }
 
+// filterNonSpeculativeRuns filters out speculative runs
 func filterNonSpeculativeRuns(runs []*ots.Run) (nonSpeculative []*ots.Run) {
 	for _, r := range runs {
 		if !r.IsSpeculative() {
