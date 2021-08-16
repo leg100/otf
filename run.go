@@ -2,7 +2,6 @@ package ots
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
