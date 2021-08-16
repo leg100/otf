@@ -9,7 +9,7 @@ type RunStatusUpdater interface {
 }
 
 // Queue implementations are able to add and remove runs from a queue-like
-// structure, and make appropriate updates to the runs
+// structure
 type Queue interface {
 	Add(*Run) error
 	Remove(*Run) error
