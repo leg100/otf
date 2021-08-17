@@ -83,7 +83,7 @@ type WorkspaceService interface {
 	DeleteByID(id string) error
 }
 
-type WorkspaceRepository interface {
+type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpecifier) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)

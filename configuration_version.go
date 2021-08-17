@@ -53,7 +53,7 @@ type ConfigurationVersionService interface {
 	Download(id string) ([]byte, error)
 }
 
-type ConfigurationVersionRepository interface {
+type ConfigurationVersionStore interface {
 	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
@@ -70,8 +70,8 @@ type ConfigurationVersionGetOptions struct {
 	WorkspaceID *string
 }
 
-// ConfigurationVersionListOptions are options for paginating and filtering the list of runs to
-// retrieve from the ConfigurationVersionRepository ListConfigurationVersions endpoint
+// ConfigurationVersionListOptions are options for paginating and filtering a
+// list of configuration versions
 type ConfigurationVersionListOptions struct {
 	tfe.ListOptions
 

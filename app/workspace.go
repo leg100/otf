@@ -8,12 +8,12 @@ import (
 var _ ots.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	db ots.WorkspaceRepository
+	db ots.WorkspaceStore
 	os ots.OrganizationService
 	es ots.EventService
 }
 
-func NewWorkspaceService(db ots.WorkspaceRepository, os ots.OrganizationService, es ots.EventService) *WorkspaceService {
+func NewWorkspaceService(db ots.WorkspaceStore, os ots.OrganizationService, es ots.EventService) *WorkspaceService {
 	return &WorkspaceService{
 		db: db,
 		es: es,

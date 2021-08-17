@@ -8,11 +8,11 @@ import (
 var _ ots.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	db ots.OrganizationRepository
+	db ots.OrganizationStore
 	es ots.EventService
 }
 
-func NewOrganizationService(db ots.OrganizationRepository, es ots.EventService) *OrganizationService {
+func NewOrganizationService(db ots.OrganizationStore, es ots.EventService) *OrganizationService {
 	return &OrganizationService{
 		db: db,
 		es: es,

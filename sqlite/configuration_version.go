@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.ConfigurationVersionRepository = (*ConfigurationVersionDB)(nil)
+var _ ots.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
 
 type ConfigurationVersionDB struct {
 	*gorm.DB

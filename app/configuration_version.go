@@ -8,13 +8,13 @@ import (
 var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 
 type ConfigurationVersionService struct {
-	db ots.ConfigurationVersionRepository
+	db ots.ConfigurationVersionStore
 	bs ots.BlobStore
 
 	*ots.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db ots.ConfigurationVersionRepository, wss ots.WorkspaceService, bs ots.BlobStore) *ConfigurationVersionService {
+func NewConfigurationVersionService(db ots.ConfigurationVersionStore, wss ots.WorkspaceService, bs ots.BlobStore) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		bs: bs,
 		db: db,

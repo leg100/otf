@@ -56,7 +56,7 @@ type OrganizationService interface {
 	GetEntitlements(name string) (*Entitlements, error)
 }
 
-type OrganizationRepository interface {
+type OrganizationStore interface {
 	Create(org *Organization) (*Organization, error)
 	Get(name string) (*Organization, error)
 	List(opts tfe.OrganizationListOptions) (*OrganizationList, error)

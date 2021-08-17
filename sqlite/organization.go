@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.OrganizationRepository = (*OrganizationDB)(nil)
+var _ ots.OrganizationStore = (*OrganizationDB)(nil)
 
 type OrganizationDB struct {
 	*gorm.DB

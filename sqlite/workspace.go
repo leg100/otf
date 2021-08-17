@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.WorkspaceRepository = (*WorkspaceDB)(nil)
+var _ ots.WorkspaceStore = (*WorkspaceDB)(nil)
 
 type WorkspaceDB struct {
 	*gorm.DB
