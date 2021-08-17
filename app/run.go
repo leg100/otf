@@ -12,14 +12,16 @@ var _ ots.RunService = (*RunService)(nil)
 type RunService struct {
 	db ots.RunStore
 	bs ots.BlobStore
+	es ots.EventService
 
 	*ots.RunFactory
 }
 
-func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore) *RunService {
+func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore, es ots.EventService) *RunService {
 	return &RunService{
 		bs: bs,
 		db: db,
+		es: es,
 		RunFactory: &ots.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -27,34 +29,40 @@ func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.Configurat
 	}
 }
 
+// Create constructs and persists a new run object to the db, before scheduling
+// the run.
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
 	run, err := s.NewRun(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.db.Create(run)
+	run, err = s.db.Create(run)
+	if err != nil {
+		return nil, err
+	}
+
+	s.es.Publish(ots.Event{Type: ots.RunCreated, Payload: run})
+
+	return run, nil
 }
 
+// Get retrieves a run obj with the given ID from the db.
 func (s RunService) Get(id string) (*ots.Run, error) {
 	return s.db.Get(ots.RunGetOptions{ID: &id})
 }
 
-func (s RunService) List(workspaceID string, opts tfe.RunListOptions) (*ots.RunList, error) {
-	dopts := ots.RunListOptions{
-		ListOptions: opts.ListOptions,
-		WorkspaceID: &workspaceID,
-	}
-
-	return s.db.List(dopts)
+// List retrieves multiple run objs. Use opts to filter and paginate the list.
+func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
+	return s.db.List(opts)
 }
 
 // GetQueued retrieves a list of runs with current status of RunPlanQueued or
 // RunApplyQueued.
 func (s RunService) GetQueued(opts tfe.RunListOptions) (*ots.RunList, error) {
 	dopts := ots.RunListOptions{
-		ListOptions: opts.ListOptions,
-		Statuses:    []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued},
+		RunListOptions: opts,
+		Statuses:       []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued},
 	}
 
 	return s.db.List(dopts)
@@ -110,6 +118,12 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 	})
 
 	return err
+}
+
+func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
+	return s.db.Update(id, func(run *ots.Run) error {
+		return run.UpdateStatus(status)
+	})
 }
 
 func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {

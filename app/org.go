@@ -9,11 +9,13 @@ var _ ots.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
 	db ots.OrganizationRepository
+	es ots.EventService
 }
 
-func NewOrganizationService(db ots.OrganizationRepository) *OrganizationService {
+func NewOrganizationService(db ots.OrganizationRepository, es ots.EventService) *OrganizationService {
 	return &OrganizationService{
 		db: db,
+		es: es,
 	}
 }
 
@@ -23,7 +25,14 @@ func (s OrganizationService) Create(opts *tfe.OrganizationCreateOptions) (*ots.O
 		return nil, err
 	}
 
-	return s.db.Create(org)
+	org, err = s.db.Create(org)
+	if err != nil {
+		return nil, err
+	}
+
+	s.es.Publish(ots.Event{Type: ots.OrganizationCreated, Payload: org})
+
+	return org, nil
 }
 
 func (s OrganizationService) Get(name string) (*ots.Organization, error) {

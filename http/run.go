@@ -40,13 +40,16 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts tfe.RunListOptions
+	var opts ots.RunListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.RunService.List(vars["workspace_id"], opts)
+	workspaceID := vars["workspace_id"]
+	opts.WorkspaceID = &workspaceID
+
+	obj, err := s.RunService.List(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
