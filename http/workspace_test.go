@@ -24,25 +24,16 @@ func TestWorkspace(t *testing.T) {
 		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceFn: func(name, org string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
-			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
-		},
-		UpdateWorkspaceByIDFn: func(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+		UpdateWorkspaceFn: func(spec ots.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", "automatize"), nil
 		},
-		GetWorkspaceFn: func(name, org string) (*ots.Workspace, error) {
-			return mock.NewWorkspace(name, "ws-123", org), nil
-		},
-		GetWorkspaceByIDFn: func(id string) (*ots.Workspace, error) {
+		GetWorkspaceFn: func(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
 		ListWorkspaceFn: func(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
 			return mock.NewWorkspaceList("dev", "ws-123", "automatize", opts), nil
 		},
-		DeleteWorkspaceFn: func(name, org string) error {
-			return nil
-		},
-		DeleteWorkspaceByIDFn: func(id string) error {
+		DeleteWorkspaceFn: func(spec ots.WorkspaceSpecifier) error {
 			return nil
 		},
 	}

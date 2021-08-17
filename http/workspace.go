@@ -34,8 +34,12 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	spec := ots.WorkspaceSpecifier{
+		Name:             ots.String(vars["name"]),
+		OrganizationName: ots.String(vars["org"]),
+	}
 
-	obj, err := s.WorkspaceService.Get(vars["name"], vars["org"])
+	obj, err := s.WorkspaceService.Get(spec)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -46,8 +50,11 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	spec := ots.WorkspaceSpecifier{
+		ID: ots.String(vars["id"]),
+	}
 
-	obj, err := s.WorkspaceService.GetByID(vars["id"])
+	obj, err := s.WorkspaceService.Get(spec)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -93,7 +100,12 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.WorkspaceService.Update(vars["name"], vars["org"], &opts)
+	spec := ots.WorkspaceSpecifier{
+		Name:             ots.String(vars["name"]),
+		OrganizationName: ots.String(vars["org"]),
+	}
+
+	obj, err := s.WorkspaceService.Update(spec, &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -116,7 +128,11 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.WorkspaceService.UpdateByID(vars["id"], &opts)
+	spec := ots.WorkspaceSpecifier{
+		ID: ots.String(vars["id"]),
+	}
+
+	obj, err := s.WorkspaceService.Update(spec, &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -163,8 +179,12 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	spec := ots.WorkspaceSpecifier{
+		Name:             ots.String(vars["name"]),
+		OrganizationName: ots.String(vars["org"]),
+	}
 
-	if err := s.WorkspaceService.Delete(vars["name"], vars["org"]); err != nil {
+	if err := s.WorkspaceService.Delete(spec); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -174,8 +194,9 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	spec := ots.WorkspaceSpecifier{ID: ots.String(vars["id"])}
 
-	if err := s.WorkspaceService.DeleteByID(vars["id"]); err != nil {
+	if err := s.WorkspaceService.Delete(spec); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

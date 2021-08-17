@@ -39,22 +39,7 @@ func (s WorkspaceService) Create(orgName string, opts *tfe.WorkspaceCreateOption
 	return ws, nil
 }
 
-func (s WorkspaceService) Update(name, orgName string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
-	spec := ots.WorkspaceSpecifier{Name: &name, OrganizationName: &orgName}
-
-	return s.db.Update(spec, func(ws *ots.Workspace) (err error) {
-		_, err = ots.UpdateWorkspace(ws, opts)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-}
-
-func (s WorkspaceService) UpdateByID(id string, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
-	spec := ots.WorkspaceSpecifier{ID: &id}
-
+func (s WorkspaceService) Update(spec ots.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
 	return s.db.Update(spec, func(ws *ots.Workspace) (err error) {
 		_, err = ots.UpdateWorkspace(ws, opts)
 		if err != nil {
@@ -69,20 +54,24 @@ func (s WorkspaceService) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceLis
 	return s.db.List(opts)
 }
 
-func (s WorkspaceService) Get(name, orgName string) (*ots.Workspace, error) {
-	return s.db.Get(ots.WorkspaceSpecifier{Name: &name, OrganizationName: &orgName})
+func (s WorkspaceService) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
+	return s.db.Get(spec)
 }
 
-func (s WorkspaceService) GetByID(id string) (*ots.Workspace, error) {
-	return s.db.Get(ots.WorkspaceSpecifier{ID: &id})
-}
+func (s WorkspaceService) Delete(spec ots.WorkspaceSpecifier) error {
+	// Get workspace so we can publish it in an event after we delete it
+	ws, err := s.db.Get(spec)
+	if err != nil {
+		return err
+	}
 
-func (s WorkspaceService) Delete(name, orgName string) error {
-	return s.deleteWS(ots.WorkspaceSpecifier{Name: &name, OrganizationName: &orgName})
-}
+	if err := s.db.Delete(spec); err != nil {
+		return err
+	}
 
-func (s WorkspaceService) DeleteByID(id string) error {
-	return s.deleteWS(ots.WorkspaceSpecifier{ID: &id})
+	s.es.Publish(ots.Event{Type: ots.WorkspaceDeleted, Payload: ws})
+
+	return nil
 }
 
 func (s WorkspaceService) Lock(id string, _ tfe.WorkspaceLockOptions) (*ots.Workspace, error) {
@@ -99,20 +88,4 @@ func (s WorkspaceService) Unlock(id string) (*ots.Workspace, error) {
 	return s.db.Update(spec, func(ws *ots.Workspace) (err error) {
 		return ws.ToggleLock(false)
 	})
-}
-
-func (s WorkspaceService) deleteWS(spec ots.WorkspaceSpecifier) error {
-	// Get workspace so we can publish it in an event after we delete it
-	ws, err := s.db.Get(spec)
-	if err != nil {
-		return err
-	}
-
-	if err := s.db.Delete(spec); err != nil {
-		return err
-	}
-
-	s.es.Publish(ots.Event{Type: ots.WorkspaceDeleted, Payload: ws})
-
-	return nil
 }

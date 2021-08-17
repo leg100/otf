@@ -72,15 +72,12 @@ type WorkspaceList struct {
 
 type WorkspaceService interface {
 	Create(org string, opts *tfe.WorkspaceCreateOptions) (*Workspace, error)
-	Get(name, org string) (*Workspace, error)
-	GetByID(id string) (*Workspace, error)
+	Get(spec WorkspaceSpecifier) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(name, org string, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
-	UpdateByID(id string, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
+	Update(spec WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
 	Lock(id string, opts tfe.WorkspaceLockOptions) (*Workspace, error)
 	Unlock(id string) (*Workspace, error)
-	Delete(name, org string) error
-	DeleteByID(id string) error
+	Delete(spec WorkspaceSpecifier) error
 }
 
 type WorkspaceStore interface {

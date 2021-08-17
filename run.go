@@ -428,7 +428,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 		Apply: newApply(),
 	}
 
-	ws, err := f.WorkspaceService.GetByID(opts.Workspace.ID)
+	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &opts.Workspace.ID})
 	if err != nil {
 		return nil, err
 	}

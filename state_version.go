@@ -78,7 +78,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 		ID:     GenerateID("sv"),
 	}
 
-	ws, err := f.WorkspaceService.GetByID(workspaceID)
+	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

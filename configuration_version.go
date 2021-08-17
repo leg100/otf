@@ -104,7 +104,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 		cv.Speculative = *opts.Speculative
 	}
 
-	ws, err := f.WorkspaceService.GetByID(workspaceID)
+	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}
