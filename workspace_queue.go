@@ -28,10 +28,10 @@ type WorkspaceQueue struct {
 	RunStatusUpdater
 }
 
-// Add adds a run to the queue.
+// Add adds a run to the workspace queue.
 func (q *WorkspaceQueue) Add(run *Run) error {
-	// Enqueue speculative runs but don't make them active because they do not
-	// block pending runs
+	// Enqueue speculative runs onto (global) queue but don't make them active
+	// because they do not block pending runs
 	if run.IsSpeculative() {
 		_, err := q.UpdateStatus(run.ID, tfe.RunPlanQueued)
 		return err
