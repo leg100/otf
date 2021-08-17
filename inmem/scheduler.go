@@ -47,7 +47,7 @@ func NewScheduler(os ots.OrganizationService, ws ots.WorkspaceService, rs ots.Ru
 		queues[org.ID] = make(map[string]ots.Queue)
 
 		// Get workspaces
-		workspaces, err := ws.List(org.ID, tfe.WorkspaceListOptions{})
+		workspaces, err := ws.List(org.Name, tfe.WorkspaceListOptions{})
 		if err != nil {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package inmem
 import (
 	"sync"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/ots"
 )
 
@@ -14,12 +15,14 @@ var _ ots.EventService = (*EventService)(nil)
 type EventService struct {
 	mu   sync.Mutex
 	subs map[string]*Subscription
+	logr.Logger
 }
 
 // NewEventService returns a new instance of EventService.
-func NewEventService() *EventService {
+func NewEventService(logger logr.Logger) *EventService {
 	return &EventService{
-		subs: make(map[string]*Subscription),
+		subs:   make(map[string]*Subscription),
+		Logger: logger.WithValues("component", "event_service"),
 	}
 }
 
@@ -43,6 +46,8 @@ func (e *EventService) Subscribe(id string) ots.Subscription {
 	// Add to list of user's subscriptions.
 	// Subscritions are stored as a map for each user so we can easily delete them.
 	e.subs[id] = sub
+
+	e.Info("subscription created", "subscriber", id)
 
 	return sub
 }
@@ -69,7 +74,7 @@ type Subscription struct {
 	id      string        // Uniquely identifies subscription
 
 	c    chan ots.Event // channel of events
-	once sync.Once         // ensures c only closed once
+	once sync.Once      // ensures c only closed once
 }
 
 // Close disconnects the subscription from the service it was created from.

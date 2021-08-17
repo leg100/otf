@@ -46,7 +46,10 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.RunService.List(vars["workspace_id"], opts)
+	workspaceID := vars["workspace_id"]
+	opts.WorkspaceID = &workspaceID
+
+	obj, err := s.RunService.List(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
