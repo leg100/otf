@@ -151,7 +151,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 
 		res := rw.(negroni.ResponseWriter)
 		server.Info("request",
-			"duration", time.Since(start),
+			"duration", time.Since(start).Milliseconds(),
 			"status", res.Status(),
 			"method", r.Method,
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))

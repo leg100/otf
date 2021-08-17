@@ -11,6 +11,7 @@ import (
 	cmdutil "github.com/leg100/ots/cmd"
 	"github.com/leg100/ots/filestore"
 	"github.com/leg100/ots/http"
+	"github.com/leg100/ots/inmem"
 	"github.com/leg100/ots/sqlite"
 	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
@@ -103,13 +104,23 @@ func main() {
 	runStore := sqlite.NewRunDB(db)
 	configurationVersionStore := sqlite.NewConfigurationVersionDB(db)
 
-	server.OrganizationService = app.NewOrganizationService(organizationStore)
-	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService)
+	eventService := inmem.NewEventService(logger)
+
+	server.OrganizationService = app.NewOrganizationService(organizationStore, eventService)
+	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService, eventService)
 	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService, fs)
 	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService, fs)
-	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService, fs)
+	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
 	server.PlanService = app.NewPlanService(runStore, fs)
 	server.ApplyService = app.NewApplyService(runStore)
+
+	scheduler, err := inmem.NewScheduler(server.OrganizationService, server.WorkspaceService, server.RunService, eventService, logger)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Run scheduler in background
+	go scheduler.Start(ctx)
 
 	// Run poller in background
 	agent := agent.NewAgent(
