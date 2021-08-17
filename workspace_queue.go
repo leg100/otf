@@ -1,11 +1,7 @@
 package ots
 
-import (
-	tfe "github.com/leg100/go-tfe"
-)
-
-type RunStatusUpdater interface {
-	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
+type PlanEnqueuer interface {
+	EnqueuePlan(id string) error
 }
 
 // Queue implementations are able to add and remove runs from a queue-like
@@ -24,8 +20,8 @@ type WorkspaceQueue struct {
 	// Pending is the list of pending runs waiting for the active run to
 	// complete.
 	Pending []*Run
-	// RunService retrieves and updates runs
-	RunStatusUpdater
+	// PlanEnqueuer enqueues a plan onto the global queue
+	PlanEnqueuer
 }
 
 // Add adds a run to the workspace queue.
@@ -33,14 +29,12 @@ func (q *WorkspaceQueue) Add(run *Run) error {
 	// Enqueue speculative runs onto (global) queue but don't make them active
 	// because they do not block pending runs
 	if run.IsSpeculative() {
-		_, err := q.UpdateStatus(run.ID, tfe.RunPlanQueued)
-		return err
+		return q.EnqueuePlan(run.ID)
 	}
 
 	// No run is current active, so make this run active
 	if q.Active == nil {
-		_, err := q.UpdateStatus(run.ID, tfe.RunPlanQueued)
-		if err != nil {
+		if err := q.EnqueuePlan(run.ID); err != nil {
 			return err
 		}
 
@@ -66,8 +60,7 @@ func (q *WorkspaceQueue) Remove(run *Run) error {
 	if q.Active.ID == run.ID {
 		q.Active = nil
 		if len(q.Pending) > 0 {
-			_, err := q.UpdateStatus(q.Pending[0].ID, tfe.RunPlanQueued)
-			if err != nil {
+			if err := q.EnqueuePlan(q.Pending[0].ID); err != nil {
 				return err
 			}
 

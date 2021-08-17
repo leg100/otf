@@ -22,8 +22,8 @@ type RunLister interface {
 // Scheduler manages workspaces' run queues in memory. It subscribes to events
 // and updates the queues accordingly.
 type Scheduler struct {
-	// Queues is a mapping of org ID to workspace ID to workspace queue of runs
-	Queues map[string]map[string]ots.Queue
+	// Queues is a mapping of workspace ID to workspace queue of runs
+	Queues map[string]ots.Queue
 	// RunService retrieves and updates runs
 	ots.RunService
 	// EventService permits scheduler to subscribe to a stream of events
@@ -34,38 +34,28 @@ type Scheduler struct {
 
 // NewScheduler constructs scheduler queues and populates them with existing
 // runs.
-func NewScheduler(os ots.OrganizationService, ws ots.WorkspaceService, rs ots.RunService, es ots.EventService, logger logr.Logger) (*Scheduler, error) {
-	queues := make(map[string]map[string]ots.Queue)
+func NewScheduler(ws ots.WorkspaceService, rs ots.RunService, es ots.EventService, logger logr.Logger) (*Scheduler, error) {
+	queues := make(map[string]ots.Queue)
 
-	// Get organizations
-	organizations, err := os.List(tfe.OrganizationListOptions{})
+	// Get workspaces
+	workspaces, err := ws.List(ots.WorkspaceListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, org := range organizations.Items {
-		queues[org.ID] = make(map[string]ots.Queue)
-
-		// Get workspaces
-		workspaces, err := ws.List(org.Name, tfe.WorkspaceListOptions{})
+	for _, ws := range workspaces.Items {
+		// Get runs
+		active, err := getActiveRun(ws.ID, rs)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, ws := range workspaces.Items {
-			// Get runs
-			active, err := getActiveRun(ws.ID, rs)
-			if err != nil {
-				return nil, err
-			}
-
-			pending, err := getPendingRuns(ws.ID, rs)
-			if err != nil {
-				return nil, err
-			}
-
-			queues[org.ID][ws.ID] = &ots.WorkspaceQueue{RunStatusUpdater: rs, Active: active, Pending: pending}
+		pending, err := getPendingRuns(ws.ID, rs)
+		if err != nil {
+			return nil, err
 		}
+
+		queues[ws.ID] = &ots.WorkspaceQueue{PlanEnqueuer: rs, Active: active, Pending: pending}
 	}
 
 	s := &Scheduler{
@@ -99,22 +89,15 @@ func (s *Scheduler) Start(ctx context.Context) {
 
 func (s *Scheduler) handleEvent(ev ots.Event) {
 	switch obj := ev.Payload.(type) {
-	case *ots.Organization:
-		switch ev.Type {
-		case ots.OrganizationCreated:
-			s.Queues[obj.ID] = make(map[string]ots.Queue)
-		case ots.OrganizationDeleted:
-			delete(s.Queues, obj.ID)
-		}
 	case *ots.Workspace:
 		switch ev.Type {
 		case ots.WorkspaceCreated:
-			s.Queues[obj.Organization.ID][obj.ID] = &ots.WorkspaceQueue{RunStatusUpdater: s.RunService}
+			s.Queues[obj.ID] = &ots.WorkspaceQueue{PlanEnqueuer: s.RunService}
 		case ots.WorkspaceDeleted:
-			delete(s.Queues[obj.Organization.ID], obj.ID)
+			delete(s.Queues, obj.ID)
 		}
 	case *ots.Run:
-		queue := s.Queues[obj.Workspace.Organization.ID][obj.Workspace.ID]
+		queue := s.Queues[obj.Workspace.ID]
 
 		switch ev.Type {
 		case ots.RunCreated:

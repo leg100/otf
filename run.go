@@ -69,11 +69,11 @@ type RunService interface {
 	Create(opts *tfe.RunCreateOptions) (*Run, error)
 	Get(id string) (*Run, error)
 	List(opts RunListOptions) (*RunList, error)
-	GetQueued(opts tfe.RunListOptions) (*RunList, error)
 	Apply(id string, opts *tfe.RunApplyOptions) error
 	Discard(id string, opts *tfe.RunDiscardOptions) error
 	Cancel(id string, opts *tfe.RunCancelOptions) error
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
+	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
 	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
@@ -128,25 +128,21 @@ type RunListOptions struct {
 }
 
 // FinishPlan updates the state of a run to reflect its plan having finished
-func (r *Run) FinishPlan(opts PlanFinishOptions) error {
+func (r *Run) FinishPlan(opts PlanFinishOptions) {
 	r.Plan.ResourceAdditions = opts.ResourceAdditions
 	r.Plan.ResourceChanges = opts.ResourceChanges
 	r.Plan.ResourceDestructions = opts.ResourceDestructions
 
 	r.UpdatePlanStatus(tfe.PlanFinished)
-
-	return nil
 }
 
 // FinishApply updates the state of a run to reflect its plan having finished
-func (r *Run) FinishApply(opts ApplyFinishOptions) error {
+func (r *Run) FinishApply(opts ApplyFinishOptions) {
 	r.Apply.ResourceAdditions = opts.ResourceAdditions
 	r.Apply.ResourceChanges = opts.ResourceChanges
 	r.Apply.ResourceDestructions = opts.ResourceDestructions
 
 	r.UpdateApplyStatus(tfe.ApplyFinished)
-
-	return nil
 }
 
 // UpdateStatusToPlanQueued updates a run's status to indicate its plan has been

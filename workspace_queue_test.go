@@ -3,13 +3,12 @@ package ots
 import (
 	"testing"
 
-	tfe "github.com/leg100/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockRunStatusUpdater struct{}
+type mockPlanEnqueuer struct{}
 
-func (u *mockRunStatusUpdater) UpdateStatus(string, tfe.RunStatus) (*Run, error) { return nil, nil }
+func (u *mockPlanEnqueuer) EnqueuePlan(string) error { return nil }
 
 func TestWorkspaceQueue_AddRun(t *testing.T) {
 	tests := []struct {
@@ -70,9 +69,9 @@ func TestWorkspaceQueue_AddRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &WorkspaceQueue{
-				RunStatusUpdater: &mockRunStatusUpdater{},
-				Active:           tt.active,
-				Pending:          tt.pending,
+				PlanEnqueuer: &mockPlanEnqueuer{},
+				Active:       tt.active,
+				Pending:      tt.pending,
 			}
 
 			q.Add(tt.run)
@@ -157,9 +156,9 @@ func TestWorkspaceQueue_RemoveRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &WorkspaceQueue{
-				RunStatusUpdater: &mockRunStatusUpdater{},
-				Active:           tt.active,
-				Pending:          tt.pending,
+				PlanEnqueuer: &mockPlanEnqueuer{},
+				Active:       tt.active,
+				Pending:      tt.pending,
 			}
 
 			q.Remove(tt.run)

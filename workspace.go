@@ -74,7 +74,7 @@ type WorkspaceService interface {
 	Create(org string, opts *tfe.WorkspaceCreateOptions) (*Workspace, error)
 	Get(name, org string) (*Workspace, error)
 	GetByID(id string) (*Workspace, error)
-	List(org string, opts tfe.WorkspaceListOptions) (*WorkspaceList, error)
+	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(name, org string, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
 	UpdateByID(id string, opts *tfe.WorkspaceUpdateOptions) (*Workspace, error)
 	Lock(id string, opts tfe.WorkspaceLockOptions) (*Workspace, error)
@@ -86,7 +86,7 @@ type WorkspaceService interface {
 type WorkspaceRepository interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpecifier) (*Workspace, error)
-	List(organizationID string, opts WorkspaceListOptions) (*WorkspaceList, error)
+	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(spec WorkspaceSpecifier, fn func(*Workspace) error) (*Workspace, error)
 	Delete(spec WorkspaceSpecifier) error
 }
@@ -102,13 +102,20 @@ type WorkspaceSpecifier struct {
 	OrganizationName *string
 }
 
-// WorkspaceListOptions are options for paginating and filtering the list of
-// Workspaces to retrieve from the WorkspaceRepository ListWorkspaces endpoint
+// WorkspaceListOptions are options for paginating and filtering a list of
+// Workspaces
 type WorkspaceListOptions struct {
+	// Pagination
 	tfe.ListOptions
 
 	// Optionally filter workspaces with name matching prefix
-	Prefix *string
+	Prefix *string `schema:"search[name],omitempty"`
+
+	// OrganizationName filters workspaces by organization name
+	OrganizationName *string
+
+	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
 func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspace {

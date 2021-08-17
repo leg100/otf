@@ -39,7 +39,7 @@ func (db OrganizationDB) Update(name string, fn func(*ots.Organization) error) (
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
 		// Get existing model obj from DB
-		model, err = getOrganization(tx, name)
+		model, err = getOrganizationByName(tx, name)
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*ots.Organizati
 }
 
 func (db OrganizationDB) Get(name string) (*ots.Organization, error) {
-	org, err := getOrganization(db.DB, name)
+	org, err := getOrganizationByName(db.DB, name)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (db OrganizationDB) Delete(name string) error {
 	return nil
 }
 
-func getOrganization(db *gorm.DB, name string) (*Organization, error) {
+func getOrganizationByName(db *gorm.DB, name string) (*Organization, error) {
 	var model Organization
 
 	if result := db.Preload(clause.Associations).Where("name = ?", name).First(&model); result.Error != nil {

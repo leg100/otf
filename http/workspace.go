@@ -59,13 +59,18 @@ func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts tfe.WorkspaceListOptions
+	// Unmarshal query into opts struct
+	var opts ots.WorkspaceListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.WorkspaceService.List(vars["org"], opts)
+	// Add org name from path to opts
+	organizationName := vars["org"]
+	opts.OrganizationName = &organizationName
+
+	obj, err := s.WorkspaceService.List(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

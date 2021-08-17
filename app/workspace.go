@@ -65,8 +65,8 @@ func (s WorkspaceService) UpdateByID(id string, opts *tfe.WorkspaceUpdateOptions
 	})
 }
 
-func (s WorkspaceService) List(orgName string, opts tfe.WorkspaceListOptions) (*ots.WorkspaceList, error) {
-	return s.db.List(orgName, ots.WorkspaceListOptions{ListOptions: opts.ListOptions, Prefix: opts.Search})
+func (s WorkspaceService) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+	return s.db.List(opts)
 }
 
 func (s WorkspaceService) Get(name, orgName string) (*ots.Workspace, error) {

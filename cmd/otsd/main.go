@@ -114,7 +114,7 @@ func main() {
 	server.PlanService = app.NewPlanService(runStore, fs)
 	server.ApplyService = app.NewApplyService(runStore)
 
-	scheduler, err := inmem.NewScheduler(server.OrganizationService, server.WorkspaceService, server.RunService, eventService, logger)
+	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
 		panic(err.Error())
 	}

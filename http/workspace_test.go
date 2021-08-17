@@ -36,8 +36,8 @@ func TestWorkspace(t *testing.T) {
 		GetWorkspaceByIDFn: func(id string) (*ots.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
-		ListWorkspaceFn: func(org string, opts tfe.WorkspaceListOptions) (*ots.WorkspaceList, error) {
-			return mock.NewWorkspaceList("dev", "ws-123", org, opts), nil
+		ListWorkspaceFn: func(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+			return mock.NewWorkspaceList("dev", "ws-123", "automatize", opts), nil
 		},
 		DeleteWorkspaceFn: func(name, org string) error {
 			return nil

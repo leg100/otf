@@ -66,7 +66,7 @@ func (a *Agent) Poller(ctx context.Context) {
 		case <-time.After(time.Second):
 		}
 
-		runs, err := a.RunService.GetQueued(tfe.RunListOptions{})
+		runs, err := a.RunService.List(ots.RunListOptions{Statuses: []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued}})
 		if err != nil {
 			a.Error(err, "unable to poll daemon")
 			continue

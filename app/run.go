@@ -57,17 +57,6 @@ func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
 	return s.db.List(opts)
 }
 
-// GetQueued retrieves a list of runs with current status of RunPlanQueued or
-// RunApplyQueued.
-func (s RunService) GetQueued(opts tfe.RunListOptions) (*ots.RunList, error) {
-	dopts := ots.RunListOptions{
-		RunListOptions: opts,
-		Statuses:       []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued},
-	}
-
-	return s.db.List(dopts)
-}
-
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
 		run.UpdateApplyStatus(tfe.ApplyQueued)
@@ -78,9 +67,15 @@ func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 }
 
 func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *ots.Run) error {
 		return run.Discard()
 	})
+	if err != nil {
+		return err
+	}
+
+	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
+
 	return err
 }
 
@@ -117,6 +112,13 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 		return nil
 	})
 
+	return err
+}
+
+func (s RunService) EnqueuePlan(id string) error {
+	_, err := s.db.Update(id, func(run *ots.Run) error {
+		return run.UpdateStatus(tfe.RunPlanQueued)
+	})
 	return err
 }
 
@@ -183,6 +185,9 @@ func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Ru
 	if err != nil {
 		return nil, err
 	}
+
+	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
+
 	return run, nil
 }
 

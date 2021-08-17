@@ -66,17 +66,21 @@ func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace
 	return model.ToDomain(), nil
 }
 
-func (db WorkspaceDB) List(organizationName string, opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+func (db WorkspaceDB) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
 	var models WorkspaceList
 	var count int64
 
 	err := db.Transaction(func(tx *gorm.DB) error {
-		org, err := getOrganization(tx, organizationName)
-		if err != nil {
-			return err
-		}
+		query := tx
 
-		query := tx.Where("organization_id = ?", org.Model.ID)
+		if opts.OrganizationName != nil {
+			org, err := getOrganizationByName(tx, *opts.OrganizationName)
+			if err != nil {
+				return err
+			}
+
+			query = query.Where("organization_id = ?", org.Model.ID)
+		}
 
 		if opts.Prefix != nil {
 			query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Prefix))
@@ -123,7 +127,7 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 			query = tx.Where("external_id = ?", *spec.ID)
 		case spec.Name != nil && spec.OrganizationName != nil:
 			// Get workspace by name and organization name
-			org, err := getOrganization(tx, *spec.OrganizationName)
+			org, err := getOrganizationByName(tx, *spec.OrganizationName)
 			if err != nil {
 				return err
 			}

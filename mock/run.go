@@ -15,9 +15,9 @@ type RunService struct {
 	DiscardFn           func(id string, opts *tfe.RunDiscardOptions) error
 	CancelFn            func(id string, opts *tfe.RunCancelOptions) error
 	ForceCancelFn       func(id string, opts *tfe.RunForceCancelOptions) error
-	GetQueuedFn         func(opts tfe.RunListOptions) (*ots.RunList, error)
 	GetPlanLogsFn       func(id string, opts ots.PlanLogOptions) ([]byte, error)
 	GetApplyLogsFn      func(id string, opts ots.ApplyLogOptions) ([]byte, error)
+	EnqueuePlanFn       func(id string) error
 	UpdateStatusFn      func(id string, status tfe.RunStatus) (*ots.Run, error)
 	UpdatePlanStatusFn  func(id string, status tfe.PlanStatus) (*ots.Run, error)
 	UpdateApplyStatusFn func(id string, status tfe.ApplyStatus) (*ots.Run, error)
@@ -57,16 +57,16 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 	return s.ForceCancelFn(id, opts)
 }
 
-func (s RunService) GetQueued(opts tfe.RunListOptions) (*ots.RunList, error) {
-	return s.GetQueuedFn(opts)
-}
-
 func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, error) {
 	return s.GetPlanLogsFn(id, opts)
 }
 
 func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
 	return s.GetApplyLogsFn(id, opts)
+}
+
+func (s RunService) EnqueuePlan(id string) error {
+	return s.EnqueuePlanFn(id)
 }
 
 func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {

@@ -16,7 +16,7 @@ import (
 func TestAgentPoller(t *testing.T) {
 	// Have the run service return a run when polled
 	runService := &mock.RunService{
-		GetQueuedFn: func(opts tfe.RunListOptions) (*ots.RunList, error) {
+		ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
 			return &ots.RunList{Items: []*ots.Run{{ID: "run-123", Status: tfe.RunPlanQueued}}}, nil
 		},
 	}
@@ -54,7 +54,7 @@ func TestAgentPollerError(t *testing.T) {
 	// Mock run service and capture the plan status it receives
 	got := make(chan tfe.PlanStatus)
 	runService := &mock.RunService{
-		GetQueuedFn: func(opts tfe.RunListOptions) (*ots.RunList, error) {
+		ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
 			return &ots.RunList{Items: []*ots.Run{
 				{
 					ID: "run-123",

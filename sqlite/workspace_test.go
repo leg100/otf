@@ -59,26 +59,26 @@ func TestWorkspace(t *testing.T) {
 
 	// List
 
-	workspaces, err := wsDB.List("automatize", ots.WorkspaceListOptions{})
+	workspaces, err := wsDB.List(ots.WorkspaceListOptions{OrganizationName: ots.String("automatize")})
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(workspaces.Items))
 
 	// List with pagination
 
-	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
+	workspaces, err = wsDB.List(ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(workspaces.Items))
 
-	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
+	workspaces, err = wsDB.List(ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
 
 	// List with search
 
-	workspaces, err = wsDB.List("automatize", ots.WorkspaceListOptions{Prefix: ots.String("new")})
+	workspaces, err = wsDB.List(ots.WorkspaceListOptions{Prefix: ots.String("new")})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
