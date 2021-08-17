@@ -135,8 +135,6 @@ func (r *Run) FinishPlan(opts PlanFinishOptions) error {
 
 	r.UpdatePlanStatus(tfe.PlanFinished)
 
-	fmt.Printf("hello!\n")
-
 	return nil
 }
 
