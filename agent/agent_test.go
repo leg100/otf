@@ -41,7 +41,7 @@ func TestAgentPoller(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go agent.Poller(ctx)
+	go agent.Start(ctx)
 
 	assert.Equal(t, "run-123", <-got)
 
@@ -89,7 +89,7 @@ func TestAgentPollerError(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go agent.Poller(ctx)
+	go agent.Start(ctx)
 
 	assert.Equal(t, tfe.PlanErrored, <-got)
 
