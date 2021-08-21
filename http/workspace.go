@@ -241,6 +241,11 @@ func (s *Server) WorkspaceJSONAPIObject(ws *ots.Workspace) *tfe.Workspace {
 		RunsCount:                  ws.RunsCount,
 	}
 
+	if ws.ExecutionMode == "remote" {
+		// Operations is deprecated but clients and go-tfe tests still use it
+		obj.Operations = true
+	}
+
 	if ws.Organization != nil {
 		obj.Organization = s.OrganizationJSONAPIObject(ws.Organization)
 	}
