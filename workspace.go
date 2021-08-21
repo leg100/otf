@@ -119,7 +119,7 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		ID:                  GenerateID("ws"),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
-		ExecutionMode:       "local", // Only local execution mode is supported
+		ExecutionMode:       "local", // Default until remote ops is officially supported
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
@@ -137,6 +137,20 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		},
 		SpeculativeEnabled: true,
 		Organization:       org,
+	}
+
+	// TODO: ExecutionMode and Operations are mututally exclusive options, this
+	// should be enforced.
+	if opts.ExecutionMode != nil {
+		ws.ExecutionMode = *opts.ExecutionMode
+	}
+	// Operations is deprecated in favour of ExecutionMode.
+	if opts.Operations != nil {
+		if *opts.Operations {
+			ws.ExecutionMode = "remote"
+		} else {
+			ws.ExecutionMode = "local"
+		}
 	}
 
 	if opts.AllowDestroyPlan != nil {
