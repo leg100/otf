@@ -26,7 +26,6 @@ type Workspace struct {
 	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
-	Operations                 bool
 	Permissions                *tfe.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
@@ -83,7 +82,6 @@ func (model *Workspace) ToDomain() *ots.Workspace {
 		Locked:                     model.Locked,
 		MigrationEnvironment:       model.MigrationEnvironment,
 		Name:                       model.Name,
-		Operations:                 model.Operations,
 		Permissions:                model.Permissions,
 		QueueAllRuns:               model.QueueAllRuns,
 		SpeculativeEnabled:         model.SpeculativeEnabled,
@@ -129,7 +127,6 @@ func (model *Workspace) FromDomain(domain *ots.Workspace) {
 	model.Locked = domain.Locked
 	model.MigrationEnvironment = domain.MigrationEnvironment
 	model.Name = domain.Name
-	model.Operations = domain.Operations
 	model.Permissions = domain.Permissions
 	model.QueueAllRuns = domain.QueueAllRuns
 	model.SpeculativeEnabled = domain.SpeculativeEnabled

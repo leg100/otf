@@ -37,7 +37,6 @@ type Workspace struct {
 	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
-	Operations                 bool
 	Permissions                *tfe.WorkspacePermissions
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
@@ -137,7 +136,6 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 			CanUpdateVariable: true,
 		},
 		SpeculativeEnabled: true,
-		Operations:         true,
 		Organization:       org,
 	}
 
@@ -152,9 +150,6 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
-	if opts.Operations != nil {
-		ws.Operations = *opts.Operations
 	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns
@@ -200,9 +195,6 @@ func UpdateWorkspace(ws *Workspace, opts *tfe.WorkspaceUpdateOptions) (*Workspac
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
-	if opts.Operations != nil {
-		ws.Operations = *opts.Operations
 	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns

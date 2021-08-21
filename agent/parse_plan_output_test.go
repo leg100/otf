@@ -38,3 +38,18 @@ func TestParsePlanOutputNoChanges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &want, plan)
 }
+
+func TestParsePlanOutputNoChangesOld(t *testing.T) {
+	want := plan{
+		adds:      0,
+		changes:   0,
+		deletions: 0,
+	}
+
+	output, err := ioutil.ReadFile("testdata/plan_no_changes_old.txt")
+	require.NoError(t, err)
+
+	plan, err := parsePlanOutput(string(output))
+	require.NoError(t, err)
+	assert.Equal(t, &want, plan)
+}

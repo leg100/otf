@@ -222,7 +222,6 @@ func (s *Server) WorkspaceJSONAPIObject(ws *ots.Workspace) *tfe.Workspace {
 		Locked:                     ws.Locked,
 		MigrationEnvironment:       ws.MigrationEnvironment,
 		Name:                       ws.Name,
-		Operations:                 ws.Operations,
 		Permissions:                ws.Permissions,
 		QueueAllRuns:               ws.QueueAllRuns,
 		SpeculativeEnabled:         ws.SpeculativeEnabled,

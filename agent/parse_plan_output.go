@@ -7,8 +7,11 @@ import (
 )
 
 var (
-	planChangesRegex   = regexp.MustCompile(`(?m)^Plan: (\d+) to add, (\d+) to change, (\d+) to destroy.$`)
-	planNoChangesRegex = regexp.MustCompile(`(?m)^No changes. Infrastructure is up-to-date.$`)
+	planChangesRegex = regexp.MustCompile(`(?m)^Plan: (\d+) to add, (\d+) to change, (\d+) to destroy.$`)
+	// Either of these messages signals there are no changes (at some point in
+	// terraform's history the language changed).
+	planNoChangesRegexOld = regexp.MustCompile(`(?m)^No changes. Infrastructure is up-to-date.$`)
+	planNoChangesRegex    = regexp.MustCompile(`(?m)^No changes. Your infrastructure matches the configuration.$`)
 )
 
 type plan struct {
@@ -16,7 +19,7 @@ type plan struct {
 }
 
 func parsePlanOutput(output string) (*plan, error) {
-	if planNoChangesRegex.MatchString(output) {
+	if planNoChangesRegex.MatchString(output) || planNoChangesRegexOld.MatchString(output) {
 		return &plan{}, nil
 	}
 
