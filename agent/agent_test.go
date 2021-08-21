@@ -12,66 +12,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestAgentPoller tests a single iteration of the agent poller.
-func TestAgentPoller(t *testing.T) {
-	// Have the run service return a run when polled
-	runService := &mock.RunService{
-		ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
-			return &ots.RunList{Items: []*ots.Run{{ID: "run-123", Status: tfe.RunPlanQueued}}}, nil
-		},
-	}
+// TestAgent_Start tests starting up the agent daemon and tests it handling a
+// single job
+func TestAgent_Start(t *testing.T) {
+	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
 
-	// Mock the processor and capture the run ID that is passed
+	// Capture the run ID that is passed to the job processor
 	got := make(chan string)
-	processor := mockProcessor{
-		PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
-			got <- run.ID
-			return nil
-		},
-	}
 
 	agent := &Agent{
-		Logger:                      logr.Discard(),
-		ConfigurationVersionService: &mock.ConfigurationVersionService{},
-		StateVersionService:         &mock.StateVersionService{},
-		PlanService:                 &mock.PlanService{},
-		RunService:                  runService,
-		Processor:                   &processor,
+		Logger: logr.Discard(),
+		Processor: &mockProcessor{
+			PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
+				got <- run.ID
+				return nil
+			},
+		},
+		Spooler: newMockSpooler(want),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go agent.Start(ctx)
+	go agent.Start(context.Background())
 
 	assert.Equal(t, "run-123", <-got)
-
-	cancel()
 }
 
-// Test poller error handling. The processor returns an error and the poller
-// should update the plan with an error status.
-func TestAgentPollerError(t *testing.T) {
+// TestAgent_StartError tests starting up the agent daemon and tests it handling
+// it a single job that errors
+func TestAgent_StartError(t *testing.T) {
 	// Mock run service and capture the plan status it receives
 	got := make(chan tfe.PlanStatus)
 	runService := &mock.RunService{
-		ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
-			return &ots.RunList{Items: []*ots.Run{
-				{
-					ID: "run-123",
-					Plan: &ots.Plan{
-						ID: "plan-123",
-					},
-					Status: tfe.RunPlanQueued,
-				},
-			}}, nil
-		},
 		UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) {
 			got <- status
 			return nil, nil
 		},
 	}
 
-	// Mock processor returning an error
+	// Mock job returning an error
 	processor := mockProcessor{
 		PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
 			return errors.New("mock process error")
@@ -79,19 +56,17 @@ func TestAgentPollerError(t *testing.T) {
 	}
 
 	agent := &Agent{
-		Logger:                      logr.Discard(),
-		ConfigurationVersionService: &mock.ConfigurationVersionService{},
-		StateVersionService:         &mock.StateVersionService{},
-		PlanService:                 &mock.PlanService{},
-		RunService:                  runService,
-		Processor:                   &processor,
+		Logger:     logr.Discard(),
+		RunService: runService,
+		Processor:  &processor,
+		Spooler: newMockSpooler(&ots.Run{
+			ID:     "run-123",
+			Status: tfe.RunPlanQueued,
+		}),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	go agent.Start(context.Background())
 
-	go agent.Start(ctx)
-
+	// assert agent correctly propagates a plan errored status update
 	assert.Equal(t, tfe.PlanErrored, <-got)
-
-	cancel()
 }

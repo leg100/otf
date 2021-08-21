@@ -116,9 +116,15 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 }
 
 func (s RunService) EnqueuePlan(id string) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *ots.Run) error {
 		return run.UpdateStatus(tfe.RunPlanQueued)
 	})
+	if err != nil {
+		return err
+	}
+
+	s.es.Publish(ots.Event{Type: ots.PlanQueued, Payload: run})
+
 	return err
 }
 

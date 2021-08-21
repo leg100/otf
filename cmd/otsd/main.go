@@ -116,21 +116,24 @@ func main() {
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
-		panic(err.Error())
+		panic(fmt.Sprintf("unable to start scheduler: %s", err.Error()))
 	}
 
 	// Run scheduler in background
 	go scheduler.Start(ctx)
 
 	// Run poller in background
-	agent := agent.NewAgent(
+	agent, err := agent.NewAgent(
 		logger,
 		server.ConfigurationVersionService,
 		server.StateVersionService,
-		server.PlanService,
 		server.RunService,
+		eventService,
 	)
-	go agent.Poller(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("unable to start agent: %s", err.Error()))
+	}
+	go agent.Start(ctx)
 
 	if err := server.Open(); err != nil {
 		server.Close()

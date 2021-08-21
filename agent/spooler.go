@@ -8,18 +8,26 @@ import (
 	"github.com/leg100/ots"
 )
 
-type RunLister interface {
-	List(ots.RunListOptions) (*ots.RunList, error)
+var _ Spooler = (*SpoolerDaemon)(nil)
+
+// Spooler is a daemon that queues incoming run jobs
+type Spooler interface {
+	GetJob() <-chan *ots.Run
+	Start(context.Context)
 }
 
-// Spooler queues jobs.
-type Spooler struct {
+// SpoolerDaemon queues jobs.
+type SpoolerDaemon struct {
 	// Queue of queued runs
 	queue chan *ots.Run
 	// EventService allows subscribing to stream of events
 	ots.EventService
 	// Logger for logging various events
 	logr.Logger
+}
+
+type RunLister interface {
+	List(ots.RunListOptions) (*ots.RunList, error)
 }
 
 const (
@@ -34,7 +42,7 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler, error) {
+func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(ots.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
@@ -47,7 +55,7 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 		queue <- r
 	}
 
-	return &Spooler{
+	return &SpoolerDaemon{
 		queue:        queue,
 		EventService: es,
 		Logger:       logger.WithValues("component", "spooler"),
@@ -55,14 +63,14 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 }
 
 // Start starts the spooler
-func (s *Spooler) Start(ctx context.Context) error {
+func (s *SpoolerDaemon) Start(ctx context.Context) {
 	sub := s.Subscribe(DefaultID)
 	defer sub.Close()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case event := <-sub.C():
 			s.handleEvent(event)
 		}
@@ -70,13 +78,15 @@ func (s *Spooler) Start(ctx context.Context) error {
 }
 
 // GetJob retrieves receive-only job queue
-func (s *Spooler) GetJob() <-chan *ots.Run {
+func (s *SpoolerDaemon) GetJob() <-chan *ots.Run {
 	return s.queue
 }
 
-func (s *Spooler) handleEvent(ev ots.Event) {
+func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 	switch obj := ev.Payload.(type) {
 	case *ots.Run:
+		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
+
 		switch ev.Type {
 		case ots.PlanQueued, ots.ApplyQueued:
 			s.queue <- obj

@@ -34,30 +34,27 @@ type Agent struct {
 
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
-	PlanService                 ots.PlanService
 	RunService                  ots.RunService
 
 	Processor
 
-	*Spooler
+	Spooler
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, ps ots.PlanService, rs ots.RunService, es ots.EventService) (*Agent, error) {
+func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, es ots.EventService) (*Agent, error) {
 	spooler, err := NewSpooler(rs, es, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Agent{
-		Logger:      logger.WithValues("component", "agent"),
-		RunService:  rs,
-		PlanService: ps,
+		Logger:     logger.WithValues("component", "agent"),
+		RunService: rs,
 		Processor: &processor{
 			Logger:                      logger.WithValues("component", "agent"),
 			ConfigurationVersionService: cvs,
 			StateVersionService:         svs,
-			PlanService:                 ps,
 			RunService:                  rs,
 			TerraformRunner:             &runner{},
 		},
@@ -67,6 +64,9 @@ func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.S
 
 // Start starts the agent daemon
 func (a *Agent) Start(ctx context.Context) {
+	// start spooler in background
+	go a.Spooler.Start(ctx)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -90,20 +90,20 @@ func (a *Agent) handleJob(ctx context.Context, run *ots.Run) {
 	switch run.Status {
 	case tfe.RunPlanQueued:
 		if err := a.Plan(ctx, run, path); err != nil {
-			a.Error(err, "unable to process run")
+			a.Error(err, "unable to process run", "run", run.ID)
 
 			_, err := a.RunService.UpdatePlanStatus(run.ID, tfe.PlanErrored)
 			if err != nil {
-				a.Error(err, "unable to update plan status")
+				a.Error(err, "unable to update plan status", "run", run.ID)
 			}
 		}
 	case tfe.RunApplyQueued:
 		if err := a.Apply(ctx, run, path); err != nil {
-			a.Error(err, "unable to process run")
+			a.Error(err, "unable to process run", "run", run.ID)
 
 			_, err := a.RunService.UpdateApplyStatus(run.ID, tfe.ApplyErrored)
 			if err != nil {
-				a.Error(err, "unable to update apply status")
+				a.Error(err, "unable to update apply status", "run", run.ID)
 			}
 		}
 	default:
