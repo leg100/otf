@@ -103,8 +103,8 @@ type RunList struct {
 	Items []*Run
 }
 
-// RunGetOptions are options for retrieving a single Run. Either ID *or* ApplyID
-// must be specfiied.
+// RunGetOptions are options for retrieving a single Run. Either ID or ApplyID
+// or PlanID must be specfiied.
 type RunGetOptions struct {
 	// ID of run to retrieve
 	ID *string

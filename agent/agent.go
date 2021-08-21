@@ -6,7 +6,6 @@ package agent
 import (
 	"context"
 	"os"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
@@ -18,7 +17,7 @@ const (
 	DefaultID      = "agent-001"
 )
 
-// Agent processes jobs
+// Agent runs remote operations
 type Agent struct {
 	// ID uniquely identifies the agent.
 	ID string
@@ -35,75 +34,79 @@ type Agent struct {
 
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
-	PlanService                 ots.PlanService
 	RunService                  ots.RunService
 
 	Processor
+
+	Spooler
 }
 
-func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, ps ots.PlanService, rs ots.RunService) *Agent {
+// NewAgent is the constructor for an Agent
+func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, es ots.EventService) (*Agent, error) {
+	spooler, err := NewSpooler(rs, es, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Agent{
-		Logger:      logger.WithValues("component", "agent"),
-		RunService:  rs,
-		PlanService: ps,
+		Logger:     logger.WithValues("component", "agent"),
+		RunService: rs,
 		Processor: &processor{
 			Logger:                      logger.WithValues("component", "agent"),
 			ConfigurationVersionService: cvs,
 			StateVersionService:         svs,
-			PlanService:                 ps,
 			RunService:                  rs,
 			TerraformRunner:             &runner{},
 		},
-	}
+		Spooler: spooler,
+	}, nil
 }
 
-// Poller polls the daemon for queued runs and launches jobs accordingly.
-func (a *Agent) Poller(ctx context.Context) {
+// Start starts the agent daemon
+func (a *Agent) Start(ctx context.Context) {
+	// start spooler in background
+	go a.Spooler.Start(ctx)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Second):
+		case run := <-a.GetJob():
+			a.handleJob(ctx, run)
 		}
+	}
+}
 
-		runs, err := a.RunService.List(ots.RunListOptions{Statuses: []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued}})
-		if err != nil {
-			a.Error(err, "unable to poll daemon")
-			continue
-		}
-		if len(runs.Items) == 0 {
-			continue
-		}
+func (a *Agent) handleJob(ctx context.Context, run *ots.Run) {
+	path, err := os.MkdirTemp("", "ots-plan")
+	if err != nil {
+		// TODO: update run status with error
+		a.Error(err, "unable to create temp path")
+		return
+	}
 
-		a.Info("job received", "run", runs.Items[0].ID, "status", runs.Items[0].Status)
+	a.Info("processing job", "run", run.ID, "status", run.Status, "dir", path)
 
-		path, err := os.MkdirTemp("", "ots-plan")
-		if err != nil {
-			a.Error(err, "unable to create temp path")
-			continue
-		}
+	switch run.Status {
+	case tfe.RunPlanQueued:
+		if err := a.Plan(ctx, run, path); err != nil {
+			a.Error(err, "unable to process run", "run", run.ID)
 
-		switch runs.Items[0].Status {
-		case tfe.RunPlanQueued:
-			if err := a.Plan(ctx, runs.Items[0], path); err != nil {
-				a.Error(err, "unable to process run")
-
-				_, err := a.RunService.UpdatePlanStatus(runs.Items[0].ID, tfe.PlanErrored)
-				if err != nil {
-					a.Error(err, "unable to update plan status")
-				}
+			_, err := a.RunService.UpdatePlanStatus(run.ID, tfe.PlanErrored)
+			if err != nil {
+				a.Error(err, "unable to update plan status", "run", run.ID)
 			}
-		case tfe.RunApplyQueued:
-			if err := a.Apply(ctx, runs.Items[0], path); err != nil {
-				a.Error(err, "unable to process run")
-
-				_, err := a.RunService.UpdateApplyStatus(runs.Items[0].ID, tfe.ApplyErrored)
-				if err != nil {
-					a.Error(err, "unable to update apply status")
-				}
-			}
-		default:
-			a.Error(nil, "unexpected run status", "status", runs.Items[0].Status)
 		}
+	case tfe.RunApplyQueued:
+		if err := a.Apply(ctx, run, path); err != nil {
+			a.Error(err, "unable to process run", "run", run.ID)
+
+			_, err := a.RunService.UpdateApplyStatus(run.ID, tfe.ApplyErrored)
+			if err != nil {
+				a.Error(err, "unable to update apply status", "run", run.ID)
+			}
+		}
+	default:
+		a.Error(nil, "unexpected run status", "status", run.Status)
 	}
 }
