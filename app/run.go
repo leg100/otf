@@ -58,11 +58,17 @@ func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
 }
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *ots.Run) error {
 		run.UpdateApplyStatus(tfe.ApplyQueued)
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	s.es.Publish(ots.Event{Type: ots.ApplyQueued, Payload: run})
+
 	return err
 }
 

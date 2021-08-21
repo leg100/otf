@@ -78,14 +78,14 @@ func (a *Agent) Start(ctx context.Context) {
 }
 
 func (a *Agent) handleJob(ctx context.Context, run *ots.Run) {
-	a.Info("job received", "run", run.ID, "status", run.Status)
-
 	path, err := os.MkdirTemp("", "ots-plan")
 	if err != nil {
 		// TODO: update run status with error
 		a.Error(err, "unable to create temp path")
 		return
 	}
+
+	a.Info("processing job", "run", run.ID, "status", run.Status, "dir", path)
 
 	switch run.Status {
 	case tfe.RunPlanQueued:
