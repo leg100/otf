@@ -11,6 +11,12 @@ type Runner struct {
 	canceled bool
 }
 
+func NewRunner(steps []Step) *Runner {
+	return &Runner{
+		steps: steps,
+	}
+}
+
 func (r *Runner) Cancel(force bool) {
 	r.canceled = true
 
@@ -24,8 +30,12 @@ func (r *Runner) Run(ctx context.Context, path string, out io.Writer) error {
 		if r.canceled {
 			return nil
 		}
+
 		r.current = i
-		s.Run(ctx, path, out)
+
+		if err := s.Run(ctx, path, out); err != nil {
+			return err
+		}
 	}
 
 	return nil

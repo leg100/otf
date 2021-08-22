@@ -41,8 +41,6 @@ func (r *MockRunner) Apply(ctx context.Context, path string) ([]byte, error) {
 }
 
 func TestProcessor(t *testing.T) {
-	path := t.TempDir()
-
 	p := &processor{
 		Logger: logr.Discard(),
 		ConfigurationVersionService: &mock.ConfigurationVersionService{
@@ -58,7 +56,7 @@ func TestProcessor(t *testing.T) {
 				return &ots.StateVersion{ID: "sv-123"}, nil
 			},
 			DownloadFn: func(id string) ([]byte, error) {
-				return os.ReadFile("testdata/terraform.tfstate")
+				return os.ReadFile(filepath.Join("testdata/terraform.tfstate"))
 			},
 		},
 		RunService: &mock.RunService{
@@ -73,8 +71,9 @@ func TestProcessor(t *testing.T) {
 		TerraformRunner: &MockRunner{},
 	}
 
-	// Run a plan
-	require.NoError(t, p.Plan(context.Background(), &ots.Run{
+	// Run an apply
+	path := t.TempDir()
+	require.NoError(t, p.Apply(context.Background(), &ots.Run{
 		Plan: &ots.Plan{
 			ID: "plan-123",
 		},
@@ -99,21 +98,8 @@ func TestProcessor(t *testing.T) {
 		"dir/file",
 		"dir/symlink",
 		"file",
+		"plan.out",
 		"terraform.tfstate",
 	}, got)
-
-	// Run an apply
-	applyPath := t.TempDir()
-	require.NoError(t, p.Apply(context.Background(), &ots.Run{
-		Plan: &ots.Plan{
-			ID: "plan-123",
-		},
-		ConfigurationVersion: &ots.ConfigurationVersion{
-			ID: "cv-123",
-		},
-		Workspace: &ots.Workspace{
-			ID: "ws-123",
-		},
-	}, applyPath))
 
 }

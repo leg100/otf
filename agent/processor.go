@@ -51,6 +51,12 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 		return deleteBackendConfigFromDirectory(ctx, path)
 	}))
 
+	// Update status
+	steps = append(steps, ots.NewFuncStep(func(ctx context.Context, path string) error {
+		_, err := p.RunService.UpdatePlanStatus(run.ID, tfe.PlanRunning)
+		return err
+	}))
+
 	steps = append(steps, ots.NewCommandStep("terraform", "init", "-no-color"))
 	steps = append(steps, ots.NewCommandStep("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)))
 	steps = append(steps, ots.NewCommandStep("sh", "-c",
@@ -66,68 +72,46 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 			return err
 		}
 
-		// Parse plan output
-		info, err := parsePlanOutput(string(out))
-		if err != nil {
-			return fmt.Errorf("unable to parse plan output: %w", err)
+		planFile := ots.PlanFile{}
+		if err := json.Unmarshal(jsonFile, &planFile); err != nil {
+			return err
 		}
+
+		// Parse plan output
+		adds, updates, deletes := planFile.Changes()
 
 		// Update status
 		_, err = p.RunService.FinishPlan(run.ID, ots.PlanFinishOptions{
-			ResourceAdditions:    info.adds,
-			ResourceChanges:      info.changes,
-			ResourceDestructions: info.deletions,
+			ResourceAdditions:    adds,
+			ResourceChanges:      updates,
+			ResourceDestructions: deletes,
 			Plan:                 file,
 			PlanJSON:             jsonFile,
 		})
 		if err != nil {
 			return fmt.Errorf("unable to finish plan: %w", err)
 		}
+
+		p.Info("job completed", "run", run.ID,
+			"additions", adds,
+			"changes", updates,
+			"deletions", deletes,
+		)
+
+		return nil
 	}))
 
-	// Update status
-	_, err := p.RunService.UpdatePlanStatus(run.ID, tfe.PlanRunning)
-	if err != nil {
-		return fmt.Errorf("unable to update plan status: %w", err)
-	}
+	out := new(bytes.Buffer)
 
-	// Upload logs regardless of whether plan errored
-	if err := p.RunService.UploadPlanLogs(run.ID, out); err != nil {
-		return fmt.Errorf("unable to upload plan logs: %w", err)
-	}
+	runner := ots.NewRunner(steps)
+	runErr := runner.Run(ctx, path, out)
 
-	// Go no further if plan errored
-	if planErr != nil {
-		return planErr
-	}
-
-	planFile := ots.PlanFile{}
-	if err := json.Unmarshal(planJSON, &planFile); err != nil {
+	// Upload logs regardless of runner error
+	if err := p.RunService.UploadPlanLogs(run.ID, out.Bytes()); err != nil {
 		return err
 	}
 
-	// Parse plan output
-	adds, updates, deletes := planFile.Changes()
-
-	// Update status
-	_, err = p.RunService.FinishPlan(run.ID, ots.PlanFinishOptions{
-		ResourceAdditions:    adds,
-		ResourceChanges:      updates,
-		ResourceDestructions: deletes,
-		Plan:                 plan,
-		PlanJSON:             planJSON,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to finish plan: %w", err)
-	}
-
-	p.Info("job completed", "run", run.ID,
-		"additions", adds,
-		"changes", updates,
-		"deletions", deletes,
-	)
-
-	return nil
+	return runErr
 }
 
 // Apply processes a run apply
