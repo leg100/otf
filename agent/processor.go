@@ -17,6 +17,7 @@ import (
 const (
 	LocalStateFilename = "terraform.tfstate"
 	PlanFilename       = "plan.out"
+	JSONPlanFilename   = "plan.out.json"
 )
 
 type Processor interface {
@@ -39,29 +40,55 @@ type processor struct {
 
 // Plan processes a run plan
 func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
-	// Download config
-	if err := p.downloadConfig(ctx, run, path); err != nil {
-		return fmt.Errorf("unable to download config: %w", err)
-	}
+	var steps []ots.Step
 
-	// Delete backend config
-	if err := deleteBackendConfigFromDirectory(ctx, path); err != nil {
-		return fmt.Errorf("unable to delete backend config: %w", err)
-	}
+	steps = append(steps, ots.NewFuncStep(func(ctx context.Context, path string) error {
+		return p.downloadConfig(ctx, run, path)
+	}))
 
-	// Download state
-	if err := p.downloadState(ctx, run, path); err != nil {
-		return fmt.Errorf("unable to download state: %w", err)
-	}
+	steps = append(steps, ots.NewFuncStep(func(ctx context.Context, path string) error {
+		return deleteBackendConfigFromDirectory(ctx, path)
+	}))
+
+	steps = append(steps, ots.NewCommandStep("terraform", "init", "-no-color"))
+	steps = append(steps, ots.NewCommandStep("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)))
+	steps = append(steps, ots.NewCommandStep("sh", "-c",
+		fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)))
+
+	steps = append(steps, ots.NewFuncStep(func(ctx context.Context, path string) error {
+		file, err := os.ReadFile(PlanFilename)
+		if err != nil {
+			return err
+		}
+		jsonFile, err := os.ReadFile(JSONPlanFilename)
+		if err != nil {
+			return err
+		}
+
+		// Parse plan output
+		info, err := parsePlanOutput(string(out))
+		if err != nil {
+			return fmt.Errorf("unable to parse plan output: %w", err)
+		}
+
+		// Update status
+		_, err = p.RunService.FinishPlan(run.ID, ots.PlanFinishOptions{
+			ResourceAdditions:    info.adds,
+			ResourceChanges:      info.changes,
+			ResourceDestructions: info.deletions,
+			Plan:                 file,
+			PlanJSON:             jsonFile,
+		})
+		if err != nil {
+			return fmt.Errorf("unable to finish plan: %w", err)
+		}
+	}))
 
 	// Update status
 	_, err := p.RunService.UpdatePlanStatus(run.ID, tfe.PlanRunning)
 	if err != nil {
 		return fmt.Errorf("unable to update plan status: %w", err)
 	}
-
-	// Run terraform init then plan
-	out, plan, planJSON, planErr := p.TerraformRunner.Plan(ctx, path)
 
 	// Upload logs regardless of whether plan errored
 	if err := p.RunService.UploadPlanLogs(run.ID, out); err != nil {

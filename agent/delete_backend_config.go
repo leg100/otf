@@ -11,7 +11,7 @@ import (
 )
 
 func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
-	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -42,8 +42,6 @@ func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
 
 		return nil
 	})
-
-	return nil
 }
 
 func deleteBackendConfig(config []byte) (bool, []byte, error) {
