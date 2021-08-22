@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -100,17 +101,19 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 		return planErr
 	}
 
-	// Parse plan output
-	info, err := parsePlanOutput(string(out))
-	if err != nil {
-		return fmt.Errorf("unable to parse plan output: %w", err)
+	planFile := ots.PlanFile{}
+	if err := json.Unmarshal(planJSON, &planFile); err != nil {
+		return err
 	}
+
+	// Parse plan output
+	adds, updates, deletes := planFile.Changes()
 
 	// Update status
 	_, err = p.RunService.FinishPlan(run.ID, ots.PlanFinishOptions{
-		ResourceAdditions:    info.adds,
-		ResourceChanges:      info.changes,
-		ResourceDestructions: info.deletions,
+		ResourceAdditions:    adds,
+		ResourceChanges:      updates,
+		ResourceDestructions: deletes,
 		Plan:                 plan,
 		PlanJSON:             planJSON,
 	})
@@ -119,9 +122,10 @@ func (p *processor) Plan(ctx context.Context, run *ots.Run, path string) error {
 	}
 
 	p.Info("job completed", "run", run.ID,
-		"additions", info.adds,
-		"changes", info.changes,
-		"deletions", info.deletions)
+		"additions", adds,
+		"changes", updates,
+		"deletions", deletes,
+	)
 
 	return nil
 }
