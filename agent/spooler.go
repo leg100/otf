@@ -58,7 +58,7 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 	return &SpoolerDaemon{
 		queue:        queue,
 		EventService: es,
-		Logger:       logger.WithValues("component", "spooler"),
+		Logger:       logger,
 	}, nil
 }
 

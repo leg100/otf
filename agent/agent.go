@@ -5,10 +5,8 @@ package agent
 
 import (
 	"context"
-	"os"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -34,31 +32,32 @@ type Agent struct {
 
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
-	RunService                  ots.RunService
-
-	Processor
 
 	Spooler
+
+	*Supervisor
 }
 
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, es ots.EventService) (*Agent, error) {
+	logger = logger.WithValues("component", "agent")
+
 	spooler, err := NewSpooler(rs, es, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	proc := processor{
+		Logger:                      logger,
+		ConfigurationVersionService: cvs,
+		StateVersionService:         svs,
+		RunService:                  rs,
+		TerraformRunner:             &runner{},
+	}
 	return &Agent{
-		Logger:     logger.WithValues("component", "agent"),
-		RunService: rs,
-		Processor: &processor{
-			Logger:                      logger.WithValues("component", "agent"),
-			ConfigurationVersionService: cvs,
-			StateVersionService:         svs,
-			RunService:                  rs,
-			TerraformRunner:             &runner{},
-		},
-		Spooler: spooler,
+		Logger:     logger,
+		Supervisor: NewSupervisor(spooler, &proc, rs, logger, DefaultConcurrency),
+		Spooler:    spooler,
 	}, nil
 }
 
@@ -67,46 +66,6 @@ func (a *Agent) Start(ctx context.Context) {
 	// start spooler in background
 	go a.Spooler.Start(ctx)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case run := <-a.GetJob():
-			a.handleJob(ctx, run)
-		}
-	}
-}
+	a.Supervisor.Start(ctx)
 
-func (a *Agent) handleJob(ctx context.Context, run *ots.Run) {
-	path, err := os.MkdirTemp("", "ots-plan")
-	if err != nil {
-		// TODO: update run status with error
-		a.Error(err, "unable to create temp path")
-		return
-	}
-
-	a.Info("processing job", "run", run.ID, "status", run.Status, "dir", path)
-
-	switch run.Status {
-	case tfe.RunPlanQueued:
-		if err := a.Plan(ctx, run, path); err != nil {
-			a.Error(err, "unable to process run", "run", run.ID)
-
-			_, err := a.RunService.UpdatePlanStatus(run.ID, tfe.PlanErrored)
-			if err != nil {
-				a.Error(err, "unable to update plan status", "run", run.ID)
-			}
-		}
-	case tfe.RunApplyQueued:
-		if err := a.Apply(ctx, run, path); err != nil {
-			a.Error(err, "unable to process run", "run", run.ID)
-
-			_, err := a.RunService.UpdateApplyStatus(run.ID, tfe.ApplyErrored)
-			if err != nil {
-				a.Error(err, "unable to update apply status", "run", run.ID)
-			}
-		}
-	default:
-		a.Error(nil, "unexpected run status", "status", run.Status)
-	}
 }
