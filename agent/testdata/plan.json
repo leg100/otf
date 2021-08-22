@@ -1,0 +1,181 @@
+{
+  "format_version": "0.1",
+  "terraform_version": "0.15.3",
+  "variables": {
+    "suffix": {
+      "value": "abcdef"
+    }
+  },
+  "planned_values": {
+    "outputs": {
+      "random_string": {
+        "sensitive": false
+      }
+    },
+    "root_module": {
+      "resources": [
+        {
+          "address": "null_resource.example",
+          "mode": "managed",
+          "type": "null_resource",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/null",
+          "schema_version": 0,
+          "values": {
+            "triggers": null
+          }
+        }
+      ],
+      "child_modules": [
+        {
+          "resources": [
+            {
+              "address": "module.random.random_id.test",
+              "mode": "managed",
+              "type": "random_id",
+              "name": "test",
+              "provider_name": "registry.terraform.io/hashicorp/random",
+              "schema_version": 0,
+              "values": {
+                "byte_length": 2,
+                "keepers": null,
+                "prefix": null
+              }
+            }
+          ],
+          "address": "module.random"
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "module.random.random_id.test",
+      "module_address": "module.random",
+      "mode": "managed",
+      "type": "random_id",
+      "name": "test",
+      "provider_name": "registry.terraform.io/hashicorp/random",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "byte_length": 2,
+          "keepers": null,
+          "prefix": null
+        },
+        "after_unknown": {
+          "b64_std": true,
+          "b64_url": true,
+          "dec": true,
+          "hex": true,
+          "id": true
+        },
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "null_resource.example",
+      "mode": "managed",
+      "type": "null_resource",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/null",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "triggers": null
+        },
+        "after_unknown": {
+          "id": true
+        },
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "output_changes": {
+    "random_string": {
+      "actions": [
+        "create"
+      ],
+      "before": null,
+      "after_unknown": true,
+      "before_sensitive": false,
+      "after_sensitive": false
+    }
+  },
+  "configuration": {
+    "root_module": {
+      "outputs": {
+        "random_string": {
+          "expression": {
+            "references": [
+              "module.random.random_string"
+            ]
+          }
+        }
+      },
+      "resources": [
+        {
+          "address": "null_resource.example",
+          "mode": "managed",
+          "type": "null_resource",
+          "name": "example",
+          "provider_config_key": "null",
+          "schema_version": 0
+        }
+      ],
+      "module_calls": {
+        "random": {
+          "source": "../modules/random",
+          "expressions": {
+            "suffix": {
+              "references": [
+                "var.suffix"
+              ]
+            }
+          },
+          "module": {
+            "outputs": {
+              "random_string": {
+                "expression": {
+                  "references": [
+                    "random_id.test",
+                    "var.suffix"
+                  ]
+                }
+              }
+            },
+            "resources": [
+              {
+                "address": "random_id.test",
+                "mode": "managed",
+                "type": "random_id",
+                "name": "test",
+                "provider_config_key": "random:random",
+                "expressions": {
+                  "byte_length": {
+                    "constant_value": 2
+                  }
+                },
+                "schema_version": 0
+              }
+            ],
+            "variables": {
+              "suffix": {}
+            }
+          }
+        }
+      },
+      "variables": {
+        "suffix": {}
+      }
+    }
+  }
+}
