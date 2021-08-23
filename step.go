@@ -63,6 +63,9 @@ func (s *FuncStep) Cancel(force bool) {
 	if !force {
 		return
 	}
+	if s.cancel == nil {
+		return
+	}
 	s.cancel()
 }
 

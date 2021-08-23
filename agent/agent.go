@@ -47,17 +47,14 @@ func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.S
 		return nil, err
 	}
 
-	proc := processor{
-		Logger:                      logger,
-		ConfigurationVersionService: cvs,
-		StateVersionService:         svs,
-		RunService:                  rs,
-		TerraformRunner:             &runner{},
-	}
 	return &Agent{
-		Logger:     logger,
-		Supervisor: NewSupervisor(spooler, &proc, rs, logger, DefaultConcurrency),
-		Spooler:    spooler,
+		Logger: logger,
+		Supervisor: NewSupervisor(
+			spooler,
+			cvs,
+			svs,
+			rs,
+			logger, DefaultConcurrency),
 	}, nil
 }
 
