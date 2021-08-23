@@ -43,6 +43,7 @@ func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots
 		Logger:                      logger,
 		concurrency:                 concurrency,
 		planRunnerFn:                NewPlanRunner,
+		applyRunnerFn:               NewApplyRunner,
 	}
 }
 
@@ -89,6 +90,8 @@ func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
 		}
 
 		if runErr != nil {
+			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
+
 			_, err := s.RunService.UpdatePlanStatus(run.ID, tfe.PlanErrored)
 			if err != nil {
 				s.Error(err, "unable to update plan status", "run", run.ID)
@@ -106,6 +109,8 @@ func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
 		}
 
 		if runErr != nil {
+			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
+
 			_, err := s.RunService.UpdateApplyStatus(run.ID, tfe.ApplyErrored)
 			if err != nil {
 				s.Error(err, "unable to update apply status", "run", run.ID)

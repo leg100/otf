@@ -63,11 +63,11 @@ func UpdateApplyStatusStep(run *ots.Run, rs ots.RunService, status tfe.ApplyStat
 
 func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		file, err := os.ReadFile(PlanFilename)
+		file, err := os.ReadFile(filepath.Join(path, PlanFilename))
 		if err != nil {
 			return err
 		}
-		jsonFile, err := os.ReadFile(JSONPlanFilename)
+		jsonFile, err := os.ReadFile(filepath.Join(path, JSONPlanFilename))
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 
 func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		out, err := os.ReadFile(ApplyOutputFilename)
+		out, err := os.ReadFile(filepath.Join(path, ApplyOutputFilename))
 		if err != nil {
 			return err
 		}
@@ -134,8 +134,8 @@ func FinishApplyStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.F
 	})
 }
 
-// Download current state to disk. If there is no state yet nothing will be
-// downloaded and no error will be reported.
+// DownloadStateStep downloads current state to disk. If there is no state yet
+// nothing will be downloaded and no error will be reported.
 func DownloadStateStep(run *ots.Run, svs ots.StateVersionService, logger logr.Logger) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
 		state, err := svs.Current(run.Workspace.ID)
@@ -169,7 +169,7 @@ func DownloadPlanFileStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
 	})
 }
 
-// Read, parse, and upload state
+// UploadStateStep reads, parses, and uploads state
 func UploadStateStep(run *ots.Run, svs ots.StateVersionService) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
 		stateFile, err := os.ReadFile(filepath.Join(path, LocalStateFilename))

@@ -71,16 +71,6 @@ func (s *FuncStep) Cancel(force bool) {
 
 // Run invokes the func, setting the working dir to the given path
 func (s *FuncStep) Run(ctx context.Context, path string, out io.Writer) error {
-	// Change dir, reverting back to prev dir when finished
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if err := os.Chdir(path); err != nil {
-		return err
-	}
-	defer os.Chdir(wd)
-
 	ctx, s.cancel = context.WithCancel(ctx)
 	return s.fn(ctx, path)
 }

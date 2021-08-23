@@ -48,7 +48,8 @@ func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.S
 	}
 
 	return &Agent{
-		Logger: logger,
+		Logger:  logger,
+		Spooler: spooler,
 		Supervisor: NewSupervisor(
 			spooler,
 			cvs,

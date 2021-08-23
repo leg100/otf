@@ -23,8 +23,10 @@ func TestSupervisor_Start(t *testing.T) {
 		Logger:       logr.Discard(),
 		planRunnerFn: mockNewPlanRunnerFn,
 		RunService: mock.RunService{
-			UploadPlanLogsFn:   func(string, []byte) error { return nil },
-			UpdatePlanStatusFn: func(string, tfe.PlanStatus) (*ots.Run, error) { return nil, nil },
+			UploadPlanLogsFn: func(id string, _ []byte) error {
+				got <- id
+				return nil
+			},
 		},
 		Spooler:     newMockSpooler(want),
 		concurrency: 1,
@@ -41,6 +43,7 @@ func TestSupervisor_StartError(t *testing.T) {
 	// Mock run service and capture the plan status it receives
 	got := make(chan tfe.PlanStatus)
 	runService := &mock.RunService{
+		UploadPlanLogsFn: func(id string, _ []byte) error { return nil },
 		UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) {
 			got <- status
 			return nil, nil

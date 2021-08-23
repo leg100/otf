@@ -41,7 +41,5 @@ func TestDownloadConfigStep(t *testing.T) {
 		"dir/file",
 		"dir/symlink",
 		"file",
-		"plan.out",
-		"terraform.tfstate",
 	}, got)
 }
