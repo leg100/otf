@@ -147,18 +147,21 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 			return result.Error
 		}
 
-		// Delete associated runs
-		if result := tx.Delete(&Run{}, "workspace_id = ?", ws.ID); result.Error != nil {
+		// Delete associated runs if they exist
+		result := tx.Delete(&Run{}, "workspace_id = ?", ws.ID)
+		if result.Error != nil && !ots.IsNotFound(result.Error) {
 			return result.Error
 		}
 
-		// Delete associated state versions
-		if result := tx.Delete(&StateVersion{}, "workspace_id = ?", ws.ID); result.Error != nil {
+		// Delete associated state versions if they exist
+		result = tx.Delete(&StateVersion{}, "workspace_id = ?", ws.ID)
+		if result.Error != nil && !ots.IsNotFound(result.Error) {
 			return result.Error
 		}
 
-		// Delete associated configuration versions
-		if result := tx.Delete(&ConfigurationVersion{}, "workspace_id = ?", ws.ID); result.Error != nil {
+		// Delete associated configuration versions if they exist
+		result = tx.Delete(&ConfigurationVersion{}, "workspace_id = ?", ws.ID)
+		if result.Error != nil && !ots.IsNotFound(result.Error) {
 			return result.Error
 		}
 
