@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -21,10 +20,11 @@ func TestSupervisor_Start(t *testing.T) {
 	got := make(chan string)
 
 	supervisor := &Supervisor{
-		Logger: logr.Discard(),
-		Processor: &mockProcessor{
-			PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
-				got <- run.ID
+		Logger:       logr.Discard(),
+		planRunnerFn: mockNewPlanRunnerFn,
+		RunService: mock.RunService{
+			UploadPlanLogsFn: func(id string, _ []byte) error {
+				got <- id
 				return nil
 			},
 		},
@@ -43,23 +43,17 @@ func TestSupervisor_StartError(t *testing.T) {
 	// Mock run service and capture the plan status it receives
 	got := make(chan tfe.PlanStatus)
 	runService := &mock.RunService{
+		UploadPlanLogsFn: func(id string, _ []byte) error { return nil },
 		UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) {
 			got <- status
 			return nil, nil
 		},
 	}
 
-	// Mock job returning an error
-	processor := mockProcessor{
-		PlanFn: func(ctx context.Context, run *ots.Run, path string) error {
-			return errors.New("mock process error")
-		},
-	}
-
 	supervisor := &Supervisor{
-		Logger:     logr.Discard(),
-		RunService: runService,
-		Processor:  &processor,
+		Logger:       logr.Discard(),
+		RunService:   runService,
+		planRunnerFn: mockNewPlanRunnerFnWithError,
 		Spooler: newMockSpooler(&ots.Run{
 			ID:     "run-123",
 			Status: tfe.RunPlanQueued,
