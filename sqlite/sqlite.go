@@ -42,6 +42,14 @@ func New(path string, opts ...Option) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// Avoid "database is locked" errors:
+	// https://github.com/mattn/go-sqlite3/issues/274
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	if err := db.AutoMigrate(models...); err != nil {
 		return nil, err
 	}
