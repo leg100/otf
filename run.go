@@ -85,6 +85,7 @@ type RunService interface {
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
+	UploadPlan(runID string, plan []byte, json bool) error
 }
 
 // RunStore implementations persist Run objects.

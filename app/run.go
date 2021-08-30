@@ -164,27 +164,37 @@ func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.R
 	return run, nil
 }
 
+// UploadPlan persists a run's plan file. The plan file is expected to have been
+// produced using `terraform plan`. If the plan file is JSON serialized then set
+// json to true.
+func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+	blobID, err := s.bs.Put(plan)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Update(id, func(run *ots.Run) error {
+		if json {
+			run.Plan.PlanJSONBlobID = blobID
+		} else {
+			run.Plan.PlanFileBlobID = blobID
+		}
+
+		return nil
+	})
+	return err
+}
+
 func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	planFileBlobID, err := s.bs.Put(opts.Plan)
-	if err != nil {
-		return nil, err
-	}
-
-	planJSONBlobID, err := s.bs.Put(opts.PlanJSON)
-	if err != nil {
-		return nil, err
-	}
-
 	run, err := s.db.Update(id, func(run *ots.Run) error {
 		run.FinishPlan(opts)
-		run.Plan.PlanFileBlobID = planFileBlobID
-		run.Plan.PlanJSONBlobID = planJSONBlobID
 
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	return run, nil
 }
 
