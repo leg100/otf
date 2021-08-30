@@ -47,16 +47,16 @@ func DownloadConfigStep(run *ots.Run, cvs ots.ConfigurationVersionService) *ots.
 	})
 }
 
-func UpdatePlanStatusStep(run *ots.Run, rs ots.RunService, status tfe.PlanStatus) *ots.FuncStep {
+func UpdatePlanStatusStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		_, err := rs.UpdatePlanStatus(run.ID, tfe.PlanRunning)
+		_, err := rs.UpdateStatus(run.ID, tfe.RunPlanning)
 		return err
 	})
 }
 
-func UpdateApplyStatusStep(run *ots.Run, rs ots.RunService, status tfe.ApplyStatus) *ots.FuncStep {
+func UpdateApplyStatusStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
-		_, err := rs.UpdateApplyStatus(run.ID, tfe.ApplyRunning)
+		_, err := rs.UpdateStatus(run.ID, tfe.RunApplying)
 		return err
 	})
 }

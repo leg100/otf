@@ -75,8 +75,6 @@ type RunService interface {
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
 	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
-	UpdatePlanStatus(id string, status tfe.PlanStatus) (*Run, error)
-	UpdateApplyStatus(id string, status tfe.ApplyStatus) (*Run, error)
 	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
 	UploadPlanLogs(id string, logs []byte) error
 	GetApplyLogs(id string, opts ApplyLogOptions) ([]byte, error)
@@ -146,28 +144,13 @@ func (r *Run) FinishApply(opts ApplyFinishOptions) {
 	r.UpdateStatus(tfe.RunApplied)
 }
 
-// UpdateStatusToPlanQueued updates a run's status to indicate its plan has been
-// queued.
-func (r *Run) UpdateStatusToPlanQueued() {
-	r.Status = tfe.RunPlanQueued
-	r.StatusTimestamps.PlanQueuedAt = TimeNow()
-	r.Plan.Status = tfe.PlanQueued
-	r.Plan.StatusTimestamps.QueuedAt = TimeNow()
-}
-
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
 		return ErrRunDiscardNotAllowed
 	}
 
-	r.Status = tfe.RunDiscarded
-	r.StatusTimestamps.DiscardedAt = TimeNow()
-
-	// TODO: update plan status
-
-	r.Apply.Status = tfe.ApplyUnreachable
-	r.Apply.StatusTimestamps.CanceledAt = TimeNow()
+	r.UpdateStatus(tfe.RunDiscarded)
 
 	return nil
 }
@@ -313,6 +296,9 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) error {
 		}
 	}
 
+	// TODO: determine when tfe.ApplyUnreachable is applicable and set
+	// accordingly
+
 	return nil
 }
 
@@ -358,16 +344,15 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 			CanDiscard:      true,
 			CanForceExecute: true,
 		},
-		Refresh:      DefaultRefresh,
-		ReplaceAddrs: opts.ReplaceAddrs,
-		TargetAddrs:  opts.TargetAddrs,
-		Status:       tfe.RunPending,
-		StatusTimestamps: &tfe.RunStatusTimestamps{
-			PlanQueueableAt: TimeNow(),
-		},
-		Plan:  newPlan(),
-		Apply: newApply(),
+		Refresh:          DefaultRefresh,
+		ReplaceAddrs:     opts.ReplaceAddrs,
+		TargetAddrs:      opts.TargetAddrs,
+		StatusTimestamps: &tfe.RunStatusTimestamps{},
+		Plan:             newPlan(),
+		Apply:            newApply(),
 	}
+
+	run.UpdateStatus(tfe.RunPending)
 
 	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &opts.Workspace.ID})
 	if err != nil {

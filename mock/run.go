@@ -8,26 +8,24 @@ import (
 var _ ots.RunService = (*RunService)(nil)
 
 type RunService struct {
-	CreateFn            func(opts *tfe.RunCreateOptions) (*ots.Run, error)
-	GetFn               func(id string) (*ots.Run, error)
-	ListFn              func(opts ots.RunListOptions) (*ots.RunList, error)
-	ApplyFn             func(id string, opts *tfe.RunApplyOptions) error
-	DiscardFn           func(id string, opts *tfe.RunDiscardOptions) error
-	CancelFn            func(id string, opts *tfe.RunCancelOptions) error
-	ForceCancelFn       func(id string, opts *tfe.RunForceCancelOptions) error
-	GetPlanLogsFn       func(id string, opts ots.PlanLogOptions) ([]byte, error)
-	GetApplyLogsFn      func(id string, opts ots.ApplyLogOptions) ([]byte, error)
-	EnqueuePlanFn       func(id string) error
-	UpdateStatusFn      func(id string, status tfe.RunStatus) (*ots.Run, error)
-	UpdatePlanStatusFn  func(id string, status tfe.PlanStatus) (*ots.Run, error)
-	UpdateApplyStatusFn func(id string, status tfe.ApplyStatus) (*ots.Run, error)
-	UploadPlanLogsFn    func(id string, logs []byte) error
-	UploadApplyLogsFn   func(id string, logs []byte) error
-	FinishPlanFn        func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
-	FinishApplyFn       func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
-	GetPlanJSONFn       func(id string) ([]byte, error)
-	GetPlanFileFn       func(id string) ([]byte, error)
-	UploadPlanFn        func(id string, plan []byte, json bool) error
+	CreateFn          func(opts *tfe.RunCreateOptions) (*ots.Run, error)
+	GetFn             func(id string) (*ots.Run, error)
+	ListFn            func(opts ots.RunListOptions) (*ots.RunList, error)
+	ApplyFn           func(id string, opts *tfe.RunApplyOptions) error
+	DiscardFn         func(id string, opts *tfe.RunDiscardOptions) error
+	CancelFn          func(id string, opts *tfe.RunCancelOptions) error
+	ForceCancelFn     func(id string, opts *tfe.RunForceCancelOptions) error
+	GetPlanLogsFn     func(id string, opts ots.PlanLogOptions) ([]byte, error)
+	GetApplyLogsFn    func(id string, opts ots.ApplyLogOptions) ([]byte, error)
+	EnqueuePlanFn     func(id string) error
+	UpdateStatusFn    func(id string, status tfe.RunStatus) (*ots.Run, error)
+	UploadPlanLogsFn  func(id string, logs []byte) error
+	UploadApplyLogsFn func(id string, logs []byte) error
+	FinishPlanFn      func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
+	FinishApplyFn     func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
+	GetPlanJSONFn     func(id string) ([]byte, error)
+	GetPlanFileFn     func(id string) ([]byte, error)
+	UploadPlanFn      func(id string, plan []byte, json bool) error
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
@@ -72,14 +70,6 @@ func (s RunService) EnqueuePlan(id string) error {
 
 func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
 	return s.UpdateStatusFn(id, status)
-}
-
-func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
-	return s.UpdatePlanStatusFn(id, status)
-}
-
-func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.Run, error) {
-	return s.UpdateApplyStatusFn(id, status)
 }
 
 func (s RunService) UploadPlanLogs(id string, logs []byte) error {

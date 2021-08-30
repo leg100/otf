@@ -59,7 +59,7 @@ func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdateApplyStatus(tfe.ApplyQueued)
+		run.UpdateStatus(tfe.RunApplyQueued)
 
 		return nil
 	})
@@ -138,30 +138,6 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 	return s.db.Update(id, func(run *ots.Run) error {
 		return run.UpdateStatus(status)
 	})
-}
-
-func (s RunService) UpdatePlanStatus(id string, status tfe.PlanStatus) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdatePlanStatus(status)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return run, nil
-}
-
-func (s RunService) UpdateApplyStatus(id string, status tfe.ApplyStatus) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.UpdateApplyStatus(status)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return run, nil
 }
 
 // UploadPlan persists a run's plan file. The plan file is expected to have been

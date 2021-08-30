@@ -92,7 +92,7 @@ func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
 		if runErr != nil {
 			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
 
-			_, err := s.RunService.UpdatePlanStatus(run.ID, tfe.PlanErrored)
+			_, err := s.RunService.UpdateStatus(run.ID, tfe.RunErrored)
 			if err != nil {
 				s.Error(err, "unable to update plan status", "run", run.ID)
 			}
@@ -111,7 +111,7 @@ func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
 		if runErr != nil {
 			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
 
-			_, err := s.RunService.UpdateApplyStatus(run.ID, tfe.ApplyErrored)
+			_, err := s.RunService.UpdateStatus(run.ID, tfe.RunErrored)
 			if err != nil {
 				s.Error(err, "unable to update apply status", "run", run.ID)
 			}

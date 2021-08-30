@@ -2,7 +2,6 @@ package agent
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
 
@@ -25,7 +24,7 @@ func NewApplyRunner(run *ots.Run,
 			DeleteBackendStep,
 			DownloadPlanFileStep(run, rs),
 			DownloadStateStep(run, svs, log),
-			UpdateApplyStatusStep(run, rs, tfe.ApplyRunning),
+			UpdateApplyStatusStep(run, rs),
 			InitStep,
 			ApplyStep,
 			UploadStateStep(run, svs),
