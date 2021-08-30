@@ -133,7 +133,7 @@ func (r *Run) FinishPlan(opts PlanFinishOptions) {
 	r.Plan.ResourceChanges = opts.ResourceChanges
 	r.Plan.ResourceDestructions = opts.ResourceDestructions
 
-	r.UpdatePlanStatus(tfe.PlanFinished)
+	r.UpdateStatus(tfe.RunPlanned)
 }
 
 // FinishApply updates the state of a run to reflect its plan having finished
@@ -142,7 +142,7 @@ func (r *Run) FinishApply(opts ApplyFinishOptions) {
 	r.Apply.ResourceChanges = opts.ResourceChanges
 	r.Apply.ResourceDestructions = opts.ResourceDestructions
 
-	r.UpdateApplyStatus(tfe.ApplyFinished)
+	r.UpdateStatus(tfe.RunApplied)
 }
 
 // UpdateStatusToPlanQueued updates a run's status to indicate its plan has been
@@ -181,6 +181,8 @@ func (r *Run) IssueCancel() error {
 	// Run can be forcefully cancelled after a cool-off period of ten seconds
 	r.ForceCancelAvailableAt = time.Now().Add(10 * time.Second)
 
+	r.UpdateStatus(tfe.RunCanceled)
+
 	return nil
 }
 
@@ -191,19 +193,7 @@ func (r *Run) ForceCancel() error {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	// Put plan or apply into cancel state
-	switch r.Status {
-	case tfe.RunPlanQueued, tfe.RunPlanning:
-		r.Plan.Status = tfe.PlanCanceled
-		r.Plan.StatusTimestamps.CanceledAt = TimeNow()
-	case tfe.RunApplyQueued, tfe.RunApplying:
-		r.Apply.Status = tfe.ApplyCanceled
-		r.Apply.StatusTimestamps.CanceledAt = TimeNow()
-	}
-
-	// Put run into a cancel state
-	r.Status = tfe.RunCanceled
-	r.StatusTimestamps.CanceledAt = TimeNow()
+	r.StatusTimestamps.ForceCanceledAt = TimeNow()
 
 	return nil
 }
@@ -282,124 +272,74 @@ func (e ErrInvalidRunStatusTransition) Error() string {
 	return fmt.Sprintf("invalid run status transition from %s to %s", e.From, e.To)
 }
 
-// UpdateStatus updates the status of the run.
+func (r *Run) IsSpeculative() bool {
+	return r.ConfigurationVersion.Speculative
+}
+
+// UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status tfe.RunStatus) error {
+	r.Status = status
+	r.setTimestamp(status)
+
 	switch status {
+	case tfe.RunPending:
+		r.Plan.UpdateStatus(tfe.PlanPending)
 	case tfe.RunPlanQueued:
-		if r.Status != tfe.RunPending {
-			return ErrInvalidRunStatusTransition{From: r.Status, To: status}
-		}
-		r.UpdateStatusToPlanQueued()
-	case tfe.RunDiscarded:
-		return r.Discard()
+		r.Plan.UpdateStatus(tfe.PlanQueued)
+	case tfe.RunPlanning:
+		r.Plan.UpdateStatus(tfe.PlanRunning)
+	case tfe.RunPlanned, tfe.RunPlannedAndFinished:
+		r.Plan.UpdateStatus(tfe.PlanFinished)
 	case tfe.RunApplyQueued:
-		r.Status = tfe.RunApplyQueued
-		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
-
-		r.Apply.Status = tfe.ApplyQueued
-		r.Apply.StatusTimestamps.QueuedAt = TimeNow()
+		r.Apply.UpdateStatus(tfe.ApplyQueued)
+	case tfe.RunApplying:
+		r.Apply.UpdateStatus(tfe.ApplyRunning)
 	case tfe.RunApplied:
-		r.Status = tfe.RunApplied
-		r.StatusTimestamps.AppliedAt = TimeNow()
-
-		r.Apply.Status = tfe.ApplyFinished
-		r.Apply.StatusTimestamps.FinishedAt = TimeNow()
+		r.Apply.UpdateStatus(tfe.ApplyFinished)
 	case tfe.RunErrored:
-		r.Status = tfe.RunErrored
-		r.StatusTimestamps.ErroredAt = TimeNow()
-
-		// TODO: determine whether to set status to errored on plan or apply
-	default:
-		// TODO: log no matching status
-
-		// Don't set a status or timestamp
-		return nil
+		switch r.Status {
+		case tfe.RunPlanning:
+			r.Plan.UpdateStatus(tfe.PlanErrored)
+		case tfe.RunApplying:
+			r.Apply.UpdateStatus(tfe.ApplyErrored)
+		}
+	case tfe.RunCanceled:
+		switch r.Status {
+		case tfe.RunPlanQueued, tfe.RunPlanning:
+			r.Plan.UpdateStatus(tfe.PlanCanceled)
+		case tfe.RunApplyQueued, tfe.RunApplying:
+			r.Apply.UpdateStatus(tfe.ApplyCanceled)
+		}
 	}
 
 	return nil
 }
 
-func (r *Run) IsSpeculative() bool {
-	return r.ConfigurationVersion.Speculative
-}
-
-// UpdatePlanStatus updates the status of the plan. It'll also update the
-// appropriate timestamp and set any other appropriate fields for the given
-// status.
-func (r *Run) UpdatePlanStatus(status tfe.PlanStatus) {
-	// Copy timestamps from plan
-	timestamps := &tfe.PlanStatusTimestamps{}
-	if r.StatusTimestamps != nil {
-		timestamps = r.Plan.StatusTimestamps
-	}
-
+func (r *Run) setTimestamp(status tfe.RunStatus) {
 	switch status {
-	case tfe.PlanQueued:
-		timestamps.QueuedAt = TimeNow()
-		r.UpdateStatus(tfe.RunPlanQueued)
-	case tfe.PlanRunning:
-		timestamps.StartedAt = TimeNow()
-		r.UpdateStatus(tfe.RunPlanning)
-	case tfe.PlanCanceled:
-		timestamps.CanceledAt = TimeNow()
-	case tfe.PlanErrored:
-		r.UpdateStatus(tfe.RunErrored)
-		timestamps.ErroredAt = TimeNow()
-	case tfe.PlanFinished:
-
-		if r.ConfigurationVersion.Speculative {
-			r.Status = tfe.RunPlannedAndFinished
-			r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
-			timestamps.FinishedAt = TimeNow()
-		} else {
-			r.Status = tfe.RunPlanned
-			timestamps.FinishedAt = TimeNow()
-		}
-	default:
-		// Don't set a timestamp
-		return
+	case tfe.RunPending:
+		r.StatusTimestamps.PlanQueueableAt = TimeNow()
+	case tfe.RunPlanQueued:
+		r.StatusTimestamps.PlanQueuedAt = TimeNow()
+	case tfe.RunPlanning:
+		r.StatusTimestamps.PlanningAt = TimeNow()
+	case tfe.RunPlanned:
+		r.StatusTimestamps.PlannedAt = TimeNow()
+	case tfe.RunPlannedAndFinished:
+		r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
+	case tfe.RunApplyQueued:
+		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
+	case tfe.RunApplying:
+		r.StatusTimestamps.ApplyingAt = TimeNow()
+	case tfe.RunApplied:
+		r.StatusTimestamps.AppliedAt = TimeNow()
+	case tfe.RunErrored:
+		r.StatusTimestamps.ErroredAt = TimeNow()
+	case tfe.RunCanceled:
+		r.StatusTimestamps.CanceledAt = TimeNow()
+	case tfe.RunDiscarded:
+		r.StatusTimestamps.DiscardedAt = TimeNow()
 	}
-
-	r.Plan.Status = status
-
-	// Set timestamps on plan
-	r.Plan.StatusTimestamps = timestamps
-}
-
-// UpdateApplyStatus updates the status of the apply. It'll also update the
-// appropriate timestamp and set any other appropriate fields for the given
-// status.
-func (r *Run) UpdateApplyStatus(status tfe.ApplyStatus) {
-	// Copy timestamps from apply
-	timestamps := &tfe.ApplyStatusTimestamps{}
-	if r.StatusTimestamps != nil {
-		timestamps = r.Apply.StatusTimestamps
-	}
-
-	switch status {
-	case tfe.ApplyFinished:
-		timestamps.FinishedAt = TimeNow()
-		r.UpdateStatus(tfe.RunApplied)
-	case tfe.ApplyRunning:
-		timestamps.StartedAt = TimeNow()
-		r.UpdateStatus(tfe.RunApplying)
-	case tfe.ApplyQueued:
-		timestamps.QueuedAt = TimeNow()
-		r.UpdateStatus(tfe.RunApplyQueued)
-	case tfe.ApplyCanceled:
-		timestamps.CanceledAt = TimeNow()
-	case tfe.ApplyErrored:
-		timestamps.ErroredAt = TimeNow()
-		r.UpdateStatus(tfe.RunErrored)
-	default:
-		// Don't set a timestamp
-		return
-	}
-
-	r.Apply.Status = status
-
-	// Set timestamps on apply
-	r.Apply.StatusTimestamps = timestamps
 }
 
 // NewRun constructs a run object.
