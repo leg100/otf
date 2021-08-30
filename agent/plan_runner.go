@@ -28,6 +28,8 @@ func NewPlanRunner(run *ots.Run,
 			InitStep,
 			PlanStep,
 			JSONPlanStep,
+			UploadPlanStep(run, rs),
+			UploadJSONPlanStep(run, rs),
 			FinishPlanStep(run, rs, log),
 		},
 	)

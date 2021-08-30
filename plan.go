@@ -53,12 +53,6 @@ type PlanFinishOptions struct {
 	ResourceAdditions    int `jsonapi:"attr,resource-additions"`
 	ResourceChanges      int `jsonapi:"attr,resource-changes"`
 	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
-
-	// The execution plan file
-	Plan []byte `jsonapi:"attr,plan"`
-
-	// The execution plan file in json format
-	PlanJSON []byte `jsonapi:"attr,plan-json"`
 }
 
 func newPlan() *Plan {

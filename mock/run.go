@@ -27,6 +27,7 @@ type RunService struct {
 	FinishApplyFn       func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
 	GetPlanJSONFn       func(id string) ([]byte, error)
 	GetPlanFileFn       func(id string) ([]byte, error)
+	UploadPlanFn        func(id string, plan []byte, json bool) error
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
@@ -103,4 +104,8 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 
 func (s RunService) GetPlanFile(id string) ([]byte, error) {
 	return s.GetPlanFileFn(id)
+}
+
+func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+	return s.UploadPlanFn(id, plan, json)
 }
