@@ -53,3 +53,23 @@ func newApply() *Apply {
 		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
 	}
 }
+
+func (a *Apply) UpdateStatus(status tfe.ApplyStatus) {
+	a.Status = status
+	a.setTimestamp(status)
+}
+
+func (a *Apply) setTimestamp(status tfe.ApplyStatus) {
+	switch status {
+	case tfe.ApplyCanceled:
+		a.StatusTimestamps.CanceledAt = TimeNow()
+	case tfe.ApplyErrored:
+		a.StatusTimestamps.ErroredAt = TimeNow()
+	case tfe.ApplyFinished:
+		a.StatusTimestamps.FinishedAt = TimeNow()
+	case tfe.ApplyQueued:
+		a.StatusTimestamps.QueuedAt = TimeNow()
+	case tfe.ApplyRunning:
+		a.StatusTimestamps.StartedAt = TimeNow()
+	}
+}

@@ -69,3 +69,23 @@ func (p *Plan) HasChanges() bool {
 	}
 	return false
 }
+
+func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
+	p.Status = status
+	p.setTimestamp(status)
+}
+
+func (p *Plan) setTimestamp(status tfe.PlanStatus) {
+	switch status {
+	case tfe.PlanCanceled:
+		p.StatusTimestamps.CanceledAt = TimeNow()
+	case tfe.PlanErrored:
+		p.StatusTimestamps.ErroredAt = TimeNow()
+	case tfe.PlanFinished:
+		p.StatusTimestamps.FinishedAt = TimeNow()
+	case tfe.PlanQueued:
+		p.StatusTimestamps.QueuedAt = TimeNow()
+	case tfe.PlanRunning:
+		p.StatusTimestamps.StartedAt = TimeNow()
+	}
+}

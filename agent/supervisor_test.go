@@ -40,11 +40,11 @@ func TestSupervisor_Start(t *testing.T) {
 // TestSupervisor_StartError tests starting up the agent daemon and tests it handling
 // it a single job that errors
 func TestSupervisor_StartError(t *testing.T) {
-	// Mock run service and capture the plan status it receives
-	got := make(chan tfe.PlanStatus)
+	// Mock run service and capture the run status it receives
+	got := make(chan tfe.RunStatus)
 	runService := &mock.RunService{
 		UploadPlanLogsFn: func(id string, _ []byte) error { return nil },
-		UpdatePlanStatusFn: func(id string, status tfe.PlanStatus) (*ots.Run, error) {
+		UpdateStatusFn: func(id string, status tfe.RunStatus) (*ots.Run, error) {
 			got <- status
 			return nil, nil
 		},
@@ -63,6 +63,6 @@ func TestSupervisor_StartError(t *testing.T) {
 
 	go supervisor.Start(context.Background())
 
-	// assert agent correctly propagates a plan errored status update
-	assert.Equal(t, tfe.PlanErrored, <-got)
+	// assert agent correctly propagates an errored status update
+	assert.Equal(t, tfe.RunErrored, <-got)
 }
