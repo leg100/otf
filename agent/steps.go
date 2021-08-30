@@ -61,12 +61,40 @@ func UpdateApplyStatusStep(run *ots.Run, rs ots.RunService, status tfe.ApplyStat
 	})
 }
 
-func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
+func UploadPlanStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
 	return ots.NewFuncStep(func(ctx context.Context, path string) error {
 		file, err := os.ReadFile(filepath.Join(path, PlanFilename))
 		if err != nil {
 			return err
 		}
+
+		// Upload plan
+		if err := rs.UploadPlan(run.ID, file, false); err != nil {
+			return fmt.Errorf("unable to upload plan: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func UploadJSONPlanStep(run *ots.Run, rs ots.RunService) *ots.FuncStep {
+	return ots.NewFuncStep(func(ctx context.Context, path string) error {
+		jsonFile, err := os.ReadFile(filepath.Join(path, JSONPlanFilename))
+		if err != nil {
+			return err
+		}
+
+		// Upload plan
+		if err := rs.UploadPlan(run.ID, jsonFile, true); err != nil {
+			return fmt.Errorf("unable to upload JSON plan: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.FuncStep {
+	return ots.NewFuncStep(func(ctx context.Context, path string) error {
 		jsonFile, err := os.ReadFile(filepath.Join(path, JSONPlanFilename))
 		if err != nil {
 			return err
@@ -85,8 +113,6 @@ func FinishPlanStep(run *ots.Run, rs ots.RunService, logger logr.Logger) *ots.Fu
 			ResourceAdditions:    adds,
 			ResourceChanges:      updates,
 			ResourceDestructions: deletes,
-			Plan:                 file,
-			PlanJSON:             jsonFile,
 		})
 		if err != nil {
 			return fmt.Errorf("unable to finish plan: %w", err)
