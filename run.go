@@ -262,9 +262,6 @@ func (r *Run) IsSpeculative() bool {
 
 // UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status tfe.RunStatus) error {
-	r.Status = status
-	r.setTimestamp(status)
-
 	switch status {
 	case tfe.RunPending:
 		r.Plan.UpdateStatus(tfe.PlanPending)
@@ -295,6 +292,9 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) error {
 			r.Apply.UpdateStatus(tfe.ApplyCanceled)
 		}
 	}
+
+	r.Status = status
+	r.setTimestamp(status)
 
 	// TODO: determine when tfe.ApplyUnreachable is applicable and set
 	// accordingly
