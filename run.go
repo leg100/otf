@@ -155,9 +155,9 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// IssueCancel updates the state of a run to reflect a cancel request having
+// Cancel updates the state of a run to reflect a cancel request having
 // been issued.
-func (r *Run) IssueCancel() error {
+func (r *Run) Cancel() error {
 	if !r.IsCancelable() {
 		return ErrRunCancelNotAllowed
 	}

@@ -89,18 +89,7 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 // or apply.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
-		if err := run.IssueCancel(); err != nil {
-			return err
-		}
-
-		// Immediately mark pending/queued runs as cancelled
-		switch run.Status {
-		case tfe.RunPending, tfe.RunPlanQueued, tfe.RunApplyQueued:
-			run.Status = tfe.RunCanceled
-			run.StatusTimestamps.CanceledAt = ots.TimeNow()
-		}
-
-		return nil
+		return run.Cancel()
 	})
 	return err
 }
