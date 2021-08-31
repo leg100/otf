@@ -50,6 +50,10 @@ func New(path string, opts ...Option) (*gorm.DB, error) {
 	}
 	sqlDB.SetMaxOpenConns(1)
 
+	// Enable WAL. SQLite performs better with the WAL because it allows
+	// multiple readers to operate while data is being written.
+	db.Exec(`PRAGMA journal_mode = wal;`)
+
 	if err := db.AutoMigrate(models...); err != nil {
 		return nil, err
 	}
