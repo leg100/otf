@@ -75,10 +75,10 @@ type RunService interface {
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
 	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
-	GetPlanLogs(id string, opts PlanLogOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte) error
-	GetApplyLogs(id string, opts ApplyLogOptions) ([]byte, error)
-	UploadApplyLogs(id string, logs []byte) error
+	GetPlanLogs(id string, opts GetLogOptions) ([]byte, error)
+	UploadPlanLogs(id string, logs []byte, opts AppendLogOptions) error
+	GetApplyLogs(id string, opts GetLogOptions) ([]byte, error)
+	UploadApplyLogs(id string, logs []byte, opts AppendLogOptions) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)

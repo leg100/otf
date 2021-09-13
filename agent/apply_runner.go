@@ -16,6 +16,7 @@ func NewApplyRunner(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
+	runLogger ots.RunLogger,
 	log logr.Logger) *ots.Runner {
 
 	return ots.NewRunner(
@@ -30,5 +31,8 @@ func NewApplyRunner(run *ots.Run,
 			UploadStateStep(run, svs),
 			FinishApplyStep(run, rs, log),
 		},
+		runLogger,
+		log,
+		run.ID,
 	)
 }

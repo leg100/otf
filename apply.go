@@ -24,7 +24,7 @@ type Apply struct {
 	Status               tfe.ApplyStatus
 	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
-	Logs []byte
+	Logs
 }
 
 // ApplyFinishOptions represents the options for finishing an apply.
@@ -37,14 +37,6 @@ type ApplyFinishOptions struct {
 	ResourceAdditions    int `jsonapi:"attr,resource-additions"`
 	ResourceChanges      int `jsonapi:"attr,resource-changes"`
 	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
-}
-
-type ApplyLogOptions struct {
-	// The maximum number of bytes of logs to return to the client
-	Limit int `schema:"limit"`
-
-	// The start position in the logs from which to send to the client
-	Offset int `schema:"offset"`
 }
 
 func newApply() *Apply {

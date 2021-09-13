@@ -1,9 +1,7 @@
 package agent
 
 import (
-	"bytes"
 	"context"
-	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
@@ -13,6 +11,14 @@ import (
 const (
 	DefaultConcurrency = 5
 )
+
+type newRunnerFn func(
+	*ots.Run,
+	ots.ConfigurationVersionService,
+	ots.StateVersionService,
+	ots.RunService,
+	ots.RunLogger,
+	logr.Logger) *ots.Runner
 
 // Supervisor supervises jobs
 type Supervisor struct {
@@ -28,10 +34,10 @@ type Supervisor struct {
 	Spooler
 
 	// Overridable plan runner constructor for testing purposes
-	planRunnerFn NewPlanRunnerFn
+	planRunnerFn newRunnerFn
 
 	// Overridable apply runner constructor for testing purposes
-	applyRunnerFn NewApplyRunnerFn
+	applyRunnerFn newRunnerFn
 }
 
 func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
@@ -65,58 +71,28 @@ func (s *Supervisor) startWorkers(ctx context.Context) {
 }
 
 func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
-	path, err := os.MkdirTemp("", "ots-plan")
-	if err != nil {
-		// TODO: update run status with error
-		s.Error(err, "unable to create temp path")
-		return
-	}
+	s.Info("processing job", "run", run.ID, "status", run.Status)
 
-	s.Info("processing job", "run", run.ID, "status", run.Status, "dir", path)
-
-	// For logs
-	out := new(bytes.Buffer)
-
+	var runner *ots.Runner
 	switch run.Status {
 	case tfe.RunPlanQueued:
-		runner := s.planRunnerFn(run, s.ConfigurationVersionService,
-			s.StateVersionService, s.RunService, s.Logger)
-
-		runErr := runner.Run(ctx, path, out)
-
-		// Upload logs regardless of runner error
-		if err := s.RunService.UploadPlanLogs(run.ID, out.Bytes()); err != nil {
-			s.Error(err, "unable to upload plan logs", "run", run.ID)
-		}
-
-		if runErr != nil {
-			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
-
-			_, err := s.RunService.UpdateStatus(run.ID, tfe.RunErrored)
-			if err != nil {
-				s.Error(err, "unable to update plan status", "run", run.ID)
-			}
-		}
+		runner = s.planRunnerFn(run, s.ConfigurationVersionService,
+			s.StateVersionService, s.RunService, s.RunService.UploadPlanLogs,
+			s.Logger)
 	case tfe.RunApplyQueued:
-		runner := s.applyRunnerFn(run, s.ConfigurationVersionService,
-			s.StateVersionService, s.RunService, s.Logger)
-
-		runErr := runner.Run(ctx, path, out)
-
-		// Upload logs regardless of runner error
-		if err := s.RunService.UploadApplyLogs(run.ID, out.Bytes()); err != nil {
-			s.Error(err, "unable to upload apply logs", "run", run.ID)
-		}
-
-		if runErr != nil {
-			s.Error(runErr, "unable to process run", "run", run.ID, "status", run.Status)
-
-			_, err := s.RunService.UpdateStatus(run.ID, tfe.RunErrored)
-			if err != nil {
-				s.Error(err, "unable to update apply status", "run", run.ID)
-			}
-		}
+		runner = s.applyRunnerFn(run, s.ConfigurationVersionService,
+			s.StateVersionService, s.RunService, s.RunService.UploadApplyLogs,
+			s.Logger)
 	default:
 		s.Error(nil, "unexpected run status", "status", run.Status)
+	}
+
+	if err := runner.Run(ctx); err != nil {
+		s.Error(err, "unable to process run", "run", run.ID, "status", run.Status)
+
+		_, err := s.RunService.UpdateStatus(run.ID, tfe.RunErrored)
+		if err != nil {
+			s.Error(err, "unable to update status", "run", run.ID)
+		}
 	}
 }

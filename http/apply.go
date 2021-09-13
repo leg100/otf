@@ -25,7 +25,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.ApplyLogOptions
+	var opts ots.GetLogOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -53,7 +53,14 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.UploadApplyLogs(vars["id"], buf.Bytes()); err != nil {
+	var opts ots.AppendLogOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.UploadApplyLogs(vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

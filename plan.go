@@ -21,7 +21,7 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *tfe.PlanStatusTimestamps
 
-	Logs []byte
+	Logs
 
 	// The blob ID of the execution plan file
 	PlanFileBlobID string
@@ -33,14 +33,6 @@ type Plan struct {
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
-}
-
-type PlanLogOptions struct {
-	// The maximum number of bytes of logs to return to the client
-	Limit int `schema:"limit"`
-
-	// The start position in the logs from which to send to the client
-	Offset int `schema:"offset"`
 }
 
 // PlanFinishOptions represents the options for finishing a plan.

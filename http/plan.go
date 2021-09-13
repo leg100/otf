@@ -25,13 +25,6 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.PlanLogOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
 	json, err := s.PlanService.GetPlanJSON(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
@@ -47,7 +40,7 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.PlanLogOptions
+	var opts ots.GetLogOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -75,7 +68,14 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.UploadPlanLogs(vars["id"], buf.Bytes()); err != nil {
+	var opts ots.AppendLogOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.UploadPlanLogs(vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

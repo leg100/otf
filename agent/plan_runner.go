@@ -5,17 +5,11 @@ import (
 	"github.com/leg100/ots"
 )
 
-type NewPlanRunnerFn func(
-	*ots.Run,
-	ots.ConfigurationVersionService,
-	ots.StateVersionService,
-	ots.RunService,
-	logr.Logger) *ots.Runner
-
 func NewPlanRunner(run *ots.Run,
 	cvs ots.ConfigurationVersionService,
 	svs ots.StateVersionService,
 	rs ots.RunService,
+	runLogger ots.RunLogger,
 	log logr.Logger) *ots.Runner {
 
 	return ots.NewRunner(
@@ -31,5 +25,8 @@ func NewPlanRunner(run *ots.Run,
 			UploadJSONPlanStep(run, rs),
 			FinishPlanStep(run, rs, log),
 		},
+		runLogger,
+		log,
+		run.ID,
 	)
 }
