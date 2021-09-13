@@ -5,10 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	MaxPlanLogsLimit = 65536
-)
-
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	ID string
@@ -23,11 +19,11 @@ type Plan struct {
 
 	Logs
 
-	// The blob ID of the execution plan file
-	PlanFileBlobID string
+	// PlanFile is the execution plan file in binary format
+	PlanFile Blob
 
-	// The blob ID of the execution plan file in json format
-	PlanJSONBlobID string
+	// PlanJSON is execution plan file in json format
+	PlanJSON Blob
 }
 
 type PlanService interface {

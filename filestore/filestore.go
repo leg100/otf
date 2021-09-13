@@ -43,8 +43,19 @@ func NewFilestore(path string) (*FileStore, error) {
 	return &FileStore{path: path}, nil
 }
 
-func (fs *FileStore) Get(id string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(fs.path, id))
+func (fs *FileStore) Get(b ots.Blob) ([]byte, error) {
+	return os.ReadFile(filepath.Join(fs.path, string(b)))
+}
+
+func (fs *FileStore) GetChunk(b ots.Blob, opts ots.GetBlobOptions) ([]byte, error) {
+	f, err := fs.Get(b)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(f) == 0 {
+		return nil, nil
+	}
 }
 
 func (fs *FileStore) Put(blob []byte) (string, error) {
@@ -55,6 +66,16 @@ func (fs *FileStore) Put(blob []byte) (string, error) {
 	}
 
 	return id, nil
+}
+
+func (fs *FileStore) Create(blob []byte) (ots.Blob, error) {
+	id := newID()
+
+	if err := os.WriteFile(filepath.Join(fs.path, id), blob, 0644); err != nil {
+		return "", err
+	}
+
+	return ots.Blob(id), nil
 }
 
 func (fs *FileStore) Path() string {

@@ -51,5 +51,5 @@ func (s StateVersionService) Download(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return s.bs.Get(sv.BlobID)
+	return s.bs.Get(sv.Blob)
 }

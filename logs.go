@@ -2,6 +2,12 @@ package ots
 
 import "fmt"
 
+const (
+	MaxLogsLimit    = 65536
+	StartLogsMarker = byte(2)
+	EndLogsMarker   = byte(3)
+)
+
 // Logs is the output from a terraform task, with options for getting and
 // appending a 'chunk' of logs
 type Logs []byte
@@ -32,8 +38,8 @@ func (l Logs) Get(opts GetLogOptions) ([]byte, error) {
 		return nil, fmt.Errorf("offset cannot be bigger than total logs")
 	}
 
-	if opts.Limit > MaxPlanLogsLimit {
-		opts.Limit = MaxPlanLogsLimit
+	if opts.Limit > MaxLogsLimit {
+		opts.Limit = MaxLogsLimit
 	}
 
 	// Ensure specified chunk does not exceed slice length
@@ -47,14 +53,12 @@ func (l Logs) Get(opts GetLogOptions) ([]byte, error) {
 // Append appends a log chunk.
 func (l *Logs) Append(logs []byte, opts AppendLogOptions) {
 	if opts.Start {
-		// Add start marker
-		*l = []byte{byte(2)}
+		*l = []byte{StartLogsMarker}
 	}
 
 	*l = append(*l, logs...)
 
 	if opts.End {
-		// Add end marker
-		*l = append(*l, byte(3))
+		*l = append(*l, EndLogsMarker)
 	}
 }

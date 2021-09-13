@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -131,16 +133,16 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 // produced using `terraform plan`. If the plan file is JSON serialized then set
 // json to true.
 func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	blobID, err := s.bs.Put(plan)
+	blob, err := s.bs.Create(plan)
 	if err != nil {
 		return err
 	}
 
 	_, err = s.db.Update(id, func(run *ots.Run) error {
 		if json {
-			run.Plan.PlanJSONBlobID = blobID
+			run.Plan.PlanJSON = blob
 		} else {
-			run.Plan.PlanFileBlobID = blobID
+			run.Plan.PlanFile = blob
 		}
 
 		return nil
@@ -182,7 +184,7 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanJSONBlobID)
+	return s.bs.Get(run.Plan.PlanJSON)
 }
 
 // GetPlanFile returns the binary plan file for the run.
@@ -191,41 +193,86 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanFileBlobID)
+	return s.bs.Get(run.Plan.PlanFile)
 }
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetPlanLogs(id string, opts ots.PlanLogOptions) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
-	return run.Plan.Logs.Get(opts)
+	logs := run.Plan.Logs
+
+	// Add start marker
+	logs = append([]byte{byte(2)}, logs...)
+
+	// Add end marker
+	logs = append(logs, byte(3))
+
+	if opts.Offset > len(logs) {
+		return nil, fmt.Errorf("offset cannot be bigger than total logs")
+	}
+
+	if opts.Limit > ots.MaxLogsLimit {
+		opts.Limit = ots.MaxLogsLimit
+	}
+
+	// Ensure specified chunk does not exceed slice length
+	if (opts.Offset + opts.Limit) > len(logs) {
+		opts.Limit = len(logs) - opts.Offset
+	}
+
+	resp := logs[opts.Offset:(opts.Offset + opts.Limit)]
+
+	return resp, nil
 }
 
 // GetApplyLogs returns logs from the apply of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetApplyLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetApplyLogs(id string, opts ots.ApplyLogOptions) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}
-	return run.Apply.Logs.Get(opts)
+	logs := run.Apply.Logs
+
+	// Add start marker
+	logs = append([]byte{byte(2)}, logs...)
+
+	// Add end marker
+	logs = append(logs, byte(3))
+
+	if opts.Offset > len(logs) {
+		return nil, fmt.Errorf("offset cannot be bigger than total logs")
+	}
+
+	if opts.Limit > ots.MaxApplyLogsLimit {
+		opts.Limit = ots.MaxApplyLogsLimit
+	}
+
+	// Ensure specified chunk does not exceed slice length
+	if (opts.Offset + opts.Limit) > len(logs) {
+		opts.Limit = len(logs) - opts.Offset
+	}
+
+	resp := logs[opts.Offset:(opts.Offset + opts.Limit)]
+
+	return resp, nil
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
+func (s RunService) UploadPlanLogs(id string, logs []byte) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Plan.Logs.Append(logs, opts)
+		run.Plan.Logs = logs
 
 		return nil
 	})
 	return err
 }
-
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
+func (s RunService) UploadApplyLogs(id string, logs []byte) error {
 	_, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Apply.Logs.Append(logs, opts)
+		run.Apply.Logs = logs
 
 		return nil
 	})

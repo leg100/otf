@@ -5,10 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	MaxApplyLogsLimit = 65536
-)
-
 type ApplyService interface {
 	Get(id string) (*Apply, error)
 }
