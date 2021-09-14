@@ -20,7 +20,7 @@ type Apply struct {
 	Status               tfe.ApplyStatus
 	StatusTimestamps     *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Logs ots.BlobID
+	LogsBlobID string
 
 	// Apply belongs to a run
 	RunID uint
@@ -65,7 +65,7 @@ func (model *Apply) ToDomain() *ots.Apply {
 		ResourceDestructions: model.ResourceDestructions,
 		Status:               model.Status,
 		StatusTimestamps:     &tfe.ApplyStatusTimestamps{},
-		Logs:                 model.Logs,
+		LogsBlobID:           model.LogsBlobID,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {
@@ -103,7 +103,7 @@ func (model *Apply) FromDomain(domain *ots.Apply) {
 	model.ResourceChanges = domain.ResourceChanges
 	model.ResourceDestructions = domain.ResourceDestructions
 	model.Status = domain.Status
-	model.Logs = domain.Logs
+	model.LogsBlobID = domain.LogsBlobID
 
 	if domain.StatusTimestamps.CanceledAt != nil {
 		model.StatusTimestamps.CanceledAt.Time = *domain.StatusTimestamps.CanceledAt

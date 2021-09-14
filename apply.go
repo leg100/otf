@@ -21,7 +21,7 @@ type Apply struct {
 	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
 	// Logs is the blob ID for the log output from a terraform apply
-	Logs BlobID
+	LogsBlobID string
 }
 
 // ApplyFinishOptions represents the options for finishing an apply.
@@ -40,6 +40,7 @@ func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
 		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		LogsBlobID:       NewBlobID(),
 	}
 }
 

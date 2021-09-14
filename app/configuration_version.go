@@ -47,13 +47,11 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*ots.Configu
 
 // Upload a configuration version blob
 func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
-	blob, err := s.bs.Create(configuration, ots.CreateBlobOptions{})
-	if err != nil {
-		return err
-	}
+	_, err := s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
+		if err := s.bs.Put(cv.BlobID, configuration); err != nil {
+			return err
+		}
 
-	_, err = s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
-		cv.BlobID = blob
 		cv.Status = tfe.ConfigurationUploaded
 
 		return nil

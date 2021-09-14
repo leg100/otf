@@ -39,7 +39,7 @@ type ConfigurationVersion struct {
 	StatusTimestamps *tfe.CVStatusTimestamps
 
 	// BlobID is the ID of the blob containing the configuration
-	BlobID BlobID
+	BlobID string
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
@@ -95,6 +95,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        tfe.ConfigurationPending,
 		Source:        DefaultConfigurationSource,
+		BlobID:        NewBlobID(),
 	}
 
 	if opts.AutoQueueRuns != nil {

@@ -11,6 +11,7 @@ type LogsWriter struct {
 
 func (lw *LogsWriter) Write(p []byte) (int, error) {
 	if err := lw.runLogger(lw.runID, p, PutChunkOptions{}); err != nil {
+		lw.Error(err, "unable to write logs")
 		return 0, err
 	}
 

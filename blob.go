@@ -17,26 +17,20 @@ const (
 	ChunkEndMarker = byte(3)
 )
 
-// BlobID is a binary object identifier
-type BlobID string
-
 // BlobStore implementations provide a persistent store from and to which binary
 // objects can be fetched and uploaded.
 type BlobStore interface {
 	// Get fetches a blob
-	Get(BlobID) ([]byte, error)
+	Get(string) ([]byte, error)
 
 	// Get fetches a blob chunk
-	GetChunk(BlobID, GetChunkOptions) ([]byte, error)
+	GetChunk(string, GetChunkOptions) ([]byte, error)
 
 	// Put uploads a blob
-	Put(BlobID, []byte) error
+	Put(string, []byte) error
 
 	// Put uploads a blob chunk
-	PutChunk(BlobID, []byte, PutChunkOptions) error
-
-	// Create creates a new blob
-	Create([]byte, CreateBlobOptions) (BlobID, error)
+	PutChunk(string, []byte, PutChunkOptions) error
 }
 
 type GetChunkOptions struct {
@@ -52,14 +46,9 @@ type PutChunkOptions struct {
 	End bool `schema:"end"`
 }
 
-type CreateBlobOptions struct {
-	// Chunked is whether the blob is split into chunks.
-	Chunked bool `schema:"chunked"`
-}
-
 // NewBlobID generates a unique blob ID
-func NewBlobID() BlobID {
-	return BlobID(uuid.NewString())
+func NewBlobID() string {
+	return uuid.NewString()
 }
 
 // GetChunk retrieves a chunk of bytes from a byte slice. The first chunk in the

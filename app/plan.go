@@ -32,5 +32,5 @@ func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanJSON)
+	return s.bs.Get(run.Plan.PlanJSONBlobID)
 }

@@ -48,12 +48,12 @@ func NewFilestore(path string) (*FileStore, error) {
 }
 
 // Get retrieves a complete blob.
-func (fs *FileStore) Get(bid ots.BlobID) ([]byte, error) {
+func (fs *FileStore) Get(bid string) ([]byte, error) {
 	return os.ReadFile(fs.fpath(bid, false))
 }
 
 // GetChunk retrieves a chunk of bytes of the blob.
-func (fs *FileStore) GetChunk(bid ots.BlobID, opts ots.GetChunkOptions) ([]byte, error) {
+func (fs *FileStore) GetChunk(bid string, opts ots.GetChunkOptions) ([]byte, error) {
 	complete := true
 
 	// Check whether complete or incomplete file exists
@@ -74,13 +74,13 @@ func (fs *FileStore) GetChunk(bid ots.BlobID, opts ots.GetChunkOptions) ([]byte,
 }
 
 // Put writes a complete blob in one go.
-func (fs *FileStore) Put(bid ots.BlobID, p []byte) error {
+func (fs *FileStore) Put(bid string, p []byte) error {
 	return os.WriteFile(fs.fpath(bid, false), p, Perms)
 }
 
 // PutChunk writes a chunk of bytes of a blob.
-func (fs *FileStore) PutChunk(bid ots.BlobID, chunk []byte, opts ots.PutChunkOptions) error {
-	f, err := os.OpenFile(fs.fpath(bid, true), os.O_APPEND, Perms)
+func (fs *FileStore) PutChunk(bid string, chunk []byte, opts ots.PutChunkOptions) error {
+	f, err := os.OpenFile(fs.fpath(bid, true), os.O_CREATE|os.O_APPEND|os.O_WRONLY, Perms)
 	if err != nil {
 		return err
 	}
@@ -92,10 +92,13 @@ func (fs *FileStore) PutChunk(bid ots.BlobID, chunk []byte, opts ots.PutChunkOpt
 
 	// Is last chunk?
 	if opts.End {
-		f.Close() // Must close file before moving it
+		// Must close file before moving it
+		if err := f.Close(); err != nil {
+			return err
+		}
 
 		// blob.incomplete -> blob
-		if err := os.Link(fs.fpath(bid, true), fs.fpath(bid, false)); err != nil {
+		if err := os.Rename(fs.fpath(bid, true), fs.fpath(bid, false)); err != nil {
 			return err
 		}
 	}
@@ -103,20 +106,8 @@ func (fs *FileStore) PutChunk(bid ots.BlobID, chunk []byte, opts ots.PutChunkOpt
 	return nil
 }
 
-// Create creates a new blob with the given content. Set chunked=true if further
-// chunks are to be written before the blob is deemed complete.
-func (fs *FileStore) Create(p []byte, opts ots.CreateBlobOptions) (ots.BlobID, error) {
-	bid := ots.NewBlobID()
-
-	if err := os.WriteFile(fs.fpath(bid, opts.Chunked), p, Perms); err != nil {
-		return "", err
-	}
-
-	return bid, nil
-}
-
-func (fs *FileStore) fpath(blob ots.BlobID, incomplete bool) string {
-	name := filepath.Join(fs.Path, string(blob))
+func (fs *FileStore) fpath(bid string, incomplete bool) string {
+	name := filepath.Join(fs.Path, bid)
 	if incomplete {
 		name = name + ".incomplete"
 	}

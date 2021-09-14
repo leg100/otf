@@ -15,7 +15,7 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	BlobID ots.BlobID
+	BlobID string
 
 	// State version belongs to a workspace
 	WorkspaceID uint
@@ -37,7 +37,7 @@ func (model *StateVersion) ToDomain() *ots.StateVersion {
 		Serial:       model.Serial,
 		VCSCommitSHA: model.VCSCommitSHA,
 		VCSCommitURL: model.VCSCommitURL,
-		BlobID:        model.BlobID,
+		BlobID:       model.BlobID,
 	}
 
 	for _, out := range model.Outputs {

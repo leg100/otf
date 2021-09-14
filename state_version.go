@@ -24,7 +24,7 @@ type StateVersion struct {
 	VCSCommitURL string
 
 	// BlobID is ID of the binary object containing the state
-	BlobID BlobID
+	BlobID string
 
 	// State version belongs to a workspace
 	Workspace *Workspace
@@ -90,8 +90,8 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 		return nil, err
 	}
 
-	sv.BlobID, err = f.BlobStore.Create(decoded, CreateBlobOptions{})
-	if err != nil {
+	sv.BlobID = NewBlobID()
+	if err := f.BlobStore.Put(sv.BlobID, decoded); err != nil {
 		return nil, err
 	}
 

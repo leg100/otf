@@ -17,14 +17,14 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *tfe.PlanStatusTimestamps
 
-	// Logs is the blob ID for the log output from a terraform plan
-	Logs BlobID
+	// LogsBlobID is the blob ID for the log output from a terraform plan
+	LogsBlobID string
 
-	// PlanFile is the blob ID of the execution plan file in binary format
-	PlanFile BlobID
+	// PlanFileBlobID is the blob ID of the execution plan file in binary format
+	PlanFileBlobID string
 
-	// PlanJSON is the blob ID of the execution plan file in json format
-	PlanJSON BlobID
+	// PlanJSONBlobID is the blob ID of the execution plan file in json format
+	PlanJSONBlobID string
 }
 
 type PlanService interface {
@@ -48,6 +48,9 @@ func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
 		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		LogsBlobID:       NewBlobID(),
+		PlanFileBlobID:   NewBlobID(),
+		PlanJSONBlobID:   NewBlobID(),
 	}
 }
 

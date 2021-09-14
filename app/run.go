@@ -131,21 +131,20 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 // produced using `terraform plan`. If the plan file is JSON serialized then set
 // json to true.
 func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	blob, err := s.bs.Create(plan, ots.CreateBlobOptions{})
+	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
 
-	_, err = s.db.Update(id, func(run *ots.Run) error {
-		if json {
-			run.Plan.PlanJSON = blob
-		} else {
-			run.Plan.PlanFile = blob
-		}
+	var bid string // Blob ID
 
-		return nil
-	})
-	return err
+	if json {
+		bid = run.Plan.PlanJSONBlobID
+	} else {
+		bid = run.Plan.PlanFileBlobID
+	}
+
+	return s.bs.Put(bid, plan)
 }
 
 func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
@@ -182,7 +181,7 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanJSON)
+	return s.bs.Get(run.Plan.PlanJSONBlobID)
 }
 
 // GetPlanFile returns the binary plan file for the run.
@@ -191,7 +190,7 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanFile)
+	return s.bs.Get(run.Plan.PlanFileBlobID)
 }
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
@@ -201,7 +200,7 @@ func (s RunService) GetPlanLogs(id string, opts ots.GetChunkOptions) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.GetChunk(run.Plan.Logs, opts)
+	return s.bs.GetChunk(run.Plan.LogsBlobID, opts)
 }
 
 // GetApplyLogs returns logs from the apply of the run identified by id. The
@@ -211,21 +210,21 @@ func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.GetChunk(run.Apply.Logs, opts)
+	return s.bs.GetChunk(run.Apply.LogsBlobID, opts)
 }
 
 func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
-	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
+	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
-	return s.bs.PutChunk(run.Plan.Logs, logs, opts)
+	return s.bs.PutChunk(run.Plan.LogsBlobID, logs, opts)
 }
 
 func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
-	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
+	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
-	return s.bs.PutChunk(run.Plan.Logs, logs, opts)
+	return s.bs.PutChunk(run.Apply.LogsBlobID, logs, opts)
 }
