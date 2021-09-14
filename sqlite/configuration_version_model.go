@@ -20,7 +20,7 @@ type ConfigurationVersion struct {
 	Status           tfe.ConfigurationStatus
 	StatusTimestamps *tfe.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	BlobID string
+	BlobID ots.BlobID
 
 	// Configuration Version belongs to a Workspace
 	WorkspaceID uint
@@ -57,7 +57,7 @@ func (model *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
 		Speculative:   model.Speculative,
 		Source:        model.Source,
 		Status:        model.Status,
-		BlobID:        model.BlobID,
+		BlobID: model.BlobID,
 	}
 
 	if model.Workspace != nil {

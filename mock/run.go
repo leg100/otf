@@ -15,12 +15,12 @@ type RunService struct {
 	DiscardFn         func(id string, opts *tfe.RunDiscardOptions) error
 	CancelFn          func(id string, opts *tfe.RunCancelOptions) error
 	ForceCancelFn     func(id string, opts *tfe.RunForceCancelOptions) error
-	GetPlanLogsFn     func(id string, opts ots.GetLogOptions) ([]byte, error)
-	GetApplyLogsFn    func(id string, opts ots.GetLogOptions) ([]byte, error)
+	GetPlanLogsFn     func(id string, opts ots.GetChunkOptions) ([]byte, error)
+	GetApplyLogsFn    func(id string, opts ots.GetChunkOptions) ([]byte, error)
 	EnqueuePlanFn     func(id string) error
 	UpdateStatusFn    func(id string, status tfe.RunStatus) (*ots.Run, error)
-	UploadPlanLogsFn  func(id string, logs []byte, opts ots.AppendLogOptions) error
-	UploadApplyLogsFn func(id string, logs []byte, opts ots.AppendLogOptions) error
+	UploadPlanLogsFn  func(id string, logs []byte, opts ots.PutChunkOptions) error
+	UploadApplyLogsFn func(id string, logs []byte, opts ots.PutChunkOptions) error
 	FinishPlanFn      func(id string, opts ots.PlanFinishOptions) (*ots.Run, error)
 	FinishApplyFn     func(id string, opts ots.ApplyFinishOptions) (*ots.Run, error)
 	GetPlanJSONFn     func(id string) ([]byte, error)
@@ -56,11 +56,11 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 	return s.ForceCancelFn(id, opts)
 }
 
-func (s RunService) GetPlanLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetPlanLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
 	return s.GetPlanLogsFn(id, opts)
 }
 
-func (s RunService) GetApplyLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
 	return s.GetApplyLogsFn(id, opts)
 }
 
@@ -72,11 +72,11 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 	return s.UpdateStatusFn(id, status)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
+func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
 	return s.UploadPlanLogsFn(id, logs, opts)
 }
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
+func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
 	return s.UploadApplyLogsFn(id, logs, opts)
 }
 

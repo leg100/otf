@@ -20,7 +20,7 @@ type Apply struct {
 	Status               tfe.ApplyStatus
 	StatusTimestamps     *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Logs []byte
+	Logs ots.BlobID
 
 	// Apply belongs to a run
 	RunID uint

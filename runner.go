@@ -15,7 +15,7 @@ type Runner struct {
 	lw *LogsWriter
 }
 
-type RunLogger func(id string, out []byte, opts AppendLogOptions) error
+type RunLogger func(id string, out []byte, opts PutChunkOptions) error
 
 func NewRunner(steps []Step, rl RunLogger, logger logr.Logger, runID string) *Runner {
 	return &Runner{

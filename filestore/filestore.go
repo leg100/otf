@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/leg100/ots"
 )
 
@@ -54,19 +53,19 @@ func NewFilestore(path string) (*FileStore, error) {
 }
 
 // Get retrieves a complete blob.
-func (fs *FileStore) Get(b ots.Blob) ([]byte, error) {
-	return os.ReadFile(fs.fpath(b, false))
+func (fs *FileStore) Get(bid ots.BlobID) ([]byte, error) {
+	return os.ReadFile(fs.fpath(bid, false))
 }
 
 // GetChunk retrieves a chunk of bytes of the blob.
-func (fs *FileStore) GetChunk(b ots.Blob, opts ots.GetBlobOptions) ([]byte, error) {
+func (fs *FileStore) GetChunk(bid ots.BlobID, opts ots.GetChunkOptions) ([]byte, error) {
 	completed := true
 
 	// Check whether complete or incomplete file exists
-	f, err := os.ReadFile(fs.fpath(b, false))
+	f, err := os.ReadFile(fs.fpath(bid, false))
 	if err != nil {
 		if os.IsNotExist(err) {
-			f, err = os.ReadFile(fs.fpath(b, true))
+			f, err = os.ReadFile(fs.fpath(bid, true))
 			if err != nil {
 				return nil, err
 			}
@@ -101,13 +100,13 @@ func (fs *FileStore) GetChunk(b ots.Blob, opts ots.GetBlobOptions) ([]byte, erro
 }
 
 // Put writes a complete blob in one go.
-func (fs *FileStore) Put(blob ots.Blob, p []byte) error {
-	return os.WriteFile(fs.fpath(blob, false), p, Perms)
+func (fs *FileStore) Put(bid ots.BlobID, p []byte) error {
+	return os.WriteFile(fs.fpath(bid, false), p, Perms)
 }
 
 // PutChunk writes a chunk of bytes of a blob.
-func (fs *FileStore) PutChunk(b ots.Blob, chunk []byte, opts ots.PutBlobOptions) error {
-	f, err := os.OpenFile(fs.fpath(b, true), os.O_APPEND, Perms)
+func (fs *FileStore) PutChunk(bid ots.BlobID, chunk []byte, opts ots.PutChunkOptions) error {
+	f, err := os.OpenFile(fs.fpath(bid, true), os.O_APPEND, Perms)
 	if err != nil {
 		return err
 	}
@@ -122,7 +121,7 @@ func (fs *FileStore) PutChunk(b ots.Blob, chunk []byte, opts ots.PutBlobOptions)
 		f.Close() // Must close file before moving it
 
 		// blob.incomplete -> blob
-		if err := os.Link(fs.fpath(b, true), fs.fpath(b, false)); err != nil {
+		if err := os.Link(fs.fpath(bid, true), fs.fpath(bid, false)); err != nil {
 			return err
 		}
 	}
@@ -131,26 +130,21 @@ func (fs *FileStore) PutChunk(b ots.Blob, chunk []byte, opts ots.PutBlobOptions)
 }
 
 // Create creates a new blob with the given content. Set chunked=true if further
-// chunks are to be written before the blob is complete.
-func (fs *FileStore) Create(p []byte, opts ots.CreateBlobOptions) (ots.Blob, error) {
-	blob := ots.Blob(newID())
+// chunks are to be written before the blob is deemed complete.
+func (fs *FileStore) Create(p []byte, opts ots.CreateBlobOptions) (ots.BlobID, error) {
+	bid := ots.NewBlobID()
 
-	if err := os.WriteFile(fs.fpath(blob, opts.Chunked), p, Perms); err != nil {
+	if err := os.WriteFile(fs.fpath(bid, opts.Chunked), p, Perms); err != nil {
 		return "", err
 	}
 
-	return blob, nil
+	return bid, nil
 }
 
-func (fs *FileStore) fpath(blob ots.Blob, incomplete bool) string {
+func (fs *FileStore) fpath(blob ots.BlobID, incomplete bool) string {
 	name := filepath.Join(fs.Path, string(blob))
 	if incomplete {
 		name = name + ".incomplete"
 	}
 	return name
-}
-
-// Generate a new unique ID for a filestore blob
-func newID() string {
-	return uuid.NewString()
 }

@@ -1,27 +1,30 @@
 package ots
 
+import "github.com/google/uuid"
+
+// BlobID is a binary object identifier
+type BlobID string
+
 // BlobStore implementations provide a persistent store from and to which binary
 // objects can be fetched and uploaded.
 type BlobStore interface {
 	// Get fetches a blob
-	Get(Blob) ([]byte, error)
+	Get(BlobID) ([]byte, error)
 
 	// Get fetches a blob chunk
-	GetChunk(Blob, GetBlobOptions) ([]byte, error)
+	GetChunk(BlobID, GetChunkOptions) ([]byte, error)
 
 	// Put uploads a blob
-	Put(Blob, []byte) error
+	Put(BlobID, []byte) error
 
 	// Put uploads a blob chunk
-	PutChunk(Blob, []byte, PutBlobOptions) error
+	PutChunk(BlobID, []byte, PutChunkOptions) error
 
 	// Create creates a new blob
-	Create([]byte, CreateBlobOptions) (Blob, error)
+	Create([]byte, CreateBlobOptions) (BlobID, error)
 }
 
-type Blob string
-
-type GetBlobOptions struct {
+type GetChunkOptions struct {
 	// The maximum number of bytes of logs to return to the client
 	Limit int `schema:"limit"`
 
@@ -29,10 +32,7 @@ type GetBlobOptions struct {
 	Offset int `schema:"offset"`
 }
 
-type PutBlobOptions struct {
-	// Start indicates this is the first chunk
-	Start bool `schema:"start"`
-
+type PutChunkOptions struct {
 	// End indicates this is the last and final chunk
 	End bool `schema:"end"`
 }
@@ -40,4 +40,9 @@ type PutBlobOptions struct {
 type CreateBlobOptions struct {
 	// Chunked is whether the blob is split into chunks.
 	Chunked bool `schema:"chunked"`
+}
+
+// NewBlobID generates a unique blob ID
+func NewBlobID() BlobID {
+	return BlobID(uuid.NewString())
 }

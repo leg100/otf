@@ -20,13 +20,14 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Logs []byte
+	// The blob ID of the logs
+	Logs ots.BlobID
 
 	// The blob ID of the execution plan file
-	PlanFileBlobID string
+	PlanFile ots.BlobID
 
 	// The blob ID of the execution plan file in json format
-	PlanJSONBlobID string
+	PlanJSON ots.BlobID
 
 	// Plan belongs to a run
 	RunID uint
@@ -72,8 +73,8 @@ func (model *Plan) ToDomain() *ots.Plan {
 		Status:               model.Status,
 		StatusTimestamps:     &tfe.PlanStatusTimestamps{},
 		Logs:                 model.Logs,
-		PlanFileBlobID:       model.PlanFileBlobID,
-		PlanJSONBlobID:       model.PlanJSONBlobID,
+		PlanFile:             model.PlanFile,
+		PlanJSON:             model.PlanJSON,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {
@@ -112,8 +113,8 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	model.ResourceDestructions = domain.ResourceDestructions
 	model.Status = domain.Status
 	model.Logs = domain.Logs
-	model.PlanFileBlobID = domain.PlanFileBlobID
-	model.PlanJSONBlobID = domain.PlanJSONBlobID
+	model.PlanFile = domain.PlanFile
+	model.PlanJSON = domain.PlanJSON
 
 	if domain.StatusTimestamps.CanceledAt != nil {
 		model.StatusTimestamps.CanceledAt.Time = *domain.StatusTimestamps.CanceledAt

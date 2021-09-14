@@ -17,13 +17,14 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *tfe.PlanStatusTimestamps
 
-	Logs
+	// Logs is the blob ID for the log output from a terraform plan
+	Logs BlobID
 
-	// PlanFile is the execution plan file in binary format
-	PlanFile Blob
+	// PlanFile is the blob ID of the execution plan file in binary format
+	PlanFile BlobID
 
-	// PlanJSON is execution plan file in json format
-	PlanJSON Blob
+	// PlanJSON is the blob ID of the execution plan file in json format
+	PlanJSON BlobID
 }
 
 type PlanService interface {

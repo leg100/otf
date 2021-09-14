@@ -40,7 +40,7 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.GetLogOptions
+	var opts ots.GetChunkOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -68,7 +68,7 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts ots.AppendLogOptions
+	var opts ots.PutChunkOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)

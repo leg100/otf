@@ -53,7 +53,7 @@ func (s ConfigurationVersionService) Upload(id string, configuration []byte) err
 	}
 
 	_, err = s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
-		cv.Blob = blob
+		cv.BlobID = blob
 		cv.Status = tfe.ConfigurationUploaded
 
 		return nil
@@ -68,5 +68,5 @@ func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return s.bs.Get(cv.Blob)
+	return s.bs.Get(cv.BlobID)
 }

@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -198,38 +196,36 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetPlanLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
-	return run.Plan.Logs.Get(opts)
+	return s.bs.GetChunk(run.Plan.Logs, opts)
 }
 
 // GetApplyLogs returns logs from the apply of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetApplyLogs(id string, opts ots.GetLogOptions) ([]byte, error) {
+func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
 	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}
-	return run.Apply.Logs.Get(opts)
+	return s.bs.GetChunk(run.Apply.Logs, opts)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Plan.Logs.Append(logs, opts)
-
-		return nil
-	})
-	return err
+func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
+	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
+	if err != nil {
+		return err
+	}
+	return s.bs.PutChunk(run.Plan.Logs, logs, opts)
 }
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.AppendLogOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
-		run.Apply.Logs.Append(logs, opts)
-
-		return nil
-	})
-	return err
+func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
+	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
+	if err != nil {
+		return err
+	}
+	return s.bs.PutChunk(run.Plan.Logs, logs, opts)
 }

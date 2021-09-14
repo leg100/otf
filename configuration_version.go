@@ -38,8 +38,8 @@ type ConfigurationVersion struct {
 	Status           tfe.ConfigurationStatus
 	StatusTimestamps *tfe.CVStatusTimestamps
 
-	// Blob stores the configuration itself
-	Blob
+	// BlobID is the ID of the blob containing the configuration
+	BlobID BlobID
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
