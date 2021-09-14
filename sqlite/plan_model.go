@@ -20,7 +20,8 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
-	Logs []byte
+	// The blob ID of the logs
+	LogsBlobID string
 
 	// The blob ID of the execution plan file
 	PlanFileBlobID string
@@ -71,7 +72,7 @@ func (model *Plan) ToDomain() *ots.Plan {
 		ResourceDestructions: model.ResourceDestructions,
 		Status:               model.Status,
 		StatusTimestamps:     &tfe.PlanStatusTimestamps{},
-		Logs:                 model.Logs,
+		LogsBlobID:           model.LogsBlobID,
 		PlanFileBlobID:       model.PlanFileBlobID,
 		PlanJSONBlobID:       model.PlanJSONBlobID,
 	}
@@ -111,7 +112,7 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	model.ResourceChanges = domain.ResourceChanges
 	model.ResourceDestructions = domain.ResourceDestructions
 	model.Status = domain.Status
-	model.Logs = domain.Logs
+	model.LogsBlobID = domain.LogsBlobID
 	model.PlanFileBlobID = domain.PlanFileBlobID
 	model.PlanJSONBlobID = domain.PlanJSONBlobID
 

@@ -90,7 +90,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	logger.Info("filestore started", "path", fs.Path())
+	logger.Info("filestore started", "path", fs.Path)
 
 	// Setup sqlite db
 	db, err := sqlite.New(DBPath, sqlite.WithZeroLogger(zerologger))

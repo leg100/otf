@@ -7,15 +7,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/leg100/ots"
+)
+
+const (
+	// Chmod perms for a file blob
+	Perms = 0644
 )
 
 var _ ots.BlobStore = (*FileStore)(nil)
 
 // FileStore is a filesystem based blob database
 type FileStore struct {
-	path string
+	Path string
 }
 
 // NewFilestore constructs a filestore rooted at the given path.
@@ -40,28 +44,72 @@ func NewFilestore(path string) (*FileStore, error) {
 		return nil, err
 	}
 
-	return &FileStore{path: path}, nil
+	return &FileStore{Path: path}, nil
 }
 
-func (fs *FileStore) Get(id string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(fs.path, id))
+// Get retrieves a complete blob.
+func (fs *FileStore) Get(bid string) ([]byte, error) {
+	return os.ReadFile(fs.fpath(bid, false))
 }
 
-func (fs *FileStore) Put(blob []byte) (string, error) {
-	id := newID()
+// GetChunk retrieves a chunk of bytes of the blob.
+func (fs *FileStore) GetChunk(bid string, opts ots.GetChunkOptions) ([]byte, error) {
+	complete := true
 
-	if err := os.WriteFile(filepath.Join(fs.path, id), blob, 0644); err != nil {
-		return "", err
+	// Check whether complete or incomplete file exists
+	f, err := os.ReadFile(fs.fpath(bid, false))
+	if err != nil {
+		if os.IsNotExist(err) {
+			f, err = os.ReadFile(fs.fpath(bid, true))
+			if err != nil {
+				return nil, err
+			}
+			complete = false
+		} else {
+			return nil, err
+		}
 	}
 
-	return id, nil
+	return ots.GetChunk(f, opts, complete)
 }
 
-func (fs *FileStore) Path() string {
-	return fs.path
+// Put writes a complete blob in one go.
+func (fs *FileStore) Put(bid string, p []byte) error {
+	return os.WriteFile(fs.fpath(bid, false), p, Perms)
 }
 
-// Generate a new unique ID for a filestore blob
-func newID() string {
-	return uuid.NewString()
+// PutChunk writes a chunk of bytes of a blob.
+func (fs *FileStore) PutChunk(bid string, chunk []byte, opts ots.PutChunkOptions) error {
+	f, err := os.OpenFile(fs.fpath(bid, true), os.O_CREATE|os.O_APPEND|os.O_WRONLY, Perms)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.Write(chunk); err != nil {
+		return err
+	}
+
+	// Is last chunk?
+	if opts.End {
+		// Must close file before moving it
+		if err := f.Close(); err != nil {
+			return err
+		}
+
+		// blob.incomplete -> blob
+		if err := os.Rename(fs.fpath(bid, true), fs.fpath(bid, false)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (fs *FileStore) fpath(bid string, incomplete bool) string {
+	name := filepath.Join(fs.Path, bid)
+	if incomplete {
+		name = name + ".incomplete"
+	}
+	return name
 }

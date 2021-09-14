@@ -5,10 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	MaxApplyLogsLimit = 65536
-)
-
 type ApplyService interface {
 	Get(id string) (*Apply, error)
 }
@@ -24,7 +20,8 @@ type Apply struct {
 	Status               tfe.ApplyStatus
 	StatusTimestamps     *tfe.ApplyStatusTimestamps
 
-	Logs
+	// Logs is the blob ID for the log output from a terraform apply
+	LogsBlobID string
 }
 
 // ApplyFinishOptions represents the options for finishing an apply.
@@ -43,6 +40,7 @@ func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
 		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		LogsBlobID:       NewBlobID(),
 	}
 }
 

@@ -23,6 +23,7 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
+	// BlobID is ID of the binary object containing the state
 	BlobID string
 
 	// State version belongs to a workspace
@@ -89,11 +90,10 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 		return nil, err
 	}
 
-	blobID, err := f.BlobStore.Put(decoded)
-	if err != nil {
+	sv.BlobID = NewBlobID()
+	if err := f.BlobStore.Put(sv.BlobID, decoded); err != nil {
 		return nil, err
 	}
-	sv.BlobID = blobID
 
 	state, err := Parse(decoded)
 	if err != nil {

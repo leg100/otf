@@ -5,10 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	MaxPlanLogsLimit = 65536
-)
-
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	ID string
@@ -21,12 +17,13 @@ type Plan struct {
 	Status               tfe.PlanStatus
 	StatusTimestamps     *tfe.PlanStatusTimestamps
 
-	Logs
+	// LogsBlobID is the blob ID for the log output from a terraform plan
+	LogsBlobID string
 
-	// The blob ID of the execution plan file
+	// PlanFileBlobID is the blob ID of the execution plan file in binary format
 	PlanFileBlobID string
 
-	// The blob ID of the execution plan file in json format
+	// PlanJSONBlobID is the blob ID of the execution plan file in json format
 	PlanJSONBlobID string
 }
 
@@ -51,6 +48,9 @@ func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
 		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		LogsBlobID:       NewBlobID(),
+		PlanFileBlobID:   NewBlobID(),
+		PlanJSONBlobID:   NewBlobID(),
 	}
 }
 

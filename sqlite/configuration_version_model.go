@@ -20,6 +20,7 @@ type ConfigurationVersion struct {
 	Status           tfe.ConfigurationStatus
 	StatusTimestamps *tfe.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
+	// BlobID is the ID of the binary object containing the configuration
 	BlobID string
 
 	// Configuration Version belongs to a Workspace
