@@ -47,7 +47,7 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*ots.Configu
 
 // Upload a configuration version blob
 func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
-	blob, err := s.bs.Create(configuration)
+	blob, err := s.bs.Create(configuration, ots.CreateBlobOptions{})
 	if err != nil {
 		return err
 	}

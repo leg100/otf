@@ -133,7 +133,7 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, err
 // produced using `terraform plan`. If the plan file is JSON serialized then set
 // json to true.
 func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	blob, err := s.bs.Create(plan)
+	blob, err := s.bs.Create(plan, ots.CreateBlobOptions{})
 	if err != nil {
 		return err
 	}

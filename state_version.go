@@ -90,7 +90,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.State
 		return nil, err
 	}
 
-	sv.Blob, err = f.BlobStore.Create(decoded)
+	sv.Blob, err = f.BlobStore.Create(decoded, CreateBlobOptions{})
 	if err != nil {
 		return nil, err
 	}

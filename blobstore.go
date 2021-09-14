@@ -16,7 +16,7 @@ type BlobStore interface {
 	PutChunk(Blob, []byte, PutBlobOptions) error
 
 	// Create creates a new blob
-	Create([]byte) (Blob, error)
+	Create([]byte, CreateBlobOptions) (Blob, error)
 }
 
 type Blob string
@@ -35,4 +35,9 @@ type PutBlobOptions struct {
 
 	// End indicates this is the last and final chunk
 	End bool `schema:"end"`
+}
+
+type CreateBlobOptions struct {
+	// Chunked is whether the blob is split into chunks.
+	Chunked bool `schema:"chunked"`
 }
