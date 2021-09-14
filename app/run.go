@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -213,18 +215,17 @@ func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, e
 	return s.bs.GetChunk(run.Apply.LogsBlobID, opts)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
+// UploadLogs writes a chunk of logs for a run.
+func (s RunService) UploadLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
 	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
-	return s.bs.PutChunk(run.Plan.LogsBlobID, logs, opts)
-}
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
-	if err != nil {
-		return err
+	active := run.ActivePhase()
+	if active == nil {
+		return fmt.Errorf("attempted to upload logs to an inactive run")
 	}
-	return s.bs.PutChunk(run.Apply.LogsBlobID, logs, opts)
+
+	return s.bs.PutChunk(active.GetLogsBlobID(), logs, opts)
 }

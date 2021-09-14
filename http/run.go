@@ -1,6 +1,8 @@
 package http
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -56,6 +58,28 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteResponse(w, r, s.RunListJSONAPIObject(obj))
+}
+
+func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var opts ots.PutChunkOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.UploadLogs(vars["id"], buf.Bytes(), opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {

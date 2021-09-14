@@ -23,7 +23,7 @@ func TestSupervisor_Start(t *testing.T) {
 		Logger:       logr.Discard(),
 		planRunnerFn: mockNewPlanRunnerFn,
 		RunService: mock.RunService{
-			UploadPlanLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error {
+			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error {
 				got <- id
 				return nil
 			},
@@ -43,7 +43,7 @@ func TestSupervisor_StartError(t *testing.T) {
 	// Mock run service and capture the run status it receives
 	got := make(chan tfe.RunStatus)
 	runService := &mock.RunService{
-		UploadPlanLogsFn: func(id string, _ []byte, opts ots.PutChunkOptions) error { return nil },
+		UploadLogsFn: func(id string, _ []byte, opts ots.PutChunkOptions) error { return nil },
 		UpdateStatusFn: func(id string, status tfe.RunStatus) (*ots.Run, error) {
 			got <- status
 			return nil, nil

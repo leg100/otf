@@ -58,6 +58,12 @@ type Run struct {
 	ConfigurationVersion *ConfigurationVersion
 }
 
+// Phase implementations represent the phases that make up a run: a plan and an
+// apply.
+type Phase interface {
+	GetLogsBlobID() string
+}
+
 // RunFactory is a factory for constructing Run objects.
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
@@ -76,9 +82,8 @@ type RunService interface {
 	EnqueuePlan(id string) error
 	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
-	UploadPlanLogs(id string, logs []byte, opts PutChunkOptions) error
+	UploadLogs(id string, logs []byte, opts PutChunkOptions) error
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
-	UploadApplyLogs(id string, logs []byte, opts PutChunkOptions) error
 	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
 	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
 	GetPlanJSON(id string) ([]byte, error)
@@ -258,6 +263,17 @@ func (e ErrInvalidRunStatusTransition) Error() string {
 
 func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
+}
+
+func (r *Run) ActivePhase() Phase {
+	switch r.Status {
+	case tfe.RunPlanQueued, tfe.RunPlanning, tfe.RunPlanned, tfe.RunPlannedAndFinished:
+		return r.Plan
+	case tfe.RunApplyQueued, tfe.RunApplying, tfe.RunApplied:
+		return r.Apply
+	default:
+		return nil
+	}
 }
 
 // UpdateStatus updates the status of the run as well as its plan and apply

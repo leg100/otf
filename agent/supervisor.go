@@ -77,11 +77,11 @@ func (s *Supervisor) handleJob(ctx context.Context, run *ots.Run) {
 	switch run.Status {
 	case tfe.RunPlanQueued:
 		runner = s.planRunnerFn(run, s.ConfigurationVersionService,
-			s.StateVersionService, s.RunService, s.RunService.UploadPlanLogs,
+			s.StateVersionService, s.RunService, s.RunService.UploadLogs,
 			s.Logger)
 	case tfe.RunApplyQueued:
 		runner = s.applyRunnerFn(run, s.ConfigurationVersionService,
-			s.StateVersionService, s.RunService, s.RunService.UploadApplyLogs,
+			s.StateVersionService, s.RunService, s.RunService.UploadLogs,
 			s.Logger)
 	default:
 		s.Error(nil, "unexpected run status", "status", run.Status)

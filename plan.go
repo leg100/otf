@@ -62,6 +62,10 @@ func (p *Plan) HasChanges() bool {
 	return false
 }
 
+func (p *Plan) GetLogsBlobID() string {
+	return p.LogsBlobID
+}
+
 func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
 	p.Status = status
 	p.setTimestamp(status)

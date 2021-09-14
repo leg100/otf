@@ -44,6 +44,10 @@ func newApply() *Apply {
 	}
 }
 
+func (a *Apply) GetLogsBlobID() string {
+	return a.LogsBlobID
+}
+
 func (a *Apply) UpdateStatus(status tfe.ApplyStatus) {
 	a.Status = status
 	a.setTimestamp(status)
