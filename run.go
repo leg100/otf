@@ -1,8 +1,14 @@
 package ots
 
 import (
+	"bytes"
+	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	tfe "github.com/leg100/go-tfe"
@@ -62,6 +68,7 @@ type Run struct {
 // apply.
 type Phase interface {
 	GetLogsBlobID() string
+	Do(*Run, *Environment) error
 }
 
 // RunFactory is a factory for constructing Run objects.
@@ -80,15 +87,22 @@ type RunService interface {
 	Cancel(id string, opts *tfe.RunCancelOptions) error
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
 	EnqueuePlan(id string) error
-	UpdateStatus(id string, status tfe.RunStatus) (*Run, error)
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
 	UploadLogs(id string, logs []byte, opts PutChunkOptions) error
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
-	FinishPlan(id string, opts PlanFinishOptions) (*Run, error)
-	FinishApply(id string, opts ApplyFinishOptions) (*Run, error)
+	Start(id string, opts RunStartOptions) error
+	Finish(id string, opts RunFinishOptions) error
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
 	UploadPlan(runID string, plan []byte, json bool) error
+}
+
+type RunStartOptions struct {
+	AgentID string
+}
+
+type RunFinishOptions struct {
+	Errored bool
 }
 
 // RunStore implementations persist Run objects.
@@ -131,24 +145,6 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
-// FinishPlan updates the state of a run to reflect its plan having finished
-func (r *Run) FinishPlan(opts PlanFinishOptions) {
-	r.Plan.ResourceAdditions = opts.ResourceAdditions
-	r.Plan.ResourceChanges = opts.ResourceChanges
-	r.Plan.ResourceDestructions = opts.ResourceDestructions
-
-	r.UpdateStatus(tfe.RunPlanned)
-}
-
-// FinishApply updates the state of a run to reflect its plan having finished
-func (r *Run) FinishApply(opts ApplyFinishOptions) {
-	r.Apply.ResourceAdditions = opts.ResourceAdditions
-	r.Apply.ResourceChanges = opts.ResourceChanges
-	r.Apply.ResourceDestructions = opts.ResourceDestructions
-
-	r.UpdateStatus(tfe.RunApplied)
-}
-
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
@@ -160,7 +156,6 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// Cancel updates the state of a run to reflect a cancel request having
 // been issued.
 func (r *Run) Cancel() error {
 	if !r.IsCancelable() {
@@ -265,19 +260,72 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
-func (r *Run) ActivePhase() Phase {
+// ActivePhase retrieves the currently active phase
+func (r *Run) ActivePhase() (Phase, error) {
 	switch r.Status {
-	case tfe.RunPlanQueued, tfe.RunPlanning, tfe.RunPlanned, tfe.RunPlannedAndFinished:
-		return r.Plan
-	case tfe.RunApplyQueued, tfe.RunApplying, tfe.RunApplied:
-		return r.Apply
+	case tfe.RunPlanning:
+		return r.Plan, nil
+	case tfe.RunApplying:
+		return r.Apply, nil
 	default:
-		return nil
+		return nil, fmt.Errorf("invalid run status: %s", r.Status)
 	}
 }
 
+// Start starts a run phase.
+func (r *Run) Start() error {
+	switch r.Status {
+	case tfe.RunPlanQueued:
+		r.UpdateStatus(tfe.RunPlanning)
+	case tfe.RunApplyQueued:
+		r.UpdateStatus(tfe.RunApplying)
+	default:
+		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status)
+	}
+
+	return nil
+}
+
+// Finish updates the run to reflect the current phase having finished. An event
+// is emitted reflecting the run's new status.
+func (r *Run) Finish(bs BlobStore) (*Event, error) {
+	if r.Status == tfe.RunApplying {
+		r.UpdateStatus(tfe.RunApplied)
+
+		if err := r.Apply.UpdateResources(bs); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	// Only remaining valid status is planning
+	if r.Status != tfe.RunPlanning {
+		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.Status)
+	}
+
+	if err := r.Plan.UpdateResources(bs); err != nil {
+		return nil, err
+	}
+
+	// Speculative plan, proceed no further
+	if r.ConfigurationVersion.Speculative {
+		r.UpdateStatus(tfe.RunPlannedAndFinished)
+		return nil, nil
+	}
+
+	r.UpdateStatus(tfe.RunPlanned)
+
+	if r.Workspace.AutoApply {
+		r.UpdateStatus(tfe.RunApplyQueued)
+		return &Event{Type: ApplyQueued, Payload: r}, nil
+	}
+
+	return nil, nil
+}
+
 // UpdateStatus updates the status of the run as well as its plan and apply
-func (r *Run) UpdateStatus(status tfe.RunStatus) error {
+func (r *Run) UpdateStatus(status tfe.RunStatus) {
 	switch status {
 	case tfe.RunPending:
 		r.Plan.UpdateStatus(tfe.PlanPending)
@@ -314,8 +362,6 @@ func (r *Run) UpdateStatus(status tfe.RunStatus) error {
 
 	// TODO: determine when tfe.ApplyUnreachable is applicable and set
 	// accordingly
-
-	return nil
 }
 
 func (r *Run) setTimestamp(status tfe.RunStatus) {
@@ -343,6 +389,132 @@ func (r *Run) setTimestamp(status tfe.RunStatus) {
 	case tfe.RunDiscarded:
 		r.StatusTimestamps.DiscardedAt = TimeNow()
 	}
+}
+
+func (r *Run) Do(env *Environment) error {
+	if err := env.RunFunc(r.downloadConfig); err != nil {
+		return err
+	}
+
+	if err := env.RunFunc(deleteBackendConfigFromDirectory); err != nil {
+		return err
+	}
+
+	if err := env.RunFunc(r.downloadState); err != nil {
+		return err
+	}
+
+	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
+		return err
+	}
+
+	phase, err := r.ActivePhase()
+	if err != nil {
+		return err
+	}
+
+	if err := phase.Do(r, env); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Run) downloadConfig(ctx context.Context, env *Environment) error {
+	// Download config
+	cv, err := env.ConfigurationVersionService.Download(r.ConfigurationVersion.ID)
+	if err != nil {
+		return fmt.Errorf("unable to download config: %w", err)
+	}
+
+	// Decompress and untar config
+	if err := Unpack(bytes.NewBuffer(cv), env.Path); err != nil {
+		return fmt.Errorf("unable to unpack config: %w", err)
+	}
+
+	return nil
+}
+
+// downloadState downloads current state to disk. If there is no state yet
+// nothing will be downloaded and no error will be reported.
+func (r *Run) downloadState(ctx context.Context, env *Environment) error {
+	state, err := env.StateVersionService.Current(r.Workspace.ID)
+	if IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	statefile, err := env.StateVersionService.Download(state.ID)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(env.Path, LocalStateFilename), statefile, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Run) uploadPlan(ctx context.Context, env *Environment) error {
+	file, err := os.ReadFile(filepath.Join(env.Path, PlanFilename))
+	if err != nil {
+		return err
+	}
+
+	if err := env.RunService.UploadPlan(r.ID, file, false); err != nil {
+		return fmt.Errorf("unable to upload plan: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Run) uploadJSONPlan(ctx context.Context, env *Environment) error {
+	jsonFile, err := os.ReadFile(filepath.Join(env.Path, JSONPlanFilename))
+	if err != nil {
+		return err
+	}
+
+	if err := env.RunService.UploadPlan(r.ID, jsonFile, true); err != nil {
+		return fmt.Errorf("unable to upload JSON plan: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Run) downloadPlanFile(ctx context.Context, env *Environment) error {
+	plan, err := env.RunService.GetPlanFile(r.ID)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(env.Path, PlanFilename), plan, 0644)
+}
+
+// UploadStateStep reads, parses, and uploads state
+func (r *Run) uploadState(ctx context.Context, env *Environment) error {
+	stateFile, err := os.ReadFile(filepath.Join(env.Path, LocalStateFilename))
+	if err != nil {
+		return err
+	}
+
+	state, err := Parse(stateFile)
+	if err != nil {
+		return err
+	}
+
+	_, err = env.StateVersionService.Create(r.Workspace.ID, tfe.StateVersionCreateOptions{
+		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
+		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
+		Lineage: &state.Lineage,
+		Serial:  Int64(state.Serial),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // NewRun constructs a run object.

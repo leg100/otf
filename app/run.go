@@ -112,7 +112,8 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 
 func (s RunService) EnqueuePlan(id string) error {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		return run.UpdateStatus(tfe.RunPlanQueued)
+		run.UpdateStatus(tfe.RunPlanQueued)
+		return nil
 	})
 	if err != nil {
 		return err
@@ -121,12 +122,6 @@ func (s RunService) EnqueuePlan(id string) error {
 	s.es.Publish(ots.Event{Type: ots.PlanQueued, Payload: run})
 
 	return err
-}
-
-func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
-	return s.db.Update(id, func(run *ots.Run) error {
-		return run.UpdateStatus(status)
-	})
 }
 
 // UploadPlan persists a run's plan file. The plan file is expected to have been
@@ -149,32 +144,37 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return s.bs.Put(bid, plan)
 }
 
-func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishPlan(opts)
-
-		return nil
+// Start persists changes to a run to reflect a run phase as having started.
+func (s RunService) Start(id string, opts ots.RunStartOptions) error {
+	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		return run.Start()
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return run, nil
+	return nil
 }
 
-func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishApply(opts)
+// Finish persists changes to a run to reflect a run phase as having finished.
+// An event is emitted to notify any subscribers of the new run state.
+func (s RunService) Finish(id string, opts ots.RunFinishOptions) error {
+	var event *ots.Event
 
-		return nil
+	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		event, err = run.Finish(s.bs)
+		if err != nil {
+			return err
+		}
+		return err
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
+	s.es.Publish(*event)
 
-	return run, nil
+	return nil
 }
 
 // GetPlanJSON returns the JSON formatted plan file for the run.
@@ -222,9 +222,9 @@ func (s RunService) UploadLogs(id string, logs []byte, opts ots.PutChunkOptions)
 		return err
 	}
 
-	active := run.ActivePhase()
-	if active == nil {
-		return fmt.Errorf("attempted to upload logs to an inactive run")
+	active, err := run.ActivePhase()
+	if err != nil {
+		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
 
 	return s.bs.PutChunk(active.GetLogsBlobID(), logs, opts)

@@ -12,14 +12,12 @@ import (
 
 // Environment provides an execution environment for a Run.
 type Environment struct {
-	Run *Run
-
 	RunService                  RunService
 	ConfigurationVersionService ConfigurationVersionService
 	StateVersionService         StateVersionService
 
 	// Current working directory
-	path string
+	Path string
 
 	// Whether cancelation has been triggered
 	canceled bool
@@ -37,21 +35,20 @@ type Environment struct {
 // EnvironmentFunc is a func that can be invoked in the environment
 type EnvironmentFunc func(context.Context, *Environment) error
 
-// NewEnvironment is a constructor for Environment.
-func NewEnvironment(logger logr.Logger, run *Run, rs RunService, cvs ConfigurationVersionService, svs StateVersionService) (*Environment, error) {
+// NewEnvironment constructs an Environment.
+func NewEnvironment(logger logr.Logger, runID string, rs RunService, cvs ConfigurationVersionService, svs StateVersionService) (*Environment, error) {
 	path, err := os.MkdirTemp("", "ots-plan")
 	if err != nil {
 		return nil, err
 	}
 
 	return &Environment{
-		Run:                         run,
 		RunService:                  rs,
 		ConfigurationVersionService: cvs,
 		StateVersionService:         svs,
-		path:                        path,
+		Path:                        path,
 		out: &LogsWriter{
-			runID:     run.ID,
+			runID:     runID,
 			runLogger: rs.UploadLogs,
 			Logger:    logger,
 		},
@@ -59,10 +56,17 @@ func NewEnvironment(logger logr.Logger, run *Run, rs RunService, cvs Configurati
 }
 
 // Cancel terminates execution. Force controls whether termination is graceful
-// or not.
+// or not. Performed on a best-effort basis - the func or process may have
+// finished before they are cancelled, in which case only the next func or
+// process will be stopped from executing.
 func (e *Environment) Cancel(force bool) {
 	e.canceled = true
 
+	e.cancelCLI(force)
+	e.cancelFunc(force)
+}
+
+func (e *Environment) cancelCLI(force bool) {
 	if e.proc == nil {
 		return
 	}
@@ -74,6 +78,17 @@ func (e *Environment) Cancel(force bool) {
 	}
 }
 
+func (e *Environment) cancelFunc(force bool) {
+	// Don't cancel a func's context unless forced
+	if !force {
+		return
+	}
+	if e.cancel == nil {
+		return
+	}
+	e.cancel()
+}
+
 // RunCLI executes a CLI process in the environment.
 func (e *Environment) RunCLI(name string, args ...string) error {
 	if e.canceled {
@@ -81,7 +96,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	}
 
 	cmd := exec.Command(name, args...)
-	cmd.Dir = e.path
+	cmd.Dir = e.Path
 	cmd.Stdout = e.out
 	cmd.Stderr = e.out
 

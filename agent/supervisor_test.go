@@ -14,15 +14,18 @@ import (
 // TestSupervisor_Start tests starting up the daemon and tests it handling a
 // single job
 func TestSupervisor_Start(t *testing.T) {
-	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &RunJob{Run: &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}}
 
 	// Capture the run ID that is passed to the job processor
 	got := make(chan string)
 
 	supervisor := &Supervisor{
-		Logger:       logr.Discard(),
-		planRunnerFn: mockNewPlanRunnerFn,
+		Logger: logr.Discard(),
 		RunService: mock.RunService{
+			StartFn: func(id string, opts ots.RunStartOptions) error {
+				got <- id
+				return nil
+			},
 			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error {
 				got <- id
 				return nil
@@ -51,13 +54,12 @@ func TestSupervisor_StartError(t *testing.T) {
 	}
 
 	supervisor := &Supervisor{
-		Logger:       logr.Discard(),
-		RunService:   runService,
-		planRunnerFn: mockNewPlanRunnerFnWithError,
-		Spooler: newMockSpooler(&ots.Run{
+		Logger:     logr.Discard(),
+		RunService: runService,
+		Spooler: newMockSpooler(&RunJob{Run: &ots.Run{
 			ID:     "run-123",
 			Status: tfe.RunPlanQueued,
-		}),
+		}}),
 		concurrency: 1,
 	}
 

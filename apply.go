@@ -1,6 +1,8 @@
 package ots
 
 import (
+	"fmt"
+
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
@@ -46,6 +48,43 @@ func newApply() *Apply {
 
 func (a *Apply) GetLogsBlobID() string {
 	return a.LogsBlobID
+}
+
+func (a *Apply) Do(run *Run, env *Environment) error {
+	if err := env.RunFunc(run.downloadPlanFile); err != nil {
+		return err
+	}
+
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
+		return err
+	}
+
+	if err := env.RunFunc(run.uploadState); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateResources parses the output from terraform apply to determine the
+// number and type of resource changes applied and updates the apply object
+// accordingly.
+func (a *Apply) UpdateResources(bs BlobStore) error {
+	logs, err := bs.Get(a.LogsBlobID)
+	if err != nil {
+		return err
+	}
+
+	resources, err := parseApplyOutput(string(logs))
+	if err != nil {
+		return err
+	}
+
+	a.ResourceAdditions = resources.adds
+	a.ResourceChanges = resources.changes
+	a.ResourceDestructions = resources.deletions
+
+	return nil
 }
 
 func (a *Apply) UpdateStatus(status tfe.ApplyStatus) {

@@ -2,6 +2,8 @@ package ots
 
 import "github.com/go-logr/logr"
 
+type RunLogger func(id string, out []byte, opts PutChunkOptions) error
+
 type LogsWriter struct {
 	runLogger RunLogger
 	runID     string

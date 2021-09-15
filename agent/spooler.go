@@ -10,16 +10,19 @@ import (
 
 var _ Spooler = (*SpoolerDaemon)(nil)
 
-// Spooler is a daemon that queues incoming run jobs
+// Spooler is a daemon from which jobs can be retrieved
 type Spooler interface {
-	GetJob() <-chan *ots.Run
+	// Start the daemon
 	Start(context.Context)
+
+	// GetJob retrieves spooled job
+	GetJob() <-chan Job
 }
 
-// SpoolerDaemon queues jobs.
+// SpoolerDaemon implements Spooler, spooling queued jobs
 type SpoolerDaemon struct {
-	// Queue of queued runs
-	queue chan *ots.Run
+	// Queue of queued jobs
+	queue chan Job
 	// EventService allows subscribing to stream of events
 	ots.EventService
 	// Logger for logging various events
@@ -50,9 +53,9 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 	}
 
 	// Populate queue
-	queue := make(chan *ots.Run, SpoolerCapacity)
+	queue := make(chan Job, SpoolerCapacity)
 	for _, r := range runs.Items {
-		queue <- r
+		queue <- &RunJob{Run: r}
 	}
 
 	return &SpoolerDaemon{
@@ -77,8 +80,8 @@ func (s *SpoolerDaemon) Start(ctx context.Context) {
 	}
 }
 
-// GetJob retrieves receive-only job queue
-func (s *SpoolerDaemon) GetJob() <-chan *ots.Run {
+// GetJob returns a channel of queued jobs
+func (s *SpoolerDaemon) GetJob() <-chan Job {
 	return s.queue
 }
 
@@ -89,7 +92,7 @@ func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 
 		switch ev.Type {
 		case ots.PlanQueued, ots.ApplyQueued:
-			s.queue <- obj
+			s.queue <- &RunJob{Run: obj}
 		case ots.RunCanceled:
 			// TODO: forward event immediately to job supervisor
 		}

@@ -2,23 +2,21 @@ package agent
 
 import (
 	"context"
-
-	"github.com/leg100/ots"
 )
 
 type mockSpooler struct {
-	queue chan *ots.Run
+	queue chan Job
 }
 
-func newMockSpooler(run ...*ots.Run) *mockSpooler {
-	queue := make(chan *ots.Run, len(run))
-	for _, r := range run {
+func newMockSpooler(job ...Job) *mockSpooler {
+	queue := make(chan Job, len(job))
+	for _, r := range job {
 		queue <- r
 	}
 	return &mockSpooler{queue: queue}
 }
 
-func (s *mockSpooler) GetJob() <-chan *ots.Run {
+func (s *mockSpooler) GetJob() <-chan Job {
 	return s.queue
 }
 
