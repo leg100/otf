@@ -492,7 +492,7 @@ func (r *Run) downloadPlanFile(ctx context.Context, env *Environment) error {
 	return os.WriteFile(filepath.Join(env.Path, PlanFilename), plan, 0644)
 }
 
-// UploadStateStep reads, parses, and uploads state
+// uploadState reads, parses, and uploads state
 func (r *Run) uploadState(ctx context.Context, env *Environment) error {
 	stateFile, err := os.ReadFile(filepath.Join(env.Path, LocalStateFilename))
 	if err != nil {

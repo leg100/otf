@@ -42,8 +42,8 @@ func (w *Worker) handleJob(ctx context.Context, job Job) {
 	log.Info("executing job", "status", job.GetStatus())
 
 	if err := job.Do(env); err != nil {
+		errored = true
 		log.Error(err, "unable to execute job")
-		return
 	}
 
 	if err := w.RunService.Finish(job.GetID(), ots.RunFinishOptions{Errored: errored}); err != nil {

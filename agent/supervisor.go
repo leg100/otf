@@ -22,12 +22,12 @@ type Supervisor struct {
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
 
-	Spooler
+	JobGetter
 }
 
 func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		Spooler:                     spooler,
+		JobGetter:                   spooler,
 		RunService:                  rs,
 		StateVersionService:         svs,
 		ConfigurationVersionService: cvs,

@@ -15,11 +15,16 @@ type Spooler interface {
 	// Start the daemon
 	Start(context.Context)
 
+	JobGetter
+}
+
+type JobGetter interface {
 	// GetJob retrieves spooled job
 	GetJob() <-chan Job
 }
 
-// SpoolerDaemon implements Spooler, spooling queued jobs
+// SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
+// apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
 	queue chan Job
