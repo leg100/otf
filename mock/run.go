@@ -20,8 +20,8 @@ type RunService struct {
 	EnqueuePlanFn  func(id string) error
 	UpdateStatusFn func(id string, status tfe.RunStatus) (*ots.Run, error)
 	UploadLogsFn   func(id string, logs []byte, opts ots.PutChunkOptions) error
-	StartFn        func(id string, opts ots.RunStartOptions) error
-	FinishFn       func(id string, opts ots.RunFinishOptions) error
+	StartFn        func(id string, opts ots.JobStartOptions) (ots.Job, error)
+	FinishFn       func(id string, opts ots.JobFinishOptions) (ots.Job, error)
 	GetPlanJSONFn  func(id string) ([]byte, error)
 	GetPlanFileFn  func(id string) ([]byte, error)
 	UploadPlanFn   func(id string, plan []byte, json bool) error
@@ -75,11 +75,11 @@ func (s RunService) UploadLogs(id string, logs []byte, opts ots.PutChunkOptions)
 	return s.UploadLogsFn(id, logs, opts)
 }
 
-func (s RunService) Start(id string, opts ots.RunStartOptions) error {
+func (s RunService) Start(id string, opts ots.JobStartOptions) (ots.Job, error) {
 	return s.StartFn(id, opts)
 }
 
-func (s RunService) Finish(id string, opts ots.RunFinishOptions) error {
+func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error) {
 	return s.FinishFn(id, opts)
 }
 

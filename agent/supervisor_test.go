@@ -29,13 +29,13 @@ func TestSupervisor_Start(t *testing.T) {
 	supervisor := &Supervisor{
 		Logger: logr.Discard(),
 		RunService: mock.RunService{
-			StartFn: func(id string, opts ots.RunStartOptions) error {
+			StartFn: func(id string, opts ots.JobStartOptions) (ots.Job, error) {
 				got <- id
-				return nil
+				return want, nil
 			},
-			FinishFn: func(id string, opts ots.RunFinishOptions) error {
+			FinishFn: func(id string, opts ots.JobFinishOptions) (ots.Job, error) {
 				got <- id
-				return nil
+				return want, nil
 			},
 			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error {
 				got <- id
@@ -68,11 +68,11 @@ func TestSupervisor_StartError(t *testing.T) {
 	supervisor := &Supervisor{
 		Logger: logr.Discard(),
 		RunService: mock.RunService{
-			StartFn:      func(id string, opts ots.RunStartOptions) error { return nil },
+			StartFn:      func(id string, opts ots.JobStartOptions) (ots.Job, error) { return want, nil },
 			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error { return nil },
-			FinishFn: func(id string, opts ots.RunFinishOptions) error {
+			FinishFn: func(id string, opts ots.JobFinishOptions) (ots.Job, error) {
 				got <- opts.Errored
-				return nil
+				return want, nil
 			},
 		},
 		JobGetter:   NewMockJobGetter(want),

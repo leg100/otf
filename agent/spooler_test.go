@@ -30,10 +30,10 @@ func (s *mockSubscription) Close() error { return nil }
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
-	want := &RunJob{Run: &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}}
+	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
 
 	spooler, err := NewSpooler(
-		&mockRunLister{runs: []*ots.Run{want.Run}},
+		&mockRunLister{runs: []*ots.Run{want}},
 		&mock.EventService{},
 		logr.Discard(),
 	)
@@ -69,9 +69,9 @@ func TestSpooler_Start(t *testing.T) {
 // TestSpooler_GetJob tests retrieving a job from the spooler with a
 // pre-populated queue
 func TestSpooler_GetJob(t *testing.T) {
-	want := &RunJob{Run: &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}}
+	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
 
-	spooler := &SpoolerDaemon{queue: make(chan Job, 1)}
+	spooler := &SpoolerDaemon{queue: make(chan ots.Job, 1)}
 	spooler.queue <- want
 
 	assert.Equal(t, want, <-spooler.GetJob())
@@ -80,12 +80,12 @@ func TestSpooler_GetJob(t *testing.T) {
 // TestSpooler_GetJobFromEvent tests retrieving a job from the spooler after an
 // event is received
 func TestSpooler_GetJobFromEvent(t *testing.T) {
-	want := &RunJob{Run: &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}}
+	want := &ots.Run{ID: "run-123", Status: tfe.RunPlanQueued}
 
 	sub := mockSubscription{c: make(chan ots.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		queue: make(chan Job, 1),
+		queue: make(chan ots.Job, 1),
 		EventService: &mock.EventService{
 			SubscribeFn: func(id string) ots.Subscription {
 				return &sub
@@ -97,7 +97,7 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 	go spooler.Start(context.Background())
 
 	// send event
-	sub.c <- ots.Event{Type: ots.PlanQueued, Payload: want.Run}
+	sub.c <- ots.Event{Type: ots.PlanQueued, Payload: want}
 
 	assert.Equal(t, want, <-spooler.GetJob())
 }

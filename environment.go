@@ -10,7 +10,7 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// Environment provides an execution environment for a Run.
+// Environment provides an execution environment for a Job.
 type Environment struct {
 	RunService                  RunService
 	ConfigurationVersionService ConfigurationVersionService
@@ -30,13 +30,19 @@ type Environment struct {
 
 	// CLI process output is written to this
 	out io.WriteCloser
+
+	// logger
+	logr.Logger
+
+	// agentID is the ID of the agent hosting the execution environment
+	agentID string
 }
 
 // EnvironmentFunc is a func that can be invoked in the environment
 type EnvironmentFunc func(context.Context, *Environment) error
 
 // NewEnvironment constructs an Environment.
-func NewEnvironment(logger logr.Logger, runID string, rs RunService, cvs ConfigurationVersionService, svs StateVersionService) (*Environment, error) {
+func NewEnvironment(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Environment, error) {
 	path, err := os.MkdirTemp("", "ots-plan")
 	if err != nil {
 		return nil, err
@@ -47,12 +53,49 @@ func NewEnvironment(logger logr.Logger, runID string, rs RunService, cvs Configu
 		ConfigurationVersionService: cvs,
 		StateVersionService:         svs,
 		Path:                        path,
-		out: &LogsWriter{
-			runID:     runID,
-			runLogger: rs.UploadLogs,
-			Logger:    logger,
-		},
+		agentID:                     agentID,
+		Logger:                      logger,
 	}, nil
+}
+
+// Execute executes the job in the environment.
+func (e *Environment) Execute(job Job) (err error) {
+	job, err = e.RunService.Start(job.GetID(), JobStartOptions{AgentID: e.agentID})
+	if err != nil {
+		return fmt.Errorf("unable to start job: %w", err)
+	}
+
+	e.out = &LogsWriter{
+		runID:     job.GetID(),
+		runLogger: e.RunService.UploadLogs,
+		Logger:    e.Logger,
+	}
+
+	// Record whether job errored
+	var errored bool
+
+	e.Info("executing job", "status", job.GetStatus())
+
+	if err := job.Do(e); err != nil {
+		errored = true
+		e.Error(err, "unable to execute job")
+	}
+
+	if err := e.out.Close(); err != nil {
+		errored = true
+		e.Error(err, "unable to finish writing logs")
+	}
+
+	// Regardless of job success, mark job as finished
+	_, err = e.RunService.Finish(job.GetID(), JobFinishOptions{Errored: errored})
+	if err != nil {
+		e.Error(err, "finishing job")
+		return err
+	}
+
+	e.Info("finished job")
+
+	return nil
 }
 
 // Cancel terminates execution. Force controls whether termination is graceful

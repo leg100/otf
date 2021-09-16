@@ -20,14 +20,14 @@ type Spooler interface {
 
 type JobGetter interface {
 	// GetJob retrieves spooled job
-	GetJob() <-chan Job
+	GetJob() <-chan ots.Job
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
-	queue chan Job
+	queue chan ots.Job
 	// EventService allows subscribing to stream of events
 	ots.EventService
 	// Logger for logging various events
@@ -58,9 +58,9 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 	}
 
 	// Populate queue
-	queue := make(chan Job, SpoolerCapacity)
+	queue := make(chan ots.Job, SpoolerCapacity)
 	for _, r := range runs.Items {
-		queue <- &RunJob{Run: r}
+		queue <- r
 	}
 
 	return &SpoolerDaemon{
@@ -86,7 +86,7 @@ func (s *SpoolerDaemon) Start(ctx context.Context) {
 }
 
 // GetJob returns a channel of queued jobs
-func (s *SpoolerDaemon) GetJob() <-chan Job {
+func (s *SpoolerDaemon) GetJob() <-chan ots.Job {
 	return s.queue
 }
 
@@ -97,7 +97,7 @@ func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 
 		switch ev.Type {
 		case ots.PlanQueued, ots.ApplyQueued:
-			s.queue <- &RunJob{Run: obj}
+			s.queue <- obj
 		case ots.RunCanceled:
 			// TODO: forward event immediately to job supervisor
 		}

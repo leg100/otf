@@ -90,19 +90,11 @@ type RunService interface {
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
 	UploadLogs(id string, logs []byte, opts PutChunkOptions) error
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
-	Start(id string, opts RunStartOptions) error
-	Finish(id string, opts RunFinishOptions) error
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
 	UploadPlan(runID string, plan []byte, json bool) error
-}
 
-type RunStartOptions struct {
-	AgentID string
-}
-
-type RunFinishOptions struct {
-	Errored bool
+	JobService
 }
 
 // RunStore implementations persist Run objects.
@@ -145,6 +137,14 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
+func (r *Run) GetID() string {
+	return r.ID
+}
+
+func (r *Run) GetStatus() string {
+	return string(r.Status)
+}
+
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
@@ -156,7 +156,7 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// been issued.
+// Cancel run.
 func (r *Run) Cancel() error {
 	if !r.IsCancelable() {
 		return ErrRunCancelNotAllowed
@@ -296,7 +296,7 @@ func (r *Run) Finish(bs BlobStore) (*Event, error) {
 			return nil, err
 		}
 
-		return nil, nil
+		return &Event{Payload: r, Type: RunApplied}, nil
 	}
 
 	// Only remaining valid status is planning
@@ -311,7 +311,7 @@ func (r *Run) Finish(bs BlobStore) (*Event, error) {
 	// Speculative plan, proceed no further
 	if r.ConfigurationVersion.Speculative {
 		r.UpdateStatus(tfe.RunPlannedAndFinished)
-		return nil, nil
+		return &Event{Payload: r, Type: RunPlannedAndFinished}, nil
 	}
 
 	r.UpdateStatus(tfe.RunPlanned)
@@ -321,7 +321,7 @@ func (r *Run) Finish(bs BlobStore) (*Event, error) {
 		return &Event{Type: ApplyQueued, Payload: r}, nil
 	}
 
-	return nil, nil
+	return &Event{Payload: r, Type: RunPlanned}, nil
 }
 
 // UpdateStatus updates the status of the run as well as its plan and apply

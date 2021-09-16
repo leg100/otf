@@ -144,24 +144,21 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return s.bs.Put(bid, plan)
 }
 
-// Start persists changes to a run to reflect a run phase as having started.
-func (s RunService) Start(id string, opts ots.RunStartOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+// Start is called by an agent to announce that it has started a run job, i.e. a
+// plan or an apply.
+func (s RunService) Start(id string, opts ots.JobStartOptions) (ots.Job, error) {
+	return s.db.Update(id, func(run *ots.Run) (err error) {
 		return run.Start()
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
-// Finish persists changes to a run to reflect a run phase as having finished.
-// An event is emitted to notify any subscribers of the new run state.
-func (s RunService) Finish(id string, opts ots.RunFinishOptions) error {
+// Finish is called by an agent to announce that is has finished a run job, i.e.
+// a plan or an apply. An event is emitted to notify any subscribers of the new
+// run state.
+func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error) {
 	var event *ots.Event
 
-	_, err := s.db.Update(id, func(run *ots.Run) (err error) {
+	run, err := s.db.Update(id, func(run *ots.Run) (err error) {
 		event, err = run.Finish(s.bs)
 		if err != nil {
 			return err
@@ -169,12 +166,12 @@ func (s RunService) Finish(id string, opts ots.RunFinishOptions) error {
 		return err
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	s.es.Publish(*event)
 
-	return nil
+	return run, nil
 }
 
 // GetPlanJSON returns the JSON formatted plan file for the run.
