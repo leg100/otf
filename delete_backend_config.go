@@ -1,4 +1,4 @@
-package agent
+package ots
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+func deleteBackendConfigFromDirectory(ctx context.Context, exe *Executor) error {
+	return filepath.Walk(exe.Path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
 
-		if dir != path && info.IsDir() {
+		if exe.Path != path && info.IsDir() {
 			return filepath.SkipDir
 		}
 

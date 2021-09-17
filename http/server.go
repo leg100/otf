@@ -76,9 +76,8 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
 	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
-	router.HandleFunc("/plans/{id}/logs", server.UploadPlanLogs).Methods("POST")
 	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
-	router.HandleFunc("/applies/{id}/logs", server.UploadApplyLogs).Methods("POST")
+	router.HandleFunc("/runs/{id}/logs", server.UploadLogs).Methods("POST")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()

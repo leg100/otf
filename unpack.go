@@ -1,4 +1,4 @@
-package agent
+package ots
 
 import (
 	"archive/tar"

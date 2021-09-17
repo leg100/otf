@@ -10,18 +10,30 @@ import (
 
 var _ Spooler = (*SpoolerDaemon)(nil)
 
-// Spooler is a daemon that queues incoming run jobs
+// Spooler is a daemon from which jobs can be retrieved
 type Spooler interface {
-	GetJob() <-chan *ots.Run
+	// Start the daemon
 	Start(context.Context)
+
+	// GetJob receives spooled job
+	GetJob() <-chan ots.Job
+
+	// GetCancelation receives cancelation request for a job
+	GetCancelation() <-chan ots.Job
 }
 
-// SpoolerDaemon queues jobs.
+// SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
+// apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	// Queue of queued runs
-	queue chan *ots.Run
+	// Queue of queued jobs
+	queue chan ots.Job
+
+	// Queue of cancelation requests
+	cancelations chan ots.Job
+
 	// EventService allows subscribing to stream of events
 	ots.EventService
+
 	// Logger for logging various events
 	logr.Logger
 }
@@ -50,13 +62,14 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 	}
 
 	// Populate queue
-	queue := make(chan *ots.Run, SpoolerCapacity)
+	queue := make(chan ots.Job, SpoolerCapacity)
 	for _, r := range runs.Items {
 		queue <- r
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
+		cancelations: make(chan ots.Job, SpoolerCapacity),
 		EventService: es,
 		Logger:       logger,
 	}, nil
@@ -77,9 +90,14 @@ func (s *SpoolerDaemon) Start(ctx context.Context) {
 	}
 }
 
-// GetJob retrieves receive-only job queue
-func (s *SpoolerDaemon) GetJob() <-chan *ots.Run {
+// GetJob returns a channel of queued jobs
+func (s *SpoolerDaemon) GetJob() <-chan ots.Job {
 	return s.queue
+}
+
+// GetCancelation returns a channel of cancelation requests
+func (s *SpoolerDaemon) GetCancelation() <-chan ots.Job {
+	return s.cancelations
 }
 
 func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
@@ -91,7 +109,7 @@ func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 		case ots.PlanQueued, ots.ApplyQueued:
 			s.queue <- obj
 		case ots.RunCanceled:
-			// TODO: forward event immediately to job supervisor
+			s.cancelations <- obj
 		}
 	}
 }

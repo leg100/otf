@@ -1,8 +1,6 @@
 package http
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -40,28 +38,6 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := w.Write(logs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	var opts ots.PutChunkOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	if err := s.RunService.UploadApplyLogs(vars["id"], buf.Bytes(), opts); err != nil {
-		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestPlanFile(t *testing.T) {
-	data, err := os.ReadFile("agent/testdata/plan.json")
+	data, err := os.ReadFile("testdata/plan.json")
 	require.NoError(t, err)
 
 	file := PlanFile{}
@@ -38,7 +38,7 @@ func TestPlanFile(t *testing.T) {
 }
 
 func TestPlanFile_Changes(t *testing.T) {
-	data, err := os.ReadFile("agent/testdata/plan.json")
+	data, err := os.ReadFile("testdata/plan.json")
 	require.NoError(t, err)
 
 	file := PlanFile{}

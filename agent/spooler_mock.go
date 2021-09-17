@@ -1,25 +1,45 @@
 package agent
 
-import (
-	"context"
+import "github.com/leg100/ots"
 
-	"github.com/leg100/ots"
-)
+type MockSpooler struct {
+	queue, cancelations chan ots.Job
 
-type mockSpooler struct {
-	queue chan *ots.Run
+	Spooler
 }
 
-func newMockSpooler(run ...*ots.Run) *mockSpooler {
-	queue := make(chan *ots.Run, len(run))
-	for _, r := range run {
-		queue <- r
+type MockSpoolerOption func(*MockSpooler)
+
+func WithMockJobs(job ...ots.Job) MockSpoolerOption {
+	return func(s *MockSpooler) {
+		s.queue = make(chan ots.Job, len(job))
+		for _, r := range job {
+			s.queue <- r
+		}
 	}
-	return &mockSpooler{queue: queue}
 }
 
-func (s *mockSpooler) GetJob() <-chan *ots.Run {
+func WithCanceledJobs(job ...ots.Job) MockSpoolerOption {
+	return func(s *MockSpooler) {
+		s.cancelations = make(chan ots.Job, len(job))
+		for _, r := range job {
+			s.cancelations <- r
+		}
+	}
+}
+
+func NewMockSpooler(opt ...MockSpoolerOption) *MockSpooler {
+	spooler := MockSpooler{}
+	for _, o := range opt {
+		o(&spooler)
+	}
+	return &spooler
+}
+
+func (s *MockSpooler) GetJob() <-chan ots.Job {
 	return s.queue
 }
 
-func (s *mockSpooler) Start(context.Context) {}
+func (s *MockSpooler) GetCancelation() <-chan ots.Job {
+	return s.queue
+}

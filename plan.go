@@ -1,8 +1,18 @@
 package ots
 
 import (
+	"encoding/json"
+	"fmt"
+
 	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
+)
+
+const (
+	LocalStateFilename  = "terraform.tfstate"
+	PlanFilename        = "plan.out"
+	JSONPlanFilename    = "plan.out.json"
+	ApplyOutputFilename = "apply.out"
 )
 
 // Plan represents a Terraform Enterprise plan.
@@ -60,6 +70,55 @@ func (p *Plan) HasChanges() bool {
 		return true
 	}
 	return false
+}
+
+func (p *Plan) GetLogsBlobID() string {
+	return p.LogsBlobID
+}
+
+func (p *Plan) Do(run *Run, exe *Executor) error {
+	if err := exe.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+		return err
+	}
+
+	if err := exe.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
+		return err
+	}
+
+	if err := exe.RunFunc(run.uploadPlan); err != nil {
+		return err
+	}
+
+	if err := exe.RunFunc(run.uploadJSONPlan); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateResources parses the plan file produced from terraform plan to
+// determine the number and type of resource changes planned and updates the
+// plan object accordingly.
+func (p *Plan) UpdateResources(bs BlobStore) error {
+	jsonFile, err := bs.Get(p.PlanJSONBlobID)
+	if err != nil {
+		return err
+	}
+
+	planFile := PlanFile{}
+	if err := json.Unmarshal(jsonFile, &planFile); err != nil {
+		return err
+	}
+
+	// Parse plan output
+	adds, updates, deletes := planFile.Changes()
+
+	// Update status
+	p.ResourceAdditions = adds
+	p.ResourceChanges = updates
+	p.ResourceDestructions = deletes
+
+	return nil
 }
 
 func (p *Plan) UpdateStatus(status tfe.PlanStatus) {

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/ots"
 )
@@ -110,7 +112,8 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 
 func (s RunService) EnqueuePlan(id string) error {
 	run, err := s.db.Update(id, func(run *ots.Run) error {
-		return run.UpdateStatus(tfe.RunPlanQueued)
+		run.UpdateStatus(tfe.RunPlanQueued)
+		return nil
 	})
 	if err != nil {
 		return err
@@ -119,12 +122,6 @@ func (s RunService) EnqueuePlan(id string) error {
 	s.es.Publish(ots.Event{Type: ots.PlanQueued, Payload: run})
 
 	return err
-}
-
-func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*ots.Run, error) {
-	return s.db.Update(id, func(run *ots.Run) error {
-		return run.UpdateStatus(status)
-	})
 }
 
 // UploadPlan persists a run's plan file. The plan file is expected to have been
@@ -147,30 +144,30 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return s.bs.Put(bid, plan)
 }
 
-func (s RunService) FinishPlan(id string, opts ots.PlanFinishOptions) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishPlan(opts)
-
-		return nil
+// Start marks a run phase (plan, apply) as started.
+func (s RunService) Start(id string, opts ots.JobStartOptions) (ots.Job, error) {
+	return s.db.Update(id, func(run *ots.Run) error {
+		return run.Start()
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return run, nil
 }
 
-func (s RunService) FinishApply(id string, opts ots.ApplyFinishOptions) (*ots.Run, error) {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
-		run.FinishApply(opts)
+// Finish marks a run phase (plan, apply) as finished.  An event is emitted to
+// notify any subscribers of the new run state.
+func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error) {
+	var event *ots.Event
 
-		return nil
+	run, err := s.db.Update(id, func(run *ots.Run) (err error) {
+		event, err = run.Finish(s.bs)
+		if err != nil {
+			return err
+		}
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
+	s.es.Publish(*event)
 
 	return run, nil
 }
@@ -213,18 +210,17 @@ func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, e
 	return s.bs.GetChunk(run.Apply.LogsBlobID, opts)
 }
 
-func (s RunService) UploadPlanLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
+// UploadLogs writes a chunk of logs for a run.
+func (s RunService) UploadLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
 	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
-	return s.bs.PutChunk(run.Plan.LogsBlobID, logs, opts)
-}
 
-func (s RunService) UploadApplyLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	active, err := run.ActivePhase()
 	if err != nil {
-		return err
+		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
-	return s.bs.PutChunk(run.Apply.LogsBlobID, logs, opts)
+
+	return s.bs.PutChunk(active.GetLogsBlobID(), logs, opts)
 }
