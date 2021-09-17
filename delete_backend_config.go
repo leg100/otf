@@ -10,13 +10,13 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func deleteBackendConfigFromDirectory(ctx context.Context, env *Environment) error {
-	return filepath.Walk(env.Path, func(path string, info os.FileInfo, err error) error {
+func deleteBackendConfigFromDirectory(ctx context.Context, exe *Executor) error {
+	return filepath.Walk(exe.Path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
 
-		if env.Path != path && info.IsDir() {
+		if exe.Path != path && info.IsDir() {
 			return filepath.SkipDir
 		}
 

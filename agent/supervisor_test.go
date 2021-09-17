@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestSupervisor_Start tests starting up the daemon and tests it handling a
+// TestSupervisor_Start tests starting up the supervisor and tests it handling a
 // single job
 func TestSupervisor_Start(t *testing.T) {
 	want := &agentmock.Job{
 		ID:     "run-123",
 		Status: "queued",
-		DoFn: func(env *ots.Environment) error {
+		DoFn: func(env *ots.Executor) error {
 			return nil
 		},
 	}
@@ -42,8 +42,9 @@ func TestSupervisor_Start(t *testing.T) {
 				return nil
 			},
 		},
-		JobGetter:   NewMockJobGetter(want),
+		Spooler:     NewMockSpooler(WithMockJobs(want)),
 		concurrency: 1,
+		Terminator:  NewTerminator(),
 	}
 
 	go supervisor.Start(context.Background())
@@ -51,13 +52,13 @@ func TestSupervisor_Start(t *testing.T) {
 	assert.Equal(t, "run-123", <-got)
 }
 
-// TestSupervisor_StartError tests starting up the agent daemon and tests it handling
-// it a single job that errors
+// TestSupervisor_StartError tests starting up the supervisor and tests it
+// handling it a single job that errors
 func TestSupervisor_StartError(t *testing.T) {
 	want := &agentmock.Job{
 		ID:     "run-123",
 		Status: "queued",
-		DoFn: func(env *ots.Environment) error {
+		DoFn: func(env *ots.Executor) error {
 			return errors.New("mock error")
 		},
 	}
@@ -75,8 +76,9 @@ func TestSupervisor_StartError(t *testing.T) {
 				return want, nil
 			},
 		},
-		JobGetter:   NewMockJobGetter(want),
+		Spooler:     NewMockSpooler(WithMockJobs(want)),
 		concurrency: 1,
+		Terminator:  NewTerminator(),
 	}
 
 	go supervisor.Start(context.Background())

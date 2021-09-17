@@ -15,12 +15,11 @@ type Spooler interface {
 	// Start the daemon
 	Start(context.Context)
 
-	JobGetter
-}
-
-type JobGetter interface {
-	// GetJob retrieves spooled job
+	// GetJob receives spooled job
 	GetJob() <-chan ots.Job
+
+	// GetCancelation receives cancelation request for a job
+	GetCancelation() <-chan ots.Job
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
@@ -28,8 +27,13 @@ type JobGetter interface {
 type SpoolerDaemon struct {
 	// Queue of queued jobs
 	queue chan ots.Job
+
+	// Queue of cancelation requests
+	cancelations chan ots.Job
+
 	// EventService allows subscribing to stream of events
 	ots.EventService
+
 	// Logger for logging various events
 	logr.Logger
 }
@@ -65,6 +69,7 @@ func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*Spooler
 
 	return &SpoolerDaemon{
 		queue:        queue,
+		cancelations: make(chan ots.Job, SpoolerCapacity),
 		EventService: es,
 		Logger:       logger,
 	}, nil
@@ -90,6 +95,11 @@ func (s *SpoolerDaemon) GetJob() <-chan ots.Job {
 	return s.queue
 }
 
+// GetCancelation returns a channel of cancelation requests
+func (s *SpoolerDaemon) GetCancelation() <-chan ots.Job {
+	return s.cancelations
+}
+
 func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 	switch obj := ev.Payload.(type) {
 	case *ots.Run:
@@ -99,7 +109,7 @@ func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
 		case ots.PlanQueued, ots.ApplyQueued:
 			s.queue <- obj
 		case ots.RunCanceled:
-			// TODO: forward event immediately to job supervisor
+			s.cancelations <- obj
 		}
 	}
 }

@@ -50,16 +50,16 @@ func (a *Apply) GetLogsBlobID() string {
 	return a.LogsBlobID
 }
 
-func (a *Apply) Do(run *Run, env *Environment) error {
-	if err := env.RunFunc(run.downloadPlanFile); err != nil {
+func (a *Apply) Do(run *Run, exe *Executor) error {
+	if err := exe.RunFunc(run.downloadPlanFile); err != nil {
 		return err
 	}
 
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
+	if err := exe.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
 		return err
 	}
 
-	if err := env.RunFunc(run.uploadState); err != nil {
+	if err := exe.RunFunc(run.uploadState); err != nil {
 		return err
 	}
 

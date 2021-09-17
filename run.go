@@ -68,7 +68,7 @@ type Run struct {
 // apply.
 type Phase interface {
 	GetLogsBlobID() string
-	Do(*Run, *Environment) error
+	Do(*Run, *Executor) error
 }
 
 // RunFactory is a factory for constructing Run objects.
@@ -88,7 +88,6 @@ type RunService interface {
 	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
 	EnqueuePlan(id string) error
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
-	UploadLogs(id string, logs []byte, opts PutChunkOptions) error
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
 	GetPlanJSON(id string) ([]byte, error)
 	GetPlanFile(id string) ([]byte, error)
@@ -391,20 +390,20 @@ func (r *Run) setTimestamp(status tfe.RunStatus) {
 	}
 }
 
-func (r *Run) Do(env *Environment) error {
-	if err := env.RunFunc(r.downloadConfig); err != nil {
+func (r *Run) Do(exe *Executor) error {
+	if err := exe.RunFunc(r.downloadConfig); err != nil {
 		return err
 	}
 
-	if err := env.RunFunc(deleteBackendConfigFromDirectory); err != nil {
+	if err := exe.RunFunc(deleteBackendConfigFromDirectory); err != nil {
 		return err
 	}
 
-	if err := env.RunFunc(r.downloadState); err != nil {
+	if err := exe.RunFunc(r.downloadState); err != nil {
 		return err
 	}
 
-	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
+	if err := exe.RunCLI("terraform", "init", "-no-color"); err != nil {
 		return err
 	}
 
@@ -413,22 +412,22 @@ func (r *Run) Do(env *Environment) error {
 		return err
 	}
 
-	if err := phase.Do(r, env); err != nil {
+	if err := phase.Do(r, exe); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *Run) downloadConfig(ctx context.Context, env *Environment) error {
+func (r *Run) downloadConfig(ctx context.Context, exe *Executor) error {
 	// Download config
-	cv, err := env.ConfigurationVersionService.Download(r.ConfigurationVersion.ID)
+	cv, err := exe.ConfigurationVersionService.Download(r.ConfigurationVersion.ID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 
 	// Decompress and untar config
-	if err := Unpack(bytes.NewBuffer(cv), env.Path); err != nil {
+	if err := Unpack(bytes.NewBuffer(cv), exe.Path); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 
@@ -437,64 +436,64 @@ func (r *Run) downloadConfig(ctx context.Context, env *Environment) error {
 
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, env *Environment) error {
-	state, err := env.StateVersionService.Current(r.Workspace.ID)
+func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
+	state, err := exe.StateVersionService.Current(r.Workspace.ID)
 	if IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err
 	}
 
-	statefile, err := env.StateVersionService.Download(state.ID)
+	statefile, err := exe.StateVersionService.Download(state.ID)
 	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(filepath.Join(env.Path, LocalStateFilename), statefile, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(exe.Path, LocalStateFilename), statefile, 0644); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *Run) uploadPlan(ctx context.Context, env *Environment) error {
-	file, err := os.ReadFile(filepath.Join(env.Path, PlanFilename))
+func (r *Run) uploadPlan(ctx context.Context, exe *Executor) error {
+	file, err := os.ReadFile(filepath.Join(exe.Path, PlanFilename))
 	if err != nil {
 		return err
 	}
 
-	if err := env.RunService.UploadPlan(r.ID, file, false); err != nil {
+	if err := exe.RunService.UploadPlan(r.ID, file, false); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) uploadJSONPlan(ctx context.Context, env *Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.Path, JSONPlanFilename))
+func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
+	jsonFile, err := os.ReadFile(filepath.Join(exe.Path, JSONPlanFilename))
 	if err != nil {
 		return err
 	}
 
-	if err := env.RunService.UploadPlan(r.ID, jsonFile, true); err != nil {
+	if err := exe.RunService.UploadPlan(r.ID, jsonFile, true); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) downloadPlanFile(ctx context.Context, env *Environment) error {
-	plan, err := env.RunService.GetPlanFile(r.ID)
+func (r *Run) downloadPlanFile(ctx context.Context, exe *Executor) error {
+	plan, err := exe.RunService.GetPlanFile(r.ID)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(env.Path, PlanFilename), plan, 0644)
+	return os.WriteFile(filepath.Join(exe.Path, PlanFilename), plan, 0644)
 }
 
 // uploadState reads, parses, and uploads state
-func (r *Run) uploadState(ctx context.Context, env *Environment) error {
-	stateFile, err := os.ReadFile(filepath.Join(env.Path, LocalStateFilename))
+func (r *Run) uploadState(ctx context.Context, exe *Executor) error {
+	stateFile, err := os.ReadFile(filepath.Join(exe.Path, LocalStateFilename))
 	if err != nil {
 		return err
 	}
@@ -504,7 +503,7 @@ func (r *Run) uploadState(ctx context.Context, env *Environment) error {
 		return err
 	}
 
-	_, err = env.StateVersionService.Create(r.Workspace.ID, tfe.StateVersionCreateOptions{
+	_, err = exe.StateVersionService.Create(r.Workspace.ID, tfe.StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,

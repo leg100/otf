@@ -10,11 +10,11 @@ import (
 type Job struct {
 	ID     string
 	Status string
-	DoFn   func(*ots.Environment) error
+	DoFn   func(*ots.Executor) error
 }
 
-func (j *Job) Do(env *ots.Environment) error {
-	return j.DoFn(env)
+func (j *Job) Do(exe *ots.Executor) error {
+	return j.DoFn(exe)
 }
 
 func (j *Job) GetID() string {

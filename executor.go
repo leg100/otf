@@ -10,8 +10,11 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// Environment provides an execution environment for a Job.
-type Environment struct {
+// Executor executes a job, providing it with services, temp directory etc,
+// capturing its stdout
+type Executor struct {
+	JobService
+
 	RunService                  RunService
 	ConfigurationVersionService ConfigurationVersionService
 	StateVersionService         StateVersionService
@@ -34,22 +37,23 @@ type Environment struct {
 	// logger
 	logr.Logger
 
-	// agentID is the ID of the agent hosting the execution environment
+	// agentID is the ID of the agent hosting the execution executor
 	agentID string
 }
 
-// EnvironmentFunc is a func that can be invoked in the environment
-type EnvironmentFunc func(context.Context, *Environment) error
+// ExecutorFunc is a func that can be invoked in the executor
+type ExecutorFunc func(context.Context, *Executor) error
 
-// NewEnvironment constructs an Environment.
-func NewEnvironment(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Environment, error) {
+// NewExecutor constructs an Executor.
+func NewExecutor(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Executor, error) {
 	path, err := os.MkdirTemp("", "ots-plan")
 	if err != nil {
 		return nil, err
 	}
 
-	return &Environment{
+	return &Executor{
 		RunService:                  rs,
+		JobService:                  rs,
 		ConfigurationVersionService: cvs,
 		StateVersionService:         svs,
 		Path:                        path,
@@ -58,17 +62,19 @@ func NewEnvironment(logger logr.Logger, rs RunService, cvs ConfigurationVersionS
 	}, nil
 }
 
-// Execute executes the job in the environment.
-func (e *Environment) Execute(job Job) (err error) {
-	job, err = e.RunService.Start(job.GetID(), JobStartOptions{AgentID: e.agentID})
+// Execute performs the full lifecycle of executing a job: marking it as
+// started, running the job, and then marking it as finished. Its logs are
+// captured and forwarded.
+func (e *Executor) Execute(job Job) (err error) {
+	job, err = e.Start(job.GetID(), JobStartOptions{AgentID: e.agentID})
 	if err != nil {
 		return fmt.Errorf("unable to start job: %w", err)
 	}
 
-	e.out = &LogsWriter{
-		runID:     job.GetID(),
-		runLogger: e.RunService.UploadLogs,
-		Logger:    e.Logger,
+	e.out = &JobWriter{
+		ID:              job.GetID(),
+		JobLogsUploader: e.JobService,
+		Logger:          e.Logger,
 	}
 
 	// Record whether job errored
@@ -81,13 +87,14 @@ func (e *Environment) Execute(job Job) (err error) {
 		e.Error(err, "unable to execute job")
 	}
 
+	// Mark the logs as fully uploaded
 	if err := e.out.Close(); err != nil {
 		errored = true
 		e.Error(err, "unable to finish writing logs")
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = e.RunService.Finish(job.GetID(), JobFinishOptions{Errored: errored})
+	_, err = e.Finish(job.GetID(), JobFinishOptions{Errored: errored})
 	if err != nil {
 		e.Error(err, "finishing job")
 		return err
@@ -102,38 +109,15 @@ func (e *Environment) Execute(job Job) (err error) {
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *Environment) Cancel(force bool) {
+func (e *Executor) Cancel(force bool) {
 	e.canceled = true
 
 	e.cancelCLI(force)
 	e.cancelFunc(force)
 }
 
-func (e *Environment) cancelCLI(force bool) {
-	if e.proc == nil {
-		return
-	}
-
-	if force {
-		e.proc.Signal(os.Kill)
-	} else {
-		e.proc.Signal(os.Interrupt)
-	}
-}
-
-func (e *Environment) cancelFunc(force bool) {
-	// Don't cancel a func's context unless forced
-	if !force {
-		return
-	}
-	if e.cancel == nil {
-		return
-	}
-	e.cancel()
-}
-
-// RunCLI executes a CLI process in the environment.
-func (e *Environment) RunCLI(name string, args ...string) error {
+// RunCLI executes a CLI process in the executor.
+func (e *Executor) RunCLI(name string, args ...string) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
@@ -148,8 +132,8 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	return cmd.Run()
 }
 
-// RunFunc invokes a func in the environment.
-func (e *Environment) RunFunc(fn EnvironmentFunc) error {
+// RunFunc invokes a func in the executor.
+func (e *Executor) RunFunc(fn ExecutorFunc) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
@@ -159,4 +143,27 @@ func (e *Environment) RunFunc(fn EnvironmentFunc) error {
 	e.cancel = cancel
 
 	return fn(ctx, e)
+}
+
+func (e *Executor) cancelCLI(force bool) {
+	if e.proc == nil {
+		return
+	}
+
+	if force {
+		e.proc.Signal(os.Kill)
+	} else {
+		e.proc.Signal(os.Interrupt)
+	}
+}
+
+func (e *Executor) cancelFunc(force bool) {
+	// Don't cancel a func's context unless forced
+	if !force {
+		return
+	}
+	if e.cancel == nil {
+		return
+	}
+	e.cancel()
 }

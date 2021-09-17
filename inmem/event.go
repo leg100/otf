@@ -43,8 +43,8 @@ func (e *EventService) Subscribe(id string) ots.Subscription {
 		c:       make(chan ots.Event, EventBufferSize),
 	}
 
-	// Add to list of user's subscriptions.
-	// Subscritions are stored as a map for each user so we can easily delete them.
+	// Add to list of user's subscriptions. Subscriptions are stored as a map
+	// for each user so we can easily delete them.
 	e.subs[id] = sub
 
 	e.Info("subscription created", "subscriber", id)

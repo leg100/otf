@@ -11,9 +11,9 @@ const (
 	DefaultConcurrency = 5
 )
 
-// Supervisor supervises jobs
+// Supervisor supervises concurrently running workers.
 type Supervisor struct {
-	// concurrency is the max number of concurrent jobs
+	// concurrency is the max number of concurrent workers
 	concurrency int
 
 	logr.Logger
@@ -22,26 +22,38 @@ type Supervisor struct {
 	ConfigurationVersionService ots.ConfigurationVersionService
 	StateVersionService         ots.StateVersionService
 
-	JobGetter
+	Spooler
+
+	*Terminator
 }
 
+// NewSupervisor is the constructor for Supervisor
 func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		JobGetter:                   spooler,
+		Spooler:                     spooler,
 		RunService:                  rs,
 		StateVersionService:         svs,
 		ConfigurationVersionService: cvs,
 		Logger:                      logger,
 		concurrency:                 concurrency,
+		Terminator:                  NewTerminator(),
 	}
 }
 
-// Start starts the supervisor's workers
+// Start starts the supervisor's workers.
 func (s *Supervisor) Start(ctx context.Context) {
 	for i := 0; i < s.concurrency; i++ {
 		w := &Worker{Supervisor: s}
 		w.Start(ctx)
 	}
 
-	<-ctx.Done()
+	for {
+		select {
+		case job := <-s.GetCancelation():
+			// TODO: support force cancelations too.
+			s.Cancel(job.GetID(), false)
+		case <-ctx.Done():
+			return
+		}
+	}
 }

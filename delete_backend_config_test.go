@@ -74,5 +74,5 @@ terraform {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.tf"), []byte(config), 0644))
 
-	assert.NoError(t, deleteBackendConfigFromDirectory(context.Background(), &Environment{Path: dir}))
+	assert.NoError(t, deleteBackendConfigFromDirectory(context.Background(), &Executor{Path: dir}))
 }

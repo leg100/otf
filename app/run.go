@@ -144,17 +144,15 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 	return s.bs.Put(bid, plan)
 }
 
-// Start is called by an agent to announce that it has started a run job, i.e. a
-// plan or an apply.
+// Start marks a run phase (plan, apply) as started.
 func (s RunService) Start(id string, opts ots.JobStartOptions) (ots.Job, error) {
-	return s.db.Update(id, func(run *ots.Run) (err error) {
+	return s.db.Update(id, func(run *ots.Run) error {
 		return run.Start()
 	})
 }
 
-// Finish is called by an agent to announce that is has finished a run job, i.e.
-// a plan or an apply. An event is emitted to notify any subscribers of the new
-// run state.
+// Finish marks a run phase (plan, apply) as finished.  An event is emitted to
+// notify any subscribers of the new run state.
 func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error) {
 	var event *ots.Event
 

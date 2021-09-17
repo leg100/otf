@@ -101,3 +101,28 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 
 	assert.Equal(t, want, <-spooler.GetJob())
 }
+
+// TestSpooler_GetJobFromCancelation tests retrieving a job from the spooler
+// after a cancelation is received
+func TestSpooler_GetJobFromCancelation(t *testing.T) {
+	want := &ots.Run{ID: "run-123", Status: tfe.RunCanceled}
+
+	sub := mockSubscription{c: make(chan ots.Event, 1)}
+
+	spooler := &SpoolerDaemon{
+		cancelations: make(chan ots.Job, 1),
+		EventService: &mock.EventService{
+			SubscribeFn: func(id string) ots.Subscription {
+				return &sub
+			},
+		},
+		Logger: logr.Discard(),
+	}
+
+	go spooler.Start(context.Background())
+
+	// send event
+	sub.c <- ots.Event{Type: ots.RunCanceled, Payload: want}
+
+	assert.Equal(t, want, <-spooler.GetCancelation())
+}
