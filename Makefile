@@ -37,8 +37,8 @@ install:
 install-latest-release:
 	{ \
 	set -e ;\
-	ZIP_FILE=$$(tempfile --prefix=ots --suffix=.zip) ;\
-	RELEASE_URL=$$(curl -s https://api.github.com/repos/leg100/ots/releases/latest | \
+	ZIP_FILE=$$(tempfile --prefix=otf --suffix=.zip) ;\
+	RELEASE_URL=$$(curl -s https://api.github.com/repos/leg100/otf/releases/latest | \
 		jq -r '.assets[] | select(.name | test(".*_linux_amd64.zip$$")) | .browser_download_url') ;\
 	curl -Lo $$ZIP_FILE $$RELEASE_URL ;\
 	unzip -o -d $(GOBIN) $$ZIP_FILE ;\

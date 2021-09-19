@@ -15,9 +15,9 @@ func TestCredentialsStore(t *testing.T) {
 	store, err := NewCredentialsStore(FakeDirectories(tmpdir))
 	require.NoError(t, err)
 
-	require.NoError(t, store.Save("ots.dev:8080", "dummy"))
+	require.NoError(t, store.Save("otf.dev:8080", "dummy"))
 
-	token, err := store.Load("ots.dev:8080")
+	token, err := store.Load("otf.dev:8080")
 	require.NoError(t, err)
 
 	assert.Equal(t, "dummy", token)
@@ -42,7 +42,7 @@ func TestCredentialsStoreWithExistingCredentials(t *testing.T) {
 	store, err := NewCredentialsStore(FakeDirectories(tmpdir))
 	require.NoError(t, err)
 
-	require.NoError(t, store.Save("ots.dev:8080", "dummy"))
+	require.NoError(t, store.Save("otf.dev:8080", "dummy"))
 
 	got, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestCredentialsStoreWithExistingCredentials(t *testing.T) {
     "app.terraform.io": {
       "token": "secret"
     },
-    "ots.dev:8080": {
+    "otf.dev:8080": {
       "token": "dummy"
     }
   }

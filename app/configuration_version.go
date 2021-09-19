@@ -2,29 +2,29 @@ package app
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
+var _ otf.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 
 type ConfigurationVersionService struct {
-	db ots.ConfigurationVersionStore
-	bs ots.BlobStore
+	db otf.ConfigurationVersionStore
+	bs otf.BlobStore
 
-	*ots.ConfigurationVersionFactory
+	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db ots.ConfigurationVersionStore, wss ots.WorkspaceService, bs ots.BlobStore) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, wss otf.WorkspaceService, bs otf.BlobStore) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		bs: bs,
 		db: db,
-		ConfigurationVersionFactory: &ots.ConfigurationVersionFactory{
+		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
 	}
 }
 
-func (s ConfigurationVersionService) Create(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*ots.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) Create(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	cv, err := s.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		return nil, err
@@ -33,21 +33,21 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts *tfe.Config
 	return s.db.Create(cv)
 }
 
-func (s ConfigurationVersionService) List(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*ots.ConfigurationVersionList, error) {
-	return s.db.List(workspaceID, ots.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+func (s ConfigurationVersionService) List(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+	return s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 }
 
-func (s ConfigurationVersionService) Get(id string) (*ots.ConfigurationVersion, error) {
-	return s.db.Get(ots.ConfigurationVersionGetOptions{ID: &id})
+func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, error) {
+	return s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
 }
 
-func (s ConfigurationVersionService) GetLatest(workspaceID string) (*ots.ConfigurationVersion, error) {
-	return s.db.Get(ots.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.ConfigurationVersion, error) {
+	return s.db.Get(otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 }
 
 // Upload a configuration version blob
 func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
-	_, err := s.db.Update(id, func(cv *ots.ConfigurationVersion) error {
+	_, err := s.db.Update(id, func(cv *otf.ConfigurationVersion) error {
 		if err := s.bs.Put(cv.BlobID, configuration); err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func (s ConfigurationVersionService) Upload(id string, configuration []byte) err
 }
 
 func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
-	cv, err := s.db.Get(ots.ConfigurationVersionGetOptions{ID: &id})
+	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}

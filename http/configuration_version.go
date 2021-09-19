@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +77,7 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 
 // ConfigurationVersionJSONAPIObject converts a ConfigurationVersion to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) ConfigurationVersionJSONAPIObject(cv *ots.ConfigurationVersion) *tfe.ConfigurationVersion {
+func (s *Server) ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion) *tfe.ConfigurationVersion {
 	obj := &tfe.ConfigurationVersion{
 		ID:            cv.ID,
 		AutoQueueRuns: cv.AutoQueueRuns,
@@ -98,7 +98,7 @@ func (s *Server) ConfigurationVersionJSONAPIObject(cv *ots.ConfigurationVersion)
 
 // ConfigurationVersionListJSONAPIObject converts a ConfigurationVersionList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *ots.ConfigurationVersionList) *tfe.ConfigurationVersionList {
+func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *otf.ConfigurationVersionList) *tfe.ConfigurationVersionList {
 	obj := &tfe.ConfigurationVersionList{
 		Pagination: cvl.Pagination,
 	}

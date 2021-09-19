@@ -1,7 +1,7 @@
 /*
-Package ots is responsible for domain logic.
+Package otf is responsible for domain logic.
 */
-package ots
+package otf
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ const (
 	MaxPageSize       = 100
 
 	DefaultUserID   = "user-123"
-	DefaultUsername = "ots"
+	DefaultUsername = "otf"
 
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
 )

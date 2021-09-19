@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,17 +18,17 @@ func TestStateVersion(t *testing.T) {
 
 	// Create one org and three workspaces
 
-	org, err := orgDB.Create(&ots.Organization{
+	org, err := orgDB.Create(&otf.Organization{
 		Name:  "automatize",
 		Email: "sysadmin@automatize.co.uk",
 	})
 	require.NoError(t, err)
 
-	var workspaces []*ots.Workspace
+	var workspaces []*otf.Workspace
 	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := wsDB.Create(&ots.Workspace{
+		ws, err := wsDB.Create(&otf.Workspace{
 			Name:         name,
-			ID:           ots.GenerateID("ws"),
+			ID:           otf.GenerateID("ws"),
 			Organization: org,
 		})
 		require.NoError(t, err)
@@ -44,8 +44,8 @@ func TestStateVersion(t *testing.T) {
 	var stateVersionIDs []string
 	for _, ws := range workspaces {
 		for _, j := range []int{1, 2, 3} {
-			sv, err := svDB.Create(&ots.StateVersion{
-				ID:        ots.GenerateID("sv"),
+			sv, err := svDB.Create(&otf.StateVersion{
+				ID:        otf.GenerateID("sv"),
 				Serial:    int64(j),
 				Workspace: ws,
 			})
@@ -61,8 +61,8 @@ func TestStateVersion(t *testing.T) {
 
 	svl, err := svDB.List(tfe.StateVersionListOptions{
 		ListOptions:  tfe.ListOptions{PageNumber: 1, PageSize: 20},
-		Organization: ots.String("automatize"),
-		Workspace:    ots.String("dev"),
+		Organization: otf.String("automatize"),
+		Workspace:    otf.String("dev"),
 	})
 	require.NoError(t, err)
 
@@ -70,12 +70,12 @@ func TestStateVersion(t *testing.T) {
 
 	// Get
 
-	_, err = svDB.Get(ots.StateVersionGetOptions{ID: &stateVersionIDs[0]})
+	_, err = svDB.Get(otf.StateVersionGetOptions{ID: &stateVersionIDs[0]})
 	require.NoError(t, err)
 
 	// Current
 
-	sv, err := svDB.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaces[0].ID})
+	sv, err := svDB.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaces[0].ID})
 	require.NoError(t, err)
 	require.Equal(t, int64(3), sv.Serial)
 }

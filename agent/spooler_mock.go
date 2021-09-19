@@ -1,27 +1,27 @@
 package agent
 
-import "github.com/leg100/ots"
+import "github.com/leg100/otf"
 
 type MockSpooler struct {
-	queue, cancelations chan ots.Job
+	queue, cancelations chan otf.Job
 
 	Spooler
 }
 
 type MockSpoolerOption func(*MockSpooler)
 
-func WithMockJobs(job ...ots.Job) MockSpoolerOption {
+func WithMockJobs(job ...otf.Job) MockSpoolerOption {
 	return func(s *MockSpooler) {
-		s.queue = make(chan ots.Job, len(job))
+		s.queue = make(chan otf.Job, len(job))
 		for _, r := range job {
 			s.queue <- r
 		}
 	}
 }
 
-func WithCanceledJobs(job ...ots.Job) MockSpoolerOption {
+func WithCanceledJobs(job ...otf.Job) MockSpoolerOption {
 	return func(s *MockSpooler) {
-		s.cancelations = make(chan ots.Job, len(job))
+		s.cancelations = make(chan otf.Job, len(job))
 		for _, r := range job {
 			s.cancelations <- r
 		}
@@ -36,10 +36,10 @@ func NewMockSpooler(opt ...MockSpoolerOption) *MockSpooler {
 	return &spooler
 }
 
-func (s *MockSpooler) GetJob() <-chan ots.Job {
+func (s *MockSpooler) GetJob() <-chan otf.Job {
 	return s.queue
 }
 
-func (s *MockSpooler) GetCancelation() <-chan ots.Job {
+func (s *MockSpooler) GetCancelation() <-chan otf.Job {
 	return s.queue
 }

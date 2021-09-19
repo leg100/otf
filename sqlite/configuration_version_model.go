@@ -2,7 +2,7 @@ package sqlite
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -33,7 +33,7 @@ type ConfigurationVersionList []ConfigurationVersion
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *ConfigurationVersion) Update(fn func(*ots.ConfigurationVersion) error) error {
+func (model *ConfigurationVersion) Update(fn func(*otf.ConfigurationVersion) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -48,8 +48,8 @@ func (model *ConfigurationVersion) Update(fn func(*ots.ConfigurationVersion) err
 	return nil
 }
 
-func (model *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
-	domain := ots.ConfigurationVersion{
+func (model *ConfigurationVersion) ToDomain() *otf.ConfigurationVersion {
+	domain := otf.ConfigurationVersion{
 		ID:            model.ExternalID,
 		Model:         model.Model,
 		AutoQueueRuns: model.AutoQueueRuns,
@@ -69,7 +69,7 @@ func (model *ConfigurationVersion) ToDomain() *ots.ConfigurationVersion {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (model *ConfigurationVersion) FromDomain(domain *ots.ConfigurationVersion) {
+func (model *ConfigurationVersion) FromDomain(domain *otf.ConfigurationVersion) {
 	model.ExternalID = domain.ID
 	model.Model = domain.Model
 	model.AutoQueueRuns = domain.AutoQueueRuns
@@ -87,7 +87,7 @@ func (model *ConfigurationVersion) FromDomain(domain *ots.ConfigurationVersion) 
 	}
 }
 
-func (l ConfigurationVersionList) ToDomain() (dl []*ots.ConfigurationVersion) {
+func (l ConfigurationVersionList) ToDomain() (dl []*otf.ConfigurationVersion) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

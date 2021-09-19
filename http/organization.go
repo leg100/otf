@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +103,7 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 
 // OrganizationJSONAPIObject converts a Organization to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) OrganizationJSONAPIObject(org *ots.Organization) *tfe.Organization {
+func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *tfe.Organization {
 	obj := &tfe.Organization{
 		Name:                   org.Name,
 		CollaboratorAuthPolicy: org.CollaboratorAuthPolicy,
@@ -125,7 +125,7 @@ func (s *Server) OrganizationJSONAPIObject(org *ots.Organization) *tfe.Organizat
 
 // OrganizationListJSONAPIObject converts a OrganizationList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) OrganizationListJSONAPIObject(cvl *ots.OrganizationList) *tfe.OrganizationList {
+func (s *Server) OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *tfe.OrganizationList {
 	obj := &tfe.OrganizationList{
 		Pagination: cvl.Pagination,
 	}

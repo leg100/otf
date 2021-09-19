@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ type OrganizationList []Organization
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *Organization) Update(fn func(*ots.Organization) error) error {
+func (model *Organization) Update(fn func(*otf.Organization) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -47,8 +47,8 @@ func (model *Organization) Update(fn func(*ots.Organization) error) error {
 	return nil
 }
 
-func (model *Organization) ToDomain() *ots.Organization {
-	domain := ots.Organization{
+func (model *Organization) ToDomain() *otf.Organization {
+	domain := otf.Organization{
 		ID:                     model.ExternalID,
 		Model:                  model.Model,
 		Name:                   model.Name,
@@ -68,7 +68,7 @@ func (model *Organization) ToDomain() *ots.Organization {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (model *Organization) FromDomain(org *ots.Organization) {
+func (model *Organization) FromDomain(org *otf.Organization) {
 	model.ExternalID = org.ID
 	model.Model = org.Model
 	model.Name = org.Name
@@ -84,7 +84,7 @@ func (model *Organization) FromDomain(org *ots.Organization) {
 	model.TwoFactorConformant = org.TwoFactorConformant
 }
 
-func (l OrganizationList) ToDomain() (dl []*ots.Organization) {
+func (l OrganizationList) ToDomain() (dl []*otf.Organization) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

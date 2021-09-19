@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ func OrganizationNewCommand(config ClientConfig) *cobra.Command {
 		Short: "Create a new organization",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Name = ots.String(args[0])
+			opts.Name = otf.String(args[0])
 
 			client, err := config.NewClient()
 			if err != nil {

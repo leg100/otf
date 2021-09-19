@@ -2,18 +2,18 @@ package agent
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 type Executor struct {
 	logr.Logger
 
-	RunService                  ots.RunService
-	ConfigurationVersionService ots.ConfigurationVersionService
-	StateVersionService         ots.StateVersionService
+	RunService                  otf.RunService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
 }
 
-func (e *Executor) Do(run *ots.Run) error {
+func (e *Executor) Do(run *otf.Run) error {
 	return nil
 }
 

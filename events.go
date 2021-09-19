@@ -1,4 +1,4 @@
-package ots
+package otf
 
 const (
 	OrganizationCreated   EventType = "organization_created"

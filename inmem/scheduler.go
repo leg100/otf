@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	tfe "github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -16,29 +16,29 @@ const (
 )
 
 type RunLister interface {
-	List(ots.RunListOptions) (*ots.RunList, error)
+	List(otf.RunListOptions) (*otf.RunList, error)
 }
 
 // Scheduler manages workspaces' run queues in memory. It subscribes to events
 // and updates the queues accordingly.
 type Scheduler struct {
 	// Queues is a mapping of workspace ID to workspace queue of runs
-	Queues map[string]ots.Queue
+	Queues map[string]otf.Queue
 	// RunService retrieves and updates runs
-	ots.RunService
+	otf.RunService
 	// EventService permits scheduler to subscribe to a stream of events
-	ots.EventService
+	otf.EventService
 	// Logger for logging various events
 	logr.Logger
 }
 
 // NewScheduler constructs scheduler queues and populates them with existing
 // runs.
-func NewScheduler(ws ots.WorkspaceService, rs ots.RunService, es ots.EventService, logger logr.Logger) (*Scheduler, error) {
-	queues := make(map[string]ots.Queue)
+func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventService, logger logr.Logger) (*Scheduler, error) {
+	queues := make(map[string]otf.Queue)
 
 	// Get workspaces
-	workspaces, err := ws.List(ots.WorkspaceListOptions{})
+	workspaces, err := ws.List(otf.WorkspaceListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func NewScheduler(ws ots.WorkspaceService, rs ots.RunService, es ots.EventServic
 			return nil, err
 		}
 
-		queues[ws.ID] = &ots.WorkspaceQueue{PlanEnqueuer: rs, Active: active, Pending: pending}
+		queues[ws.ID] = &otf.WorkspaceQueue{PlanEnqueuer: rs, Active: active, Pending: pending}
 	}
 
 	s := &Scheduler{
@@ -87,24 +87,24 @@ func (s *Scheduler) Start(ctx context.Context) {
 	}
 }
 
-func (s *Scheduler) handleEvent(ev ots.Event) {
+func (s *Scheduler) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
-	case *ots.Workspace:
+	case *otf.Workspace:
 		switch ev.Type {
-		case ots.WorkspaceCreated:
-			s.Queues[obj.ID] = &ots.WorkspaceQueue{PlanEnqueuer: s.RunService}
-		case ots.WorkspaceDeleted:
+		case otf.WorkspaceCreated:
+			s.Queues[obj.ID] = &otf.WorkspaceQueue{PlanEnqueuer: s.RunService}
+		case otf.WorkspaceDeleted:
 			delete(s.Queues, obj.ID)
 		}
-	case *ots.Run:
+	case *otf.Run:
 		queue := s.Queues[obj.Workspace.ID]
 
 		switch ev.Type {
-		case ots.RunCreated:
+		case otf.RunCreated:
 			if err := queue.Add(obj); err != nil {
 				s.Error(err, "unable to enqueue run", "run", obj.ID)
 			}
-		case ots.RunCompleted:
+		case otf.RunCompleted:
 			if err := queue.Remove(obj); err != nil {
 				s.Error(err, "unable to dequeue run", "run", obj.ID)
 			}
@@ -113,10 +113,10 @@ func (s *Scheduler) handleEvent(ev ots.Event) {
 }
 
 // getActiveRun retrieves the active (non-speculative) run for the workspace
-func getActiveRun(workspaceID string, rl RunLister) (*ots.Run, error) {
-	opts := ots.RunListOptions{
+func getActiveRun(workspaceID string, rl RunLister) (*otf.Run, error) {
+	opts := otf.RunListOptions{
 		WorkspaceID: &workspaceID,
-		Statuses:    ots.ActiveRunStatuses,
+		Statuses:    otf.ActiveRunStatuses,
 	}
 	active, err := rl.List(opts)
 	if err != nil {
@@ -136,7 +136,7 @@ func getActiveRun(workspaceID string, rl RunLister) (*ots.Run, error) {
 }
 
 // filterNonSpeculativeRuns filters out speculative runs
-func filterNonSpeculativeRuns(runs []*ots.Run) (nonSpeculative []*ots.Run) {
+func filterNonSpeculativeRuns(runs []*otf.Run) (nonSpeculative []*otf.Run) {
 	for _, r := range runs {
 		if !r.IsSpeculative() {
 			nonSpeculative = append(nonSpeculative, r)
@@ -146,8 +146,8 @@ func filterNonSpeculativeRuns(runs []*ots.Run) (nonSpeculative []*ots.Run) {
 }
 
 // getPendingRuns retrieves pending runs for a workspace
-func getPendingRuns(workspaceID string, rl RunLister) ([]*ots.Run, error) {
-	opts := ots.RunListOptions{
+func getPendingRuns(workspaceID string, rl RunLister) ([]*otf.Run, error) {
+	opts := otf.RunListOptions{
 		WorkspaceID: &workspaceID,
 		Statuses:    []tfe.RunStatus{tfe.RunPending},
 	}

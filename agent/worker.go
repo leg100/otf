@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 // Worker sequentially executes jobs on behalf of a supervisor.
@@ -23,10 +23,10 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 }
 
-func (w *Worker) handleJob(ctx context.Context, job ots.Job) {
+func (w *Worker) handleJob(ctx context.Context, job otf.Job) {
 	log := w.Logger.WithValues("job", job.GetID())
 
-	env, err := ots.NewExecutor(
+	env, err := otf.NewExecutor(
 		log,
 		w.RunService,
 		w.ConfigurationVersionService,

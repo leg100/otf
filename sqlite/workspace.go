@@ -3,12 +3,12 @@ package sqlite
 import (
 	"fmt"
 
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.WorkspaceStore = (*WorkspaceDB)(nil)
+var _ otf.WorkspaceStore = (*WorkspaceDB)(nil)
 
 type WorkspaceDB struct {
 	*gorm.DB
@@ -22,7 +22,7 @@ func NewWorkspaceDB(db *gorm.DB) *WorkspaceDB {
 
 // Create persists a Workspace to the DB. The returned Workspace is adorned with
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
-func (db WorkspaceDB) Create(domain *ots.Workspace) (*ots.Workspace, error) {
+func (db WorkspaceDB) Create(domain *otf.Workspace) (*otf.Workspace, error) {
 	model := &Workspace{}
 	model.FromDomain(domain)
 
@@ -37,7 +37,7 @@ func (db WorkspaceDB) Create(domain *ots.Workspace) (*ots.Workspace, error) {
 // from the DB, the supplied func is invoked on the run, and the updated run is
 // persisted back to the DB. The returned Workspace includes any changes,
 // including a new UpdatedAt value.
-func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace) error) (*ots.Workspace, error) {
+func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	var model *Workspace
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
@@ -66,7 +66,7 @@ func (db WorkspaceDB) Update(spec ots.WorkspaceSpecifier, fn func(*ots.Workspace
 	return model.ToDomain(), nil
 }
 
-func (db WorkspaceDB) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	var models WorkspaceList
 	var count int64
 
@@ -100,13 +100,13 @@ func (db WorkspaceDB) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, e
 		return nil, err
 	}
 
-	return &ots.WorkspaceList{
+	return &otf.WorkspaceList{
 		Items:      models.ToDomain(),
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
 
-func (db WorkspaceDB) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
+func (db WorkspaceDB) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	ws, err := getWorkspace(db.DB, spec)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (db WorkspaceDB) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
 
 // Delete deletes a specific workspace, along with its associated records (runs
 // etc).
-func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
+func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var ws Workspace
 		var query *gorm.DB
@@ -134,7 +134,7 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 
 			query = tx.Where("organization_id = ? AND name = ?", org.ID, spec.Name)
 		default:
-			return ots.ErrInvalidWorkspaceSpecifier
+			return otf.ErrInvalidWorkspaceSpecifier
 		}
 
 		// Retrieve workspace
@@ -149,19 +149,19 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 
 		// Delete associated runs if they exist
 		result := tx.Delete(&Run{}, "workspace_id = ?", ws.ID)
-		if result.Error != nil && !ots.IsNotFound(result.Error) {
+		if result.Error != nil && !otf.IsNotFound(result.Error) {
 			return result.Error
 		}
 
 		// Delete associated state versions if they exist
 		result = tx.Delete(&StateVersion{}, "workspace_id = ?", ws.ID)
-		if result.Error != nil && !ots.IsNotFound(result.Error) {
+		if result.Error != nil && !otf.IsNotFound(result.Error) {
 			return result.Error
 		}
 
 		// Delete associated configuration versions if they exist
 		result = tx.Delete(&ConfigurationVersion{}, "workspace_id = ?", ws.ID)
-		if result.Error != nil && !ots.IsNotFound(result.Error) {
+		if result.Error != nil && !otf.IsNotFound(result.Error) {
 			return result.Error
 		}
 
@@ -174,7 +174,7 @@ func (db WorkspaceDB) Delete(spec ots.WorkspaceSpecifier) error {
 	return nil
 }
 
-func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*Workspace, error) {
+func getWorkspace(db *gorm.DB, spec otf.WorkspaceSpecifier) (*Workspace, error) {
 	var model Workspace
 
 	query := db.Preload(clause.Associations)
@@ -188,7 +188,7 @@ func getWorkspace(db *gorm.DB, spec ots.WorkspaceSpecifier) (*Workspace, error) 
 		query = query.Joins("JOIN organizations ON organizations.id = workspaces.organization_id").
 			Where("workspaces.name = ? AND organizations.name = ?", spec.Name, spec.OrganizationName)
 	default:
-		return nil, ots.ErrInvalidWorkspaceSpecifier
+		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
 	if result := query.First(&model); result.Error != nil {

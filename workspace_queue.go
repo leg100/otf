@@ -1,4 +1,4 @@
-package ots
+package otf
 
 type PlanEnqueuer interface {
 	EnqueuePlan(id string) error

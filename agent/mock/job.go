@@ -4,16 +4,16 @@ Package mock provides mocks for the parent agent package
 package mock
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 type Job struct {
 	ID     string
 	Status string
-	DoFn   func(*ots.Executor) error
+	DoFn   func(*otf.Executor) error
 }
 
-func (j *Job) Do(exe *ots.Executor) error {
+func (j *Job) Do(exe *otf.Executor) error {
 	return j.DoFn(exe)
 }
 

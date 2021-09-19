@@ -1,12 +1,12 @@
 package sqlite
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.RunStore = (*RunDB)(nil)
+var _ otf.RunStore = (*RunDB)(nil)
 
 type RunDB struct {
 	*gorm.DB
@@ -19,7 +19,7 @@ func NewRunDB(db *gorm.DB) *RunDB {
 }
 
 // Create persists a Run to the DB.
-func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
+func (db RunDB) Create(domain *otf.Run) (*otf.Run, error) {
 	model := NewFromDomain(domain)
 
 	if result := db.Omit("Workspace", "ConfigurationVersion").Create(model); result.Error != nil {
@@ -33,12 +33,12 @@ func (db RunDB) Create(domain *ots.Run) (*ots.Run, error) {
 // the DB, the supplied func is invoked on the run, and the updated run is
 // persisted back to the DB. The returned Run includes any changes, including a
 // new UpdatedAt value.
-func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
+func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	var model *Run
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
 		// DB -> model
-		model, err = getRun(tx, ots.RunGetOptions{ID: &id})
+		model, err = getRun(tx, otf.RunGetOptions{ID: &id})
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (db RunDB) Update(id string, fn func(*ots.Run) error) (*ots.Run, error) {
 	return model.ToDomain(), nil
 }
 
-func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
+func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	var models RunList
 	var count int64
 
@@ -71,7 +71,7 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 
 		// Optionally filter by workspace
 		if opts.WorkspaceID != nil {
-			ws, err := getWorkspace(tx, ots.WorkspaceSpecifier{ID: opts.WorkspaceID})
+			ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{ID: opts.WorkspaceID})
 			if err != nil {
 				return err
 			}
@@ -98,14 +98,14 @@ func (db RunDB) List(opts ots.RunListOptions) (*ots.RunList, error) {
 		return nil, err
 	}
 
-	return &ots.RunList{
+	return &otf.RunList{
 		Items:      models.ToDomain(),
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
 
 // Get retrieves a Run domain obj
-func (db RunDB) Get(opts ots.RunGetOptions) (*ots.Run, error) {
+func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	run, err := getRun(db.DB, opts)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (db RunDB) Get(opts ots.RunGetOptions) (*ots.Run, error) {
 	return run.ToDomain(), nil
 }
 
-func getRun(db *gorm.DB, opts ots.RunGetOptions) (*Run, error) {
+func getRun(db *gorm.DB, opts otf.RunGetOptions) (*Run, error) {
 	var model Run
 
 	query := db.Preload(clause.Associations)
@@ -126,7 +126,7 @@ func getRun(db *gorm.DB, opts ots.RunGetOptions) (*Run, error) {
 	case opts.ApplyID != nil:
 		query = query.Joins("JOIN applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
 	default:
-		return nil, ots.ErrInvalidRunGetOptions
+		return nil, otf.ErrInvalidRunGetOptions
 	}
 
 	if result := query.First(&model); result.Error != nil {

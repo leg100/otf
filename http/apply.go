@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +23,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.GetChunkOptions
+	var opts otf.GetChunkOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -44,7 +44,7 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 // ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) ApplyJSONAPIObject(a *ots.Apply) *tfe.Apply {
+func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *tfe.Apply {
 	obj := &tfe.Apply{
 		ID:                   a.ID,
 		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ID),

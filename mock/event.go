@@ -1,18 +1,18 @@
 package mock
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 type EventService struct {
-	PublishFn   func(event ots.Event)
-	SubscribeFn func(id string) ots.Subscription
+	PublishFn   func(event otf.Event)
+	SubscribeFn func(id string) otf.Subscription
 }
 
-func (s EventService) Publish(event ots.Event) {
+func (s EventService) Publish(event otf.Event) {
 	s.PublishFn(event)
 }
 
-func (s EventService) Subscribe(id string) ots.Subscription {
+func (s EventService) Subscribe(id string) otf.Subscription {
 	return s.SubscribeFn(id)
 }

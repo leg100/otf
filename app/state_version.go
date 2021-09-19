@@ -2,29 +2,29 @@ package app
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.StateVersionService = (*StateVersionService)(nil)
+var _ otf.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
-	db ots.StateVersionStore
-	bs ots.BlobStore
-	*ots.StateVersionFactory
+	db otf.StateVersionStore
+	bs otf.BlobStore
+	*otf.StateVersionFactory
 }
 
-func NewStateVersionService(db ots.StateVersionStore, wss ots.WorkspaceService, bs ots.BlobStore) *StateVersionService {
+func NewStateVersionService(db otf.StateVersionStore, wss otf.WorkspaceService, bs otf.BlobStore) *StateVersionService {
 	return &StateVersionService{
 		bs: bs,
 		db: db,
-		StateVersionFactory: &ots.StateVersionFactory{
+		StateVersionFactory: &otf.StateVersionFactory{
 			BlobStore:        bs,
 			WorkspaceService: wss,
 		},
 	}
 }
 
-func (s StateVersionService) Create(workspaceID string, opts tfe.StateVersionCreateOptions) (*ots.StateVersion, error) {
+func (s StateVersionService) Create(workspaceID string, opts tfe.StateVersionCreateOptions) (*otf.StateVersion, error) {
 	sv, err := s.NewStateVersion(workspaceID, opts)
 	if err != nil {
 		return nil, err
@@ -33,20 +33,20 @@ func (s StateVersionService) Create(workspaceID string, opts tfe.StateVersionCre
 	return s.db.Create(sv)
 }
 
-func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateVersionList, error) {
+func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*otf.StateVersionList, error) {
 	return s.db.List(opts)
 }
 
-func (s StateVersionService) Current(workspaceID string) (*ots.StateVersion, error) {
-	return s.db.Get(ots.StateVersionGetOptions{WorkspaceID: &workspaceID})
+func (s StateVersionService) Current(workspaceID string) (*otf.StateVersion, error) {
+	return s.db.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
 }
 
-func (s StateVersionService) Get(id string) (*ots.StateVersion, error) {
-	return s.db.Get(ots.StateVersionGetOptions{ID: &id})
+func (s StateVersionService) Get(id string) (*otf.StateVersion, error) {
+	return s.db.Get(otf.StateVersionGetOptions{ID: &id})
 }
 
 func (s StateVersionService) Download(id string) ([]byte, error) {
-	sv, err := s.db.Get(ots.StateVersionGetOptions{ID: &id})
+	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}

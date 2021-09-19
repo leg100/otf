@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	daemon = "../_build/otsd"
-	client = "../_build/ots"
+	daemon = "../_build/otfd"
+	client = "../_build/otf"
 	config = `
 terraform {
   backend "remote" {
@@ -28,7 +28,7 @@ resource "null_resource" "e2e" {}
 `
 )
 
-func TestOTS(t *testing.T) {
+func TestOTF(t *testing.T) {
 	// Create TF config
 	root := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0600))

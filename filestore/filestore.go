@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 	Perms = 0644
 )
 
-var _ ots.BlobStore = (*FileStore)(nil)
+var _ otf.BlobStore = (*FileStore)(nil)
 
 // FileStore is a filesystem based blob database
 type FileStore struct {
@@ -27,7 +27,7 @@ func NewFilestore(path string) (*FileStore, error) {
 	// Empty path defaults to a temp dir
 	if path == "" {
 		var err error
-		path, err = os.MkdirTemp("", "ots-filestore-")
+		path, err = os.MkdirTemp("", "otf-filestore-")
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +53,7 @@ func (fs *FileStore) Get(bid string) ([]byte, error) {
 }
 
 // GetChunk retrieves a chunk of bytes of the blob.
-func (fs *FileStore) GetChunk(bid string, opts ots.GetChunkOptions) ([]byte, error) {
+func (fs *FileStore) GetChunk(bid string, opts otf.GetChunkOptions) ([]byte, error) {
 	complete := true
 
 	// Check whether complete or incomplete file exists
@@ -70,7 +70,7 @@ func (fs *FileStore) GetChunk(bid string, opts ots.GetChunkOptions) ([]byte, err
 		}
 	}
 
-	return ots.GetChunk(f, opts, complete)
+	return otf.GetChunk(f, opts, complete)
 }
 
 // Put writes a complete blob in one go.
@@ -79,7 +79,7 @@ func (fs *FileStore) Put(bid string, p []byte) error {
 }
 
 // PutChunk writes a chunk of bytes of a blob.
-func (fs *FileStore) PutChunk(bid string, chunk []byte, opts ots.PutChunkOptions) error {
+func (fs *FileStore) PutChunk(bid string, chunk []byte, opts otf.PutChunkOptions) error {
 	f, err := os.OpenFile(fs.fpath(bid, true), os.O_CREATE|os.O_APPEND|os.O_WRONLY, Perms)
 	if err != nil {
 		return err

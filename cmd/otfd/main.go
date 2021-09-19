@@ -6,13 +6,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/leg100/ots/agent"
-	"github.com/leg100/ots/app"
-	cmdutil "github.com/leg100/ots/cmd"
-	"github.com/leg100/ots/filestore"
-	"github.com/leg100/ots/http"
-	"github.com/leg100/ots/inmem"
-	"github.com/leg100/ots/sqlite"
+	"github.com/leg100/otf/agent"
+	"github.com/leg100/otf/app"
+	cmdutil "github.com/leg100/otf/cmd"
+	"github.com/leg100/otf/filestore"
+	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/sqlite"
 	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
@@ -22,15 +22,15 @@ import (
 const (
 	DefaultAddress  = ":8080"
 	DefaultHostname = "localhost:8080"
-	DefaultDBPath   = "ots.db"
-	DefaultDataDir  = "~/.ots-data"
+	DefaultDBPath   = "otf.db"
+	DefaultDataDir  = "~/.otf-data"
 	DefaultLogLevel = "info"
 )
 
 var (
 	// DBPath is the path to the sqlite database file
 	DBPath string
-	// DataDir is the path to the directory used for storing OTS-related data
+	// DataDir is the path to the directory used for storing OTF-related data
 	DataDir string
 )
 
@@ -42,7 +42,7 @@ func main() {
 	server := http.NewServer()
 
 	cmd := &cobra.Command{
-		Use:           "otsd",
+		Use:           "otfd",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -53,7 +53,7 @@ func main() {
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
-	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTS related data")
+	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())

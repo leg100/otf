@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -48,7 +48,7 @@ type PlanList []Plan
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *Plan) Update(fn func(*ots.Plan) error) error {
+func (model *Plan) Update(fn func(*otf.Plan) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -63,8 +63,8 @@ func (model *Plan) Update(fn func(*ots.Plan) error) error {
 	return nil
 }
 
-func (model *Plan) ToDomain() *ots.Plan {
-	domain := ots.Plan{
+func (model *Plan) ToDomain() *otf.Plan {
+	domain := otf.Plan{
 		ID:                   model.ExternalID,
 		Model:                model.Model,
 		ResourceAdditions:    model.ResourceAdditions,
@@ -105,7 +105,7 @@ func (model *Plan) ToDomain() *ots.Plan {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (model *Plan) FromDomain(domain *ots.Plan) {
+func (model *Plan) FromDomain(domain *otf.Plan) {
 	model.ExternalID = domain.ID
 	model.Model = domain.Model
 	model.ResourceAdditions = domain.ResourceAdditions
@@ -147,7 +147,7 @@ func (model *Plan) FromDomain(domain *ots.Plan) {
 	}
 }
 
-func (l PlanList) ToDomain() (dl []*ots.Plan) {
+func (l PlanList) ToDomain() (dl []*otf.Plan) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

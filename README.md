@@ -1,4 +1,4 @@
-# OTS: Open Terraforming Server
+# OTF: Open Terraforming Server
 
 A prototype open source alternative to terraform enterprise.
 
@@ -14,7 +14,7 @@ These steps will get you started with running everything on your local system. Y
 
 ![demo](https://user-images.githubusercontent.com/75728/122782051-49d58200-d2a8-11eb-93d4-87ba353033e1.gif)
 
-1. Download a [release](https://github.com/leg100/ots/releases). The zip file contains two binaries: a daemon and a client, `otsd` and `ots`. Extract them to a directory in your `PATH`, e.g. `/usr/local/bin`.
+1. Download a [release](https://github.com/leg100/otf/releases). The zip file contains two binaries: a daemon and a client, `otfd` and `otf`. Extract them to a directory in your `PATH`, e.g. `/usr/local/bin`.
 1. Generate SSL cert and key. For example, to generate a self-signed cert and key for localhost:
 
     ```bash
@@ -28,24 +28,24 @@ These steps will get you started with running everything on your local system. Y
     sudo update-ca-certificates
     ```
     
-1. Run the OTS daemon:
+1. Run the OTF daemon:
 
     ```bash
-    otsd --ssl --cert-file=cert.crt --key-file=key.pem
+    otfd --ssl --cert-file=cert.crt --key-file=key.pem
     ```
    
    The daemon runs in the foreground and can be left to run.
       
-1. In another terminal, login to your OTS server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
+1. In another terminal, login to your OTF server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
 
    ```bash
-   ots login
+   otf login
    ```
    
 1. Create an organization:
 
    ```bash
-   ots organizations new mycorp --email=sysadmin@mycorp.co
+   otf organizations new mycorp --email=sysadmin@mycorp.co
    ```
 
 1. Configure the terraform backend and define a resource:
@@ -77,7 +77,7 @@ These steps will get you started with running everything on your local system. Y
 
 ## Next Steps
 
-OTS is a mere prototype but a roadmap of further features could be:
+OTF is a mere prototype but a roadmap of further features could be:
 
 * User AuthN/Z
 * Remote execution mode
@@ -93,8 +93,8 @@ You'll need [Go](https://golang.org/doc/install) installed.
 Clone the repo, and then build and install the binary using the make task:
 
 ```bash
-git clone https://github.com/leg100/ots
-cd ots
+git clone https://github.com/leg100/otf
+cd otf
 make install
 ```
 

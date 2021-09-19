@@ -23,16 +23,16 @@ func TestLoginCommand(t *testing.T) {
 
 func TestLoginCommandWithExplicitAddress(t *testing.T) {
 	// Ensure env var doesn't interfere with test
-	os.Unsetenv("OTS_ADDRESS")
+	os.Unsetenv("OTF_ADDRESS")
 
 	tmpdir := t.TempDir()
 
 	cmd := LoginCommand(FakeDirectories(tmpdir))
-	cmd.SetArgs([]string{"--address", "ots.dev:8080"})
+	cmd.SetArgs([]string{"--address", "otf.dev:8080"})
 	require.NoError(t, cmd.Execute())
 
 	store, err := NewCredentialsStore(FakeDirectories(tmpdir))
 	require.NoError(t, err)
-	_, err = store.Load("ots.dev:8080")
+	_, err = store.Load("otf.dev:8080")
 	require.NoError(t, err)
 }

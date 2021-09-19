@@ -7,11 +7,11 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 const (
-	DefaultDataDir = "~/.ots-agent"
+	DefaultDataDir = "~/.otf-agent"
 	DefaultID      = "agent-001"
 )
 
@@ -26,12 +26,12 @@ type Agent struct {
 	// modules (?), configuration versions, state, etc.
 	DataDir string
 
-	// ServerAddr is the address (<host>:<port>) of the OTS server to connect
+	// ServerAddr is the address (<host>:<port>) of the OTF server to connect
 	// to.
 	ServerAddr string
 
-	ConfigurationVersionService ots.ConfigurationVersionService
-	StateVersionService         ots.StateVersionService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
 
 	Spooler
 
@@ -39,7 +39,7 @@ type Agent struct {
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, es ots.EventService) (*Agent, error) {
+func NewAgent(logger logr.Logger, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, es otf.EventService) (*Agent, error) {
 	logger = logger.WithValues("component", "agent")
 
 	spooler, err := NewSpooler(rs, es, logger)

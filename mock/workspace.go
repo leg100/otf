@@ -2,54 +2,54 @@ package mock
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.WorkspaceService = (*WorkspaceService)(nil)
+var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	CreateWorkspaceFn func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error)
-	UpdateWorkspaceFn func(spec ots.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error)
-	GetWorkspaceFn    func(spec ots.WorkspaceSpecifier) (*ots.Workspace, error)
-	ListWorkspaceFn   func(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error)
-	DeleteWorkspaceFn func(spec ots.WorkspaceSpecifier) error
-	LockWorkspaceFn   func(id string, opts tfe.WorkspaceLockOptions) (*ots.Workspace, error)
-	UnlockWorkspaceFn func(id string) (*ots.Workspace, error)
+	CreateWorkspaceFn func(org string, opts *tfe.WorkspaceCreateOptions) (*otf.Workspace, error)
+	UpdateWorkspaceFn func(spec otf.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*otf.Workspace, error)
+	GetWorkspaceFn    func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error)
+	ListWorkspaceFn   func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
+	DeleteWorkspaceFn func(spec otf.WorkspaceSpecifier) error
+	LockWorkspaceFn   func(id string, opts tfe.WorkspaceLockOptions) (*otf.Workspace, error)
+	UnlockWorkspaceFn func(id string) (*otf.Workspace, error)
 }
 
-func (s WorkspaceService) Create(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) Create(org string, opts *tfe.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return s.CreateWorkspaceFn(org, opts)
 }
 
-func (s WorkspaceService) Update(spec ots.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return s.UpdateWorkspaceFn(spec, opts)
 }
 
-func (s WorkspaceService) Get(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
+func (s WorkspaceService) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return s.GetWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) List(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+func (s WorkspaceService) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return s.ListWorkspaceFn(opts)
 }
 
-func (s WorkspaceService) Delete(spec ots.WorkspaceSpecifier) error {
+func (s WorkspaceService) Delete(spec otf.WorkspaceSpecifier) error {
 	return s.DeleteWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) Lock(id string, opts tfe.WorkspaceLockOptions) (*ots.Workspace, error) {
+func (s WorkspaceService) Lock(id string, opts tfe.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return s.LockWorkspaceFn(id, opts)
 }
 
-func (s WorkspaceService) Unlock(id string) (*ots.Workspace, error) {
+func (s WorkspaceService) Unlock(id string) (*otf.Workspace, error) {
 	return s.UnlockWorkspaceFn(id)
 }
 
-func NewWorkspace(name, id, org string) *ots.Workspace {
-	return &ots.Workspace{
+func NewWorkspace(name, id, org string) *otf.Workspace {
+	return &otf.Workspace{
 		ID:   id,
 		Name: name,
-		Organization: &ots.Organization{
+		Organization: &otf.Organization{
 			Name: org,
 		},
 		Permissions:     &tfe.WorkspacePermissions{},
@@ -58,11 +58,11 @@ func NewWorkspace(name, id, org string) *ots.Workspace {
 	}
 }
 
-func NewWorkspaceList(name, id, org string, opts ots.WorkspaceListOptions) *ots.WorkspaceList {
-	return &ots.WorkspaceList{
-		Items: []*ots.Workspace{
+func NewWorkspaceList(name, id, org string, opts otf.WorkspaceListOptions) *otf.WorkspaceList {
+	return &otf.WorkspaceList{
+		Items: []*otf.Workspace{
 			NewWorkspace(name, id, org),
 		},
-		Pagination: ots.NewPagination(opts.ListOptions, 1),
+		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}
 }
