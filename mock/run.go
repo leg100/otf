@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"context"
+
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
@@ -24,7 +26,7 @@ type RunService struct {
 	FinishFn       func(id string, opts otf.JobFinishOptions) (otf.Job, error)
 	GetPlanJSONFn  func(id string) ([]byte, error)
 	GetPlanFileFn  func(id string) ([]byte, error)
-	UploadPlanFn   func(id string, plan []byte, json bool) error
+	UploadPlanFn   func(ctx context.Context, id string, plan []byte, opts tfe.RunUploadPlanOptions) error
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*otf.Run, error) {
@@ -91,6 +93,6 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 	return s.GetPlanFileFn(id)
 }
 
-func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	return s.UploadPlanFn(id, plan, json)
+func (s RunService) UploadPlan(ctx context.Context, id string, plan []byte, opts tfe.RunUploadPlanOptions) error {
+	return s.UploadPlanFn(ctx, id, plan, opts)
 }

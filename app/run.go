@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leg100/go-tfe"
@@ -127,7 +128,7 @@ func (s RunService) EnqueuePlan(id string) error {
 // UploadPlan persists a run's plan file. The plan file is expected to have been
 // produced using `terraform plan`. If the plan file is JSON serialized then set
 // json to true.
-func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+func (s RunService) UploadPlan(ctx context.Context, id string, plan []byte, opts tfe.RunUploadPlanOptions) error {
 	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
@@ -135,10 +136,13 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 
 	var bid string // Blob ID
 
-	if json {
+	switch opts.Format {
+	case tfe.PlanJSONFormat:
 		bid = run.Plan.PlanJSONBlobID
-	} else {
+	case tfe.PlanBinaryFormat:
 		bid = run.Plan.PlanFileBlobID
+	default:
+		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
 
 	return s.bs.Put(bid, plan)

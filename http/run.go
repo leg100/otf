@@ -82,6 +82,28 @@ func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) UploadPlan(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var opts tfe.RunUploadPlanOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.UploadPlan(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+}
+
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
