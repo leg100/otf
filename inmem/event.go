@@ -41,6 +41,7 @@ func (e *EventService) Subscribe(id string) otf.Subscription {
 	sub := &Subscription{
 		service: e,
 		c:       make(chan otf.Event, EventBufferSize),
+		id:      id,
 	}
 
 	// Add to list of user's subscriptions. Subscriptions are stored as a map
@@ -57,6 +58,8 @@ func (e *EventService) Unsubscribe(sub *Subscription) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.unsubscribe(sub)
+
+	e.Info("subscription deleted", "subscriber", sub.id)
 }
 
 func (e *EventService) unsubscribe(sub *Subscription) {

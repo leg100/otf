@@ -113,6 +113,7 @@ func main() {
 	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
 	server.PlanService = app.NewPlanService(runStore, fs)
 	server.ApplyService = app.NewApplyService(runStore)
+	server.EventService = eventService
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
