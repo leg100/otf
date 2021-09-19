@@ -214,6 +214,13 @@ func UpdateWorkspace(ws *Workspace, opts *tfe.WorkspaceUpdateOptions) (*Workspac
 	if opts.FileTriggersEnabled != nil {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
 	}
+	if opts.Operations != nil {
+		if *opts.Operations {
+			ws.ExecutionMode = "remote"
+		} else {
+			ws.ExecutionMode = "local"
+		}
+	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns
 	}
