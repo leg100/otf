@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/hashicorp/hcl/v2 v2.10.0
-	github.com/leg100/go-tfe v0.17.1-0.20210804135856-d05f7109100e
+	github.com/leg100/go-tfe v0.17.1-0.20210919202602-eb02b90e2ad6
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
