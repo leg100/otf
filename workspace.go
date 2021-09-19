@@ -120,7 +120,7 @@ func NewWorkspace(opts *tfe.WorkspaceCreateOptions, org *Organization) *Workspac
 		ID:                  GenerateID("ws"),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
-		ExecutionMode:       "local", // Default until remote ops is officially supported
+		ExecutionMode:       DefaultExecutionMode,
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
