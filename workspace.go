@@ -12,6 +12,7 @@ const (
 	DefaultAllowDestroyPlan    = true
 	DefaultFileTriggersEnabled = true
 	DefaultTerraformVersion    = "0.15.4"
+	DefaultExecutionMode       = "remote"
 )
 
 var (
@@ -206,6 +207,9 @@ func UpdateWorkspace(ws *Workspace, opts *tfe.WorkspaceUpdateOptions) (*Workspac
 	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
+	}
+	if opts.ExecutionMode != nil {
+		ws.ExecutionMode = *opts.ExecutionMode
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled

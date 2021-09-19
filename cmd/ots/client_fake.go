@@ -39,6 +39,22 @@ func (f *FakeWorkspacesClient) Read(ctx context.Context, org string, ws string) 
 	}, nil
 }
 
+func (f *FakeWorkspacesClient) List(ctx context.Context, org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
+	return &tfe.WorkspaceList{
+		Items: []*tfe.Workspace{
+			{
+				ID: "ws-123",
+			},
+		},
+	}, nil
+}
+
+func (f *FakeWorkspacesClient) Update(ctx context.Context, org string, ws string, opts tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
+	return &tfe.Workspace{
+		ID: "ws-123",
+	}, nil
+}
+
 func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error) {
 	return &tfe.Workspace{
 		ID: "ws-123",
