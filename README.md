@@ -1,18 +1,19 @@
 # OTF: Open Terraforming Framework
 
-A prototype open source alternative to terraform enterprise.
+An open source alternative to terraform enterprise.
 
 Functionality is currently limited:
 
-* State backend (state stored in a sqlite database)
+* Remote execution mode (plans and applies run remotely)
+* State backend (state stored on disk)
 * Workspace management (supports `terraform workspace` commands)
-* Local execution mode (plans and applies run locally)
+* No web frontend; CLI/API support only.
 
 ## Getting Started
 
 These steps will get you started with running everything on your local system. You'll setup the server, configure SSL so that terraform trusts the server, and then configure terraform. You'll then be able to run terraform commands using the server as a remote backend.
 
-![demo](https://user-images.githubusercontent.com/75728/122782051-49d58200-d2a8-11eb-93d4-87ba353033e1.gif)
+![demo](https://user-images.githubusercontent.com/75728/133922405-b8474369-28ea-4772-b4bf-9131dc366f1d.gif)
 
 1. Download a [release](https://github.com/leg100/otf/releases). The zip file contains two binaries: a daemon and a client, `otfd` and `otf`. Extract them to a directory in your `PATH`, e.g. `/usr/local/bin`.
 1. Generate SSL cert and key. For example, to generate a self-signed cert and key for localhost:
@@ -77,11 +78,11 @@ These steps will get you started with running everything on your local system. Y
 
 ## Next Steps
 
-OTF is a mere prototype but a roadmap of further features could be:
+OTF is a mere prototype but a roadmap of further features is planned:
 
 * User AuthN/Z
-* Remote execution mode
 * Agents
+* Terminal application
 * Github integration
 * Policies (OPA?)
 * Web frontend
