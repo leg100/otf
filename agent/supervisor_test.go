@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/ots"
-	agentmock "github.com/leg100/ots/agent/mock"
-	"github.com/leg100/ots/mock"
+	"github.com/leg100/otf"
+	agentmock "github.com/leg100/otf/agent/mock"
+	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestSupervisor_Start(t *testing.T) {
 	want := &agentmock.Job{
 		ID:     "run-123",
 		Status: "queued",
-		DoFn: func(env *ots.Executor) error {
+		DoFn: func(env *otf.Executor) error {
 			return nil
 		},
 	}
@@ -29,15 +29,15 @@ func TestSupervisor_Start(t *testing.T) {
 	supervisor := &Supervisor{
 		Logger: logr.Discard(),
 		RunService: mock.RunService{
-			StartFn: func(id string, opts ots.JobStartOptions) (ots.Job, error) {
+			StartFn: func(id string, opts otf.JobStartOptions) (otf.Job, error) {
 				got <- id
 				return want, nil
 			},
-			FinishFn: func(id string, opts ots.JobFinishOptions) (ots.Job, error) {
+			FinishFn: func(id string, opts otf.JobFinishOptions) (otf.Job, error) {
 				got <- id
 				return want, nil
 			},
-			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error {
+			UploadLogsFn: func(id string, logs []byte, opts otf.PutChunkOptions) error {
 				got <- id
 				return nil
 			},
@@ -58,7 +58,7 @@ func TestSupervisor_StartError(t *testing.T) {
 	want := &agentmock.Job{
 		ID:     "run-123",
 		Status: "queued",
-		DoFn: func(env *ots.Executor) error {
+		DoFn: func(env *otf.Executor) error {
 			return errors.New("mock error")
 		},
 	}
@@ -69,9 +69,9 @@ func TestSupervisor_StartError(t *testing.T) {
 	supervisor := &Supervisor{
 		Logger: logr.Discard(),
 		RunService: mock.RunService{
-			StartFn:      func(id string, opts ots.JobStartOptions) (ots.Job, error) { return want, nil },
-			UploadLogsFn: func(id string, logs []byte, opts ots.PutChunkOptions) error { return nil },
-			FinishFn: func(id string, opts ots.JobFinishOptions) (ots.Job, error) {
+			StartFn:      func(id string, opts otf.JobStartOptions) (otf.Job, error) { return want, nil },
+			UploadLogsFn: func(id string, logs []byte, opts otf.PutChunkOptions) error { return nil },
+			FinishFn: func(id string, opts otf.JobFinishOptions) (otf.Job, error) {
 				got <- opts.Errored
 				return want, nil
 			},

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -41,7 +41,7 @@ type ApplyStatusTimestamps struct {
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *Apply) Update(fn func(*ots.Apply) error) error {
+func (model *Apply) Update(fn func(*otf.Apply) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -56,8 +56,8 @@ func (model *Apply) Update(fn func(*ots.Apply) error) error {
 	return nil
 }
 
-func (model *Apply) ToDomain() *ots.Apply {
-	domain := ots.Apply{
+func (model *Apply) ToDomain() *otf.Apply {
+	domain := otf.Apply{
 		ID:                   model.ExternalID,
 		Model:                model.Model,
 		ResourceAdditions:    model.ResourceAdditions,
@@ -96,7 +96,7 @@ func (model *Apply) ToDomain() *ots.Apply {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (model *Apply) FromDomain(domain *ots.Apply) {
+func (model *Apply) FromDomain(domain *otf.Apply) {
 	model.ExternalID = domain.ID
 	model.Model = domain.Model
 	model.ResourceAdditions = domain.ResourceAdditions
@@ -136,7 +136,7 @@ func (model *Apply) FromDomain(domain *ots.Apply) {
 	}
 }
 
-func (l ApplyList) ToDomain() (dl []*ots.Apply) {
+func (l ApplyList) ToDomain() (dl []*otf.Apply) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

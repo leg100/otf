@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-logr/logr"
 	tfe "github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
-	"github.com/leg100/ots/mock"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,9 +14,9 @@ import (
 func TestNewScheduler(t *testing.T) {
 	scheduler, err := NewScheduler(
 		&mock.WorkspaceService{
-			ListWorkspaceFn: func(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
-				return &ots.WorkspaceList{
-					Items: []*ots.Workspace{
+			ListWorkspaceFn: func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+				return &otf.WorkspaceList{
+					Items: []*otf.Workspace{
 						{
 							ID: "ws-123",
 						},
@@ -27,30 +27,30 @@ func TestNewScheduler(t *testing.T) {
 		&mock.RunService{
 			// Mock results depending on whether active or pending runs are
 			// requested.
-			ListFn: func(opts ots.RunListOptions) (*ots.RunList, error) {
+			ListFn: func(opts otf.RunListOptions) (*otf.RunList, error) {
 				for _, status := range opts.Statuses {
 					switch status {
 					case tfe.RunPlanning:
-						return &ots.RunList{
-							Items: []*ots.Run{
+						return &otf.RunList{
+							Items: []*otf.Run{
 								{
 									ID:                   "run-active",
-									ConfigurationVersion: &ots.ConfigurationVersion{},
+									ConfigurationVersion: &otf.ConfigurationVersion{},
 									Status:               tfe.RunPlanning,
 								},
 								{
 									ID:                   "run-speculative",
-									ConfigurationVersion: &ots.ConfigurationVersion{Speculative: true},
+									ConfigurationVersion: &otf.ConfigurationVersion{Speculative: true},
 									Status:               tfe.RunPlanning,
 								},
 							},
 						}, nil
 					case tfe.RunPending:
-						return &ots.RunList{
-							Items: []*ots.Run{
+						return &otf.RunList{
+							Items: []*otf.Run{
 								{
 									ID:                   "run-pending",
-									ConfigurationVersion: &ots.ConfigurationVersion{},
+									ConfigurationVersion: &otf.ConfigurationVersion{},
 									Status:               tfe.RunPending,
 								},
 							},
@@ -69,11 +69,11 @@ func TestNewScheduler(t *testing.T) {
 	// Expecting
 	// queues=map[ws-123]Queue{active:run-active,pending:[run-pending]}
 	if assert.Contains(t, scheduler.Queues, "ws-123") {
-		if assert.NotNil(t, scheduler.Queues["ws-123"].(*ots.WorkspaceQueue).Active) {
-			assert.Equal(t, "run-active", scheduler.Queues["ws-123"].(*ots.WorkspaceQueue).Active.ID)
+		if assert.NotNil(t, scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Active) {
+			assert.Equal(t, "run-active", scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Active.ID)
 		}
-		if assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*ots.WorkspaceQueue).Pending)) {
-			assert.Equal(t, "run-pending", scheduler.Queues["ws-123"].(*ots.WorkspaceQueue).Pending[0].ID)
+		if assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Pending)) {
+			assert.Equal(t, "run-pending", scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Pending[0].ID)
 		}
 	}
 }
@@ -81,12 +81,12 @@ func TestNewScheduler(t *testing.T) {
 func TestScheduler_AddWorkspace(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
-		Queues: make(map[string]ots.Queue),
+		Queues: make(map[string]otf.Queue),
 	}
 
-	scheduler.handleEvent(ots.Event{
-		Type:    ots.WorkspaceCreated,
-		Payload: &ots.Workspace{ID: "ws-123"},
+	scheduler.handleEvent(otf.Event{
+		Type:    otf.WorkspaceCreated,
+		Payload: &otf.Workspace{ID: "ws-123"},
 	})
 
 	assert.Contains(t, scheduler.Queues, "ws-123")
@@ -95,14 +95,14 @@ func TestScheduler_AddWorkspace(t *testing.T) {
 func TestScheduler_RemoveWorkspace(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
-		Queues: map[string]ots.Queue{
+		Queues: map[string]otf.Queue{
 			"ws-123": &mock.Queue{},
 		},
 	}
 
-	scheduler.handleEvent(ots.Event{
-		Type:    ots.WorkspaceDeleted,
-		Payload: &ots.Workspace{ID: "ws-123"},
+	scheduler.handleEvent(otf.Event{
+		Type:    otf.WorkspaceDeleted,
+		Payload: &otf.Workspace{ID: "ws-123"},
 	})
 
 	assert.NotContains(t, scheduler.Queues, "ws-123")
@@ -111,18 +111,18 @@ func TestScheduler_RemoveWorkspace(t *testing.T) {
 func TestScheduler_AddRun(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
-		Queues: map[string]ots.Queue{
+		Queues: map[string]otf.Queue{
 			"ws-123": &mock.Queue{},
 		},
 	}
 
-	scheduler.handleEvent(ots.Event{
-		Type: ots.RunCreated,
-		Payload: &ots.Run{
+	scheduler.handleEvent(otf.Event{
+		Type: otf.RunCreated,
+		Payload: &otf.Run{
 			ID: "ws-123",
-			Workspace: &ots.Workspace{
+			Workspace: &otf.Workspace{
 				ID:           "ws-123",
-				Organization: &ots.Organization{ID: "org-123"},
+				Organization: &otf.Organization{ID: "org-123"},
 			},
 		},
 	})
@@ -133,9 +133,9 @@ func TestScheduler_AddRun(t *testing.T) {
 func TestScheduler_RemoveRun(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
-		Queues: map[string]ots.Queue{
+		Queues: map[string]otf.Queue{
 			"ws-123": &mock.Queue{
-				Runs: []*ots.Run{
+				Runs: []*otf.Run{
 					{
 						ID: "run-123",
 					},
@@ -145,13 +145,13 @@ func TestScheduler_RemoveRun(t *testing.T) {
 	}
 	require.NotNil(t, scheduler)
 
-	scheduler.handleEvent(ots.Event{
-		Type: ots.RunCompleted,
-		Payload: &ots.Run{
+	scheduler.handleEvent(otf.Event{
+		Type: otf.RunCompleted,
+		Payload: &otf.Run{
 			ID: "run-123",
-			Workspace: &ots.Workspace{
+			Workspace: &otf.Workspace{
 				ID:           "ws-123",
-				Organization: &ots.Organization{ID: "org-123"},
+				Organization: &otf.Organization{ID: "org-123"},
 			},
 		},
 	})

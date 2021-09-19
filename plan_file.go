@@ -1,4 +1,4 @@
-package ots
+package otf
 
 const (
 	CreateAction ChangeAction = "create"

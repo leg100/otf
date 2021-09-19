@@ -1,9 +1,9 @@
-package ots
+package otf
 
 import tfe "github.com/leg100/go-tfe"
 
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
-// OTS is free and therefore the user is entitled to all currently supported
+// OTF is free and therefore the user is entitled to all currently supported
 // services.
 type Entitlements struct {
 	*tfe.Entitlements

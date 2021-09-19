@@ -1,25 +1,25 @@
 package app
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.PlanService = (*PlanService)(nil)
+var _ otf.PlanService = (*PlanService)(nil)
 
 type PlanService struct {
-	bs ots.BlobStore
-	db ots.RunStore
+	bs otf.BlobStore
+	db otf.RunStore
 }
 
-func NewPlanService(db ots.RunStore, bs ots.BlobStore) *PlanService {
+func NewPlanService(db otf.RunStore, bs otf.BlobStore) *PlanService {
 	return &PlanService{
 		bs: bs,
 		db: db,
 	}
 }
 
-func (s PlanService) Get(id string) (*ots.Plan, error) {
-	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
+func (s PlanService) Get(id string) (*otf.Plan, error) {
+	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (s PlanService) Get(id string) (*ots.Plan, error) {
 
 // GetPlanJSON returns the JSON formatted plan file for the plan.
 func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
-	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
+	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}

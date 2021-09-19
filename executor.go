@@ -1,4 +1,4 @@
-package ots
+package otf
 
 import (
 	"context"
@@ -46,7 +46,7 @@ type ExecutorFunc func(context.Context, *Executor) error
 
 // NewExecutor constructs an Executor.
 func NewExecutor(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Executor, error) {
-	path, err := os.MkdirTemp("", "ots-plan")
+	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
 		return nil, err
 	}

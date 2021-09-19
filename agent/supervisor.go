@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -18,9 +18,9 @@ type Supervisor struct {
 
 	logr.Logger
 
-	RunService                  ots.RunService
-	ConfigurationVersionService ots.ConfigurationVersionService
-	StateVersionService         ots.StateVersionService
+	RunService                  otf.RunService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
 
 	Spooler
 
@@ -28,7 +28,7 @@ type Supervisor struct {
 }
 
 // NewSupervisor is the constructor for Supervisor
-func NewSupervisor(spooler Spooler, cvs ots.ConfigurationVersionService, svs ots.StateVersionService, rs ots.RunService, logger logr.Logger, concurrency int) *Supervisor {
+func NewSupervisor(spooler Spooler, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
 		Spooler:                     spooler,
 		RunService:                  rs,

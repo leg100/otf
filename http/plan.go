@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.GetChunkOptions
+	var opts otf.GetChunkOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -59,7 +59,7 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 
 // PlanJSONAPIObject converts a Plan to a struct that can be
 // marshalled into a JSON-API object
-func (s *Server) PlanJSONAPIObject(p *ots.Plan) *tfe.Plan {
+func (s *Server) PlanJSONAPIObject(p *otf.Plan) *tfe.Plan {
 	obj := &tfe.Plan{
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),

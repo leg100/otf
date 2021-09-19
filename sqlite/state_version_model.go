@@ -1,7 +1,7 @@
 package sqlite
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -30,8 +30,8 @@ type StateVersion struct {
 
 type StateVersionList []StateVersion
 
-func (model *StateVersion) ToDomain() *ots.StateVersion {
-	domain := ots.StateVersion{
+func (model *StateVersion) ToDomain() *otf.StateVersion {
+	domain := otf.StateVersion{
 		ID:           model.ExternalID,
 		Model:        model.Model,
 		Serial:       model.Serial,
@@ -53,7 +53,7 @@ func (model *StateVersion) ToDomain() *ots.StateVersion {
 
 // FromDomain updates state version model fields with a state version domain
 // object's fields
-func (model *StateVersion) FromDomain(domain *ots.StateVersion) {
+func (model *StateVersion) FromDomain(domain *otf.StateVersion) {
 	model.Model = domain.Model
 	model.ExternalID = domain.ID
 	model.Serial = domain.Serial
@@ -72,7 +72,7 @@ func (model *StateVersion) FromDomain(domain *ots.StateVersion) {
 	}
 }
 
-func (l StateVersionList) ToDomain() (dl []*ots.StateVersion) {
+func (l StateVersionList) ToDomain() (dl []*otf.StateVersion) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

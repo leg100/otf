@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts ots.RunListOptions
+	var opts otf.RunListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -69,7 +69,7 @@ func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts ots.PutChunkOptions
+	var opts otf.PutChunkOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -109,7 +109,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := s.RunService.Discard(vars["id"], opts)
-	if err == ots.ErrRunDiscardNotAllowed {
+	if err == otf.ErrRunDiscardNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -130,7 +130,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := s.RunService.Cancel(vars["id"], opts)
-	if err == ots.ErrRunCancelNotAllowed {
+	if err == otf.ErrRunCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -151,7 +151,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := s.RunService.ForceCancel(vars["id"], opts)
-	if err == ots.ErrRunForceCancelNotAllowed {
+	if err == otf.ErrRunForceCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -179,7 +179,7 @@ func (s *Server) GetRunPlanJSON(w http.ResponseWriter, r *http.Request) {
 
 // RunJSONAPIObject converts a Run to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
+func (s *Server) RunJSONAPIObject(r *otf.Run) *tfe.Run {
 	obj := &tfe.Run{
 		ID:                     r.ID,
 		Actions:                r.Actions(),
@@ -193,7 +193,7 @@ func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
 		Refresh:                r.Refresh,
 		RefreshOnly:            r.RefreshOnly,
 		ReplaceAddrs:           r.ReplaceAddrs,
-		Source:                 ots.DefaultConfigurationSource,
+		Source:                 otf.DefaultConfigurationSource,
 		Status:                 r.Status,
 		StatusTimestamps:       r.StatusTimestamps,
 		TargetAddrs:            r.TargetAddrs,
@@ -206,8 +206,8 @@ func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
 
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &tfe.User{
-			ID:       ots.DefaultUserID,
-			Username: ots.DefaultUsername,
+			ID:       otf.DefaultUserID,
+			Username: otf.DefaultUsername,
 		},
 	}
 
@@ -216,7 +216,7 @@ func (s *Server) RunJSONAPIObject(r *ots.Run) *tfe.Run {
 
 // RunListJSONAPIObject converts a RunList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) RunListJSONAPIObject(cvl *ots.RunList) *tfe.RunList {
+func (s *Server) RunListJSONAPIObject(cvl *otf.RunList) *tfe.RunList {
 	obj := &tfe.RunList{
 		Pagination: cvl.Pagination,
 	}

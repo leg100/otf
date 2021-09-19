@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Run go-tfe's tests against an otsd instance. Either specify tests as arguments
+# Run go-tfe's tests against an otfd instance. Either specify tests as arguments
 # or a default subset of tests will be run.
 
 set -ex

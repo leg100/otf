@@ -1,7 +1,7 @@
 package sqlite
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -23,8 +23,8 @@ type StateVersionOutput struct {
 // StateVersionOutputList is a list of run models
 type StateVersionOutputList []StateVersionOutput
 
-func (model *StateVersionOutput) ToDomain() *ots.StateVersionOutput {
-	domain := ots.StateVersionOutput{
+func (model *StateVersionOutput) ToDomain() *otf.StateVersionOutput {
+	domain := otf.StateVersionOutput{
 		ID:        model.ExternalID,
 		Name:      model.Name,
 		Sensitive: model.Sensitive,
@@ -36,7 +36,7 @@ func (model *StateVersionOutput) ToDomain() *ots.StateVersionOutput {
 }
 
 // NewStateVersionOutputFromDomain constructs a model obj from a domain obj
-func NewStateVersionOutputFromDomain(domain *ots.StateVersionOutput) *StateVersionOutput {
+func NewStateVersionOutputFromDomain(domain *otf.StateVersionOutput) *StateVersionOutput {
 	return &StateVersionOutput{
 		ExternalID: domain.ID,
 		Name:       domain.Name,
@@ -46,7 +46,7 @@ func NewStateVersionOutputFromDomain(domain *ots.StateVersionOutput) *StateVersi
 	}
 }
 
-func (l StateVersionOutputList) ToDomain() (dl []*ots.StateVersionOutput) {
+func (l StateVersionOutputList) ToDomain() (dl []*otf.StateVersionOutput) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

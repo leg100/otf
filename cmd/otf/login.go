@@ -15,7 +15,7 @@ func LoginCommand(dirs Directories) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "login",
-		Short: "Login to OTS",
+		Short: "Login to OTF",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store, err := NewCredentialsStore(dirs)
 			if err != nil {
@@ -32,7 +32,7 @@ func LoginCommand(dirs Directories) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&address, "address", DefaultAddress, "Address of OTS instance")
+	cmd.Flags().StringVar(&address, "address", DefaultAddress, "Address of OTF instance")
 
 	return cmd
 }

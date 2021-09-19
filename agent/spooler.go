@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 var _ Spooler = (*SpoolerDaemon)(nil)
@@ -16,30 +16,30 @@ type Spooler interface {
 	Start(context.Context)
 
 	// GetJob receives spooled job
-	GetJob() <-chan ots.Job
+	GetJob() <-chan otf.Job
 
 	// GetCancelation receives cancelation request for a job
-	GetCancelation() <-chan ots.Job
+	GetCancelation() <-chan otf.Job
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
-	queue chan ots.Job
+	queue chan otf.Job
 
 	// Queue of cancelation requests
-	cancelations chan ots.Job
+	cancelations chan otf.Job
 
 	// EventService allows subscribing to stream of events
-	ots.EventService
+	otf.EventService
 
 	// Logger for logging various events
 	logr.Logger
 }
 
 type RunLister interface {
-	List(ots.RunListOptions) (*ots.RunList, error)
+	List(otf.RunListOptions) (*otf.RunList, error)
 }
 
 const (
@@ -54,22 +54,22 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es ots.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
-	runs, err := rl.List(ots.RunListOptions{Statuses: QueuedStatuses})
+	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate queue
-	queue := make(chan ots.Job, SpoolerCapacity)
+	queue := make(chan otf.Job, SpoolerCapacity)
 	for _, r := range runs.Items {
 		queue <- r
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
-		cancelations: make(chan ots.Job, SpoolerCapacity),
+		cancelations: make(chan otf.Job, SpoolerCapacity),
 		EventService: es,
 		Logger:       logger,
 	}, nil
@@ -91,24 +91,24 @@ func (s *SpoolerDaemon) Start(ctx context.Context) {
 }
 
 // GetJob returns a channel of queued jobs
-func (s *SpoolerDaemon) GetJob() <-chan ots.Job {
+func (s *SpoolerDaemon) GetJob() <-chan otf.Job {
 	return s.queue
 }
 
 // GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan ots.Job {
+func (s *SpoolerDaemon) GetCancelation() <-chan otf.Job {
 	return s.cancelations
 }
 
-func (s *SpoolerDaemon) handleEvent(ev ots.Event) {
+func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
-	case *ots.Run:
+	case *otf.Run:
 		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
 
 		switch ev.Type {
-		case ots.PlanQueued, ots.ApplyQueued:
+		case otf.PlanQueued, otf.ApplyQueued:
 			s.queue <- obj
-		case ots.RunCanceled:
+		case otf.RunCanceled:
 			s.cancelations <- obj
 		}
 	}

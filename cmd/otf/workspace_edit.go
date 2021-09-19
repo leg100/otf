@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func WorkspaceEditCommand(config ClientConfig) *cobra.Command {
 		},
 	}
 
-	opts.ExecutionMode = cmd.Flags().String("execution-mode", ots.DefaultExecutionMode, "Which execution mode to use. Valid values are remote, local")
+	opts.ExecutionMode = cmd.Flags().String("execution-mode", otf.DefaultExecutionMode, "Which execution mode to use. Valid values are remote, local")
 
 	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")

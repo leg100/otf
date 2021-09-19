@@ -10,8 +10,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
-	"github.com/leg100/ots/mock"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,19 +21,19 @@ func TestWorkspace(t *testing.T) {
 		Logger: logr.Discard(),
 	}
 	s.WorkspaceService = &mock.WorkspaceService{
-		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*ots.Workspace, error) {
+		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*otf.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceFn: func(spec ots.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*ots.Workspace, error) {
+		UpdateWorkspaceFn: func(spec otf.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", "automatize"), nil
 		},
-		GetWorkspaceFn: func(spec ots.WorkspaceSpecifier) (*ots.Workspace, error) {
+		GetWorkspaceFn: func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 			return mock.NewWorkspace("dev", "ws-123", "automatize"), nil
 		},
-		ListWorkspaceFn: func(opts ots.WorkspaceListOptions) (*ots.WorkspaceList, error) {
+		ListWorkspaceFn: func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 			return mock.NewWorkspaceList("dev", "ws-123", "automatize", opts), nil
 		},
-		DeleteWorkspaceFn: func(spec ots.WorkspaceSpecifier) error {
+		DeleteWorkspaceFn: func(spec otf.WorkspaceSpecifier) error {
 			return nil
 		},
 	}

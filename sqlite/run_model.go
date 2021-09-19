@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -71,7 +71,7 @@ type RunList []Run
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *Run) Update(fn func(*ots.Run) error) error {
+func (model *Run) Update(fn func(*otf.Run) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -86,8 +86,8 @@ func (model *Run) Update(fn func(*ots.Run) error) error {
 	return nil
 }
 
-func (model *Run) ToDomain() *ots.Run {
-	domain := ots.Run{
+func (model *Run) ToDomain() *otf.Run {
+	domain := otf.Run{
 		ID:                     model.ExternalID,
 		ForceCancelAvailableAt: model.ForceCancelAvailableAt,
 		Message:                model.Message,
@@ -178,7 +178,7 @@ func (model *Run) ToDomain() *ots.Run {
 }
 
 // NewFromDomain constructs a model obj from a domain obj
-func NewFromDomain(domain *ots.Run) *Run {
+func NewFromDomain(domain *otf.Run) *Run {
 	model := &Run{
 		Apply: &Apply{
 			StatusTimestamps: &ApplyStatusTimestamps{},
@@ -196,7 +196,7 @@ func NewFromDomain(domain *ots.Run) *Run {
 }
 
 // FromDomain updates run model fields with a run domain object's fields
-func (model *Run) FromDomain(domain *ots.Run) {
+func (model *Run) FromDomain(domain *otf.Run) {
 	model.ExternalID = domain.ID
 	model.ForceCancelAvailableAt = domain.ForceCancelAvailableAt
 	model.Status = domain.Status
@@ -283,7 +283,7 @@ func (model *Run) FromDomain(domain *ots.Run) {
 	model.ConfigurationVersionID = domain.ConfigurationVersion.Model.ID
 }
 
-func (l RunList) ToDomain() (dl []*ots.Run) {
+func (l RunList) ToDomain() (dl []*otf.Run) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

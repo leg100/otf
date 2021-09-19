@@ -4,13 +4,13 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 // EventBufferSize is the buffer size of the channel for each subscription.
 const EventBufferSize = 16
 
-var _ ots.EventService = (*EventService)(nil)
+var _ otf.EventService = (*EventService)(nil)
 
 type EventService struct {
 	mu   sync.Mutex
@@ -26,7 +26,7 @@ func NewEventService(logger logr.Logger) *EventService {
 	}
 }
 
-func (e *EventService) Publish(event ots.Event) {
+func (e *EventService) Publish(event otf.Event) {
 	for _, sub := range e.subs {
 		select {
 		case sub.c <- event:
@@ -36,11 +36,11 @@ func (e *EventService) Publish(event ots.Event) {
 	}
 }
 
-func (e *EventService) Subscribe(id string) ots.Subscription {
+func (e *EventService) Subscribe(id string) otf.Subscription {
 	// Create new subscription
 	sub := &Subscription{
 		service: e,
-		c:       make(chan ots.Event, EventBufferSize),
+		c:       make(chan otf.Event, EventBufferSize),
 	}
 
 	// Add to list of user's subscriptions. Subscriptions are stored as a map
@@ -73,7 +73,7 @@ type Subscription struct {
 	service *EventService // service subscription was created from
 	id      string        // Uniquely identifies subscription
 
-	c    chan ots.Event // channel of events
+	c    chan otf.Event // channel of events
 	once sync.Once      // ensures c only closed once
 }
 
@@ -84,6 +84,6 @@ func (s *Subscription) Close() error {
 }
 
 // C returns a receive-only channel of user-related events.
-func (s *Subscription) C() <-chan ots.Event {
+func (s *Subscription) C() <-chan otf.Event {
 	return s.c
 }

@@ -2,12 +2,12 @@ package sqlite
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.OrganizationStore = (*OrganizationDB)(nil)
+var _ otf.OrganizationStore = (*OrganizationDB)(nil)
 
 type OrganizationDB struct {
 	*gorm.DB
@@ -20,7 +20,7 @@ func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
 }
 
 // Create persists a Organization to the DB.
-func (db OrganizationDB) Create(domain *ots.Organization) (*ots.Organization, error) {
+func (db OrganizationDB) Create(domain *otf.Organization) (*otf.Organization, error) {
 	model := &Organization{}
 	model.FromDomain(domain)
 
@@ -34,7 +34,7 @@ func (db OrganizationDB) Create(domain *ots.Organization) (*ots.Organization, er
 // Update persists an updated Organization to the DB. The existing org is
 // fetched from the DB, the supplied func is invoked on the org, and the updated
 // org is persisted back to the DB.
-func (db OrganizationDB) Update(name string, fn func(*ots.Organization) error) (*ots.Organization, error) {
+func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	var model *Organization
 
 	err := db.Transaction(func(tx *gorm.DB) (err error) {
@@ -62,7 +62,7 @@ func (db OrganizationDB) Update(name string, fn func(*ots.Organization) error) (
 	return model.ToDomain(), nil
 }
 
-func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*ots.OrganizationList, error) {
+func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
 	var count int64
 	var models OrganizationList
 
@@ -81,13 +81,13 @@ func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*ots.Organizati
 		return nil, err
 	}
 
-	return &ots.OrganizationList{
+	return &otf.OrganizationList{
 		Items:      models.ToDomain(),
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
 
-func (db OrganizationDB) Get(name string) (*ots.Organization, error) {
+func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 	org, err := getOrganizationByName(db.DB, name)
 	if err != nil {
 		return nil, err

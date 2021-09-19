@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
 
@@ -52,7 +52,7 @@ type WorkspaceList []Workspace
 
 // Update updates the model with the supplied fn. The fn operates on the domain
 // obj, so Update handles converting to and from a domain obj.
-func (model *Workspace) Update(fn func(*ots.Workspace) error) error {
+func (model *Workspace) Update(fn func(*otf.Workspace) error) error {
 	// model -> domain
 	domain := model.ToDomain()
 
@@ -67,8 +67,8 @@ func (model *Workspace) Update(fn func(*ots.Workspace) error) error {
 	return nil
 }
 
-func (model *Workspace) ToDomain() *ots.Workspace {
-	domain := ots.Workspace{
+func (model *Workspace) ToDomain() *otf.Workspace {
+	domain := otf.Workspace{
 		ID:                         model.ExternalID,
 		Model:                      model.Model,
 		AllowDestroyPlan:           model.AllowDestroyPlan,
@@ -113,7 +113,7 @@ func (model *Workspace) ToDomain() *ots.Workspace {
 
 // FromDomain updates workspace model fields with a workspace domain object's
 // fields
-func (model *Workspace) FromDomain(domain *ots.Workspace) {
+func (model *Workspace) FromDomain(domain *otf.Workspace) {
 	model.ExternalID = domain.ID
 	model.Model = domain.Model
 	model.AllowDestroyPlan = domain.AllowDestroyPlan
@@ -152,7 +152,7 @@ func (model *Workspace) FromDomain(domain *ots.Workspace) {
 	}
 }
 
-func (l WorkspaceList) ToDomain() (dl []*ots.Workspace) {
+func (l WorkspaceList) ToDomain() (dl []*otf.Workspace) {
 	for _, i := range l {
 		dl = append(dl, i.ToDomain())
 	}

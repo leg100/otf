@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 
 // StateVersionJSONAPIObject converts a StateVersion to a struct that can be
 // marshalled into a JSON-API object
-func (s *Server) StateVersionJSONAPIObject(r *ots.StateVersion) *tfe.StateVersion {
+func (s *Server) StateVersionJSONAPIObject(r *otf.StateVersion) *tfe.StateVersion {
 	obj := &tfe.StateVersion{
 		ID:          r.ID,
 		CreatedAt:   r.Model.CreatedAt,
@@ -95,7 +95,7 @@ func (s *Server) StateVersionJSONAPIObject(r *ots.StateVersion) *tfe.StateVersio
 
 // StateVersionListJSONAPIObject converts a StateVersionList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) StateVersionListJSONAPIObject(cvl *ots.StateVersionList) *tfe.StateVersionList {
+func (s *Server) StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *tfe.StateVersionList {
 	obj := &tfe.StateVersionList{
 		Pagination: cvl.Pagination,
 	}
@@ -108,7 +108,7 @@ func (s *Server) StateVersionListJSONAPIObject(cvl *ots.StateVersionList) *tfe.S
 
 // StateVersionOutputJSONAPIObject converts a StateVersionOutput to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) StateVersionOutputJSONAPIObject(svo *ots.StateVersionOutput) *tfe.StateVersionOutput {
+func (s *Server) StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *tfe.StateVersionOutput {
 	obj := &tfe.StateVersionOutput{
 		ID:        svo.ID,
 		Name:      svo.Name,
@@ -122,7 +122,7 @@ func (s *Server) StateVersionOutputJSONAPIObject(svo *ots.StateVersionOutput) *t
 
 // StateVersionOutputListJSONAPIObject converts a StateVersionOutputList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) StateVersionOutputListJSONAPIObject(svol ots.StateVersionOutputList) []*tfe.StateVersionOutput {
+func (s *Server) StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*tfe.StateVersionOutput {
 	var obj []*tfe.StateVersionOutput
 	for _, item := range svol {
 		obj = append(obj, s.StateVersionOutputJSONAPIObject(item))

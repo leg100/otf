@@ -4,25 +4,25 @@ import (
 	"fmt"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.RunService = (*RunService)(nil)
+var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
-	db ots.RunStore
-	bs ots.BlobStore
-	es ots.EventService
+	db otf.RunStore
+	bs otf.BlobStore
+	es otf.EventService
 
-	*ots.RunFactory
+	*otf.RunFactory
 }
 
-func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.ConfigurationVersionService, bs ots.BlobStore, es ots.EventService) *RunService {
+func NewRunService(db otf.RunStore, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, bs otf.BlobStore, es otf.EventService) *RunService {
 	return &RunService{
 		bs: bs,
 		db: db,
 		es: es,
-		RunFactory: &ots.RunFactory{
+		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
 		},
@@ -31,7 +31,7 @@ func NewRunService(db ots.RunStore, wss ots.WorkspaceService, cvs ots.Configurat
 
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
-func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
+func (s RunService) Create(opts *tfe.RunCreateOptions) (*otf.Run, error) {
 	run, err := s.NewRun(opts)
 	if err != nil {
 		return nil, err
@@ -42,23 +42,23 @@ func (s RunService) Create(opts *tfe.RunCreateOptions) (*ots.Run, error) {
 		return nil, err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.RunCreated, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.RunCreated, Payload: run})
 
 	return run, nil
 }
 
 // Get retrieves a run obj with the given ID from the db.
-func (s RunService) Get(id string) (*ots.Run, error) {
-	return s.db.Get(ots.RunGetOptions{ID: &id})
+func (s RunService) Get(id string) (*otf.Run, error) {
+	return s.db.Get(otf.RunGetOptions{ID: &id})
 }
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
-func (s RunService) List(opts ots.RunListOptions) (*ots.RunList, error) {
+func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	return s.db.List(opts)
 }
 
 func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *otf.Run) error {
 		run.UpdateStatus(tfe.RunApplyQueued)
 
 		return nil
@@ -67,20 +67,20 @@ func (s RunService) Apply(id string, opts *tfe.RunApplyOptions) error {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.ApplyQueued, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.ApplyQueued, Payload: run})
 
 	return err
 }
 
 func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.RunCompleted, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.RunCompleted, Payload: run})
 
 	return err
 }
@@ -88,14 +88,14 @@ func (s RunService) Discard(id string, opts *tfe.RunDiscardOptions) error {
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(id string, opts *tfe.RunCancelOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	_, err := s.db.Update(id, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) error {
-	_, err := s.db.Update(id, func(run *ots.Run) error {
+	_, err := s.db.Update(id, func(run *otf.Run) error {
 		if err := run.ForceCancel(); err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func (s RunService) ForceCancel(id string, opts *tfe.RunForceCancelOptions) erro
 }
 
 func (s RunService) EnqueuePlan(id string) error {
-	run, err := s.db.Update(id, func(run *ots.Run) error {
+	run, err := s.db.Update(id, func(run *otf.Run) error {
 		run.UpdateStatus(tfe.RunPlanQueued)
 		return nil
 	})
@@ -119,7 +119,7 @@ func (s RunService) EnqueuePlan(id string) error {
 		return err
 	}
 
-	s.es.Publish(ots.Event{Type: ots.PlanQueued, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.PlanQueued, Payload: run})
 
 	return err
 }
@@ -128,7 +128,7 @@ func (s RunService) EnqueuePlan(id string) error {
 // produced using `terraform plan`. If the plan file is JSON serialized then set
 // json to true.
 func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
@@ -145,18 +145,18 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 }
 
 // Start marks a run phase (plan, apply) as started.
-func (s RunService) Start(id string, opts ots.JobStartOptions) (ots.Job, error) {
-	return s.db.Update(id, func(run *ots.Run) error {
+func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) {
+	return s.db.Update(id, func(run *otf.Run) error {
 		return run.Start()
 	})
 }
 
 // Finish marks a run phase (plan, apply) as finished.  An event is emitted to
 // notify any subscribers of the new run state.
-func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error) {
-	var event *ots.Event
+func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error) {
+	var event *otf.Event
 
-	run, err := s.db.Update(id, func(run *ots.Run) (err error) {
+	run, err := s.db.Update(id, func(run *otf.Run) (err error) {
 		event, err = run.Finish(s.bs)
 		if err != nil {
 			return err
@@ -174,7 +174,7 @@ func (s RunService) Finish(id string, opts ots.JobFinishOptions) (ots.Job, error
 
 // GetPlanJSON returns the JSON formatted plan file for the run.
 func (s RunService) GetPlanJSON(id string) ([]byte, error) {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (s RunService) GetPlanJSON(id string) ([]byte, error) {
 
 // GetPlanFile returns the binary plan file for the run.
 func (s RunService) GetPlanFile(id string) ([]byte, error) {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +192,8 @@ func (s RunService) GetPlanFile(id string) ([]byte, error) {
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(ots.RunGetOptions{PlanID: &id})
+func (s RunService) GetPlanLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +202,8 @@ func (s RunService) GetPlanLogs(id string, opts ots.GetChunkOptions) ([]byte, er
 
 // GetApplyLogs returns logs from the apply of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
+func (s RunService) GetApplyLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +211,8 @@ func (s RunService) GetApplyLogs(id string, opts ots.GetChunkOptions) ([]byte, e
 }
 
 // UploadLogs writes a chunk of logs for a run.
-func (s RunService) UploadLogs(id string, logs []byte, opts ots.PutChunkOptions) error {
-	run, err := s.db.Get(ots.RunGetOptions{ID: &id})
+func (s RunService) UploadLogs(id string, logs []byte, opts otf.PutChunkOptions) error {
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}

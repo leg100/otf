@@ -2,33 +2,33 @@ package mock
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.OrganizationService = (*OrganizationService)(nil)
+var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	CreateOrganizationFn func(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error)
-	UpdateOrganizationFn func(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error)
-	GetOrganizationFn    func(name string) (*ots.Organization, error)
-	ListOrganizationFn   func(opts tfe.OrganizationListOptions) (*ots.OrganizationList, error)
+	CreateOrganizationFn func(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error)
+	UpdateOrganizationFn func(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error)
+	GetOrganizationFn    func(name string) (*otf.Organization, error)
+	ListOrganizationFn   func(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error)
 	DeleteOrganizationFn func(name string) error
-	GetEntitlementsFn    func(name string) (*ots.Entitlements, error)
+	GetEntitlementsFn    func(name string) (*otf.Entitlements, error)
 }
 
-func (s OrganizationService) Create(opts *tfe.OrganizationCreateOptions) (*ots.Organization, error) {
+func (s OrganizationService) Create(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error) {
 	return s.CreateOrganizationFn(opts)
 }
 
-func (s OrganizationService) Get(name string) (*ots.Organization, error) {
+func (s OrganizationService) Get(name string) (*otf.Organization, error) {
 	return s.GetOrganizationFn(name)
 }
 
-func (s OrganizationService) List(opts tfe.OrganizationListOptions) (*ots.OrganizationList, error) {
+func (s OrganizationService) List(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return s.ListOrganizationFn(opts)
 }
 
-func (s OrganizationService) Update(name string, opts *tfe.OrganizationUpdateOptions) (*ots.Organization, error) {
+func (s OrganizationService) Update(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error) {
 	return s.UpdateOrganizationFn(name, opts)
 }
 
@@ -36,27 +36,27 @@ func (s OrganizationService) Delete(name string) error {
 	return s.DeleteOrganizationFn(name)
 }
 
-func (s OrganizationService) GetEntitlements(name string) (*ots.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(name string) (*otf.Entitlements, error) {
 	return s.GetEntitlementsFn(name)
 }
 
-func NewOrganization(name, email string) *ots.Organization {
-	return &ots.Organization{
+func NewOrganization(name, email string) *otf.Organization {
+	return &otf.Organization{
 		Name:                   name,
 		Email:                  email,
 		Permissions:            &tfe.OrganizationPermissions{},
-		SessionTimeout:         ots.DefaultSessionTimeout,
-		SessionRemember:        ots.DefaultSessionExpiration,
-		CollaboratorAuthPolicy: ots.DefaultCollaboratorAuthPolicy,
-		CostEstimationEnabled:  ots.DefaultCostEstimationEnabled,
+		SessionTimeout:         otf.DefaultSessionTimeout,
+		SessionRemember:        otf.DefaultSessionExpiration,
+		CollaboratorAuthPolicy: otf.DefaultCollaboratorAuthPolicy,
+		CostEstimationEnabled:  otf.DefaultCostEstimationEnabled,
 	}
 }
 
-func NewOrganizationList(name, email string, opts tfe.OrganizationListOptions) *ots.OrganizationList {
-	return &ots.OrganizationList{
-		Items: []*ots.Organization{
+func NewOrganizationList(name, email string, opts tfe.OrganizationListOptions) *otf.OrganizationList {
+	return &otf.OrganizationList{
+		Items: []*otf.Organization{
 			NewOrganization(name, email),
 		},
-		Pagination: ots.NewPagination(opts.ListOptions, 1),
+		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}
 }

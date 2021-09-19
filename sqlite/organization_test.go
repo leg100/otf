@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestOrganization(t *testing.T) {
 
 	// Create
 
-	org, err := svc.Create(&ots.Organization{
+	org, err := svc.Create(&otf.Organization{
 		Name:  "automatize",
 		ID:    "org-123",
 		Email: "sysadmin@automatize.co.uk",
@@ -29,7 +29,7 @@ func TestOrganization(t *testing.T) {
 
 	// Create second org
 
-	org, err = svc.Create(&ots.Organization{
+	org, err = svc.Create(&otf.Organization{
 		Name:  "second",
 		ID:    "org-456",
 		Email: "sysadmin@second.org",
@@ -42,7 +42,7 @@ func TestOrganization(t *testing.T) {
 
 	// Update
 
-	org, err = svc.Update("automatize", func(org *ots.Organization) error {
+	org, err = svc.Update("automatize", func(org *otf.Organization) error {
 		org.Email = "newguy@automatize.co.uk"
 		return nil
 	})

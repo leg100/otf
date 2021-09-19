@@ -11,7 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/urfave/negroni"
 )
 
@@ -46,13 +46,13 @@ type Server struct {
 	// Hostname, used within absolute URL links, defaults to localhost
 	Hostname string
 
-	OrganizationService         ots.OrganizationService
-	WorkspaceService            ots.WorkspaceService
-	StateVersionService         ots.StateVersionService
-	ConfigurationVersionService ots.ConfigurationVersionService
-	RunService                  ots.RunService
-	PlanService                 ots.PlanService
-	ApplyService                ots.ApplyService
+	OrganizationService         otf.OrganizationService
+	WorkspaceService            otf.WorkspaceService
+	StateVersionService         otf.StateVersionService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	RunService                  otf.RunService
+	PlanService                 otf.PlanService
+	ApplyService                otf.ApplyService
 }
 
 // NewServer is the contructor for Server

@@ -1,23 +1,23 @@
 package app
 
 import (
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 )
 
-var _ ots.ApplyService = (*ApplyService)(nil)
+var _ otf.ApplyService = (*ApplyService)(nil)
 
 type ApplyService struct {
-	db ots.RunStore
+	db otf.RunStore
 }
 
-func NewApplyService(db ots.RunStore) *ApplyService {
+func NewApplyService(db otf.RunStore) *ApplyService {
 	return &ApplyService{
 		db: db,
 	}
 }
 
-func (s ApplyService) Get(id string) (*ots.Apply, error) {
-	run, err := s.db.Get(ots.RunGetOptions{ApplyID: &id})
+func (s ApplyService) Get(id string) (*otf.Apply, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	EnvironmentVariablePrefix = "OTS_"
+	EnvironmentVariablePrefix = "OTF_"
 )
 
 // SetFlagsFromEnvVariables overrides flag values with environment variables.

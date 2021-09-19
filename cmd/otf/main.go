@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	cmdutil "github.com/leg100/ots/cmd"
+	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ func main() {
 
 func Run(ctx context.Context, args []string) error {
 	cmd := &cobra.Command{
-		Use:           "ots",
+		Use:           "otf",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}

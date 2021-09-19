@@ -1,4 +1,4 @@
-module github.com/leg100/ots
+module github.com/leg100/otf
 
 go 1.16
 

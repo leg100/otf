@@ -2,12 +2,12 @@ package sqlite
 
 import (
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-var _ ots.StateVersionStore = (*StateVersionService)(nil)
+var _ otf.StateVersionStore = (*StateVersionService)(nil)
 
 type StateVersionService struct {
 	*gorm.DB
@@ -20,7 +20,7 @@ func NewStateVersionDB(db *gorm.DB) *StateVersionService {
 }
 
 // Create persists a StateVersion to the DB.
-func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, error) {
+func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
 	model := &StateVersion{}
 	model.FromDomain(sv)
 
@@ -31,12 +31,12 @@ func (s StateVersionService) Create(sv *ots.StateVersion) (*ots.StateVersion, er
 	return model.ToDomain(), nil
 }
 
-func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateVersionList, error) {
+func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*otf.StateVersionList, error) {
 	var models StateVersionList
 	var count int64
 
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
-		ws, err := getWorkspace(tx, ots.WorkspaceSpecifier{Name: opts.Workspace, OrganizationName: opts.Organization})
+		ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{Name: opts.Workspace, OrganizationName: opts.Organization})
 		if err != nil {
 			return err
 		}
@@ -57,13 +57,13 @@ func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*ots.StateV
 		return nil, err
 	}
 
-	return &ots.StateVersionList{
+	return &otf.StateVersionList{
 		Items:      models.ToDomain(),
-		Pagination: ots.NewPagination(opts.ListOptions, int(count)),
+		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
 	}, nil
 }
 
-func (s StateVersionService) Get(opts ots.StateVersionGetOptions) (*ots.StateVersion, error) {
+func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	sv, err := getStateVersion(s.DB, opts)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (s StateVersionService) Get(opts ots.StateVersionGetOptions) (*ots.StateVer
 	return sv.ToDomain(), nil
 }
 
-func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*StateVersion, error) {
+func getStateVersion(db *gorm.DB, opts otf.StateVersionGetOptions) (*StateVersion, error) {
 	var model StateVersion
 
 	query := db.Preload(clause.Associations)
@@ -86,7 +86,7 @@ func getStateVersion(db *gorm.DB, opts ots.StateVersionGetOptions) (*StateVersio
 			Order("state_versions.serial desc, state_versions.created_at desc").
 			Where("workspaces.external_id = ?", *opts.WorkspaceID)
 	default:
-		return nil, ots.ErrInvalidStateVersionGetOptions
+		return nil, otf.ErrInvalidStateVersionGetOptions
 	}
 
 	if result := query.First(&model); result.Error != nil {

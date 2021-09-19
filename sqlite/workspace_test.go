@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/leg100/go-tfe"
-	"github.com/leg100/ots"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ func TestWorkspace(t *testing.T) {
 
 	// Create one org and three workspaces
 
-	org, err := orgDB.Create(&ots.Organization{
+	org, err := orgDB.Create(&otf.Organization{
 		ID:    "org-123",
 		Name:  "automatize",
 		Email: "sysadmin@automatize.co.uk",
@@ -28,9 +28,9 @@ func TestWorkspace(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := wsDB.Create(&ots.Workspace{
+		ws, err := wsDB.Create(&otf.Workspace{
 			Name:         name,
-			ID:           ots.GenerateID("ws"),
+			ID:           otf.GenerateID("ws"),
 			Organization: org,
 		})
 		require.NoError(t, err)
@@ -41,8 +41,8 @@ func TestWorkspace(t *testing.T) {
 
 	// Update
 
-	spec := ots.WorkspaceSpecifier{Name: ots.String("dev"), OrganizationName: ots.String("automatize")}
-	ws, err := wsDB.Update(spec, func(ws *ots.Workspace) error {
+	spec := otf.WorkspaceSpecifier{Name: otf.String("dev"), OrganizationName: otf.String("automatize")}
+	ws, err := wsDB.Update(spec, func(ws *otf.Workspace) error {
 		ws.Name = "newdev"
 		return nil
 	})
@@ -52,33 +52,33 @@ func TestWorkspace(t *testing.T) {
 
 	// Get
 
-	ws, err = wsDB.Get(ots.WorkspaceSpecifier{Name: ots.String("newdev"), OrganizationName: ots.String("automatize")})
+	ws, err = wsDB.Get(otf.WorkspaceSpecifier{Name: otf.String("newdev"), OrganizationName: otf.String("automatize")})
 	require.NoError(t, err)
 
 	require.Equal(t, "newdev", ws.Name)
 
 	// List
 
-	workspaces, err := wsDB.List(ots.WorkspaceListOptions{OrganizationName: ots.String("automatize")})
+	workspaces, err := wsDB.List(otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")})
 	require.NoError(t, err)
 
 	require.Equal(t, 3, len(workspaces.Items))
 
 	// List with pagination
 
-	workspaces, err = wsDB.List(ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
+	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(workspaces.Items))
 
-	workspaces, err = wsDB.List(ots.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
+	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
 
 	// List with search
 
-	workspaces, err = wsDB.List(ots.WorkspaceListOptions{Prefix: ots.String("new")})
+	workspaces, err = wsDB.List(otf.WorkspaceListOptions{Prefix: otf.String("new")})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))
@@ -86,11 +86,11 @@ func TestWorkspace(t *testing.T) {
 
 	// Delete
 
-	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{Name: ots.String("newdev"), OrganizationName: ots.String("automatize")}))
+	require.NoError(t, wsDB.Delete(otf.WorkspaceSpecifier{Name: otf.String("newdev"), OrganizationName: otf.String("automatize")}))
 
 	// Re-create
 
-	ws, err = wsDB.Create(&ots.Workspace{
+	ws, err = wsDB.Create(&otf.Workspace{
 		Name:         "dev",
 		Organization: org,
 	})
@@ -100,7 +100,7 @@ func TestWorkspace(t *testing.T) {
 
 	// Update by ID
 
-	ws, err = wsDB.Update(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)}, func(ws *ots.Workspace) error {
+	ws, err = wsDB.Update(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}, func(ws *otf.Workspace) error {
 		ws.Name = "staging"
 		return nil
 	})
@@ -110,12 +110,12 @@ func TestWorkspace(t *testing.T) {
 
 	// Get by ID
 
-	ws, err = wsDB.Get(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)})
+	ws, err = wsDB.Get(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
 	require.NoError(t, err)
 
 	require.Equal(t, "staging", ws.Name)
 
 	// Delete by ID
 
-	require.NoError(t, wsDB.Delete(ots.WorkspaceSpecifier{ID: ots.String(ws.ID)}))
+	require.NoError(t, wsDB.Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}))
 }

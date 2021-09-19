@@ -41,7 +41,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "invalid",
 			args: []string{"invalid", "-h"},
-			err:  "unknown command \"invalid\" for \"ots\"",
+			err:  "unknown command \"invalid\" for \"otf\"",
 		},
 	}
 	for _, tt := range tests {
