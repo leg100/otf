@@ -1,4 +1,4 @@
-# OTF: Open Terraforming Server
+# OTF: Open Terraforming Framework
 
 A prototype open source alternative to terraform enterprise.
 
