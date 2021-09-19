@@ -50,6 +50,7 @@ type Server struct {
 	WorkspaceService            otf.WorkspaceService
 	StateVersionService         otf.StateVersionService
 	ConfigurationVersionService otf.ConfigurationVersionService
+	EventService                otf.EventService
 	RunService                  otf.RunService
 	PlanService                 otf.PlanService
 	ApplyService                otf.ApplyService
@@ -78,6 +79,9 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
 	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
 	router.HandleFunc("/runs/{id}/logs", server.UploadLogs).Methods("POST")
+
+	// Websocket connections
+	server.registerEventRoutes(router)
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
