@@ -55,16 +55,14 @@ func NewBlobID() string {
 // slice is prefixed with a special byte. If complete is true then the last
 // chunk in the slice is suffixed with a special byte.
 func GetChunk(p []byte, opts GetChunkOptions, complete bool) ([]byte, error) {
-	if opts.Offset == 0 {
-		p = append([]byte{ChunkStartMarker}, p...)
-	}
+	p = append([]byte{ChunkStartMarker}, p...)
 
 	if complete {
 		p = append(p, ChunkEndMarker)
 	}
 
 	if opts.Offset > len(p) {
-		return nil, fmt.Errorf("offset greater than size of binary object")
+		return nil, fmt.Errorf("offset greater than size of binary object: %d > %d", opts.Offset, len(p))
 	}
 
 	if opts.Limit > ChunkMaxLimit {
