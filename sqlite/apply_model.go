@@ -14,11 +14,10 @@ type Apply struct {
 
 	ExternalID string `gorm:"uniqueIndex"`
 
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
-	Status               tfe.ApplyStatus
-	StatusTimestamps     *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	otf.Resources
+
+	Status           tfe.ApplyStatus
+	StatusTimestamps *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	LogsBlobID string
 
@@ -58,14 +57,12 @@ func (model *Apply) Update(fn func(*otf.Apply) error) error {
 
 func (model *Apply) ToDomain() *otf.Apply {
 	domain := otf.Apply{
-		ID:                   model.ExternalID,
-		Model:                model.Model,
-		ResourceAdditions:    model.ResourceAdditions,
-		ResourceChanges:      model.ResourceChanges,
-		ResourceDestructions: model.ResourceDestructions,
-		Status:               model.Status,
-		StatusTimestamps:     &tfe.ApplyStatusTimestamps{},
-		LogsBlobID:           model.LogsBlobID,
+		ID:               model.ExternalID,
+		Model:            model.Model,
+		Resources:        model.Resources,
+		Status:           model.Status,
+		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		LogsBlobID:       model.LogsBlobID,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {

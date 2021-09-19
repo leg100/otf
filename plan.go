@@ -21,11 +21,10 @@ type Plan struct {
 
 	gorm.Model
 
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
-	Status               tfe.PlanStatus
-	StatusTimestamps     *tfe.PlanStatusTimestamps
+	Resources
+
+	Status           tfe.PlanStatus
+	StatusTimestamps *tfe.PlanStatusTimestamps
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
 	LogsBlobID string
@@ -40,18 +39,6 @@ type Plan struct {
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
-}
-
-// PlanFinishOptions represents the options for finishing a plan.
-type PlanFinishOptions struct {
-	// Type is a public field utilized by JSON:API to set the resource type via
-	// the field tag.  It is not a user-defined value and does not need to be
-	// set.  https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,plans"`
-
-	ResourceAdditions    int `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int `jsonapi:"attr,resource-destructions"`
 }
 
 func newPlan() *Plan {

@@ -10,10 +10,10 @@ import (
 )
 
 func TestParseApplyOutputChanges(t *testing.T) {
-	want := apply{
-		adds:      2,
-		changes:   0,
-		deletions: 0,
+	want := Resources{
+		ResourceAdditions:    2,
+		ResourceChanges:      0,
+		ResourceDestructions: 0,
 	}
 
 	output, err := os.ReadFile("testdata/apply.txt")
@@ -21,14 +21,14 @@ func TestParseApplyOutputChanges(t *testing.T) {
 
 	apply, err := parseApplyOutput(string(output))
 	require.NoError(t, err)
-	assert.Equal(t, &want, apply)
+	assert.Equal(t, want, apply)
 }
 
 func TestParseApplyOutputNoChanges(t *testing.T) {
-	want := apply{
-		adds:      0,
-		changes:   0,
-		deletions: 0,
+	want := Resources{
+		ResourceAdditions:    0,
+		ResourceChanges:      0,
+		ResourceDestructions: 0,
 	}
 
 	output, err := ioutil.ReadFile("testdata/apply_no_changes.txt")
@@ -36,5 +36,5 @@ func TestParseApplyOutputNoChanges(t *testing.T) {
 
 	apply, err := parseApplyOutput(string(output))
 	require.NoError(t, err)
-	assert.Equal(t, &want, apply)
+	assert.Equal(t, want, apply)
 }

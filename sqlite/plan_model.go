@@ -14,11 +14,10 @@ type Plan struct {
 
 	ExternalID string `gorm:"uniqueIndex"`
 
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
-	Status               tfe.PlanStatus
-	StatusTimestamps     *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	otf.Resources
+
+	Status           tfe.PlanStatus
+	StatusTimestamps *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	// The blob ID of the logs
 	LogsBlobID string
@@ -65,16 +64,14 @@ func (model *Plan) Update(fn func(*otf.Plan) error) error {
 
 func (model *Plan) ToDomain() *otf.Plan {
 	domain := otf.Plan{
-		ID:                   model.ExternalID,
-		Model:                model.Model,
-		ResourceAdditions:    model.ResourceAdditions,
-		ResourceChanges:      model.ResourceChanges,
-		ResourceDestructions: model.ResourceDestructions,
-		Status:               model.Status,
-		StatusTimestamps:     &tfe.PlanStatusTimestamps{},
-		LogsBlobID:           model.LogsBlobID,
-		PlanFileBlobID:       model.PlanFileBlobID,
-		PlanJSONBlobID:       model.PlanJSONBlobID,
+		ID:               model.ExternalID,
+		Model:            model.Model,
+		Resources:        model.Resources,
+		Status:           model.Status,
+		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		LogsBlobID:       model.LogsBlobID,
+		PlanFileBlobID:   model.PlanFileBlobID,
+		PlanJSONBlobID:   model.PlanJSONBlobID,
 	}
 
 	if model.StatusTimestamps.CanceledAt.Valid {
