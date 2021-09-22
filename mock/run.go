@@ -10,23 +10,22 @@ import (
 var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
-	CreateFn       func(opts *tfe.RunCreateOptions) (*otf.Run, error)
-	GetFn          func(id string) (*otf.Run, error)
-	ListFn         func(opts otf.RunListOptions) (*otf.RunList, error)
-	ApplyFn        func(id string, opts *tfe.RunApplyOptions) error
-	DiscardFn      func(id string, opts *tfe.RunDiscardOptions) error
-	CancelFn       func(id string, opts *tfe.RunCancelOptions) error
-	ForceCancelFn  func(id string, opts *tfe.RunForceCancelOptions) error
-	GetPlanLogsFn  func(id string, opts otf.GetChunkOptions) ([]byte, error)
-	GetApplyLogsFn func(id string, opts otf.GetChunkOptions) ([]byte, error)
-	EnqueuePlanFn  func(id string) error
-	UpdateStatusFn func(id string, status tfe.RunStatus) (*otf.Run, error)
-	UploadLogsFn   func(id string, logs []byte, opts otf.PutChunkOptions) error
-	StartFn        func(id string, opts otf.JobStartOptions) (otf.Job, error)
-	FinishFn       func(id string, opts otf.JobFinishOptions) (otf.Job, error)
-	GetPlanJSONFn  func(id string) ([]byte, error)
-	GetPlanFileFn  func(id string) ([]byte, error)
-	UploadPlanFn   func(ctx context.Context, id string, plan []byte, opts tfe.RunUploadPlanOptions) error
+	CreateFn         func(opts *tfe.RunCreateOptions) (*otf.Run, error)
+	GetFn            func(id string) (*otf.Run, error)
+	ListFn           func(opts otf.RunListOptions) (*otf.RunList, error)
+	ApplyFn          func(id string, opts *tfe.RunApplyOptions) error
+	DiscardFn        func(id string, opts *tfe.RunDiscardOptions) error
+	CancelFn         func(id string, opts *tfe.RunCancelOptions) error
+	ForceCancelFn    func(id string, opts *tfe.RunForceCancelOptions) error
+	GetPlanLogsFn    func(id string, opts otf.GetChunkOptions) ([]byte, error)
+	GetApplyLogsFn   func(id string, opts otf.GetChunkOptions) ([]byte, error)
+	EnqueuePlanFn    func(id string) error
+	UpdateStatusFn   func(id string, status tfe.RunStatus) (*otf.Run, error)
+	UploadLogsFn     func(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error
+	StartFn          func(id string, opts otf.JobStartOptions) (otf.Job, error)
+	FinishFn         func(id string, opts otf.JobFinishOptions) (otf.Job, error)
+	GetPlanFileFn    func(ctx context.Context, id string, opts tfe.PlanFileOptions) ([]byte, error)
+	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, opts tfe.PlanFileOptions) error
 }
 
 func (s RunService) Create(opts *tfe.RunCreateOptions) (*otf.Run, error) {
@@ -73,8 +72,8 @@ func (s RunService) UpdateStatus(id string, status tfe.RunStatus) (*otf.Run, err
 	return s.UpdateStatusFn(id, status)
 }
 
-func (s RunService) UploadLogs(id string, logs []byte, opts otf.PutChunkOptions) error {
-	return s.UploadLogsFn(id, logs, opts)
+func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error {
+	return s.UploadLogsFn(ctx, id, logs, opts)
 }
 
 func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) {
@@ -85,14 +84,10 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 	return s.FinishFn(id, opts)
 }
 
-func (s RunService) GetPlanJSON(id string) ([]byte, error) {
-	return s.GetPlanJSONFn(id)
+func (s RunService) GetPlanFile(ctx context.Context, id string, opts tfe.PlanFileOptions) ([]byte, error) {
+	return s.GetPlanFileFn(ctx, id, opts)
 }
 
-func (s RunService) GetPlanFile(id string) ([]byte, error) {
-	return s.GetPlanFileFn(id)
-}
-
-func (s RunService) UploadPlan(ctx context.Context, id string, plan []byte, opts tfe.RunUploadPlanOptions) error {
-	return s.UploadPlanFn(ctx, id, plan, opts)
+func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts tfe.PlanFileOptions) error {
+	return s.UploadPlanFileFn(ctx, id, plan, opts)
 }

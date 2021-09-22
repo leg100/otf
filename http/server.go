@@ -77,8 +77,9 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
 	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
 	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
-	router.HandleFunc("/runs/{id}/logs", server.UploadLogs).Methods("POST")
-	router.HandleFunc("/runs/{id}/plan/upload", server.UploadPlan).Methods("PUT")
+	router.HandleFunc("/runs/{id}/logs", server.UploadLogs).Methods("PUT")
+	router.HandleFunc("/runs/{id}/plan", server.UploadPlanFile).Methods("PUT")
+	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
@@ -129,7 +130,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	sub.HandleFunc("/runs/{id}/actions/discard", server.DiscardRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/cancel", server.CancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/force-cancel", server.ForceCancelRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/plan/json-output", server.GetRunPlanJSON).Methods("GET")
+	sub.HandleFunc("/runs/{id}/plan/json-output", server.GetJSONPlanByRunID).Methods("GET")
 
 	// Plan routes
 	sub.HandleFunc("/plans/{id}", server.GetPlan).Methods("GET")
