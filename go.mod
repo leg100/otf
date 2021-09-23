@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/leg100/go-tfe v0.17.1-0.20210922205542-e9b6035a0a18
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
