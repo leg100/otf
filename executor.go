@@ -75,6 +75,8 @@ func (e *Executor) Execute(job Job) (err error) {
 		ID:              job.GetID(),
 		JobLogsUploader: e.JobService,
 		Logger:          e.Logger,
+		// TODO: pass in proper context
+		ctx: context.Background(),
 	}
 
 	// Record whether job errored

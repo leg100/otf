@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leg100/go-tfe"
@@ -124,10 +125,31 @@ func (s RunService) EnqueuePlan(id string) error {
 	return err
 }
 
-// UploadPlan persists a run's plan file. The plan file is expected to have been
-// produced using `terraform plan`. If the plan file is JSON serialized then set
-// json to true.
-func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
+// GetPlanFile returns the plan file for the run.
+func (s RunService) GetPlanFile(ctx context.Context, id string, opts tfe.PlanFileOptions) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	if err != nil {
+		return nil, err
+	}
+
+	var bid string // Blob ID
+
+	switch opts.Format {
+	case tfe.PlanJSONFormat:
+		bid = run.Plan.PlanJSONBlobID
+	case tfe.PlanBinaryFormat:
+		bid = run.Plan.PlanFileBlobID
+	default:
+		return nil, fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+	}
+
+	return s.bs.Get(bid)
+}
+
+// UploadPlanFile persists a run's plan file. The plan file is expected to have
+// been produced using `terraform plan`. If the plan file is JSON serialized
+// then set json to true.
+func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts tfe.PlanFileOptions) error {
 	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
@@ -135,10 +157,13 @@ func (s RunService) UploadPlan(id string, plan []byte, json bool) error {
 
 	var bid string // Blob ID
 
-	if json {
+	switch opts.Format {
+	case tfe.PlanJSONFormat:
 		bid = run.Plan.PlanJSONBlobID
-	} else {
+	case tfe.PlanBinaryFormat:
 		bid = run.Plan.PlanFileBlobID
+	default:
+		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
 
 	return s.bs.Put(bid, plan)
@@ -172,24 +197,6 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 	return run, nil
 }
 
-// GetPlanJSON returns the JSON formatted plan file for the run.
-func (s RunService) GetPlanJSON(id string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
-	if err != nil {
-		return nil, err
-	}
-	return s.bs.Get(run.Plan.PlanJSONBlobID)
-}
-
-// GetPlanFile returns the binary plan file for the run.
-func (s RunService) GetPlanFile(id string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
-	if err != nil {
-		return nil, err
-	}
-	return s.bs.Get(run.Plan.PlanFileBlobID)
-}
-
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
 func (s RunService) GetPlanLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
@@ -211,16 +218,17 @@ func (s RunService) GetApplyLogs(id string, opts otf.GetChunkOptions) ([]byte, e
 }
 
 // UploadLogs writes a chunk of logs for a run.
-func (s RunService) UploadLogs(id string, logs []byte, opts otf.PutChunkOptions) error {
+func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error {
 	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return err
 	}
 
+	// Determine currently active phase to upload logs for: plan or apply.
 	active, err := run.ActivePhase()
 	if err != nil {
 		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
 
-	return s.bs.PutChunk(active.GetLogsBlobID(), logs, opts)
+	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions{End: opts.End})
 }

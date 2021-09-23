@@ -1,6 +1,11 @@
 package otf
 
-import "github.com/go-logr/logr"
+import (
+	"context"
+
+	"github.com/go-logr/logr"
+	tfe "github.com/leg100/go-tfe"
+)
 
 // JobWriter writes logs on behalf of a job.
 type JobWriter struct {
@@ -11,11 +16,13 @@ type JobWriter struct {
 	ID string
 
 	logr.Logger
+
+	ctx context.Context
 }
 
 // Write uploads a chunk of logs to the server.
 func (jw *JobWriter) Write(p []byte) (int, error) {
-	if err := jw.UploadLogs(jw.ID, p, PutChunkOptions{}); err != nil {
+	if err := jw.UploadLogs(jw.ctx, jw.ID, p, tfe.RunUploadLogsOptions{}); err != nil {
 		jw.Error(err, "unable to write logs")
 		return 0, err
 	}
@@ -25,9 +32,9 @@ func (jw *JobWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (jw *JobWriter) Close() error {
-	opts := PutChunkOptions{End: true}
+	opts := tfe.RunUploadLogsOptions{End: true}
 
-	if err := jw.UploadLogs(jw.ID, nil, opts); err != nil {
+	if err := jw.UploadLogs(jw.ctx, jw.ID, nil, opts); err != nil {
 		jw.Error(err, "unable to close logs")
 
 		return err

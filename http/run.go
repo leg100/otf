@@ -69,14 +69,36 @@ func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts otf.PutChunkOptions
+	var opts tfe.RunUploadLogsOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := s.RunService.UploadLogs(vars["id"], buf.Bytes(), opts); err != nil {
+	if err := s.RunService.UploadLogs(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+}
+
+func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var opts tfe.PlanFileOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.RunService.UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -162,10 +184,29 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *Server) GetRunPlanJSON(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	json, err := s.RunService.GetPlanJSON(vars["id"])
+	var opts tfe.PlanFileOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	s.getPlanFile(w, r, vars["id"], opts)
+}
+
+func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	opts := tfe.PlanFileOptions{Format: tfe.PlanJSONFormat}
+
+	s.getPlanFile(w, r, vars["id"], opts)
+}
+
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts tfe.PlanFileOptions) {
+	json, err := s.RunService.GetPlanFile(r.Context(), runID, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

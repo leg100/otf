@@ -89,9 +89,8 @@ type RunService interface {
 	EnqueuePlan(id string) error
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
-	GetPlanJSON(id string) ([]byte, error)
-	GetPlanFile(id string) ([]byte, error)
-	UploadPlan(runID string, plan []byte, json bool) error
+	GetPlanFile(ctx context.Context, runID string, opts tfe.PlanFileOptions) ([]byte, error)
+	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts tfe.PlanFileOptions) error
 
 	JobService
 }
@@ -462,7 +461,9 @@ func (r *Run) uploadPlan(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	if err := exe.RunService.UploadPlan(r.ID, file, false); err != nil {
+	opts := tfe.PlanFileOptions{Format: tfe.PlanBinaryFormat}
+
+	if err := exe.RunService.UploadPlanFile(ctx, r.ID, file, opts); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -475,7 +476,9 @@ func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	if err := exe.RunService.UploadPlan(r.ID, jsonFile, true); err != nil {
+	opts := tfe.PlanFileOptions{Format: tfe.PlanJSONFormat}
+
+	if err := exe.RunService.UploadPlanFile(ctx, r.ID, jsonFile, opts); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
@@ -483,7 +486,9 @@ func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, exe *Executor) error {
-	plan, err := exe.RunService.GetPlanFile(r.ID)
+	opts := tfe.PlanFileOptions{Format: tfe.PlanBinaryFormat}
+
+	plan, err := exe.RunService.GetPlanFile(ctx, r.ID, opts)
 	if err != nil {
 		return err
 	}
