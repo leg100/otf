@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -19,7 +18,7 @@ func NewOrganizationService(db otf.OrganizationStore, es otf.EventService) *Orga
 	}
 }
 
-func (s OrganizationService) Create(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Create(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, err
@@ -39,11 +38,11 @@ func (s OrganizationService) Get(name string) (*otf.Organization, error) {
 	return s.db.Get(name)
 }
 
-func (s OrganizationService) List(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (s OrganizationService) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return s.db.List(opts)
 }
 
-func (s OrganizationService) Update(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Update(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	return s.db.Update(name, func(org *otf.Organization) error {
 		return otf.UpdateOrganization(org, opts)
 	})

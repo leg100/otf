@@ -4,21 +4,168 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 )
 
+// Run represents a Terraform Enterprise run.
+type Run struct {
+	ID                     string                   `jsonapi:"primary,runs"`
+	Actions                *RunActions              `jsonapi:"attr,actions"`
+	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
+	ForceCancelAvailableAt time.Time                `jsonapi:"attr,force-cancel-available-at,iso8601"`
+	HasChanges             bool                     `jsonapi:"attr,has-changes"`
+	IsDestroy              bool                     `jsonapi:"attr,is-destroy"`
+	Message                string                   `jsonapi:"attr,message"`
+	Permissions            *otf.RunPermissions      `jsonapi:"attr,permissions"`
+	PositionInQueue        int                      `jsonapi:"attr,position-in-queue"`
+	Refresh                bool                     `jsonapi:"attr,refresh"`
+	RefreshOnly            bool                     `jsonapi:"attr,refresh-only"`
+	ReplaceAddrs           []string                 `jsonapi:"attr,replace-addrs,omitempty"`
+	Source                 string                   `jsonapi:"attr,source"`
+	Status                 otf.RunStatus            `jsonapi:"attr,status"`
+	StatusTimestamps       *otf.RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	TargetAddrs            []string                 `jsonapi:"attr,target-addrs,omitempty"`
+
+	// Relations
+	Apply                *Apply                `jsonapi:"relation,apply"`
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+	CreatedBy            *User                 `jsonapi:"relation,created-by"`
+	Plan                 *Plan                 `jsonapi:"relation,plan"`
+	Workspace            *Workspace            `jsonapi:"relation,workspace"`
+}
+
+// RunList represents a list of runs.
+type RunList struct {
+	*otf.Pagination
+	Items []*Run
+}
+
+// RunActions represents the run actions.
+type RunActions struct {
+	IsCancelable      bool `json:"is-cancelable"`
+	IsConfirmable     bool `json:"is-confirmable"`
+	IsDiscardable     bool `json:"is-discardable"`
+	IsForceCancelable bool `json:"is-force-cancelable"`
+}
+
+// RunCreateOptions represents the options for creating a new run.
+type RunCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,runs"`
+
+	// Specifies if this plan is a destroy plan, which will destroy all
+	// provisioned resources.
+	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
+
+	// Refresh determines if the run should
+	// update the state prior to checking for differences
+	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
+
+	// RefreshOnly determines whether the run should ignore config changes
+	// and refresh the state only
+	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
+
+	// Specifies the message to be associated with this run.
+	Message *string `jsonapi:"attr,message,omitempty"`
+
+	// Specifies the configuration version to use for this run. If the
+	// configuration version object is omitted, the run will be created using the
+	// workspace's latest configuration version.
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+
+	// Specifies the workspace where the run will be executed.
+	Workspace *Workspace `jsonapi:"relation,workspace"`
+
+	// If non-empty, requests that Terraform should create a plan including
+	// actions only for the given objects (specified using resource address
+	// syntax) and the objects they depend on.
+	//
+	// This capability is provided for exceptional circumstances only, such as
+	// recovering from mistakes or working around existing Terraform
+	// limitations. Terraform will generally mention the -target command line
+	// option in its error messages describing situations where setting this
+	// argument may be appropriate. This argument should not be used as part
+	// of routine workflow and Terraform will emit warnings reminding about
+	// this whenever this property is set.
+	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
+
+	// If non-empty, requests that Terraform create a plan that replaces
+	// (destroys and then re-creates) the objects specified by the given
+	// resource addresses.
+	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+}
+
+// ToDomain converts http organization obj to a domain organization obj.
+func (r *Run) ToDomain() *otf.Run {
+	domain := otf.Run{
+		ID:                     r.ID,
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
+		IsDestroy:              r.IsDestroy,
+		Message:                r.Message,
+		Permissions:            r.Permissions,
+		PositionInQueue:        r.PositionInQueue,
+		Refresh:                r.Refresh,
+		RefreshOnly:            r.RefreshOnly,
+		ReplaceAddrs:           r.ReplaceAddrs,
+		Status:                 r.Status,
+		StatusTimestamps:       r.StatusTimestamps,
+		TargetAddrs:            r.TargetAddrs,
+	}
+
+	if r.Apply != nil {
+		domain.Apply = r.Apply.ToDomain()
+	}
+
+	if r.ConfigurationVersion != nil {
+		domain.ConfigurationVersion = r.ConfigurationVersion.ToDomain()
+	}
+
+	if r.Plan != nil {
+		domain.Plan = r.Plan.ToDomain()
+	}
+
+	if r.Workspace != nil {
+		domain.Workspace = r.Workspace.ToDomain()
+	}
+
+	return &domain
+}
+
+func (o *RunCreateOptions) ToDomain() otf.RunCreateOptions {
+	domain := otf.RunCreateOptions{
+		IsDestroy:    o.IsDestroy,
+		Refresh:      o.Refresh,
+		RefreshOnly:  o.RefreshOnly,
+		Message:      o.Message,
+		TargetAddrs:  o.TargetAddrs,
+		ReplaceAddrs: o.ReplaceAddrs,
+	}
+
+	if o.ConfigurationVersion != nil {
+		domain.ConfigurationVersion = o.ConfigurationVersion.ToDomain()
+	}
+	if o.Workspace != nil {
+		domain.Workspace = o.Workspace.ToDomain()
+	}
+
+	return domain
+}
+
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
-	opts := tfe.RunCreateOptions{}
+	opts := RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.RunService.Create(&opts)
+	obj, err := s.RunService.Create(r.Context(), opts.ToDomain())
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -69,7 +216,7 @@ func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts tfe.RunUploadLogsOptions
+	var opts otf.RunUploadLogsOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -91,7 +238,7 @@ func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts tfe.PlanFileOptions
+	var opts otf.PlanFileOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -107,8 +254,8 @@ func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := &tfe.RunApplyOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+	opts := otf.RunApplyOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -124,8 +271,8 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := &tfe.RunDiscardOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+	opts := otf.RunDiscardOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -145,8 +292,8 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := &tfe.RunCancelOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+	opts := otf.RunCancelOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -166,8 +313,8 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := &tfe.RunForceCancelOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, opts); err != nil {
+	opts := otf.RunForceCancelOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
@@ -187,7 +334,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var opts tfe.PlanFileOptions
+	var opts otf.PlanFileOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -200,12 +347,12 @@ func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := tfe.PlanFileOptions{Format: tfe.PlanJSONFormat}
+	opts := otf.PlanFileOptions{Format: otf.PlanJSONFormat}
 
 	s.getPlanFile(w, r, vars["id"], opts)
 }
 
-func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts tfe.PlanFileOptions) {
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts otf.PlanFileOptions) {
 	json, err := s.RunService.GetPlanFile(r.Context(), runID, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
@@ -220,10 +367,15 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID strin
 
 // RunJSONAPIObject converts a Run to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) RunJSONAPIObject(r *otf.Run) *tfe.Run {
-	obj := &tfe.Run{
-		ID:                     r.ID,
-		Actions:                r.Actions(),
+func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
+	return &Run{
+		ID: r.ID,
+		Actions: &RunActions{
+			IsCancelable:      r.IsCancelable(),
+			IsConfirmable:     r.IsConfirmable(),
+			IsForceCancelable: r.IsForceCancelable(),
+			IsDiscardable:     r.IsDiscardable(),
+		},
 		CreatedAt:              r.CreatedAt,
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
 		HasChanges:             r.Plan.HasChanges(),
@@ -246,19 +398,17 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *tfe.Run {
 		Workspace:            s.WorkspaceJSONAPIObject(r.Workspace),
 
 		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &tfe.User{
+		CreatedBy: &User{
 			ID:       otf.DefaultUserID,
 			Username: otf.DefaultUsername,
 		},
 	}
-
-	return obj
 }
 
 // RunListJSONAPIObject converts a RunList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) RunListJSONAPIObject(cvl *otf.RunList) *tfe.RunList {
-	obj := &tfe.RunList{
+func (s *Server) RunListJSONAPIObject(cvl *otf.RunList) *RunList {
+	obj := &RunList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {

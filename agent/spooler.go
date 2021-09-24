@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -50,7 +49,7 @@ const (
 var (
 	// QueuedStatuses are the list of run statuses that indicate it is in a
 	// queued state
-	QueuedStatuses = []tfe.RunStatus{tfe.RunPlanQueued, tfe.RunApplyQueued}
+	QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
@@ -106,9 +105,9 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
 
 		switch ev.Type {
-		case otf.PlanQueued, otf.ApplyQueued:
+		case otf.EventPlanQueued, otf.EventApplyQueued:
 			s.queue <- obj
-		case otf.RunCanceled:
+		case otf.EventRunCanceled:
 			s.cancelations <- obj
 		}
 	}

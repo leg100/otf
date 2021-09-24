@@ -3,7 +3,6 @@ package sqlite
 import (
 	"time"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -15,11 +14,11 @@ type Organization struct {
 	ExternalID string `gorm:"uniqueIndex"`
 
 	Name                   string
-	CollaboratorAuthPolicy tfe.AuthPolicyType
+	CollaboratorAuthPolicy otf.AuthPolicyType
 	CostEstimationEnabled  bool
 	Email                  string
 	OwnersTeamSAMLRoleID   string
-	Permissions            *tfe.OrganizationPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *otf.OrganizationPermissions `gorm:"embedded;embeddedPrefix:permission_"`
 	SAMLEnabled            bool
 	SessionRemember        int
 	SessionTimeout         int

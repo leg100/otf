@@ -3,7 +3,6 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -59,8 +58,8 @@ func TestStateVersion(t *testing.T) {
 
 	// List
 
-	svl, err := svDB.List(tfe.StateVersionListOptions{
-		ListOptions:  tfe.ListOptions{PageNumber: 1, PageSize: 20},
+	svl, err := svDB.List(otf.StateVersionListOptions{
+		ListOptions:  otf.ListOptions{PageNumber: 1, PageSize: 20},
 		Organization: otf.String("automatize"),
 		Workspace:    otf.String("dev"),
 	})

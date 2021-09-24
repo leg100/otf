@@ -2,10 +2,25 @@ package otf
 
 import (
 	"fmt"
+	"time"
 
-	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
+
+//List all available apply statuses supported in OTF.
+const (
+	ApplyCanceled    ApplyStatus = "canceled"
+	ApplyCreated     ApplyStatus = "created"
+	ApplyErrored     ApplyStatus = "errored"
+	ApplyFinished    ApplyStatus = "finished"
+	ApplyPending     ApplyStatus = "pending"
+	ApplyQueued      ApplyStatus = "queued"
+	ApplyRunning     ApplyStatus = "running"
+	ApplyUnreachable ApplyStatus = "unreachable"
+)
+
+// ApplyStatus represents an apply state.
+type ApplyStatus string
 
 type ApplyService interface {
 	Get(id string) (*Apply, error)
@@ -18,17 +33,27 @@ type Apply struct {
 
 	Resources
 
-	Status           tfe.ApplyStatus
-	StatusTimestamps *tfe.ApplyStatusTimestamps
+	Status           ApplyStatus
+	StatusTimestamps *ApplyStatusTimestamps
 
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
 }
 
+// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
+type ApplyStatusTimestamps struct {
+	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
+	ErroredAt       *time.Time `json:"errored-at,omitempty"`
+	FinishedAt      *time.Time `json:"finished-at,omitempty"`
+	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
+	QueuedAt        *time.Time `json:"queued-at,omitempty"`
+	StartedAt       *time.Time `json:"started-at,omitempty"`
+}
+
 func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
-		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		StatusTimestamps: &ApplyStatusTimestamps{},
 		LogsBlobID:       NewBlobID(),
 	}
 }
@@ -72,22 +97,22 @@ func (a *Apply) UpdateResources(bs BlobStore) error {
 	return nil
 }
 
-func (a *Apply) UpdateStatus(status tfe.ApplyStatus) {
+func (a *Apply) UpdateStatus(status ApplyStatus) {
 	a.Status = status
 	a.setTimestamp(status)
 }
 
-func (a *Apply) setTimestamp(status tfe.ApplyStatus) {
+func (a *Apply) setTimestamp(status ApplyStatus) {
 	switch status {
-	case tfe.ApplyCanceled:
+	case ApplyCanceled:
 		a.StatusTimestamps.CanceledAt = TimeNow()
-	case tfe.ApplyErrored:
+	case ApplyErrored:
 		a.StatusTimestamps.ErroredAt = TimeNow()
-	case tfe.ApplyFinished:
+	case ApplyFinished:
 		a.StatusTimestamps.FinishedAt = TimeNow()
-	case tfe.ApplyQueued:
+	case ApplyQueued:
 		a.StatusTimestamps.QueuedAt = TimeNow()
-	case tfe.ApplyRunning:
+	case ApplyRunning:
 		a.StatusTimestamps.StartedAt = TimeNow()
 	}
 }

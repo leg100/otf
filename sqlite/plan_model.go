@@ -3,7 +3,6 @@ package sqlite
 import (
 	"database/sql"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -16,7 +15,7 @@ type Plan struct {
 
 	otf.Resources
 
-	Status           tfe.PlanStatus
+	Status           otf.PlanStatus
 	StatusTimestamps *PlanStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	// The blob ID of the logs
@@ -68,7 +67,7 @@ func (model *Plan) ToDomain() *otf.Plan {
 		Model:            model.Model,
 		Resources:        model.Resources,
 		Status:           model.Status,
-		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		StatusTimestamps: &otf.PlanStatusTimestamps{},
 		LogsBlobID:       model.LogsBlobID,
 		PlanFileBlobID:   model.PlanFileBlobID,
 		PlanJSONBlobID:   model.PlanJSONBlobID,

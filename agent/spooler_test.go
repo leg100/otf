@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func (s *mockSubscription) Close() error { return nil }
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
-	want := &otf.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
 	spooler, err := NewSpooler(
 		&mockRunLister{runs: []*otf.Run{want}},
@@ -69,7 +68,7 @@ func TestSpooler_Start(t *testing.T) {
 // TestSpooler_GetJob tests retrieving a job from the spooler with a
 // pre-populated queue
 func TestSpooler_GetJob(t *testing.T) {
-	want := &otf.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
 	spooler := &SpoolerDaemon{queue: make(chan otf.Job, 1)}
 	spooler.queue <- want
@@ -80,7 +79,7 @@ func TestSpooler_GetJob(t *testing.T) {
 // TestSpooler_GetJobFromEvent tests retrieving a job from the spooler after an
 // event is received
 func TestSpooler_GetJobFromEvent(t *testing.T) {
-	want := &otf.Run{ID: "run-123", Status: tfe.RunPlanQueued}
+	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
 	sub := mockSubscription{c: make(chan otf.Event, 1)}
 
@@ -97,7 +96,7 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 	go spooler.Start(context.Background())
 
 	// send event
-	sub.c <- otf.Event{Type: otf.PlanQueued, Payload: want}
+	sub.c <- otf.Event{Type: otf.EventPlanQueued, Payload: want}
 
 	assert.Equal(t, want, <-spooler.GetJob())
 }
@@ -105,7 +104,7 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 // TestSpooler_GetJobFromCancelation tests retrieving a job from the spooler
 // after a cancelation is received
 func TestSpooler_GetJobFromCancelation(t *testing.T) {
-	want := &otf.Run{ID: "run-123", Status: tfe.RunCanceled}
+	want := &otf.Run{ID: "run-123", Status: otf.RunCanceled}
 
 	sub := mockSubscription{c: make(chan otf.Event, 1)}
 
@@ -122,7 +121,7 @@ func TestSpooler_GetJobFromCancelation(t *testing.T) {
 	go spooler.Start(context.Background())
 
 	// send event
-	sub.c <- otf.Event{Type: otf.RunCanceled, Payload: want}
+	sub.c <- otf.Event{Type: otf.EventRunCanceled, Payload: want}
 
 	assert.Equal(t, want, <-spooler.GetCancelation())
 }

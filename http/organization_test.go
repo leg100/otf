@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/mock"
@@ -21,17 +20,17 @@ func TestOrganization(t *testing.T) {
 		Logger: logr.Discard(),
 	}
 	s.OrganizationService = &mock.OrganizationService{
-		CreateOrganizationFn: func(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error) {
+		CreateOrganizationFn: func(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 
 		},
-		UpdateOrganizationFn: func(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error) {
+		UpdateOrganizationFn: func(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 		},
 		GetOrganizationFn: func(name string) (*otf.Organization, error) {
 			return mock.NewOrganization(name, "leg100@automatize.co.uk"), nil
 		},
-		ListOrganizationFn: func(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
+		ListOrganizationFn: func(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 			return mock.NewOrganizationList("automatize", "leg100@automatize.co.uk", opts), nil
 		},
 		DeleteOrganizationFn: func(name string) error {

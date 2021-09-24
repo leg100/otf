@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	tfe "github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -149,7 +148,7 @@ func filterNonSpeculativeRuns(runs []*otf.Run) (nonSpeculative []*otf.Run) {
 func getPendingRuns(workspaceID string, rl RunLister) ([]*otf.Run, error) {
 	opts := otf.RunListOptions{
 		WorkspaceID: &workspaceID,
-		Statuses:    []tfe.RunStatus{tfe.RunPending},
+		Statuses:    []otf.RunStatus{otf.RunPending},
 	}
 	pending, err := rl.List(opts)
 	if err != nil {

@@ -3,7 +3,6 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -66,12 +65,12 @@ func TestWorkspace(t *testing.T) {
 
 	// List with pagination
 
-	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 2}})
+	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(workspaces.Items))
 
-	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 2}})
+	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 2}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(workspaces.Items))

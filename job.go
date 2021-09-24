@@ -2,8 +2,6 @@ package otf
 
 import (
 	"context"
-
-	tfe "github.com/leg100/go-tfe"
 )
 
 type ErrJobAlreadyStarted error
@@ -30,7 +28,7 @@ type JobService interface {
 
 type JobLogsUploader interface {
 	// UploadLogs uploads a chunk of output from the job.
-	UploadLogs(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error
+	UploadLogs(ctx context.Context, id string, logs []byte, opts RunUploadLogsOptions) error
 }
 
 type JobStartOptions struct {
@@ -39,4 +37,10 @@ type JobStartOptions struct {
 
 type JobFinishOptions struct {
 	Errored bool
+}
+
+// RunUploadLogsOptions represents the options for uploading logs for a run.
+type RunUploadLogsOptions struct {
+	// End indicates this is the last and final chunk
+	End bool `schema:"end"`
 }

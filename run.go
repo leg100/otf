@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +18,23 @@ const (
 	// DefaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	DefaultRefresh = true
+
+	// List all available run statuses supported in OTF.
+	RunApplied            RunStatus = "applied"
+	RunApplyQueued        RunStatus = "apply_queued"
+	RunApplying           RunStatus = "applying"
+	RunCanceled           RunStatus = "canceled"
+	RunConfirmed          RunStatus = "confirmed"
+	RunDiscarded          RunStatus = "discarded"
+	RunErrored            RunStatus = "errored"
+	RunPending            RunStatus = "pending"
+	RunPlanQueued         RunStatus = "plan_queued"
+	RunPlanned            RunStatus = "planned"
+	RunPlannedAndFinished RunStatus = "planned_and_finished"
+	RunPlanning           RunStatus = "planning"
+
+	PlanBinaryFormat = "binary"
+	PlanJSONFormat   = "json"
 )
 
 var (
@@ -30,15 +46,18 @@ var (
 
 	// ActiveRunStatuses are those run statuses that deem a run to be active.
 	// There can only be at most one active run for a workspace.
-	ActiveRunStatuses = []tfe.RunStatus{
-		tfe.RunApplyQueued,
-		tfe.RunApplying,
-		tfe.RunConfirmed,
-		tfe.RunPlanQueued,
-		tfe.RunPlanned,
-		tfe.RunPlanning,
+	ActiveRunStatuses = []RunStatus{
+		RunApplyQueued,
+		RunApplying,
+		RunConfirmed,
+		RunPlanQueued,
+		RunPlanned,
+		RunPlanning,
 	}
 )
+
+// RunStatus represents a run state.
+type RunStatus string
 
 type Run struct {
 	ID string
@@ -48,12 +67,12 @@ type Run struct {
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
-	Permissions            *tfe.RunPermissions
+	Permissions            *RunPermissions
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
-	Status                 tfe.RunStatus
-	StatusTimestamps       *tfe.RunStatusTimestamps
+	Status                 RunStatus
+	StatusTimestamps       *RunStatusTimestamps
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 
@@ -62,6 +81,27 @@ type Run struct {
 	Apply                *Apply
 	Workspace            *Workspace
 	ConfigurationVersion *ConfigurationVersion
+}
+
+// RunStatusTimestamps holds the timestamps for individual run statuses.
+type RunStatusTimestamps struct {
+	AppliedAt            *time.Time `json:"applied-at,omitempty"`
+	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
+	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
+	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
+	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
+	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
+	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
+	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
+	ErroredAt            *time.Time `json:"errored-at,omitempty"`
+	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
+	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
+	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
+	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
+	PlannedAt            *time.Time `json:"planned-at,omitempty"`
+	PlanningAt           *time.Time `json:"planning-at,omitempty"`
+	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
+	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
@@ -79,20 +119,102 @@ type RunFactory struct {
 
 // RunService implementations allow interactions with runs
 type RunService interface {
-	Create(opts *tfe.RunCreateOptions) (*Run, error)
+	// Create a new run with the given options.
+	Create(ctx context.Context, opts RunCreateOptions) (*Run, error)
+
 	Get(id string) (*Run, error)
 	List(opts RunListOptions) (*RunList, error)
-	Apply(id string, opts *tfe.RunApplyOptions) error
-	Discard(id string, opts *tfe.RunDiscardOptions) error
-	Cancel(id string, opts *tfe.RunCancelOptions) error
-	ForceCancel(id string, opts *tfe.RunForceCancelOptions) error
+
+	// Apply a run by its ID.
+	Apply(id string, opts RunApplyOptions) error
+
+	Discard(id string, opts RunDiscardOptions) error
+	Cancel(id string, opts RunCancelOptions) error
+	ForceCancel(id string, opts RunForceCancelOptions) error
 	EnqueuePlan(id string) error
 	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
 	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
-	GetPlanFile(ctx context.Context, runID string, opts tfe.PlanFileOptions) ([]byte, error)
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts tfe.PlanFileOptions) error
+	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
+	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
 
 	JobService
+}
+
+// RunCreateOptions represents the options for creating a new run.
+type RunCreateOptions struct {
+	// Specifies if this plan is a destroy plan, which will destroy all
+	// provisioned resources.
+	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
+
+	// Refresh determines if the run should
+	// update the state prior to checking for differences
+	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
+
+	// RefreshOnly determines whether the run should ignore config changes
+	// and refresh the state only
+	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
+
+	// Specifies the message to be associated with this run.
+	Message *string `jsonapi:"attr,message,omitempty"`
+
+	// Specifies the configuration version to use for this run. If the
+	// configuration version object is omitted, the run will be created using the
+	// workspace's latest configuration version.
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+
+	// Specifies the workspace where the run will be executed.
+	Workspace *Workspace `jsonapi:"relation,workspace"`
+
+	// If non-empty, requests that Terraform should create a plan including
+	// actions only for the given objects (specified using resource address
+	// syntax) and the objects they depend on.
+	//
+	// This capability is provided for exceptional circumstances only, such as
+	// recovering from mistakes or working around existing Terraform
+	// limitations. Terraform will generally mention the -target command line
+	// option in its error messages describing situations where setting this
+	// argument may be appropriate. This argument should not be used as part
+	// of routine workflow and Terraform will emit warnings reminding about
+	// this whenever this property is set.
+	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
+
+	// If non-empty, requests that Terraform create a plan that replaces
+	// (destroys and then re-creates) the objects specified by the given
+	// resource addresses.
+	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+}
+
+// RunApplyOptions represents the options for applying a run.
+type RunApplyOptions struct {
+	// An optional comment about the run.
+	Comment *string `jsonapi:"attr,comment,omitempty"`
+}
+
+// RunCancelOptions represents the options for canceling a run.
+type RunCancelOptions struct {
+	// An optional explanation for why the run was canceled.
+	Comment *string `jsonapi:"attr,comment,omitempty"`
+}
+
+// RunForceCancelOptions represents the options for force-canceling a run.
+type RunForceCancelOptions struct {
+	// An optional comment explaining the reason for the force-cancel.
+	Comment *string `jsonapi:"attr,comment,omitempty"`
+}
+
+// RunDiscardOptions represents the options for discarding a run.
+type RunDiscardOptions struct {
+	// An optional explanation for why the run was discarded.
+	Comment *string `jsonapi:"attr,comment,omitempty"`
+}
+
+// RunPermissions represents the run permissions.
+type RunPermissions struct {
+	CanApply        bool `json:"can-apply"`
+	CanCancel       bool `json:"can-cancel"`
+	CanDiscard      bool `json:"can-discard"`
+	CanForceCancel  bool `json:"can-force-cancel"`
+	CanForceExecute bool `json:"can-force-execute"`
 }
 
 // RunStore implementations persist Run objects.
@@ -107,7 +229,7 @@ type RunStore interface {
 
 // RunList represents a list of runs.
 type RunList struct {
-	*tfe.Pagination
+	*Pagination
 	Items []*Run
 }
 
@@ -126,13 +248,24 @@ type RunGetOptions struct {
 
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
-	tfe.RunListOptions
+	ListOptions
+
+	// A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include *string `schema:"include"`
 
 	// Filter by run statuses (with an implicit OR condition)
-	Statuses []tfe.RunStatus
+	Statuses []RunStatus
 
 	// Filter by workspace ID
 	WorkspaceID *string
+}
+
+func (o RunCreateOptions) Valid() error {
+	if o.Workspace == nil {
+		return errors.New("workspace is required")
+	}
+	return nil
 }
 
 func (r *Run) GetID() string {
@@ -149,7 +282,7 @@ func (r *Run) Discard() error {
 		return ErrRunDiscardNotAllowed
 	}
 
-	r.UpdateStatus(tfe.RunDiscarded)
+	r.UpdateStatus(RunDiscarded)
 
 	return nil
 }
@@ -163,7 +296,7 @@ func (r *Run) Cancel() error {
 	// Run can be forcefully cancelled after a cool-off period of ten seconds
 	r.ForceCancelAvailableAt = time.Now().Add(10 * time.Second)
 
-	r.UpdateStatus(tfe.RunCanceled)
+	r.UpdateStatus(RunCanceled)
 
 	return nil
 }
@@ -180,20 +313,10 @@ func (r *Run) ForceCancel() error {
 	return nil
 }
 
-// Actions lists which actions are currently invokable.
-func (r *Run) Actions() *tfe.RunActions {
-	return &tfe.RunActions{
-		IsCancelable:      r.IsCancelable(),
-		IsConfirmable:     r.IsConfirmable(),
-		IsForceCancelable: r.IsForceCancelable(),
-		IsDiscardable:     r.IsDiscardable(),
-	}
-}
-
 // IsCancelable determines whether run can be cancelled.
 func (r *Run) IsCancelable() bool {
 	switch r.Status {
-	case tfe.RunPending, tfe.RunPlanQueued, tfe.RunPlanning, tfe.RunApplyQueued, tfe.RunApplying:
+	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false
@@ -203,7 +326,7 @@ func (r *Run) IsCancelable() bool {
 // IsConfirmable determines whether run can be confirmed.
 func (r *Run) IsConfirmable() bool {
 	switch r.Status {
-	case tfe.RunPlanned:
+	case RunPlanned:
 		return true
 	default:
 		return false
@@ -213,7 +336,7 @@ func (r *Run) IsConfirmable() bool {
 // IsDiscardable determines whether run can be discarded.
 func (r *Run) IsDiscardable() bool {
 	switch r.Status {
-	case tfe.RunPending, tfe.RunPolicyChecked, tfe.RunPolicyOverride, tfe.RunPlanned:
+	case RunPending, RunPlanned:
 		return true
 	default:
 		return false
@@ -228,7 +351,7 @@ func (r *Run) IsForceCancelable() bool {
 // IsActive determines whether run is currently the active run on a workspace,
 // i.e. it is neither finished nor pending
 func (r *Run) IsActive() bool {
-	if r.IsDone() || r.Status == tfe.RunPending {
+	if r.IsDone() || r.Status == RunPending {
 		return false
 	}
 	return true
@@ -238,7 +361,7 @@ func (r *Run) IsActive() bool {
 // discarded, etc.
 func (r *Run) IsDone() bool {
 	switch r.Status {
-	case tfe.RunApplied, tfe.RunPlannedAndFinished, tfe.RunDiscarded, tfe.RunCanceled, tfe.RunErrored:
+	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
 		return true
 	default:
 		return false
@@ -246,8 +369,8 @@ func (r *Run) IsDone() bool {
 }
 
 type ErrInvalidRunStatusTransition struct {
-	From tfe.RunStatus
-	To   tfe.RunStatus
+	From RunStatus
+	To   RunStatus
 }
 
 func (e ErrInvalidRunStatusTransition) Error() string {
@@ -261,9 +384,9 @@ func (r *Run) IsSpeculative() bool {
 // ActivePhase retrieves the currently active phase
 func (r *Run) ActivePhase() (Phase, error) {
 	switch r.Status {
-	case tfe.RunPlanning:
+	case RunPlanning:
 		return r.Plan, nil
-	case tfe.RunApplying:
+	case RunApplying:
 		return r.Apply, nil
 	default:
 		return nil, fmt.Errorf("invalid run status: %s", r.Status)
@@ -273,10 +396,10 @@ func (r *Run) ActivePhase() (Phase, error) {
 // Start starts a run phase.
 func (r *Run) Start() error {
 	switch r.Status {
-	case tfe.RunPlanQueued:
-		r.UpdateStatus(tfe.RunPlanning)
-	case tfe.RunApplyQueued:
-		r.UpdateStatus(tfe.RunApplying)
+	case RunPlanQueued:
+		r.UpdateStatus(RunPlanning)
+	case RunApplyQueued:
+		r.UpdateStatus(RunApplying)
 	default:
 		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status)
 	}
@@ -287,18 +410,18 @@ func (r *Run) Start() error {
 // Finish updates the run to reflect the current phase having finished. An event
 // is emitted reflecting the run's new status.
 func (r *Run) Finish(bs BlobStore) (*Event, error) {
-	if r.Status == tfe.RunApplying {
-		r.UpdateStatus(tfe.RunApplied)
+	if r.Status == RunApplying {
+		r.UpdateStatus(RunApplied)
 
 		if err := r.Apply.UpdateResources(bs); err != nil {
 			return nil, err
 		}
 
-		return &Event{Payload: r, Type: RunApplied}, nil
+		return &Event{Payload: r, Type: EventRunApplied}, nil
 	}
 
 	// Only remaining valid status is planning
-	if r.Status != tfe.RunPlanning {
+	if r.Status != RunPlanning {
 		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.Status)
 	}
 
@@ -308,83 +431,83 @@ func (r *Run) Finish(bs BlobStore) (*Event, error) {
 
 	// Speculative plan, proceed no further
 	if r.ConfigurationVersion.Speculative {
-		r.UpdateStatus(tfe.RunPlannedAndFinished)
-		return &Event{Payload: r, Type: RunPlannedAndFinished}, nil
+		r.UpdateStatus(RunPlannedAndFinished)
+		return &Event{Payload: r, Type: EventRunPlannedAndFinished}, nil
 	}
 
-	r.UpdateStatus(tfe.RunPlanned)
+	r.UpdateStatus(RunPlanned)
 
 	if r.Workspace.AutoApply {
-		r.UpdateStatus(tfe.RunApplyQueued)
-		return &Event{Type: ApplyQueued, Payload: r}, nil
+		r.UpdateStatus(RunApplyQueued)
+		return &Event{Type: EventApplyQueued, Payload: r}, nil
 	}
 
-	return &Event{Payload: r, Type: RunPlanned}, nil
+	return &Event{Payload: r, Type: EventRunPlanned}, nil
 }
 
 // UpdateStatus updates the status of the run as well as its plan and apply
-func (r *Run) UpdateStatus(status tfe.RunStatus) {
+func (r *Run) UpdateStatus(status RunStatus) {
 	switch status {
-	case tfe.RunPending:
-		r.Plan.UpdateStatus(tfe.PlanPending)
-	case tfe.RunPlanQueued:
-		r.Plan.UpdateStatus(tfe.PlanQueued)
-	case tfe.RunPlanning:
-		r.Plan.UpdateStatus(tfe.PlanRunning)
-	case tfe.RunPlanned, tfe.RunPlannedAndFinished:
-		r.Plan.UpdateStatus(tfe.PlanFinished)
-	case tfe.RunApplyQueued:
-		r.Apply.UpdateStatus(tfe.ApplyQueued)
-	case tfe.RunApplying:
-		r.Apply.UpdateStatus(tfe.ApplyRunning)
-	case tfe.RunApplied:
-		r.Apply.UpdateStatus(tfe.ApplyFinished)
-	case tfe.RunErrored:
+	case RunPending:
+		r.Plan.UpdateStatus(PlanPending)
+	case RunPlanQueued:
+		r.Plan.UpdateStatus(PlanQueued)
+	case RunPlanning:
+		r.Plan.UpdateStatus(PlanRunning)
+	case RunPlanned, RunPlannedAndFinished:
+		r.Plan.UpdateStatus(PlanFinished)
+	case RunApplyQueued:
+		r.Apply.UpdateStatus(ApplyQueued)
+	case RunApplying:
+		r.Apply.UpdateStatus(ApplyRunning)
+	case RunApplied:
+		r.Apply.UpdateStatus(ApplyFinished)
+	case RunErrored:
 		switch r.Status {
-		case tfe.RunPlanning:
-			r.Plan.UpdateStatus(tfe.PlanErrored)
-		case tfe.RunApplying:
-			r.Apply.UpdateStatus(tfe.ApplyErrored)
+		case RunPlanning:
+			r.Plan.UpdateStatus(PlanErrored)
+		case RunApplying:
+			r.Apply.UpdateStatus(ApplyErrored)
 		}
-	case tfe.RunCanceled:
+	case RunCanceled:
 		switch r.Status {
-		case tfe.RunPlanQueued, tfe.RunPlanning:
-			r.Plan.UpdateStatus(tfe.PlanCanceled)
-		case tfe.RunApplyQueued, tfe.RunApplying:
-			r.Apply.UpdateStatus(tfe.ApplyCanceled)
+		case RunPlanQueued, RunPlanning:
+			r.Plan.UpdateStatus(PlanCanceled)
+		case RunApplyQueued, RunApplying:
+			r.Apply.UpdateStatus(ApplyCanceled)
 		}
 	}
 
 	r.Status = status
 	r.setTimestamp(status)
 
-	// TODO: determine when tfe.ApplyUnreachable is applicable and set
+	// TODO: determine when ApplyUnreachable is applicable and set
 	// accordingly
 }
 
-func (r *Run) setTimestamp(status tfe.RunStatus) {
+func (r *Run) setTimestamp(status RunStatus) {
 	switch status {
-	case tfe.RunPending:
+	case RunPending:
 		r.StatusTimestamps.PlanQueueableAt = TimeNow()
-	case tfe.RunPlanQueued:
+	case RunPlanQueued:
 		r.StatusTimestamps.PlanQueuedAt = TimeNow()
-	case tfe.RunPlanning:
+	case RunPlanning:
 		r.StatusTimestamps.PlanningAt = TimeNow()
-	case tfe.RunPlanned:
+	case RunPlanned:
 		r.StatusTimestamps.PlannedAt = TimeNow()
-	case tfe.RunPlannedAndFinished:
+	case RunPlannedAndFinished:
 		r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
-	case tfe.RunApplyQueued:
+	case RunApplyQueued:
 		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
-	case tfe.RunApplying:
+	case RunApplying:
 		r.StatusTimestamps.ApplyingAt = TimeNow()
-	case tfe.RunApplied:
+	case RunApplied:
 		r.StatusTimestamps.AppliedAt = TimeNow()
-	case tfe.RunErrored:
+	case RunErrored:
 		r.StatusTimestamps.ErroredAt = TimeNow()
-	case tfe.RunCanceled:
+	case RunCanceled:
 		r.StatusTimestamps.CanceledAt = TimeNow()
-	case tfe.RunDiscarded:
+	case RunDiscarded:
 		r.StatusTimestamps.DiscardedAt = TimeNow()
 	}
 }
@@ -461,7 +584,7 @@ func (r *Run) uploadPlan(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	opts := tfe.PlanFileOptions{Format: tfe.PlanBinaryFormat}
+	opts := PlanFileOptions{Format: PlanBinaryFormat}
 
 	if err := exe.RunService.UploadPlanFile(ctx, r.ID, file, opts); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
@@ -476,7 +599,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	opts := tfe.PlanFileOptions{Format: tfe.PlanJSONFormat}
+	opts := PlanFileOptions{Format: PlanJSONFormat}
 
 	if err := exe.RunService.UploadPlanFile(ctx, r.ID, jsonFile, opts); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
@@ -486,7 +609,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, exe *Executor) error {
-	opts := tfe.PlanFileOptions{Format: tfe.PlanBinaryFormat}
+	opts := PlanFileOptions{Format: PlanBinaryFormat}
 
 	plan, err := exe.RunService.GetPlanFile(ctx, r.ID, opts)
 	if err != nil {
@@ -508,7 +631,7 @@ func (r *Run) uploadState(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	_, err = exe.StateVersionService.Create(r.Workspace.ID, tfe.StateVersionCreateOptions{
+	_, err = exe.StateVersionService.Create(r.Workspace.ID, StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,
@@ -522,14 +645,14 @@ func (r *Run) uploadState(ctx context.Context, exe *Executor) error {
 }
 
 // NewRun constructs a run object.
-func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
+func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 	if opts.Workspace == nil {
 		return nil, errors.New("workspace is required")
 	}
 
 	run := Run{
 		ID: GenerateID("run"),
-		Permissions: &tfe.RunPermissions{
+		Permissions: &RunPermissions{
 			CanForceCancel:  true,
 			CanApply:        true,
 			CanCancel:       true,
@@ -539,12 +662,12 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: &tfe.RunStatusTimestamps{},
+		StatusTimestamps: &RunStatusTimestamps{},
 		Plan:             newPlan(),
 		Apply:            newApply(),
 	}
 
-	run.UpdateStatus(tfe.RunPending)
+	run.UpdateStatus(RunPending)
 
 	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &opts.Workspace.ID})
 	if err != nil {
@@ -573,7 +696,7 @@ func (f *RunFactory) NewRun(opts *tfe.RunCreateOptions) (*Run, error) {
 	return &run, nil
 }
 
-func (f *RunFactory) getConfigurationVersion(opts *tfe.RunCreateOptions) (*ConfigurationVersion, error) {
+func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
 	// Unless CV ID provided, get workspace's latest CV
 	if opts.ConfigurationVersion != nil {
 		return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID)

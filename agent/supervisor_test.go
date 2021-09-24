@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	agentmock "github.com/leg100/otf/agent/mock"
 	"github.com/leg100/otf/mock"
@@ -38,7 +37,7 @@ func TestSupervisor_Start(t *testing.T) {
 				got <- id
 				return want, nil
 			},
-			UploadLogsFn: func(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error {
+			UploadLogsFn: func(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error {
 				got <- id
 				return nil
 			},
@@ -71,7 +70,7 @@ func TestSupervisor_StartError(t *testing.T) {
 		Logger: logr.Discard(),
 		RunService: mock.RunService{
 			StartFn:      func(id string, opts otf.JobStartOptions) (otf.Job, error) { return want, nil },
-			UploadLogsFn: func(ctx context.Context, id string, logs []byte, opts tfe.RunUploadLogsOptions) error { return nil },
+			UploadLogsFn: func(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error { return nil },
 			FinishFn: func(id string, opts otf.JobFinishOptions) (otf.Job, error) {
 				got <- opts.Errored
 				return want, nil

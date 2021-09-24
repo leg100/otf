@@ -2,12 +2,10 @@ package otf
 
 import (
 	"math"
-
-	tfe "github.com/leg100/go-tfe"
 )
 
 // SanitizeListOptions ensures list options adhere to mins and maxs
-func SanitizeListOptions(opts *tfe.ListOptions) {
+func SanitizeListOptions(opts *ListOptions) {
 	if opts.PageNumber == 0 {
 		opts.PageNumber = 1
 	}
@@ -21,10 +19,10 @@ func SanitizeListOptions(opts *tfe.ListOptions) {
 }
 
 // NewPagination constructs a Pagination obj.
-func NewPagination(opts tfe.ListOptions, count int) *tfe.Pagination {
+func NewPagination(opts ListOptions, count int) *Pagination {
 	SanitizeListOptions(&opts)
 
-	return &tfe.Pagination{
+	return &Pagination{
 		CurrentPage:  opts.PageNumber,
 		PreviousPage: previousPage(opts.PageNumber),
 		NextPage:     nextPage(opts, count),
@@ -44,7 +42,7 @@ func previousPage(currentPage int) int {
 	return 1
 }
 
-func nextPage(opts tfe.ListOptions, count int) int {
+func nextPage(opts ListOptions, count int) int {
 	if opts.PageNumber < totalPages(count, opts.PageSize) {
 		return opts.PageNumber + 1
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
 
@@ -40,22 +39,22 @@ type StateVersion struct {
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
-	*tfe.Pagination
+	*Pagination
 	Items []*StateVersion
 }
 
 type StateVersionService interface {
-	Create(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error)
+	Create(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
 	Current(workspaceID string) (*StateVersion, error)
 	Get(id string) (*StateVersion, error)
 	Download(id string) ([]byte, error)
-	List(opts tfe.StateVersionListOptions) (*StateVersionList, error)
+	List(opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 type StateVersionStore interface {
 	Create(sv *StateVersion) (*StateVersion, error)
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
-	List(opts tfe.StateVersionListOptions) (*StateVersionList, error)
+	List(opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.
@@ -68,12 +67,48 @@ type StateVersionGetOptions struct {
 	WorkspaceID *string
 }
 
+// StateVersionListOptions represents the options for listing state versions.
+type StateVersionListOptions struct {
+	ListOptions
+	Organization *string `schema:"filter[organization][name]"`
+	Workspace    *string `schema:"filter[workspace][name]"`
+}
+
+// StateVersionCreateOptions represents the options for creating a state
+// version.
+type StateVersionCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,state-versions"`
+
+	// The lineage of the state.
+	Lineage *string `jsonapi:"attr,lineage,omitempty"`
+
+	// The MD5 hash of the state version.
+	MD5 *string `jsonapi:"attr,md5"`
+
+	// The serial of the state.
+	Serial *int64 `jsonapi:"attr,serial"`
+
+	// The base64 encoded state.
+	State *string `jsonapi:"attr,state"`
+
+	// Force can be set to skip certain validations. Wrong use
+	// of this flag can cause data loss, so USE WITH CAUTION!
+	Force *bool `jsonapi:"attr,force"`
+
+	// Specifies the run to associate the state with.
+	Run *Run `jsonapi:"relation,run,omitempty"`
+}
+
 type StateVersionFactory struct {
 	WorkspaceService WorkspaceService
 	BlobStore        BlobStore
 }
 
-func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts tfe.StateVersionCreateOptions) (*StateVersion, error) {
+func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
 		Serial: *opts.Serial,
 		ID:     GenerateID("sv"),
