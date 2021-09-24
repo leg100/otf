@@ -59,14 +59,19 @@ type StateVersionCreateOptions struct {
 }
 
 func (o *StateVersionCreateOptions) ToDomain() otf.StateVersionCreateOptions {
-	return otf.StateVersionCreateOptions{
+	domain := otf.StateVersionCreateOptions{
 		Lineage: o.Lineage,
 		MD5:     o.MD5,
 		Serial:  o.Serial,
 		State:   o.State,
 		Force:   o.Force,
-		Run:     o.Run.ToDomain(),
 	}
+
+	if o.Run != nil {
+		domain.Run = o.Run.ToDomain()
+	}
+
+	return domain
 }
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
