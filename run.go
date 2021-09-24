@@ -85,23 +85,23 @@ type Run struct {
 
 // RunStatusTimestamps holds the timestamps for individual run statuses.
 type RunStatusTimestamps struct {
-	AppliedAt            *time.Time `json:"applied-at,rfc3339,omitempty"`
-	ApplyQueuedAt        *time.Time `json:"apply-queued-at,rfc3339,omitempty"`
-	ApplyingAt           *time.Time `json:"applying-at,rfc3339,omitempty"`
-	CanceledAt           *time.Time `json:"canceled-at,rfc3339,omitempty"`
-	ConfirmedAt          *time.Time `json:"confirmed-at,rfc3339,omitempty"`
-	CostEstimatedAt      *time.Time `json:"cost-estimated-at,rfc3339,omitempty"`
-	CostEstimatingAt     *time.Time `json:"cost-estimating-at,rfc3339,omitempty"`
-	DiscardedAt          *time.Time `json:"discarded-at,rfc3339,omitempty"`
-	ErroredAt            *time.Time `json:"errored-at,rfc3339,omitempty"`
-	ForceCanceledAt      *time.Time `json:"force-canceled-at,rfc3339,omitempty"`
-	PlanQueueableAt      *time.Time `json:"plan-queueable-at,rfc3339,omitempty"`
-	PlanQueuedAt         *time.Time `json:"plan-queued-at,rfc3339,omitempty"`
-	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,rfc3339,omitempty"`
-	PlannedAt            *time.Time `json:"planned-at,rfc3339,omitempty"`
-	PlanningAt           *time.Time `json:"planning-at,rfc3339,omitempty"`
-	PolicyCheckedAt      *time.Time `json:"policy-checked-at,rfc3339,omitempty"`
-	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,rfc3339,omitempty"`
+	AppliedAt            *time.Time `json:"applied-at,omitempty"`
+	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
+	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
+	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
+	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
+	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
+	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
+	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
+	ErroredAt            *time.Time `json:"errored-at,omitempty"`
+	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
+	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
+	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
+	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
+	PlannedAt            *time.Time `json:"planned-at,omitempty"`
+	PlanningAt           *time.Time `json:"planning-at,omitempty"`
+	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
+	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an

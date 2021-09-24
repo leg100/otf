@@ -42,12 +42,12 @@ type Apply struct {
 
 // ApplyStatusTimestamps holds the timestamps for individual apply statuses.
 type ApplyStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,rfc3339,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,rfc3339,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,rfc3339,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,rfc3339,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,rfc3339,omitempty"`
-	StartedAt       *time.Time `json:"started-at,rfc3339,omitempty"`
+	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
+	ErroredAt       *time.Time `json:"errored-at,omitempty"`
+	FinishedAt      *time.Time `json:"finished-at,omitempty"`
+	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
+	QueuedAt        *time.Time `json:"queued-at,omitempty"`
+	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
 
 func newApply() *Apply {
