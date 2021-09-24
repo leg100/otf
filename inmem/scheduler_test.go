@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	tfe "github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
@@ -30,28 +29,28 @@ func TestNewScheduler(t *testing.T) {
 			ListFn: func(opts otf.RunListOptions) (*otf.RunList, error) {
 				for _, status := range opts.Statuses {
 					switch status {
-					case tfe.RunPlanning:
+					case otf.RunPlanning:
 						return &otf.RunList{
 							Items: []*otf.Run{
 								{
 									ID:                   "run-active",
 									ConfigurationVersion: &otf.ConfigurationVersion{},
-									Status:               tfe.RunPlanning,
+									Status:               otf.RunPlanning,
 								},
 								{
 									ID:                   "run-speculative",
 									ConfigurationVersion: &otf.ConfigurationVersion{Speculative: true},
-									Status:               tfe.RunPlanning,
+									Status:               otf.RunPlanning,
 								},
 							},
 						}, nil
-					case tfe.RunPending:
+					case otf.RunPending:
 						return &otf.RunList{
 							Items: []*otf.Run{
 								{
 									ID:                   "run-pending",
 									ConfigurationVersion: &otf.ConfigurationVersion{},
-									Status:               tfe.RunPending,
+									Status:               otf.RunPending,
 								},
 							},
 						}, nil

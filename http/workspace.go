@@ -2,17 +2,64 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 )
 
+// Workspace represents a Terraform Enterprise workspace.
+type Workspace struct {
+	ID                         string                    `jsonapi:"primary,workspaces"`
+	Actions                    *otf.WorkspaceActions     `jsonapi:"attr,actions"`
+	AgentPoolID                string                    `jsonapi:"attr,agent-pool-id"`
+	AllowDestroyPlan           bool                      `jsonapi:"attr,allow-destroy-plan"`
+	AutoApply                  bool                      `jsonapi:"attr,auto-apply"`
+	CanQueueDestroyPlan        bool                      `jsonapi:"attr,can-queue-destroy-plan"`
+	CreatedAt                  time.Time                 `jsonapi:"attr,created-at,iso8601"`
+	Description                string                    `jsonapi:"attr,description"`
+	Environment                string                    `jsonapi:"attr,environment"`
+	ExecutionMode              string                    `jsonapi:"attr,execution-mode"`
+	FileTriggersEnabled        bool                      `jsonapi:"attr,file-triggers-enabled"`
+	GlobalRemoteState          bool                      `jsonapi:"attr,global-remote-state"`
+	Locked                     bool                      `jsonapi:"attr,locked"`
+	MigrationEnvironment       string                    `jsonapi:"attr,migration-environment"`
+	Name                       string                    `jsonapi:"attr,name"`
+	Operations                 bool                      `jsonapi:"attr,operations"`
+	Permissions                *otf.WorkspacePermissions `jsonapi:"attr,permissions"`
+	QueueAllRuns               bool                      `jsonapi:"attr,queue-all-runs"`
+	SpeculativeEnabled         bool                      `jsonapi:"attr,speculative-enabled"`
+	SourceName                 string                    `jsonapi:"attr,source-name"`
+	SourceURL                  string                    `jsonapi:"attr,source-url"`
+	StructuredRunOutputEnabled bool                      `jsonapi:"attr,structured-run-output-enabled"`
+	TerraformVersion           string                    `jsonapi:"attr,terraform-version"`
+	TriggerPrefixes            []string                  `jsonapi:"attr,trigger-prefixes"`
+	VCSRepo                    *otf.VCSRepo              `jsonapi:"attr,vcs-repo"`
+	WorkingDirectory           string                    `jsonapi:"attr,working-directory"`
+	UpdatedAt                  time.Time                 `jsonapi:"attr,updated-at,iso8601"`
+	ResourceCount              int                       `jsonapi:"attr,resource-count"`
+	ApplyDurationAverage       time.Duration             `jsonapi:"attr,apply-duration-average"`
+	PlanDurationAverage        time.Duration             `jsonapi:"attr,plan-duration-average"`
+	PolicyCheckFailures        int                       `jsonapi:"attr,policy-check-failures"`
+	RunFailures                int                       `jsonapi:"attr,run-failures"`
+	RunsCount                  int                       `jsonapi:"attr,workspace-kpis-runs-count"`
+
+	// Relations
+	CurrentRun   *Run          `jsonapi:"relation,current-run"`
+	Organization *Organization `jsonapi:"relation,organization"`
+}
+
+// WorkspaceList represents a list of workspaces.
+type WorkspaceList struct {
+	*otf.Pagination
+	Items []*Workspace
+}
+
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := tfe.WorkspaceCreateOptions{}
+	opts := otf.WorkspaceCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -23,7 +70,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.WorkspaceService.Create(vars["org"], &opts)
+	obj, err := s.WorkspaceService.Create(vars["org"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -89,7 +136,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := tfe.WorkspaceUpdateOptions{}
+	opts := otf.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -105,7 +152,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		OrganizationName: otf.String(vars["org"]),
 	}
 
-	obj, err := s.WorkspaceService.Update(spec, &opts)
+	obj, err := s.WorkspaceService.Update(spec, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -117,7 +164,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := tfe.WorkspaceUpdateOptions{}
+	opts := otf.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -132,7 +179,7 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		ID: otf.String(vars["id"]),
 	}
 
-	obj, err := s.WorkspaceService.Update(spec, &opts)
+	obj, err := s.WorkspaceService.Update(spec, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -144,7 +191,7 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := tfe.WorkspaceLockOptions{}
+	opts := otf.WorkspaceLockOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -206,10 +253,12 @@ func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 
 // WorkspaceJSONAPIObject converts a Workspace to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *tfe.Workspace {
-	obj := &tfe.Workspace{
-		ID:                         ws.ID,
-		Actions:                    ws.Actions(),
+func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
+	obj := &Workspace{
+		ID: ws.ID,
+		Actions: &otf.WorkspaceActions{
+			IsDestroyable: false,
+		},
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		AutoApply:                  ws.AutoApply,
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan,
@@ -255,8 +304,8 @@ func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *tfe.Workspace {
 
 // WorkspaceListJSONAPIObject converts a WorkspaceList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) WorkspaceListJSONAPIObject(cvl *otf.WorkspaceList) *tfe.WorkspaceList {
-	obj := &tfe.WorkspaceList{
+func (s *Server) WorkspaceListJSONAPIObject(cvl *otf.WorkspaceList) *WorkspaceList {
+	obj := &WorkspaceList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {

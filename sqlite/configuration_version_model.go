@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -15,10 +14,10 @@ type ConfigurationVersion struct {
 	AutoQueueRuns    bool
 	Error            string
 	ErrorMessage     string
-	Source           tfe.ConfigurationSource
+	Source           otf.ConfigurationSource
 	Speculative      bool
-	Status           tfe.ConfigurationStatus
-	StatusTimestamps *tfe.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+	Status           otf.ConfigurationStatus
+	StatusTimestamps *otf.CVStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	// BlobID is the ID of the binary object containing the configuration
 	BlobID string

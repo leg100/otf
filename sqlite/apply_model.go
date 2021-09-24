@@ -3,7 +3,6 @@ package sqlite
 import (
 	"database/sql"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -16,7 +15,7 @@ type Apply struct {
 
 	otf.Resources
 
-	Status           tfe.ApplyStatus
+	Status           otf.ApplyStatus
 	StatusTimestamps *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	LogsBlobID string
@@ -61,7 +60,7 @@ func (model *Apply) ToDomain() *otf.Apply {
 		Model:            model.Model,
 		Resources:        model.Resources,
 		Status:           model.Status,
-		StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+		StatusTimestamps: &otf.ApplyStatusTimestamps{},
 		LogsBlobID:       model.LogsBlobID,
 	}
 

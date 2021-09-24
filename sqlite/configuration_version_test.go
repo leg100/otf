@@ -3,7 +3,6 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -34,17 +33,17 @@ func TestConfigurationVersion(t *testing.T) {
 
 	cv, err := cvDB.Create(&otf.ConfigurationVersion{
 		ID:        "cv-123",
-		Status:    tfe.ConfigurationPending,
+		Status:    otf.ConfigurationPending,
 		Workspace: ws,
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, tfe.ConfigurationPending, cv.Status)
+	require.Equal(t, otf.ConfigurationPending, cv.Status)
 
 	// Update
 
 	cv, err = cvDB.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
-		cv.Status = tfe.ConfigurationUploaded
+		cv.Status = otf.ConfigurationUploaded
 		return nil
 	})
 	require.NoError(t, err)
@@ -54,7 +53,7 @@ func TestConfigurationVersion(t *testing.T) {
 	cv, err = cvDB.Get(otf.ConfigurationVersionGetOptions{ID: &cv.ID})
 	require.NoError(t, err)
 
-	require.Equal(t, tfe.ConfigurationUploaded, cv.Status)
+	require.Equal(t, otf.ConfigurationUploaded, cv.Status)
 
 	// List
 

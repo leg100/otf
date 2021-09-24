@@ -3,7 +3,6 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -59,19 +58,19 @@ func TestOrganization(t *testing.T) {
 
 	// List
 
-	orgs, err := svc.List(tfe.OrganizationListOptions{})
+	orgs, err := svc.List(otf.OrganizationListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(orgs.Items))
 
 	// List with pagination
 
-	orgs, err = svc.List(tfe.OrganizationListOptions{ListOptions: tfe.ListOptions{PageNumber: 1, PageSize: 1}})
+	orgs, err = svc.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(orgs.Items))
 
-	orgs, err = svc.List(tfe.OrganizationListOptions{ListOptions: tfe.ListOptions{PageNumber: 2, PageSize: 1}})
+	orgs, err = svc.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(orgs.Items))

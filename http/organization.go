@@ -2,15 +2,38 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 )
 
+// Organization represents a Terraform Enterprise organization.
+type Organization struct {
+	Name                   string                       `jsonapi:"primary,organizations"`
+	CollaboratorAuthPolicy otf.AuthPolicyType           `jsonapi:"attr,collaborator-auth-policy"`
+	CostEstimationEnabled  bool                         `jsonapi:"attr,cost-estimation-enabled"`
+	CreatedAt              time.Time                    `jsonapi:"attr,created-at,iso8601"`
+	Email                  string                       `jsonapi:"attr,email"`
+	ExternalID             string                       `jsonapi:"attr,external-id"`
+	OwnersTeamSAMLRoleID   string                       `jsonapi:"attr,owners-team-saml-role-id"`
+	Permissions            *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
+	SAMLEnabled            bool                         `jsonapi:"attr,saml-enabled"`
+	SessionRemember        int                          `jsonapi:"attr,session-remember"`
+	SessionTimeout         int                          `jsonapi:"attr,session-timeout"`
+	TrialExpiresAt         time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
+	TwoFactorConformant    bool                         `jsonapi:"attr,two-factor-conformant"`
+}
+
+// OrganizationList represents a list of organizations.
+type OrganizationList struct {
+	*otf.Pagination
+	Items []*Organization
+}
+
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	opts := tfe.OrganizationCreateOptions{}
+	opts := otf.OrganizationCreateOptions{}
 
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -44,7 +67,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
-	var opts tfe.OrganizationListOptions
+	var opts otf.OrganizationListOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -63,7 +86,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	opts := tfe.OrganizationUpdateOptions{}
+	opts := otf.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -98,13 +121,13 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, obj.Entitlements)
+	WriteResponse(w, r, obj)
 }
 
 // OrganizationJSONAPIObject converts a Organization to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *tfe.Organization {
-	obj := &tfe.Organization{
+func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *Organization {
+	obj := &Organization{
 		Name:                   org.Name,
 		CollaboratorAuthPolicy: org.CollaboratorAuthPolicy,
 		CostEstimationEnabled:  org.CostEstimationEnabled,
@@ -125,8 +148,8 @@ func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *tfe.Organizat
 
 // OrganizationListJSONAPIObject converts a OrganizationList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *tfe.OrganizationList {
-	obj := &tfe.OrganizationList{
+func (s *Server) OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
+	obj := &OrganizationList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {

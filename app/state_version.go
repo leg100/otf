@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -24,7 +23,7 @@ func NewStateVersionService(db otf.StateVersionStore, wss otf.WorkspaceService, 
 	}
 }
 
-func (s StateVersionService) Create(workspaceID string, opts tfe.StateVersionCreateOptions) (*otf.StateVersion, error) {
+func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
 	sv, err := s.NewStateVersion(workspaceID, opts)
 	if err != nil {
 		return nil, err
@@ -33,7 +32,7 @@ func (s StateVersionService) Create(workspaceID string, opts tfe.StateVersionCre
 	return s.db.Create(sv)
 }
 
-func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	return s.db.List(opts)
 }
 

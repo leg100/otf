@@ -1,9 +1,9 @@
 package otf
 
 import (
+	"errors"
 	"time"
 
-	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
 
@@ -12,15 +12,22 @@ const (
 	DefaultSessionExpiration      = 20160
 	DefaultCollaboratorAuthPolicy = "password"
 	DefaultCostEstimationEnabled  = true
+
+	// List of available authentication policies.
+	AuthPolicyPassword  AuthPolicyType = "password"
+	AuthPolicyTwoFactor AuthPolicyType = "two_factor_mandatory"
 )
 
 var (
-	DefaultOrganizationPermissions = tfe.OrganizationPermissions{
+	DefaultOrganizationPermissions = OrganizationPermissions{
 		CanCreateWorkspace: true,
 		CanUpdate:          true,
 		CanDestroy:         true,
 	}
 )
+
+// AuthPolicyType represents an authentication policy type.
+type AuthPolicyType string
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
@@ -29,11 +36,11 @@ type Organization struct {
 	gorm.Model
 
 	Name                   string
-	CollaboratorAuthPolicy tfe.AuthPolicyType
+	CollaboratorAuthPolicy AuthPolicyType
 	CostEstimationEnabled  bool
 	Email                  string
 	OwnersTeamSAMLRoleID   string
-	Permissions            *tfe.OrganizationPermissions
+	Permissions            *OrganizationPermissions
 	SAMLEnabled            bool
 	SessionRemember        int
 	SessionTimeout         int
@@ -41,17 +48,97 @@ type Organization struct {
 	TwoFactorConformant    bool
 }
 
+// OrganizationPermissions represents the organization permissions.
+type OrganizationPermissions struct {
+	CanCreateTeam               bool `json:"can-create-team"`
+	CanCreateWorkspace          bool `json:"can-create-workspace"`
+	CanCreateWorkspaceMigration bool `json:"can-create-workspace-migration"`
+	CanDestroy                  bool `json:"can-destroy"`
+	CanTraverse                 bool `json:"can-traverse"`
+	CanUpdate                   bool `json:"can-update"`
+	CanUpdateAPIToken           bool `json:"can-update-api-token"`
+	CanUpdateOAuth              bool `json:"can-update-oauth"`
+	CanUpdateSentinel           bool `json:"can-update-sentinel"`
+}
+
+// OrganizationCreateOptions represents the options for creating an
+// organization.
+type OrganizationCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// Name of the organization.
+	Name *string `jsonapi:"attr,name"`
+
+	// Admin email address.
+	Email *string `jsonapi:"attr,email"`
+
+	// Session expiration (minutes).
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+
+	// Authentication policy.
+	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
+
+	// Enable Cost Estimation
+	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
+
+	// The name of the "owners" team
+	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
+}
+
+// OrganizationUpdateOptions represents the options for updating an
+// organization.
+type OrganizationUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// New name for the organization.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// New admin email address.
+	Email *string `jsonapi:"attr,email,omitempty"`
+
+	// Session expiration (minutes).
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+
+	// Authentication policy.
+	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
+
+	// Enable Cost Estimation
+	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
+
+	// The name of the "owners" team
+	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
+}
+
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
-	*tfe.Pagination
+	*Pagination
 	Items []*Organization
 }
 
+// OrganizationListOptions represents the options for listing organizations.
+type OrganizationListOptions struct {
+	ListOptions
+}
+
 type OrganizationService interface {
-	Create(opts *tfe.OrganizationCreateOptions) (*Organization, error)
+	Create(opts *OrganizationCreateOptions) (*Organization, error)
 	Get(name string) (*Organization, error)
-	List(opts tfe.OrganizationListOptions) (*OrganizationList, error)
-	Update(name string, opts *tfe.OrganizationUpdateOptions) (*Organization, error)
+	List(opts OrganizationListOptions) (*OrganizationList, error)
+	Update(name string, opts *OrganizationUpdateOptions) (*Organization, error)
 	Delete(name string) error
 	GetEntitlements(name string) (*Entitlements, error)
 }
@@ -59,12 +146,25 @@ type OrganizationService interface {
 type OrganizationStore interface {
 	Create(org *Organization) (*Organization, error)
 	Get(name string) (*Organization, error)
-	List(opts tfe.OrganizationListOptions) (*OrganizationList, error)
+	List(opts OrganizationListOptions) (*OrganizationList, error)
 	Update(name string, fn func(*Organization) error) (*Organization, error)
 	Delete(name string) error
 }
 
-func NewOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error) {
+func (o OrganizationCreateOptions) Valid() error {
+	if !validString(o.Name) {
+		return ErrRequiredName
+	}
+	if !validStringID(o.Name) {
+		return ErrInvalidName
+	}
+	if !validString(o.Email) {
+		return errors.New("email is required")
+	}
+	return nil
+}
+
+func NewOrganization(opts *OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		Name:                   *opts.Name,
 		Email:                  *opts.Email,
@@ -95,7 +195,7 @@ func NewOrganization(opts *tfe.OrganizationCreateOptions) (*Organization, error)
 	return &org, nil
 }
 
-func UpdateOrganization(org *Organization, opts *tfe.OrganizationUpdateOptions) error {
+func UpdateOrganization(org *Organization, opts *OrganizationUpdateOptions) error {
 	if opts.Name != nil {
 		org.Name = *opts.Name
 	}

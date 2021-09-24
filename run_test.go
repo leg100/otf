@@ -3,7 +3,6 @@ package otf
 import (
 	"testing"
 
-	tfe "github.com/leg100/go-tfe"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,46 +12,46 @@ import (
 func TestRun_UpdateStatus(t *testing.T) {
 	tests := []struct {
 		name            string
-		fromStatus      tfe.RunStatus
-		toStatus        tfe.RunStatus
-		wantPlanStatus  tfe.PlanStatus
-		wantApplyStatus tfe.ApplyStatus
+		fromStatus      RunStatus
+		toStatus        RunStatus
+		wantPlanStatus  PlanStatus
+		wantApplyStatus ApplyStatus
 	}{
 		{
 			name:           "plan error",
-			fromStatus:     tfe.RunPlanning,
-			toStatus:       tfe.RunErrored,
-			wantPlanStatus: tfe.PlanErrored,
+			fromStatus:     RunPlanning,
+			toStatus:       RunErrored,
+			wantPlanStatus: PlanErrored,
 		},
 		{
 			name:           "plan canceled",
-			fromStatus:     tfe.RunPlanning,
-			toStatus:       tfe.RunCanceled,
-			wantPlanStatus: tfe.PlanCanceled,
+			fromStatus:     RunPlanning,
+			toStatus:       RunCanceled,
+			wantPlanStatus: PlanCanceled,
 		},
 		{
 			name:            "apply error",
-			fromStatus:      tfe.RunApplying,
-			toStatus:        tfe.RunErrored,
-			wantApplyStatus: tfe.ApplyErrored,
+			fromStatus:      RunApplying,
+			toStatus:        RunErrored,
+			wantApplyStatus: ApplyErrored,
 		},
 		{
 			name:            "apply canceled",
-			fromStatus:      tfe.RunApplying,
-			toStatus:        tfe.RunCanceled,
-			wantApplyStatus: tfe.ApplyCanceled,
+			fromStatus:      RunApplying,
+			toStatus:        RunCanceled,
+			wantApplyStatus: ApplyCanceled,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Run{
 				Status:           tt.fromStatus,
-				StatusTimestamps: &tfe.RunStatusTimestamps{},
+				StatusTimestamps: &RunStatusTimestamps{},
 				Plan: &Plan{
-					StatusTimestamps: &tfe.PlanStatusTimestamps{},
+					StatusTimestamps: &PlanStatusTimestamps{},
 				},
 				Apply: &Apply{
-					StatusTimestamps: &tfe.ApplyStatusTimestamps{},
+					StatusTimestamps: &ApplyStatusTimestamps{},
 				},
 			}
 

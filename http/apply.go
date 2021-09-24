@@ -4,9 +4,19 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
+
+// Apply represents a Terraform Enterprise apply.
+type Apply struct {
+	ID                   string                     `jsonapi:"primary,applies"`
+	LogReadURL           string                     `jsonapi:"attr,log-read-url"`
+	ResourceAdditions    int                        `jsonapi:"attr,resource-additions"`
+	ResourceChanges      int                        `jsonapi:"attr,resource-changes"`
+	ResourceDestructions int                        `jsonapi:"attr,resource-destructions"`
+	Status               otf.ApplyStatus            `jsonapi:"attr,status"`
+	StatusTimestamps     *otf.ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
+}
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -44,8 +54,8 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 // ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *tfe.Apply {
-	obj := &tfe.Apply{
+func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *Apply {
+	obj := &Apply{
 		ID:                   a.ID,
 		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ID),
 		ResourceAdditions:    a.ResourceAdditions,

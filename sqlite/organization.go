@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -62,7 +61,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	return model.ToDomain(), nil
 }
 
-func (db OrganizationDB) List(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	var count int64
 	var models OrganizationList
 

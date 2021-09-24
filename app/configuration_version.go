@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -24,7 +23,7 @@ func NewConfigurationVersionService(db otf.ConfigurationVersionStore, wss otf.Wo
 	}
 }
 
-func (s ConfigurationVersionService) Create(workspaceID string, opts *tfe.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) Create(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	cv, err := s.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		return nil, err
@@ -33,7 +32,7 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts *tfe.Config
 	return s.db.Create(cv)
 }
 
-func (s ConfigurationVersionService) List(workspaceID string, opts tfe.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (s ConfigurationVersionService) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	return s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 }
 
@@ -52,7 +51,7 @@ func (s ConfigurationVersionService) Upload(id string, configuration []byte) err
 			return err
 		}
 
-		cv.Status = tfe.ConfigurationUploaded
+		cv.Status = otf.ConfigurationUploaded
 
 		return nil
 	})

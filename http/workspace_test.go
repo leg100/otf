@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/mock"
@@ -21,10 +20,10 @@ func TestWorkspace(t *testing.T) {
 		Logger: logr.Discard(),
 	}
 	s.WorkspaceService = &mock.WorkspaceService{
-		CreateWorkspaceFn: func(org string, opts *tfe.WorkspaceCreateOptions) (*otf.Workspace, error) {
+		CreateWorkspaceFn: func(org string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", org), nil
 		},
-		UpdateWorkspaceFn: func(spec otf.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+		UpdateWorkspaceFn: func(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 			return mock.NewWorkspace(*opts.Name, "ws-123", "automatize"), nil
 		},
 		GetWorkspaceFn: func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
@@ -107,9 +106,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -118,9 +114,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -188,9 +181,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -199,9 +189,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -269,9 +256,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -280,9 +264,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -369,9 +350,6 @@ func TestWorkspace(t *testing.T) {
 						},
 						"id": "ws-123",
 						"relationships": map[string]interface{}{
-							"agent-pool": map[string]interface{}{
-								"data": interface{}(nil),
-							},
 							"current-run": map[string]interface{}{
 								"data": interface{}(nil),
 							},
@@ -380,9 +358,6 @@ func TestWorkspace(t *testing.T) {
 									"id":   "automatize",
 									"type": "organizations",
 								},
-							},
-							"ssh-key": map[string]interface{}{
-								"data": interface{}(nil),
 							},
 						},
 						"type": "workspaces",
@@ -468,9 +443,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -479,9 +451,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -557,9 +526,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -568,9 +534,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",
@@ -646,9 +609,6 @@ func TestWorkspace(t *testing.T) {
 					},
 					"id": "ws-123",
 					"relationships": map[string]interface{}{
-						"agent-pool": map[string]interface{}{
-							"data": interface{}(nil),
-						},
 						"current-run": map[string]interface{}{
 							"data": interface{}(nil),
 						},
@@ -657,9 +617,6 @@ func TestWorkspace(t *testing.T) {
 								"id":   "automatize",
 								"type": "organizations",
 							},
-						},
-						"ssh-key": map[string]interface{}{
-							"data": interface{}(nil),
 						},
 					},
 					"type": "workspaces",

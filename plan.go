@@ -3,8 +3,8 @@ package otf
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
-	tfe "github.com/leg100/go-tfe"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +13,21 @@ const (
 	PlanFilename        = "plan.out"
 	JSONPlanFilename    = "plan.out.json"
 	ApplyOutputFilename = "apply.out"
+
+	//List all available plan statuses.
+	PlanCanceled    PlanStatus = "canceled"
+	PlanCreated     PlanStatus = "created"
+	PlanErrored     PlanStatus = "errored"
+	PlanFinished    PlanStatus = "finished"
+	PlanMFAWaiting  PlanStatus = "mfa_waiting"
+	PlanPending     PlanStatus = "pending"
+	PlanQueued      PlanStatus = "queued"
+	PlanRunning     PlanStatus = "running"
+	PlanUnreachable PlanStatus = "unreachable"
 )
+
+// PlanStatus represents a plan state.
+type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
@@ -23,8 +37,8 @@ type Plan struct {
 
 	Resources
 
-	Status           tfe.PlanStatus
-	StatusTimestamps *tfe.PlanStatusTimestamps
+	Status           PlanStatus
+	StatusTimestamps *PlanStatusTimestamps
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
 	LogsBlobID string
@@ -36,6 +50,16 @@ type Plan struct {
 	PlanJSONBlobID string
 }
 
+// PlanStatusTimestamps holds the timestamps for individual plan statuses.
+type PlanStatusTimestamps struct {
+	CanceledAt      *time.Time `json:"canceled-at,rfc3339,omitempty"`
+	ErroredAt       *time.Time `json:"errored-at,rfc3339,omitempty"`
+	FinishedAt      *time.Time `json:"finished-at,rfc3339,omitempty"`
+	ForceCanceledAt *time.Time `json:"force-canceled-at,rfc3339,omitempty"`
+	QueuedAt        *time.Time `json:"queued-at,rfc3339,omitempty"`
+	StartedAt       *time.Time `json:"started-at,rfc3339,omitempty"`
+}
+
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
@@ -44,7 +68,7 @@ type PlanService interface {
 func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
-		StatusTimestamps: &tfe.PlanStatusTimestamps{},
+		StatusTimestamps: &PlanStatusTimestamps{},
 		LogsBlobID:       NewBlobID(),
 		PlanFileBlobID:   NewBlobID(),
 		PlanJSONBlobID:   NewBlobID(),
@@ -108,22 +132,22 @@ func (p *Plan) UpdateResources(bs BlobStore) error {
 	return nil
 }
 
-func (p *Plan) UpdateStatus(status tfe.PlanStatus) {
+func (p *Plan) UpdateStatus(status PlanStatus) {
 	p.Status = status
 	p.setTimestamp(status)
 }
 
-func (p *Plan) setTimestamp(status tfe.PlanStatus) {
+func (p *Plan) setTimestamp(status PlanStatus) {
 	switch status {
-	case tfe.PlanCanceled:
+	case PlanCanceled:
 		p.StatusTimestamps.CanceledAt = TimeNow()
-	case tfe.PlanErrored:
+	case PlanErrored:
 		p.StatusTimestamps.ErroredAt = TimeNow()
-	case tfe.PlanFinished:
+	case PlanFinished:
 		p.StatusTimestamps.FinishedAt = TimeNow()
-	case tfe.PlanQueued:
+	case PlanQueued:
 		p.StatusTimestamps.QueuedAt = TimeNow()
-	case tfe.PlanRunning:
+	case PlanRunning:
 		p.StatusTimestamps.StartedAt = TimeNow()
 	}
 }

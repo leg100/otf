@@ -1,22 +1,21 @@
 package mock
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
 var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	CreateOrganizationFn func(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error)
-	UpdateOrganizationFn func(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error)
+	CreateOrganizationFn func(opts *otf.OrganizationCreateOptions) (*otf.Organization, error)
+	UpdateOrganizationFn func(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error)
 	GetOrganizationFn    func(name string) (*otf.Organization, error)
-	ListOrganizationFn   func(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error)
+	ListOrganizationFn   func(opts otf.OrganizationListOptions) (*otf.OrganizationList, error)
 	DeleteOrganizationFn func(name string) error
 	GetEntitlementsFn    func(name string) (*otf.Entitlements, error)
 }
 
-func (s OrganizationService) Create(opts *tfe.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Create(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	return s.CreateOrganizationFn(opts)
 }
 
@@ -24,11 +23,11 @@ func (s OrganizationService) Get(name string) (*otf.Organization, error) {
 	return s.GetOrganizationFn(name)
 }
 
-func (s OrganizationService) List(opts tfe.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (s OrganizationService) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return s.ListOrganizationFn(opts)
 }
 
-func (s OrganizationService) Update(name string, opts *tfe.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Update(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	return s.UpdateOrganizationFn(name, opts)
 }
 
@@ -44,7 +43,7 @@ func NewOrganization(name, email string) *otf.Organization {
 	return &otf.Organization{
 		Name:                   name,
 		Email:                  email,
-		Permissions:            &tfe.OrganizationPermissions{},
+		Permissions:            &otf.OrganizationPermissions{},
 		SessionTimeout:         otf.DefaultSessionTimeout,
 		SessionRemember:        otf.DefaultSessionExpiration,
 		CollaboratorAuthPolicy: otf.DefaultCollaboratorAuthPolicy,
@@ -52,7 +51,7 @@ func NewOrganization(name, email string) *otf.Organization {
 	}
 }
 
-func NewOrganizationList(name, email string, opts tfe.OrganizationListOptions) *otf.OrganizationList {
+func NewOrganizationList(name, email string, opts otf.OrganizationListOptions) *otf.OrganizationList {
 	return &otf.OrganizationList{
 		Items: []*otf.Organization{
 			NewOrganization(name, email),

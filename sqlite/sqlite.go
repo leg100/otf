@@ -4,7 +4,6 @@ Package sqlite implements persistent storage using the sqlite database.
 package sqlite
 
 import (
-	"github.com/leg100/go-tfe"
 	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/otf"
 	"github.com/rs/zerolog"
@@ -63,7 +62,7 @@ func New(path string, opts ...Option) (*gorm.DB, error) {
 
 // Gorm scopes: https://gorm.io/docs/advanced_query.html#Scopes
 
-func paginate(opts tfe.ListOptions) func(*gorm.DB) *gorm.DB {
+func paginate(opts otf.ListOptions) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		otf.SanitizeListOptions(&opts)
 

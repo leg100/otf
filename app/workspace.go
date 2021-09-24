@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 )
 
@@ -21,7 +20,7 @@ func NewWorkspaceService(db otf.WorkspaceStore, os otf.OrganizationService, es o
 	}
 }
 
-func (s WorkspaceService) Create(orgName string, opts *tfe.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Create(orgName string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	org, err := s.os.Get(orgName)
 	if err != nil {
 		return nil, err
@@ -39,7 +38,7 @@ func (s WorkspaceService) Create(orgName string, opts *tfe.WorkspaceCreateOption
 	return ws, nil
 }
 
-func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts *tfe.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
 		_, err = otf.UpdateWorkspace(ws, opts)
 		if err != nil {
@@ -74,7 +73,7 @@ func (s WorkspaceService) Delete(spec otf.WorkspaceSpecifier) error {
 	return nil
 }
 
-func (s WorkspaceService) Lock(id string, _ tfe.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Lock(id string, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	spec := otf.WorkspaceSpecifier{ID: &id}
 
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {

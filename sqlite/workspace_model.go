@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -26,7 +25,7 @@ type Workspace struct {
 	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
-	Permissions                *tfe.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions                *otf.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	SourceName                 string
@@ -34,7 +33,7 @@ type Workspace struct {
 	StructuredRunOutputEnabled bool
 	TerraformVersion           string
 	TriggerPrefixes            string
-	VCSRepo                    *tfe.VCSRepo `gorm:"-"`
+	VCSRepo                    *otf.VCSRepo `gorm:"-"`
 	WorkingDirectory           string
 	ResourceCount              int
 	ApplyDurationAverage       time.Duration

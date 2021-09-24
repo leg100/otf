@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -31,7 +30,7 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	return model.ToDomain(), nil
 }
 
-func (s StateVersionService) List(opts tfe.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	var models StateVersionList
 	var count int64
 

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 )
@@ -19,11 +18,11 @@ type Run struct {
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
-	Permissions            *tfe.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	Permissions            *otf.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
-	Status                 tfe.RunStatus
+	Status                 otf.RunStatus
 	StatusTimestamps       *RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
 
 	// Comma separated list of replace addresses
@@ -95,7 +94,7 @@ func (model *Run) ToDomain() *otf.Run {
 		Refresh:                model.Refresh,
 		RefreshOnly:            model.RefreshOnly,
 		Status:                 model.Status,
-		StatusTimestamps:       &tfe.RunStatusTimestamps{},
+		StatusTimestamps:       &otf.RunStatusTimestamps{},
 	}
 
 	if model.StatusTimestamps.AppliedAt.Valid {
