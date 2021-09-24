@@ -231,9 +231,8 @@ type WorkspaceUpdateOptions struct {
 	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
 }
 
-// TODO: move this struct out. VCSRepoOptions is used by workspaces, policy
-// sets, and registry modules VCSRepoOptions represents the configuration
-// options of a VCS integration.
+// VCSRepoOptions is used by workspaces, policy sets, and registry modules
+// VCSRepoOptions represents the configuration options of a VCS integration.
 type VCSRepoOptions struct {
 	Branch            *string `json:"branch,omitempty"`
 	Identifier        *string `json:"identifier,omitempty"`

@@ -233,5 +233,5 @@ func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts
 		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
 
-	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions{End: opts.End})
+	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions(opts))
 }

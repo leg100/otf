@@ -76,9 +76,9 @@ type ConfigurationVersionCreateOptions struct {
 // CVStatusTimestamps holds the timestamps for individual configuration version
 // statuses.
 type CVStatusTimestamps struct {
-	FinishedAt *time.Time `json:"finished-at,rfc3339,omitempty"`
-	QueuedAt   *time.Time `json:"queued-at,rfc3339,omitempty"`
-	StartedAt  *time.Time `json:"started-at,rfc3339,omitempty"`
+	FinishedAt *time.Time `json:"finished-at,omitempty"`
+	QueuedAt   *time.Time `json:"queued-at,omitempty"`
+	StartedAt  *time.Time `json:"started-at,omitempty"`
 }
 
 type ConfigurationVersionService interface {
