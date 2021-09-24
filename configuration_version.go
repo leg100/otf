@@ -110,6 +110,9 @@ type ConfigurationVersionGetOptions struct {
 // ConfigurationVersionListOptions are options for paginating and filtering a
 // list of configuration versions
 type ConfigurationVersionListOptions struct {
+	// A list of relations to include
+	Include *string `schema:"include"`
+
 	ListOptions
 
 	// Filter by run statuses (with an implicit OR condition)

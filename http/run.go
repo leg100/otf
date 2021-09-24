@@ -52,14 +52,120 @@ type RunActions struct {
 	IsForceCancelable bool `json:"is-force-cancelable"`
 }
 
+// RunCreateOptions represents the options for creating a new run.
+type RunCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,runs"`
+
+	// Specifies if this plan is a destroy plan, which will destroy all
+	// provisioned resources.
+	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
+
+	// Refresh determines if the run should
+	// update the state prior to checking for differences
+	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
+
+	// RefreshOnly determines whether the run should ignore config changes
+	// and refresh the state only
+	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
+
+	// Specifies the message to be associated with this run.
+	Message *string `jsonapi:"attr,message,omitempty"`
+
+	// Specifies the configuration version to use for this run. If the
+	// configuration version object is omitted, the run will be created using the
+	// workspace's latest configuration version.
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+
+	// Specifies the workspace where the run will be executed.
+	Workspace *Workspace `jsonapi:"relation,workspace"`
+
+	// If non-empty, requests that Terraform should create a plan including
+	// actions only for the given objects (specified using resource address
+	// syntax) and the objects they depend on.
+	//
+	// This capability is provided for exceptional circumstances only, such as
+	// recovering from mistakes or working around existing Terraform
+	// limitations. Terraform will generally mention the -target command line
+	// option in its error messages describing situations where setting this
+	// argument may be appropriate. This argument should not be used as part
+	// of routine workflow and Terraform will emit warnings reminding about
+	// this whenever this property is set.
+	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
+
+	// If non-empty, requests that Terraform create a plan that replaces
+	// (destroys and then re-creates) the objects specified by the given
+	// resource addresses.
+	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+}
+
+// ToDomain converts http organization obj to a domain organization obj.
+func (r *Run) ToDomain() *otf.Run {
+	domain := otf.Run{
+		ID:                     r.ID,
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
+		IsDestroy:              r.IsDestroy,
+		Message:                r.Message,
+		Permissions:            r.Permissions,
+		PositionInQueue:        r.PositionInQueue,
+		Refresh:                r.Refresh,
+		RefreshOnly:            r.RefreshOnly,
+		ReplaceAddrs:           r.ReplaceAddrs,
+		Status:                 r.Status,
+		StatusTimestamps:       r.StatusTimestamps,
+		TargetAddrs:            r.TargetAddrs,
+	}
+
+	if r.Apply != nil {
+		domain.Apply = r.Apply.ToDomain()
+	}
+
+	if r.ConfigurationVersion != nil {
+		domain.ConfigurationVersion = r.ConfigurationVersion.ToDomain()
+	}
+
+	if r.Plan != nil {
+		domain.Plan = r.Plan.ToDomain()
+	}
+
+	if r.Workspace != nil {
+		domain.Workspace = r.Workspace.ToDomain()
+	}
+
+	return &domain
+}
+
+func (o *RunCreateOptions) ToDomain() otf.RunCreateOptions {
+	domain := otf.RunCreateOptions{
+		IsDestroy:    o.IsDestroy,
+		Refresh:      o.Refresh,
+		RefreshOnly:  o.RefreshOnly,
+		Message:      o.Message,
+		TargetAddrs:  o.TargetAddrs,
+		ReplaceAddrs: o.ReplaceAddrs,
+	}
+
+	if o.ConfigurationVersion != nil {
+		domain.ConfigurationVersion = o.ConfigurationVersion.ToDomain()
+	}
+	if o.Workspace != nil {
+		domain.Workspace = o.Workspace.ToDomain()
+	}
+
+	return domain
+}
+
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
-	opts := otf.RunCreateOptions{}
+	opts := RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.RunService.Create(r.Context(), opts)
+	obj, err := s.RunService.Create(r.Context(), opts.ToDomain())
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

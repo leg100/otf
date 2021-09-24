@@ -19,6 +19,20 @@ type Plan struct {
 	StatusTimestamps     *otf.PlanStatusTimestamps `jsonapi:"attr,status-timestamps"`
 }
 
+// ToDomain converts http organization obj to a domain organization obj.
+func (p *Plan) ToDomain() *otf.Plan {
+	return &otf.Plan{
+		ID: p.ID,
+		Resources: otf.Resources{
+			ResourceAdditions:    p.ResourceAdditions,
+			ResourceChanges:      p.ResourceChanges,
+			ResourceDestructions: p.ResourceDestructions,
+		},
+		Status:           p.Status,
+		StatusTimestamps: p.StatusTimestamps,
+	}
+}
+
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 

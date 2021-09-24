@@ -29,6 +29,46 @@ type StateVersionList struct {
 	Items []*StateVersion
 }
 
+// StateVersionCreateOptions represents the options for creating a state
+// version.
+type StateVersionCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,state-versions"`
+
+	// The lineage of the state.
+	Lineage *string `jsonapi:"attr,lineage,omitempty"`
+
+	// The MD5 hash of the state version.
+	MD5 *string `jsonapi:"attr,md5"`
+
+	// The serial of the state.
+	Serial *int64 `jsonapi:"attr,serial"`
+
+	// The base64 encoded state.
+	State *string `jsonapi:"attr,state"`
+
+	// Force can be set to skip certain validations. Wrong use
+	// of this flag can cause data loss, so USE WITH CAUTION!
+	Force *bool `jsonapi:"attr,force"`
+
+	// Specifies the run to associate the state with.
+	Run *Run `jsonapi:"relation,run,omitempty"`
+}
+
+func (o *StateVersionCreateOptions) ToDomain() otf.StateVersionCreateOptions {
+	return otf.StateVersionCreateOptions{
+		Lineage: o.Lineage,
+		MD5:     o.MD5,
+		Serial:  o.Serial,
+		State:   o.State,
+		Force:   o.Force,
+		Run:     o.Run.ToDomain(),
+	}
+}
+
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 	var opts otf.StateVersionListOptions
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
@@ -72,13 +112,13 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.StateVersionCreateOptions{}
+	opts := StateVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.StateVersionService.Create(vars["workspace_id"], opts)
+	obj, err := s.StateVersionService.Create(vars["workspace_id"], opts.ToDomain())
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

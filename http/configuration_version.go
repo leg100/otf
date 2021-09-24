@@ -26,6 +26,44 @@ type ConfigurationVersion struct {
 	UploadURL        string                  `jsonapi:"attr,upload-url"`
 }
 
+// ToDomain converts http organization obj to a domain organization obj.
+func (cv *ConfigurationVersion) ToDomain() *otf.ConfigurationVersion {
+	return &otf.ConfigurationVersion{
+		ID:               cv.ID,
+		AutoQueueRuns:    cv.AutoQueueRuns,
+		Error:            cv.Error,
+		ErrorMessage:     cv.ErrorMessage,
+		Source:           cv.Source,
+		Speculative:      cv.Speculative,
+		Status:           cv.Status,
+		StatusTimestamps: cv.StatusTimestamps,
+	}
+}
+
+// ConfigurationVersionCreateOptions represents the options for creating a
+// configuration version.
+type ConfigurationVersionCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,configuration-versions"`
+
+	// When true, runs are queued automatically when the configuration version
+	// is uploaded.
+	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
+
+	// When true, this configuration version can only be used for planning.
+	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
+}
+
+func (o *ConfigurationVersionCreateOptions) ToDomain() otf.ConfigurationVersionCreateOptions {
+	return otf.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: o.AutoQueueRuns,
+		Speculative:   o.Speculative,
+	}
+}
+
 // ConfigurationVersionList represents a list of configuration versions.
 type ConfigurationVersionList struct {
 	*otf.Pagination
@@ -35,13 +73,13 @@ type ConfigurationVersionList struct {
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.ConfigurationVersionCreateOptions{}
+	opts := ConfigurationVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.ConfigurationVersionService.Create(vars["workspace_id"], opts)
+	obj, err := s.ConfigurationVersionService.Create(vars["workspace_id"], opts.ToDomain())
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

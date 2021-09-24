@@ -65,15 +65,10 @@ type Workspace struct {
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
 type WorkspaceCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,workspaces"`
-
 	// Required when execution-mode is set to agent. The ID of the agent pool
-	// belonging to the workspace's organization. This value must not be specified
-	// if execution-mode is set to remote or local or if operations is set to true.
+	// belonging to the workspace's organization. This value must not be
+	// specified if execution-mode is set to remote or local or if operations is
+	// set to true.
 	AgentPoolID *string `jsonapi:"attr,agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.
@@ -160,15 +155,10 @@ type WorkspaceCreateOptions struct {
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.
 type WorkspaceUpdateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,workspaces"`
-
 	// Required when execution-mode is set to agent. The ID of the agent pool
-	// belonging to the workspace's organization. This value must not be specified
-	// if execution-mode is set to remote or local or if operations is set to true.
+	// belonging to the workspace's organization. This value must not be
+	// specified if execution-mode is set to remote or local or if operations is
+	// set to true.
 	AgentPoolID *string `jsonapi:"attr,agent-pool-id,omitempty"`
 
 	// Whether destroy plans can be queued on the workspace.

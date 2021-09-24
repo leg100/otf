@@ -18,6 +18,20 @@ type Apply struct {
 	StatusTimestamps     *otf.ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
 }
 
+// ToDomain converts http organization obj to a domain organization obj.
+func (a *Apply) ToDomain() *otf.Apply {
+	return &otf.Apply{
+		ID: a.ID,
+		Resources: otf.Resources{
+			ResourceAdditions:    a.ResourceAdditions,
+			ResourceChanges:      a.ResourceChanges,
+			ResourceDestructions: a.ResourceDestructions,
+		},
+		Status:           a.Status,
+		StatusTimestamps: a.StatusTimestamps,
+	}
+}
+
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 

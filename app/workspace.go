@@ -21,6 +21,10 @@ func NewWorkspaceService(db otf.WorkspaceStore, os otf.OrganizationService, es o
 }
 
 func (s WorkspaceService) Create(orgName string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+	if err := opts.Valid(); err != nil {
+		return nil, err
+	}
+
 	org, err := s.os.Get(orgName)
 	if err != nil {
 		return nil, err
@@ -39,6 +43,10 @@ func (s WorkspaceService) Create(orgName string, opts otf.WorkspaceCreateOptions
 }
 
 func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	if err := opts.Valid(); err != nil {
+		return nil, err
+	}
+
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
 		_, err = otf.UpdateWorkspace(ws, opts)
 		if err != nil {

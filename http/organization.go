@@ -32,6 +32,24 @@ type OrganizationList struct {
 	Items []*Organization
 }
 
+// ToDomain converts http organization obj to a domain organization obj.
+func (o *Organization) ToDomain() *otf.Organization {
+	return &otf.Organization{
+		ID:                     o.ExternalID,
+		Name:                   o.Name,
+		CollaboratorAuthPolicy: o.CollaboratorAuthPolicy,
+		CostEstimationEnabled:  o.CostEstimationEnabled,
+		Email:                  o.Email,
+		OwnersTeamSAMLRoleID:   o.OwnersTeamSAMLRoleID,
+		Permissions:            o.Permissions,
+		SAMLEnabled:            o.SAMLEnabled,
+		SessionRemember:        o.SessionRemember,
+		SessionTimeout:         o.SessionTimeout,
+		TrialExpiresAt:         o.TrialExpiresAt,
+		TwoFactorConformant:    o.TwoFactorConformant,
+	}
+}
+
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := otf.OrganizationCreateOptions{}
 

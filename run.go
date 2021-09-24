@@ -142,12 +142,6 @@ type RunService interface {
 
 // RunCreateOptions represents the options for creating a new run.
 type RunCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,runs"`
-
 	// Specifies if this plan is a destroy plan, which will destroy all
 	// provisioned resources.
 	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
@@ -265,6 +259,13 @@ type RunListOptions struct {
 
 	// Filter by workspace ID
 	WorkspaceID *string
+}
+
+func (o RunCreateOptions) Valid() error {
+	if o.Workspace == nil {
+		return errors.New("workspace is required")
+	}
+	return nil
 }
 
 func (r *Run) GetID() string {
