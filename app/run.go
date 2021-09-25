@@ -130,20 +130,9 @@ func (s RunService) EnqueuePlan(id string) error {
 
 // GetPlanFile returns the plan file for the run.
 func (s RunService) GetPlanFile(ctx context.Context, id string, opts otf.PlanFileOptions) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	bid, err := s.getPlanFileBlobID(ctx, id, opts)
 	if err != nil {
 		return nil, err
-	}
-
-	var bid string // Blob ID
-
-	switch opts.Format {
-	case otf.PlanJSONFormat:
-		bid = run.Plan.PlanJSONBlobID
-	case otf.PlanBinaryFormat:
-		bid = run.Plan.PlanFileBlobID
-	default:
-		return nil, fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
 
 	return s.bs.Get(bid)
@@ -153,20 +142,9 @@ func (s RunService) GetPlanFile(ctx context.Context, id string, opts otf.PlanFil
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then set json to true.
 func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	bid, err := s.getPlanFileBlobID(ctx, id, opts)
 	if err != nil {
 		return err
-	}
-
-	var bid string // Blob ID
-
-	switch opts.Format {
-	case otf.PlanJSONFormat:
-		bid = run.Plan.PlanJSONBlobID
-	case otf.PlanBinaryFormat:
-		bid = run.Plan.PlanFileBlobID
-	default:
-		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
 
 	return s.bs.Put(bid, plan)
@@ -234,4 +212,24 @@ func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts
 	}
 
 	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions(opts))
+}
+
+func (s RunService) getPlanFileBlobID(ctx context.Context, id string, opts otf.PlanFileOptions) (string, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	if err != nil {
+		return "", err
+	}
+
+	var bid string // Blob ID
+
+	switch opts.Format {
+	case otf.PlanJSONFormat:
+		bid = run.Plan.PlanJSONBlobID
+	case otf.PlanBinaryFormat:
+		bid = run.Plan.PlanFileBlobID
+	default:
+		return "", fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+	}
+
+	return bid, nil
 }
