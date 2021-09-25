@@ -368,15 +368,6 @@ func (r *Run) IsDone() bool {
 	}
 }
 
-type ErrInvalidRunStatusTransition struct {
-	From RunStatus
-	To   RunStatus
-}
-
-func (e ErrInvalidRunStatusTransition) Error() string {
-	return fmt.Sprintf("invalid run status transition from %s to %s", e.From, e.To)
-}
-
 func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
