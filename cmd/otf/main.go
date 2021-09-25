@@ -28,7 +28,12 @@ func Run(ctx context.Context, args []string) error {
 	}
 	cmd.SetArgs(args)
 
-	cmd.AddCommand(LoginCommand(&SystemDirectories{}))
+	store, err := NewCredentialsStore()
+	if err != nil {
+		return err
+	}
+
+	cmd.AddCommand(LoginCommand(store))
 	cmd.AddCommand(OrganizationCommand())
 	cmd.AddCommand(WorkspaceCommand())
 

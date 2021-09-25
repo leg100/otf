@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 )
+
+var _ KVStore = (CredentialsStore)("")
 
 const (
 	CredentialsPath = ".terraform.d/credentials.tfrc.json"
@@ -26,9 +27,9 @@ type TokenConfig struct {
 type CredentialsStore string
 
 // NewCredentialsStore is a contructor for CredentialsStore
-func NewCredentialsStore(dirs Directories) (CredentialsStore, error) {
+func NewCredentialsStore() (CredentialsStore, error) {
 	// Construct full path to creds config
-	home, err := dirs.UserHomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +40,7 @@ func NewCredentialsStore(dirs Directories) (CredentialsStore, error) {
 
 // Load retrieves the token for hostname
 func (c CredentialsStore) Load(hostname string) (string, error) {
-	hostname, err := c.sanitizeHostname(hostname)
+	hostname, err := sanitizeHostname(hostname)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +61,7 @@ func (c CredentialsStore) Load(hostname string) (string, error) {
 // Save saves the token for the given hostname to the store, overwriting any
 // existing tokens for the hostname.
 func (c CredentialsStore) Save(hostname, token string) error {
-	hostname, err := c.sanitizeHostname(hostname)
+	hostname, err := sanitizeHostname(hostname)
 	if err != nil {
 		return err
 	}
@@ -114,18 +115,4 @@ func (c CredentialsStore) write(config *CredentialsConfig) error {
 	}
 
 	return nil
-}
-
-// Ensure hostname is in the format <host>:<port>
-func (c CredentialsStore) sanitizeHostname(hostname string) (string, error) {
-	u, err := url.ParseRequestURI(hostname)
-	if err != nil || u.Host == "" {
-		u, er := url.ParseRequestURI("https://" + hostname)
-		if er != nil {
-			return "", fmt.Errorf("could not parse hostname: %w", err)
-		}
-		return u.Host, nil
-	}
-
-	return u.Host, nil
 }

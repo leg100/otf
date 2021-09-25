@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"net/url"
-
 	"github.com/leg100/go-tfe"
 )
 
@@ -37,11 +34,14 @@ func (c *client) Workspaces() tfe.Workspaces {
 }
 
 func (c *clientConfig) NewClient() (Client, error) {
-	if err := c.sanitizeAddress(); err != nil {
+	var err error
+
+	c.Address, err = sanitizeAddress(c.Address)
+	if err != nil {
 		return nil, err
 	}
 
-	creds, err := NewCredentialsStore(&SystemDirectories{})
+	creds, err := NewCredentialsStore()
 	if err != nil {
 		return nil, err
 	}
@@ -60,22 +60,4 @@ func (c *clientConfig) NewClient() (Client, error) {
 	}
 
 	return &client{Client: tfeClient}, nil
-}
-
-// Ensure address is in format https://<host>:<port>
-func (c *clientConfig) sanitizeAddress() error {
-	u, err := url.ParseRequestURI(c.Address)
-	if err != nil || u.Host == "" {
-		u, er := url.ParseRequestURI("https://" + c.Address)
-		if er != nil {
-			return fmt.Errorf("could not parse hostname: %w", err)
-		}
-		c.Address = u.String()
-		return nil
-	}
-
-	u.Scheme = "https"
-	c.Address = u.String()
-
-	return nil
 }
