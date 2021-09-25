@@ -5,10 +5,11 @@ import (
 
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func OrganizationNewCommand(config ClientConfig) *cobra.Command {
+func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 	opts := tfe.OrganizationCreateOptions{}
 
 	cmd := &cobra.Command{
@@ -18,7 +19,7 @@ func OrganizationNewCommand(config ClientConfig) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = otf.String(args[0])
 
-			client, err := config.NewClient()
+			client, err := factory.NewClient()
 			if err != nil {
 				return err
 			}

@@ -4,17 +4,18 @@ import (
 	"fmt"
 
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func WorkspaceListCommand(config ClientConfig) *cobra.Command {
+func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 	var organization string
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List workspaces",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := config.NewClient()
+			client, err := factory.NewClient()
 			if err != nil {
 				return err
 			}

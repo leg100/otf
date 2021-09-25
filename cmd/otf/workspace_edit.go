@@ -6,10 +6,11 @@ import (
 
 	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func WorkspaceEditCommand(config ClientConfig) *cobra.Command {
+func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 	var organization, workspace string
 
 	var opts tfe.WorkspaceUpdateOptions
@@ -21,7 +22,7 @@ func WorkspaceEditCommand(config ClientConfig) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace = args[0]
 
-			client, err := config.NewClient()
+			client, err := factory.NewClient()
 			if err != nil {
 				return err
 			}

@@ -1,8 +1,10 @@
 package main
 
-var _ KVStore = (KVMap)(nil)
+import "github.com/leg100/otf/http"
 
-// KVMap is a basic implementation of KVStore for testing purposes.
+var _ http.KVStore = (KVMap)(nil)
+
+// KVMap is a basic implementation of http.KVStore for testing purposes.
 type KVMap map[string]string
 
 func (m KVMap) Save(key, value string) error {

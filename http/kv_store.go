@@ -1,4 +1,4 @@
-package main
+package http
 
 // KVStore implementations provide a key-value store.
 type KVStore interface {

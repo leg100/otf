@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"github.com/leg100/go-tfe"
 )
 
-type FakeClientConfig struct{}
+type FakeClientFactory struct{}
 
-func (f FakeClientConfig) NewClient() (Client, error) { return &FakeClient{}, nil }
+func (f FakeClientFactory) NewClient() (Client, error) { return &FakeClient{}, nil }
 
 type FakeClient struct {
 	Client

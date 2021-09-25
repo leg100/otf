@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
@@ -10,7 +11,7 @@ const (
 	DummyToken = "dummy"
 )
 
-func LoginCommand(store KVStore) *cobra.Command {
+func LoginCommand(store http.KVStore) *cobra.Command {
 	var address string
 
 	cmd := &cobra.Command{
@@ -27,7 +28,7 @@ func LoginCommand(store KVStore) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&address, "address", DefaultAddress, "Address of OTF instance")
+	cmd.Flags().StringVar(&address, "address", http.DefaultAddress, "Address of OTF instance")
 
 	return cmd
 }

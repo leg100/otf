@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/leg100/go-tfe"
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func WorkspaceLockCommand(config ClientConfig) *cobra.Command {
+func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 	var organization string
 	var workspace string
 
@@ -18,7 +19,7 @@ func WorkspaceLockCommand(config ClientConfig) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workspace = args[0]
 
-			client, err := config.NewClient()
+			client, err := factory.NewClient()
 			if err != nil {
 				return err
 			}
