@@ -88,9 +88,9 @@ func validString(v *string) bool {
 	return v != nil && *v != ""
 }
 
-// validStringID checks if the given string pointer is non-nil and
+// ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
-func validStringID(v *string) bool {
+func ValidStringID(v *string) bool {
 	return v != nil && reStringID.MatchString(*v)
 }
 

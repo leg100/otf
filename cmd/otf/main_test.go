@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRun checks the command tree is as it should be
-func TestRun(t *testing.T) {
+// TestMain checks the command tree is as it should be
+func TestMain(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string

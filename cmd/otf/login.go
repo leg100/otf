@@ -11,7 +11,7 @@ const (
 	DummyToken = "dummy"
 )
 
-func LoginCommand(store http.KVStore) *cobra.Command {
+func LoginCommand(store KVStore) *cobra.Command {
 	var address string
 
 	cmd := &cobra.Command{

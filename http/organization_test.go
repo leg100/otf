@@ -20,7 +20,7 @@ func TestOrganization(t *testing.T) {
 		Logger: logr.Discard(),
 	}
 	s.OrganizationService = &mock.OrganizationService{
-		CreateOrganizationFn: func(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
+		CreateOrganizationFn: func(opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 			return mock.NewOrganization(*opts.Name, *opts.Email), nil
 
 		},

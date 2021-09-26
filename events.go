@@ -13,6 +13,7 @@ const (
 	EventRunPlannedAndFinished EventType = "run_planned_and_finished"
 	EventPlanQueued            EventType = "plan_queued"
 	EventApplyQueued           EventType = "apply_queued"
+	EventError                 EventType = "error"
 )
 
 type EventType string
@@ -24,7 +25,7 @@ type Event struct {
 
 type EventService interface {
 	Publish(Event)
-	Subscribe(id string) Subscription
+	Subscribe(id string) (Subscription, error)
 }
 
 // Subscription represents a stream of events for a subscriber

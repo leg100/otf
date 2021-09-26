@@ -9,7 +9,8 @@ export TFE_TOKEN=dummy
 export TFE_ADDRESS=https://localhost:8080
 export SKIP_PAID=1
 
-TESTS="${@:-Test(Workspaces(Create|List|Update|Delete|Unlock|Lock)|Organizations(Create|List|Read|Update)|StateVersions|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions|Events)}"
+# Default subset of tests
+TESTS="${@:-Test(Workspaces(Create|List|Update|Delete|Unlock|Lock)|Organizations(Create|List|Read|Update)|StateVersions|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
-cd $(go list -f '{{.Dir}}' github.com/leg100/go-tfe)
+cd $(go mod download -json github.com/hashicorp/go-tfe@v0.17.1 | jq -r '.Dir')
 go test -v -run $TESTS

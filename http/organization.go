@@ -63,7 +63,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.OrganizationService.Create(&opts)
+	obj, err := s.OrganizationService.Create(r.Context(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

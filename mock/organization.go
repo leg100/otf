@@ -1,13 +1,15 @@
 package mock
 
 import (
+	"context"
+
 	"github.com/leg100/otf"
 )
 
 var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	CreateOrganizationFn func(opts *otf.OrganizationCreateOptions) (*otf.Organization, error)
+	CreateOrganizationFn func(opts otf.OrganizationCreateOptions) (*otf.Organization, error)
 	UpdateOrganizationFn func(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error)
 	GetOrganizationFn    func(name string) (*otf.Organization, error)
 	ListOrganizationFn   func(opts otf.OrganizationListOptions) (*otf.OrganizationList, error)
@@ -15,7 +17,7 @@ type OrganizationService struct {
 	GetEntitlementsFn    func(name string) (*otf.Entitlements, error)
 }
 
-func (s OrganizationService) Create(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	return s.CreateOrganizationFn(opts)
 }
 

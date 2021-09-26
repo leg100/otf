@@ -6,7 +6,6 @@ import (
 	"os"
 
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +28,7 @@ func Run(ctx context.Context, args []string) error {
 	}
 	cmd.SetArgs(args)
 
-	store, err := http.NewCredentialsStore()
+	store, err := NewCredentialsStore()
 	if err != nil {
 		return err
 	}

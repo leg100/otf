@@ -1,8 +1,12 @@
 package main
 
-import "github.com/leg100/otf/http"
+// KVStore implementations provide a key-value store.
+type KVStore interface {
+	Save(key, value string) error
+	Load(key string) (value string, err error)
+}
 
-var _ http.KVStore = (KVMap)(nil)
+var _ KVStore = (KVMap)(nil)
 
 // KVMap is a basic implementation of http.KVStore for testing purposes.
 type KVMap map[string]string

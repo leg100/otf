@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/leg100/otf"
 )
 
@@ -20,7 +22,7 @@ func NewWorkspaceService(db otf.WorkspaceStore, os otf.OrganizationService, es o
 	}
 }
 
-func (s WorkspaceService) Create(orgName string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (s WorkspaceService) Create(orgName string, opts otf.WorkspaceCreateOptions
 	return ws, nil
 }
 
-func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
@@ -57,15 +59,15 @@ func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts otf.Workspace
 	})
 }
 
-func (s WorkspaceService) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return s.db.List(opts)
 }
 
-func (s WorkspaceService) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return s.db.Get(spec)
 }
 
-func (s WorkspaceService) Delete(spec otf.WorkspaceSpecifier) error {
+func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) error {
 	// Get workspace so we can publish it in an event after we delete it
 	ws, err := s.db.Get(spec)
 	if err != nil {
@@ -81,7 +83,7 @@ func (s WorkspaceService) Delete(spec otf.WorkspaceSpecifier) error {
 	return nil
 }
 
-func (s WorkspaceService) Lock(id string, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Lock(ctx context.Context, id string, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	spec := otf.WorkspaceSpecifier{ID: &id}
 
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
@@ -89,7 +91,7 @@ func (s WorkspaceService) Lock(id string, _ otf.WorkspaceLockOptions) (*otf.Work
 	})
 }
 
-func (s WorkspaceService) Unlock(id string) (*otf.Workspace, error) {
+func (s WorkspaceService) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
 	spec := otf.WorkspaceSpecifier{ID: &id}
 
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {

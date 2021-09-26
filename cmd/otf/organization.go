@@ -8,7 +8,10 @@ import (
 )
 
 func OrganizationCommand() *cobra.Command {
-	cfg := http.ClientConfig{}
+	cfg, err := http.NewConfig(LoadCredentials)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	cmd := &cobra.Command{
 		Use:   "organizations",
@@ -17,7 +20,7 @@ func OrganizationCommand() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
 	cmd.Flags().StringVar(&cfg.Token, "token", os.Getenv("OTF_TOKEN"), "Authentication token")
 
-	cmd.AddCommand(OrganizationNewCommand(&cfg))
+	cmd.AddCommand(OrganizationNewCommand(cfg))
 
 	return cmd
 }

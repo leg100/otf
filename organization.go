@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -135,7 +136,7 @@ type OrganizationListOptions struct {
 }
 
 type OrganizationService interface {
-	Create(opts *OrganizationCreateOptions) (*Organization, error)
+	Create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 	Get(name string) (*Organization, error)
 	List(opts OrganizationListOptions) (*OrganizationList, error)
 	Update(name string, opts *OrganizationUpdateOptions) (*Organization, error)
@@ -155,7 +156,7 @@ func (o OrganizationCreateOptions) Valid() error {
 	if !validString(o.Name) {
 		return ErrRequiredName
 	}
-	if !validStringID(o.Name) {
+	if !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
 	if !validString(o.Email) {
@@ -164,7 +165,7 @@ func (o OrganizationCreateOptions) Valid() error {
 	return nil
 }
 
-func NewOrganization(opts *OrganizationCreateOptions) (*Organization, error) {
+func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		Name:                   *opts.Name,
 		Email:                  *opts.Email,

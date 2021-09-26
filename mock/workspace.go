@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"context"
+
 	"github.com/leg100/otf"
 )
 
@@ -16,31 +18,31 @@ type WorkspaceService struct {
 	UnlockWorkspaceFn func(id string) (*otf.Workspace, error)
 }
 
-func (s WorkspaceService) Create(org string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Create(ctx context.Context, org string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return s.CreateWorkspaceFn(org, opts)
 }
 
-func (s WorkspaceService) Update(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return s.UpdateWorkspaceFn(spec, opts)
 }
 
-func (s WorkspaceService) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return s.GetWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return s.ListWorkspaceFn(opts)
 }
 
-func (s WorkspaceService) Delete(spec otf.WorkspaceSpecifier) error {
+func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) error {
 	return s.DeleteWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) Lock(id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Lock(ctx context.Context, id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return s.LockWorkspaceFn(id, opts)
 }
 
-func (s WorkspaceService) Unlock(id string) (*otf.Workspace, error) {
+func (s WorkspaceService) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
 	return s.UnlockWorkspaceFn(id)
 }
 
