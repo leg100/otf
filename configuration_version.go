@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -145,7 +146,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 		cv.Speculative = *opts.Speculative
 	}
 
-	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &workspaceID})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

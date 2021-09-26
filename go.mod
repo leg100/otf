@@ -8,8 +8,9 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/hashicorp/go-retryablehttp v0.5.2
 	github.com/hashicorp/hcl/v2 v2.10.0
-	github.com/leg100/go-tfe v0.17.1-0.20210923192658-d6d9bd3c5555
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
@@ -20,6 +21,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.3.0
 	github.com/urfave/negroni v1.0.0
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.10
 )

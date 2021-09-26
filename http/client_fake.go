@@ -3,8 +3,10 @@ package http
 import (
 	"context"
 
-	"github.com/leg100/go-tfe"
+	"github.com/leg100/otf"
 )
+
+var _ ClientFactory = (*FakeClientFactory)(nil)
 
 type FakeClientFactory struct{}
 
@@ -14,34 +16,34 @@ type FakeClient struct {
 	Client
 }
 
-func (f FakeClient) Organizations() tfe.Organizations { return &FakeOrganizationsClient{} }
+func (f FakeClient) Organizations() otf.OrganizationService { return &FakeOrganizationsClient{} }
 
-func (f FakeClient) Workspaces() tfe.Workspaces { return &FakeWorkspacesClient{} }
+func (f FakeClient) Workspaces() otf.WorkspaceService { return &FakeWorkspacesClient{} }
 
 type FakeOrganizationsClient struct {
-	tfe.Organizations
+	otf.OrganizationService
 }
 
-func (f *FakeOrganizationsClient) Create(ctx context.Context, opts tfe.OrganizationCreateOptions) (*tfe.Organization, error) {
-	return &tfe.Organization{
+func (f *FakeOrganizationsClient) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	return &otf.Organization{
 		Name:  *opts.Name,
 		Email: *opts.Email,
 	}, nil
 }
 
 type FakeWorkspacesClient struct {
-	tfe.Workspaces
+	otf.WorkspaceService
 }
 
-func (f *FakeWorkspacesClient) Read(ctx context.Context, org string, ws string) (*tfe.Workspace, error) {
-	return &tfe.Workspace{
+func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) List(ctx context.Context, org string, opts tfe.WorkspaceListOptions) (*tfe.WorkspaceList, error) {
-	return &tfe.WorkspaceList{
-		Items: []*tfe.Workspace{
+func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+	return &otf.WorkspaceList{
+		Items: []*otf.Workspace{
 			{
 				ID: "ws-123",
 			},
@@ -49,20 +51,20 @@ func (f *FakeWorkspacesClient) List(ctx context.Context, org string, opts tfe.Wo
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Update(ctx context.Context, org string, ws string, opts tfe.WorkspaceUpdateOptions) (*tfe.Workspace, error) {
-	return &tfe.Workspace{
+func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts tfe.WorkspaceLockOptions) (*tfe.Workspace, error) {
-	return &tfe.Workspace{
+func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Unlock(ctx context.Context, id string) (*tfe.Workspace, error) {
-	return &tfe.Workspace{
+func (f *FakeWorkspacesClient) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
+	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil
 }

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/leg100/otf"
 )
 
@@ -18,7 +20,7 @@ func NewOrganizationService(db otf.OrganizationStore, es otf.EventService) *Orga
 	}
 }
 
-func (s OrganizationService) Create(opts *otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, err

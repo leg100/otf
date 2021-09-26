@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -114,7 +115,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 		ID:     GenerateID("sv"),
 	}
 
-	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &workspaceID})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

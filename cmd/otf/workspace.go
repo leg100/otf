@@ -8,7 +8,10 @@ import (
 )
 
 func WorkspaceCommand() *cobra.Command {
-	cfg := http.ClientConfig{}
+	cfg, err := http.NewConfig(LoadCredentials)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	cmd := &cobra.Command{
 		Use:   "workspaces",
@@ -17,11 +20,11 @@ func WorkspaceCommand() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
 	cmd.Flags().StringVar(&cfg.Token, "token", os.Getenv("OTF_TOKEN"), "Authentication token")
 
-	cmd.AddCommand(WorkspaceListCommand(&cfg))
-	cmd.AddCommand(WorkspaceShowCommand(&cfg))
-	cmd.AddCommand(WorkspaceEditCommand(&cfg))
-	cmd.AddCommand(WorkspaceLockCommand(&cfg))
-	cmd.AddCommand(WorkspaceUnlockCommand(&cfg))
+	cmd.AddCommand(WorkspaceListCommand(cfg))
+	cmd.AddCommand(WorkspaceShowCommand(cfg))
+	cmd.AddCommand(WorkspaceEditCommand(cfg))
+	cmd.AddCommand(WorkspaceLockCommand(cfg))
+	cmd.AddCommand(WorkspaceUnlockCommand(cfg))
 
 	return cmd
 }

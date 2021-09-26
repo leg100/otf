@@ -12,7 +12,7 @@ var _ Spooler = (*SpoolerDaemon)(nil)
 // Spooler is a daemon from which jobs can be retrieved
 type Spooler interface {
 	// Start the daemon
-	Start(context.Context)
+	Start(context.Context) error
 
 	// GetJob receives spooled job
 	GetJob() <-chan otf.Job
@@ -75,14 +75,18 @@ func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*Spooler
 }
 
 // Start starts the spooler
-func (s *SpoolerDaemon) Start(ctx context.Context) {
-	sub := s.Subscribe(DefaultID)
+func (s *SpoolerDaemon) Start(ctx context.Context) error {
+	sub, err := s.Subscribe(DefaultID)
+	if err != nil {
+		return err
+	}
+
 	defer sub.Close()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case event := <-sub.C():
 			s.handleEvent(event)
 		}

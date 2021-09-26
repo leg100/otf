@@ -3,13 +3,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/leg100/go-tfe"
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
 func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
-	var organization string
+	var (
+		opts otf.WorkspaceListOptions
+	)
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -20,7 +22,7 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			list, err := client.Workspaces().List(cmd.Context(), organization, tfe.WorkspaceListOptions{})
+			list, err := client.Workspaces().List(cmd.Context(), opts)
 			if err != nil {
 				return err
 			}
@@ -33,7 +35,7 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
+	opts.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

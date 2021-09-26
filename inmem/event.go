@@ -36,7 +36,7 @@ func (e *EventService) Publish(event otf.Event) {
 	}
 }
 
-func (e *EventService) Subscribe(id string) otf.Subscription {
+func (e *EventService) Subscribe(id string) (otf.Subscription, error) {
 	// Create new subscription
 	sub := &Subscription{
 		service: e,
@@ -50,7 +50,7 @@ func (e *EventService) Subscribe(id string) otf.Subscription {
 
 	e.Info("subscription created", "subscriber", id)
 
-	return sub
+	return sub, nil
 }
 
 // Unsubscribe disconnects sub from the service.

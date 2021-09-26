@@ -1,4 +1,4 @@
-package http
+package main
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/leg100/otf/http"
 )
 
 var _ KVStore = (CredentialsStore)("")
@@ -14,6 +16,10 @@ const (
 	CredentialsPath = ".terraform.d/credentials.tfrc.json"
 )
 
+// CredentialsStore is a JSON file in a user's home dir that stores tokens for
+// one or more TFE-type hosts
+type CredentialsStore string
+
 type CredentialsConfig struct {
 	Credentials map[string]TokenConfig `json:"credentials"`
 }
@@ -21,10 +27,6 @@ type CredentialsConfig struct {
 type TokenConfig struct {
 	Token string `json:"token"`
 }
-
-// CredentialsStore is a JSON file in a user's home dir that stores tokens for
-// one or more TFE-type hosts
-type CredentialsStore string
 
 // NewCredentialsStore is a contructor for CredentialsStore
 func NewCredentialsStore() (CredentialsStore, error) {
@@ -40,7 +42,7 @@ func NewCredentialsStore() (CredentialsStore, error) {
 
 // Load retrieves the token for hostname
 func (c CredentialsStore) Load(hostname string) (string, error) {
-	hostname, err := sanitizeHostname(hostname)
+	hostname, err := http.SanitizeHostname(hostname)
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +63,7 @@ func (c CredentialsStore) Load(hostname string) (string, error) {
 // Save saves the token for the given hostname to the store, overwriting any
 // existing tokens for the hostname.
 func (c CredentialsStore) Save(hostname, token string) error {
-	hostname, err := sanitizeHostname(hostname)
+	hostname, err := http.SanitizeHostname(hostname)
 	if err != nil {
 		return err
 	}
@@ -111,6 +113,22 @@ func (c CredentialsStore) write(config *CredentialsConfig) error {
 	}
 
 	if err := os.WriteFile(string(c), data, 0600); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// LoadCredentials is passed as an arg to http.NewClient to instruct it to load
+// the auth token from the credentials store.
+func LoadCredentials(cfg *http.Config) error {
+	creds, err := NewCredentialsStore()
+	if err != nil {
+		return err
+	}
+
+	cfg.Token, err = creds.Load(cfg.Address)
+	if err != nil {
 		return err
 	}
 

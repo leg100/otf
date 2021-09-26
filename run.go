@@ -660,7 +660,7 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 
 	run.UpdateStatus(RunPending)
 
-	ws, err := f.WorkspaceService.Get(WorkspaceSpecifier{ID: &opts.Workspace.ID})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &opts.Workspace.ID})
 	if err != nil {
 		return nil, err
 	}

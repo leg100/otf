@@ -13,6 +13,6 @@ func (s EventService) Publish(event otf.Event) {
 	s.PublishFn(event)
 }
 
-func (s EventService) Subscribe(id string) otf.Subscription {
-	return s.SubscribeFn(id)
+func (s EventService) Subscribe(id string) (otf.Subscription, error) {
+	return s.SubscribeFn(id), nil
 }

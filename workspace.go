@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -65,6 +66,11 @@ type Workspace struct {
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
 type WorkspaceCreateOptions struct {
+	// Type is a public field utilized by JSON:API to set the resource type via
+	// the field tag.  It is not a user-defined value and does not need to be
+	// set.  https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,workspaces"`
+
 	// Required when execution-mode is set to agent. The ID of the agent pool
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
@@ -155,6 +161,11 @@ type WorkspaceCreateOptions struct {
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.
 type WorkspaceUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to set the resource type via
+	// the field tag.  It is not a user-defined value and does not need to be
+	// set.  https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,workspaces"`
+
 	// Required when execution-mode is set to agent. The ID of the agent pool
 	// belonging to the workspace's organization. This value must not be
 	// specified if execution-mode is set to remote or local or if operations is
@@ -253,13 +264,13 @@ type WorkspaceList struct {
 }
 
 type WorkspaceService interface {
-	Create(org string, opts WorkspaceCreateOptions) (*Workspace, error)
-	Get(spec WorkspaceSpecifier) (*Workspace, error)
-	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpecifier, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(id string, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(id string) (*Workspace, error)
-	Delete(spec WorkspaceSpecifier) error
+	Create(ctx context.Context, org string, opts WorkspaceCreateOptions) (*Workspace, error)
+	Get(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
+	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	Update(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceUpdateOptions) (*Workspace, error)
+	Lock(ctx context.Context, id string, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(ctx context.Context, id string) (*Workspace, error)
+	Delete(ctx context.Context, spec WorkspaceSpecifier) error
 }
 
 type WorkspaceStore interface {
@@ -410,7 +421,7 @@ func (o WorkspaceCreateOptions) Valid() error {
 	if !validString(o.Name) {
 		return ErrRequiredName
 	}
-	if !validStringID(o.Name) {
+	if !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
@@ -430,7 +441,7 @@ func (o WorkspaceCreateOptions) Valid() error {
 }
 
 func (o WorkspaceUpdateOptions) Valid() error {
-	if o.Name != nil && !validStringID(o.Name) {
+	if o.Name != nil && !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {

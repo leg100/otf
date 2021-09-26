@@ -37,7 +37,7 @@ func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventServic
 	queues := make(map[string]otf.Queue)
 
 	// Get workspaces
-	workspaces, err := ws.List(otf.WorkspaceListOptions{})
+	workspaces, err := ws.List(context.Background(), otf.WorkspaceListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +68,12 @@ func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventServic
 }
 
 // Start starts the scheduler event loop
-func (s *Scheduler) Start(ctx context.Context) {
-	sub := s.Subscribe(SchedulerSubscriptionID)
+func (s *Scheduler) Start(ctx context.Context) error {
+	sub, err := s.Subscribe(SchedulerSubscriptionID)
+	if err != nil {
+		return err
+	}
+
 	defer sub.Close()
 
 	for {
@@ -77,11 +81,11 @@ func (s *Scheduler) Start(ctx context.Context) {
 		case event, ok := <-sub.C():
 			// If sub closed then exit.
 			if !ok {
-				return
+				return nil
 			}
 			s.handleEvent(event)
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }

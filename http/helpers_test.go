@@ -26,7 +26,7 @@ func TestSanitizeHostname(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			address, err := sanitizeHostname(tt.address)
+			address, err := SanitizeHostname(tt.address)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, address)
 		})
@@ -57,7 +57,7 @@ func TestClientSanitizeAddress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sanitizeAddress(tt.address)
+			got, err := SanitizeAddress(tt.address)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tt.want, got)
 			}

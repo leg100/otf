@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/leg100/go-tfe"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
 func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
-	opts := tfe.OrganizationCreateOptions{}
+	opts := otf.OrganizationCreateOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "new [name]",
