@@ -73,7 +73,7 @@ func WriteError(w http.ResponseWriter, code int, err error) {
 	})
 }
 
-// Ensure hostname is in the format <host>:<port>
+// SanitizeHostname ensures hostname is in the format <host>:<port>
 func SanitizeHostname(hostname string) (string, error) {
 	u, err := url.ParseRequestURI(hostname)
 	if err != nil || u.Host == "" {
@@ -87,7 +87,7 @@ func SanitizeHostname(hostname string) (string, error) {
 	return u.Host, nil
 }
 
-// Ensure address is in format https://<host>:<port>
+// SanitizeAddress ensures address is in format https://<host>:<port>
 func SanitizeAddress(address string) (string, error) {
 	u, err := url.ParseRequestURI(address)
 	if err != nil || u.Host == "" {

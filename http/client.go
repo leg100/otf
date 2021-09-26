@@ -204,18 +204,18 @@ func serializeRequestBody(v interface{}) (interface{}, error) {
 
 	// Infer whether the request uses jsonapi or regular json
 	// serialization based on how the fields are tagged.
-	jsonApiFields := 0
+	jsonAPIFields := 0
 	jsonFields := 0
 	for i := 0; i < modelType.NumField(); i++ {
 		structField := modelType.Field(i)
 		if structField.Tag.Get("jsonapi") != "" {
-			jsonApiFields++
+			jsonAPIFields++
 		}
 		if structField.Tag.Get("json") != "" {
 			jsonFields++
 		}
 	}
-	if jsonApiFields > 0 && jsonFields > 0 {
+	if jsonAPIFields > 0 && jsonFields > 0 {
 		// Defining a struct with both json and jsonapi tags doesn't
 		// make sense, because a struct can only be serialized
 		// as one or another. If this does happen, it's a bug
