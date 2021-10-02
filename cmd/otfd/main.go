@@ -93,10 +93,11 @@ func main() {
 	logger.Info("filestore started", "path", fs.Path)
 
 	// Setup sqlite db
-	db, err := sqlite.New(DBPath, sqlite.WithZeroLogger(zerologger))
+	db, err := sqlite.New(logger, DBPath, sqlite.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
 	}
+	defer db.Close()
 
 	organizationStore := sqlite.NewOrganizationDB(db)
 	workspaceStore := sqlite.NewWorkspaceDB(db)

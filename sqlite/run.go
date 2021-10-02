@@ -1,6 +1,12 @@
 package sqlite
 
 import (
+	"database/sql"
+	"strings"
+	"time"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -8,25 +14,84 @@ import (
 
 var _ otf.RunStore = (*RunDB)(nil)
 
-type RunDB struct {
-	*gorm.DB
+// Run models a row in a runs table.
+type Run struct {
+	gorm.Model
+
+	ExternalID string
+
+	ForceCancelAvailableAt time.Time
+	IsDestroy              bool
+	Message                string
+	Permissions            *otf.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
+	PositionInQueue        int
+	Refresh                bool
+	RefreshOnly            bool
+	Status                 otf.RunStatus
+	StatusTimestamps       *RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
+
+	// Comma separated list of replace addresses
+	ReplaceAddrs string
+	// Comma separated list of target addresses
+	TargetAddrs string
+
+	// Run belongs to a workspace
+	WorkspaceID uint
+
+	// Run belongs to a configuration version
+	ConfigurationVersionID uint
 }
 
-func NewRunDB(db *gorm.DB) *RunDB {
+type RunDB struct {
+	*sqlx.DB
+}
+
+func NewRunDB(db *sqlx.DB) *RunDB {
 	return &RunDB{
 		DB: db,
 	}
 }
 
 // Create persists a Run to the DB.
-func (db RunDB) Create(domain *otf.Run) (*otf.Run, error) {
-	model := NewFromDomain(domain)
+func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
+	run.CreatedAt = time.Now()
+	run.UpdatedAt = time.Now()
 
-	if result := db.Omit("Workspace", "ConfigurationVersion").Create(model); result.Error != nil {
-		return nil, result.Error
+	clauses := map[string]interface{}{
+		"configuration_version_id":  run.ConfigurationVersion.ID,
+		"created_at":                run.CreatedAt,
+		"external_id":               run.ID,
+		"force_cancel_available_at": run.ForceCancelAvailableAt,
+		"is_destroy":                run.IsDestroy,
+		"message":                   run.Message,
+		"refresh":                   run.Refresh,
+		"refresh_only":              run.RefreshOnly,
+		"replace_addrs":             strings.Join(run.ReplaceAddrs, ","),
+		"status":                    run.Status,
+		"target_addrs":              strings.Join(run.TargetAddrs, ","),
+		"updated_at":                run.UpdatedAt,
+		"workspace_id":              run.Workspace.ID,
 	}
 
-	return model.ToDomain(), nil
+	if run.StatusTimestamps.AppliedAt != nil {
+		clauses["timestamp_applied_at"] = sql.NullTime{Time: *run.StatusTimestamps.AppliedAt, Valid: true}
+	}
+
+	result, err := sq.Insert("runs").SetMap(clauses).RunWith(db).Exec()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// plan#create(run_id)
+
+	// apply#create(run_id)
+
+	return run, nil
 }
 
 // Update persists an updated Run to the DB. The existing run is fetched from
@@ -36,7 +101,7 @@ func (db RunDB) Create(domain *otf.Run) (*otf.Run, error) {
 func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	var model *Run
 
-	err := db.Transaction(func(tx *gorm.DB) (err error) {
+	err := db.Transaction(func(tx *sqlx.DB) (err error) {
 		// DB -> model
 		model, err = getRun(tx, otf.RunGetOptions{ID: &id})
 		if err != nil {
@@ -66,7 +131,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	var models RunList
 	var count int64
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *sqlx.DB) error {
 		query := tx
 
 		// Optionally filter by workspace
@@ -113,24 +178,28 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	return run.ToDomain(), nil
 }
 
-func getRun(db *gorm.DB, opts otf.RunGetOptions) (*Run, error) {
-	var model Run
-
-	query := db.Preload(clause.Associations)
+func getRun(db *sqlx.DB, opts otf.RunGetOptions) (*otf.Run, error) {
+	runs := sq.Select("*").From("runs")
 
 	switch {
 	case opts.ID != nil:
-		query = query.Where("external_id = ?", opts.ID)
+		runs = runs.Where("external_id = ?", opts.ID)
 	case opts.PlanID != nil:
-		query = query.Joins("JOIN plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
+		runs = runs.Join("plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
 	case opts.ApplyID != nil:
-		query = query.Joins("JOIN applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
+		runs = runs.Join("applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
 	default:
 		return nil, otf.ErrInvalidRunGetOptions
 	}
 
-	if result := query.First(&model); result.Error != nil {
-		return nil, result.Error
+	sql, args, err := runs.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+	if err := db.QueryRowx(sql, args).MapScan(m); err != nil {
+		return nil, err
 	}
 
 	return &model, nil

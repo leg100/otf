@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/go-logr/logr v1.0.0
+	github.com/golang-migrate/migrate/v4 v4.15.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
@@ -19,9 +20,9 @@ require (
 	github.com/rs/zerolog v1.23.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.6.1
 	github.com/urfave/negroni v1.0.0
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.10
 )

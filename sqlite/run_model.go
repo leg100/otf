@@ -3,47 +3,9 @@ package sqlite
 import (
 	"database/sql"
 	"strings"
-	"time"
 
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
-
-// Run models a row in a runs table.
-type Run struct {
-	gorm.Model
-
-	ExternalID string `gorm:"uniqueIndex"`
-
-	ForceCancelAvailableAt time.Time
-	IsDestroy              bool
-	Message                string
-	Permissions            *otf.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
-	PositionInQueue        int
-	Refresh                bool
-	RefreshOnly            bool
-	Status                 otf.RunStatus
-	StatusTimestamps       *RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
-
-	// Comma separated list of replace addresses
-	ReplaceAddrs string
-	// Comma separated list of target addresses
-	TargetAddrs string
-
-	// Run has one plan
-	Plan *Plan
-
-	// Run has one apply
-	Apply *Apply
-
-	// Run belongs to a workspace
-	WorkspaceID uint
-	Workspace   *Workspace
-
-	// Run belongs to a configuration version
-	ConfigurationVersionID uint
-	ConfigurationVersion   *ConfigurationVersion
-}
 
 type RunStatusTimestamps struct {
 	AppliedAt            sql.NullTime

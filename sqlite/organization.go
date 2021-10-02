@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"database/sql"
+
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -9,10 +11,10 @@ import (
 var _ otf.OrganizationStore = (*OrganizationDB)(nil)
 
 type OrganizationDB struct {
-	*gorm.DB
+	*sql.DB
 }
 
-func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
+func NewOrganizationDB(db *sql.DB) *OrganizationDB {
 	return &OrganizationDB{
 		DB: db,
 	}

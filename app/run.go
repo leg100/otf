@@ -180,8 +180,8 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
+func (s RunService) GetPlanLogs(planID string, opts otf.GetChunkOptions) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{PlanID: &planID})
 	if err != nil {
 		return nil, err
 	}
