@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"database/sql"
 	"strings"
 	"time"
 
@@ -9,38 +8,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var _ otf.RunStore = (*RunDB)(nil)
-
-// Run models a row in a runs table.
-type Run struct {
-	gorm.Model
-
-	ExternalID string
-
-	ForceCancelAvailableAt time.Time
-	IsDestroy              bool
-	Message                string
-	Permissions            *otf.RunPermissions `gorm:"embedded;embeddedPrefix:permission_"`
-	PositionInQueue        int
-	Refresh                bool
-	RefreshOnly            bool
-	Status                 otf.RunStatus
-	StatusTimestamps       *RunStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
-
-	// Comma separated list of replace addresses
-	ReplaceAddrs string
-	// Comma separated list of target addresses
-	TargetAddrs string
-
-	// Run belongs to a workspace
-	WorkspaceID uint
-
-	// Run belongs to a configuration version
-	ConfigurationVersionID uint
-}
 
 type RunDB struct {
 	*sqlx.DB
@@ -73,16 +43,21 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 		"workspace_id":              run.Workspace.ID,
 	}
 
-	if run.StatusTimestamps.AppliedAt != nil {
-		clauses["timestamp_applied_at"] = sql.NullTime{Time: *run.StatusTimestamps.AppliedAt, Valid: true}
-	}
-
 	result, err := sq.Insert("runs").SetMap(clauses).RunWith(db).Exec()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = result.LastInsertId()
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	timestamps := sq.Insert("run_timestamps").Columns("id", "status", "timestamp")
+	for status, timestamp := range run.StatusTimestamps {
+		timestamps = timestamps.Values(id, status, timestamp)
+	}
+	_, err = timestamps.RunWith(db).Exec()
 	if err != nil {
 		return nil, err
 	}
@@ -128,79 +103,172 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	var models RunList
-	var count int64
+	query := sq.Select("*").From("workspaces")
 
-	err := db.Transaction(func(tx *sqlx.DB) error {
-		query := tx
-
-		// Optionally filter by workspace
-		if opts.WorkspaceID != nil {
-			ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{ID: opts.WorkspaceID})
-			if err != nil {
-				return err
-			}
-
-			query = query.Where("workspace_id = ?", ws.Model.ID)
+	// Optionally filter by workspace
+	if opts.WorkspaceID != nil {
+		ws, err := getWorkspace(db.DB, otf.WorkspaceSpecifier{ID: opts.WorkspaceID})
+		if err != nil {
+			return nil, err
 		}
 
-		// Optionally filter by statuses
-		if len(opts.Statuses) > 0 {
-			query = query.Where("status IN ?", opts.Statuses)
-		}
+		query = query.Where("workspace_id = ?", ws.Model.ID)
+	}
 
-		if result := query.Model(&models).Count(&count); result.Error != nil {
-			return result.Error
-		}
+	// Optionally filter by statuses
+	if len(opts.Statuses) > 0 {
+		query = query.Where(sq.Eq{"status": opts.Statuses})
+	}
 
-		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-			return result.Error
-		}
-
-		return nil
-	})
+	sql, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	return &otf.RunList{
-		Items:      models.ToDomain(),
-		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
-	}, nil
+	rl := otf.RunList{}
+	var count int
+
+	rows, err := tx.Queryx(sql, args)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		ws, err := scanWorkspace(db.DB, rows)
+		if err != nil {
+			return nil, err
+		}
+
+		rl.Items = append(rl.Items, ws)
+		count++
+	}
+
+	rl.Pagination = otf.NewPagination(opts.ListOptions, count)
+
+	return &rl, nil
 }
 
 // Get retrieves a Run domain obj
 func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
-	run, err := getRun(db.DB, opts)
-	if err != nil {
-		return nil, err
-	}
-	return run.ToDomain(), nil
+	return getRun(db.DB, opts)
 }
 
-func getRun(db *sqlx.DB, opts otf.RunGetOptions) (*otf.Run, error) {
-	runs := sq.Select("*").From("runs")
+func getRun(db sqlx.Queryer, opts otf.RunGetOptions) (*otf.Run, error) {
+	query := sq.Select("runs.*").From("runs")
 
 	switch {
 	case opts.ID != nil:
-		runs = runs.Where("external_id = ?", opts.ID)
+		query = query.Where("external_id = ?", opts.ID)
 	case opts.PlanID != nil:
-		runs = runs.Join("plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
+		query = query.Join("plans ON plans.run_id = runs.id").Where("plans.external_id = ?", opts.PlanID)
 	case opts.ApplyID != nil:
-		runs = runs.Join("applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
+		query = query.Join("applies ON applies.run_id = runs.id").Where("applies.external_id = ?", opts.ApplyID)
 	default:
 		return nil, otf.ErrInvalidRunGetOptions
 	}
 
-	sql, args, err := runs.ToSql()
+	sql, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	m := map[string]interface{}{}
-	if err := db.QueryRowx(sql, args).MapScan(m); err != nil {
+	run, err := scanRun(db, db.QueryRowx(sql, args))
+	if err != nil {
 		return nil, err
 	}
 
-	return &model, nil
+	// Attach workspace to run
+	run.Workspace, err = getWorkspace(db, otf.WorkspaceSpecifier{InternalID: &run.Workspace.Model.ID})
+	if err != nil {
+		return nil, err
+	}
+
+	return run, nil
+}
+
+func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
+	type result struct {
+		metadata
+
+		ForceCancelAvailableAt time.Time
+		IsDestroy              bool `db:"is_destroy"`
+		Message                string
+		PositionInQueue        int `db:"position_in_queue"`
+		Refresh                bool
+		RefreshOnly            bool `db:"refresh_only"`
+		Status                 otf.RunStatus
+		ReplaceAddrs           CSV  `db:"replace_addrs"`
+		TargetAddrs            CSV  `db:"target_addrs"`
+		WorkspaceID            uint `db:"workspace_id"`
+		ConfigurationVersionID uint `db:"configuration_version_id"`
+	}
+
+	type plan struct {
+		metadata
+
+		otf.Resources
+		Status         otf.PlanStatus
+		LogsBlobID     string `db:"logs_blob_id"`
+		PlanFileBlobID string `db:"plan_file_blob_id"`
+		PlanJSONBlobID string `db:"plan_json_blob_id"`
+		RunID          uint   `db:"run_id"`
+	}
+
+	res := result{}
+	if err := scannable.StructScan(res); err != nil {
+		return nil, err
+	}
+
+	run := otf.Run{
+		ID: res.ExternalID,
+		Model: gorm.Model{
+			ID:        res.ID,
+			CreatedAt: res.CreatedAt,
+			UpdatedAt: res.UpdatedAt,
+		},
+		ForceCancelAvailableAt: res.ForceCancelAvailableAt,
+		IsDestroy:              res.IsDestroy,
+		Message:                res.Message,
+		PositionInQueue:        res.PositionInQueue,
+		Refresh:                res.Refresh,
+		RefreshOnly:            res.RefreshOnly,
+		ReplaceAddrs:           res.ReplaceAddrs,
+		TargetAddrs:            res.TargetAddrs,
+		Status:                 res.Status,
+		StatusTimestamps:       make(map[otf.RunStatus]time.Time),
+		Workspace: &otf.Workspace{
+			Model: gorm.Model{
+				ID: res.WorkspaceID,
+			},
+		},
+		ConfigurationVersion: &otf.ConfigurationVersion{
+			Model: gorm.Model{
+				ID: res.ConfigurationVersionID,
+			},
+		},
+	}
+
+	// Fetch and attach timestamps to run
+	sql, args, err := sq.Select("status, timestamp").From("run_timestamps").Where("id", res.ID).ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Queryx(sql, args)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var timestamp time.Time
+		var status otf.RunStatus
+		if err := rows.Scan(&status, &timestamp); err != nil {
+			return nil, err
+		}
+		run.StatusTimestamps[status] = timestamp
+	}
+
+	// Relations
+	Plan * Plan
+	Apply * Apply
+	Workspace * Workspace
+	ConfigurationVersion * ConfigurationVersion
 }

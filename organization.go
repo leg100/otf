@@ -41,7 +41,6 @@ type Organization struct {
 	CostEstimationEnabled  bool
 	Email                  string
 	OwnersTeamSAMLRoleID   string
-	Permissions            *OrganizationPermissions
 	SAMLEnabled            bool
 	SessionRemember        int
 	SessionTimeout         int
@@ -174,7 +173,6 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 		SessionRemember:        DefaultSessionExpiration,
 		CollaboratorAuthPolicy: DefaultCollaboratorAuthPolicy,
 		CostEstimationEnabled:  DefaultCostEstimationEnabled,
-		Permissions:            &DefaultOrganizationPermissions,
 	}
 
 	if opts.SessionTimeout != nil {

@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	gormzerolog "github.com/leg100/gorm-zerolog"
@@ -23,16 +25,28 @@ import (
 //go:embed migrations/*.sql
 var fs embed.FS
 
+type metadata struct {
+	ID        uint
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+
+	ExternalID string `db:"external_id"`
+}
+
+type StructScannable interface {
+	StructScan(dest interface{}) error
+}
+
 type Option func(*gorm.Config)
+
+type Logger struct {
+	logr.Logger
+}
 
 func WithZeroLogger(logger *zerolog.Logger) Option {
 	return func(cfg *gorm.Config) {
 		cfg.Logger = &gormzerolog.Logger{Zlog: *logger}
 	}
-}
-
-type Logger struct {
-	logr.Logger
 }
 
 func (l *Logger) Printf(format string, v ...interface{}) {
@@ -93,4 +107,12 @@ func paginate(opts otf.ListOptions) func(*gorm.DB) *gorm.DB {
 
 		return db.Offset(offset).Limit(opts.PageSize)
 	}
+}
+
+// setIfChanged sets a key on a map if a != b. Key is set to the value of b.
+func setIfChanged(a, b interface{}, m map[string]interface{}, k string) {
+	if reflect.DeepEqual(a, b) {
+		return
+	}
+	m[k] = b
 }

@@ -2,49 +2,9 @@ package sqlite
 
 import (
 	"strings"
-	"time"
 
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
-
-// Workspace models a row in a runs table.
-type Workspace struct {
-	gorm.Model
-
-	ExternalID string `gorm:"uniqueIndex"`
-
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	FileTriggersEnabled        bool
-	GlobalRemoteState          bool
-	Locked                     bool
-	MigrationEnvironment       string
-	Name                       string
-	Permissions                *otf.WorkspacePermissions `gorm:"embedded;embeddedPrefix:permission_"`
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceURL                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	TriggerPrefixes            string
-	VCSRepo                    *otf.VCSRepo `gorm:"-"`
-	WorkingDirectory           string
-	ResourceCount              int
-	ApplyDurationAverage       time.Duration
-	PlanDurationAverage        time.Duration
-	PolicyCheckFailures        int
-	RunFailures                int
-	RunsCount                  int
-
-	OrganizationID uint
-	Organization   *Organization
-}
 
 // WorkspaceList is a list of run models
 type WorkspaceList []Workspace

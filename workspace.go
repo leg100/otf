@@ -287,6 +287,9 @@ type WorkspaceSpecifier struct {
 	// Specify workspace using its ID
 	ID *string
 
+	// Specify workspace using its internal ID
+	InternalID *uint
+
 	// Specify workspace using its name and organization
 	Name             *string
 	OrganizationName *string
@@ -347,20 +350,8 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
-		Permissions: &WorkspacePermissions{
-			CanDestroy:        true,
-			CanForceUnlock:    true,
-			CanLock:           true,
-			CanUnlock:         true,
-			CanQueueApply:     true,
-			CanQueueDestroy:   true,
-			CanQueueRun:       true,
-			CanReadSettings:   true,
-			CanUpdate:         true,
-			CanUpdateVariable: true,
-		},
-		SpeculativeEnabled: true,
-		Organization:       org,
+		SpeculativeEnabled:  true,
+		Organization:        org,
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this

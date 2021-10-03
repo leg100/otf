@@ -1,30 +1,8 @@
 package sqlite
 
 import (
-	"time"
-
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
-
-// Organization models a row in a organizations table.
-type Organization struct {
-	gorm.Model
-
-	ExternalID string `gorm:"uniqueIndex"`
-
-	Name                   string
-	CollaboratorAuthPolicy otf.AuthPolicyType
-	CostEstimationEnabled  bool
-	Email                  string
-	OwnersTeamSAMLRoleID   string
-	Permissions            *otf.OrganizationPermissions `gorm:"embedded;embeddedPrefix:permission_"`
-	SAMLEnabled            bool
-	SessionRemember        int
-	SessionTimeout         int
-	TrialExpiresAt         time.Time
-	TwoFactorConformant    bool
-}
 
 // OrganizationList is a list of run models
 type OrganizationList []Organization

@@ -144,6 +144,14 @@ CREATE TABLE IF NOT EXISTS runs (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_external_id ON runs(external_id);
 CREATE INDEX IF NOT EXISTS idx_runs_deleted_at ON runs(deleted_at);
 
+CREATE TABLE IF NOT EXISTS run_timestamps (
+    id integer,
+    status text,
+    timestamp datetime,
+    PRIMARY KEY (id, status),
+    CONSTRAINT fk_run_timestamps_runs FOREIGN KEY (id) REFERENCES runs(id),
+);
+
 CREATE TABLE IF NOT EXISTS applies (
     id integer,
     created_at datetime,

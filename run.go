@@ -24,6 +24,7 @@ const (
 	RunApplyQueued        RunStatus = "apply_queued"
 	RunApplying           RunStatus = "applying"
 	RunCanceled           RunStatus = "canceled"
+	RunForceCanceled      RunStatus = "force_canceled"
 	RunConfirmed          RunStatus = "confirmed"
 	RunDiscarded          RunStatus = "discarded"
 	RunErrored            RunStatus = "errored"
@@ -67,12 +68,11 @@ type Run struct {
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	Message                string
-	Permissions            *RunPermissions
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 RunStatus
-	StatusTimestamps       *RunStatusTimestamps
+	StatusTimestamps       map[RunStatus]time.Time
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 
@@ -81,27 +81,6 @@ type Run struct {
 	Apply                *Apply
 	Workspace            *Workspace
 	ConfigurationVersion *ConfigurationVersion
-}
-
-// RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
-	AppliedAt            *time.Time `json:"applied-at,omitempty"`
-	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
-	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
-	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
-	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
-	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
-	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
-	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
-	ErroredAt            *time.Time `json:"errored-at,omitempty"`
-	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
-	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
-	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
-	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
-	PlannedAt            *time.Time `json:"planned-at,omitempty"`
-	PlanningAt           *time.Time `json:"planning-at,omitempty"`
-	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
-	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
@@ -477,6 +456,7 @@ func (r *Run) UpdateStatus(status RunStatus) {
 }
 
 func (r *Run) setTimestamp(status RunStatus) {
+	r.StatusTimestamps[status] = time.Now()
 	switch status {
 	case RunPending:
 		r.StatusTimestamps.PlanQueueableAt = TimeNow()
@@ -498,6 +478,8 @@ func (r *Run) setTimestamp(status RunStatus) {
 		r.StatusTimestamps.ErroredAt = TimeNow()
 	case RunCanceled:
 		r.StatusTimestamps.CanceledAt = TimeNow()
+	case RunForceCanceled:
+		r.StatusTimestamps.ForceCanceledAt = TimeNow()
 	case RunDiscarded:
 		r.StatusTimestamps.DiscardedAt = TimeNow()
 	}
@@ -642,14 +624,7 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 	}
 
 	run := Run{
-		ID: GenerateID("run"),
-		Permissions: &RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
-		},
+		ID:               GenerateID("run"),
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
