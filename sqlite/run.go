@@ -1,10 +1,10 @@
 package sqlite
 
 import (
-	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"gorm.io/gorm"
@@ -36,9 +36,9 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 		"message":                   run.Message,
 		"refresh":                   run.Refresh,
 		"refresh_only":              run.RefreshOnly,
-		"replace_addrs":             strings.Join(run.ReplaceAddrs, ","),
+		"replace_addrs":             run.ReplaceAddrs,
 		"status":                    run.Status,
-		"target_addrs":              strings.Join(run.TargetAddrs, ","),
+		"target_addrs":              run.TargetAddrs,
 		"updated_at":                run.UpdatedAt,
 		"workspace_id":              run.Workspace.ID,
 	}
@@ -74,36 +74,54 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 // persisted back to the DB. The returned Run includes any changes, including a
 // new UpdatedAt value.
 func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
-	var model *Run
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	err := db.Transaction(func(tx *sqlx.DB) (err error) {
-		// DB -> model
-		model, err = getRun(tx, otf.RunGetOptions{ID: &id})
-		if err != nil {
-			return err
-		}
-
-		// Update obj using client-supplied fn
-		if err := model.Update(fn); err != nil {
-			return err
-		}
-
-		// Save changes to fields of relations (plan, apply) too
-		if result := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(model); result.Error != nil {
-			return err
-		}
-
-		return nil
-	})
+	run, err := getRun(tx, otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	before := otf.Run{}
+	copier.Copy(&before, run)
+
+	// Update obj using client-supplied fn
+	if err := fn(run); err != nil {
+		return nil, err
+	}
+
+	updates := map[string]interface{}{}
+	setIfChanged(before.Status, run.Status, updates, "status")
+
+	if len(updates) == 0 {
+		return run, nil
+	}
+
+	updates["updated_at"] = time.Now()
+
+	_, err = sq.Update("runs").SetMap(updates).Where("id = ?", run.ID).RunWith(db).Exec()
+	if err != nil {
+		return nil, err
+	}
+
+	// Insert new status timestamps.
+	for status, timestamp := range run.StatusTimestamps {
+		if _, ok := before.StatusTimestamps[status]; ok {
+			// Skip: status timestamp is not new
+			continue
+		}
+		_, err := sq.Insert("run_timestamps").Columns("id", "status", "timestamp").
+			Values(run.ID, status, timestamp).RunWith(db).Exec()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return run, tx.Commit()
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	query := sq.Select("*").From("workspaces")
+	query := sq.Select("*").From("runs")
 
 	// Optionally filter by workspace
 	if opts.WorkspaceID != nil {
@@ -128,17 +146,17 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	rl := otf.RunList{}
 	var count int
 
-	rows, err := tx.Queryx(sql, args)
+	rows, err := db.Queryx(sql, args)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
-		ws, err := scanWorkspace(db.DB, rows)
+		run, err := scanRun(db.DB, rows)
 		if err != nil {
 			return nil, err
 		}
 
-		rl.Items = append(rl.Items, ws)
+		rl.Items = append(rl.Items, run)
 		count++
 	}
 
@@ -186,22 +204,6 @@ func getRun(db sqlx.Queryer, opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
-	type result struct {
-		metadata
-
-		ForceCancelAvailableAt time.Time
-		IsDestroy              bool `db:"is_destroy"`
-		Message                string
-		PositionInQueue        int `db:"position_in_queue"`
-		Refresh                bool
-		RefreshOnly            bool `db:"refresh_only"`
-		Status                 otf.RunStatus
-		ReplaceAddrs           CSV  `db:"replace_addrs"`
-		TargetAddrs            CSV  `db:"target_addrs"`
-		WorkspaceID            uint `db:"workspace_id"`
-		ConfigurationVersionID uint `db:"configuration_version_id"`
-	}
-
 	type plan struct {
 		metadata
 
@@ -211,6 +213,24 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 		PlanFileBlobID string `db:"plan_file_blob_id"`
 		PlanJSONBlobID string `db:"plan_json_blob_id"`
 		RunID          uint   `db:"run_id"`
+	}
+
+	type result struct {
+		metadata
+
+		ForceCancelAvailableAt time.Time `db:"force_cancel_available_at"`
+		IsDestroy              bool      `db:"is_destroy"`
+		Message                string
+		PositionInQueue        int `db:"position_in_queue"`
+		Refresh                bool
+		RefreshOnly            bool `db:"refresh_only"`
+		Status                 otf.RunStatus
+		ReplaceAddrs           CSV  `db:"replace_addrs"`
+		TargetAddrs            CSV  `db:"target_addrs"`
+		WorkspaceID            uint `db:"workspace_id"`
+		ConfigurationVersionID uint `db:"configuration_version_id"`
+
+		plan
 	}
 
 	res := result{}
@@ -244,6 +264,15 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 			Model: gorm.Model{
 				ID: res.ConfigurationVersionID,
 			},
+		},
+		Plan: &otf.Plan{
+			ID: res.ExternalID,
+			Model: gorm.Model{
+				ID:        res.plan.ID,
+				CreatedAt: res.plan.CreatedAt,
+				UpdatedAt: res.plan.UpdatedAt,
+			},
+			Status: res.plan.Status,
 		},
 	}
 
