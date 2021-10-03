@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -63,7 +61,7 @@ type RunStatus string
 type Run struct {
 	ID string
 
-	gorm.Model
+	Model
 
 	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
@@ -287,7 +285,7 @@ func (r *Run) ForceCancel() error {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	r.StatusTimestamps.ForceCanceledAt = TimeNow()
+	r.setTimestamp(RunForceCanceled)
 
 	return nil
 }
@@ -457,32 +455,6 @@ func (r *Run) UpdateStatus(status RunStatus) {
 
 func (r *Run) setTimestamp(status RunStatus) {
 	r.StatusTimestamps[status] = time.Now()
-	switch status {
-	case RunPending:
-		r.StatusTimestamps.PlanQueueableAt = TimeNow()
-	case RunPlanQueued:
-		r.StatusTimestamps.PlanQueuedAt = TimeNow()
-	case RunPlanning:
-		r.StatusTimestamps.PlanningAt = TimeNow()
-	case RunPlanned:
-		r.StatusTimestamps.PlannedAt = TimeNow()
-	case RunPlannedAndFinished:
-		r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
-	case RunApplyQueued:
-		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
-	case RunApplying:
-		r.StatusTimestamps.ApplyingAt = TimeNow()
-	case RunApplied:
-		r.StatusTimestamps.AppliedAt = TimeNow()
-	case RunErrored:
-		r.StatusTimestamps.ErroredAt = TimeNow()
-	case RunCanceled:
-		r.StatusTimestamps.CanceledAt = TimeNow()
-	case RunForceCanceled:
-		r.StatusTimestamps.ForceCanceledAt = TimeNow()
-	case RunDiscarded:
-		r.StatusTimestamps.DiscardedAt = TimeNow()
-	}
 }
 
 func (r *Run) Do(exe *Executor) error {
@@ -628,7 +600,7 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: &RunStatusTimestamps{},
+		StatusTimestamps: make(map[RunStatus]time.Time),
 		Plan:             newPlan(),
 		Apply:            newApply(),
 	}

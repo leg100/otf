@@ -38,7 +38,7 @@ type Plan struct {
 	Resources
 
 	Status           PlanStatus
-	StatusTimestamps *PlanStatusTimestamps
+	StatusTimestamps map[PlanStatus]time.Time
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
 	LogsBlobID string
@@ -68,7 +68,7 @@ type PlanService interface {
 func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
-		StatusTimestamps: &PlanStatusTimestamps{},
+		StatusTimestamps: make(map[PlanStatus]time.Time),
 		LogsBlobID:       NewBlobID(),
 		PlanFileBlobID:   NewBlobID(),
 		PlanJSONBlobID:   NewBlobID(),
@@ -138,16 +138,5 @@ func (p *Plan) UpdateStatus(status PlanStatus) {
 }
 
 func (p *Plan) setTimestamp(status PlanStatus) {
-	switch status {
-	case PlanCanceled:
-		p.StatusTimestamps.CanceledAt = TimeNow()
-	case PlanErrored:
-		p.StatusTimestamps.ErroredAt = TimeNow()
-	case PlanFinished:
-		p.StatusTimestamps.FinishedAt = TimeNow()
-	case PlanQueued:
-		p.StatusTimestamps.QueuedAt = TimeNow()
-	case PlanRunning:
-		p.StatusTimestamps.StartedAt = TimeNow()
-	}
+	p.StatusTimestamps[status] = time.Now()
 }

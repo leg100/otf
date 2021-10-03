@@ -130,13 +130,11 @@ func (r *Run) ToDomain() *otf.Run {
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
 		IsDestroy:              r.IsDestroy,
 		Message:                r.Message,
-		Permissions:            r.Permissions,
 		PositionInQueue:        r.PositionInQueue,
 		Refresh:                r.Refresh,
 		RefreshOnly:            r.RefreshOnly,
 		ReplaceAddrs:           r.ReplaceAddrs,
 		Status:                 r.Status,
-		StatusTimestamps:       r.StatusTimestamps,
 		TargetAddrs:            r.TargetAddrs,
 	}
 
@@ -435,6 +433,8 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 			result.StatusTimestamps = &RunStatusTimestamps{}
 		}
 		switch k {
+		case otf.RunPending:
+			result.StatusTimestamps.PlanQueueableAt = &v
 		case otf.RunPlanQueued:
 			result.StatusTimestamps.PlanQueuedAt = &v
 		case otf.RunPlanning:
@@ -443,6 +443,20 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 			result.StatusTimestamps.PlannedAt = &v
 		case otf.RunPlannedAndFinished:
 			result.StatusTimestamps.PlannedAndFinishedAt = &v
+		case otf.RunApplyQueued:
+			result.StatusTimestamps.ApplyQueuedAt = &v
+		case otf.RunApplying:
+			result.StatusTimestamps.ApplyingAt = &v
+		case otf.RunApplied:
+			result.StatusTimestamps.AppliedAt = &v
+		case otf.RunErrored:
+			result.StatusTimestamps.ErroredAt = &v
+		case otf.RunCanceled:
+			result.StatusTimestamps.CanceledAt = &v
+		case otf.RunForceCanceled:
+			result.StatusTimestamps.ForceCanceledAt = &v
+		case otf.RunDiscarded:
+			result.StatusTimestamps.DiscardedAt = &v
 		}
 	}
 

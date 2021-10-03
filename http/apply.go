@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -9,13 +10,23 @@ import (
 
 // Apply represents a Terraform Enterprise apply.
 type Apply struct {
-	ID                   string                     `jsonapi:"primary,applies"`
-	LogReadURL           string                     `jsonapi:"attr,log-read-url"`
-	ResourceAdditions    int                        `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int                        `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int                        `jsonapi:"attr,resource-destructions"`
-	Status               otf.ApplyStatus            `jsonapi:"attr,status"`
-	StatusTimestamps     *otf.ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	ID                   string                 `jsonapi:"primary,applies"`
+	LogReadURL           string                 `jsonapi:"attr,log-read-url"`
+	ResourceAdditions    int                    `jsonapi:"attr,resource-additions"`
+	ResourceChanges      int                    `jsonapi:"attr,resource-changes"`
+	ResourceDestructions int                    `jsonapi:"attr,resource-destructions"`
+	Status               otf.ApplyStatus        `jsonapi:"attr,status"`
+	StatusTimestamps     *ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
+}
+
+// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
+type ApplyStatusTimestamps struct {
+	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
+	ErroredAt       *time.Time `json:"errored-at,omitempty"`
+	FinishedAt      *time.Time `json:"finished-at,omitempty"`
+	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
+	QueuedAt        *time.Time `json:"queued-at,omitempty"`
+	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
 
 // ToDomain converts http organization obj to a domain organization obj.
@@ -27,8 +38,7 @@ func (a *Apply) ToDomain() *otf.Apply {
 			ResourceChanges:      a.ResourceChanges,
 			ResourceDestructions: a.ResourceDestructions,
 		},
-		Status:           a.Status,
-		StatusTimestamps: a.StatusTimestamps,
+		Status: a.Status,
 	}
 }
 
@@ -76,7 +86,24 @@ func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *Apply {
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,
 		Status:               a.Status,
-		StatusTimestamps:     a.StatusTimestamps,
+	}
+
+	for k, v := range a.StatusTimestamps {
+		if obj.StatusTimestamps == nil {
+			obj.StatusTimestamps = &ApplyStatusTimestamps{}
+		}
+		switch k {
+		case otf.ApplyCanceled:
+			obj.StatusTimestamps.CanceledAt = &v
+		case otf.ApplyErrored:
+			obj.StatusTimestamps.ErroredAt = &v
+		case otf.ApplyFinished:
+			obj.StatusTimestamps.FinishedAt = &v
+		case otf.ApplyQueued:
+			obj.StatusTimestamps.QueuedAt = &v
+		case otf.ApplyRunning:
+			obj.StatusTimestamps.StartedAt = &v
+		}
 	}
 
 	return obj

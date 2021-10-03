@@ -28,8 +28,7 @@ func (p *Plan) ToDomain() *otf.Plan {
 			ResourceChanges:      p.ResourceChanges,
 			ResourceDestructions: p.ResourceDestructions,
 		},
-		Status:           p.Status,
-		StatusTimestamps: p.StatusTimestamps,
+		Status: p.Status,
 	}
 }
 
@@ -93,7 +92,6 @@ func (s *Server) PlanJSONAPIObject(p *otf.Plan) *Plan {
 		ResourceChanges:      p.ResourceChanges,
 		ResourceDestructions: p.ResourceDestructions,
 		Status:               p.Status,
-		StatusTimestamps:     p.StatusTimestamps,
 	}
 
 	return obj

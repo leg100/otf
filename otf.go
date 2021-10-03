@@ -99,3 +99,9 @@ func ValidStringID(v *string) bool {
 func validSemanticVersion(v string) bool {
 	return reSemanticVersion.MatchString(v)
 }
+
+type Model struct {
+	ID        int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}

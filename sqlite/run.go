@@ -36,9 +36,10 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 		"message":                   run.Message,
 		"refresh":                   run.Refresh,
 		"refresh_only":              run.RefreshOnly,
-		"replace_addrs":             run.ReplaceAddrs,
+		"replace_addrs":             CSV(run.ReplaceAddrs),
 		"status":                    run.Status,
-		"target_addrs":              run.TargetAddrs,
+		"status_timestamps":         RunTimeMap(run.StatusTimestamps),
+		"target_addrs":              CSV(run.TargetAddrs),
 		"updated_at":                run.UpdatedAt,
 		"workspace_id":              run.Workspace.ID,
 	}
@@ -48,21 +49,28 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 		return nil, err
 	}
 
-	id, err := result.LastInsertId()
+	run.Model.ID, err = result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	timestamps := sq.Insert("run_timestamps").Columns("id", "status", "timestamp")
-	for status, timestamp := range run.StatusTimestamps {
-		timestamps = timestamps.Values(id, status, timestamp)
+	// plan#create(run_id) Create persists a Run to the DB.
+	planClauses := map[string]interface{}{
+		"created_at":        run.CreatedAt,
+		"updated_at":        run.UpdatedAt,
+		"external_id":       run.ID,
+		"logs_blob_id":      run.Plan.LogsBlobID,
+		"plan_file_blob_id": run.Plan.PlanFileBlobID,
+		"plan_json_blob_id": run.Plan.PlanJSONBlobID,
+		"status":            run.Plan.Status,
+		"status_timestamps": PlanTimeMap(run.Plan.StatusTimestamps),
+		"run_id":            run.Model.ID,
 	}
-	_, err = timestamps.RunWith(db).Exec()
+
+	planResult, err = sq.Insert("plans").SetMap(planClauses).RunWith(db).Exec()
 	if err != nil {
 		return nil, err
 	}
-
-	// plan#create(run_id)
 
 	// apply#create(run_id)
 
@@ -92,6 +100,7 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 
 	updates := map[string]interface{}{}
 	setIfChanged(before.Status, run.Status, updates, "status")
+	setIfChanged(before.StatusTimestamps, run.StatusTimestamps, updates, "status_timestamps")
 
 	if len(updates) == 0 {
 		return run, nil
@@ -102,19 +111,6 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	_, err = sq.Update("runs").SetMap(updates).Where("id = ?", run.ID).RunWith(db).Exec()
 	if err != nil {
 		return nil, err
-	}
-
-	// Insert new status timestamps.
-	for status, timestamp := range run.StatusTimestamps {
-		if _, ok := before.StatusTimestamps[status]; ok {
-			// Skip: status timestamp is not new
-			continue
-		}
-		_, err := sq.Insert("run_timestamps").Columns("id", "status", "timestamp").
-			Values(run.ID, status, timestamp).RunWith(db).Exec()
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return run, tx.Commit()
@@ -225,10 +221,11 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 		Refresh                bool
 		RefreshOnly            bool `db:"refresh_only"`
 		Status                 otf.RunStatus
-		ReplaceAddrs           CSV  `db:"replace_addrs"`
-		TargetAddrs            CSV  `db:"target_addrs"`
-		WorkspaceID            uint `db:"workspace_id"`
-		ConfigurationVersionID uint `db:"configuration_version_id"`
+		StatusTimestamps       RunTimeMap `db:"status_timestamps"`
+		ReplaceAddrs           CSV        `db:"replace_addrs"`
+		TargetAddrs            CSV        `db:"target_addrs"`
+		WorkspaceID            int64      `db:"workspace_id"`
+		ConfigurationVersionID int64      `db:"configuration_version_id"`
 
 		plan
 	}
@@ -240,7 +237,7 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 
 	run := otf.Run{
 		ID: res.ExternalID,
-		Model: gorm.Model{
+		Model: otf.Model{
 			ID:        res.ID,
 			CreatedAt: res.CreatedAt,
 			UpdatedAt: res.UpdatedAt,
@@ -254,7 +251,7 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 		ReplaceAddrs:           res.ReplaceAddrs,
 		TargetAddrs:            res.TargetAddrs,
 		Status:                 res.Status,
-		StatusTimestamps:       make(map[otf.RunStatus]time.Time),
+		StatusTimestamps:       map[otf.RunStatus]time.Time(res.StatusTimestamps),
 		Workspace: &otf.Workspace{
 			Model: gorm.Model{
 				ID: res.WorkspaceID,
@@ -274,25 +271,6 @@ func scanRun(db sqlx.Queryer, scannable StructScannable) (*otf.Run, error) {
 			},
 			Status: res.plan.Status,
 		},
-	}
-
-	// Fetch and attach timestamps to run
-	sql, args, err := sq.Select("status, timestamp").From("run_timestamps").Where("id", res.ID).ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := db.Queryx(sql, args)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var timestamp time.Time
-		var status otf.RunStatus
-		if err := rows.Scan(&status, &timestamp); err != nil {
-			return nil, err
-		}
-		run.StatusTimestamps[status] = timestamp
 	}
 
 	// Relations

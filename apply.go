@@ -34,26 +34,16 @@ type Apply struct {
 	Resources
 
 	Status           ApplyStatus
-	StatusTimestamps *ApplyStatusTimestamps
+	StatusTimestamps map[ApplyStatus]time.Time
 
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
 }
 
-// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
-type ApplyStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
-}
-
 func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
-		StatusTimestamps: &ApplyStatusTimestamps{},
+		StatusTimestamps: make(map[ApplyStatus]time.Time),
 		LogsBlobID:       NewBlobID(),
 	}
 }
@@ -103,16 +93,5 @@ func (a *Apply) UpdateStatus(status ApplyStatus) {
 }
 
 func (a *Apply) setTimestamp(status ApplyStatus) {
-	switch status {
-	case ApplyCanceled:
-		a.StatusTimestamps.CanceledAt = TimeNow()
-	case ApplyErrored:
-		a.StatusTimestamps.ErroredAt = TimeNow()
-	case ApplyFinished:
-		a.StatusTimestamps.FinishedAt = TimeNow()
-	case ApplyQueued:
-		a.StatusTimestamps.QueuedAt = TimeNow()
-	case ApplyRunning:
-		a.StatusTimestamps.StartedAt = TimeNow()
-	}
+	a.StatusTimestamps[status] = time.Now()
 }

@@ -26,7 +26,7 @@ import (
 var fs embed.FS
 
 type metadata struct {
-	ID        uint
+	ID        int64
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 
