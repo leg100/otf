@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -34,7 +32,7 @@ type AuthPolicyType string
 type Organization struct {
 	ID string
 
-	gorm.Model
+	Model
 
 	Name                   string
 	CollaboratorAuthPolicy AuthPolicyType

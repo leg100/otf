@@ -20,16 +20,6 @@ func (c CSV) Scan(src interface{}) error {
 	return nil
 }
 
-type RunTimeMap map[otf.RunStatus]time.Time
-
-func (m RunTimeMap) Value() (driver.Value, error) {
-	return json.Marshal(m)
-}
-
-func (m RunTimeMap) Scan(src interface{}) error {
-	return json.Unmarshal(src.([]byte), m)
-}
-
 type PlanTimeMap map[otf.PlanStatus]time.Time
 
 func (m PlanTimeMap) Value() (driver.Value, error) {

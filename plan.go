@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -31,14 +29,14 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Resources
 
 	Status           PlanStatus
-	StatusTimestamps map[PlanStatus]time.Time
+	StatusTimestamps TimestampMap
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
 	LogsBlobID string
@@ -68,7 +66,8 @@ type PlanService interface {
 func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
-		StatusTimestamps: make(map[PlanStatus]time.Time),
+		Model:            NewModel(),
+		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
 		PlanFileBlobID:   NewBlobID(),
 		PlanJSONBlobID:   NewBlobID(),
@@ -138,5 +137,5 @@ func (p *Plan) UpdateStatus(status PlanStatus) {
 }
 
 func (p *Plan) setTimestamp(status PlanStatus) {
-	p.StatusTimestamps[status] = time.Now()
+	p.StatusTimestamps[string(status)] = time.Now()
 }

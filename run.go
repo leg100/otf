@@ -70,15 +70,15 @@ type Run struct {
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 RunStatus
-	StatusTimestamps       map[RunStatus]time.Time
-	ReplaceAddrs           []string
-	TargetAddrs            []string
+	StatusTimestamps       TimestampMap
+	ReplaceAddrs           CSV
+	TargetAddrs            CSV
 
 	// Relations
-	Plan                 *Plan
-	Apply                *Apply
-	Workspace            *Workspace
-	ConfigurationVersion *ConfigurationVersion
+	Plan                 *Plan                 `db:"plan"`
+	Apply                *Apply                `db:"apply"`
+	Workspace            *Workspace            `db:"-"`
+	ConfigurationVersion *ConfigurationVersion `db:"-"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
@@ -454,7 +454,7 @@ func (r *Run) UpdateStatus(status RunStatus) {
 }
 
 func (r *Run) setTimestamp(status RunStatus) {
-	r.StatusTimestamps[status] = time.Now()
+	r.StatusTimestamps[string(status)] = time.Now()
 }
 
 func (r *Run) Do(exe *Executor) error {
@@ -597,10 +597,11 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 
 	run := Run{
 		ID:               GenerateID("run"),
+		Model:            NewModel(),
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: make(map[RunStatus]time.Time),
+		StatusTimestamps: make(TimestampMap),
 		Plan:             newPlan(),
 		Apply:            newApply(),
 	}

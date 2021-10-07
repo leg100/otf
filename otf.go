@@ -102,6 +102,22 @@ func validSemanticVersion(v string) bool {
 
 type Model struct {
 	ID        int64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func NewModel() Model {
+	now := time.Now()
+	return Model{
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func GetMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

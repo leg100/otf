@@ -3,8 +3,6 @@ package otf
 import (
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 //List all available apply statuses supported in OTF.
@@ -29,12 +27,12 @@ type ApplyService interface {
 type Apply struct {
 	ID string
 
-	gorm.Model
+	Model
 
 	Resources
 
 	Status           ApplyStatus
-	StatusTimestamps map[ApplyStatus]time.Time
+	StatusTimestamps TimestampMap
 
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
@@ -43,7 +41,8 @@ type Apply struct {
 func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
-		StatusTimestamps: make(map[ApplyStatus]time.Time),
+		Model:            NewModel(),
+		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
 	}
 }
@@ -93,5 +92,5 @@ func (a *Apply) UpdateStatus(status ApplyStatus) {
 }
 
 func (a *Apply) setTimestamp(status ApplyStatus) {
-	a.StatusTimestamps[status] = time.Now()
+	a.StatusTimestamps[string(status)] = time.Now()
 }

@@ -432,7 +432,7 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &RunStatusTimestamps{}
 		}
-		switch k {
+		switch otf.RunStatus(k) {
 		case otf.RunPending:
 			result.StatusTimestamps.PlanQueueableAt = &v
 		case otf.RunPlanQueued:

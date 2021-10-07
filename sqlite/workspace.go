@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -26,20 +27,15 @@ func NewWorkspaceDB(db *sqlx.DB) *WorkspaceDB {
 // Create persists a Workspace to the DB. The returned Workspace is adorned with
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
-	ws.CreatedAt = time.Now()
-	ws.UpdatedAt = time.Now()
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	clauses := map[string]interface{}{
-		"created_at":         ws.CreatedAt,
-		"updated_at":         ws.UpdatedAt,
-		"external_id":        ws.ID,
-		"allow_destroy_plan": ws.AllowDestroyPlan,
-		"auto_apply":         ws.AutoApply,
-		"locked":             ws.Locked,
-		"organization_id":    ws.Organization.ID,
+	// Insert workspace
+	result, err := tx.NamedExec(insertWorkspaceSql, ws)
+	if err != nil {
+		return nil, err
 	}
-
-	_, err := sq.Insert("ws").SetMap(clauses).RunWith(db).Exec()
+	ws.Model.ID, err = result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
@@ -68,19 +64,24 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 		return nil, err
 	}
 
-	updates := map[string]interface{}{}
-	setIfChanged(before.AllowDestroyPlan, ws.AllowDestroyPlan, updates, "allow_destroy_plan")
-	setIfChanged(before.AutoApply, ws.AutoApply, updates, "auto_apply")
-	setIfChanged(before.ExecutionMode, ws.ExecutionMode, updates, "execution_mode")
-	setIfChanged(before.Locked, ws.Locked, updates, "locked")
-
+	updates := FindUpdates(db.Mapper, before, ws)
 	if len(updates) == 0 {
 		return ws, nil
 	}
 
-	updates["updated_at"] = time.Now()
+	ws.UpdatedAt = time.Now()
+	updates["updated_at"] = ws.UpdatedAt
 
-	_, err = sq.Update("workspaces").SetMap(updates).Where("id = ?", ws.ID).RunWith(db).Exec()
+	var sql strings.Builder
+	fmt.Fprintln(&sql, "UPDATE workspaces")
+
+	for k := range updates {
+		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+	}
+
+	fmt.Fprintf(&sql, "WHERE %s = :id", ws.Model.ID)
+
+	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
 		return nil, err
 	}
@@ -89,46 +90,57 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	query := sq.Select("*").From("workspaces")
-
-	if opts.OrganizationName != nil {
-		org, err := getOrganizationByName(db.DB, *opts.OrganizationName)
-		if err != nil {
-			return nil, err
-		}
-
-		query = query.Where("organization_id = ?", org.ID)
+	type listParams struct {
+		Limit            int
+		Offset           int
+		Prefix           string
+		OrganizationName string
 	}
 
+	params := listParams{}
+
+	var sql strings.Builder
+	fmt.Fprintln(&sql, "SELECT", getWorkspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
+
+	var conditions []string
+
+	// Optionally filter by workspace name prefix
 	if opts.Prefix != nil {
-		query = query.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Prefix))
+		conditions = append(conditions, "name LIKE ?")
+		params.Prefix = fmt.Sprintf("%s%%", *opts.Prefix)
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
+	// Optionally filter by organization name
+	if opts.OrganizationName != nil {
+		conditions = append(conditions, "organizations.name = ?")
+		params.OrganizationName = *opts.OrganizationName
+	}
+
+	fmt.Fprintln(&sql, "WHERE", strings.Join(conditions, " AND "))
+
+	if opts.PageSize > 0 {
+		params.Limit = opts.PageSize
+	}
+
+	if opts.PageNumber > 0 {
+		params.Offset = (opts.PageNumber - 1) * opts.PageSize
+	}
+
+	var result []otf.Workspace
+	if err := db.Select(&result, sql.String(), params); err != nil {
 		return nil, err
 	}
 
-	wl := otf.WorkspaceList{}
-	var count int
-
-	rows, err := db.Queryx(sql, args)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		ws, err := scanWorkspace(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		wl.Items = append(wl.Items, ws)
-		count++
+	// Convert from []otf.Workspace to []*otf.Workspace
+	var items []*otf.Workspace
+	for _, r := range result {
+		items = append(items, &r)
 	}
 
-	wl.Pagination = otf.NewPagination(opts.ListOptions, count)
-
-	return &wl, nil
+	return &otf.WorkspaceList{
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+	}, nil
 }
 
 func (db WorkspaceDB) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {

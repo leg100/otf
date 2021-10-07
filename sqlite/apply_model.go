@@ -4,25 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
-
-// Apply models a row in an applies table.
-type Apply struct {
-	gorm.Model
-
-	ExternalID string `gorm:"uniqueIndex"`
-
-	otf.Resources
-
-	Status           otf.ApplyStatus
-	StatusTimestamps *ApplyStatusTimestamps `gorm:"embedded;embeddedPrefix:timestamp_"`
-
-	LogsBlobID string
-
-	// Apply belongs to a run
-	RunID uint
-}
 
 // ApplyList is a list of run models
 type ApplyList []Apply

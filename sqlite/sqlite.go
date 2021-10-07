@@ -4,15 +4,17 @@ Package sqlite implements persistent storage using the sqlite database.
 package sqlite
 
 import (
-	"database/sql"
 	"embed"
 	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/snake_case"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -24,6 +26,10 @@ import (
 
 //go:embed migrations/*.sql
 var fs embed.FS
+
+type Getter interface {
+	Get(dest interface{}, query string, args ...interface{}) error
+}
 
 type metadata struct {
 	ID        int64
@@ -55,13 +61,13 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 
 func (l *Logger) Verbose() bool { return true }
 
-func New(logger logr.Logger, path string, opts ...Option) (*sql.DB, error) {
+func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 	cfg := &gorm.Config{}
 	for _, o := range opts {
 		o(cfg)
 	}
 
-	db, err := sql.Open("sqlite3", path)
+	db, err := sqlx.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +75,9 @@ func New(logger logr.Logger, path string, opts ...Option) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
+
+	// Map struct field names from CamelCase to snake_case.
+	db.MapperFunc(snake_case.ToSnakeCase)
 
 	// Avoid "database is locked" errors:
 	// https://github.com/mattn/go-sqlite3/issues/274
@@ -115,4 +124,39 @@ func setIfChanged(a, b interface{}, m map[string]interface{}, k string) {
 		return
 	}
 	m[k] = b
+}
+
+func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
+	if reflect.DeepEqual(a, b) {
+		return nil
+	}
+
+	idx := diffIndex(reflect.ValueOf(a), reflect.ValueOf(b), nil, nil)
+
+	updates := make(map[string]interface{})
+
+	smap := m.TypeMap(reflect.TypeOf(b))
+	fmap := m.FieldMap(reflect.ValueOf(b))
+	for _, n := range idx {
+		path := smap.GetByTraversal(n).Path
+		val := fmap[path].Interface()
+		updates[path] = val
+	}
+
+	return updates
+}
+
+func diffIndex(a, b reflect.Value, idx [][]int, n []int) [][]int {
+	switch a.Kind() {
+	case reflect.Struct:
+		for i := 0; i < a.NumField(); i++ {
+			idx = diffIndex(a.Field(i), b.Field(i), idx, append(n, i))
+		}
+	default:
+		if !reflect.DeepEqual(a.Interface(), b.Interface()) {
+			idx = append(idx, n)
+		}
+	}
+
+	return idx
 }

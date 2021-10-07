@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -23,9 +21,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	AllowDestroyPlan           bool
 	AutoApply                  bool
@@ -38,7 +36,6 @@ type Workspace struct {
 	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
-	Permissions                *WorkspacePermissions
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	SourceName                 string
@@ -54,7 +51,7 @@ type Workspace struct {
 	RunFailures                int
 	RunsCount                  int
 
-	TriggerPrefixes []string
+	TriggerPrefixes CSV
 
 	// Relations AgentPool  *AgentPool CurrentRun *Run
 

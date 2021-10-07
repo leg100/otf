@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -40,7 +38,7 @@ type ConfigurationSource string
 type ConfigurationVersion struct {
 	ID string
 
-	gorm.Model
+	Model
 
 	AutoQueueRuns    bool
 	Error            string

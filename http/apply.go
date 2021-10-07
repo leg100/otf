@@ -92,7 +92,7 @@ func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *Apply {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &ApplyStatusTimestamps{}
 		}
-		switch k {
+		switch otf.ApplyStatus(k) {
 		case otf.ApplyCanceled:
 			obj.StatusTimestamps.CanceledAt = &v
 		case otf.ApplyErrored:
