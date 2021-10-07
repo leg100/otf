@@ -1,64 +1,110 @@
 package sqlite
 
 import (
+	"fmt"
+
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"sqlx.io/sqlx"
+	"sqlx.io/sqlx/clause"
 )
 
-var _ otf.StateVersionStore = (*StateVersionService)(nil)
+var (
+	_ otf.StateVersionStore = (*StateVersionService)(nil)
+
+	stateVersionTableName = "state_versions"
+
+	insertStateVersionSql = `INSERT INTO state_versions (
+    created_at,
+    updated_at,
+    external_id,
+    serial,
+    blob_id,
+    workspace_id)
+VALUES (
+	:created_at,
+    :updated_at,
+    :external_id,
+    :serial,
+    :blob_id,
+    :workspace_id)
+`
+
+	getStateVersionColumns = `
+state_versions.created_at   AS state_versions.created_at,
+state_versions.updated_at   AS state_versions.updated_at,
+state_versions.external_id  AS state_versions.external_id,
+state_versions.serial       AS state_versions.serial,
+state_versions.blob_id      AS state_versions.blob_id,
+state_versions.workspace_id AS state_versions.workspace_id,
+`
+	stateVersionColumns = []string{"created_at", "updated_at", "external_id", "serial", "blob_id", "workspace_id"}
+
+	listStateVersionsSql = fmt.Sprintf(`SELECT %s, %s
+FROM state_versions
+JOIN workspaces ON workspaces.id = state_versions.workspace_id
+JOIN organizations ON organizations.id = workspaces.organization_id
+WHERE workspaces.external_id = :workspace_external_id
+AND workspaces.name = :workspace_name
+AND organizations.name = :organization_name
+LIMIT :limit
+OFFSET :offset
+`, asColumnList(stateVersionTableName, getStateVersionColumns), asColumnList(workspacesTableName, workspaceColumns))
+)
 
 type StateVersionService struct {
-	*gorm.DB
+	*sqlx.DB
+	columns []string
 }
 
-func NewStateVersionDB(db *gorm.DB) *StateVersionService {
+func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
 	return &StateVersionService{
-		DB: db,
+		DB:      db,
+		columns: []string{"created_at", "updated_at", "external_id", "serial", "blob_id", "workspace_id"},
 	}
 }
 
 // Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	model := &StateVersion{}
-	model.FromDomain(sv)
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	if result := s.DB.Omit("Workspace").Create(model); result.Error != nil {
-		return nil, result.Error
+	// Insert
+	result, err := tx.NamedExec(insertStateVersionSql, sv)
+	if err != nil {
+		return nil, err
 	}
-
-	return model.ToDomain(), nil
-}
-
-func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	var models StateVersionList
-	var count int64
-
-	err := s.DB.Transaction(func(tx *gorm.DB) error {
-		ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{Name: opts.Workspace, OrganizationName: opts.Organization})
-		if err != nil {
-			return err
-		}
-
-		query := tx.Where("workspace_id = ?", ws.ID)
-
-		if result := query.Model(&models).Count(&count); result.Error != nil {
-			return result.Error
-		}
-
-		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-			return result.Error
-		}
-
-		return nil
-	})
+	sv.Model.ID, err = result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
+	return sv, nil
+}
+
+func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+	limit, offset := opts.GetSQLWindow()
+
+	params := map[string]interface{}{
+		"workspace_name":    opts.Workspace,
+		"organization_name": opts.Organization,
+		"limit":             limit,
+		"offset":            offset,
+	}
+
+	var result []otf.StateVersion
+	if err := s.Select(&result, listStateVersionsSql, params); err != nil {
+		return nil, err
+	}
+
+	// Convert from []otf.StateVersion to []*otf.StateVersion
+	var items []*otf.StateVersion
+	for _, r := range result {
+		items = append(items, &r)
+	}
+
 	return &otf.StateVersionList{
-		Items:      models.ToDomain(),
-		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
 	}, nil
 }
 
@@ -70,7 +116,7 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 	return sv.ToDomain(), nil
 }
 
-func getStateVersion(db *gorm.DB, opts otf.StateVersionGetOptions) (*StateVersion, error) {
+func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*StateVersion, error) {
 	var model StateVersion
 
 	query := db.Preload(clause.Associations)

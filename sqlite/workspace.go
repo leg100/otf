@@ -13,6 +13,8 @@ import (
 var (
 	_ otf.WorkspaceStore = (*WorkspaceDB)(nil)
 
+	workspacesTableName = "workspaces"
+
 	insertWorkspaceSql = `INSERT INTO workspaces (
     created_at,
     updated_at,
@@ -61,33 +63,37 @@ VALUES (
     :organization_id,
 `
 
-	getWorkspaceColumns = `
-workspaces.id               		AS workspaces.id
-workspaces.created_at               AS workspaces.created_at
-workspaces.updated_at               AS workspaces.updated_at
-workspaces.external_id              AS workspaces.external_id
-workspaces.allow_destroy_plan       AS workspaces.allow_destroy_plan
-workspaces.auto_apply               AS workspaces.auto_apply
-workspaces.can_queue_destroy_plan   AS workspaces.can_queue_destroy_plan
-workspaces.description              AS workspaces.description
-workspaces.environment              AS workspaces.environment
-workspaces.execution_mode           AS workspaces.execution_mode
-workspaces.file_triggers_enabled    AS workspaces.file_triggers_enabled
-workspaces.global_remote_state      AS workspaces.global_remote_state
-workspaces.locked                   AS workspaces.locked
-workspaces.migration_environment    AS workspaces.migration_environment
-workspaces.name                     AS workspaces.name
-workspaces.queue_all_runs           AS workspaces.queue_all_runs
-workspaces.speculative_enabled      AS workspaces.speculative_enabled
-workspaces.source_name              AS workspaces.source_name
-workspaces.source_url               AS workspaces.source_url
-workspaces.terraform_version        AS workspaces.terraform_version
-workspaces.trigger_prefixes         AS workspaces.trigger_prefixes
-workspaces.working_directory        AS workspaces.working_directory
-workspaces.organization_id          AS workspaces.organization_id
-`
+	workspaceColumns = []string{"id",
+		"created_at",
+		"updated_at",
+		"external_id",
+		"allow_destroy_plan",
+		"auto_apply",
+		"can_queue_destroy_plan",
+		"description",
+		"environment",
+		"execution_mode",
+		"file_triggers_enabled",
+		"global_remote_state",
+		"locked",
+		"migration_environment",
+		"name",
+		"queue_all_runs",
+		"speculative_enabled",
+		"source_name",
+		"source_url",
+		"terraform_version",
+		"trigger_prefixes",
+		"working_directory",
+		"organization_id",
+	}
 
-	getWorkspaceJoins = `JOIN organizations ON organizations.id = workspaces.organization_id`
+	workspacesColumnList = asColumnList(workspacesTableName, workspaceColumns...)
+
+	getWorkspaceSql = fmt.Sprintf(`SELECT %s, %s
+FROM workspaces")
+JOIN organizations ON organizations.id = workspaces.organization_id
+`, workspacesColumnList, organizationColumnList)
 )
 
 type WorkspaceDB struct {
@@ -166,41 +172,32 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	type listParams struct {
-		Limit            int
-		Offset           int
-		Prefix           string
-		OrganizationName string
+	limit, offset := opts.GetSQLWindow()
+
+	params := map[string]interface{}{
+		"limit":  limit,
+		"offset": offset,
 	}
 
-	params := listParams{}
-
 	var sql strings.Builder
-	fmt.Fprintln(&sql, "SELECT", getWorkspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
+	fmt.Fprintln(&sql, "SELECT", workspaceColumns, "FROM workspaces")
+	fmt.Fprintln(&sql, "JOIN organizations ON organizations.id = workspaces.organization_id")
 
 	var conditions []string
 
 	// Optionally filter by workspace name prefix
 	if opts.Prefix != nil {
 		conditions = append(conditions, "name LIKE ?")
-		params.Prefix = fmt.Sprintf("%s%%", *opts.Prefix)
+		params["prefix"] = fmt.Sprintf("%s%%", *opts.Prefix)
 	}
 
 	// Optionally filter by organization name
 	if opts.OrganizationName != nil {
 		conditions = append(conditions, "organizations.name = ?")
-		params.OrganizationName = *opts.OrganizationName
+		params["oranization_name"] = *opts.OrganizationName
 	}
 
 	fmt.Fprintln(&sql, "WHERE", strings.Join(conditions, " AND "))
-
-	if opts.PageSize > 0 {
-		params.Limit = opts.PageSize
-	}
-
-	if opts.PageNumber > 0 {
-		params.Offset = (opts.PageNumber - 1) * opts.PageSize
-	}
 
 	var result []otf.Workspace
 	if err := db.Select(&result, sql.String(), params); err != nil {
@@ -275,7 +272,7 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error
 	params := getWorkspaceParams{}
 
 	var sql strings.Builder
-	fmt.Fprintln(&sql, "SELECT", getWorkspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
+	fmt.Fprintln(&sql, "SELECT", workspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
 
 	var conditions []string
 

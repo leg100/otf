@@ -13,6 +13,8 @@ import (
 var (
 	_ otf.OrganizationStore = (*OrganizationDB)(nil)
 
+	organizationsTableName = "organizations"
+
 	insertOrganizationSql = `INSERT INTO organizations (
     created_at,
     updated_at,
@@ -31,15 +33,23 @@ VALUES (
     :session_timeout)
 `
 
-	getOrganizationColumns = `
-organizations.created_at           AS organizations.created_at
-organizations.updated_at           AS organizations.updated_at
-organizations.external_id          AS organizations.external_id
-organizations.name                 AS organizations.name
-organizations.email                AS organizations.email
-organizations.session_remember     AS organizations.session_remember
-organizations.session_timeout      AS organizations.session_timeout
-`
+	organizationColumns = []string{
+		"id",
+		"created_at",
+		"updated_at",
+		"external_id",
+		"name",
+		"email",
+		"session_remember",
+		"session_timeout",
+	}
+
+	organizationColumnList = asColumnList(organizationsTableName, organizationColumns...)
+
+	listOrganizationsSql = fmt.Sprintf(`SELECT %s FROM organizations LIMIT :limit OFFSET :offset`,
+		asColumnList(organizationsTableName, organizationColumns...))
+
+	getOrganizationSql = fmt.Sprintf("SELECT %s FROM organizations WHERE name = ?", organizationColumns)
 )
 
 // Organization models a row in a organizations table.
@@ -117,28 +127,15 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	type listParams struct {
-		Limit  int
-		Offset int
-	}
+	limit, offset := opts.GetSQLWindow()
 
-	params := listParams{}
-
-	var sql strings.Builder
-	fmt.Fprintln(&sql, "SELECT", getOrganizationColumns, "FROM", "organizations")
-
-	if opts.PageSize > 0 {
-		fmt.Fprintln(&sql, "LIMIT :limit")
-		params.Limit = opts.PageSize
-	}
-
-	if opts.PageNumber > 0 {
-		fmt.Fprintln(&sql, "OFFSET :limit")
-		params.Offset = (opts.PageNumber - 1) * opts.PageSize
+	params := map[string]interface{}{
+		"limit":  limit,
+		"offset": offset,
 	}
 
 	var result []otf.Organization
-	if err := db.Select(&result, sql.String(), params); err != nil {
+	if err := db.Select(&result, listOrganizationsSql, params); err != nil {
 		return nil, err
 	}
 
@@ -160,15 +157,13 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 
 // Delete organization. TODO: delete dependencies, i.e. everything else too
 func (db OrganizationDB) Delete(name string) error {
-	_, err = db.MustExec("DELETE FROM organizations WHERE name = ?", name)
+	_, err := db.MustExec("DELETE FROM organizations WHERE name = ?", name)
 	return err
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {
-	sql := fmt.Sprintln("SELECT", getOrganizationColumns, "FROM organizations WHERE name = ?")
-
 	var org otf.Organization
-	if err := getter.Get(&org, sql, name); err != nil {
+	if err := getter.Get(&org, getOrganizationSql, name); err != nil {
 		return nil, err
 	}
 

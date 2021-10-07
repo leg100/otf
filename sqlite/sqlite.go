@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -159,4 +160,14 @@ func diffIndex(a, b reflect.Value, idx [][]int, n []int) [][]int {
 	}
 
 	return idx
+}
+
+// asColumnList takes a table name and a list of columns and returns the SQL
+// snippet 'table.col1 AS table.col1, table.col2 AS table.col2, ...'
+func asColumnList(table string, cols ...string) (sql string) {
+	var asLines []string
+	for _, c := range cols {
+		asLines = append(asLines, fmt.Sprintf("%s.%s AS %[1]s.%s", table, c))
+	}
+	return strings.Join(asLines, ",")
 }
