@@ -41,12 +41,10 @@ type ConfigurationVersion struct {
 	Model
 
 	AutoQueueRuns    bool
-	Error            string
-	ErrorMessage     string
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps *CVStatusTimestamps
+	StatusTimestamps CSV
 
 	// BlobID is the ID of the blob containing the configuration
 	BlobID string

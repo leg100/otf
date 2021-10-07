@@ -5,14 +5,90 @@ import (
 	"strings"
 	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
 
-var _ otf.WorkspaceStore = (*WorkspaceDB)(nil)
+var (
+	_ otf.WorkspaceStore = (*WorkspaceDB)(nil)
+
+	insertWorkspaceSql = `INSERT INTO workspaces (
+    created_at,
+    updated_at,
+    external_id,
+    allow_destroy_plan,
+    auto_apply,
+    can_queue_destroy_plan,
+    description,
+    environment,
+    execution_mode,
+    file_triggers_enabled,
+    global_remote_state,
+    locked,
+    migration_environment,
+    name,
+    queue_all_runs,
+    speculative_enabled,
+    source_name,
+    source_url,
+    terraform_version,
+    trigger_prefixes,
+    working_directory,
+    organization_id,
+VALUES (
+	:created_at,
+    :updated_at,
+    :external_id,
+    :allow_destroy_plan,
+    :auto_apply,
+    :can_queue_destroy_plan,
+    :description,
+    :environment,
+    :execution_mode,
+    :file_triggers_enabled,
+    :global_remote_state,
+    :locked,
+    :migration_environment,
+    :name,
+    :queue_all_runs,
+    :speculative_enabled,
+    :source_name,
+    :source_url,
+    :terraform_version,
+    :trigger_prefixes,
+    :working_directory,
+    :organization_id,
+`
+
+	getWorkspaceColumns = `
+workspaces.id               		AS workspaces.id
+workspaces.created_at               AS workspaces.created_at
+workspaces.updated_at               AS workspaces.updated_at
+workspaces.external_id              AS workspaces.external_id
+workspaces.allow_destroy_plan       AS workspaces.allow_destroy_plan
+workspaces.auto_apply               AS workspaces.auto_apply
+workspaces.can_queue_destroy_plan   AS workspaces.can_queue_destroy_plan
+workspaces.description              AS workspaces.description
+workspaces.environment              AS workspaces.environment
+workspaces.execution_mode           AS workspaces.execution_mode
+workspaces.file_triggers_enabled    AS workspaces.file_triggers_enabled
+workspaces.global_remote_state      AS workspaces.global_remote_state
+workspaces.locked                   AS workspaces.locked
+workspaces.migration_environment    AS workspaces.migration_environment
+workspaces.name                     AS workspaces.name
+workspaces.queue_all_runs           AS workspaces.queue_all_runs
+workspaces.speculative_enabled      AS workspaces.speculative_enabled
+workspaces.source_name              AS workspaces.source_name
+workspaces.source_url               AS workspaces.source_url
+workspaces.terraform_version        AS workspaces.terraform_version
+workspaces.trigger_prefixes         AS workspaces.trigger_prefixes
+workspaces.working_directory        AS workspaces.working_directory
+workspaces.organization_id          AS workspaces.organization_id
+`
+
+	getWorkspaceJoins = `JOIN organizations ON organizations.id = workspaces.organization_id`
+)
 
 type WorkspaceDB struct {
 	*sqlx.DB
@@ -159,25 +235,29 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	}
 
 	// Delete workspace
-	_, err = sq.Delete("workspaces").Where("id = ?", ws.ID).RunWith(db).Exec()
+	_, err = db.MustExec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated runs
-	_, err = sq.Delete("runs").Where("workspace_id = ?", ws.ID).RunWith(db).Exec()
+	_, err = db.MustExec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated state versions
-	_, err = sq.Delete("state_versions").Where("workspace_id = ?", ws.ID).RunWith(db).Exec()
+	_, err = db.MustExec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated configuration versions
-	_, err = sq.Delete("configuration_versions").Where("workspace_id = ?", ws.ID).RunWith(db).Exec()
+	_, err = db.MustExec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
+	if err != nil {
+		return err
+	}
+
 	if err != nil {
 		return err
 	}
@@ -185,99 +265,44 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	return tx.Commit()
 }
 
-func getWorkspace(db sqlx.Queryer, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
-	query := sq.Select("workspaces.*").From("workspaces")
+func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+	type getWorkspaceParams struct {
+		ID               string
+		InternalID       int64
+		Name             string
+		OrganizationName string
+	}
+	params := getWorkspaceParams{}
+
+	var sql strings.Builder
+	fmt.Fprintln(&sql, "SELECT", getWorkspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
+
+	var conditions []string
 
 	switch {
 	case spec.ID != nil:
 		// Get workspace by (external) ID
-		query = query.Where("external_id = ?", *spec.ID)
+		conditions = append(conditions, "workspaces.external_id = :id")
+		params.ID = *spec.ID
 	case spec.InternalID != nil:
 		// Get workspace by internal ID
-		query = query.Where("id = ?", *spec.ID)
+		conditions = append(conditions, "workspaces.id = :internal_id")
+		params.InternalID = *spec.InternalID
 	case spec.Name != nil && spec.OrganizationName != nil:
 		// Get workspace by name and organization name
-		query = query.Join("JOIN organizations ON organizations.id = workspaces.organization_id").
-			Where("workspaces.name = ? AND organizations.name = ?", spec.Name, spec.OrganizationName)
+		conditions = append(conditions, "workspaces.name = :name")
+		conditions = append(conditions, "organizations.name = :organization_name")
+		params.Name = *spec.Name
+		params.OrganizationName = *spec.OrganizationName
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
+	fmt.Fprintln(&sql, "WHERE", strings.Join(conditions, " AND "))
+
+	var ws otf.Workspace
+	if err := db.Get(&ws, sql.String(), params); err != nil {
 		return nil, err
-	}
-
-	ws, err := scanWorkspace(db.QueryRowx(sql, args))
-	if err != nil {
-		return nil, err
-	}
-
-	// Attach org to workspace
-	ws.Organization, err = getOrganizationByID(db, ws.Organization.Model.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return ws, nil
-}
-
-func scanWorkspace(scannable StructScannable) (*otf.Workspace, error) {
-	type result struct {
-		metadata
-
-		AllowDestroyPlan    bool `db:"allow_destroy_plan"`
-		AutoApply           bool `db:"auto_apply"`
-		CanQueueDestroyPlan bool `db:"can_queue_destroy_plan"`
-		Description         string
-		Environment         string
-		ExecutionMode       string `db:"execution_mode"`
-		FileTriggersEnabled bool   `db:"file_triggers_enabled"`
-		Locked              bool
-		Name                string
-		QueueAllRuns        bool   `db:"queue_all_runs"`
-		SpeculativeEnabled  bool   `db:"speculative_enabled"`
-		SourceName          string `db:"source_name"`
-		SourceURL           string `db:"source_url"`
-		TerraformVersion    string `db:"terraform_version"`
-		TriggerPrefixes     string `db:"trigger_prefixes"`
-		WorkingDirectory    string `db:"working_directory"`
-
-		OrganizationID uint `db:"organization_id"`
-	}
-
-	res := result{}
-	if err := scannable.StructScan(res); err != nil {
-		return nil, err
-	}
-
-	ws := otf.Workspace{
-		ID: res.ExternalID,
-		Model: gorm.Model{
-			ID:        res.ID,
-			CreatedAt: res.CreatedAt,
-			UpdatedAt: res.UpdatedAt,
-		},
-		AllowDestroyPlan:    res.AllowDestroyPlan,
-		AutoApply:           res.AutoApply,
-		CanQueueDestroyPlan: res.CanQueueDestroyPlan,
-		Description:         res.Description,
-		Environment:         res.Environment,
-		ExecutionMode:       res.ExecutionMode,
-		FileTriggersEnabled: res.FileTriggersEnabled,
-		Locked:              res.Locked,
-		Name:                res.Name,
-		QueueAllRuns:        res.QueueAllRuns,
-		SpeculativeEnabled:  res.SpeculativeEnabled,
-		SourceName:          res.SourceName,
-		SourceURL:           res.SourceURL,
-		TerraformVersion:    res.TerraformVersion,
-		WorkingDirectory:    res.WorkingDirectory,
-		Organization: &otf.Organization{
-			Model: gorm.Model{
-				ID: res.OrganizationID,
-			},
-		},
 	}
 
 	return &ws, nil

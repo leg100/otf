@@ -1,16 +1,46 @@
 package sqlite
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
 )
 
-var _ otf.OrganizationStore = (*OrganizationDB)(nil)
+var (
+	_ otf.OrganizationStore = (*OrganizationDB)(nil)
+
+	insertOrganizationSql = `INSERT INTO organizations (
+    created_at,
+    updated_at,
+    external_id,
+    name,
+    email,
+    session_remember,
+    session_timeout)
+VALUES (
+	:created_at,
+    :updated_at,
+    :external_id,
+    :name,
+    :email,
+    :session_remember,
+    :session_timeout)
+`
+
+	getOrganizationColumns = `
+organizations.created_at           AS organizations.created_at
+organizations.updated_at           AS organizations.updated_at
+organizations.external_id          AS organizations.external_id
+organizations.name                 AS organizations.name
+organizations.email                AS organizations.email
+organizations.session_remember     AS organizations.session_remember
+organizations.session_timeout      AS organizations.session_timeout
+`
+)
 
 // Organization models a row in a organizations table.
 type OrganizationDB struct {
@@ -25,18 +55,15 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	org.CreatedAt = time.Now()
-	org.UpdatedAt = time.Now()
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	clauses := map[string]interface{}{
-		"created_at":  org.CreatedAt,
-		"updated_at":  org.UpdatedAt,
-		"external_id": org.ID,
-		"name":        org.Name,
-		"email":       org.Email,
+	// Insert
+	result, err := tx.NamedExec(insertOrganizationSql, org)
+	if err != nil {
+		return nil, err
 	}
-
-	_, err := sq.Insert("organizations").SetMap(clauses).RunWith(db).Exec()
+	org.Model.ID, err = result.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +78,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
-	org, err := getOrganizationByName(tx, name)
+	org, err := getOrganization(tx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -64,17 +91,24 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	updates := make(map[string]interface{})
-	setIfChanged(before.Name, org.Name, updates, "name")
-	setIfChanged(before.Email, org.Email, updates, "email")
-
+	updates := FindUpdates(db.Mapper, before, org)
 	if len(updates) == 0 {
 		return org, nil
 	}
 
-	updates["updated_at"] = time.Now()
+	org.UpdatedAt = time.Now()
+	updates["updated_at"] = org.UpdatedAt
 
-	_, err = sq.Update("organizations").SetMap(updates).Where("name = ?", name).RunWith(db).Exec()
+	var sql strings.Builder
+	fmt.Fprintln(&sql, "UPDATE organizations")
+
+	for k := range updates {
+		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+	}
+
+	fmt.Fprintf(&sql, "WHERE %s = :id", org.Model.ID)
+
+	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
 		return nil, err
 	}
@@ -83,84 +117,59 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	query := sq.Select("*").From("organizations")
+	type listParams struct {
+		Limit  int
+		Offset int
+	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
+	params := listParams{}
+
+	var sql strings.Builder
+	fmt.Fprintln(&sql, "SELECT", getOrganizationColumns, "FROM", "organizations")
+
+	if opts.PageSize > 0 {
+		fmt.Fprintln(&sql, "LIMIT :limit")
+		params.Limit = opts.PageSize
+	}
+
+	if opts.PageNumber > 0 {
+		fmt.Fprintln(&sql, "OFFSET :limit")
+		params.Offset = (opts.PageNumber - 1) * opts.PageSize
+	}
+
+	var result []otf.Organization
+	if err := db.Select(&result, sql.String(), params); err != nil {
 		return nil, err
 	}
 
-	ol := otf.OrganizationList{}
-	var count int
-
-	rows, err := db.Queryx(sql, args)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		org, err := scanOrganization(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		ol.Items = append(ol.Items, org)
-		count++
+	// Convert from []otf.Organization to []*otf.Organization
+	var items []*otf.Organization
+	for _, r := range result {
+		items = append(items, &r)
 	}
 
-	ol.Pagination = otf.NewPagination(opts.ListOptions, count)
-
-	return &ol, nil
+	return &otf.OrganizationList{
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+	}, nil
 }
 
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
-	return getOrganizationByName(db.DB, name)
+	return getOrganization(db.DB, name)
 }
 
+// Delete organization. TODO: delete dependencies, i.e. everything else too
 func (db OrganizationDB) Delete(name string) error {
-	_, err := sq.Delete("organizations").Where("name = ?", name).RunWith(db).Exec()
+	_, err = db.MustExec("DELETE FROM organizations WHERE name = ?", name)
 	return err
 }
 
-func getOrganizationByName(db sqlx.Queryer, name string) (*otf.Organization, error) {
-	return getOrganization(db, "name = ?", name)
-}
+func getOrganization(getter Getter, name string) (*otf.Organization, error) {
+	sql := fmt.Sprintln("SELECT", getOrganizationColumns, "FROM organizations WHERE name = ?")
 
-func getOrganizationByID(db sqlx.Queryer, id uint) (*otf.Organization, error) {
-	return getOrganization(db, "id = ?", id)
-}
-
-func getOrganization(db sqlx.Queryer, pred interface{}, args ...interface{}) (*otf.Organization, error) {
-	query := sq.Select("*").From("organizations").Where(pred, args)
-	sql, args, err := query.ToSql()
-	if err != nil {
+	var org otf.Organization
+	if err := getter.Get(&org, sql, name); err != nil {
 		return nil, err
-	}
-
-	return scanOrganization(db.QueryRowx(sql, args))
-}
-
-func scanOrganization(scannable StructScannable) (*otf.Organization, error) {
-	type result struct {
-		metadata
-
-		Name  string
-		Email string
-	}
-
-	res := result{}
-	if err := scannable.StructScan(res); err != nil {
-		return nil, err
-	}
-
-	org := otf.Organization{
-		ID: res.ExternalID,
-		Model: gorm.Model{
-			ID:        res.ID,
-			CreatedAt: res.CreatedAt,
-			UpdatedAt: res.UpdatedAt,
-		},
-		Name:  res.Name,
-		Email: res.Email,
 	}
 
 	return &org, nil

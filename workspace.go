@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"time"
 )
 
 const (
@@ -25,40 +24,28 @@ type Workspace struct {
 
 	Model
 
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	FileTriggersEnabled        bool
-	GlobalRemoteState          bool
-	Locked                     bool
-	MigrationEnvironment       string
-	Name                       string
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceURL                  string
-	StructuredRunOutputEnabled bool
-	TerraformVersion           string
-	VCSRepo                    *VCSRepo
-	WorkingDirectory           string
-	ResourceCount              int
-	ApplyDurationAverage       time.Duration
-	PlanDurationAverage        time.Duration
-	PolicyCheckFailures        int
-	RunFailures                int
-	RunsCount                  int
-
-	TriggerPrefixes CSV
-
-	// Relations AgentPool  *AgentPool CurrentRun *Run
+	AllowDestroyPlan     bool
+	AutoApply            bool
+	CanQueueDestroyPlan  bool
+	Description          string
+	Environment          string
+	ExecutionMode        string
+	FileTriggersEnabled  bool
+	GlobalRemoteState    bool
+	Locked               bool
+	MigrationEnvironment string
+	Name                 string
+	QueueAllRuns         bool
+	SpeculativeEnabled   bool
+	SourceName           string
+	SourceURL            string
+	TerraformVersion     string
+	TriggerPrefixes      CSV
+	VCSRepo              *VCSRepo
+	WorkingDirectory     string
 
 	// Workspace belongs to an organization
 	Organization *Organization
-
-	//SSHKey *SSHKey
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -285,7 +272,7 @@ type WorkspaceSpecifier struct {
 	ID *string
 
 	// Specify workspace using its internal ID
-	InternalID *uint
+	InternalID *int64
 
 	// Specify workspace using its name and organization
 	Name             *string
@@ -389,9 +376,6 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
 	}
-	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
-	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion
 	}
@@ -477,9 +461,6 @@ func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, er
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
-	}
-	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion
