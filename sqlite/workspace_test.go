@@ -9,7 +9,7 @@ import (
 )
 
 func TestWorkspace(t *testing.T) {
-	db, err := New(logr.Discard(), ":memory:")
+	db, err := New(logr.Discard(), "test.db")
 	require.NoError(t, err)
 
 	orgDB := NewOrganizationDB(db)

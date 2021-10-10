@@ -23,7 +23,7 @@ func TestOrganization(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, uint(1), org.Model.ID)
+	require.Equal(t, int64(1), org.Model.ID)
 	require.Equal(t, "automatize", org.Name)
 	require.Equal(t, "sysadmin@automatize.co.uk", org.Email)
 
@@ -36,7 +36,7 @@ func TestOrganization(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, uint(2), org.Model.ID)
+	require.Equal(t, int64(2), org.Model.ID)
 	require.Equal(t, "second", org.Name)
 	require.Equal(t, "sysadmin@second.org", org.Email)
 

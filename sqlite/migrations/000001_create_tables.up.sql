@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS organizations (
     id integer,
     created_at datetime,
@@ -7,7 +9,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     email text,
     session_remember integer,
     session_timeout integer,
-    PRIMARY KEY (id));
+    PRIMARY KEY (id)
+);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_external_id ON organizations(external_id);
 
 CREATE TABLE IF NOT EXISTS workspaces (
@@ -151,3 +154,4 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
     CONSTRAINT fk_state_versions_outputs FOREIGN KEY (state_version_id) REFERENCES state_versions(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_state_version_outputs_external_id ON state_version_outputs(external_id);
+-- +goose StatementEnd

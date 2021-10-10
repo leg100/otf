@@ -17,12 +17,11 @@ import (
 	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/otf"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
 //go:embed migrations/*.sql
@@ -88,20 +87,14 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 	// multiple readers to operate while data is being written.
 	db.Exec(`PRAGMA journal_mode = wal;`)
 
-	d, err := iofs.New(fs, "migrations")
-	if err != nil {
-		logger.Error(err, "creating migrations")
-	}
-	m, err := migrate.NewWithSourceInstance("iofs", d, fmt.Sprintf("sqlite3://%s", path))
-	if err != nil {
-		logger.Error(err, "new source instance")
+	goose.SetBaseFS(fs)
+
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return nil, fmt.Errorf("setting sqlite3 dialect for migrations: %w", err)
 	}
 
-	m.Log = &Logger{Logger: logger}
-
-	err = m.Up()
-	if err != nil {
-		logger.Error(err, "running migrations")
+	if err := goose.Up(db.DB, "migrations"); err != nil {
+		return nil, fmt.Errorf("unable to migrate database: %w", err)
 	}
 
 	return db, nil
@@ -128,11 +121,10 @@ func setIfChanged(a, b interface{}, m map[string]interface{}, k string) {
 }
 
 func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
-	if reflect.DeepEqual(a, b) {
+	idx := diffIndex(a, b)
+	if len(idx) == 0 {
 		return nil
 	}
-
-	idx := diffIndex(reflect.ValueOf(a), reflect.ValueOf(b), nil, nil)
 
 	updates := make(map[string]interface{})
 
@@ -147,16 +139,26 @@ func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
 	return updates
 }
 
-func diffIndex(a, b reflect.Value, idx [][]int, n []int) [][]int {
-	switch a.Kind() {
+// diffIndex returns an index of differences in the fields of two structs of
+// identical types. Supports nested structs.
+func diffIndex(a, b interface{}) [][]int {
+	return doDiffIndex(reflect.ValueOf(a), reflect.ValueOf(b), nil, nil)
+}
+
+func doDiffIndex(v1, v2 reflect.Value, idx [][]int, n []int) [][]int {
+	if reflect.DeepEqual(v1.Interface(), v2.Interface()) {
+		return idx
+	}
+
+	switch v1.Kind() {
+	case reflect.Ptr, reflect.Interface:
+		idx = doDiffIndex(v1.Elem(), v2.Elem(), idx, n)
 	case reflect.Struct:
-		for i := 0; i < a.NumField(); i++ {
-			idx = diffIndex(a.Field(i), b.Field(i), idx, append(n, i))
+		for i := 0; i < v1.NumField(); i++ {
+			idx = doDiffIndex(v1.Field(i), v2.Field(i), idx, append(n, i))
 		}
 	default:
-		if !reflect.DeepEqual(a.Interface(), b.Interface()) {
-			idx = append(idx, n)
-		}
+		idx = append(idx, n)
 	}
 
 	return idx

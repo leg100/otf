@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -47,7 +47,7 @@ VALUES (
 	listOrganizationsSql = fmt.Sprintf(`SELECT %s FROM organizations LIMIT :limit OFFSET :offset`,
 		asColumnList("organizations", false, organizationColumns...))
 
-	getOrganizationSql = fmt.Sprintf("SELECT %s FROM organizations WHERE name = ?", organizationColumns)
+	getOrganizationSql = fmt.Sprintf("SELECT %s FROM organizations WHERE name = ?", strings.Join(organizationColumns, ","))
 )
 
 // Organization models a row in a organizations table.
@@ -88,15 +88,19 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	before := otf.Organization{}
-	copier.Copy(&before, org)
+	before, err := copystructure.Copy(org)
+	if err != nil {
+		return nil, err
+	}
 
 	// Update obj using client-supplied fn
 	if err := fn(org); err != nil {
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before, org)
+	var any interface{}
+	any = org
+	updates := FindUpdates(db.Mapper, &before, &any)
 	if len(updates) == 0 {
 		return org, nil
 	}
@@ -115,7 +119,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 
 	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("executing SQL statement: %s: %w", sql.String(), err)
 	}
 
 	return org, tx.Commit()

@@ -46,12 +46,12 @@ func TestRun_UpdateStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Run{
 				Status:           tt.fromStatus,
-				StatusTimestamps: &RunStatusTimestamps{},
+				StatusTimestamps: TimestampMap{},
 				Plan: &Plan{
-					StatusTimestamps: &PlanStatusTimestamps{},
+					StatusTimestamps: TimestampMap{},
 				},
 				Apply: &Apply{
-					StatusTimestamps: &ApplyStatusTimestamps{},
+					StatusTimestamps: TimestampMap{},
 				},
 			}
 
