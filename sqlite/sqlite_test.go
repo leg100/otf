@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx/reflectx"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFindUpdates(t *testing.T) {

@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"sqlx.io/sqlx"
 )
 
 var (
@@ -42,17 +41,15 @@ VALUES (
 
 	configurationVersionColumns = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id", "workspace_id"}
 
-	configurationVersionColumnList = asColumnList(configurationVersionsTableName, configurationVersionColumns...)
-
 	listConfigurationVersionsSql = fmt.Sprintf(`SELECT %s, %s
 FROM configuration_versions
 JOIN workspaces ON workspaces.id = configuration_versions.workspace_id
-WHERE workspaces.external_id = ?`, configurationVersionColumnList, workspacesColumnList)
+WHERE workspaces.external_id = ?`, asColumnList("configuration_versions", false, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
 
 	getConfigurationVersionSql = fmt.Sprintf(`SELECT %s, %s
 FROM configuration_versions")
 JOIN workspaces ON workspaces.id = configuration_versions.workspace_id
-`, configurationVersionColumnList, workspacesColumnList)
+`, asColumnList("configuration_versions", false, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
 )
 
 type ConfigurationVersionDB struct {
@@ -115,10 +112,10 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 	fmt.Fprintln(&sql, "UPDATE configuration_versions")
 
 	for k := range updates {
-		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
 	}
 
-	fmt.Fprintf(&sql, "WHERE %s = :id", cv.Model.ID)
+	fmt.Fprintf(&sql, "WHERE %d = :id", cv.Model.ID)
 
 	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {

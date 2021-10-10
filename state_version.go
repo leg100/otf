@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -15,9 +13,9 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Serial       int64
 	VCSCommitSHA string

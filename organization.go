@@ -17,7 +17,7 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	ID string
+	ID string `db:"external_id"`
 
 	Model
 

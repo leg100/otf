@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"reflect"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
@@ -22,21 +22,26 @@ type ConfigurationVersion struct {
 	Source           otf.ConfigurationSource `jsonapi:"attr,source"`
 	Speculative      bool                    `jsonapi:"attr,speculative "`
 	Status           otf.ConfigurationStatus `jsonapi:"attr,status"`
-	StatusTimestamps *otf.CVStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	StatusTimestamps *CVStatusTimestamps     `jsonapi:"attr,status-timestamps"`
 	UploadURL        string                  `jsonapi:"attr,upload-url"`
 }
 
-// ToDomain converts http organization obj to a domain organization obj.
+// CVStatusTimestamps holds the timestamps for individual configuration version
+// statuses.
+type CVStatusTimestamps struct {
+	FinishedAt *time.Time `json:"finished-at,omitempty"`
+	QueuedAt   *time.Time `json:"queued-at,omitempty"`
+	StartedAt  *time.Time `json:"started-at,omitempty"`
+}
+
+// ToDomain converts http config version obj to a domain config version obj.
 func (cv *ConfigurationVersion) ToDomain() *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
-		ID:               cv.ID,
-		AutoQueueRuns:    cv.AutoQueueRuns,
-		Error:            cv.Error,
-		ErrorMessage:     cv.ErrorMessage,
-		Source:           cv.Source,
-		Speculative:      cv.Speculative,
-		Status:           cv.Status,
-		StatusTimestamps: cv.StatusTimestamps,
+		ID:            cv.ID,
+		AutoQueueRuns: cv.AutoQueueRuns,
+		Source:        cv.Source,
+		Speculative:   cv.Speculative,
+		Status:        cv.Status,
 	}
 }
 
@@ -115,16 +120,24 @@ func (s *Server) ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion)
 	obj := &ConfigurationVersion{
 		ID:            cv.ID,
 		AutoQueueRuns: cv.AutoQueueRuns,
-		Error:         cv.Error,
-		ErrorMessage:  cv.ErrorMessage,
 		Speculative:   cv.Speculative,
 		Source:        cv.Source,
 		Status:        cv.Status,
 		UploadURL:     s.GetURL(UploadConfigurationVersionRoute, cv.ID),
 	}
 
-	if cv.StatusTimestamps != nil && !reflect.ValueOf(cv.StatusTimestamps).Elem().IsZero() {
-		obj.StatusTimestamps = cv.StatusTimestamps
+	for k, v := range cv.StatusTimestamps {
+		if obj.StatusTimestamps == nil {
+			obj.StatusTimestamps = &CVStatusTimestamps{}
+		}
+		switch otf.ConfigurationStatus(k) {
+		case otf.ConfigurationPending:
+			obj.StatusTimestamps.QueuedAt = &v
+		case otf.ConfigurationErrored:
+			obj.StatusTimestamps.FinishedAt = &v
+		case otf.ConfigurationUploaded:
+			obj.StatusTimestamps.StartedAt = &v
+		}
 	}
 
 	return obj

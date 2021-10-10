@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/snake_case"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
@@ -78,7 +78,7 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 	}
 
 	// Map struct field names from CamelCase to snake_case.
-	db.MapperFunc(snake_case.ToSnakeCase)
+	db.MapperFunc(strcase.ToSnake)
 
 	// Avoid "database is locked" errors:
 	// https://github.com/mattn/go-sqlite3/issues/274
@@ -163,11 +163,17 @@ func diffIndex(a, b reflect.Value, idx [][]int, n []int) [][]int {
 }
 
 // asColumnList takes a table name and a list of columns and returns the SQL
-// snippet 'table.col1 AS table.col1, table.col2 AS table.col2, ...'
-func asColumnList(table string, cols ...string) (sql string) {
+// syntax for a list of column aliases. Toggle prefix to add the table name to
+// the alias, separated from the column name with a period, e.g. "t1.c1 AS
+// t1.c1".
+func asColumnList(table string, prefix bool, cols ...string) (sql string) {
 	var asLines []string
 	for _, c := range cols {
-		asLines = append(asLines, fmt.Sprintf("%s.%s AS %[1]s.%s", table, c))
+		if prefix {
+			asLines = append(asLines, fmt.Sprintf("%s.%s AS '%[1]s.%s'", table, c))
+		} else {
+			asLines = append(asLines, fmt.Sprintf("%s.%s AS '%[2]s'", table, c))
+		}
 	}
 	return strings.Join(asLines, ",")
 }

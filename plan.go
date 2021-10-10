@@ -46,6 +46,8 @@ type Plan struct {
 
 	// PlanJSONBlobID is the blob ID of the execution plan file in json format
 	PlanJSONBlobID string
+
+	RunID int64
 }
 
 // PlanStatusTimestamps holds the timestamps for individual plan statuses.

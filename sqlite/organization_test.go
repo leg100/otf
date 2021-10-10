@@ -3,12 +3,13 @@ package sqlite
 import (
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
 func TestOrganization(t *testing.T) {
-	db, err := New(":memory:")
+	db, err := New(logr.Discard(), ":memory:")
 	require.NoError(t, err)
 
 	svc := NewOrganizationDB(db)

@@ -44,10 +44,8 @@ VALUES (
 		"session_timeout",
 	}
 
-	organizationColumnList = asColumnList(organizationsTableName, organizationColumns...)
-
 	listOrganizationsSql = fmt.Sprintf(`SELECT %s FROM organizations LIMIT :limit OFFSET :offset`,
-		asColumnList(organizationsTableName, organizationColumns...))
+		asColumnList("organizations", false, organizationColumns...))
 
 	getOrganizationSql = fmt.Sprintf("SELECT %s FROM organizations WHERE name = ?", organizationColumns)
 )
@@ -65,11 +63,8 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
-
 	// Insert
-	result, err := tx.NamedExec(insertOrganizationSql, org)
+	result, err := db.NamedExec(insertOrganizationSql, org)
 	if err != nil {
 		return nil, err
 	}
@@ -113,10 +108,10 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	fmt.Fprintln(&sql, "UPDATE organizations")
 
 	for k := range updates {
-		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
 	}
 
-	fmt.Fprintf(&sql, "WHERE %s = :id", org.Model.ID)
+	fmt.Fprintf(&sql, "WHERE %d = :id", org.Model.ID)
 
 	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
@@ -157,8 +152,15 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 
 // Delete organization. TODO: delete dependencies, i.e. everything else too
 func (db OrganizationDB) Delete(name string) error {
-	_, err := db.MustExec("DELETE FROM organizations WHERE name = ?", name)
-	return err
+	result, err := db.Exec("DELETE FROM organizations WHERE name = ?", name)
+	if err != nil {
+		return err
+	}
+	_, err = result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {

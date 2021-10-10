@@ -3,12 +3,13 @@ package sqlite
 import (
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConfigurationVersion(t *testing.T) {
-	db, err := New(":memory:")
+	db, err := New(logr.Discard(), "test.db")
 	require.NoError(t, err)
 
 	cvDB := NewConfigurationVersionDB(db)

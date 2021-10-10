@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"time"
 )
 
 const (
@@ -36,21 +35,22 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID string
-
+	ID string `db:"external_id" jsonapi:"primary,configuration-versions"`
 	Model
 
 	AutoQueueRuns    bool
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps CSV
+	StatusTimestamps TimestampMap
 
 	// BlobID is the ID of the blob containing the configuration
 	BlobID string
 
 	// Configuration Version belongs to a Workspace
-	Workspace *Workspace
+	Workspace *Workspace `db:"workspaces"`
+
+	WorkspaceID int64
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
@@ -68,14 +68,6 @@ type ConfigurationVersionCreateOptions struct {
 
 	// When true, this configuration version can only be used for planning.
 	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
-}
-
-// CVStatusTimestamps holds the timestamps for individual configuration version
-// statuses.
-type CVStatusTimestamps struct {
-	FinishedAt *time.Time `json:"finished-at,omitempty"`
-	QueuedAt   *time.Time `json:"queued-at,omitempty"`
-	StartedAt  *time.Time `json:"started-at,omitempty"`
 }
 
 type ConfigurationVersionService interface {

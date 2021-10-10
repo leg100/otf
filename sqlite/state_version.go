@@ -3,9 +3,8 @@ package sqlite
 import (
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"sqlx.io/sqlx"
-	"sqlx.io/sqlx/clause"
 )
 
 var (
@@ -29,14 +28,15 @@ VALUES (
     :workspace_id)
 `
 
-	getStateVersionColumns = `
-state_versions.created_at   AS state_versions.created_at,
-state_versions.updated_at   AS state_versions.updated_at,
-state_versions.external_id  AS state_versions.external_id,
-state_versions.serial       AS state_versions.serial,
-state_versions.blob_id      AS state_versions.blob_id,
-state_versions.workspace_id AS state_versions.workspace_id,
-`
+	getStateVersionColumns = []string{
+		"created_at",
+		"updated_at",
+		"external_id",
+		"serial",
+		"blob_id",
+		"workspace_id",
+	}
+
 	stateVersionColumns = []string{"created_at", "updated_at", "external_id", "serial", "blob_id", "workspace_id"}
 
 	listStateVersionsSql = fmt.Sprintf(`SELECT %s, %s
@@ -48,7 +48,12 @@ AND workspaces.name = :workspace_name
 AND organizations.name = :organization_name
 LIMIT :limit
 OFFSET :offset
-`, asColumnList(stateVersionTableName, getStateVersionColumns), asColumnList(workspacesTableName, workspaceColumns))
+`, asColumnList(stateVersionTableName, false, stateVersionColumns...), asColumnList(workspacesTableName, true, workspaceColumns...))
+
+	getStateVersionSql = fmt.Sprintf(`SELECT %s, %s
+FROM state_versions
+JOIN workspaces ON workspaces.id = state_versions.workspace_id
+`, asColumnList(stateVersionTableName, false, stateVersionColumns...), asColumnList(workspacesTableName, true, workspaceColumns...))
 )
 
 type StateVersionService struct {
@@ -65,7 +70,7 @@ func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
 
 // Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	tx := db.MustBegin()
+	tx := s.MustBegin()
 	defer tx.Rollback()
 
 	// Insert
@@ -109,34 +114,31 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	sv, err := getStateVersion(s.DB, opts)
-	if err != nil {
-		return nil, err
-	}
-	return sv.ToDomain(), nil
+	return getStateVersion(s.DB, opts)
 }
 
-func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*StateVersion, error) {
-	var model StateVersion
-
-	query := db.Preload(clause.Associations)
+func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
+	var condition, arg string
 
 	switch {
 	case opts.ID != nil:
 		// Get state version by ID
-		query = query.Where("external_id = ?", *opts.ID)
+		condition = "WHERE state_versions.external_id = ?"
+		arg = *opts.ID
 	case opts.WorkspaceID != nil:
-		// Get most recent state version belonging to workspace
-		query = query.Joins("JOIN workspaces ON workspaces.id = state_versions.workspace_id").
-			Order("state_versions.serial desc, state_versions.created_at desc").
-			Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		// Get latest state version for given workspace
+		condition = "WHERE workspaces.external_id = ? ORDER BY state_versions.serial DESC, state_versions.created_at DESC"
+		arg = *opts.WorkspaceID
 	default:
-		return nil, otf.ErrInvalidStateVersionGetOptions
+		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	if result := query.First(&model); result.Error != nil {
-		return nil, result.Error
+	sql := fmt.Sprintf(getStateVersionSql, "WHERE", condition)
+
+	sv := otf.StateVersion{}
+	if err := db.Get(&sv, sql, arg); err != nil {
+		return nil, err
 	}
 
-	return &model, nil
+	return &sv, nil
 }

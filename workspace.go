@@ -38,14 +38,16 @@ type Workspace struct {
 	QueueAllRuns         bool
 	SpeculativeEnabled   bool
 	SourceName           string
-	SourceURL            string
+	SourceURL            string `db:"source_url"`
 	TerraformVersion     string
 	TriggerPrefixes      CSV
 	VCSRepo              *VCSRepo
 	WorkingDirectory     string
 
 	// Workspace belongs to an organization
-	Organization *Organization
+	Organization *Organization `db:"organizations"`
+
+	OrganizationID int64 `db:"organization_id"`
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

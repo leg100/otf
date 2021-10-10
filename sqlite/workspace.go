@@ -32,8 +32,8 @@ var (
     name,
     queue_all_runs,
     speculative_enabled,
-    source_name,
-    source_url,
+	source_name,
+	source_url,
     terraform_version,
     trigger_prefixes,
     working_directory,
@@ -88,12 +88,10 @@ VALUES (
 		"organization_id",
 	}
 
-	workspacesColumnList = asColumnList(workspacesTableName, workspaceColumns...)
-
 	getWorkspaceSql = fmt.Sprintf(`SELECT %s, %s
-FROM workspaces")
+FROM workspaces
 JOIN organizations ON organizations.id = workspaces.organization_id
-`, workspacesColumnList, organizationColumnList)
+`, asColumnList("workspaces", false, workspaceColumns...), asColumnList("organizations", true, organizationColumns...))
 )
 
 type WorkspaceDB struct {
@@ -158,10 +156,10 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 	fmt.Fprintln(&sql, "UPDATE workspaces")
 
 	for k := range updates {
-		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
 	}
 
-	fmt.Fprintf(&sql, "WHERE %s = :id", ws.Model.ID)
+	fmt.Fprintf(&sql, "WHERE %d = :id", ws.Model.ID)
 
 	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
@@ -179,10 +177,6 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 		"offset": offset,
 	}
 
-	var sql strings.Builder
-	fmt.Fprintln(&sql, "SELECT", workspaceColumns, "FROM workspaces")
-	fmt.Fprintln(&sql, "JOIN organizations ON organizations.id = workspaces.organization_id")
-
 	var conditions []string
 
 	// Optionally filter by workspace name prefix
@@ -194,14 +188,22 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	// Optionally filter by organization name
 	if opts.OrganizationName != nil {
 		conditions = append(conditions, "organizations.name = ?")
-		params["oranization_name"] = *opts.OrganizationName
+		params["organization_name"] = *opts.OrganizationName
 	}
 
-	fmt.Fprintln(&sql, "WHERE", strings.Join(conditions, " AND "))
+	sql := getWorkspaceSql + " LIMIT :limit OFFSET :offset"
+	if len(conditions) > 0 {
+		sql += " WHERE" + strings.Join(conditions, " AND ")
+	}
+
+	sql, args, err := sqlx.Named(sql, params)
+	if err != nil {
+		return nil, err
+	}
 
 	var result []otf.Workspace
-	if err := db.Select(&result, sql.String(), params); err != nil {
-		return nil, err
+	if err := db.Select(&result, sql, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan workspaces from db: %w", err)
 	}
 
 	// Convert from []otf.Workspace to []*otf.Workspace
@@ -232,25 +234,25 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	}
 
 	// Delete workspace
-	_, err = db.MustExec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
+	_, err = db.Exec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated runs
-	_, err = db.MustExec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
+	_, err = db.Exec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated state versions
-	_, err = db.MustExec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
+	_, err = db.Exec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated configuration versions
-	_, err = db.MustExec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
+	_, err = db.Exec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
@@ -272,7 +274,7 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error
 	params := getWorkspaceParams{}
 
 	var sql strings.Builder
-	fmt.Fprintln(&sql, "SELECT", workspaceColumns, "FROM", "workspaces", getWorkspaceJoins)
+	fmt.Fprintln(&sql, getWorkspaceSql)
 
 	var conditions []string
 

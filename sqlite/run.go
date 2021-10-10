@@ -25,15 +25,11 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 `
 
-	runColumns = []string{"id", "created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status text", "status_timestamps", "replace_addrs", "target_addrs", "workspace_id", "configuration_version_id"}
+	runColumns = []string{"id", "created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs", "workspace_id", "configuration_version_id"}
 
-	planColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_deletions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
+	planColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
 
-	applyColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_deletions", "status", "status_timestamps", "logs_blob_id", "run_id"}
-
-	runColumnList   = asColumnList("runs", runColumns...)
-	planColumnList  = asColumnList("plans", planColumns...)
-	applyColumnList = asColumnList("applies", applyColumns...)
+	applyColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
 
 	listRunsSql = fmt.Sprintf(`SELECT %s, %s, %s, %s, %s
 FROM runs
@@ -41,7 +37,7 @@ JOIN plans ON plans.run_id = runs.id
 JOIN applies ON applies.run_id = runs.id
 JOIN configuration_versions ON configuration_versions.id = runs.configuration_version_id
 JOIN workspaces ON workspaces.id = runs.workspace_id
-`, runColumnList, planColumnList, applyColumnList, configurationVersionColumnList, workspacesColumnList)
+`, asColumnList("runs", false, runColumns...), asColumnList("plans", true, planColumns...), asColumnList("applies", true, applyColumns...), asColumnList("configuration_versions", true, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
 
 	getRunSql = fmt.Sprintf(`SELECT %s, %s, %s, %s, %s
 FROM runs
@@ -49,7 +45,7 @@ JOIN plans ON plans.run_id = runs.id
 JOIN applies ON applies.run_id = runs.id
 JOIN configuration_versions ON configuration_versions.id = runs.configuration_version_id
 JOIN workspaces ON workspaces.id = runs.workspace_id
-`, runColumnList, planColumnList, applyColumnList, configurationVersionColumnList, workspacesColumnList)
+`, asColumnList("runs", false, runColumns...), asColumnList("plans", true, planColumns...), asColumnList("applies", true, applyColumns...), asColumnList("configuration_versions", true, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
 )
 
 type RunDB struct {
@@ -78,12 +74,14 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	}
 
 	// Insert plan
+	run.Plan.RunID = run.Model.ID
 	result, err = tx.NamedExec(insertPlanSql, run.Plan)
 	if err != nil {
 		return nil, err
 	}
 
 	// Insert apply
+	run.Apply.RunID = run.Model.ID
 	result, err = tx.NamedExec(insertApplySql, run.Apply)
 	if err != nil {
 		return nil, err
@@ -125,10 +123,10 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	fmt.Fprintln(&sql, "UPDATE runs")
 
 	for k := range updates {
-		fmt.Fprintln(&sql, "SET %s = :%[1]s", k)
+		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
 	}
 
-	fmt.Fprintf(&sql, "WHERE %s = :id", run.Model.ID)
+	fmt.Fprintf(&sql, "WHERE %d = :id", run.Model.ID)
 
 	_, err = db.NamedExec(sql.String(), updates)
 	if err != nil {
@@ -156,28 +154,30 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 
 	// Optionally filter by statuses
 	if len(opts.Statuses) > 0 {
-		conditions = append(conditions, "run.status IN (:statuses)")
+		conditions = append(conditions, "runs.status IN (:statuses)")
 		params["statuses"] = opts.Statuses
 	}
 
 	sql := listRunsSql
 	if len(conditions) > 0 {
-		sql += "\n"
-		sql += fmt.Sprint("WHERE", strings.Join(conditions, " AND "))
+		sql += fmt.Sprintln("WHERE", strings.Join(conditions, " AND "))
 	}
+	sql += " LIMIT :limit OFFSET :offset "
 
 	query, args, err := sqlx.Named(sql, params)
 	if err != nil {
 		return nil, err
 	}
-	query, args, err = sqlx.In(query, args)
+	query, args, err = sqlx.In(query, args...)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println(query)
+
 	var result []otf.Run
-	if err := db.Select(&result, query, args); err != nil {
-		return nil, err
+	if err := db.Select(&result, query, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan runs from DB: %w", err)
 	}
 
 	// Convert from []otf.Run to []*otf.Run

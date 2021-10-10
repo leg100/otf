@@ -2,7 +2,6 @@ CREATE TABLE IF NOT EXISTS organizations (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     name text,
     email text,
@@ -10,13 +9,11 @@ CREATE TABLE IF NOT EXISTS organizations (
     session_timeout integer,
     PRIMARY KEY (id));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_external_id ON organizations(external_id);
-CREATE INDEX IF NOT EXISTS idx_organizations_deleted_at ON organizations(deleted_at);
 
 CREATE TABLE IF NOT EXISTS workspaces (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     allow_destroy_plan numeric,
     auto_apply numeric,
@@ -36,18 +33,11 @@ CREATE TABLE IF NOT EXISTS workspaces (
     terraform_version text,
     trigger_prefixes text,
     working_directory text,
-    resource_count integer,
-    apply_duration_average integer,
-    plan_duration_average integer,
-    policy_check_failures integer,
-    run_failures integer,
-    runs_count integer,
     organization_id integer,
     PRIMARY KEY (id),
     CONSTRAINT fk_workspaces_organization FOREIGN KEY (organization_id) REFERENCES organizations(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_external_id ON workspaces(external_id);
-CREATE INDEX IF NOT EXISTS idx_workspaces_deleted_at ON workspaces(deleted_at);
 
 CREATE TABLE IF NOT EXISTS configuration_versions (
     id integer,
@@ -65,7 +55,6 @@ CREATE TABLE IF NOT EXISTS configuration_versions (
     CONSTRAINT fk_configuration_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_configuration_versions_external_id ON configuration_versions(external_id);
-CREATE INDEX IF NOT EXISTS idx_configuration_versions_deleted_at ON configuration_versions(deleted_at);
 
 CREATE TABLE IF NOT EXISTS runs (
     id integer,
@@ -88,56 +77,42 @@ CREATE TABLE IF NOT EXISTS runs (
     CONSTRAINT fk_runs_configuration_version FOREIGN KEY (configuration_version_id) REFERENCES configuration_versions(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_external_id ON runs(external_id);
-CREATE INDEX IF NOT EXISTS idx_runs_deleted_at ON runs(deleted_at);
 
 CREATE TABLE IF NOT EXISTS run_timestamps (
     id integer,
     status text,
     timestamp datetime,
     PRIMARY KEY (id, status),
-    CONSTRAINT fk_run_timestamps_runs FOREIGN KEY (id) REFERENCES runs(id),
+    CONSTRAINT fk_run_timestamps_runs FOREIGN KEY (id) REFERENCES runs(id)
 );
 
 CREATE TABLE IF NOT EXISTS applies (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     resource_additions integer,
     resource_changes integer,
     resource_destructions integer,
     status text,
-    timestamp_canceled_at datetime,
-    timestamp_errored_at datetime,
-    timestamp_finished_at datetime,
-    timestamp_force_canceled_at datetime,
-    timestamp_queued_at datetime,
-    timestamp_started_at datetime,
+    status_timestamps text,
     logs_blob_id text,
     run_id integer,
     PRIMARY KEY (id),
     CONSTRAINT fk_runs_apply FOREIGN KEY (run_id) REFERENCES runs(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_applies_external_id ON applies(external_id);
-CREATE INDEX IF NOT EXISTS idx_applies_deleted_at ON applies(deleted_at);
 
 CREATE TABLE IF NOT EXISTS plans (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     resource_additions integer,
     resource_changes integer,
     resource_destructions integer,
     status text,
-    timestamp_canceled_at datetime,
-    timestamp_errored_at datetime,
-    timestamp_finished_at datetime,
-    timestamp_force_canceled_at datetime,
-    timestamp_queued_at datetime,
-    timestamp_started_at datetime,
+    status_timestamps text,
     logs_blob_id text,
     plan_file_blob_id text,
     plan_json_blob_id text,
@@ -146,13 +121,11 @@ CREATE TABLE IF NOT EXISTS plans (
     CONSTRAINT fk_runs_plan FOREIGN KEY (run_id) REFERENCES runs(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_external_id ON plans(external_id);
-CREATE INDEX IF NOT EXISTS idx_plans_deleted_at ON plans(deleted_at);
 
 CREATE TABLE IF NOT EXISTS state_versions (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     serial integer,
     vcs_commit_sha text,
@@ -163,13 +136,11 @@ CREATE TABLE IF NOT EXISTS state_versions (
     CONSTRAINT fk_state_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_state_versions_external_id ON state_versions(external_id);
-CREATE INDEX IF NOT EXISTS idx_state_versions_deleted_at ON state_versions(deleted_at);
 
 CREATE TABLE IF NOT EXISTS state_version_outputs (
     id integer,
     created_at datetime,
     updated_at datetime,
-    deleted_at datetime,
     external_id text,
     name text,
     sensitive numeric,
@@ -179,5 +150,4 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
     PRIMARY KEY (id),
     CONSTRAINT fk_state_versions_outputs FOREIGN KEY (state_version_id) REFERENCES state_versions(id)
 );
-CREATE INDEX IF NOT EXISTS idx_state_version_outputs_deleted_at ON state_version_outputs(deleted_at);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_state_version_outputs_external_id ON state_version_outputs(external_id);

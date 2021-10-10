@@ -11,19 +11,18 @@ import (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	Name                   string                       `jsonapi:"primary,organizations"`
-	CollaboratorAuthPolicy otf.AuthPolicyType           `jsonapi:"attr,collaborator-auth-policy"`
-	CostEstimationEnabled  bool                         `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt              time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	Email                  string                       `jsonapi:"attr,email"`
-	ExternalID             string                       `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID   string                       `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions            *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled            bool                         `jsonapi:"attr,saml-enabled"`
-	SessionRemember        int                          `jsonapi:"attr,session-remember"`
-	SessionTimeout         int                          `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt         time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant    bool                         `jsonapi:"attr,two-factor-conformant"`
+	Name                  string                       `jsonapi:"primary,organizations"`
+	CostEstimationEnabled bool                         `jsonapi:"attr,cost-estimation-enabled"`
+	CreatedAt             time.Time                    `jsonapi:"attr,created-at,iso8601"`
+	Email                 string                       `jsonapi:"attr,email"`
+	ExternalID            string                       `jsonapi:"attr,external-id"`
+	OwnersTeamSAMLRoleID  string                       `jsonapi:"attr,owners-team-saml-role-id"`
+	Permissions           *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
+	SAMLEnabled           bool                         `jsonapi:"attr,saml-enabled"`
+	SessionRemember       int                          `jsonapi:"attr,session-remember"`
+	SessionTimeout        int                          `jsonapi:"attr,session-timeout"`
+	TrialExpiresAt        time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
+	TwoFactorConformant   bool                         `jsonapi:"attr,two-factor-conformant"`
 }
 
 // OrganizationList represents a list of organizations.
@@ -35,17 +34,11 @@ type OrganizationList struct {
 // ToDomain converts http organization obj to a domain organization obj.
 func (o *Organization) ToDomain() *otf.Organization {
 	return &otf.Organization{
-		ID:                     o.ExternalID,
-		Name:                   o.Name,
-		CollaboratorAuthPolicy: o.CollaboratorAuthPolicy,
-		CostEstimationEnabled:  o.CostEstimationEnabled,
-		Email:                  o.Email,
-		OwnersTeamSAMLRoleID:   o.OwnersTeamSAMLRoleID,
-		SAMLEnabled:            o.SAMLEnabled,
-		SessionRemember:        o.SessionRemember,
-		SessionTimeout:         o.SessionTimeout,
-		TrialExpiresAt:         o.TrialExpiresAt,
-		TwoFactorConformant:    o.TwoFactorConformant,
+		ID:              o.ExternalID,
+		Name:            o.Name,
+		Email:           o.Email,
+		SessionRemember: o.SessionRemember,
+		SessionTimeout:  o.SessionTimeout,
 	}
 }
 
@@ -145,19 +138,13 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 // that can be marshalled into a JSON-API object
 func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *Organization {
 	obj := &Organization{
-		Name:                   org.Name,
-		CollaboratorAuthPolicy: org.CollaboratorAuthPolicy,
-		CostEstimationEnabled:  org.CostEstimationEnabled,
-		CreatedAt:              org.CreatedAt,
-		Email:                  org.Email,
-		ExternalID:             org.ID,
-		OwnersTeamSAMLRoleID:   org.OwnersTeamSAMLRoleID,
-		Permissions:            &otf.DefaultOrganizationPermissions,
-		SAMLEnabled:            org.SAMLEnabled,
-		SessionRemember:        org.SessionRemember,
-		SessionTimeout:         org.SessionTimeout,
-		TrialExpiresAt:         org.TrialExpiresAt,
-		TwoFactorConformant:    org.TwoFactorConformant,
+		Name:            org.Name,
+		CreatedAt:       org.CreatedAt,
+		Email:           org.Email,
+		ExternalID:      org.ID,
+		Permissions:     &otf.DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
 	}
 
 	return obj

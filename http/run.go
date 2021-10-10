@@ -123,7 +123,7 @@ type RunCreateOptions struct {
 	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
 }
 
-// ToDomain converts http organization obj to a domain organization obj.
+// ToDomain converts http run obj to a domain run obj.
 func (r *Run) ToDomain() *otf.Run {
 	domain := otf.Run{
 		ID:                     r.ID,

@@ -12,10 +12,13 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.1
 	github.com/hashicorp/go-retryablehttp v0.5.2
 	github.com/hashicorp/hcl/v2 v2.10.0
+	github.com/iancoleman/strcase v0.2.0
+	github.com/jinzhu/copier v0.3.2
+	github.com/jmoiron/sqlx v1.3.1
 	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
-	github.com/mattn/go-sqlite3 v1.14.7 // indirect
+	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.23.0
 	github.com/spf13/cobra v1.1.3

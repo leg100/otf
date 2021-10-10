@@ -25,7 +25,7 @@ type ApplyService interface {
 }
 
 type Apply struct {
-	ID string
+	ID string `db:"external_id"`
 
 	Model
 
@@ -36,6 +36,8 @@ type Apply struct {
 
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
+
+	RunID int64
 }
 
 func newApply() *Apply {

@@ -59,7 +59,7 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string
+	ID string `db:"external_id"`
 
 	Model
 
@@ -75,10 +75,13 @@ type Run struct {
 	TargetAddrs            CSV
 
 	// Relations
-	Plan                 *Plan                 `db:"plan"`
-	Apply                *Apply                `db:"apply"`
-	Workspace            *Workspace            `db:"-"`
-	ConfigurationVersion *ConfigurationVersion `db:"-"`
+	Plan                 *Plan                 `db:"plans"`
+	Apply                *Apply                `db:"applies"`
+	Workspace            *Workspace            `db:"workspaces"`
+	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
+
+	WorkspaceID            int64 `db:"workspace_id"`
+	ConfigurationVersionID int64 `db:"configuration_version_id"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
@@ -119,6 +122,11 @@ type RunService interface {
 
 // RunCreateOptions represents the options for creating a new run.
 type RunCreateOptions struct {
+	// Type is a public field utilized by JSON:API to set the resource type via
+	// the field tag.  It is not a user-defined value and does not need to be
+	// set.  https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,runs"`
+
 	// Specifies if this plan is a destroy plan, which will destroy all
 	// provisioned resources.
 	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
