@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
@@ -15,26 +16,7 @@ var (
 
 	organizationsTableName = "organizations"
 
-	insertOrganizationSql = `INSERT INTO organizations (
-    created_at,
-    updated_at,
-    external_id,
-    name,
-    email,
-    session_remember,
-    session_timeout)
-VALUES (
-	:created_at,
-    :updated_at,
-    :external_id,
-    :name,
-    :email,
-    :session_remember,
-    :session_timeout)
-`
-
-	organizationColumns = []string{
-		"id",
+	organizationColumnsWithoutID = []string{
 		"created_at",
 		"updated_at",
 		"external_id",
@@ -43,11 +25,7 @@ VALUES (
 		"session_remember",
 		"session_timeout",
 	}
-
-	listOrganizationsSql = fmt.Sprintf(`SELECT %s FROM organizations LIMIT :limit OFFSET :offset`,
-		asColumnList("organizations", false, organizationColumns...))
-
-	getOrganizationSql = fmt.Sprintf("SELECT %s FROM organizations WHERE name = ?", strings.Join(organizationColumns, ","))
+	organizationColumns = append(organizationColumnsWithoutID, "id")
 )
 
 // Organization models a row in a organizations table.
@@ -63,8 +41,18 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
+	sql := sq.
+		Insert("organizations").
+		Columns(organizationColumnsWithoutID...).
+		Values(sq.Expr(strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ",")))
+
+	query, _, err := sql.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
 	// Insert
-	result, err := db.NamedExec(insertOrganizationSql, org)
+	result, err := db.NamedExec(query, org)
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +76,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
+	// Make a copy for comparison with the updated obj
 	before, err := copystructure.Copy(org)
 	if err != nil {
 		return nil, err
@@ -98,9 +87,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	var any interface{}
-	any = org
-	updates := FindUpdates(db.Mapper, &before, &any)
+	updates := FindUpdates(db.Mapper, before.(*otf.Organization), org)
 	if len(updates) == 0 {
 		return org, nil
 	}
@@ -108,18 +95,16 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	org.UpdatedAt = time.Now()
 	updates["updated_at"] = org.UpdatedAt
 
-	var sql strings.Builder
-	fmt.Fprintln(&sql, "UPDATE organizations")
+	sql := sq.Update("organizations").Where("id = ?", org.Model.ID)
 
-	for k := range updates {
-		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
+	query, args, err := sql.SetMap(updates).ToSql()
+	if err != nil {
+		return nil, err
 	}
 
-	fmt.Fprintf(&sql, "WHERE %d = :id", org.Model.ID)
-
-	_, err = db.NamedExec(sql.String(), updates)
+	_, err = tx.Exec(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("executing SQL statement: %s: %w", sql.String(), err)
+		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
 	}
 
 	return org, tx.Commit()
@@ -128,13 +113,14 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	limit, offset := opts.GetSQLWindow()
 
-	params := map[string]interface{}{
-		"limit":  limit,
-		"offset": offset,
-	}
+	sql, _ := sq.Select(strings.Join(organizationColumns, ",")).
+		From("organizations").
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
+		MustSql()
 
 	var result []otf.Organization
-	if err := db.Select(&result, listOrganizationsSql, params); err != nil {
+	if err := db.Select(&result, sql); err != nil {
 		return nil, err
 	}
 
@@ -168,8 +154,12 @@ func (db OrganizationDB) Delete(name string) error {
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {
+	sql, _ := sq.Select(strings.Join(organizationColumns, ",")).
+		From("organizations").
+		Where("name = ?").MustSql()
+
 	var org otf.Organization
-	if err := getter.Get(&org, getOrganizationSql, name); err != nil {
+	if err := getter.Get(&org, sql, name); err != nil {
 		return nil, err
 	}
 

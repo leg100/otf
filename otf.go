@@ -139,3 +139,11 @@ func GetMapKeys(m map[string]interface{}) []string {
 	}
 	return keys
 }
+
+// PrefixSlice prefixes each string in a slice with another string.
+func PrefixSlice(slice []string, prefix string) (ret []string) {
+	for _, s := range slice {
+		ret = append(ret, prefix+s)
+	}
+	return
+}

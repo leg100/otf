@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.0 // indirect
+	github.com/Masterminds/squirrel v1.5.0
 	github.com/denisenkom/go-mssqldb v0.11.0 // indirect
 	github.com/go-logr/logr v1.0.0
 	github.com/golang-migrate/migrate/v4 v4.15.0

@@ -173,8 +173,6 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		return nil, err
 	}
 
-	fmt.Println(query)
-
 	var result []otf.Run
 	if err := db.Select(&result, query, args...); err != nil {
 		return nil, fmt.Errorf("unable to scan runs from DB: %w", err)
