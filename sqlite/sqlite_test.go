@@ -57,22 +57,3 @@ func TestFindUpdates_WithPointers(t *testing.T) {
 	updates := FindUpdates(m, before, after)
 	assert.Equal(t, map[string]interface{}{"b": 9, "ss.d": 99}, updates)
 }
-
-func TestFindUpdates_InvalidParams(t *testing.T) {
-	type S struct {
-		A int `db:"a"`
-		B int `db:"b"`
-	}
-
-	type Z struct {
-		X int `db:"x"`
-		Y int `db:"y"`
-	}
-
-	before := S{A: 1, B: 2}
-	after := Z{X: 1, Y: 9}
-
-	assert.Panics(t, func() {
-		_ = diffIndex(before, after)
-	})
-}

@@ -16,11 +16,11 @@ var (
 
 	configurationVersionsTableName = "configuration_versions"
 
-	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id", "workspace_id"}
+	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id"}
 
 	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")
 
-	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s) VALUES (%s)",
+	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
 		strings.Join(configurationVersionColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(configurationVersionColumnsWithoutID, ":"), ", "))
 )
@@ -133,16 +133,17 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
-		Columns(asColumnList("organizations", true, organizationColumns...)).
-		From("organizations")
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		From("configuration_versions")
 
 	switch {
 	case opts.ID != nil:
 		// Get config version by ID
-		selectBuilder = selectBuilder.Where("WHERE configuration_versions.external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("configuration_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest config version for given workspace
-		selectBuilder = selectBuilder.Where("WHERE workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
@@ -153,7 +154,7 @@ func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOpti
 	}
 
 	var cv otf.ConfigurationVersion
-	if err := getter.Get(&cv, sql, args); err != nil {
+	if err := getter.Get(&cv, sql, args...); err != nil {
 		return nil, err
 	}
 

@@ -9,7 +9,7 @@ import (
 )
 
 func TestConfigurationVersion(t *testing.T) {
-	db, err := New(logr.Discard(), "test.db")
+	db, err := New(logr.Discard(), ":memory:")
 	require.NoError(t, err)
 
 	cvDB := NewConfigurationVersionDB(db)

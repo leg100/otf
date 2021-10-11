@@ -14,7 +14,7 @@ import (
 var (
 	_ otf.RunStore = (*RunDB)(nil)
 
-	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs", "workspace_id", "configuration_version_id"}
+	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs"}
 	runColumns          = append(runColumnsWithoutID, "id")
 
 	planColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
@@ -23,7 +23,7 @@ var (
 	applyColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
 	applyColumns          = append(applyColumnsWithoutID, "id")
 
-	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s) VALUES (%s)",
+	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :configuration_versions.id)",
 		strings.Join(runColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(runColumnsWithoutID, ":"), ", "))
 
@@ -86,31 +86,31 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
-	cv, err := getRun(tx, otf.RunGetOptions{ID: &id})
+	run, err := getRun(tx, otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
 
 	// Make a copy for comparison with the updated obj
-	before, err := copystructure.Copy(cv)
+	before, err := copystructure.Copy(run)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update obj using client-supplied fn
-	if err := fn(cv); err != nil {
+	if err := fn(run); err != nil {
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before.(*otf.Run), cv)
+	updates := FindUpdates(db.Mapper, before.(*otf.Run), run)
 	if len(updates) == 0 {
-		return cv, nil
+		return run, nil
 	}
 
-	cv.UpdatedAt = time.Now()
-	updates["updated_at"] = cv.UpdatedAt
+	run.UpdatedAt = time.Now()
+	updates["updated_at"] = run.UpdatedAt
 
-	sql := sq.Update("runs").Where("id = ?", cv.Model.ID)
+	sql := sq.Update("runs").Where("id = ?", run.Model.ID)
 
 	query, args, err := sql.SetMap(updates).ToSql()
 	if err != nil {
@@ -122,7 +122,7 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
 	}
 
-	return cv, tx.Commit()
+	return run, tx.Commit()
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {

@@ -25,7 +25,7 @@ type StateVersion struct {
 	BlobID string
 
 	// State version belongs to a workspace
-	Workspace *Workspace
+	Workspace *Workspace `db:"workspaces"`
 
 	// Run that created this state version. Optional.
 	// Run     *Run

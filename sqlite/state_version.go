@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"fmt"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -13,48 +14,12 @@ var (
 
 	stateVersionTableName = "state_versions"
 
-	insertStateVersionSql = `INSERT INTO state_versions (
-    created_at,
-    updated_at,
-    external_id,
-    serial,
-    blob_id,
-    workspace_id)
-VALUES (
-	:created_at,
-    :updated_at,
-    :external_id,
-    :serial,
-    :blob_id,
-    :workspace_id)
-`
+	stateVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "serial", "blob_id"}
+	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
 
-	getStateVersionColumns = []string{
-		"created_at",
-		"updated_at",
-		"external_id",
-		"serial",
-		"blob_id",
-		"workspace_id",
-	}
-
-	stateVersionColumns = []string{"created_at", "updated_at", "external_id", "serial", "blob_id", "workspace_id"}
-
-	listStateVersionsSql = fmt.Sprintf(`SELECT %s, %s
-FROM state_versions
-JOIN workspaces ON workspaces.id = state_versions.workspace_id
-JOIN organizations ON organizations.id = workspaces.organization_id
-WHERE workspaces.external_id = :workspace_external_id
-AND workspaces.name = :workspace_name
-AND organizations.name = :organization_name
-LIMIT :limit
-OFFSET :offset
-`, asColumnList(stateVersionTableName, false, stateVersionColumns...), asColumnList(workspacesTableName, true, workspaceColumns...))
-
-	getStateVersionSql = fmt.Sprintf(`SELECT %s, %s
-FROM state_versions
-JOIN workspaces ON workspaces.id = state_versions.workspace_id
-`, asColumnList(stateVersionTableName, false, stateVersionColumns...), asColumnList(workspacesTableName, true, workspaceColumns...))
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+		strings.Join(stateVersionColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
 )
 
 type StateVersionService struct {
@@ -64,18 +29,14 @@ type StateVersionService struct {
 
 func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
 	return &StateVersionService{
-		DB:      db,
-		columns: []string{"created_at", "updated_at", "external_id", "serial", "blob_id", "workspace_id"},
+		DB: db,
 	}
 }
 
 // Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	tx := s.MustBegin()
-	defer tx.Rollback()
-
 	// Insert
-	result, err := tx.NamedExec(insertStateVersionSql, sv)
+	result, err := s.NamedExec(insertStateVersionSQL, sv)
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +82,6 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	return getStateVersion(s.DB, opts)
-}
-
-func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
@@ -133,10 +90,10 @@ func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*otf.StateVe
 	switch {
 	case opts.ID != nil:
 		// Get state version by ID
-		selectBuilder = selectBuilder.Where("WHERE state_versions.external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("state_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest state version for given workspace
-		selectBuilder = selectBuilder.Where("WHERE workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
 		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
@@ -148,7 +105,7 @@ func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*otf.StateVe
 	}
 
 	sv := otf.StateVersion{}
-	if err := db.Get(&sv, sql, args); err != nil {
+	if err := s.DB.Get(&sv, sql, args...); err != nil {
 		return nil, err
 	}
 

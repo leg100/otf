@@ -46,8 +46,6 @@ type Workspace struct {
 
 	// Workspace belongs to an organization
 	Organization *Organization `db:"organizations"`
-
-	OrganizationID int64 `db:"organization_id"`
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

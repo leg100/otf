@@ -36,6 +36,7 @@ type ConfigurationSource string
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
 	ID string `db:"external_id" jsonapi:"primary,configuration-versions"`
+
 	Model
 
 	AutoQueueRuns    bool
@@ -49,8 +50,6 @@ type ConfigurationVersion struct {
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
-
-	WorkspaceID int64
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a

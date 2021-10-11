@@ -3,9 +3,7 @@ module github.com/leg100/otf
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go v1.5.0 // indirect
 	github.com/Masterminds/squirrel v1.5.0
-	github.com/denisenkom/go-mssqldb v0.11.0 // indirect
 	github.com/go-logr/logr v1.0.0
 	github.com/golang-migrate/migrate/v4 v4.15.0
 	github.com/google/uuid v1.3.0
@@ -31,9 +29,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/negroni v1.0.0
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	gorm.io/driver/sqlite v1.1.4
+	gorm.io/driver/sqlite v1.1.4 // indirect
 	gorm.io/gorm v1.21.10
 )
 

@@ -79,9 +79,6 @@ type Run struct {
 	Apply                *Apply                `db:"applies"`
 	Workspace            *Workspace            `db:"workspaces"`
 	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
-
-	WorkspaceID            int64 `db:"workspace_id"`
-	ConfigurationVersionID int64 `db:"configuration_version_id"`
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
