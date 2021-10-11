@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jinzhu/copier"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
@@ -170,33 +171,24 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	limit, offset := opts.GetSQLWindow()
-
-	params := map[string]interface{}{
-		"limit":  limit,
-		"offset": offset,
-	}
-
-	var conditions []string
+	selectBuilder := sq.Select(asColumnList("workspaces", false, workspaceColumns...)).
+		Columns(asColumnList("organizations", true, organizationColumns...)).
+		From("workspaces").
+		Join("organizations ON organizations.id = workspaces.organization_id").
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
 	// Optionally filter by workspace name prefix
 	if opts.Prefix != nil {
-		conditions = append(conditions, "name LIKE ?")
-		params["prefix"] = fmt.Sprintf("%s%%", *opts.Prefix)
+		selectBuilder.Where("name LIKE ?", fmt.Sprintf("%s%%", *opts.Prefix))
 	}
 
 	// Optionally filter by organization name
 	if opts.OrganizationName != nil {
-		conditions = append(conditions, "organizations.name = ?")
-		params["organization_name"] = *opts.OrganizationName
+		selectBuilder.Where("organizations.name = ?", *opts.OrganizationName)
 	}
 
-	sql := getWorkspaceSql + " LIMIT :limit OFFSET :offset"
-	if len(conditions) > 0 {
-		sql += " WHERE" + strings.Join(conditions, " AND ")
-	}
-
-	sql, args, err := sqlx.Named(sql, params)
+	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -234,25 +226,25 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	}
 
 	// Delete workspace
-	_, err = db.Exec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
+	_, err = tx.Exec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated runs
-	_, err = db.Exec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
+	_, err = tx.Exec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated state versions
-	_, err = db.Exec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
+	_, err = tx.Exec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}
 
 	// Delete associated configuration versions
-	_, err = db.Exec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
+	_, err = tx.Exec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
 	if err != nil {
 		return err
 	}

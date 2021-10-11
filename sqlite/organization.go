@@ -26,6 +26,10 @@ var (
 		"session_timeout",
 	}
 	organizationColumns = append(organizationColumnsWithoutID, "id")
+
+	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s)",
+		strings.Join(organizationColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ", "))
 )
 
 // Organization models a row in a organizations table.
@@ -41,18 +45,8 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	sql := sq.
-		Insert("organizations").
-		Columns(organizationColumnsWithoutID...).
-		Values(sq.Expr(strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ",")))
-
-	query, _, err := sql.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
 	// Insert
-	result, err := db.NamedExec(query, org)
+	result, err := db.NamedExec(insertOrganizationSQL, org)
 	if err != nil {
 		return nil, err
 	}
@@ -111,13 +105,15 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	limit, offset := opts.GetSQLWindow()
-
-	sql, _ := sq.Select(strings.Join(organizationColumns, ",")).
+	selectBuilder := sq.Select(strings.Join(organizationColumns, ",")).
 		From("organizations").
-		Limit(uint64(limit)).
-		Offset(uint64(offset)).
-		MustSql()
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
+
+	sql, _, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	var result []otf.Organization
 	if err := db.Select(&result, sql); err != nil {
@@ -154,12 +150,17 @@ func (db OrganizationDB) Delete(name string) error {
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {
-	sql, _ := sq.Select(strings.Join(organizationColumns, ",")).
+	selectBuilder := sq.Select(strings.Join(organizationColumns, ",")).
 		From("organizations").
-		Where("name = ?").MustSql()
+		Where("name = ?", name)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	var org otf.Organization
-	if err := getter.Get(&org, sql, name); err != nil {
+	if err := getter.Get(&org, sql, args...); err != nil {
 		return nil, err
 	}
 

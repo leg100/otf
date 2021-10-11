@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/copier"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -15,41 +16,13 @@ var (
 
 	configurationVersionsTableName = "configuration_versions"
 
-	insertConfigurationVersionSql = `INSERT INTO configuration_versions (
-    created_at,
-    updated_at,
-    external_id,
-    auto_queue_runs,
-    source,
-    speculative,
-    status,
-    status_timestamps,
-    blob_id,
-    workspace_id)
-VALUES (
-	:created_at,
-    :updated_at,
-    :external_id,
-	:auto_queue_runs,
-    :source,
-    :speculative,
-    :status,
-    :status_timestamps,
-    :blob_id,
-    :workspace_id)
-`
+	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id", "workspace_id"}
 
-	configurationVersionColumns = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id", "workspace_id"}
+	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")
 
-	listConfigurationVersionsSql = fmt.Sprintf(`SELECT %s, %s
-FROM configuration_versions
-JOIN workspaces ON workspaces.id = configuration_versions.workspace_id
-WHERE workspaces.external_id = ?`, asColumnList("configuration_versions", false, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
-
-	getConfigurationVersionSql = fmt.Sprintf(`SELECT %s, %s
-FROM configuration_versions")
-JOIN workspaces ON workspaces.id = configuration_versions.workspace_id
-`, asColumnList("configuration_versions", false, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
+	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s) VALUES (%s)",
+		strings.Join(configurationVersionColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(configurationVersionColumnsWithoutID, ":"), ", "))
 )
 
 type ConfigurationVersionDB struct {
@@ -63,11 +36,8 @@ func NewConfigurationVersionDB(db *sqlx.DB) *ConfigurationVersionDB {
 }
 
 func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
-
 	// Insert
-	result, err := tx.NamedExec(insertConfigurationVersionSql, cv)
+	result, err := db.NamedExec(insertConfigurationVersionSQL, cv)
 	if err != nil {
 		return nil, err
 	}
@@ -92,15 +62,18 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 		return nil, err
 	}
 
-	before := otf.ConfigurationVersion{}
-	copier.Copy(&before, cv)
+	// Make a copy for comparison with the updated obj
+	before, err := copystructure.Copy(cv)
+	if err != nil {
+		return nil, err
+	}
 
 	// Update obj using client-supplied fn
 	if err := fn(cv); err != nil {
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before, cv)
+	updates := FindUpdates(db.Mapper, before.(*otf.ConfigurationVersion), cv)
 	if len(updates) == 0 {
 		return cv, nil
 	}
@@ -108,34 +81,37 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 	cv.UpdatedAt = time.Now()
 	updates["updated_at"] = cv.UpdatedAt
 
-	var sql strings.Builder
-	fmt.Fprintln(&sql, "UPDATE configuration_versions")
+	sql := sq.Update("configuration_versions").Where("id = ?", cv.Model.ID)
 
-	for k := range updates {
-		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
-	}
-
-	fmt.Fprintf(&sql, "WHERE %d = :id", cv.Model.ID)
-
-	_, err = db.NamedExec(sql.String(), updates)
+	query, args, err := sql.SetMap(updates).ToSql()
 	if err != nil {
 		return nil, err
+	}
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
 	}
 
 	return cv, tx.Commit()
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	limit, offset := opts.GetSQLWindow()
+	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("configuration_versions").
+		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		Where("workspaces.external_id = ?", workspaceID).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
-	params := map[string]interface{}{
-		"limit":        limit,
-		"offset":       offset,
-		"workspace_id": workspaceID,
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
 	}
 
 	var result []otf.ConfigurationVersion
-	if err := db.Select(&result, listConfigurationVersionsSql, params); err != nil {
+	if err := db.Select(&result, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -156,25 +132,28 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 }
 
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	var condition, arg string
+	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+		Columns(asColumnList("organizations", true, organizationColumns...)).
+		From("organizations")
 
 	switch {
 	case opts.ID != nil:
 		// Get config version by ID
-		condition = "WHERE configuration_versions.external_id = ?"
-		arg = *opts.ID
+		selectBuilder = selectBuilder.Where("WHERE configuration_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest config version for given workspace
-		condition = "WHERE workspaces.external_id = ?"
-		arg = *opts.WorkspaceID
+		selectBuilder = selectBuilder.Where("WHERE workspaces.external_id = ?", *opts.WorkspaceID)
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	sql := fmt.Sprintf(getConfigurationVersionSql, "WHERE", condition)
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	var cv otf.ConfigurationVersion
-	if err := getter.Get(&cv, sql, arg); err != nil {
+	if err := getter.Get(&cv, sql, args); err != nil {
 		return nil, err
 	}
 

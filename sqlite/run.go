@@ -5,47 +5,35 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/copier"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var (
 	_ otf.RunStore = (*RunDB)(nil)
 
-	insertRunSql = `INSERT INTO runs (created_at, updated_at, external_id, force_cancel_available_at, is_destroy, message, position_in_queue, refresh, refresh_only, status, status_timestamps, replace_addrs, target_addrs, workspace_id, configuration_version_id)
-VALUES (:created_at,:updated_at,:external_id,:force_cancel_available_at,?,?,?,?,?,?,?,?,?,?)
-`
+	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs", "workspace_id", "configuration_version_id"}
+	runColumns          = append(runColumnsWithoutID, "id")
 
-	insertPlanSql = `INSERT INTO plans (created_at, updated_at, external_id, logs_blob_id, plan_file_blob_id, plan_json_blob_id, status, status_timestamps, run_id
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-`
+	planColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
+	planColumns          = append(planColumnsWithoutID, "id")
 
-	insertApplySql = `INSERT INTO applies (created_at, updated_at, external_id, logs_blob_id, status, status_timestamps, run_id
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-`
+	applyColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
+	applyColumns          = append(applyColumnsWithoutID, "id")
 
-	runColumns = []string{"id", "created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs", "workspace_id", "configuration_version_id"}
+	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s) VALUES (%s)",
+		strings.Join(runColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(runColumnsWithoutID, ":"), ", "))
 
-	planColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
+	insertPlanSQL = fmt.Sprintf("INSERT INTO plans (%s) VALUES (%s)",
+		strings.Join(planColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(planColumnsWithoutID, ":"), ", "))
 
-	applyColumns = []string{"id", "created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
-
-	listRunsSql = fmt.Sprintf(`SELECT %s, %s, %s, %s, %s
-FROM runs
-JOIN plans ON plans.run_id = runs.id
-JOIN applies ON applies.run_id = runs.id
-JOIN configuration_versions ON configuration_versions.id = runs.configuration_version_id
-JOIN workspaces ON workspaces.id = runs.workspace_id
-`, asColumnList("runs", false, runColumns...), asColumnList("plans", true, planColumns...), asColumnList("applies", true, applyColumns...), asColumnList("configuration_versions", true, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
-
-	getRunSql = fmt.Sprintf(`SELECT %s, %s, %s, %s, %s
-FROM runs
-JOIN plans ON plans.run_id = runs.id
-JOIN applies ON applies.run_id = runs.id
-JOIN configuration_versions ON configuration_versions.id = runs.configuration_version_id
-JOIN workspaces ON workspaces.id = runs.workspace_id
-`, asColumnList("runs", false, runColumns...), asColumnList("plans", true, planColumns...), asColumnList("applies", true, applyColumns...), asColumnList("configuration_versions", true, configurationVersionColumns...), asColumnList("workspaces", true, workspaceColumns...))
+	insertApplySQL = fmt.Sprintf("INSERT INTO applies (%s) VALUES (%s)",
+		strings.Join(planColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(planColumnsWithoutID, ":"), ", "))
 )
 
 type RunDB struct {
@@ -64,7 +52,7 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	defer tx.Rollback()
 
 	// Insert run
-	result, err := tx.NamedExec(insertRunSql, run)
+	result, err := tx.NamedExec(insertRunSQL, run)
 	if err != nil {
 		return nil, err
 	}
@@ -75,14 +63,14 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 
 	// Insert plan
 	run.Plan.RunID = run.Model.ID
-	result, err = tx.NamedExec(insertPlanSql, run.Plan)
+	result, err = tx.NamedExec(insertPlanSQL, run.Plan)
 	if err != nil {
 		return nil, err
 	}
 
 	// Insert apply
 	run.Apply.RunID = run.Model.ID
-	result, err = tx.NamedExec(insertApplySql, run.Apply)
+	result, err = tx.NamedExec(insertApplySQL, run.Apply)
 	if err != nil {
 		return nil, err
 	}
@@ -98,77 +86,70 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
-	run, err := getRun(tx, otf.RunGetOptions{ID: &id})
+	cv, err := getRun(tx, otf.RunGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
 
-	before := otf.Run{}
-	copier.Copy(&before, run)
+	// Make a copy for comparison with the updated obj
+	before, err := copystructure.Copy(cv)
+	if err != nil {
+		return nil, err
+	}
 
 	// Update obj using client-supplied fn
-	if err := fn(run); err != nil {
+	if err := fn(cv); err != nil {
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before, run)
+	updates := FindUpdates(db.Mapper, before.(*otf.Run), cv)
 	if len(updates) == 0 {
-		return run, nil
+		return cv, nil
 	}
 
-	run.UpdatedAt = time.Now()
-	updates["updated_at"] = run.UpdatedAt
+	cv.UpdatedAt = time.Now()
+	updates["updated_at"] = cv.UpdatedAt
 
-	var sql strings.Builder
-	fmt.Fprintln(&sql, "UPDATE runs")
+	sql := sq.Update("runs").Where("id = ?", cv.Model.ID)
 
-	for k := range updates {
-		fmt.Fprintf(&sql, "SET %s = :%[1]s\n", k)
-	}
-
-	fmt.Fprintf(&sql, "WHERE %d = :id", run.Model.ID)
-
-	_, err = db.NamedExec(sql.String(), updates)
+	query, args, err := sql.SetMap(updates).ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	return run, tx.Commit()
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+	}
+
+	return cv, tx.Commit()
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	limit, offset := opts.GetSQLWindow()
-
-	params := map[string]interface{}{
-		"limit":  limit,
-		"offset": offset,
-	}
-
-	var conditions []string
+	selectBuilder := sq.Select(asColumnList("runs", false, runColumns...)).
+		Columns(asColumnList("plans", true, planColumns...)).
+		Columns(asColumnList("applies", true, applyColumns...)).
+		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("runs").
+		Join("plans ON plans.run_id = runs.id").
+		Join("applies ON applies.run_id = runs.id").
+		Join("configuration_versions ON configuration_versions.id = runs.configuration_version_id").
+		Join("workspaces ON workspaces.id = runs.workspace_id").
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
 	// Optionally filter by workspace
 	if opts.WorkspaceID != nil {
-		conditions = append(conditions, "workspaces.external_id = :workspace_external_id")
-		params["workspace_external_id"] = *opts.WorkspaceID
+		selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
 	}
 
 	// Optionally filter by statuses
 	if len(opts.Statuses) > 0 {
-		conditions = append(conditions, "runs.status IN (:statuses)")
-		params["statuses"] = opts.Statuses
+		selectBuilder.Where(sq.Eq{"runs.status": opts.Statuses})
 	}
 
-	sql := listRunsSql
-	if len(conditions) > 0 {
-		sql += fmt.Sprintln("WHERE", strings.Join(conditions, " AND "))
-	}
-	sql += " LIMIT :limit OFFSET :offset "
-
-	query, args, err := sqlx.Named(sql, params)
-	if err != nil {
-		return nil, err
-	}
-	query, args, err = sqlx.In(query, args...)
+	query, args, err := selectBuilder.ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -196,26 +177,35 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
-	var condition, arg string
+	selectBuilder := sq.Select(asColumnList("runs", false, runColumns...)).
+		Columns(asColumnList("plans", true, planColumns...)).
+		Columns(asColumnList("applies", true, applyColumns...)).
+		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("runs").
+		Join("plans ON plans.run_id = runs.id").
+		Join("applies ON applies.run_id = runs.id").
+		Join("configuration_versions ON configuration_versions.id = runs.configuration_version_id").
+		Join("workspaces ON workspaces.id = runs.workspace_id")
 
 	switch {
 	case opts.ID != nil:
-		condition = "runs.external_id = :id"
-		arg = *opts.ID
+		selectBuilder = selectBuilder.Where("runs.external_id = ?", *opts.ID)
 	case opts.PlanID != nil:
-		condition = "plans.external_id = :plan_id"
-		arg = *opts.PlanID
+		selectBuilder = selectBuilder.Where("plans.external_id = ?", *opts.PlanID)
 	case opts.ApplyID != nil:
-		condition = "applies.external_id = :apply_id"
-		arg = *opts.ApplyID
+		selectBuilder = selectBuilder.Where("applies.external_id = ?", *opts.ApplyID)
 	default:
 		return nil, otf.ErrInvalidRunGetOptions
 	}
 
-	sql := fmt.Sprintf(getRunSql, "WHERE", condition)
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	var run otf.Run
-	if err := db.Get(&run, sql, arg); err != nil {
+	if err := db.Get(&run, sql, args...); err != nil {
 		return nil, err
 	}
 

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 )
@@ -87,17 +88,23 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	limit, offset := opts.GetSQLWindow()
+	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("state_versions").
+		Join("workspaces ON workspaces.id = state_versions.workspace_id").
+		Join("organizations ON organizations.id = workspaces.organization_id").
+		Where("workspaces.name = ?", *opts.Workspace).
+		Where("organizations.name = ?", *opts.Organization).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
-	params := map[string]interface{}{
-		"workspace_name":    opts.Workspace,
-		"organization_name": opts.Organization,
-		"limit":             limit,
-		"offset":            offset,
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
 	}
 
 	var result []otf.StateVersion
-	if err := s.Select(&result, listStateVersionsSql, params); err != nil {
+	if err := s.Select(&result, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -118,25 +125,30 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 }
 
 func getStateVersion(db *sqlx.DB, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	var condition, arg string
+	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("state_versions").
+		Join("workspaces ON workspaces.id = state_versions.workspace_id")
 
 	switch {
 	case opts.ID != nil:
 		// Get state version by ID
-		condition = "WHERE state_versions.external_id = ?"
-		arg = *opts.ID
+		selectBuilder = selectBuilder.Where("WHERE state_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest state version for given workspace
-		condition = "WHERE workspaces.external_id = ? ORDER BY state_versions.serial DESC, state_versions.created_at DESC"
-		arg = *opts.WorkspaceID
+		selectBuilder = selectBuilder.Where("WHERE workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	sql := fmt.Sprintf(getStateVersionSql, "WHERE", condition)
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	sv := otf.StateVersion{}
-	if err := db.Get(&sv, sql, arg); err != nil {
+	if err := db.Get(&sv, sql, args); err != nil {
 		return nil, err
 	}
 

@@ -83,22 +83,24 @@ type ListOptions struct {
 	PageSize int `schema:"page[size],omitempty"`
 }
 
-// GetSQLWindow returns a limit and offset for use in SQL queries.
-func (o *ListOptions) GetSQLWindow() (limit int, offset int) {
-	switch {
-	case o.PageSize == 0:
-		limit = DefaultPageSize
-	case o.PageSize > MaxPageSize:
-		limit = MaxPageSize
-	default:
-		limit = o.PageSize
+// GetOffset calculates the offset for use in SQL queries.
+func (o *ListOptions) GetOffset() uint64 {
+	if o.PageNumber == 0 {
+		return 0
 	}
 
-	if o.PageNumber > 0 {
-		offset = (o.PageNumber - 1) * o.PageSize
+	return uint64((o.PageNumber - 1) * o.PageSize)
+}
+
+// GetLimit calculates the limit for use in SQL queries.
+func (o *ListOptions) GetLimit() uint64 {
+	if o.PageSize == 0 {
+		return DefaultPageSize
+	} else if o.PageSize > MaxPageSize {
+		return MaxPageSize
 	}
 
-	return
+	return uint64(o.PageSize)
 }
 
 // validString checks if the given input is present and non-empty.
