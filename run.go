@@ -510,7 +510,7 @@ func (r *Run) downloadConfig(ctx context.Context, exe *Executor) error {
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
 	state, err := exe.StateVersionService.Current(r.Workspace.ID)
-	if IsNotFound(err) {
+	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return err

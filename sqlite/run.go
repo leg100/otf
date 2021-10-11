@@ -23,7 +23,7 @@ var (
 	applyColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
 	applyColumns          = append(applyColumnsWithoutID, "id")
 
-	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :configuration_versions.id)",
+	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :workspaces.id, :configuration_versions.id)",
 		strings.Join(runColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(runColumnsWithoutID, ":"), ", "))
 
@@ -32,8 +32,8 @@ var (
 		strings.Join(otf.PrefixSlice(planColumnsWithoutID, ":"), ", "))
 
 	insertApplySQL = fmt.Sprintf("INSERT INTO applies (%s) VALUES (%s)",
-		strings.Join(planColumnsWithoutID, ", "),
-		strings.Join(otf.PrefixSlice(planColumnsWithoutID, ":"), ", "))
+		strings.Join(applyColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(applyColumnsWithoutID, ":"), ", "))
 )
 
 type RunDB struct {

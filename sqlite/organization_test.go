@@ -3,80 +3,94 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrganization(t *testing.T) {
-	db, err := New(logr.Discard(), ":memory:")
+func TestOrganization_Create(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
+
+	run, err := db.Create(newTestOrganization("org-123"))
 	require.NoError(t, err)
 
-	svc := NewOrganizationDB(db)
+	assert.Equal(t, int64(1), run.Model.ID)
+}
 
-	// Create
+func TestOrganization_Update(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
 
-	org, err := svc.Create(&otf.Organization{
-		Name:  "automatize",
-		ID:    "org-123",
-		Email: "sysadmin@automatize.co.uk",
-	})
+	_, err := db.Create(newTestOrganization("org-123"))
 	require.NoError(t, err)
 
-	require.Equal(t, int64(1), org.Model.ID)
-	require.Equal(t, "automatize", org.Name)
-	require.Equal(t, "sysadmin@automatize.co.uk", org.Email)
-
-	// Create second org
-
-	org, err = svc.Create(&otf.Organization{
-		Name:  "second",
-		ID:    "org-456",
-		Email: "sysadmin@second.org",
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, int64(2), org.Model.ID)
-	require.Equal(t, "second", org.Name)
-	require.Equal(t, "sysadmin@second.org", org.Email)
-
-	// Update
-
-	org, err = svc.Update("automatize", func(org *otf.Organization) error {
+	org, err := db.Update("automatize", func(org *otf.Organization) error {
 		org.Email = "newguy@automatize.co.uk"
 		return nil
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, "newguy@automatize.co.uk", org.Email)
+	assert.Equal(t, "newguy@automatize.co.uk", org.Email)
+}
 
-	// Get
+func TestOrganization_Get(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
 
-	org, err = svc.Get("automatize")
+	_, err := db.Create(newTestOrganization("org-123"))
 	require.NoError(t, err)
 
-	require.Equal(t, "newguy@automatize.co.uk", org.Email)
-
-	// List
-
-	orgs, err := svc.List(otf.OrganizationListOptions{})
+	org, err := db.Get("automatize")
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(orgs.Items))
+	assert.Equal(t, "automatize", org.Name)
+}
 
-	// List with pagination
+func TestOrganization_List(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
 
-	orgs, err = svc.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+	_, err := db.Create(newTestOrganization("org-123"))
+	require.NoError(t, err)
+
+	orgs, err := db.List(otf.OrganizationListOptions{})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(orgs.Items))
+}
 
-	orgs, err = svc.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+func TestOrganization_ListWithPagination(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
+
+	_, err := db.Create(newTestOrganization("org-123"))
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(orgs.Items))
+	_, err = db.Create(newTestOrganization("org-456"))
+	require.NoError(t, err)
 
-	// Delete
+	orgs, err := db.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+	require.NoError(t, err)
 
-	require.NoError(t, svc.Delete("automatize"))
+	assert.Equal(t, 2, len(orgs.Items))
+
+	orgs, err = db.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, len(orgs.Items))
+
+	orgs, err = db.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, len(orgs.Items))
+}
+
+func TestOrganization_Delete(t *testing.T) {
+	db := NewOrganizationDB(newTestDB(t))
+
+	_, err := db.Create(newTestOrganization("org-123"))
+	require.NoError(t, err)
+
+	require.NoError(t, db.Delete("automatize"))
+
+	orgs, err := db.List(otf.OrganizationListOptions{})
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, len(orgs.Items))
 }

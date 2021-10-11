@@ -153,7 +153,7 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	}
 
 	// Delete workspace
-	_, err = tx.Exec("DELETE FROM workspaces WHERE external_id = ?", spec.ID)
+	_, err = tx.Exec("DELETE FROM workspaces WHERE external_id = ?", ws.ID)
 	if err != nil {
 		return err
 	}
