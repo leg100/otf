@@ -14,8 +14,6 @@ import (
 var (
 	_ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
 
-	configurationVersionsTableName = "configuration_versions"
-
 	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id"}
 
 	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")

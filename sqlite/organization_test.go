@@ -20,7 +20,7 @@ func TestOrganization_Create(t *testing.T) {
 func TestOrganization_Update(t *testing.T) {
 	db := newTestDB(t)
 	odb := NewOrganizationDB(db)
-	org := createTestOrganization(t, db, "org-123", "automatize")
+	_ = createTestOrganization(t, db, "org-123", "automatize")
 
 	org, err := odb.Update("automatize", func(org *otf.Organization) error {
 		org.Email = "newguy@automatize.co.uk"

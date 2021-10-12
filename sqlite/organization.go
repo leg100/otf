@@ -14,8 +14,6 @@ import (
 var (
 	_ otf.OrganizationStore = (*OrganizationDB)(nil)
 
-	organizationsTableName = "organizations"
-
 	organizationColumnsWithoutID = []string{
 		"created_at",
 		"updated_at",
@@ -32,7 +30,6 @@ var (
 		strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ", "))
 )
 
-// Organization models a row in a organizations table.
 type OrganizationDB struct {
 	*sqlx.DB
 }

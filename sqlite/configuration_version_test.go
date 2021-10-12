@@ -58,7 +58,7 @@ func TestConfigurationVersion_Get(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
 			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
+			_ = createTestConfigurationVersion(t, db, "cv-123", ws)
 
 			cdb := NewConfigurationVersionDB(db)
 

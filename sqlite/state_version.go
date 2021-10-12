@@ -12,8 +12,6 @@ import (
 var (
 	_ otf.StateVersionStore = (*StateVersionService)(nil)
 
-	stateVersionTableName = "state_versions"
-
 	stateVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "serial", "blob_id"}
 	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
 
@@ -24,7 +22,6 @@ var (
 
 type StateVersionService struct {
 	*sqlx.DB
-	columns []string
 }
 
 func NewStateVersionDB(db *sqlx.DB) *StateVersionService {

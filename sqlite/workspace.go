@@ -14,8 +14,6 @@ import (
 var (
 	_ otf.WorkspaceStore = (*WorkspaceDB)(nil)
 
-	workspacesTableName = "workspaces"
-
 	workspaceColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "allow_destroy_plan", "auto_apply", "can_queue_destroy_plan", "description", "environment", "execution_mode", "file_triggers_enabled", "global_remote_state", "locked", "migration_environment", "name", "queue_all_runs", "speculative_enabled", "source_name", "source_url", "terraform_version", "trigger_prefixes", "working_directory"}
 	workspaceColumns          = append(workspaceColumnsWithoutID, "id")
 

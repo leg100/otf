@@ -41,7 +41,7 @@ func TestStateVersion_Get(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
 			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			cv := createTestStateVersion(t, db, "cv-123", ws)
+			_ = createTestStateVersion(t, db, "cv-123", ws)
 
 			sdb := NewStateVersionDB(db)
 

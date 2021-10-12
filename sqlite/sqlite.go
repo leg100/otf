@@ -8,17 +8,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/leg100/otf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 )
@@ -28,14 +25,6 @@ var fs embed.FS
 
 type Getter interface {
 	Get(dest interface{}, query string, args ...interface{}) error
-}
-
-type metadata struct {
-	ID        int64
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-
-	ExternalID string `db:"external_id"`
 }
 
 type StructScannable interface {
@@ -96,26 +85,6 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 	}
 
 	return db, nil
-}
-
-// Gorm scopes: https://gorm.io/docs/advanced_query.html#Scopes
-
-func paginate(opts otf.ListOptions) func(*gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		otf.SanitizeListOptions(&opts)
-
-		offset := (opts.PageNumber - 1) * opts.PageSize
-
-		return db.Offset(offset).Limit(opts.PageSize)
-	}
-}
-
-// setIfChanged sets a key on a map if a != b. Key is set to the value of b.
-func setIfChanged(a, b interface{}, m map[string]interface{}, k string) {
-	if reflect.DeepEqual(a, b) {
-		return
-	}
-	m[k] = b
 }
 
 func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
