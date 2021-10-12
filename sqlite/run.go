@@ -67,6 +67,10 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	if err != nil {
 		return nil, err
 	}
+	run.Plan.Model.ID, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
 
 	// Insert apply
 	run.Apply.RunID = run.Model.ID
@@ -74,8 +78,12 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	if err != nil {
 		return nil, err
 	}
+	run.Apply.Model.ID, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
 
-	return run, nil
+	return run, tx.Commit()
 }
 
 // Update persists an updated Run to the DB. The existing run is fetched from
