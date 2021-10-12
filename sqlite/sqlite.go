@@ -14,7 +14,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
-	gormzerolog "github.com/leg100/gorm-zerolog"
 	"github.com/leg100/otf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
@@ -43,15 +42,15 @@ type StructScannable interface {
 	StructScan(dest interface{}) error
 }
 
-type Option func(*gorm.Config)
+type Option func()
 
 type Logger struct {
 	logr.Logger
 }
 
-func WithZeroLogger(logger *zerolog.Logger) Option {
-	return func(cfg *gorm.Config) {
-		cfg.Logger = &gormzerolog.Logger{Zlog: *logger}
+func WithZeroLogger(zlog *zerolog.Logger) Option {
+	return func() {
+		goose.SetLogger(NewGooseLogger(zlog))
 	}
 }
 
@@ -62,9 +61,8 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 func (l *Logger) Verbose() bool { return true }
 
 func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
-	cfg := &gorm.Config{}
 	for _, o := range opts {
-		o(cfg)
+		o()
 	}
 
 	db, err := sqlx.Open("sqlite3", path)

@@ -53,7 +53,6 @@ func NewWorkspace(name, id, org string) *otf.Workspace {
 		Organization: &otf.Organization{
 			Name: org,
 		},
-		Permissions:     &otf.WorkspacePermissions{},
 		TriggerPrefixes: []string{},
 		VCSRepo:         &otf.VCSRepo{},
 	}
