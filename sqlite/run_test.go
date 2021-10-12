@@ -10,7 +10,8 @@ import (
 
 func TestRun_Create(t *testing.T) {
 	db := newTestDB(t)
-	ws := createTestWorkspace(t, db, "ws-123", "default")
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
 	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
 	rdb := NewRunDB(db)
@@ -32,7 +33,8 @@ func TestRun_Create(t *testing.T) {
 
 func TestRun_Update(t *testing.T) {
 	db := newTestDB(t)
-	ws := createTestWorkspace(t, db, "ws-123", "default")
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
 	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 	run := createTestRun(t, db, "run-123", ws, cv)
 
@@ -49,7 +51,8 @@ func TestRun_Update(t *testing.T) {
 
 func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
-	ws := createTestWorkspace(t, db, "ws-123", "default")
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
 	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 	run := createTestRun(t, db, "run-123", ws, cv)
 
@@ -76,20 +79,28 @@ func TestRun_List(t *testing.T) {
 			want: 1,
 		},
 		{
-			name: "filter by status",
+			name: "filter by status - hit",
 			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
 			want: 2,
+		},
+		{
+			name: "filter by status - miss",
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunApplied}},
+			want: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			ws1 := createTestWorkspace(t, db, "ws-123", "dev")
-			ws2 := createTestWorkspace(t, db, "ws-345", "prod")
+			org := createTestOrganization(t, db, "org-123", "automatize")
+
+			ws1 := createTestWorkspace(t, db, "ws-123", "dev", org)
 			cv1 := createTestConfigurationVersion(t, db, "cv-123", ws1)
-			cv2 := createTestConfigurationVersion(t, db, "cv-345", ws2)
 			_ = createTestRun(t, db, "run-123", ws1, cv1)
+
+			ws2 := createTestWorkspace(t, db, "ws-345", "prod", org)
+			cv2 := createTestConfigurationVersion(t, db, "cv-345", ws2)
 			_ = createTestRun(t, db, "run-345", ws2, cv2)
 
 			rdb := NewRunDB(db)

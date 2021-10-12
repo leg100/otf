@@ -16,7 +16,7 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func newTestOrganization(id string) *otf.Organization {
+func newTestOrganization(id, name string) *otf.Organization {
 	return &otf.Organization{
 		ID:    id,
 		Name:  "automatize",
@@ -40,9 +40,17 @@ func newTestConfigurationVersion(id string, ws *otf.Workspace) *otf.Configuratio
 	}
 }
 
+func newTestStateVersion(id string, ws *otf.Workspace) *otf.StateVersion {
+	return &otf.StateVersion{
+		ID:        id,
+		Workspace: ws,
+	}
+}
+
 func newTestRun(id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	return &otf.Run{
 		ID:               id,
+		Status:           otf.RunPending,
 		StatusTimestamps: make(otf.TimestampMap),
 		Plan: &otf.Plan{
 			ID:               "plan-123",
@@ -57,18 +65,16 @@ func newTestRun(id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf
 	}
 }
 
-func createTestOrganization(t *testing.T, db *sqlx.DB, id string) *otf.Organization {
+func createTestOrganization(t *testing.T, db *sqlx.DB, id, name string) *otf.Organization {
 	odb := NewOrganizationDB(db)
 
-	org, err := odb.Create(newTestOrganization(id))
+	org, err := odb.Create(newTestOrganization(id, name))
 	require.NoError(t, err)
 
 	return org
 }
 
-func createTestWorkspace(t *testing.T, db *sqlx.DB, id, name string) *otf.Workspace {
-	org := createTestOrganization(t, db, "org-123")
-
+func createTestWorkspace(t *testing.T, db *sqlx.DB, id, name string, org *otf.Organization) *otf.Workspace {
 	wdb := NewWorkspaceDB(db)
 
 	ws, err := wdb.Create(newTestWorkspace(id, name, org))
@@ -84,6 +90,15 @@ func createTestConfigurationVersion(t *testing.T, db *sqlx.DB, id string, ws *ot
 	require.NoError(t, err)
 
 	return cv
+}
+
+func createTestStateVersion(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace) *otf.StateVersion {
+	sdb := NewStateVersionDB(db)
+
+	sv, err := sdb.Create(newTestStateVersion(id, ws))
+	require.NoError(t, err)
+
+	return sv
 }
 
 func createTestRun(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {

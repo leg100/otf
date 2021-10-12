@@ -10,7 +10,8 @@ import (
 
 func TestConfigurationVersion_Create(t *testing.T) {
 	db := newTestDB(t)
-	ws := createTestWorkspace(t, db, "ws-123", "default")
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
 
 	cdb := NewConfigurationVersionDB(db)
 
@@ -22,7 +23,8 @@ func TestConfigurationVersion_Create(t *testing.T) {
 
 func TestConfigurationVersion_Update(t *testing.T) {
 	db := newTestDB(t)
-	ws := createTestWorkspace(t, db, "ws-123", "default")
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
 	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
 	cdb := NewConfigurationVersionDB(db)
@@ -54,7 +56,8 @@ func TestConfigurationVersion_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			ws := createTestWorkspace(t, db, "ws-123", "default")
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
 			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
 			cdb := NewConfigurationVersionDB(db)
@@ -88,7 +91,8 @@ func TestConfigurationVersion_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			ws := createTestWorkspace(t, db, "ws-123", "default")
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
 			_ = createTestConfigurationVersion(t, db, "cv-123", ws)
 
 			cdb := NewConfigurationVersionDB(db)

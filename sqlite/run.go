@@ -149,12 +149,12 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 
 	// Optionally filter by workspace
 	if opts.WorkspaceID != nil {
-		selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
 	}
 
 	// Optionally filter by statuses
 	if len(opts.Statuses) > 0 {
-		selectBuilder.Where(sq.Eq{"runs.status": opts.Statuses})
+		selectBuilder = selectBuilder.Where(sq.Eq{"runs.status": opts.Statuses})
 	}
 
 	query, args, err := selectBuilder.ToSql()

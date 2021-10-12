@@ -49,6 +49,13 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+	if opts.Workspace == nil {
+		return nil, fmt.Errorf("missing required option: workspace")
+	}
+	if opts.Organization == nil {
+		return nil, fmt.Errorf("missing required option: organization")
+	}
+
 	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").

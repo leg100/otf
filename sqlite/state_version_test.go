@@ -3,79 +3,87 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStateVersion(t *testing.T) {
-	db, err := New(logr.Discard(), ":memory:")
+func TestStateVersion_Create(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
+
+	sdb := NewStateVersionDB(db)
+
+	sv, err := sdb.Create(newTestStateVersion("sv-123", ws))
 	require.NoError(t, err)
 
-	orgDB := NewOrganizationDB(db)
-	wsDB := NewWorkspaceDB(db)
-	svDB := NewStateVersionDB(db)
+	assert.Equal(t, int64(1), sv.Model.ID)
+}
 
-	// Create one org and three workspaces
-
-	org, err := orgDB.Create(&otf.Organization{
-		Name:  "automatize",
-		Email: "sysadmin@automatize.co.uk",
-	})
-	require.NoError(t, err)
-
-	var workspaces []*otf.Workspace
-	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := wsDB.Create(&otf.Workspace{
-			Name:         name,
-			ID:           otf.GenerateID("ws"),
-			Organization: org,
-		})
-		require.NoError(t, err)
-
-		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ID, "ws-")
-
-		workspaces = append(workspaces, ws)
+func TestStateVersion_Get(t *testing.T) {
+	tests := []struct {
+		name string
+		opts otf.StateVersionGetOptions
+	}{
+		{
+			name: "by id",
+			opts: otf.StateVersionGetOptions{ID: otf.String("cv-123")},
+		},
+		{
+			name: "by workspace",
+			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String("ws-123")},
+		},
 	}
 
-	// Create state versions (3 WSs, 3 SVs per WS)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+			cv := createTestStateVersion(t, db, "cv-123", ws)
 
-	var stateVersionIDs []string
-	for _, ws := range workspaces {
-		for _, j := range []int{1, 2, 3} {
-			sv, err := svDB.Create(&otf.StateVersion{
-				ID:        otf.GenerateID("sv"),
-				Serial:    int64(j),
-				Workspace: ws,
-			})
+			sdb := NewStateVersionDB(db)
+
+			cv, err := sdb.Get(tt.opts)
 			require.NoError(t, err)
 
-			require.Contains(t, sv.ID, "sv-")
+			assert.Equal(t, int64(1), cv.Model.ID)
+		})
+	}
+}
 
-			stateVersionIDs = append(stateVersionIDs, sv.ID)
-		}
+func TestStateVersion_List(t *testing.T) {
+	tests := []struct {
+		name string
+		opts otf.StateVersionListOptions
+		want int
+	}{
+		{
+			name: "filter by workspace",
+			opts: otf.StateVersionListOptions{Workspace: otf.String("default"), Organization: otf.String("automatize")},
+			want: 1,
+		},
+		{
+			name: "filter by non-existent workspace",
+			opts: otf.StateVersionListOptions{Workspace: otf.String("non-existent"), Organization: otf.String("automatize")},
+			want: 0,
+		},
 	}
 
-	// List
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+			_ = createTestStateVersion(t, db, "sv-123", ws)
 
-	svl, err := svDB.List(otf.StateVersionListOptions{
-		ListOptions:  otf.ListOptions{PageNumber: 1, PageSize: 20},
-		Organization: otf.String("automatize"),
-		Workspace:    otf.String("dev"),
-	})
-	require.NoError(t, err)
+			sdb := NewStateVersionDB(db)
 
-	require.Equal(t, 3, len(svl.Items))
+			results, err := sdb.List(tt.opts)
+			require.NoError(t, err)
 
-	// Get
-
-	_, err = svDB.Get(otf.StateVersionGetOptions{ID: &stateVersionIDs[0]})
-	require.NoError(t, err)
-
-	// Current
-
-	sv, err := svDB.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaces[0].ID})
-	require.NoError(t, err)
-	require.Equal(t, int64(3), sv.Serial)
+			assert.Equal(t, tt.want, len(results.Items))
+		})
+	}
 }
