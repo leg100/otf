@@ -10,7 +10,7 @@ import (
 
 func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(db, "org-123")
+	org := createTestOrganization(t, db, "org-123")
 
 	wdb := NewWorkspaceDB(db)
 
@@ -38,7 +38,7 @@ func TestWorkspace_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			org := createTestOrganization(db, "org-123")
+			org := createTestOrganization(t, db, "org-123")
 
 			wdb := NewWorkspaceDB(db)
 
@@ -74,7 +74,7 @@ func TestWorkspace_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			org := createTestOrganization(db, "org-123")
+			org := createTestOrganization(t, db, "org-123")
 
 			wdb := NewWorkspaceDB(db)
 
@@ -125,7 +125,7 @@ func TestWorkspace_List(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			org := createTestOrganization(db, "org-123")
+			org := createTestOrganization(t, db, "org-123")
 
 			wdb := NewWorkspaceDB(db)
 
@@ -158,7 +158,7 @@ func TestWorkspace_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
-			org := createTestOrganization(db, "org-123")
+			org := createTestOrganization(t, db, "org-123")
 
 			wdb := NewWorkspaceDB(db)
 

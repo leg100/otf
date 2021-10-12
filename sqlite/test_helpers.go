@@ -16,27 +16,6 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
-func newTestRun() *otf.Run {
-	return &otf.Run{
-		ID:               "run-123",
-		StatusTimestamps: make(otf.TimestampMap),
-		Plan: &otf.Plan{
-			ID:               "plan-123",
-			StatusTimestamps: make(otf.TimestampMap),
-		},
-		Apply: &otf.Apply{
-			ID:               "apply-123",
-			StatusTimestamps: make(otf.TimestampMap),
-		},
-		Workspace: &otf.Workspace{
-			ID: "ws-123",
-		},
-		ConfigurationVersion: &otf.ConfigurationVersion{
-			ID: "cv-123",
-		},
-	}
-}
-
 func newTestOrganization(id string) *otf.Organization {
 	return &otf.Organization{
 		ID:    id,
@@ -53,12 +32,65 @@ func newTestWorkspace(id, name string, org *otf.Organization) *otf.Workspace {
 	}
 }
 
-func createTestOrganization(db *sqlx.DB, id string) *otf.Organization {
+func newTestConfigurationVersion(id string, ws *otf.Workspace) *otf.ConfigurationVersion {
+	return &otf.ConfigurationVersion{
+		ID:        id,
+		Status:    otf.ConfigurationPending,
+		Workspace: ws,
+	}
+}
+
+func newTestRun(id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	return &otf.Run{
+		ID:               id,
+		StatusTimestamps: make(otf.TimestampMap),
+		Plan: &otf.Plan{
+			ID:               "plan-123",
+			StatusTimestamps: make(otf.TimestampMap),
+		},
+		Apply: &otf.Apply{
+			ID:               "apply-123",
+			StatusTimestamps: make(otf.TimestampMap),
+		},
+		Workspace:            ws,
+		ConfigurationVersion: cv,
+	}
+}
+
+func createTestOrganization(t *testing.T, db *sqlx.DB, id string) *otf.Organization {
 	odb := NewOrganizationDB(db)
 
 	org, err := odb.Create(newTestOrganization(id))
-	if err != nil {
-		panic("cannot create org")
-	}
+	require.NoError(t, err)
+
 	return org
+}
+
+func createTestWorkspace(t *testing.T, db *sqlx.DB, id, name string) *otf.Workspace {
+	org := createTestOrganization(t, db, "org-123")
+
+	wdb := NewWorkspaceDB(db)
+
+	ws, err := wdb.Create(newTestWorkspace(id, name, org))
+	require.NoError(t, err)
+
+	return ws
+}
+
+func createTestConfigurationVersion(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace) *otf.ConfigurationVersion {
+	cdb := NewConfigurationVersionDB(db)
+
+	cv, err := cdb.Create(newTestConfigurationVersion(id, ws))
+	require.NoError(t, err)
+
+	return cv
+}
+
+func createTestRun(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	rdb := NewRunDB(db)
+
+	run, err := rdb.Create(newTestRun(id, ws, cv))
+	require.NoError(t, err)
+
+	return run
 }

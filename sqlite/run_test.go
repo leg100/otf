@@ -9,9 +9,13 @@ import (
 )
 
 func TestRun_Create(t *testing.T) {
-	db := NewRunDB(newTestDB(t))
+	db := newTestDB(t)
+	ws := createTestWorkspace(t, db, "ws-123", "default")
+	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
-	run, err := db.Create(newTestRun())
+	rdb := NewRunDB(db)
+
+	run, err := rdb.Create(newTestRun("run-123", ws, cv))
 	require.NoError(t, err)
 
 	assert.Equal(t, int64(1), run.Model.ID)
@@ -19,18 +23,12 @@ func TestRun_Create(t *testing.T) {
 
 func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
+	ws := createTestWorkspace(t, db, "ws-123", "default")
+	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
+	run := createTestRun(t, db, "run-123", ws, cv)
 
-	odb := NewOrganizationDB(db)
 	rdb := NewRunDB(db)
 
-	_, err := odb.Create(newTestOrganization("org-123"))
-	require.NoError(t, err)
-
-	testRun := newTestRun()
-
-	_, err = rdb.Create(testRun)
-	require.NoError(t, err)
-
-	_, err = rdb.Get(otf.RunGetOptions{ID: otf.String(testRun.ID)})
+	_, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
 	require.NoError(t, err)
 }

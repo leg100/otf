@@ -3,63 +3,100 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigurationVersion(t *testing.T) {
-	db, err := New(logr.Discard(), ":memory:")
+func TestConfigurationVersion_Create(t *testing.T) {
+	db := newTestDB(t)
+	ws := createTestWorkspace(t, db, "ws-123", "default")
+
+	cdb := NewConfigurationVersionDB(db)
+
+	cv, err := cdb.Create(newTestConfigurationVersion("cv-123", ws))
 	require.NoError(t, err)
 
-	cvDB := NewConfigurationVersionDB(db)
-	wsDB := NewWorkspaceDB(db)
-	orgDB := NewOrganizationDB(db)
+	assert.Equal(t, int64(1), cv.Model.ID)
+}
 
-	// Create 1 org, 1 ws, 1 cv
+func TestConfigurationVersion_Update(t *testing.T) {
+	db := newTestDB(t)
+	ws := createTestWorkspace(t, db, "ws-123", "default")
+	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
-	org, err := orgDB.Create(&otf.Organization{
-		ID:    "org-123",
-		Name:  "automatize",
-		Email: "sysadmin@automatize.co.uk",
-	})
-	require.NoError(t, err)
+	cdb := NewConfigurationVersionDB(db)
 
-	ws, err := wsDB.Create(&otf.Workspace{
-		Name:         "dev",
-		ID:           "ws-123",
-		Organization: org,
-	})
-	require.NoError(t, err)
-
-	cv, err := cvDB.Create(&otf.ConfigurationVersion{
-		ID:        "cv-123",
-		Status:    otf.ConfigurationPending,
-		Workspace: ws,
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, otf.ConfigurationPending, cv.Status)
-
-	// Update
-
-	cv, err = cvDB.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
+	updated, err := cdb.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
 		cv.Status = otf.ConfigurationUploaded
 		return nil
 	})
 	require.NoError(t, err)
 
-	// Get
+	assert.Equal(t, otf.ConfigurationUploaded, updated.Status)
+}
 
-	cv, err = cvDB.Get(otf.ConfigurationVersionGetOptions{ID: &cv.ID})
-	require.NoError(t, err)
+func TestConfigurationVersion_Get(t *testing.T) {
+	tests := []struct {
+		name string
+		opts otf.ConfigurationVersionGetOptions
+	}{
+		{
+			name: "by id",
+			opts: otf.ConfigurationVersionGetOptions{ID: otf.String("cv-123")},
+		},
+		{
+			name: "by workspace",
+			opts: otf.ConfigurationVersionGetOptions{WorkspaceID: otf.String("ws-123")},
+		},
+	}
 
-	require.Equal(t, otf.ConfigurationUploaded, cv.Status)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			ws := createTestWorkspace(t, db, "ws-123", "default")
+			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
-	// List
+			cdb := NewConfigurationVersionDB(db)
 
-	cvs, err := cvDB.List(ws.ID, otf.ConfigurationVersionListOptions{})
-	require.NoError(t, err)
+			cv, err := cdb.Get(tt.opts)
+			require.NoError(t, err)
 
-	require.Equal(t, 1, len(cvs.Items))
+			assert.Equal(t, int64(1), cv.Model.ID)
+		})
+	}
+}
+
+func TestConfigurationVersion_List(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		want        int
+	}{
+		{
+			name:        "filter by workspace",
+			workspaceID: "ws-123",
+			want:        1,
+		},
+		{
+			name:        "filter by non-existent workspace",
+			workspaceID: "ws-non-existent",
+			want:        0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			ws := createTestWorkspace(t, db, "ws-123", "default")
+			_ = createTestConfigurationVersion(t, db, "cv-123", ws)
+
+			cdb := NewConfigurationVersionDB(db)
+
+			results, err := cdb.List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want, len(results.Items))
+		})
+	}
 }
