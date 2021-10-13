@@ -39,19 +39,20 @@ func TestWorkspace_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
+			_ = createTestWorkspace(t, db, "ws-123", "default", org)
 
 			wdb := NewWorkspaceDB(db)
 
-			_, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
-			require.NoError(t, err)
-
-			ws, err := wdb.Update(tt.spec, func(ws *otf.Workspace) error {
-				ws.Name = "newdefault"
+			_, err := wdb.Update(tt.spec, func(ws *otf.Workspace) error {
+				ws.Description = "updated description"
 				return nil
 			})
 			require.NoError(t, err)
 
-			assert.Equal(t, "newdefault", ws.Name)
+			got, err := wdb.Get(tt.spec)
+			require.NoError(t, err)
+
+			assert.Equal(t, "updated description", got.Description)
 		})
 	}
 }
@@ -75,16 +76,14 @@ func TestWorkspace_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
 
 			wdb := NewWorkspaceDB(db)
 
-			_, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
+			got, err := wdb.Get(tt.spec)
 			require.NoError(t, err)
 
-			ws, err := wdb.Get(tt.spec)
-			require.NoError(t, err)
-
-			assert.Equal(t, int64(1), ws.Model.ID)
+			assert.Equal(t, ws, got)
 		})
 	}
 }
@@ -93,32 +92,48 @@ func TestWorkspace_List(t *testing.T) {
 	tests := []struct {
 		name string
 		opts otf.WorkspaceListOptions
-		want int
+		want func(*testing.T, *otf.WorkspaceList, ...*otf.Workspace)
 	}{
 		{
 			name: "default",
 			opts: otf.WorkspaceListOptions{},
-			want: 1,
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, c := range created {
+					assert.Contains(t, l.Items, c)
+				}
+			},
 		},
 		{
 			name: "filter by org",
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")},
-			want: 1,
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, c := range created {
+					assert.Contains(t, l.Items, c)
+				}
+			},
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String("def")},
-			want: 1,
+			opts: otf.WorkspaceListOptions{Prefix: otf.String("dev")},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 1, len(l.Items))
+			},
 		},
 		{
 			name: "filter by non-existent org",
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("non-existent")},
-			want: 0,
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 0, len(l.Items))
+			},
 		},
 		{
 			name: "filter by non-existent prefix",
 			opts: otf.WorkspaceListOptions{Prefix: otf.String("xyz")},
-			want: 0,
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 0, len(l.Items))
+			},
 		},
 	}
 
@@ -126,16 +141,15 @@ func TestWorkspace_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws1 := createTestWorkspace(t, db, "ws-1", "dev", org)
+			ws2 := createTestWorkspace(t, db, "ws-2", "prod", org)
 
 			wdb := NewWorkspaceDB(db)
-
-			_, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
-			require.NoError(t, err)
 
 			results, err := wdb.List(tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, len(results.Items))
+			tt.want(t, results, ws1, ws2)
 		})
 	}
 }
@@ -159,11 +173,9 @@ func TestWorkspace_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
+			_ = createTestWorkspace(t, db, "ws-123", "default", org)
 
 			wdb := NewWorkspaceDB(db)
-
-			_, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
-			require.NoError(t, err)
 
 			require.NoError(t, wdb.Delete(tt.spec))
 

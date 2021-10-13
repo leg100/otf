@@ -112,15 +112,9 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 		return nil, err
 	}
 
-	var result []otf.Organization
-	if err := db.Select(&result, sql); err != nil {
-		return nil, err
-	}
-
-	// Convert from []otf.Organization to []*otf.Organization
 	var items []*otf.Organization
-	for _, r := range result {
-		items = append(items, &r)
+	if err := db.Select(&items, sql); err != nil {
+		return nil, err
 	}
 
 	return &otf.OrganizationList{

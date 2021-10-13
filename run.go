@@ -81,6 +81,11 @@ type Run struct {
 	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
 }
 
+type RunStatusTimestamp struct {
+	Status    RunStatus
+	Timestamp time.Time
+}
+
 // Phase implementations represent the phases that make up a run: a plan and an
 // apply.
 type Phase interface {

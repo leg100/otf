@@ -40,13 +40,18 @@ func TestRun_Update(t *testing.T) {
 
 	rdb := NewRunDB(db)
 
-	updated, err := rdb.Update(run.ID, func(run *otf.Run) error {
+	_, err := rdb.Update(run.ID, func(run *otf.Run) error {
 		run.Status = otf.RunPlanQueued
+		run.Plan.Status = otf.PlanQueued
 		return nil
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, otf.RunPlanQueued, updated.Status)
+	got, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
+	require.NoError(t, err)
+
+	assert.Equal(t, otf.RunPlanQueued, got.Status)
+	assert.Equal(t, otf.PlanQueued, got.Plan.Status)
 }
 
 func TestRun_Get(t *testing.T) {
@@ -58,35 +63,58 @@ func TestRun_Get(t *testing.T) {
 
 	rdb := NewRunDB(db)
 
-	_, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
+	got, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
 	require.NoError(t, err)
+
+	// Assertion won't succeed unless transitive relations are nil (resources
+	// retrieved from the DB only possess immediate relations).
+	run.Workspace.Organization = nil
+	run.ConfigurationVersion.Workspace = nil
+	assert.Equal(t, run, got)
 }
 
 func TestRun_List(t *testing.T) {
 	tests := []struct {
 		name string
 		opts otf.RunListOptions
-		want int
+		want func(*testing.T, *otf.RunList, ...*otf.Run)
 	}{
 		{
 			name: "default",
 			opts: otf.RunListOptions{},
-			want: 2,
+			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, c := range created {
+					// Assertion won't succeed unless transitive relations are
+					// nil (resources retrieved from the DB only possess
+					// immediate relations).
+					c.Workspace.Organization = nil
+					c.ConfigurationVersion.Workspace = nil
+
+					assert.Contains(t, l.Items, c)
+				}
+			},
 		},
 		{
 			name: "filter by workspace",
 			opts: otf.RunListOptions{WorkspaceID: otf.String("ws-123")},
-			want: 1,
+			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+				assert.Equal(t, 1, len(l.Items))
+			},
 		},
 		{
 			name: "filter by status - hit",
 			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
-			want: 2,
+			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+				assert.Equal(t, 2, len(l.Items))
+			},
 		},
 		{
 			name: "filter by status - miss",
 			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunApplied}},
-			want: 0,
+			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+				assert.Equal(t, 0, len(l.Items))
+			},
 		},
 	}
 
@@ -97,18 +125,18 @@ func TestRun_List(t *testing.T) {
 
 			ws1 := createTestWorkspace(t, db, "ws-123", "dev", org)
 			cv1 := createTestConfigurationVersion(t, db, "cv-123", ws1)
-			_ = createTestRun(t, db, "run-123", ws1, cv1)
+			run1 := createTestRun(t, db, "run-1", ws1, cv1)
 
 			ws2 := createTestWorkspace(t, db, "ws-345", "prod", org)
 			cv2 := createTestConfigurationVersion(t, db, "cv-345", ws2)
-			_ = createTestRun(t, db, "run-345", ws2, cv2)
+			run2 := createTestRun(t, db, "run-2", ws2, cv2)
 
 			rdb := NewRunDB(db)
 
 			results, err := rdb.List(tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, len(results.Items))
+			tt.want(t, results, run1, run2)
 		})
 	}
 }

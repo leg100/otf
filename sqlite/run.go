@@ -3,7 +3,6 @@ package sqlite
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -17,10 +16,10 @@ var (
 	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs"}
 	runColumns          = append(runColumnsWithoutID, "id")
 
-	planColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
+	planColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
 	planColumns          = append(planColumnsWithoutID, "id")
 
-	applyColumnsWithoutID = []string{"created_at", "updated_at", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
+	applyColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
 	applyColumns          = append(applyColumnsWithoutID, "id")
 
 	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :workspaces.id, :configuration_versions.id)",
@@ -110,27 +109,26 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before.(*otf.Run), run)
-	if len(updates) == 0 {
-		return run, nil
-	}
-
-	run.UpdatedAt = time.Now()
-	updates["updated_at"] = run.UpdatedAt
-
-	sql := sq.Update("runs").Where("id = ?", run.Model.ID)
-
-	query, args, err := sql.SetMap(updates).ToSql()
+	runUpdated, err := update(db.Mapper, tx, "runs", before.(*otf.Run), run)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec(query, args...)
+	planUpdated, err := update(db.Mapper, tx, "plans", before.(*otf.Run).Plan, run.Plan)
 	if err != nil {
-		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+		return nil, err
 	}
 
-	return run, tx.Commit()
+	applyUpdated, err := update(db.Mapper, tx, "applies", before.(*otf.Run).Apply, run.Apply)
+	if err != nil {
+		return nil, err
+	}
+
+	if runUpdated || planUpdated || applyUpdated {
+		return run, tx.Commit()
+	}
+
+	return run, nil
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
@@ -162,15 +160,9 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		return nil, err
 	}
 
-	var result []otf.Run
-	if err := db.Select(&result, query, args...); err != nil {
-		return nil, fmt.Errorf("unable to scan runs from DB: %w", err)
-	}
-
-	// Convert from []otf.Run to []*otf.Run
 	var items []*otf.Run
-	for _, r := range result {
-		items = append(items, &r)
+	if err := db.Select(&items, query, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan runs from DB: %w", err)
 	}
 
 	return &otf.RunList{

@@ -17,9 +17,9 @@ func TestFindUpdates(t *testing.T) {
 	}
 
 	type S struct {
-		A  int `db:"a"`
-		B  int `db:"b"`
-		SS `db:"ss"`
+		A int `db:"a"`
+		B int `db:"b"`
+		SS
 	}
 
 	before := S{A: 1, B: 2, SS: SS{C: 3, D: 4}}
@@ -30,7 +30,7 @@ func TestFindUpdates(t *testing.T) {
 	assert.Equal(t, [][]int{{1}, {2, 1}}, idx)
 
 	updates := FindUpdates(m, before, after)
-	assert.Equal(t, map[string]interface{}{"b": 9, "ss.d": 99}, updates)
+	assert.Equal(t, map[string]interface{}{"b": 9, "d": 99}, updates)
 }
 
 func TestFindUpdates_WithPointers(t *testing.T) {
@@ -42,9 +42,9 @@ func TestFindUpdates_WithPointers(t *testing.T) {
 	}
 
 	type S struct {
-		A   int `db:"a"`
-		B   int `db:"b"`
-		*SS `db:"ss"`
+		A int `db:"a"`
+		B int `db:"b"`
+		*SS
 	}
 
 	before := S{A: 1, B: 2, SS: &SS{C: otf.Int(3), D: 4}}
@@ -55,5 +55,24 @@ func TestFindUpdates_WithPointers(t *testing.T) {
 	assert.Equal(t, [][]int{{1}, {2, 1}}, idx)
 
 	updates := FindUpdates(m, before, after)
-	assert.Equal(t, map[string]interface{}{"b": 9, "ss.d": 99}, updates)
+	assert.Equal(t, map[string]interface{}{"b": 9, "d": 99}, updates)
+}
+
+func TestFindUpdates_SkipRelations(t *testing.T) {
+	m := reflectx.NewMapper("db")
+
+	type Relation struct {
+		B int `db:"b"`
+	}
+
+	type S struct {
+		A        int `db:"a"`
+		Relation `db:"relation"`
+	}
+
+	before := S{A: 1, Relation: Relation{B: 2}}
+	after := S{A: 2, Relation: Relation{B: 3}}
+
+	updates := FindUpdates(m, before, after)
+	assert.Equal(t, map[string]interface{}{"a": 2}, updates)
 }

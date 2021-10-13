@@ -58,14 +58,18 @@ func TestConfigurationVersion_Get(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
 			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			_ = createTestConfigurationVersion(t, db, "cv-123", ws)
+			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
 			cdb := NewConfigurationVersionDB(db)
 
-			cv, err := cdb.Get(tt.opts)
+			got, err := cdb.Get(tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, int64(1), cv.Model.ID)
+			// Assertion won't succeed unless both have a workspace with a nil
+			// org.
+			cv.Workspace.Organization = nil
+
+			assert.Equal(t, cv, got)
 		})
 	}
 }
@@ -74,8 +78,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
-		// Whether list is expected to be empty
-		want func(*testing.T, *otf.ConfigurationVersionList, ...*otf.ConfigurationVersion)
+		want        func(*testing.T, *otf.ConfigurationVersionList, ...*otf.ConfigurationVersion)
 	}{
 		{
 			name:        "filter by workspace",
@@ -83,7 +86,10 @@ func TestConfigurationVersion_List(t *testing.T) {
 			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, cv := range created {
-					assert.Contains(t, l.Items, cv)
+					// Assertion won't succeed unless both have a workspace with
+					// a nil org.
+					cv.Workspace.Organization = nil
+
 					assert.Contains(t, l.Items, cv)
 				}
 			},

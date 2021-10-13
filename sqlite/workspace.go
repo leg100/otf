@@ -3,7 +3,6 @@ package sqlite
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -72,27 +71,16 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before.(*otf.Workspace), ws)
-	if len(updates) == 0 {
-		return ws, nil
-	}
-
-	ws.UpdatedAt = time.Now()
-	updates["updated_at"] = ws.UpdatedAt
-
-	sql := sq.Update("workspaces").Where("id = ?", ws.Model.ID)
-
-	query, args, err := sql.SetMap(updates).ToSql()
+	updated, err := update(db.Mapper, tx, "workspaces", before.(*otf.Workspace), ws)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+	if updated {
+		return ws, tx.Commit()
 	}
 
-	return ws, tx.Commit()
+	return ws, nil
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
@@ -118,15 +106,9 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 		return nil, err
 	}
 
-	var result []otf.Workspace
-	if err := db.Select(&result, sql, args...); err != nil {
-		return nil, fmt.Errorf("unable to scan workspaces from db: %w", err)
-	}
-
-	// Convert from []otf.Workspace to []*otf.Workspace
 	var items []*otf.Workspace
-	for _, r := range result {
-		items = append(items, &r)
+	if err := db.Select(&items, sql, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan workspaces from db: %w", err)
 	}
 
 	return &otf.WorkspaceList{

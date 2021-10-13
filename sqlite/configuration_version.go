@@ -108,15 +108,9 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 		return nil, err
 	}
 
-	var result []otf.ConfigurationVersion
-	if err := db.Select(&result, sql, args...); err != nil {
-		return nil, err
-	}
-
-	// Convert from []otf.ConfigurationVersion to []*otf.ConfigurationVersion
 	var items []*otf.ConfigurationVersion
-	for i := 0; i < len(result); i++ {
-		items = append(items, &result[i])
+	if err := db.Select(&items, sql, args...); err != nil {
+		return nil, err
 	}
 
 	return &otf.ConfigurationVersionList{

@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/go-logr/logr"
 	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
+	"github.com/leg100/otf"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
@@ -87,6 +90,10 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 	return db, nil
 }
 
+// FindUpdates compares two structs of identical type for any differences in
+// their struct field values. A mapping is returned: the sqlx db path of the
+// field mapped to the value found in the field in struct b. Relations are
+// stripped out, i.e. those fields with a period in, e.g. 'parent.child'.
 func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
 	idx := diffIndex(a, b)
 	if len(idx) == 0 {
@@ -99,6 +106,9 @@ func FindUpdates(m *reflectx.Mapper, a, b interface{}) map[string]interface{} {
 	fmap := m.FieldMap(reflect.ValueOf(b))
 	for _, n := range idx {
 		path := smap.GetByTraversal(n).Path
+		if strings.Contains(path, ".") {
+			continue
+		}
 		val := fmap[path].Interface()
 		updates[path] = val
 	}
@@ -129,6 +139,35 @@ func doDiffIndex(v1, v2 reflect.Value, idx [][]int, n []int) [][]int {
 	}
 
 	return idx
+}
+
+// update performs a SQL UPDATE, setting values for fields that have changed
+// between two structs. If the value in after is different from before then it
+// is included in the UPDATE. If all fields are identical no UPDATE is
+// performed.
+func update(mapper *reflectx.Mapper, tx sqlx.Execer, table string, before, after otf.Updateable) (bool, error) {
+	updates := FindUpdates(mapper, before, after)
+	if len(updates) == 0 {
+		return false, nil
+	}
+
+	now := time.Now()
+	after.SetUpdatedAt(now)
+	updates["updated_at"] = now
+
+	sql := sq.Update(table).Where("id = ?", before.GetInternalID())
+
+	query, args, err := sql.SetMap(updates).ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return false, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+	}
+
+	return true, nil
 }
 
 // asColumnList takes a table name and a list of columns and returns the SQL

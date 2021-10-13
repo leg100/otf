@@ -3,6 +3,7 @@ package otf
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -13,5 +14,10 @@ func (m TimestampMap) Value() (driver.Value, error) {
 }
 
 func (m TimestampMap) Scan(src interface{}) error {
-	return json.Unmarshal(src.([]byte), &m)
+	switch t := src.(type) {
+	case []byte:
+		return json.Unmarshal(t, &m)
+	default:
+		return fmt.Errorf("invalid type: %T", src)
+	}
 }

@@ -91,15 +91,9 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, err
 	}
 
-	var result []otf.StateVersion
-	if err := s.Select(&result, sql, args...); err != nil {
-		return nil, err
-	}
-
-	// Convert from []otf.StateVersion to []*otf.StateVersion
 	var items []*otf.StateVersion
-	for _, r := range result {
-		items = append(items, &r)
+	if err := s.Select(&items, sql, args...); err != nil {
+		return nil, err
 	}
 
 	return &otf.StateVersionList{
@@ -153,19 +147,13 @@ func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
 		return err
 	}
 
-	outputs := []otf.StateVersionOutput{}
+	outputs := []*otf.StateVersionOutput{}
 	if err := s.DB.Select(&outputs, sql, args...); err != nil {
 		return err
 	}
 
-	// Convert from []otf.StateVersionOutput to []*otf.StateVersionOutput
-	var ptrs []*otf.StateVersionOutput
-	for _, o := range outputs {
-		ptrs = append(ptrs, &o)
-	}
-
 	// Attach
-	sv.Outputs = ptrs
+	sv.Outputs = outputs
 
 	return nil
 }

@@ -39,9 +39,10 @@ func newTestWorkspace(id, name string, org *otf.Organization) *otf.Workspace {
 
 func newTestConfigurationVersion(id string, ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
-		ID:        id,
-		Status:    otf.ConfigurationPending,
-		Workspace: ws,
+		ID:               id,
+		Status:           otf.ConfigurationPending,
+		StatusTimestamps: make(otf.TimestampMap),
+		Workspace:        ws,
 	}
 }
 
@@ -75,11 +76,11 @@ func newTestRun(id string, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf
 		Status:           otf.RunPending,
 		StatusTimestamps: make(otf.TimestampMap),
 		Plan: &otf.Plan{
-			ID:               "plan-123",
+			ID:               "plan-" + id,
 			StatusTimestamps: make(otf.TimestampMap),
 		},
 		Apply: &otf.Apply{
-			ID:               "apply-123",
+			ID:               "apply-" + id,
 			StatusTimestamps: make(otf.TimestampMap),
 		},
 		Workspace:            ws,

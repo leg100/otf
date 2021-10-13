@@ -27,6 +27,12 @@ var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 // A regular expression used to validate semantic versions (major.minor.patch).
 var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
+// Updateable is an obj that records when it was updated.
+type Updateable interface {
+	GetInternalID() int64
+	SetUpdatedAt(time.Time)
+}
+
 func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
@@ -124,6 +130,14 @@ type Model struct {
 	ID        int64
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (m *Model) GetInternalID() int64 {
+	return m.ID
+}
+
+func (m *Model) SetUpdatedAt(t time.Time) {
+	m.UpdatedAt = t
 }
 
 func NewModel() Model {
