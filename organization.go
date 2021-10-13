@@ -129,6 +129,7 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 		Name:            *opts.Name,
 		Email:           *opts.Email,
 		ID:              GenerateID("org"),
+		Model:           NewModel(),
 		SessionTimeout:  DefaultSessionTimeout,
 		SessionRemember: DefaultSessionExpiration,
 	}

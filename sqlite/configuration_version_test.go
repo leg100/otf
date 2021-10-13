@@ -74,17 +74,26 @@ func TestConfigurationVersion_List(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
-		want        int
+		// Whether list is expected to be empty
+		want func(*testing.T, *otf.ConfigurationVersionList, ...*otf.ConfigurationVersion)
 	}{
 		{
 			name:        "filter by workspace",
 			workspaceID: "ws-123",
-			want:        1,
+			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, cv := range created {
+					assert.Contains(t, l.Items, cv)
+					assert.Contains(t, l.Items, cv)
+				}
+			},
 		},
 		{
 			name:        "filter by non-existent workspace",
 			workspaceID: "ws-non-existent",
-			want:        0,
+			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
+				assert.Empty(t, l.Items)
+			},
 		},
 	}
 
@@ -93,14 +102,16 @@ func TestConfigurationVersion_List(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
 			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			_ = createTestConfigurationVersion(t, db, "cv-123", ws)
+
+			cv1 := createTestConfigurationVersion(t, db, "cv-1", ws)
+			cv2 := createTestConfigurationVersion(t, db, "cv-2", ws)
 
 			cdb := NewConfigurationVersionDB(db)
 
 			results, err := cdb.List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, len(results.Items))
+			tt.want(t, results, cv1, cv2)
 		})
 	}
 }

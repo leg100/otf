@@ -328,6 +328,7 @@ type WorkspacePermissions struct {
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		ID:                  GenerateID("ws"),
+		Model:               NewModel(),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       DefaultExecutionMode,

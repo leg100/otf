@@ -9,8 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testPath is the database path used for tests
+var testPath = ":memory:"
+
+type newTestStateVersionOption func(*otf.StateVersion) error
+
 func newTestDB(t *testing.T) *sqlx.DB {
-	db, err := New(logr.Discard(), ":memory:")
+	db, err := New(logr.Discard(), testPath)
 	require.NoError(t, err)
 
 	return db
@@ -40,10 +45,27 @@ func newTestConfigurationVersion(id string, ws *otf.Workspace) *otf.Configuratio
 	}
 }
 
-func newTestStateVersion(id string, ws *otf.Workspace) *otf.StateVersion {
-	return &otf.StateVersion{
+func newTestStateVersion(id string, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
+	sv := &otf.StateVersion{
 		ID:        id,
 		Workspace: ws,
+	}
+	for _, o := range opts {
+		o(sv)
+	}
+	return sv
+}
+
+func appendOutput(id, name, outputType, value string, sensitive bool) newTestStateVersionOption {
+	return func(sv *otf.StateVersion) error {
+		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
+			ID:        id,
+			Name:      name,
+			Type:      outputType,
+			Value:     value,
+			Sensitive: sensitive,
+		})
+		return nil
 	}
 }
 
@@ -92,10 +114,10 @@ func createTestConfigurationVersion(t *testing.T, db *sqlx.DB, id string, ws *ot
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace) *otf.StateVersion {
+func createTestStateVersion(t *testing.T, db *sqlx.DB, id string, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
 	sdb := NewStateVersionDB(db)
 
-	sv, err := sdb.Create(newTestStateVersion(id, ws))
+	sv, err := sdb.Create(newTestStateVersion(id, ws, opts...))
 	require.NoError(t, err)
 
 	return sv

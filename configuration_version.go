@@ -43,7 +43,7 @@ type ConfigurationVersion struct {
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps TimestampMap
+	StatusTimestamps TimestampMap `json:"omitempty"`
 
 	// BlobID is the ID of the blob containing the configuration
 	BlobID string
@@ -119,6 +119,7 @@ type ConfigurationVersionFactory struct {
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            GenerateID("cv"),
+		Model:         NewModel(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        ConfigurationPending,
 		Source:        DefaultConfigurationSource,

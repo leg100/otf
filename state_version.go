@@ -30,10 +30,8 @@ type StateVersion struct {
 	// Run that created this state version. Optional.
 	// Run     *Run
 
-	Outputs []*StateVersionOutput
-
 	// State version has many outputs
-	StateVersionOutputs []StateVersionOutput
+	Outputs []*StateVersionOutput `db:"state_version_outputs"`
 }
 
 // StateVersionList represents a list of state versions.
@@ -109,8 +107,9 @@ type StateVersionFactory struct {
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
-		Serial: *opts.Serial,
 		ID:     GenerateID("sv"),
+		Model:  NewModel(),
+		Serial: *opts.Serial,
 	}
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})

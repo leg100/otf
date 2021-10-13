@@ -15,9 +15,16 @@ var (
 	stateVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "serial", "blob_id"}
 	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
 
+	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
+	stateVersionOutputColumns          = append(stateVersionColumnsWithoutID, "id")
+
 	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
 		strings.Join(stateVersionColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
+
+	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
+		strings.Join(stateVersionOutputColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionOutputColumnsWithoutID, ":"), ", "))
 )
 
 type StateVersionService struct {
@@ -32,8 +39,11 @@ func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
 
 // Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	// Insert
-	result, err := s.NamedExec(insertStateVersionSQL, sv)
+	tx := s.MustBegin()
+	defer tx.Rollback()
+
+	// Insert state_version
+	result, err := tx.NamedExec(insertStateVersionSQL, sv)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +52,20 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 		return nil, err
 	}
 
-	return sv, nil
+	// Insert state_version_outputs
+	for _, svo := range sv.Outputs {
+		svo.StateVersionID = sv.Model.ID
+		result, err := tx.NamedExec(insertStateVersionOutputSQL, svo)
+		if err != nil {
+			return nil, err
+		}
+		svo.Model.ID, err = result.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return sv, tx.Commit()
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
@@ -113,5 +136,36 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 		return nil, err
 	}
 
+	if err := s.attachOutputs(&sv); err != nil {
+		return nil, err
+	}
+
 	return &sv, nil
+}
+
+func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
+	selectBuilder := sq.Select("*").
+		From("state_version_outputs").
+		Where("state_version_id = ? ", sv.Model.ID)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	outputs := []otf.StateVersionOutput{}
+	if err := s.DB.Select(&outputs, sql, args...); err != nil {
+		return err
+	}
+
+	// Convert from []otf.StateVersionOutput to []*otf.StateVersionOutput
+	var ptrs []*otf.StateVersionOutput
+	for _, o := range outputs {
+		ptrs = append(ptrs, &o)
+	}
+
+	// Attach
+	sv.Outputs = ptrs
+
+	return nil
 }

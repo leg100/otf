@@ -115,8 +115,8 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 
 	// Convert from []otf.ConfigurationVersion to []*otf.ConfigurationVersion
 	var items []*otf.ConfigurationVersion
-	for _, r := range result {
-		items = append(items, &r)
+	for i := 0; i < len(result); i++ {
+		items = append(items, &result[i])
 	}
 
 	return &otf.ConfigurationVersionList{

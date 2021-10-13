@@ -15,7 +15,10 @@ func TestStateVersion_Create(t *testing.T) {
 
 	sdb := NewStateVersionDB(db)
 
-	sv, err := sdb.Create(newTestStateVersion("sv-123", ws))
+	out1 := appendOutput("svo-1", "out1", "string", "val1", false)
+	out2 := appendOutput("svo-2", "out2", "string", "val2", false)
+
+	sv, err := sdb.Create(newTestStateVersion("sv-123", ws, out1, out2))
 	require.NoError(t, err)
 
 	assert.Equal(t, int64(1), sv.Model.ID)
@@ -41,14 +44,18 @@ func TestStateVersion_Get(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
 			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			_ = createTestStateVersion(t, db, "cv-123", ws)
+			_ = createTestStateVersion(t, db, "cv-123", ws,
+				appendOutput("svo-1", "out1", "string", "val1", false),
+				appendOutput("svo-2", "out2", "string", "val2", false),
+			)
 
 			sdb := NewStateVersionDB(db)
 
-			cv, err := sdb.Get(tt.opts)
+			sv, err := sdb.Get(tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, int64(1), cv.Model.ID)
+			assert.Equal(t, int64(1), sv.Model.ID)
+			assert.Equal(t, 2, len(sv.Outputs))
 		})
 	}
 }

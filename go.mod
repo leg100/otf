@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/jmoiron/sqlx v1.3.1
-	github.com/leg100/gorm-zerolog v0.1.1-0.20210718123649-2348997004e6
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/lib/pq v1.10.3 // indirect
@@ -29,7 +28,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/negroni v1.0.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	gorm.io/driver/sqlite v1.1.4 // indirect
 	gorm.io/gorm v1.21.10
 )
 

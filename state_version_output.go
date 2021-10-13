@@ -1,7 +1,7 @@
 package otf
 
 type StateVersionOutput struct {
-	ID string
+	ID string `db:"external_id"`
 
 	Model
 
