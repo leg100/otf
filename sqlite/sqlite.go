@@ -4,7 +4,9 @@ Package sqlite implements persistent storage using the sqlite database.
 package sqlite
 
 import (
+	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -75,7 +77,9 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 
 	// Enable WAL. SQLite performs better with the WAL because it allows
 	// multiple readers to operate while data is being written.
-	//db.Exec(`PRAGMA journal_mode = wal;`)
+	db.Exec(`PRAGMA journal_mode = wal;`)
+
+	db.Exec(`PRAGMA foreign_keys = ON;`)
 
 	goose.SetBaseFS(fs)
 
@@ -184,4 +188,12 @@ func asColumnList(table string, prefix bool, cols ...string) (sql string) {
 		}
 	}
 	return strings.Join(asLines, ",")
+}
+
+func databaseError(err error) error {
+	if errors.Is(err, sql.ErrNoRows) {
+		// Swap DB no rows found error for the canonical not found error
+		return otf.ErrResourceNotFound
+	}
+	return err
 }

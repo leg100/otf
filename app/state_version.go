@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -10,12 +11,15 @@ type StateVersionService struct {
 	db otf.StateVersionStore
 	bs otf.BlobStore
 	*otf.StateVersionFactory
+
+	logr.Logger
 }
 
-func NewStateVersionService(db otf.StateVersionStore, wss otf.WorkspaceService, bs otf.BlobStore) *StateVersionService {
+func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, wss otf.WorkspaceService, bs otf.BlobStore) *StateVersionService {
 	return &StateVersionService{
-		bs: bs,
-		db: db,
+		bs:     bs,
+		db:     db,
+		Logger: logger,
 		StateVersionFactory: &otf.StateVersionFactory{
 			BlobStore:        bs,
 			WorkspaceService: wss,
@@ -37,7 +41,13 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Current(workspaceID string) (*otf.StateVersion, error) {
-	return s.db.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := s.db.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
+	if err != nil {
+		s.Error(err, "getting current state version", "workspace_id", workspaceID)
+		return nil, err
+	}
+
+	return sv, nil
 }
 
 func (s StateVersionService) Get(id string) (*otf.StateVersion, error) {

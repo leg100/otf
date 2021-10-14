@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     working_directory text,
     organization_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_workspaces_organization FOREIGN KEY (organization_id) REFERENCES organizations(id)
+    CONSTRAINT fk_workspaces_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_external_id ON workspaces(external_id);
 
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS configuration_versions (
     blob_id text,
     workspace_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_configuration_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+    CONSTRAINT fk_configuration_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_configuration_versions_external_id ON configuration_versions(external_id);
 
@@ -64,7 +64,6 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at datetime,
     updated_at datetime,
     external_id text,
-    force_cancel_available_at datetime,
     is_destroy numeric,
     position_in_queue integer,
     refresh numeric,
@@ -76,18 +75,10 @@ CREATE TABLE IF NOT EXISTS runs (
     workspace_id integer,
     configuration_version_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_runs_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id),
-    CONSTRAINT fk_runs_configuration_version FOREIGN KEY (configuration_version_id) REFERENCES configuration_versions(id)
+    CONSTRAINT fk_runs_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_runs_configuration_version FOREIGN KEY (configuration_version_id) REFERENCES configuration_versions(id) ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_external_id ON runs(external_id);
-
-CREATE TABLE IF NOT EXISTS run_timestamps (
-    id integer,
-    status text,
-    timestamp datetime,
-    PRIMARY KEY (id, status),
-    CONSTRAINT fk_run_timestamps_runs FOREIGN KEY (id) REFERENCES runs(id)
-);
 
 CREATE TABLE IF NOT EXISTS applies (
     id integer,
@@ -102,7 +93,7 @@ CREATE TABLE IF NOT EXISTS applies (
     logs_blob_id text,
     run_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_runs_apply FOREIGN KEY (run_id) REFERENCES runs(id)
+    CONSTRAINT fk_runs_apply FOREIGN KEY (run_id) REFERENCES runs(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_applies_external_id ON applies(external_id);
 
@@ -121,7 +112,7 @@ CREATE TABLE IF NOT EXISTS plans (
     plan_json_blob_id text,
     run_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_runs_plan FOREIGN KEY (run_id) REFERENCES runs(id)
+    CONSTRAINT fk_runs_plan FOREIGN KEY (run_id) REFERENCES runs(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_external_id ON plans(external_id);
 
@@ -136,7 +127,7 @@ CREATE TABLE IF NOT EXISTS state_versions (
     blob_id text,
     workspace_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_state_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+    CONSTRAINT fk_state_versions_workspace FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_state_versions_external_id ON state_versions(external_id);
 
@@ -151,7 +142,7 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
     value text,
     state_version_id integer,
     PRIMARY KEY (id),
-    CONSTRAINT fk_state_versions_outputs FOREIGN KEY (state_version_id) REFERENCES state_versions(id)
+    CONSTRAINT fk_state_versions_outputs FOREIGN KEY (state_version_id) REFERENCES state_versions(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_state_version_outputs_external_id ON state_version_outputs(external_id);
 -- +goose StatementEnd

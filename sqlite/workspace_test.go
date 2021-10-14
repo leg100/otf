@@ -173,9 +173,13 @@ func TestWorkspace_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newTestDB(t)
 			org := createTestOrganization(t, db, "org-123", "automatize")
-			_ = createTestWorkspace(t, db, "ws-123", "default", org)
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
+			_ = createTestRun(t, db, "run-123", ws, cv)
 
 			wdb := NewWorkspaceDB(db)
+			rdb := NewRunDB(db)
+			cdb := NewConfigurationVersionDB(db)
 
 			require.NoError(t, wdb.Delete(tt.spec))
 
@@ -183,6 +187,18 @@ func TestWorkspace_Delete(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(results.Items))
+
+			// Test ON CASCADE DELETE functionality for runs
+			rl, err := rdb.List(otf.RunListOptions{})
+			require.NoError(t, err)
+
+			assert.Equal(t, 0, len(rl.Items))
+
+			// Test ON CASCADE DELETE functionality for config versions
+			cvl, err := cdb.List(ws.ID, otf.ConfigurationVersionListOptions{})
+			require.NoError(t, err)
+
+			assert.Equal(t, 0, len(cvl.Items))
 		})
 	}
 }

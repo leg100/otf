@@ -13,7 +13,7 @@ import (
 var (
 	_ otf.RunStore = (*RunDB)(nil)
 
-	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "force_cancel_available_at", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs"}
+	runColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "is_destroy", "position_in_queue", "refresh", "refresh_only", "status", "status_timestamps", "replace_addrs", "target_addrs"}
 	runColumns          = append(runColumnsWithoutID, "id")
 
 	planColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "plan_file_blob_id", "plan_json_blob_id", "run_id"}
@@ -184,11 +184,6 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	return getRun(db.DB, opts)
 }
 
-// Get retrieves a Run domain obj
-func (db RunDB) Delete(opts otf.RunDeleteOptions) error {
-	return deleteRun(db.DB, opts)
-}
-
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 	selectBuilder := sq.Select(asColumnList("runs", false, runColumns...)).
 		Columns(asColumnList("plans", true, planColumns...)).
@@ -219,66 +214,8 @@ func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 
 	var run otf.Run
 	if err := db.Get(&run, sql, args...); err != nil {
-		return nil, fmt.Errorf("unable to get run from database: %w", err)
+		return nil, databaseError(err)
 	}
 
 	return &run, nil
-}
-
-func deleteRun(db *sqlx.DB, opts otf.RunDeleteOptions) error {
-	deleteBuilder := sq.Delete("runs").Suffix("RETURNING id")
-
-	var errIfNotFound bool
-
-	switch {
-	case opts.ID != nil:
-		deleteBuilder = deleteBuilder.Where("external_id = ?", &opts.ID)
-		errIfNotFound = true
-	case opts.WorkspaceID != nil:
-		deleteBuilder = deleteBuilder.Where("workspace_id = ?", &opts.WorkspaceID)
-	default:
-		return fmt.Errorf("invalid run delete options: %v", opts)
-	}
-
-	sql, args, err := deleteBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	var affected []int64
-	if err := db.Select(affected, sql, args...); err != nil {
-		return err
-	}
-
-	if errIfNotFound && len(affected) == 0 {
-		return fmt.Errorf("no matching rows found")
-	}
-
-	if err := deletePlanByRunID(db, affected...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func deletePlanByRunID(db sqlx.Execer, id ...int64) error {
-	sql, args, err := sq.Delete("plans").Where(sq.Eq{"run_id": id}).ToSql()
-	if err != nil {
-		return err
-	}
-
-	result, err := db.Exec(sql, args...)
-	if err != nil {
-		return err
-	}
-
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected != int64(len(id)) {
-		return fmt.Errorf("expected %d plan rows; only deleted %d", len(id), affected)
-	}
-
-	return nil
 }

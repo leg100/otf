@@ -63,16 +63,15 @@ type Run struct {
 
 	Model
 
-	ForceCancelAvailableAt time.Time
-	IsDestroy              bool
-	Message                string
-	PositionInQueue        int
-	Refresh                bool
-	RefreshOnly            bool
-	Status                 RunStatus
-	StatusTimestamps       TimestampMap
-	ReplaceAddrs           CSV
-	TargetAddrs            CSV
+	IsDestroy        bool
+	Message          string
+	PositionInQueue  int
+	Refresh          bool
+	RefreshOnly      bool
+	Status           RunStatus
+	StatusTimestamps TimestampMap
+	ReplaceAddrs     CSV
+	TargetAddrs      CSV
 
 	// Relations
 	Plan                 *Plan                 `db:"plans"`
@@ -212,7 +211,6 @@ type RunStore interface {
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
 	Update(id string, fn func(*Run) error) (*Run, error)
-	Delete(opts RunDeleteOptions) error
 }
 
 // RunList represents a list of runs.
@@ -232,16 +230,6 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
-}
-
-// RunDeleteOptions specifies options for deleting run(s).
-type RunDeleteOptions struct {
-	// ID of run to delete. Error if run not found.
-	ID *string
-
-	// (or) Delete all runs belonging to a workspace with this ID. No error if
-	// no runs found.
-	WorkspaceID *string
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -291,12 +279,19 @@ func (r *Run) Cancel() error {
 		return ErrRunCancelNotAllowed
 	}
 
-	// Run can be forcefully cancelled after a cool-off period of ten seconds
-	r.ForceCancelAvailableAt = time.Now().Add(10 * time.Second)
-
 	r.UpdateStatus(RunCanceled)
 
 	return nil
+}
+
+func (r *Run) ForceCancelAvailableAt() time.Time {
+	canceledAt, ok := r.StatusTimestamps[string(RunCanceled)]
+	if !ok {
+		return time.Time{}
+	}
+
+	// Run can be forcefully cancelled after a cool-off period of ten seconds
+	return canceledAt.Add(10 * time.Second)
 }
 
 // ForceCancel updates the state of a run to reflect it having been forcefully
@@ -343,7 +338,13 @@ func (r *Run) IsDiscardable() bool {
 
 // IsForceCancelable determines whether a run can be forcibly cancelled.
 func (r *Run) IsForceCancelable() bool {
-	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
+	availAt := r.ForceCancelAvailableAt()
+
+	if availAt.IsZero() {
+		return false
+	}
+
+	return time.Now().After(availAt)
 }
 
 // IsActive determines whether run is currently the active run on a workspace,
@@ -529,16 +530,16 @@ func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
-		return err
+		return fmt.Errorf("getting current state version: %w", err)
 	}
 
 	statefile, err := exe.StateVersionService.Download(state.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("downloading state version: %w", err)
 	}
 
 	if err := os.WriteFile(filepath.Join(exe.Path, LocalStateFilename), statefile, 0644); err != nil {
-		return err
+		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 
 	return nil

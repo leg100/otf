@@ -126,16 +126,15 @@ type RunCreateOptions struct {
 // ToDomain converts http run obj to a domain run obj.
 func (r *Run) ToDomain() *otf.Run {
 	domain := otf.Run{
-		ID:                     r.ID,
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
-		IsDestroy:              r.IsDestroy,
-		Message:                r.Message,
-		PositionInQueue:        r.PositionInQueue,
-		Refresh:                r.Refresh,
-		RefreshOnly:            r.RefreshOnly,
-		ReplaceAddrs:           r.ReplaceAddrs,
-		Status:                 r.Status,
-		TargetAddrs:            r.TargetAddrs,
+		ID:              r.ID,
+		IsDestroy:       r.IsDestroy,
+		Message:         r.Message,
+		PositionInQueue: r.PositionInQueue,
+		Refresh:         r.Refresh,
+		RefreshOnly:     r.RefreshOnly,
+		ReplaceAddrs:    r.ReplaceAddrs,
+		Status:          r.Status,
+		TargetAddrs:     r.TargetAddrs,
 	}
 
 	if r.Apply != nil {
@@ -396,7 +395,7 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 			IsDiscardable:     r.IsDiscardable(),
 		},
 		CreatedAt:              r.CreatedAt,
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
 		HasChanges:             r.Plan.HasChanges(),
 		IsDestroy:              r.IsDestroy,
 		Message:                r.Message,

@@ -134,7 +134,7 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 
 	sv := otf.StateVersion{}
 	if err := s.DB.Get(&sv, sql, args...); err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	if err := s.attachOutputs(&sv); err != nil {

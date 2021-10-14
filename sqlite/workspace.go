@@ -129,8 +129,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return getWorkspace(db.DB, spec)
 }
 
-// Delete deletes a specific workspace, along with its associated records (runs
-// etc).
+// Delete deletes a specific workspace, along with its child records (runs etc).
 func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	tx := db.MustBegin()
 	defer tx.Rollback()
@@ -140,39 +139,9 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 		return err
 	}
 
-	// Delete workspace
-	result, err := tx.Exec("DELETE FROM workspaces WHERE external_id = ?", ws.ID)
+	_, err = tx.Exec("DELETE FROM workspaces WHERE id = ?", ws.Model.ID)
 	if err != nil {
-		return err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
-		return fmt.Errorf("no workspace found")
-	}
-
-	// Delete associated runs
-	_, err = tx.Exec("DELETE FROM runs WHERE workspace_id = ?", ws.Model.ID)
-	if err != nil {
-		return err
-	}
-
-	// Delete associated state versions
-	_, err = tx.Exec("DELETE FROM state_versions WHERE workspace_id = ?", ws.Model.ID)
-	if err != nil {
-		return err
-	}
-
-	// Delete associated configuration versions
-	_, err = tx.Exec("DELETE FROM configuration_versions WHERE workspace_id = ?", ws.Model.ID)
-	if err != nil {
-		return err
-	}
-
-	if err != nil {
-		return err
+		return fmt.Errorf("unable to delete workspace: %w", err)
 	}
 
 	return tx.Commit()
@@ -206,7 +175,7 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error
 
 	var ws otf.Workspace
 	if err := db.Get(&ws, sql, args...); err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	return &ws, nil

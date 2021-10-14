@@ -108,10 +108,10 @@ func main() {
 	eventService := inmem.NewEventService(logger)
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
-	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService, fs)
+	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, fs)
 	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, fs)
-	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
 	server.PlanService = app.NewPlanService(runStore, fs)
 	server.ApplyService = app.NewApplyService(runStore)
 	server.EventService = eventService
