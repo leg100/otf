@@ -132,18 +132,12 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	selectBuilder := sq.Select(asColumnList("runs", false, runColumns...)).
-		Columns(asColumnList("plans", true, planColumns...)).
-		Columns(asColumnList("applies", true, applyColumns...)).
-		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+	selectBuilder := sq.Select().
 		From("runs").
 		Join("plans ON plans.run_id = runs.id").
 		Join("applies ON applies.run_id = runs.id").
 		Join("configuration_versions ON configuration_versions.id = runs.configuration_version_id").
-		Join("workspaces ON workspaces.id = runs.workspace_id").
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
+		Join("workspaces ON workspaces.id = runs.workspace_id")
 
 	// Optionally filter by workspace
 	if opts.WorkspaceID != nil {
@@ -154,6 +148,20 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	if len(opts.Statuses) > 0 {
 		selectBuilder = selectBuilder.Where(sq.Eq{"runs.status": opts.Statuses})
 	}
+
+	var count int
+	if err := selectBuilder.Columns("count(1)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
+
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("runs", false, runColumns...)).
+		Columns(asColumnList("plans", true, planColumns...)).
+		Columns(asColumnList("applies", true, applyColumns...)).
+		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
 	query, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -167,7 +175,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 
 	return &otf.RunList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -206,7 +214,7 @@ func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 
 	var run otf.Run
 	if err := db.Get(&run, sql, args...); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get run from database: %w", err)
 	}
 
 	return &run, nil

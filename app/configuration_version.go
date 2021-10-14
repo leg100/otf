@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -10,13 +11,16 @@ type ConfigurationVersionService struct {
 	db otf.ConfigurationVersionStore
 	bs otf.BlobStore
 
+	logr.Logger
+
 	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, wss otf.WorkspaceService, bs otf.BlobStore) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, bs otf.BlobStore) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
-		bs: bs,
-		db: db,
+		bs:     bs,
+		db:     db,
+		Logger: logger.WithValues("component", "configuration-versions"),
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
@@ -33,7 +37,12 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 }
 
 func (s ConfigurationVersionService) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	return s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+	cvl, err := s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+	if err != nil {
+		s.Error(err, "getting list")
+		return nil, err
+	}
+	return cvl, nil
 }
 
 func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, error) {

@@ -76,13 +76,20 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, fmt.Errorf("missing required option: organization")
 	}
 
-	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		From("state_versions").
+	selectBuilder := sq.Select().From("state_versions").
 		Join("workspaces ON workspaces.id = state_versions.workspace_id").
 		Join("organizations ON organizations.id = workspaces.organization_id").
 		Where("workspaces.name = ?", *opts.Workspace).
-		Where("organizations.name = ?", *opts.Organization).
+		Where("organizations.name = ?", *opts.Organization)
+
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(s).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
+
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("state_versions", false, stateVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -98,7 +105,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 
 	return &otf.StateVersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

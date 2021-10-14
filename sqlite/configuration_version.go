@@ -95,11 +95,19 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+	selectBuilder := sq.Select().
 		From("configuration_versions").
 		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
-		Where("workspaces.external_id = ?", workspaceID).
+		Where("workspaces.external_id = ?", workspaceID)
+
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
+
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -115,7 +123,7 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 
 	return &otf.ConfigurationVersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

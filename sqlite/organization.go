@@ -102,8 +102,15 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	selectBuilder := sq.Select(strings.Join(organizationColumns, ",")).
-		From("organizations").
+	selectBuilder := sq.Select().From("organizations")
+
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
+
+	selectBuilder = selectBuilder.
+		Columns(strings.Join(organizationColumns, ",")).
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -119,7 +126,7 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 
 	return &otf.OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 

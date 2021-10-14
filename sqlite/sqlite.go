@@ -75,7 +75,7 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 
 	// Enable WAL. SQLite performs better with the WAL because it allows
 	// multiple readers to operate while data is being written.
-	db.Exec(`PRAGMA journal_mode = wal;`)
+	//db.Exec(`PRAGMA journal_mode = wal;`)
 
 	goose.SetBaseFS(fs)
 
