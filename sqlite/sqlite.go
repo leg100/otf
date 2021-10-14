@@ -21,8 +21,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
-
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 )
 
 //go:embed migrations/*.sql
