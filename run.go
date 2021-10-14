@@ -212,6 +212,7 @@ type RunStore interface {
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
 	Update(id string, fn func(*Run) error) (*Run, error)
+	Delete(opts RunDeleteOptions) error
 }
 
 // RunList represents a list of runs.
@@ -231,6 +232,16 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+}
+
+// RunDeleteOptions specifies options for deleting run(s).
+type RunDeleteOptions struct {
+	// ID of run to delete. Error if run not found.
+	ID *string
+
+	// (or) Delete all runs belonging to a workspace with this ID. No error if
+	// no runs found.
+	WorkspaceID *string
 }
 
 // RunListOptions are options for paginating and filtering a list of runs

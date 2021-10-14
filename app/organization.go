@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -11,12 +12,15 @@ var _ otf.OrganizationService = (*OrganizationService)(nil)
 type OrganizationService struct {
 	db otf.OrganizationStore
 	es otf.EventService
+
+	logr.Logger
 }
 
-func NewOrganizationService(db otf.OrganizationStore, es otf.EventService) *OrganizationService {
+func NewOrganizationService(db otf.OrganizationStore, logger logr.Logger, es otf.EventService) *OrganizationService {
 	return &OrganizationService{
-		db: db,
-		es: es,
+		db:     db,
+		es:     es,
+		Logger: logger,
 	}
 }
 
@@ -28,6 +32,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 
 	org, err = s.db.Create(org)
 	if err != nil {
+		s.Error(err, "create organization")
 		return nil, err
 	}
 

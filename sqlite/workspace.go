@@ -84,12 +84,9 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	selectBuilder := sq.Select(asColumnList("workspaces", false, workspaceColumns...)).
-		Columns(asColumnList("organizations", true, organizationColumns...)).
+	selectBuilder := sq.Select().
 		From("workspaces").
-		Join("organizations ON organizations.id = workspaces.organization_id").
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
+		Join("organizations ON organizations.id = workspaces.organization_id")
 
 	// Optionally filter by workspace name prefix
 	if opts.Prefix != nil {
@@ -100,6 +97,17 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	if opts.OrganizationName != nil {
 		selectBuilder = selectBuilder.Where("organizations.name = ?", *opts.OrganizationName)
 	}
+
+	var count int
+	if err := selectBuilder.Columns("count(1)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
+
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("workspaces", false, workspaceColumns...)).
+		Columns(asColumnList("organizations", true, organizationColumns...)).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -113,7 +121,7 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 
 	return &otf.WorkspaceList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, len(items)),
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
