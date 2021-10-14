@@ -16,7 +16,6 @@ var (
 	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
 
 	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
-	stateVersionOutputColumns          = append(stateVersionColumnsWithoutID, "id")
 
 	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
 		strings.Join(stateVersionColumnsWithoutID, ", "),
