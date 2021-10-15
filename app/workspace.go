@@ -95,11 +95,13 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifie
 	}
 
 	if err := s.db.Delete(spec); err != nil {
-		s.Error(err, "deleting workspace")
+		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name)
 		return err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.WorkspaceDeleted, Payload: ws})
+
+	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name)
 
 	return nil
 }
