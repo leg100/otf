@@ -39,7 +39,7 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 		return nil, err
 	}
 
-	s.V(3).Info("created configuration version", "id", cv.ID)
+	s.V(2).Info("created configuration version", "id", cv.ID)
 
 	return cv, nil
 }
@@ -51,7 +51,7 @@ func (s ConfigurationVersionService) List(workspaceID string, opts otf.Configura
 		return nil, err
 	}
 
-	s.V(3).Info("listed configuration versions")
+	s.V(2).Info("listed configuration versions")
 
 	return cvl, nil
 }
@@ -63,7 +63,7 @@ func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, 
 		return nil, err
 	}
 
-	s.V(3).Info("retrieved configuration version", "id", id)
+	s.V(2).Info("retrieved configuration version", "id", id)
 
 	return cv, nil
 }

@@ -38,7 +38,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 
 	s.es.Publish(otf.Event{Type: otf.OrganizationCreated, Payload: org})
 
-	s.V(3).Info("created organization", "id", org.ID)
+	s.V(0).Info("created organization", "id", org.ID, "name", org.Name)
 
 	return org, nil
 }
@@ -50,7 +50,7 @@ func (s OrganizationService) Get(name string) (*otf.Organization, error) {
 		return nil, err
 	}
 
-	s.V(3).Info("retrieved organization", "name", name)
+	s.V(2).Info("retrieved organization", "name", name, "id", org.ID)
 
 	return org, nil
 }

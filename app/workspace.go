@@ -44,7 +44,7 @@ func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.W
 		return nil, err
 	}
 
-	s.Info("created workspace", "id", ws.ID)
+	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name)
 
 	s.es.Publish(otf.Event{Type: otf.WorkspaceCreated, Payload: ws})
 
@@ -82,7 +82,7 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpecifier) 
 		return nil, err
 	}
 
-	s.V(3).Info("retrieved workspace", "id", spec.String())
+	s.V(2).Info("retrieved workspace", "id", spec.String())
 
 	return ws, nil
 }

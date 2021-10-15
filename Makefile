@@ -44,6 +44,12 @@ install-latest-release:
 	unzip -o -d $(GOBIN) $$ZIP_FILE ;\
 	}
 
+
+# Run staticcheck metalinter recursively against code
+.PHONY: lint
+lint:
+	staticcheck ./...
+
 # Run go fmt against code
 .PHONY: fmt
 fmt:

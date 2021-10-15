@@ -37,6 +37,8 @@ type Server struct {
 
 	logr.Logger
 
+	EnableRequestLogging bool
+
 	SSL               bool
 	CertFile, KeyFile string
 
@@ -56,14 +58,12 @@ type Server struct {
 	ApplyService                otf.ApplyService
 }
 
-// NewServer is the contructor for Server
+// NewServer is the constructor for Server
 func NewServer() *Server {
 	s := &Server{
 		server: &http.Server{},
 		err:    make(chan error),
 	}
-
-	http.Handle("/", NewRouter(s))
 
 	return s
 }
@@ -145,22 +145,14 @@ func NewRouter(server *Server) *negroni.Negroni {
 
 	// Setup negroni and middleware
 	n := negroni.New()
+
 	// Catch panics and return 500s
 	n.Use(negroni.NewRecovery())
 
-	// Log requests
-	n.UseFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-		start := time.Now()
-
-		next(rw, r)
-
-		res := rw.(negroni.ResponseWriter)
-		server.Info("request",
-			"duration", time.Since(start).Milliseconds(),
-			"status", res.Status(),
-			"method", r.Method,
-			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
-	})
+	// Optionally enable HTTP request logging
+	if server.EnableRequestLogging {
+		n.UseFunc(NewLogHandler(server.Logger))
+	}
 
 	n.UseHandler(router)
 
@@ -178,8 +170,13 @@ func (s *Server) GetURL(route WebRoute, param ...interface{}) string {
 	return url.String()
 }
 
+func (s *Server) SetupRoutes() {
+	http.Handle("/", NewRouter(s))
+}
+
 // Open validates the server options and begins listening on the bind address.
 func (s *Server) Open() (err error) {
+
 	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
 		return err
 	}
@@ -222,4 +219,20 @@ func (s *Server) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 	defer cancel()
 	return s.server.Shutdown(ctx)
+}
+
+// NewLogHandler returns negroni middleware that logs HTTP requests
+func NewLogHandler(logger logr.Logger) negroni.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		start := time.Now()
+
+		next(rw, r)
+
+		res := rw.(negroni.ResponseWriter)
+		logger.Info("request",
+			"duration", time.Since(start).Milliseconds(),
+			"status", res.Status(),
+			"method", r.Method,
+			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+	}
 }

@@ -43,9 +43,15 @@ func main() {
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
+		Short:         "otf daemon",
+		Long:          "otfd is the daemon component of the open terraforming framework.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// Define run func in order to enable cobra's default help functionality
+		Run: func(cmd *cobra.Command, args []string) {},
 	}
+
+	var help bool
 
 	cmd.Flags().StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 	cmd.Flags().BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
@@ -53,13 +59,22 @@ func main() {
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
+	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
+	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
 	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
 		panic(err.Error())
+	}
+
+	if help {
+		if err := cmd.Help(); err != nil {
+			panic(err.Error())
+		}
+		os.Exit(0)
 	}
 
 	// DataDir: Expand ~ to home dir
@@ -136,6 +151,9 @@ func main() {
 		panic(fmt.Sprintf("unable to start agent: %s", err.Error()))
 	}
 	go agent.Start(ctx)
+
+	// Setup HTTP routes
+	server.SetupRoutes()
 
 	if err := server.Open(); err != nil {
 		server.Close()

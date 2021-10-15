@@ -33,7 +33,15 @@ func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCre
 		return nil, err
 	}
 
-	return s.db.Create(sv)
+	_, err = s.db.Create(sv)
+	if err != nil {
+		s.Error(err, "creating state version")
+		return nil, err
+	}
+
+	s.V(0).Info("created state version", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
+
+	return sv, nil
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
