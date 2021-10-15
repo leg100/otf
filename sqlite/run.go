@@ -128,7 +128,7 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 		return run, tx.Commit()
 	}
 
-	return run, tx.Commit()
+	return run, nil
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
