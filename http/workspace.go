@@ -56,7 +56,7 @@ type WorkspaceList struct {
 	Items []*Workspace
 }
 
-// ToDomain converts http workspace obj to a domain workspace obj.
+// ToDomain converts an http obj to its domain equivalent
 func (w *Workspace) ToDomain() *otf.Workspace {
 	domain := otf.Workspace{
 		ID:                         w.ID,

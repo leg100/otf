@@ -99,9 +99,7 @@ func TestWorkspace_List(t *testing.T) {
 			opts: otf.WorkspaceListOptions{},
 			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
 				assert.Equal(t, 2, len(l.Items))
-				for _, c := range created {
-					assert.Contains(t, l.Items, c)
-				}
+				assert.Equal(t, created, l.Items)
 			},
 		},
 		{
@@ -109,9 +107,7 @@ func TestWorkspace_List(t *testing.T) {
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")},
 			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
 				assert.Equal(t, 2, len(l.Items))
-				for _, c := range created {
-					assert.Contains(t, l.Items, c)
-				}
+				assert.Equal(t, created, l.Items)
 			},
 		},
 		{

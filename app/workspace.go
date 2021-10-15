@@ -71,7 +71,20 @@ func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOption
 }
 
 func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
-	return s.db.Get(spec)
+	if err := spec.Valid(); err != nil {
+		s.Error(err, "retrieving workspace: invalid specifier")
+		return nil, err
+	}
+
+	ws, err := s.db.Get(spec)
+	if err != nil {
+		s.Error(err, "retrieving workspace", "id", spec.String())
+		return nil, err
+	}
+
+	s.V(3).Info("retrieved workspace", "id", spec.String())
+
+	return ws, nil
 }
 
 func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) error {

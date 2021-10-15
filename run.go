@@ -59,7 +59,7 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string `db:"external_id"`
+	ID string `db:"external_id" jsonapi:"primary,runs"`
 
 	Model
 

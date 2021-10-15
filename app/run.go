@@ -37,11 +37,13 @@ func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService
 // the run.
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
 	if err := opts.Valid(); err != nil {
+		s.Error(err, "creating invalid run")
 		return nil, err
 	}
 
 	run, err := s.NewRun(opts)
 	if err != nil {
+		s.Error(err, "constructing new run")
 		return nil, err
 	}
 

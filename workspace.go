@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
 )
 
 const (
@@ -20,7 +22,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"external_id"`
+	ID string `db:"external_id" jsonapi:"primary,workspaces"`
 
 	Model
 
@@ -498,6 +500,52 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	}
 
 	ws.Locked = lock
+
+	return nil
+}
+
+func (spec *WorkspaceSpecifier) String() string {
+	switch {
+	case spec.ID != nil:
+		return *spec.ID
+	case spec.InternalID != nil:
+		return strconv.Itoa(int(*spec.InternalID))
+	case spec.Name != nil && spec.OrganizationName != nil:
+		return *spec.OrganizationName + "/" + *spec.Name
+	default:
+		panic("invalid workspace specifier")
+	}
+}
+
+func (spec *WorkspaceSpecifier) Valid() error {
+	if spec.InternalID != nil {
+		return nil
+	}
+
+	if spec.ID != nil {
+		if *spec.ID == "" {
+			return fmt.Errorf("id is an empty string")
+		}
+		return nil
+	}
+
+	// No ID specified; both org and workspace name must be specified
+
+	if spec.Name == nil {
+		return fmt.Errorf("workspace name nor id specified")
+	}
+
+	if spec.OrganizationName == nil {
+		return fmt.Errorf("must specify both organization and workspace")
+	}
+
+	if *spec.Name == "" {
+		return fmt.Errorf("workspace name is an empty string")
+	}
+
+	if *spec.OrganizationName == "" {
+		return fmt.Errorf("organization name is an empty string")
+	}
 
 	return nil
 }
