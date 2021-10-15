@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/zerologr"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
@@ -13,7 +14,6 @@ import (
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sqlite"
-	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -74,7 +74,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	logger := zerologr.NewLogger(zerologger)
+	logger := zerologr.New(zerologger)
 	server.Logger = logger
 
 	// Validate SSL params
