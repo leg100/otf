@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -9,14 +10,24 @@ import (
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID                   string                    `jsonapi:"primary,plans"`
-	HasChanges           bool                      `jsonapi:"attr,has-changes"`
-	LogReadURL           string                    `jsonapi:"attr,log-read-url"`
-	ResourceAdditions    int                       `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int                       `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int                       `jsonapi:"attr,resource-destructions"`
-	Status               otf.PlanStatus            `jsonapi:"attr,status"`
-	StatusTimestamps     *otf.PlanStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	ID                   string                `jsonapi:"primary,plans"`
+	HasChanges           bool                  `jsonapi:"attr,has-changes"`
+	LogReadURL           string                `jsonapi:"attr,log-read-url"`
+	ResourceAdditions    int                   `jsonapi:"attr,resource-additions"`
+	ResourceChanges      int                   `jsonapi:"attr,resource-changes"`
+	ResourceDestructions int                   `jsonapi:"attr,resource-destructions"`
+	Status               otf.PlanStatus        `jsonapi:"attr,status"`
+	StatusTimestamps     *PlanStatusTimestamps `jsonapi:"attr,status-timestamps"`
+}
+
+// PlanStatusTimestamps holds the timestamps for individual plan statuses.
+type PlanStatusTimestamps struct {
+	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
+	ErroredAt       *time.Time `json:"errored-at,omitempty"`
+	FinishedAt      *time.Time `json:"finished-at,omitempty"`
+	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
+	QueuedAt        *time.Time `json:"queued-at,omitempty"`
+	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
 
 // ToDomain converts http organization obj to a domain organization obj.
@@ -84,7 +95,7 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 // PlanJSONAPIObject converts a Plan to a struct that can be
 // marshalled into a JSON-API object
 func (s *Server) PlanJSONAPIObject(p *otf.Plan) *Plan {
-	obj := &Plan{
+	result := &Plan{
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
 		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ID),
@@ -94,5 +105,23 @@ func (s *Server) PlanJSONAPIObject(p *otf.Plan) *Plan {
 		Status:               p.Status,
 	}
 
-	return obj
+	for k, v := range p.StatusTimestamps {
+		if result.StatusTimestamps == nil {
+			result.StatusTimestamps = &PlanStatusTimestamps{}
+		}
+		switch otf.PlanStatus(k) {
+		case otf.PlanCanceled:
+			result.StatusTimestamps.CanceledAt = &v
+		case otf.PlanErrored:
+			result.StatusTimestamps.ErroredAt = &v
+		case otf.PlanFinished:
+			result.StatusTimestamps.FinishedAt = &v
+		case otf.PlanQueued:
+			result.StatusTimestamps.QueuedAt = &v
+		case otf.PlanRunning:
+			result.StatusTimestamps.StartedAt = &v
+		}
+	}
+
+	return result
 }

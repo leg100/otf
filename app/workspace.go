@@ -38,10 +38,13 @@ func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.W
 
 	ws := otf.NewWorkspace(opts, org)
 
-	ws, err = s.db.Create(ws)
+	_, err = s.db.Create(ws)
 	if err != nil {
+		s.Error(err, "creating workspace", "id", ws.ID)
 		return nil, err
 	}
+
+	s.Info("created workspace", "id", ws.ID)
 
 	s.es.Publish(otf.Event{Type: otf.WorkspaceCreated, Payload: ws})
 

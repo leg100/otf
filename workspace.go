@@ -24,25 +24,26 @@ type Workspace struct {
 
 	Model
 
-	AllowDestroyPlan     bool
-	AutoApply            bool
-	CanQueueDestroyPlan  bool
-	Description          string
-	Environment          string
-	ExecutionMode        string
-	FileTriggersEnabled  bool
-	GlobalRemoteState    bool
-	Locked               bool
-	MigrationEnvironment string
-	Name                 string
-	QueueAllRuns         bool
-	SpeculativeEnabled   bool
-	SourceName           string
-	SourceURL            string `db:"source_url"`
-	TerraformVersion     string
-	TriggerPrefixes      CSV
-	VCSRepo              *VCSRepo
-	WorkingDirectory     string
+	AllowDestroyPlan           bool
+	AutoApply                  bool
+	CanQueueDestroyPlan        bool
+	Description                string
+	Environment                string
+	ExecutionMode              string
+	FileTriggersEnabled        bool
+	GlobalRemoteState          bool
+	Locked                     bool
+	MigrationEnvironment       string
+	Name                       string
+	QueueAllRuns               bool
+	SpeculativeEnabled         bool
+	StructuredRunOutputEnabled bool
+	SourceName                 string
+	SourceURL                  string `db:"source_url"`
+	TerraformVersion           string
+	TriggerPrefixes            CSV
+	VCSRepo                    *VCSRepo
+	WorkingDirectory           string
 
 	// Workspace belongs to an organization
 	Organization *Organization `db:"organizations"`
@@ -377,6 +378,9 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
 	}
+	if opts.StructuredRunOutputEnabled != nil {
+		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion
 	}
@@ -462,6 +466,9 @@ func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, er
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+	}
+	if opts.StructuredRunOutputEnabled != nil {
+		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion

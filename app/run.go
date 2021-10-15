@@ -51,7 +51,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	s.Info("created run", "id", run.ID)
+	s.V(3).Info("created run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.RunCreated, Payload: run})
 
@@ -66,7 +66,7 @@ func (s RunService) Get(id string) (*otf.Run, error) {
 		return nil, err
 	}
 
-	s.Info("retrieved run", "id", run.ID)
+	s.V(3).Info("retrieved run", "id", run.ID)
 
 	return run, nil
 }
@@ -79,7 +79,7 @@ func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		return nil, err
 	}
 
-	s.Info("listed runs", "count", len(rl.Items))
+	s.V(3).Info("listed runs", "count", len(rl.Items))
 
 	return rl, nil
 }
@@ -95,7 +95,7 @@ func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
 		return err
 	}
 
-	s.Info("applied run", "id", run.ID)
+	s.V(3).Info("applied run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.EventApplyQueued, Payload: run})
 
@@ -111,7 +111,7 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 		return err
 	}
 
-	s.Info("discarded run", "id", run.ID)
+	s.V(3).Info("discarded run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.RunCompleted, Payload: run})
 
@@ -153,7 +153,7 @@ func (s RunService) EnqueuePlan(id string) error {
 		return err
 	}
 
-	s.Info("enqueued plan", "id", run.ID)
+	s.V(3).Info("enqueued plan", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 
@@ -172,7 +172,7 @@ func (s RunService) GetPlanFile(ctx context.Context, id string, opts otf.PlanFil
 		s.Error(err, "getting plan file")
 	}
 
-	s.Info("retrieved plan file", "id", id)
+	s.V(3).Info("retrieved plan file", "id", id)
 
 	return pfile, nil
 }
@@ -199,7 +199,7 @@ func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) 
 		return nil, err
 	}
 
-	s.Info("started run", "id", run.ID)
+	s.V(3).Info("started run", "id", run.ID)
 
 	return run, nil
 }
@@ -221,7 +221,7 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 		return nil, err
 	}
 
-	s.Info("finished run", "id", run.ID)
+	s.V(3).Info("finished run", "id", run.ID)
 
 	s.es.Publish(*event)
 
@@ -263,7 +263,7 @@ func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts
 		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
 
-	s.Info("uploaded log chunk", "id", run.ID, "end", opts.End)
+	s.V(3).Info("uploaded log chunk", "id", run.ID, "end", opts.End)
 
 	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions(opts))
 }
