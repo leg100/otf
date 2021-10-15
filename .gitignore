@@ -10,7 +10,8 @@ modd.conf
 *-wal
 *-shm
 # bins
-/_build
+/_build/otf
+/_build/otfd
 # terraform
 /.terraformignore
 .terraform
