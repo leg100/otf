@@ -39,7 +39,7 @@ func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventServic
 	// Get workspaces
 	workspaces, err := ws.List(context.Background(), otf.WorkspaceListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing workspaces: %s", err)
 	}
 
 	for _, ws := range workspaces.Items {

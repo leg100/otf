@@ -3,8 +3,6 @@ package otf
 import (
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 //List all available apply statuses supported in OTF.
@@ -27,33 +25,26 @@ type ApplyService interface {
 }
 
 type Apply struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Resources
 
 	Status           ApplyStatus
-	StatusTimestamps *ApplyStatusTimestamps
+	StatusTimestamps TimestampMap
 
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
-}
 
-// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
-type ApplyStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
+	RunID int64
 }
 
 func newApply() *Apply {
 	return &Apply{
 		ID:               GenerateID("apply"),
-		StatusTimestamps: &ApplyStatusTimestamps{},
+		Model:            NewModel(),
+		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
 	}
 }
@@ -103,16 +94,5 @@ func (a *Apply) UpdateStatus(status ApplyStatus) {
 }
 
 func (a *Apply) setTimestamp(status ApplyStatus) {
-	switch status {
-	case ApplyCanceled:
-		a.StatusTimestamps.CanceledAt = TimeNow()
-	case ApplyErrored:
-		a.StatusTimestamps.ErroredAt = TimeNow()
-	case ApplyFinished:
-		a.StatusTimestamps.FinishedAt = TimeNow()
-	case ApplyQueued:
-		a.StatusTimestamps.QueuedAt = TimeNow()
-	case ApplyRunning:
-		a.StatusTimestamps.StartedAt = TimeNow()
-	}
+	a.StatusTimestamps[string(status)] = time.Now()
 }

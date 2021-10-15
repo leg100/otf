@@ -1,13 +1,9 @@
 package otf
 
-import (
-	"gorm.io/gorm"
-)
-
 type StateVersionOutput struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Name      string
 	Sensitive bool
@@ -15,7 +11,7 @@ type StateVersionOutput struct {
 	Value     string
 
 	// StateVersionOutput belongs to State Version
-	StateVersionID uint
+	StateVersionID int64
 }
 
 type StateVersionOutputList []*StateVersionOutput

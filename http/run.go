@@ -13,22 +13,22 @@ import (
 
 // Run represents a Terraform Enterprise run.
 type Run struct {
-	ID                     string                   `jsonapi:"primary,runs"`
-	Actions                *RunActions              `jsonapi:"attr,actions"`
-	CreatedAt              time.Time                `jsonapi:"attr,created-at,iso8601"`
-	ForceCancelAvailableAt time.Time                `jsonapi:"attr,force-cancel-available-at,iso8601"`
-	HasChanges             bool                     `jsonapi:"attr,has-changes"`
-	IsDestroy              bool                     `jsonapi:"attr,is-destroy"`
-	Message                string                   `jsonapi:"attr,message"`
-	Permissions            *otf.RunPermissions      `jsonapi:"attr,permissions"`
-	PositionInQueue        int                      `jsonapi:"attr,position-in-queue"`
-	Refresh                bool                     `jsonapi:"attr,refresh"`
-	RefreshOnly            bool                     `jsonapi:"attr,refresh-only"`
-	ReplaceAddrs           []string                 `jsonapi:"attr,replace-addrs,omitempty"`
-	Source                 string                   `jsonapi:"attr,source"`
-	Status                 otf.RunStatus            `jsonapi:"attr,status"`
-	StatusTimestamps       *otf.RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
-	TargetAddrs            []string                 `jsonapi:"attr,target-addrs,omitempty"`
+	ID                     string               `jsonapi:"primary,runs"`
+	Actions                *RunActions          `jsonapi:"attr,actions"`
+	CreatedAt              time.Time            `jsonapi:"attr,created-at,iso8601"`
+	ForceCancelAvailableAt time.Time            `jsonapi:"attr,force-cancel-available-at,iso8601"`
+	HasChanges             bool                 `jsonapi:"attr,has-changes"`
+	IsDestroy              bool                 `jsonapi:"attr,is-destroy"`
+	Message                string               `jsonapi:"attr,message"`
+	Permissions            *otf.RunPermissions  `jsonapi:"attr,permissions"`
+	PositionInQueue        int                  `jsonapi:"attr,position-in-queue"`
+	Refresh                bool                 `jsonapi:"attr,refresh"`
+	RefreshOnly            bool                 `jsonapi:"attr,refresh-only"`
+	ReplaceAddrs           []string             `jsonapi:"attr,replace-addrs,omitempty"`
+	Source                 string               `jsonapi:"attr,source"`
+	Status                 otf.RunStatus        `jsonapi:"attr,status"`
+	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
+	TargetAddrs            []string             `jsonapi:"attr,target-addrs,omitempty"`
 
 	// Relations
 	Apply                *Apply                `jsonapi:"relation,apply"`
@@ -36,6 +36,27 @@ type Run struct {
 	CreatedBy            *User                 `jsonapi:"relation,created-by"`
 	Plan                 *Plan                 `jsonapi:"relation,plan"`
 	Workspace            *Workspace            `jsonapi:"relation,workspace"`
+}
+
+// RunStatusTimestamps holds the timestamps for individual run statuses.
+type RunStatusTimestamps struct {
+	AppliedAt            *time.Time `json:"applied-at,omitempty"`
+	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
+	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
+	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
+	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
+	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
+	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
+	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
+	ErroredAt            *time.Time `json:"errored-at,omitempty"`
+	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
+	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
+	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
+	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
+	PlannedAt            *time.Time `json:"planned-at,omitempty"`
+	PlanningAt           *time.Time `json:"planning-at,omitempty"`
+	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
+	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
 }
 
 // RunList represents a list of runs.
@@ -102,21 +123,18 @@ type RunCreateOptions struct {
 	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
 }
 
-// ToDomain converts http organization obj to a domain organization obj.
+// ToDomain converts http run obj to a domain run obj.
 func (r *Run) ToDomain() *otf.Run {
 	domain := otf.Run{
-		ID:                     r.ID,
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
-		IsDestroy:              r.IsDestroy,
-		Message:                r.Message,
-		Permissions:            r.Permissions,
-		PositionInQueue:        r.PositionInQueue,
-		Refresh:                r.Refresh,
-		RefreshOnly:            r.RefreshOnly,
-		ReplaceAddrs:           r.ReplaceAddrs,
-		Status:                 r.Status,
-		StatusTimestamps:       r.StatusTimestamps,
-		TargetAddrs:            r.TargetAddrs,
+		ID:              r.ID,
+		IsDestroy:       r.IsDestroy,
+		Message:         r.Message,
+		PositionInQueue: r.PositionInQueue,
+		Refresh:         r.Refresh,
+		RefreshOnly:     r.RefreshOnly,
+		ReplaceAddrs:    r.ReplaceAddrs,
+		Status:          r.Status,
+		TargetAddrs:     r.TargetAddrs,
 	}
 
 	if r.Apply != nil {
@@ -368,7 +386,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID strin
 // RunJSONAPIObject converts a Run to a struct
 // that can be marshalled into a JSON-API object
 func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
-	return &Run{
+	result := &Run{
 		ID: r.ID,
 		Actions: &RunActions{
 			IsCancelable:      r.IsCancelable(),
@@ -377,19 +395,24 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 			IsDiscardable:     r.IsDiscardable(),
 		},
 		CreatedAt:              r.CreatedAt,
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt,
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
 		HasChanges:             r.Plan.HasChanges(),
 		IsDestroy:              r.IsDestroy,
 		Message:                r.Message,
-		Permissions:            r.Permissions,
-		PositionInQueue:        0,
-		Refresh:                r.Refresh,
-		RefreshOnly:            r.RefreshOnly,
-		ReplaceAddrs:           r.ReplaceAddrs,
-		Source:                 otf.DefaultConfigurationSource,
-		Status:                 r.Status,
-		StatusTimestamps:       r.StatusTimestamps,
-		TargetAddrs:            r.TargetAddrs,
+		Permissions: &otf.RunPermissions{
+			CanForceCancel:  true,
+			CanApply:        true,
+			CanCancel:       true,
+			CanDiscard:      true,
+			CanForceExecute: true,
+		},
+		PositionInQueue: 0,
+		Refresh:         r.Refresh,
+		RefreshOnly:     r.RefreshOnly,
+		ReplaceAddrs:    r.ReplaceAddrs,
+		Source:          otf.DefaultConfigurationSource,
+		Status:          r.Status,
+		TargetAddrs:     r.TargetAddrs,
 
 		// Relations
 		Apply:                s.ApplyJSONAPIObject(r.Apply),
@@ -403,6 +426,40 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 			Username: otf.DefaultUsername,
 		},
 	}
+
+	for k, v := range r.StatusTimestamps {
+		if result.StatusTimestamps == nil {
+			result.StatusTimestamps = &RunStatusTimestamps{}
+		}
+		switch otf.RunStatus(k) {
+		case otf.RunPending:
+			result.StatusTimestamps.PlanQueueableAt = &v
+		case otf.RunPlanQueued:
+			result.StatusTimestamps.PlanQueuedAt = &v
+		case otf.RunPlanning:
+			result.StatusTimestamps.PlanningAt = &v
+		case otf.RunPlanned:
+			result.StatusTimestamps.PlannedAt = &v
+		case otf.RunPlannedAndFinished:
+			result.StatusTimestamps.PlannedAndFinishedAt = &v
+		case otf.RunApplyQueued:
+			result.StatusTimestamps.ApplyQueuedAt = &v
+		case otf.RunApplying:
+			result.StatusTimestamps.ApplyingAt = &v
+		case otf.RunApplied:
+			result.StatusTimestamps.AppliedAt = &v
+		case otf.RunErrored:
+			result.StatusTimestamps.ErroredAt = &v
+		case otf.RunCanceled:
+			result.StatusTimestamps.CanceledAt = &v
+		case otf.RunForceCanceled:
+			result.StatusTimestamps.ForceCanceledAt = &v
+		case otf.RunDiscarded:
+			result.StatusTimestamps.DiscardedAt = &v
+		}
+	}
+
+	return result
 }
 
 // RunListJSONAPIObject converts a RunList to

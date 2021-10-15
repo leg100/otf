@@ -4,117 +4,201 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestWorkspace(t *testing.T) {
-	db, err := New(":memory:")
+func TestWorkspace_Create(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db, "org-123", "automatize")
+
+	wdb := NewWorkspaceDB(db)
+
+	ws, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
 	require.NoError(t, err)
 
-	orgDB := NewOrganizationDB(db)
-	wsDB := NewWorkspaceDB(db)
-	_ = NewRunDB(db)
-	_ = NewStateVersionDB(db)
-	_ = NewConfigurationVersionDB(db)
+	assert.Equal(t, int64(1), ws.Model.ID)
+}
 
-	// Create one org and three workspaces
-
-	org, err := orgDB.Create(&otf.Organization{
-		ID:    "org-123",
-		Name:  "automatize",
-		Email: "sysadmin@automatize.co.uk",
-	})
-	require.NoError(t, err)
-
-	for _, name := range []string{"dev", "staging", "prod"} {
-		ws, err := wsDB.Create(&otf.Workspace{
-			Name:         name,
-			ID:           otf.GenerateID("ws"),
-			Organization: org,
-		})
-		require.NoError(t, err)
-
-		require.Equal(t, name, ws.Name)
-		require.Contains(t, ws.ID, "ws-")
+func TestWorkspace_Update(t *testing.T) {
+	tests := []struct {
+		name string
+		spec otf.WorkspaceSpecifier
+	}{
+		{
+			name: "by id",
+			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+		},
+		{
+			name: "by name",
+			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+		},
 	}
 
-	// Update
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			_ = createTestWorkspace(t, db, "ws-123", "default", org)
 
-	spec := otf.WorkspaceSpecifier{Name: otf.String("dev"), OrganizationName: otf.String("automatize")}
-	ws, err := wsDB.Update(spec, func(ws *otf.Workspace) error {
-		ws.Name = "newdev"
-		return nil
-	})
-	require.NoError(t, err)
+			wdb := NewWorkspaceDB(db)
 
-	require.Equal(t, "newdev", ws.Name)
+			_, err := wdb.Update(tt.spec, func(ws *otf.Workspace) error {
+				ws.Description = "updated description"
+				return nil
+			})
+			require.NoError(t, err)
 
-	// Get
+			got, err := wdb.Get(tt.spec)
+			require.NoError(t, err)
 
-	ws, err = wsDB.Get(otf.WorkspaceSpecifier{Name: otf.String("newdev"), OrganizationName: otf.String("automatize")})
-	require.NoError(t, err)
+			assert.Equal(t, "updated description", got.Description)
+		})
+	}
+}
 
-	require.Equal(t, "newdev", ws.Name)
+func TestWorkspace_Get(t *testing.T) {
+	tests := []struct {
+		name string
+		spec otf.WorkspaceSpecifier
+	}{
+		{
+			name: "by id",
+			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+		},
+		{
+			name: "by name",
+			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+		},
+	}
 
-	// List
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
 
-	workspaces, err := wsDB.List(otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")})
-	require.NoError(t, err)
+			wdb := NewWorkspaceDB(db)
 
-	require.Equal(t, 3, len(workspaces.Items))
+			got, err := wdb.Get(tt.spec)
+			require.NoError(t, err)
 
-	// List with pagination
+			assert.Equal(t, ws, got)
+		})
+	}
+}
 
-	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
-	require.NoError(t, err)
+func TestWorkspace_List(t *testing.T) {
+	tests := []struct {
+		name string
+		opts otf.WorkspaceListOptions
+		want func(*testing.T, *otf.WorkspaceList, ...*otf.Workspace)
+	}{
+		{
+			name: "default",
+			opts: otf.WorkspaceListOptions{},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, c := range created {
+					assert.Contains(t, l.Items, c)
+				}
+			},
+		},
+		{
+			name: "filter by org",
+			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, c := range created {
+					assert.Contains(t, l.Items, c)
+				}
+			},
+		},
+		{
+			name: "filter by prefix",
+			opts: otf.WorkspaceListOptions{Prefix: otf.String("dev")},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 1, len(l.Items))
+			},
+		},
+		{
+			name: "filter by non-existent org",
+			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("non-existent")},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name: "filter by non-existent prefix",
+			opts: otf.WorkspaceListOptions{Prefix: otf.String("xyz")},
+			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+	}
 
-	require.Equal(t, 2, len(workspaces.Items))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws1 := createTestWorkspace(t, db, "ws-1", "dev", org)
+			ws2 := createTestWorkspace(t, db, "ws-2", "prod", org)
 
-	workspaces, err = wsDB.List(otf.WorkspaceListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 2}})
-	require.NoError(t, err)
+			wdb := NewWorkspaceDB(db)
 
-	require.Equal(t, 1, len(workspaces.Items))
+			results, err := wdb.List(tt.opts)
+			require.NoError(t, err)
 
-	// List with search
+			tt.want(t, results, ws1, ws2)
+		})
+	}
+}
 
-	workspaces, err = wsDB.List(otf.WorkspaceListOptions{Prefix: otf.String("new")})
-	require.NoError(t, err)
+func TestWorkspace_Delete(t *testing.T) {
+	tests := []struct {
+		name string
+		spec otf.WorkspaceSpecifier
+	}{
+		{
+			name: "by id",
+			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+		},
+		{
+			name: "by name",
+			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+		},
+	}
 
-	require.Equal(t, 1, len(workspaces.Items))
-	require.Equal(t, "newdev", workspaces.Items[0].Name)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
+			_ = createTestRun(t, db, "run-123", ws, cv)
 
-	// Delete
+			wdb := NewWorkspaceDB(db)
+			rdb := NewRunDB(db)
+			cdb := NewConfigurationVersionDB(db)
 
-	require.NoError(t, wsDB.Delete(otf.WorkspaceSpecifier{Name: otf.String("newdev"), OrganizationName: otf.String("automatize")}))
+			require.NoError(t, wdb.Delete(tt.spec))
 
-	// Re-create
+			results, err := wdb.List(otf.WorkspaceListOptions{})
+			require.NoError(t, err)
 
-	ws, err = wsDB.Create(&otf.Workspace{
-		Name:         "dev",
-		Organization: org,
-	})
-	require.NoError(t, err)
+			assert.Equal(t, 0, len(results.Items))
 
-	require.Equal(t, "dev", ws.Name)
+			// Test ON CASCADE DELETE functionality for runs
+			rl, err := rdb.List(otf.RunListOptions{})
+			require.NoError(t, err)
 
-	// Update by ID
+			assert.Equal(t, 0, len(rl.Items))
 
-	ws, err = wsDB.Update(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}, func(ws *otf.Workspace) error {
-		ws.Name = "staging"
-		return nil
-	})
-	require.NoError(t, err)
+			// Test ON CASCADE DELETE functionality for config versions
+			cvl, err := cdb.List(ws.ID, otf.ConfigurationVersionListOptions{})
+			require.NoError(t, err)
 
-	require.Equal(t, "staging", ws.Name)
-
-	// Get by ID
-
-	ws, err = wsDB.Get(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
-	require.NoError(t, err)
-
-	require.Equal(t, "staging", ws.Name)
-
-	// Delete by ID
-
-	require.NoError(t, wsDB.Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}))
+			assert.Equal(t, 0, len(cvl.Items))
+		})
+	}
 }

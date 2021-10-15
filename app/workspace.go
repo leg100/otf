@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -12,13 +13,16 @@ type WorkspaceService struct {
 	db otf.WorkspaceStore
 	os otf.OrganizationService
 	es otf.EventService
+
+	logr.Logger
 }
 
-func NewWorkspaceService(db otf.WorkspaceStore, os otf.OrganizationService, es otf.EventService) *WorkspaceService {
+func NewWorkspaceService(db otf.WorkspaceStore, logger logr.Logger, os otf.OrganizationService, es otf.EventService) *WorkspaceService {
 	return &WorkspaceService{
-		db: db,
-		es: es,
-		os: os,
+		db:     db,
+		es:     es,
+		os:     os,
+		Logger: logger,
 	}
 }
 
@@ -34,10 +38,13 @@ func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.W
 
 	ws := otf.NewWorkspace(opts, org)
 
-	ws, err = s.db.Create(ws)
+	_, err = s.db.Create(ws)
 	if err != nil {
+		s.Error(err, "creating workspace", "id", ws.ID)
 		return nil, err
 	}
+
+	s.Info("created workspace", "id", ws.ID)
 
 	s.es.Publish(otf.Event{Type: otf.WorkspaceCreated, Payload: ws})
 
@@ -75,6 +82,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifie
 	}
 
 	if err := s.db.Delete(spec); err != nil {
+		s.Error(err, "deleting workspace")
 		return err
 	}
 

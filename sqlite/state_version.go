@@ -1,18 +1,36 @@
 package sqlite
 
 import (
+	"fmt"
+	"strings"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
-var _ otf.StateVersionStore = (*StateVersionService)(nil)
+var (
+	_ otf.StateVersionStore = (*StateVersionService)(nil)
+
+	stateVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "serial", "blob_id"}
+	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
+
+	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
+
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+		strings.Join(stateVersionColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
+
+	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
+		strings.Join(stateVersionOutputColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionOutputColumnsWithoutID, ":"), ", "))
+)
 
 type StateVersionService struct {
-	*gorm.DB
+	*sqlx.DB
 }
 
-func NewStateVersionDB(db *gorm.DB) *StateVersionService {
+func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
 	return &StateVersionService{
 		DB: db,
 	}
@@ -20,77 +38,128 @@ func NewStateVersionDB(db *gorm.DB) *StateVersionService {
 
 // Create persists a StateVersion to the DB.
 func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	model := &StateVersion{}
-	model.FromDomain(sv)
+	tx := s.MustBegin()
+	defer tx.Rollback()
 
-	if result := s.DB.Omit("Workspace").Create(model); result.Error != nil {
-		return nil, result.Error
+	// Insert state_version
+	result, err := tx.NamedExec(insertStateVersionSQL, sv)
+	if err != nil {
+		return nil, err
+	}
+	sv.Model.ID, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	// Insert state_version_outputs
+	for _, svo := range sv.Outputs {
+		svo.StateVersionID = sv.Model.ID
+		result, err := tx.NamedExec(insertStateVersionOutputSQL, svo)
+		if err != nil {
+			return nil, err
+		}
+		svo.Model.ID, err = result.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return sv, tx.Commit()
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	var models StateVersionList
-	var count int64
+	if opts.Workspace == nil {
+		return nil, fmt.Errorf("missing required option: workspace")
+	}
+	if opts.Organization == nil {
+		return nil, fmt.Errorf("missing required option: organization")
+	}
 
-	err := s.DB.Transaction(func(tx *gorm.DB) error {
-		ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{Name: opts.Workspace, OrganizationName: opts.Organization})
-		if err != nil {
-			return err
-		}
+	selectBuilder := sq.Select().From("state_versions").
+		Join("workspaces ON workspaces.id = state_versions.workspace_id").
+		Join("organizations ON organizations.id = workspaces.organization_id").
+		Where("workspaces.name = ?", *opts.Workspace).
+		Where("organizations.name = ?", *opts.Organization)
 
-		query := tx.Where("workspace_id = ?", ws.ID)
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(s).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
 
-		if result := query.Model(&models).Count(&count); result.Error != nil {
-			return result.Error
-		}
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("state_versions", false, stateVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
-		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-			return result.Error
-		}
-
-		return nil
-	})
+	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.StateVersion
+	if err := s.Select(&items, sql, args...); err != nil {
 		return nil, err
 	}
 
 	return &otf.StateVersionList{
-		Items:      models.ToDomain(),
-		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	sv, err := getStateVersion(s.DB, opts)
-	if err != nil {
-		return nil, err
-	}
-	return sv.ToDomain(), nil
-}
-
-func getStateVersion(db *gorm.DB, opts otf.StateVersionGetOptions) (*StateVersion, error) {
-	var model StateVersion
-
-	query := db.Preload(clause.Associations)
+	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		From("state_versions").
+		Join("workspaces ON workspaces.id = state_versions.workspace_id")
 
 	switch {
 	case opts.ID != nil:
 		// Get state version by ID
-		query = query.Where("external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("state_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
-		// Get most recent state version belonging to workspace
-		query = query.Joins("JOIN workspaces ON workspaces.id = state_versions.workspace_id").
-			Order("state_versions.serial desc, state_versions.created_at desc").
-			Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		// Get latest state version for given workspace
+		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
 	default:
-		return nil, otf.ErrInvalidStateVersionGetOptions
+		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	if result := query.First(&model); result.Error != nil {
-		return nil, result.Error
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
 	}
 
-	return &model, nil
+	sv := otf.StateVersion{}
+	if err := s.DB.Get(&sv, sql, args...); err != nil {
+		return nil, databaseError(err)
+	}
+
+	if err := s.attachOutputs(&sv); err != nil {
+		return nil, err
+	}
+
+	return &sv, nil
+}
+
+func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
+	selectBuilder := sq.Select("*").
+		From("state_version_outputs").
+		Where("state_version_id = ? ", sv.Model.ID)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	outputs := []*otf.StateVersionOutput{}
+	if err := s.DB.Select(&outputs, sql, args...); err != nil {
+		return err
+	}
+
+	// Attach
+	sv.Outputs = outputs
+
+	return nil
 }

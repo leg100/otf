@@ -1,113 +1,156 @@
 package sqlite
 
 import (
+	"fmt"
+	"strings"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"github.com/mitchellh/copystructure"
 )
 
-var _ otf.OrganizationStore = (*OrganizationDB)(nil)
+var (
+	_ otf.OrganizationStore = (*OrganizationDB)(nil)
+
+	organizationColumnsWithoutID = []string{
+		"created_at",
+		"updated_at",
+		"external_id",
+		"name",
+		"email",
+		"session_remember",
+		"session_timeout",
+	}
+	organizationColumns = append(organizationColumnsWithoutID, "id")
+
+	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s)",
+		strings.Join(organizationColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ", "))
+)
 
 type OrganizationDB struct {
-	*gorm.DB
+	*sqlx.DB
 }
 
-func NewOrganizationDB(db *gorm.DB) *OrganizationDB {
+func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 	return &OrganizationDB{
 		DB: db,
 	}
 }
 
 // Create persists a Organization to the DB.
-func (db OrganizationDB) Create(domain *otf.Organization) (*otf.Organization, error) {
-	model := &Organization{}
-	model.FromDomain(domain)
-
-	if result := db.DB.Create(model); result.Error != nil {
-		return nil, result.Error
+func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
+	// Insert
+	result, err := db.NamedExec(insertOrganizationSQL, org)
+	if err != nil {
+		return nil, err
+	}
+	org.Model.ID, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	return org, nil
 }
 
 // Update persists an updated Organization to the DB. The existing org is
 // fetched from the DB, the supplied func is invoked on the org, and the updated
 // org is persisted back to the DB.
 func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	var model *Organization
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	err := db.Transaction(func(tx *gorm.DB) (err error) {
-		// Get existing model obj from DB
-		model, err = getOrganizationByName(tx, name)
-		if err != nil {
-			return err
-		}
-
-		// Update domain obj using client-supplied fn
-		if err := model.Update(fn); err != nil {
-			return err
-		}
-
-		if result := tx.Save(model); result.Error != nil {
-			return err
-		}
-
-		return nil
-	})
+	org, err := getOrganization(tx, name)
 	if err != nil {
 		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	// Make a copy for comparison with the updated obj
+	before, err := copystructure.Copy(org)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update obj using client-supplied fn
+	if err := fn(org); err != nil {
+		return nil, err
+	}
+
+	updated, err := update(db.Mapper, tx, "organizations", before.(*otf.Organization), org)
+	if err != nil {
+		return nil, err
+	}
+
+	if updated {
+		return org, tx.Commit()
+	}
+
+	return org, nil
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	var count int64
-	var models OrganizationList
+	selectBuilder := sq.Select().From("organizations")
 
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if result := tx.Model(models).Count(&count); result.Error != nil {
-			return result.Error
-		}
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
 
-		if result := tx.Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-			return result.Error
-		}
+	selectBuilder = selectBuilder.
+		Columns(strings.Join(organizationColumns, ",")).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
-		return nil
-	})
+	sql, _, err := selectBuilder.ToSql()
 	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Organization
+	if err := db.Select(&items, sql); err != nil {
 		return nil, err
 	}
 
 	return &otf.OrganizationList{
-		Items:      models.ToDomain(),
-		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
-	org, err := getOrganizationByName(db.DB, name)
-	if err != nil {
-		return nil, err
-	}
-	return org.ToDomain(), nil
+	return getOrganization(db.DB, name)
 }
 
 func (db OrganizationDB) Delete(name string) error {
-	if result := db.Where("name = ?", name).Delete(&Organization{}); result.Error != nil {
-		return result.Error
+	result, err := db.Exec("DELETE FROM organizations WHERE name = ?", name)
+	if err != nil {
+		return err
 	}
-
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return otf.ErrResourceNotFound
+	}
 	return nil
 }
 
-func getOrganizationByName(db *gorm.DB, name string) (*Organization, error) {
-	var model Organization
+func getOrganization(getter Getter, name string) (*otf.Organization, error) {
+	selectBuilder := sq.Select(strings.Join(organizationColumns, ",")).
+		From("organizations").
+		Where("name = ?", name)
 
-	if result := db.Preload(clause.Associations).Where("name = ?", name).First(&model); result.Error != nil {
-		return nil, result.Error
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
 	}
 
-	return &model, nil
+	var org otf.Organization
+	if err := getter.Get(&org, sql, args...); err != nil {
+		return nil, err
+	}
+
+	return &org, nil
 }

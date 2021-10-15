@@ -93,10 +93,11 @@ func main() {
 	logger.Info("filestore started", "path", fs.Path)
 
 	// Setup sqlite db
-	db, err := sqlite.New(DBPath, sqlite.WithZeroLogger(zerologger))
+	db, err := sqlite.New(logger, DBPath, sqlite.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
 	}
+	defer db.Close()
 
 	organizationStore := sqlite.NewOrganizationDB(db)
 	workspaceStore := sqlite.NewWorkspaceDB(db)
@@ -106,11 +107,11 @@ func main() {
 
 	eventService := inmem.NewEventService(logger)
 
-	server.OrganizationService = app.NewOrganizationService(organizationStore, eventService)
-	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, server.WorkspaceService, fs)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, server.WorkspaceService, fs)
-	server.RunService = app.NewRunService(runStore, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
+	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
+	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, fs)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, fs)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
 	server.PlanService = app.NewPlanService(runStore, fs)
 	server.ApplyService = app.NewApplyService(runStore)
 	server.EventService = eventService

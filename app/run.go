@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -14,14 +15,17 @@ type RunService struct {
 	bs otf.BlobStore
 	es otf.EventService
 
+	logr.Logger
+
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, bs otf.BlobStore, es otf.EventService) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, bs otf.BlobStore, es otf.EventService) *RunService {
 	return &RunService{
-		bs: bs,
-		db: db,
-		es: es,
+		bs:     bs,
+		db:     db,
+		es:     es,
+		Logger: logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -41,10 +45,13 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	run, err = s.db.Create(run)
+	_, err = s.db.Create(run)
 	if err != nil {
+		s.Error(err, "creating run", "id", run.ID)
 		return nil, err
 	}
+
+	s.V(3).Info("created run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.RunCreated, Payload: run})
 
@@ -53,12 +60,28 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 
 // Get retrieves a run obj with the given ID from the db.
 func (s RunService) Get(id string) (*otf.Run, error) {
-	return s.db.Get(otf.RunGetOptions{ID: &id})
+	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	if err != nil {
+		s.Error(err, "retrieving run", "id", id)
+		return nil, err
+	}
+
+	s.V(3).Info("retrieved run", "id", run.ID)
+
+	return run, nil
 }
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
 func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	return s.db.List(opts)
+	rl, err := s.db.List(opts)
+	if err != nil {
+		s.Error(err, "listing runs")
+		return nil, err
+	}
+
+	s.V(3).Info("listed runs", "count", len(rl.Items))
+
+	return rl, nil
 }
 
 func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
@@ -68,8 +91,11 @@ func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
 		return nil
 	})
 	if err != nil {
+		s.Error(err, "applying run", "id", id)
 		return err
 	}
+
+	s.V(3).Info("applied run", "id", id)
 
 	s.es.Publish(otf.Event{Type: otf.EventApplyQueued, Payload: run})
 
@@ -81,8 +107,11 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 		return run.Discard()
 	})
 	if err != nil {
+		s.Error(err, "discarding run", "id", id)
 		return err
 	}
+
+	s.V(3).Info("discarded run", "id", id)
 
 	s.es.Publish(otf.Event{Type: otf.RunCompleted, Payload: run})
 
@@ -120,8 +149,11 @@ func (s RunService) EnqueuePlan(id string) error {
 		return nil
 	})
 	if err != nil {
+		s.Error(err, "enqueuing plan", "id", id)
 		return err
 	}
+
+	s.V(3).Info("enqueued plan", "id", id)
 
 	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 
@@ -135,7 +167,14 @@ func (s RunService) GetPlanFile(ctx context.Context, id string, opts otf.PlanFil
 		return nil, err
 	}
 
-	return s.bs.Get(bid)
+	pfile, err := s.bs.Get(bid)
+	if err != nil {
+		s.Error(err, "retrieving plan file", "id", id)
+	}
+
+	s.V(3).Info("retrieved plan file", "id", id)
+
+	return pfile, nil
 }
 
 // UploadPlanFile persists a run's plan file. The plan file is expected to have
@@ -152,9 +191,17 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 
 // Start marks a run phase (plan, apply) as started.
 func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) {
-	return s.db.Update(id, func(run *otf.Run) error {
+	run, err := s.db.Update(id, func(run *otf.Run) error {
 		return run.Start()
 	})
+	if err != nil {
+		s.Error(err, "starting run")
+		return nil, err
+	}
+
+	s.V(3).Info("started run", "id", run.ID)
+
+	return run, nil
 }
 
 // Finish marks a run phase (plan, apply) as finished.  An event is emitted to
@@ -170,8 +217,11 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 		return err
 	})
 	if err != nil {
+		s.Error(err, "finishing run", "id", id)
 		return nil, err
 	}
+
+	s.V(3).Info("finished run", "id", id)
 
 	s.es.Publish(*event)
 
@@ -180,9 +230,10 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 
 // GetPlanLogs returns logs from the plan of the run identified by id. The
 // options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
+func (s RunService) GetPlanLogs(planID string, opts otf.GetChunkOptions) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{PlanID: &planID})
 	if err != nil {
+		s.Error(err, "retrieving plan logs")
 		return nil, err
 	}
 	return s.bs.GetChunk(run.Plan.LogsBlobID, opts)
@@ -202,6 +253,7 @@ func (s RunService) GetApplyLogs(id string, opts otf.GetChunkOptions) ([]byte, e
 func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error {
 	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
+		s.Error(err, "retrieving run for uploading logs")
 		return err
 	}
 
@@ -210,6 +262,8 @@ func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts
 	if err != nil {
 		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
 	}
+
+	s.V(3).Info("uploaded log chunk", "id", run.ID, "end", opts.End)
 
 	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions(opts))
 }

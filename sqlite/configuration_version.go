@@ -1,32 +1,49 @@
 package sqlite
 
 import (
+	"fmt"
+	"strings"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"github.com/mitchellh/copystructure"
 )
 
-var _ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
+var (
+	_ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
+
+	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id"}
+
+	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")
+
+	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+		strings.Join(configurationVersionColumnsWithoutID, ", "),
+		strings.Join(otf.PrefixSlice(configurationVersionColumnsWithoutID, ":"), ", "))
+)
 
 type ConfigurationVersionDB struct {
-	*gorm.DB
+	*sqlx.DB
 }
 
-func NewConfigurationVersionDB(db *gorm.DB) *ConfigurationVersionDB {
+func NewConfigurationVersionDB(db *sqlx.DB) *ConfigurationVersionDB {
 	return &ConfigurationVersionDB{
 		DB: db,
 	}
 }
 
 func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
-	model := &ConfigurationVersion{}
-	model.FromDomain(cv)
-
-	if result := db.Omit("Workspace").Create(model); result.Error != nil {
-		return nil, result.Error
+	// Insert
+	result, err := db.NamedExec(insertConfigurationVersionSQL, cv)
+	if err != nil {
+		return nil, err
+	}
+	cv.Model.ID, err = result.LastInsertId()
+	if err != nil {
+		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	return cv, nil
 }
 
 // Update persists an updated ConfigurationVersion to the DB. The existing run
@@ -34,96 +51,100 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 // updated run is persisted back to the DB. The returned ConfigurationVersion
 // includes any changes, including a new UpdatedAt value.
 func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVersion) error) (*otf.ConfigurationVersion, error) {
-	var model *ConfigurationVersion
+	tx := db.MustBegin()
+	defer tx.Rollback()
 
-	err := db.Transaction(func(tx *gorm.DB) (err error) {
-		// Get existing model obj from DB
-		model, err = getConfigurationVersion(tx, otf.ConfigurationVersionGetOptions{ID: &id})
-		if err != nil {
-			return err
-		}
-
-		// Update domain obj using client-supplied fn
-		if err := model.Update(fn); err != nil {
-			return err
-		}
-
-		if result := tx.Save(&model); result.Error != nil {
-			return err
-		}
-
-		return nil
-	})
+	cv, err := getConfigurationVersion(tx, otf.ConfigurationVersionGetOptions{ID: &id})
 	if err != nil {
 		return nil, err
 	}
 
-	return model.ToDomain(), nil
+	// Make a copy for comparison with the updated obj
+	before, err := copystructure.Copy(cv)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update obj using client-supplied fn
+	if err := fn(cv); err != nil {
+		return nil, err
+	}
+
+	updated, err := update(db.Mapper, tx, "configuration_versions", before.(*otf.ConfigurationVersion), cv)
+	if err != nil {
+		return nil, err
+	}
+
+	if updated {
+		return cv, tx.Commit()
+	}
+
+	return cv, tx.Commit()
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	var models ConfigurationVersionList
-	var count int64
+	selectBuilder := sq.Select().
+		From("configuration_versions").
+		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		Where("workspaces.external_id = ?", workspaceID)
 
-	err := db.Transaction(func(tx *gorm.DB) error {
-		ws, err := getWorkspace(tx, otf.WorkspaceSpecifier{ID: &workspaceID})
-		if err != nil {
-			return err
-		}
+	var count int
+	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
+		return nil, fmt.Errorf("counting total rows: %w", err)
+	}
 
-		query := tx.Where("workspace_id = ?", ws.ID)
+	selectBuilder = selectBuilder.
+		Columns(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		Limit(opts.GetLimit()).
+		Offset(opts.GetOffset())
 
-		if result := query.Model(&models).Count(&count); result.Error != nil {
-			return result.Error
-		}
-
-		if result := query.Preload(clause.Associations).Scopes(paginate(opts.ListOptions)).Find(&models); result.Error != nil {
-			return result.Error
-		}
-
-		return nil
-	})
+	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.ConfigurationVersion
+	if err := db.Select(&items, sql, args...); err != nil {
 		return nil, err
 	}
 
 	return &otf.ConfigurationVersionList{
-		Items:      models.ToDomain(),
-		Pagination: otf.NewPagination(opts.ListOptions, int(count)),
+		Items:      items,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
 func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	cv, err := getConfigurationVersion(db.DB, opts)
-	if err != nil {
-		return nil, err
-	}
-	return cv.ToDomain(), nil
+	return getConfigurationVersion(db.DB, opts)
 }
 
-func getConfigurationVersion(db *gorm.DB, opts otf.ConfigurationVersionGetOptions) (*ConfigurationVersion, error) {
-	var model ConfigurationVersion
-
-	query := db.Preload(clause.Associations)
+func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
+	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+		Columns(asColumnList("workspaces", true, workspaceColumns...)).
+		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		From("configuration_versions")
 
 	switch {
 	case opts.ID != nil:
 		// Get config version by ID
-		query = query.Where("external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("configuration_versions.external_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest config version for given workspace
-		ws, err := getWorkspace(db, otf.WorkspaceSpecifier{ID: opts.WorkspaceID})
-		if err != nil {
-			return nil, err
-		}
-		query = query.Where("workspace_id = ?", ws.ID).Order("created_at desc")
+		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
 	default:
-		return nil, otf.ErrInvalidConfigurationVersionGetOptions
+		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}
 
-	if result := query.First(&model); result.Error != nil {
-		return nil, result.Error
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
 	}
 
-	return &model, nil
+	var cv otf.ConfigurationVersion
+	if err := getter.Get(&cv, sql, args...); err != nil {
+		return nil, databaseError(err)
+	}
+
+	return &cv, nil
 }

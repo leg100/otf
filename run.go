@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -24,6 +22,7 @@ const (
 	RunApplyQueued        RunStatus = "apply_queued"
 	RunApplying           RunStatus = "applying"
 	RunCanceled           RunStatus = "canceled"
+	RunForceCanceled      RunStatus = "force_canceled"
 	RunConfirmed          RunStatus = "confirmed"
 	RunDiscarded          RunStatus = "discarded"
 	RunErrored            RunStatus = "errored"
@@ -60,48 +59,30 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
-	ForceCancelAvailableAt time.Time
-	IsDestroy              bool
-	Message                string
-	Permissions            *RunPermissions
-	PositionInQueue        int
-	Refresh                bool
-	RefreshOnly            bool
-	Status                 RunStatus
-	StatusTimestamps       *RunStatusTimestamps
-	ReplaceAddrs           []string
-	TargetAddrs            []string
+	IsDestroy        bool
+	Message          string
+	PositionInQueue  int
+	Refresh          bool
+	RefreshOnly      bool
+	Status           RunStatus
+	StatusTimestamps TimestampMap
+	ReplaceAddrs     CSV
+	TargetAddrs      CSV
 
 	// Relations
-	Plan                 *Plan
-	Apply                *Apply
-	Workspace            *Workspace
-	ConfigurationVersion *ConfigurationVersion
+	Plan                 *Plan                 `db:"plans"`
+	Apply                *Apply                `db:"applies"`
+	Workspace            *Workspace            `db:"workspaces"`
+	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
 }
 
-// RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
-	AppliedAt            *time.Time `json:"applied-at,omitempty"`
-	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
-	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
-	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
-	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
-	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
-	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
-	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
-	ErroredAt            *time.Time `json:"errored-at,omitempty"`
-	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
-	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
-	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
-	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
-	PlannedAt            *time.Time `json:"planned-at,omitempty"`
-	PlanningAt           *time.Time `json:"planning-at,omitempty"`
-	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
-	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
+type RunStatusTimestamp struct {
+	Status    RunStatus
+	Timestamp time.Time
 }
 
 // Phase implementations represent the phases that make up a run: a plan and an
@@ -142,6 +123,11 @@ type RunService interface {
 
 // RunCreateOptions represents the options for creating a new run.
 type RunCreateOptions struct {
+	// Type is a public field utilized by JSON:API to set the resource type via
+	// the field tag.  It is not a user-defined value and does not need to be
+	// set.  https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,runs"`
+
 	// Specifies if this plan is a destroy plan, which will destroy all
 	// provisioned resources.
 	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
@@ -293,12 +279,19 @@ func (r *Run) Cancel() error {
 		return ErrRunCancelNotAllowed
 	}
 
-	// Run can be forcefully cancelled after a cool-off period of ten seconds
-	r.ForceCancelAvailableAt = time.Now().Add(10 * time.Second)
-
 	r.UpdateStatus(RunCanceled)
 
 	return nil
+}
+
+func (r *Run) ForceCancelAvailableAt() time.Time {
+	canceledAt, ok := r.StatusTimestamps[string(RunCanceled)]
+	if !ok {
+		return time.Time{}
+	}
+
+	// Run can be forcefully cancelled after a cool-off period of ten seconds
+	return canceledAt.Add(10 * time.Second)
 }
 
 // ForceCancel updates the state of a run to reflect it having been forcefully
@@ -308,7 +301,7 @@ func (r *Run) ForceCancel() error {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	r.StatusTimestamps.ForceCanceledAt = TimeNow()
+	r.setTimestamp(RunForceCanceled)
 
 	return nil
 }
@@ -345,7 +338,13 @@ func (r *Run) IsDiscardable() bool {
 
 // IsForceCancelable determines whether a run can be forcibly cancelled.
 func (r *Run) IsForceCancelable() bool {
-	return r.IsCancelable() && !r.ForceCancelAvailableAt.IsZero() && time.Now().After(r.ForceCancelAvailableAt)
+	availAt := r.ForceCancelAvailableAt()
+
+	if availAt.IsZero() {
+		return false
+	}
+
+	return time.Now().After(availAt)
 }
 
 // IsActive determines whether run is currently the active run on a workspace,
@@ -477,30 +476,7 @@ func (r *Run) UpdateStatus(status RunStatus) {
 }
 
 func (r *Run) setTimestamp(status RunStatus) {
-	switch status {
-	case RunPending:
-		r.StatusTimestamps.PlanQueueableAt = TimeNow()
-	case RunPlanQueued:
-		r.StatusTimestamps.PlanQueuedAt = TimeNow()
-	case RunPlanning:
-		r.StatusTimestamps.PlanningAt = TimeNow()
-	case RunPlanned:
-		r.StatusTimestamps.PlannedAt = TimeNow()
-	case RunPlannedAndFinished:
-		r.StatusTimestamps.PlannedAndFinishedAt = TimeNow()
-	case RunApplyQueued:
-		r.StatusTimestamps.ApplyQueuedAt = TimeNow()
-	case RunApplying:
-		r.StatusTimestamps.ApplyingAt = TimeNow()
-	case RunApplied:
-		r.StatusTimestamps.AppliedAt = TimeNow()
-	case RunErrored:
-		r.StatusTimestamps.ErroredAt = TimeNow()
-	case RunCanceled:
-		r.StatusTimestamps.CanceledAt = TimeNow()
-	case RunDiscarded:
-		r.StatusTimestamps.DiscardedAt = TimeNow()
-	}
+	r.StatusTimestamps[string(status)] = time.Now()
 }
 
 func (r *Run) Do(exe *Executor) error {
@@ -551,19 +527,19 @@ func (r *Run) downloadConfig(ctx context.Context, exe *Executor) error {
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
 	state, err := exe.StateVersionService.Current(r.Workspace.ID)
-	if IsNotFound(err) {
+	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
-		return err
+		return fmt.Errorf("retrieving current state version: %w", err)
 	}
 
 	statefile, err := exe.StateVersionService.Download(state.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("downloading state version: %w", err)
 	}
 
 	if err := os.WriteFile(filepath.Join(exe.Path, LocalStateFilename), statefile, 0644); err != nil {
-		return err
+		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 
 	return nil
@@ -642,18 +618,12 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 	}
 
 	run := Run{
-		ID: GenerateID("run"),
-		Permissions: &RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
-		},
+		ID:               GenerateID("run"),
+		Model:            NewModel(),
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: &RunStatusTimestamps{},
+		StatusTimestamps: make(TimestampMap),
 		Plan:             newPlan(),
 		Apply:            newApply(),
 	}

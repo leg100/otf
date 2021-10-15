@@ -27,6 +27,12 @@ var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 // A regular expression used to validate semantic versions (major.minor.patch).
 var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
+// Updateable is an obj that records when it was updated.
+type Updateable interface {
+	GetInternalID() int64
+	SetUpdatedAt(time.Time)
+}
+
 func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
@@ -59,9 +65,9 @@ func GenerateRandomString(size int) string {
 // Resources summaries updates to a workspace's resources, either proposed as
 // part of a plan, or made as a result of an apply.
 type Resources struct {
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
+	ResourceAdditions    int `db:"resource_additions"`
+	ResourceChanges      int `db:"resource_changes"`
+	ResourceDestructions int `db:"resource_destructions"`
 }
 
 // Pagination is used to return the pagination details of an API request.
@@ -83,6 +89,26 @@ type ListOptions struct {
 	PageSize int `schema:"page[size],omitempty"`
 }
 
+// GetOffset calculates the offset for use in SQL queries.
+func (o *ListOptions) GetOffset() uint64 {
+	if o.PageNumber == 0 {
+		return 0
+	}
+
+	return uint64((o.PageNumber - 1) * o.PageSize)
+}
+
+// GetLimit calculates the limit for use in SQL queries.
+func (o *ListOptions) GetLimit() uint64 {
+	if o.PageSize == 0 {
+		return DefaultPageSize
+	} else if o.PageSize > MaxPageSize {
+		return MaxPageSize
+	}
+
+	return uint64(o.PageSize)
+}
+
 // validString checks if the given input is present and non-empty.
 func validString(v *string) bool {
 	return v != nil && *v != ""
@@ -98,4 +124,42 @@ func ValidStringID(v *string) bool {
 // valid semantic version (major.minor.patch).
 func validSemanticVersion(v string) bool {
 	return reSemanticVersion.MatchString(v)
+}
+
+type Model struct {
+	ID        int64
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (m *Model) GetInternalID() int64 {
+	return m.ID
+}
+
+func (m *Model) SetUpdatedAt(t time.Time) {
+	m.UpdatedAt = t
+}
+
+func NewModel() Model {
+	now := time.Now()
+	return Model{
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func GetMapKeys(m map[string]interface{}) []string {
+	keys := make([]string, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// PrefixSlice prefixes each string in a slice with another string.
+func PrefixSlice(slice []string, prefix string) (ret []string) {
+	for _, s := range slice {
+		ret = append(ret, prefix+s)
+	}
+	return
 }

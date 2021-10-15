@@ -4,61 +4,120 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigurationVersion(t *testing.T) {
-	db, err := New(":memory:")
+func TestConfigurationVersion_Create(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
+
+	cdb := NewConfigurationVersionDB(db)
+
+	cv, err := cdb.Create(newTestConfigurationVersion("cv-123", ws))
 	require.NoError(t, err)
 
-	cvDB := NewConfigurationVersionDB(db)
-	wsDB := NewWorkspaceDB(db)
-	orgDB := NewOrganizationDB(db)
+	assert.Equal(t, int64(1), cv.Model.ID)
+}
 
-	// Create 1 org, 1 ws, 1 cv
+func TestConfigurationVersion_Update(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db, "org-123", "automatize")
+	ws := createTestWorkspace(t, db, "ws-123", "default", org)
+	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
-	org, err := orgDB.Create(&otf.Organization{
-		ID:    "org-123",
-		Name:  "automatize",
-		Email: "sysadmin@automatize.co.uk",
-	})
-	require.NoError(t, err)
+	cdb := NewConfigurationVersionDB(db)
 
-	ws, err := wsDB.Create(&otf.Workspace{
-		Name:         "dev",
-		ID:           "ws-123",
-		Organization: org,
-	})
-	require.NoError(t, err)
-
-	cv, err := cvDB.Create(&otf.ConfigurationVersion{
-		ID:        "cv-123",
-		Status:    otf.ConfigurationPending,
-		Workspace: ws,
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, otf.ConfigurationPending, cv.Status)
-
-	// Update
-
-	cv, err = cvDB.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
+	updated, err := cdb.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
 		cv.Status = otf.ConfigurationUploaded
 		return nil
 	})
 	require.NoError(t, err)
 
-	// Get
+	assert.Equal(t, otf.ConfigurationUploaded, updated.Status)
+}
 
-	cv, err = cvDB.Get(otf.ConfigurationVersionGetOptions{ID: &cv.ID})
-	require.NoError(t, err)
+func TestConfigurationVersion_Get(t *testing.T) {
+	tests := []struct {
+		name string
+		opts otf.ConfigurationVersionGetOptions
+	}{
+		{
+			name: "by id",
+			opts: otf.ConfigurationVersionGetOptions{ID: otf.String("cv-123")},
+		},
+		{
+			name: "by workspace",
+			opts: otf.ConfigurationVersionGetOptions{WorkspaceID: otf.String("ws-123")},
+		},
+	}
 
-	require.Equal(t, otf.ConfigurationUploaded, cv.Status)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
 
-	// List
+			cdb := NewConfigurationVersionDB(db)
 
-	cvs, err := cvDB.List(ws.ID, otf.ConfigurationVersionListOptions{})
-	require.NoError(t, err)
+			got, err := cdb.Get(tt.opts)
+			require.NoError(t, err)
 
-	require.Equal(t, 1, len(cvs.Items))
+			// Assertion won't succeed unless both have a workspace with a nil
+			// org.
+			cv.Workspace.Organization = nil
+
+			assert.Equal(t, cv, got)
+		})
+	}
+}
+
+func TestConfigurationVersion_List(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		want        func(*testing.T, *otf.ConfigurationVersionList, ...*otf.ConfigurationVersion)
+	}{
+		{
+			name:        "filter by workspace",
+			workspaceID: "ws-123",
+			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
+				assert.Equal(t, 2, len(l.Items))
+				for _, cv := range created {
+					// Assertion won't succeed unless both have a workspace with
+					// a nil org.
+					cv.Workspace.Organization = nil
+
+					assert.Contains(t, l.Items, cv)
+				}
+			},
+		},
+		{
+			name:        "filter by non-existent workspace",
+			workspaceID: "ws-non-existent",
+			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
+				assert.Empty(t, l.Items)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newTestDB(t)
+			org := createTestOrganization(t, db, "org-123", "automatize")
+			ws := createTestWorkspace(t, db, "ws-123", "default", org)
+
+			cv1 := createTestConfigurationVersion(t, db, "cv-1", ws)
+			cv2 := createTestConfigurationVersion(t, db, "cv-2", ws)
+
+			cdb := NewConfigurationVersionDB(db)
+
+			results, err := cdb.List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
+			require.NoError(t, err)
+
+			tt.want(t, results, cv1, cv2)
+		})
+	}
 }

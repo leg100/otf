@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -15,9 +13,9 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Serial       int64
 	VCSCommitSHA string
@@ -27,15 +25,13 @@ type StateVersion struct {
 	BlobID string
 
 	// State version belongs to a workspace
-	Workspace *Workspace
+	Workspace *Workspace `db:"workspaces"`
 
 	// Run that created this state version. Optional.
 	// Run     *Run
 
-	Outputs []*StateVersionOutput
-
 	// State version has many outputs
-	StateVersionOutputs []StateVersionOutput
+	Outputs []*StateVersionOutput `db:"state_version_outputs"`
 }
 
 // StateVersionList represents a list of state versions.
@@ -111,8 +107,9 @@ type StateVersionFactory struct {
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
-		Serial: *opts.Serial,
 		ID:     GenerateID("sv"),
+		Model:  NewModel(),
+		Serial: *opts.Serial,
 	}
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})

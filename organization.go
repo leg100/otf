@@ -3,23 +3,11 @@ package otf
 import (
 	"context"
 	"errors"
-	"time"
-
-	"gorm.io/gorm"
-)
-
-const (
-	DefaultSessionTimeout         = 20160
-	DefaultSessionExpiration      = 20160
-	DefaultCollaboratorAuthPolicy = "password"
-	DefaultCostEstimationEnabled  = true
-
-	// List of available authentication policies.
-	AuthPolicyPassword  AuthPolicyType = "password"
-	AuthPolicyTwoFactor AuthPolicyType = "two_factor_mandatory"
 )
 
 var (
+	DefaultSessionTimeout          = 20160
+	DefaultSessionExpiration       = 20160
 	DefaultOrganizationPermissions = OrganizationPermissions{
 		CanCreateWorkspace: true,
 		CanUpdate:          true,
@@ -27,26 +15,16 @@ var (
 	}
 )
 
-// AuthPolicyType represents an authentication policy type.
-type AuthPolicyType string
-
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
-	Name                   string
-	CollaboratorAuthPolicy AuthPolicyType
-	CostEstimationEnabled  bool
-	Email                  string
-	OwnersTeamSAMLRoleID   string
-	Permissions            *OrganizationPermissions
-	SAMLEnabled            bool
-	SessionRemember        int
-	SessionTimeout         int
-	TrialExpiresAt         time.Time
-	TwoFactorConformant    bool
+	Name            string
+	Email           string
+	SessionRemember int
+	SessionTimeout  int
 }
 
 // OrganizationPermissions represents the organization permissions.
@@ -77,20 +55,10 @@ type OrganizationCreateOptions struct {
 	// Admin email address.
 	Email *string `jsonapi:"attr,email"`
 
-	// Session expiration (minutes).
 	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
 
 	// Session timeout after inactivity (minutes).
 	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
-
-	// Authentication policy.
-	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
-
-	// Enable Cost Estimation
-	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
-
-	// The name of the "owners" team
-	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
 }
 
 // OrganizationUpdateOptions represents the options for updating an
@@ -113,15 +81,6 @@ type OrganizationUpdateOptions struct {
 
 	// Session timeout after inactivity (minutes).
 	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
-
-	// Authentication policy.
-	CollaboratorAuthPolicy *AuthPolicyType `jsonapi:"attr,collaborator-auth-policy,omitempty"`
-
-	// Enable Cost Estimation
-	CostEstimationEnabled *bool `jsonapi:"attr,cost-estimation-enabled,omitempty"`
-
-	// The name of the "owners" team
-	OwnersTeamSAMLRoleID *string `jsonapi:"attr,owners-team-saml-role-id,omitempty"`
 }
 
 // OrganizationList represents a list of Organizations.
@@ -167,14 +126,12 @@ func (o OrganizationCreateOptions) Valid() error {
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
-		Name:                   *opts.Name,
-		Email:                  *opts.Email,
-		ID:                     GenerateID("org"),
-		SessionTimeout:         DefaultSessionTimeout,
-		SessionRemember:        DefaultSessionExpiration,
-		CollaboratorAuthPolicy: DefaultCollaboratorAuthPolicy,
-		CostEstimationEnabled:  DefaultCostEstimationEnabled,
-		Permissions:            &DefaultOrganizationPermissions,
+		Name:            *opts.Name,
+		Email:           *opts.Email,
+		ID:              GenerateID("org"),
+		Model:           NewModel(),
+		SessionTimeout:  DefaultSessionTimeout,
+		SessionRemember: DefaultSessionExpiration,
 	}
 
 	if opts.SessionTimeout != nil {
@@ -183,14 +140,6 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 
 	if opts.SessionRemember != nil {
 		org.SessionRemember = *opts.SessionRemember
-	}
-
-	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
-	}
-
-	if opts.CostEstimationEnabled != nil {
-		org.CostEstimationEnabled = *opts.CostEstimationEnabled
 	}
 
 	return &org, nil
@@ -211,14 +160,6 @@ func UpdateOrganization(org *Organization, opts *OrganizationUpdateOptions) erro
 
 	if opts.SessionRemember != nil {
 		org.SessionRemember = *opts.SessionRemember
-	}
-
-	if opts.CollaboratorAuthPolicy != nil {
-		org.CollaboratorAuthPolicy = *opts.CollaboratorAuthPolicy
-	}
-
-	if opts.CostEstimationEnabled != nil {
-		org.CostEstimationEnabled = *opts.CostEstimationEnabled
 	}
 
 	return nil

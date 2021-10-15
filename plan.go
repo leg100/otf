@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -31,14 +29,14 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	Resources
 
 	Status           PlanStatus
-	StatusTimestamps *PlanStatusTimestamps
+	StatusTimestamps TimestampMap
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
 	LogsBlobID string
@@ -48,16 +46,8 @@ type Plan struct {
 
 	// PlanJSONBlobID is the blob ID of the execution plan file in json format
 	PlanJSONBlobID string
-}
 
-// PlanStatusTimestamps holds the timestamps for individual plan statuses.
-type PlanStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
+	RunID int64
 }
 
 type PlanService interface {
@@ -68,7 +58,8 @@ type PlanService interface {
 func newPlan() *Plan {
 	return &Plan{
 		ID:               GenerateID("plan"),
-		StatusTimestamps: &PlanStatusTimestamps{},
+		Model:            NewModel(),
+		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
 		PlanFileBlobID:   NewBlobID(),
 		PlanJSONBlobID:   NewBlobID(),
@@ -138,16 +129,5 @@ func (p *Plan) UpdateStatus(status PlanStatus) {
 }
 
 func (p *Plan) setTimestamp(status PlanStatus) {
-	switch status {
-	case PlanCanceled:
-		p.StatusTimestamps.CanceledAt = TimeNow()
-	case PlanErrored:
-		p.StatusTimestamps.ErroredAt = TimeNow()
-	case PlanFinished:
-		p.StatusTimestamps.FinishedAt = TimeNow()
-	case PlanQueued:
-		p.StatusTimestamps.QueuedAt = TimeNow()
-	case PlanRunning:
-		p.StatusTimestamps.StartedAt = TimeNow()
-	}
+	p.StatusTimestamps[string(status)] = time.Now()
 }

@@ -3,9 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"time"
-
-	"gorm.io/gorm"
 )
 
 const (
@@ -23,9 +20,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string
+	ID string `db:"external_id"`
 
-	gorm.Model
+	Model
 
 	AllowDestroyPlan           bool
 	AutoApply                  bool
@@ -38,30 +35,18 @@ type Workspace struct {
 	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
-	Permissions                *WorkspacePermissions
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceURL                  string
 	StructuredRunOutputEnabled bool
+	SourceName                 string
+	SourceURL                  string `db:"source_url"`
 	TerraformVersion           string
+	TriggerPrefixes            CSV
 	VCSRepo                    *VCSRepo
 	WorkingDirectory           string
-	ResourceCount              int
-	ApplyDurationAverage       time.Duration
-	PlanDurationAverage        time.Duration
-	PolicyCheckFailures        int
-	RunFailures                int
-	RunsCount                  int
-
-	TriggerPrefixes []string
-
-	// Relations AgentPool  *AgentPool CurrentRun *Run
 
 	// Workspace belongs to an organization
-	Organization *Organization
-
-	//SSHKey *SSHKey
+	Organization *Organization `db:"organizations"`
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -287,6 +272,9 @@ type WorkspaceSpecifier struct {
 	// Specify workspace using its ID
 	ID *string
 
+	// Specify workspace using its internal ID
+	InternalID *int64
+
 	// Specify workspace using its name and organization
 	Name             *string
 	OrganizationName *string
@@ -341,26 +329,15 @@ type WorkspacePermissions struct {
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		ID:                  GenerateID("ws"),
+		Model:               NewModel(),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       DefaultExecutionMode,
 		FileTriggersEnabled: DefaultFileTriggersEnabled,
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
-		Permissions: &WorkspacePermissions{
-			CanDestroy:        true,
-			CanForceUnlock:    true,
-			CanLock:           true,
-			CanUnlock:         true,
-			CanQueueApply:     true,
-			CanQueueDestroy:   true,
-			CanQueueRun:       true,
-			CanReadSettings:   true,
-			CanUpdate:         true,
-			CanUpdateVariable: true,
-		},
-		SpeculativeEnabled: true,
-		Organization:       org,
+		SpeculativeEnabled:  true,
+		Organization:        org,
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this

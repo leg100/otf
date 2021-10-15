@@ -2,8 +2,6 @@ package otf
 
 import (
 	"errors"
-
-	"gorm.io/gorm"
 )
 
 // Generic errors applicable to all resources.
@@ -45,7 +43,3 @@ var (
 	// ErrInvalidOrg is returned when the organization option has an invalid value.
 	ErrInvalidOrg = errors.New("invalid value for organization")
 )
-
-func IsNotFound(err error) bool {
-	return errors.Is(err, gorm.ErrRecordNotFound)
-}

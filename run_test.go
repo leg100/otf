@@ -46,12 +46,12 @@ func TestRun_UpdateStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Run{
 				Status:           tt.fromStatus,
-				StatusTimestamps: &RunStatusTimestamps{},
+				StatusTimestamps: TimestampMap{},
 				Plan: &Plan{
-					StatusTimestamps: &PlanStatusTimestamps{},
+					StatusTimestamps: TimestampMap{},
 				},
 				Apply: &Apply{
-					StatusTimestamps: &ApplyStatusTimestamps{},
+					StatusTimestamps: TimestampMap{},
 				},
 			}
 
@@ -61,4 +61,36 @@ func TestRun_UpdateStatus(t *testing.T) {
 			assert.Equal(t, tt.wantApplyStatus, r.Apply.Status)
 		})
 	}
+}
+
+func TestRun_ForceCancelAvailableAt(t *testing.T) {
+	run := &Run{
+		StatusTimestamps: TimestampMap{},
+		Plan: &Plan{
+			StatusTimestamps: TimestampMap{},
+		},
+		Apply: &Apply{
+			StatusTimestamps: TimestampMap{},
+		},
+	}
+
+	run.UpdateStatus(RunCanceled)
+
+	assert.NotZero(t, run.ForceCancelAvailableAt())
+}
+
+func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
+	run := &Run{
+		StatusTimestamps: TimestampMap{},
+		Plan: &Plan{
+			StatusTimestamps: TimestampMap{},
+		},
+		Apply: &Apply{
+			StatusTimestamps: TimestampMap{},
+		},
+	}
+
+	run.UpdateStatus(RunPending)
+
+	assert.Zero(t, run.ForceCancelAvailableAt())
 }
