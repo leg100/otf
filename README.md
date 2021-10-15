@@ -1,4 +1,4 @@
-# OTF: Open Terraforming Framework
+# oTF
 
 An open source alternative to terraform enterprise.
 
@@ -29,7 +29,7 @@ These steps will get you started with running everything on your local system. Y
     sudo update-ca-certificates
     ```
     
-1. Run the OTF daemon:
+1. Run the oTF daemon:
 
     ```bash
     otfd --ssl --cert-file=cert.crt --key-file=key.pem
@@ -78,7 +78,7 @@ These steps will get you started with running everything on your local system. Y
 
 ## Next Steps
 
-OTF is a mere prototype but a roadmap of further features is planned:
+oTF is a mere prototype but a roadmap of further features is planned:
 
 * User AuthN/Z
 * Agents
