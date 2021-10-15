@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     speculative_enabled numeric,
     source_name text,
     source_url text,
-	structured_run_output_enabled numeric,
+    structured_run_output_enabled numeric,
     terraform_version text,
     trigger_prefixes text,
     working_directory text,

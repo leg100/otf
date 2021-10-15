@@ -530,7 +530,7 @@ func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("getting current state version: %w", err)
+		return fmt.Errorf("retrieving current state version: %w", err)
 	}
 
 	statefile, err := exe.StateVersionService.Download(state.ID)

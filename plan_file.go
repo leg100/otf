@@ -6,7 +6,8 @@ const (
 	DeleteAction ChangeAction = "delete"
 )
 
-// PlanFileOptions represents the options for getting the plan file for a run.
+// PlanFileOptions represents the options for retrieving the plan file for a
+// run.
 type PlanFileOptions struct {
 	// Format of plan file. Valid values are json and binary.
 	Format string `schema:"format"`

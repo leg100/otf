@@ -87,3 +87,13 @@ func TestOrganization_Delete(t *testing.T) {
 
 	assert.Equal(t, 0, len(orgs.Items))
 }
+
+func TestOrganization_DeleteError(t *testing.T) {
+	db := newTestDB(t)
+	odb := NewOrganizationDB(db)
+	_ = createTestOrganization(t, db, "org-123", "automatize")
+
+	err := odb.Delete("non-existent-org")
+
+	assert.Equal(t, otf.ErrResourceNotFound, err)
+}

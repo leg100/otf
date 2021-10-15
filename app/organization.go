@@ -30,19 +30,29 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	org, err = s.db.Create(org)
+	_, err = s.db.Create(org)
 	if err != nil {
-		s.Error(err, "create organization")
+		s.Error(err, "creating organization", "id", org.ID)
 		return nil, err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.OrganizationCreated, Payload: org})
 
+	s.V(3).Info("created organization", "id", org.ID)
+
 	return org, nil
 }
 
 func (s OrganizationService) Get(name string) (*otf.Organization, error) {
-	return s.db.Get(name)
+	org, err := s.db.Get(name)
+	if err != nil {
+		s.Error(err, "retrieving organization", "name", name)
+		return nil, err
+	}
+
+	s.V(3).Info("retrieved organization", "name", name)
+
+	return org, nil
 }
 
 func (s OrganizationService) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {

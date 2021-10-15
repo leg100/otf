@@ -20,7 +20,7 @@ func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger log
 	return &ConfigurationVersionService{
 		bs:     bs,
 		db:     db,
-		Logger: logger.WithValues("component", "configuration-versions"),
+		Logger: logger,
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
@@ -33,20 +33,39 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 		return nil, err
 	}
 
-	return s.db.Create(cv)
+	_, err = s.db.Create(cv)
+	if err != nil {
+		s.Error(err, "creating configuration version", "id", cv.ID)
+		return nil, err
+	}
+
+	s.V(3).Info("created configuration version", "id", cv.ID)
+
+	return cv, nil
 }
 
 func (s ConfigurationVersionService) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	cvl, err := s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
-		s.Error(err, "getting list")
+		s.Error(err, "listing configuration versions")
 		return nil, err
 	}
+
+	s.V(3).Info("listed configuration versions")
+
 	return cvl, nil
 }
 
 func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, error) {
-	return s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
+	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
+	if err != nil {
+		s.Error(err, "retrieving configuration version", "id", id)
+		return nil, err
+	}
+
+	s.V(3).Info("retrieved configuration version", "id", id)
+
+	return cv, nil
 }
 
 func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.ConfigurationVersion, error) {

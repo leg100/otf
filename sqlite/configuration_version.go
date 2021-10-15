@@ -3,7 +3,6 @@ package sqlite
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -71,24 +70,13 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before.(*otf.ConfigurationVersion), cv)
-	if len(updates) == 0 {
-		return cv, nil
-	}
-
-	cv.UpdatedAt = time.Now()
-	updates["updated_at"] = cv.UpdatedAt
-
-	sql := sq.Update("configuration_versions").Where("id = ?", cv.Model.ID)
-
-	query, args, err := sql.SetMap(updates).ToSql()
+	updated, err := update(db.Mapper, tx, "configuration_versions", before.(*otf.ConfigurationVersion), cv)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+	if updated {
+		return cv, tx.Commit()
 	}
 
 	return cv, tx.Commit()

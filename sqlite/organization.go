@@ -3,7 +3,6 @@ package sqlite
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -78,27 +77,16 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	updates := FindUpdates(db.Mapper, before.(*otf.Organization), org)
-	if len(updates) == 0 {
-		return org, nil
-	}
-
-	org.UpdatedAt = time.Now()
-	updates["updated_at"] = org.UpdatedAt
-
-	sql := sq.Update("organizations").Where("id = ?", org.Model.ID)
-
-	query, args, err := sql.SetMap(updates).ToSql()
+	updated, err := update(db.Mapper, tx, "organizations", before.(*otf.Organization), org)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("executing SQL statement: %s: %w", query, err)
+	if updated {
+		return org, tx.Commit()
 	}
 
-	return org, tx.Commit()
+	return org, nil
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
@@ -134,15 +122,17 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 	return getOrganization(db.DB, name)
 }
 
-// Delete organization. TODO: delete dependencies, i.e. everything else too
 func (db OrganizationDB) Delete(name string) error {
 	result, err := db.Exec("DELETE FROM organizations WHERE name = ?", name)
 	if err != nil {
 		return err
 	}
-	_, err = result.RowsAffected()
+	affected, err := result.RowsAffected()
 	if err != nil {
 		return err
+	}
+	if affected == 0 {
+		return otf.ErrResourceNotFound
 	}
 	return nil
 }

@@ -43,7 +43,7 @@ type ConfigurationVersion struct {
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps TimestampMap `json:"omitempty"`
+	StatusTimestamps TimestampMap
 
 	// BlobID is the ID of the blob containing the configuration
 	BlobID string

@@ -54,21 +54,6 @@ func TestRun_Update(t *testing.T) {
 	assert.Equal(t, otf.PlanQueued, got.Plan.Status)
 }
 
-func TestRun_Update_Cancel(t *testing.T) {
-	db := newTestDB(t)
-	org := createTestOrganization(t, db, "org-123", "automatize")
-	ws := createTestWorkspace(t, db, "ws-123", "default", org)
-	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
-	run := createTestRun(t, db, "run-123", ws, cv)
-
-	rdb := NewRunDB(db)
-
-	_, err := rdb.Update(run.ID, func(run *otf.Run) error {
-		return run.Cancel()
-	})
-	require.NoError(t, err)
-}
-
 func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db, "org-123", "automatize")

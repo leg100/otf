@@ -43,7 +43,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 func (s StateVersionService) Current(workspaceID string) (*otf.StateVersion, error) {
 	sv, err := s.db.Get(otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
-		s.Error(err, "getting current state version", "workspace_id", workspaceID)
+		s.Error(err, "retrieving current state version", "workspace_id", workspaceID)
 		return nil, err
 	}
 
