@@ -107,7 +107,7 @@ func main() {
 	}
 	logger.Info("filestore started", "path", fs.Path)
 
-	// Setup sql db
+	// Setup postgres connection
 	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
