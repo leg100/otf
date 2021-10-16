@@ -1,10 +1,9 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
@@ -17,7 +16,7 @@ var (
 
 	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")
 
-	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.id) RETURNING id",
 		strings.Join(configurationVersionColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(configurationVersionColumnsWithoutID, ":"), ", "))
 )
@@ -33,13 +32,11 @@ func NewConfigurationVersionDB(db *sqlx.DB) *ConfigurationVersionDB {
 }
 
 func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
-	// Insert
-	result, err := db.NamedExec(insertConfigurationVersionSQL, cv)
+	sql, args, err := db.BindNamed(insertConfigurationVersionSQL, cv)
 	if err != nil {
 		return nil, err
 	}
-	cv.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := db.DB.Get(&cv.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -83,9 +80,9 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	selectBuilder := sq.Select().
+	selectBuilder := psql.Select().
 		From("configuration_versions").
-		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		Join("workspaces ON workspaces.id = configuration_versions.workspace_id").
 		Where("workspaces.external_id = ?", workspaceID)
 
 	var count int
@@ -120,9 +117,9 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 }
 
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	selectBuilder := sq.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+	selectBuilder := psql.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Join("workspaces ON workspaces.id == configuration_versions.workspace_id").
+		Join("workspaces ON workspaces.id = configuration_versions.workspace_id").
 		From("configuration_versions")
 
 	switch {

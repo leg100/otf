@@ -1,4 +1,4 @@
-package sqlite
+package sql
 
 import (
 	"testing"
@@ -10,46 +10,51 @@ import (
 
 func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(t, db, "org-123", "automatize")
+	org := createTestOrganization(t, db)
 
 	wdb := NewWorkspaceDB(db)
 
-	ws, err := wdb.Create(newTestWorkspace("ws-123", "default", org))
+	ws, err := wdb.Create(newTestWorkspace(org))
 	require.NoError(t, err)
 
 	assert.Equal(t, int64(1), ws.Model.ID)
 }
 
 func TestWorkspace_Update(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+
 	tests := []struct {
 		name string
-		spec otf.WorkspaceSpecifier
+		spec func(ws *otf.Workspace) otf.WorkspaceSpecifier
 	}{
 		{
 			name: "by id",
-			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
+				return otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}
+			},
 		},
 		{
 			name: "by name",
-			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
+				return otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)}
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := newTestDB(t)
-			org := createTestOrganization(t, db, "org-123", "automatize")
-			_ = createTestWorkspace(t, db, "ws-123", "default", org)
+			ws := createTestWorkspace(t, db, org)
 
 			wdb := NewWorkspaceDB(db)
 
-			_, err := wdb.Update(tt.spec, func(ws *otf.Workspace) error {
+			_, err := wdb.Update(tt.spec(ws), func(ws *otf.Workspace) error {
 				ws.Description = "updated description"
 				return nil
 			})
 			require.NoError(t, err)
 
-			got, err := wdb.Get(tt.spec)
+			got, err := wdb.Get(tt.spec(ws))
 			require.NoError(t, err)
 
 			assert.Equal(t, "updated description", got.Description)
@@ -58,28 +63,28 @@ func TestWorkspace_Update(t *testing.T) {
 }
 
 func TestWorkspace_Get(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+
+	wdb := NewWorkspaceDB(db)
+
 	tests := []struct {
 		name string
 		spec otf.WorkspaceSpecifier
 	}{
 		{
 			name: "by id",
-			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+			spec: otf.WorkspaceSpecifier{ID: otf.String(ws.ID)},
 		},
 		{
 			name: "by name",
-			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+			spec: otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := newTestDB(t)
-			org := createTestOrganization(t, db, "org-123", "automatize")
-			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-
-			wdb := NewWorkspaceDB(db)
-
 			got, err := wdb.Get(tt.spec)
 			require.NoError(t, err)
 
@@ -89,6 +94,13 @@ func TestWorkspace_Get(t *testing.T) {
 }
 
 func TestWorkspace_List(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws1 := createTestWorkspace(t, db, org)
+	ws2 := createTestWorkspace(t, db, org)
+
+	wdb := NewWorkspaceDB(db)
+
 	tests := []struct {
 		name string
 		opts otf.WorkspaceListOptions
@@ -104,7 +116,7 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("automatize")},
+			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)},
 			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Equal(t, created, l.Items)
@@ -112,7 +124,7 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String("dev")},
+			opts: otf.WorkspaceListOptions{Prefix: otf.String(ws1.Name[:2])},
 			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
 				assert.Equal(t, 1, len(l.Items))
 			},
@@ -135,13 +147,6 @@ func TestWorkspace_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := newTestDB(t)
-			org := createTestOrganization(t, db, "org-123", "automatize")
-			ws1 := createTestWorkspace(t, db, "ws-1", "dev", org)
-			ws2 := createTestWorkspace(t, db, "ws-2", "prod", org)
-
-			wdb := NewWorkspaceDB(db)
-
 			results, err := wdb.List(tt.opts)
 			require.NoError(t, err)
 
@@ -151,33 +156,39 @@ func TestWorkspace_List(t *testing.T) {
 }
 
 func TestWorkspace_Delete(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+
+	wdb := NewWorkspaceDB(db)
+	rdb := NewRunDB(db)
+	cdb := NewConfigurationVersionDB(db)
+
 	tests := []struct {
 		name string
-		spec otf.WorkspaceSpecifier
+		spec func(ws *otf.Workspace) otf.WorkspaceSpecifier
 	}{
 		{
 			name: "by id",
-			spec: otf.WorkspaceSpecifier{ID: otf.String("ws-123")},
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
+				return otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}
+			},
 		},
 		{
 			name: "by name",
-			spec: otf.WorkspaceSpecifier{Name: otf.String("default"), OrganizationName: otf.String("automatize")},
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
+				return otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(ws.Organization.Name)}
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := newTestDB(t)
-			org := createTestOrganization(t, db, "org-123", "automatize")
-			ws := createTestWorkspace(t, db, "ws-123", "default", org)
-			cv := createTestConfigurationVersion(t, db, "cv-123", ws)
-			_ = createTestRun(t, db, "run-123", ws, cv)
+			ws := createTestWorkspace(t, db, org)
+			cv := createTestConfigurationVersion(t, db, ws)
+			_ = createTestRun(t, db, ws, cv)
 
-			wdb := NewWorkspaceDB(db)
-			rdb := NewRunDB(db)
-			cdb := NewConfigurationVersionDB(db)
-
-			require.NoError(t, wdb.Delete(tt.spec))
+			err := wdb.Delete(tt.spec(ws))
+			require.NoError(t, err)
 
 			results, err := wdb.List(otf.WorkspaceListOptions{})
 			require.NoError(t, err)

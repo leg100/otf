@@ -1,4 +1,4 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
@@ -22,15 +22,15 @@ var (
 	applyColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "resource_additions", "resource_changes", "resource_destructions", "status", "status_timestamps", "logs_blob_id", "run_id"}
 	applyColumns          = append(applyColumnsWithoutID, "id")
 
-	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :workspaces.id, :configuration_versions.id)",
+	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :workspaces.id, :configuration_versions.id) RETURNING id",
 		strings.Join(runColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(runColumnsWithoutID, ":"), ", "))
 
-	insertPlanSQL = fmt.Sprintf("INSERT INTO plans (%s) VALUES (%s)",
+	insertPlanSQL = fmt.Sprintf("INSERT INTO plans (%s) VALUES (%s) RETURNING id",
 		strings.Join(planColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(planColumnsWithoutID, ":"), ", "))
 
-	insertApplySQL = fmt.Sprintf("INSERT INTO applies (%s) VALUES (%s)",
+	insertApplySQL = fmt.Sprintf("INSERT INTO applies (%s) VALUES (%s) RETURNING id",
 		strings.Join(applyColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(applyColumnsWithoutID, ":"), ", "))
 )
@@ -51,34 +51,31 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	defer tx.Rollback()
 
 	// Insert run
-	result, err := tx.NamedExec(insertRunSQL, run)
+	sql, args, err := tx.BindNamed(insertRunSQL, run)
 	if err != nil {
 		return nil, err
 	}
-	run.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := tx.Get(&run.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
 	// Insert plan
 	run.Plan.RunID = run.Model.ID
-	result, err = tx.NamedExec(insertPlanSQL, run.Plan)
+	sql, args, err = tx.BindNamed(insertPlanSQL, run.Plan)
 	if err != nil {
 		return nil, err
 	}
-	run.Plan.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := tx.Get(&run.Plan.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
 	// Insert apply
 	run.Apply.RunID = run.Model.ID
-	result, err = tx.NamedExec(insertApplySQL, run.Apply)
+	sql, args, err = tx.BindNamed(insertApplySQL, run.Apply)
 	if err != nil {
 		return nil, err
 	}
-	run.Apply.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := tx.Get(&run.Apply.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +129,7 @@ func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	selectBuilder := sq.Select().
+	selectBuilder := psql.Select().
 		From("runs").
 		Join("plans ON plans.run_id = runs.id").
 		Join("applies ON applies.run_id = runs.id").
@@ -185,7 +182,7 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
-	selectBuilder := sq.Select(asColumnList("runs", false, runColumns...)).
+	selectBuilder := psql.Select(asColumnList("runs", false, runColumns...)).
 		Columns(asColumnList("plans", true, planColumns...)).
 		Columns(asColumnList("applies", true, applyColumns...)).
 		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).

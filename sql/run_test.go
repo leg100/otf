@@ -1,4 +1,4 @@
-package sqlite
+package sql
 
 import (
 	"testing"
@@ -10,13 +10,13 @@ import (
 
 func TestRun_Create(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(t, db, "org-123", "automatize")
-	ws := createTestWorkspace(t, db, "ws-123", "default", org)
-	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
 
 	rdb := NewRunDB(db)
 
-	run, err := rdb.Create(newTestRun("run-123", ws, cv))
+	run, err := rdb.Create(newTestRun(ws, cv))
 	require.NoError(t, err)
 
 	// Ensure primary keys populated
@@ -33,10 +33,10 @@ func TestRun_Create(t *testing.T) {
 
 func TestRun_Update(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(t, db, "org-123", "automatize")
-	ws := createTestWorkspace(t, db, "ws-123", "default", org)
-	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
-	run := createTestRun(t, db, "run-123", ws, cv)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
 
 	rdb := NewRunDB(db)
 
@@ -56,10 +56,10 @@ func TestRun_Update(t *testing.T) {
 
 func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(t, db, "org-123", "automatize")
-	ws := createTestWorkspace(t, db, "ws-123", "default", org)
-	cv := createTestConfigurationVersion(t, db, "cv-123", ws)
-	run := createTestRun(t, db, "run-123", ws, cv)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
 
 	rdb := NewRunDB(db)
 
@@ -74,6 +74,19 @@ func TestRun_Get(t *testing.T) {
 }
 
 func TestRun_List(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+
+	ws1 := createTestWorkspace(t, db, org)
+	cv1 := createTestConfigurationVersion(t, db, ws1)
+	run1 := createTestRun(t, db, ws1, cv1)
+
+	ws2 := createTestWorkspace(t, db, org)
+	cv2 := createTestConfigurationVersion(t, db, ws2)
+	run2 := createTestRun(t, db, ws2, cv2)
+
+	rdb := NewRunDB(db)
+
 	tests := []struct {
 		name string
 		opts otf.RunListOptions
@@ -97,7 +110,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "filter by workspace",
-			opts: otf.RunListOptions{WorkspaceID: otf.String("ws-123")},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
 			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
 				assert.Equal(t, 1, len(l.Items))
 			},
@@ -120,19 +133,6 @@ func TestRun_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := newTestDB(t)
-			org := createTestOrganization(t, db, "org-123", "automatize")
-
-			ws1 := createTestWorkspace(t, db, "ws-123", "dev", org)
-			cv1 := createTestConfigurationVersion(t, db, "cv-123", ws1)
-			run1 := createTestRun(t, db, "run-1", ws1, cv1)
-
-			ws2 := createTestWorkspace(t, db, "ws-345", "prod", org)
-			cv2 := createTestConfigurationVersion(t, db, "cv-345", ws2)
-			run2 := createTestRun(t, db, "run-2", ws2, cv2)
-
-			rdb := NewRunDB(db)
-
 			results, err := rdb.List(tt.opts)
 			require.NoError(t, err)
 

@@ -1,10 +1,9 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 )
@@ -17,11 +16,11 @@ var (
 
 	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
 
-	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id) RETURNING id",
 		strings.Join(stateVersionColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
 
-	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
+	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s) RETURNING id",
 		strings.Join(stateVersionOutputColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionOutputColumnsWithoutID, ":"), ", "))
 )
@@ -42,24 +41,22 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	defer tx.Rollback()
 
 	// Insert state_version
-	result, err := tx.NamedExec(insertStateVersionSQL, sv)
+	sql, args, err := tx.BindNamed(insertStateVersionSQL, sv)
 	if err != nil {
 		return nil, err
 	}
-	sv.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := tx.Get(&sv.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
 		svo.StateVersionID = sv.Model.ID
-		result, err := tx.NamedExec(insertStateVersionOutputSQL, svo)
+		sql, args, err := tx.BindNamed(insertStateVersionOutputSQL, svo)
 		if err != nil {
 			return nil, err
 		}
-		svo.Model.ID, err = result.LastInsertId()
-		if err != nil {
+		if err := tx.Get(&svo.Model.ID, sql, args...); err != nil {
 			return nil, err
 		}
 	}
@@ -75,7 +72,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, fmt.Errorf("missing required option: organization")
 	}
 
-	selectBuilder := sq.Select().From("state_versions").
+	selectBuilder := psql.Select().From("state_versions").
 		Join("workspaces ON workspaces.id = state_versions.workspace_id").
 		Join("organizations ON organizations.id = workspaces.organization_id").
 		Where("workspaces.name = ?", *opts.Workspace).
@@ -109,7 +106,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+	selectBuilder := psql.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
 		Join("workspaces ON workspaces.id = state_versions.workspace_id")
@@ -144,7 +141,7 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 }
 
 func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
-	selectBuilder := sq.Select("*").
+	selectBuilder := psql.Select("*").
 		From("state_version_outputs").
 		Where("state_version_id = ? ", sv.Model.ID)
 
