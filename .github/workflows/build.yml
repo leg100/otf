@@ -10,7 +10,9 @@ on:
 
 jobs:
   goreleaser:
+    # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
+    container: golang:1.16-bullseye
     # Service containers to run with `goreleaser`
     services:
       # Label used to access the service container
@@ -33,23 +35,10 @@ jobs:
         with:
           fetch-depth: 0
       -
-        name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16.4
-      -
-        name: Cache Go deps
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      -
         name: E2E tests
         run: |
-          sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
-          sudo update-ca-certificates
+          cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
+          update-ca-certificates
           make go-tfe-tests e2e
         env:
           # The hostname used to communicate with the PostgreSQL service container
