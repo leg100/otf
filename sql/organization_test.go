@@ -11,10 +11,10 @@ import (
 func TestOrganization_Create(t *testing.T) {
 	db := NewOrganizationDB(newTestDB(t))
 
-	run, err := db.Create(newTestOrganization())
+	org, err := db.Create(newTestOrganization())
 	require.NoError(t, err)
 
-	assert.Equal(t, int64(1), run.Model.ID)
+	db.Delete(org.Name)
 }
 
 func TestOrganization_Update(t *testing.T) {
@@ -45,12 +45,12 @@ func TestOrganization_Get(t *testing.T) {
 func TestOrganization_List(t *testing.T) {
 	db := newTestDB(t)
 	odb := NewOrganizationDB(db)
-	_ = createTestOrganization(t, db)
+	org := createTestOrganization(t, db)
 
-	orgs, err := odb.List(otf.OrganizationListOptions{})
+	ol, err := odb.List(otf.OrganizationListOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(orgs.Items))
+	assert.Contains(t, ol.Items, org)
 }
 
 func TestOrganization_ListWithPagination(t *testing.T) {

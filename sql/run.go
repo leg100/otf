@@ -181,6 +181,24 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	return getRun(db.DB, opts)
 }
 
+// Delete deletes a run from the DB
+func (db RunDB) Delete(id string) error {
+	tx := db.MustBegin()
+	defer tx.Rollback()
+
+	run, err := getRun(tx, otf.RunGetOptions{ID: otf.String(id)})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM runs WHERE id = $1", run.Model.ID)
+	if err != nil {
+		return fmt.Errorf("unable to delete run: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 	selectBuilder := psql.Select(asColumnList("runs", false, runColumns...)).
 		Columns(asColumnList("plans", true, planColumns...)).

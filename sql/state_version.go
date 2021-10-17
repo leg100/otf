@@ -106,6 +106,28 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
+	return getStateVersion(s.DB, opts)
+}
+
+// Delete deletes a state version from the DB
+func (s StateVersionService) Delete(id string) error {
+	tx := s.MustBegin()
+	defer tx.Rollback()
+
+	sv, err := getStateVersion(tx, otf.StateVersionGetOptions{ID: otf.String(id)})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM state_versions WHERE id = $1", sv.Model.ID)
+	if err != nil {
+		return fmt.Errorf("unable to delete state_version: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	selectBuilder := psql.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
@@ -129,18 +151,18 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 	}
 
 	sv := otf.StateVersion{}
-	if err := s.DB.Get(&sv, sql, args...); err != nil {
+	if err := getter.Get(&sv, sql, args...); err != nil {
 		return nil, databaseError(err)
 	}
 
-	if err := s.attachOutputs(&sv); err != nil {
+	if err := attachOutputs(getter, &sv); err != nil {
 		return nil, err
 	}
 
 	return &sv, nil
 }
 
-func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
+func attachOutputs(getter Getter, sv *otf.StateVersion) error {
 	selectBuilder := psql.Select("*").
 		From("state_version_outputs").
 		Where("state_version_id = ? ", sv.Model.ID)
@@ -151,7 +173,7 @@ func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
 	}
 
 	outputs := []*otf.StateVersionOutput{}
-	if err := s.DB.Select(&outputs, sql, args...); err != nil {
+	if err := getter.Select(&outputs, sql, args...); err != nil {
 		return err
 	}
 

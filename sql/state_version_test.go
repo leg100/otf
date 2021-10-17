@@ -18,10 +18,8 @@ func TestStateVersion_Create(t *testing.T) {
 	out1 := appendOutput("out1", "string", "val1", false)
 	out2 := appendOutput("out2", "string", "val2", false)
 
-	sv, err := sdb.Create(newTestStateVersion(ws, out1, out2))
+	_, err := sdb.Create(newTestStateVersion(ws, out1, out2))
 	require.NoError(t, err)
-
-	assert.Equal(t, int64(1), sv.Model.ID)
 }
 
 func TestStateVersion_Get(t *testing.T) {

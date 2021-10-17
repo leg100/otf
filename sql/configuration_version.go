@@ -116,6 +116,24 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 	return getConfigurationVersion(db.DB, opts)
 }
 
+// Delete deletes a configuration version from the DB
+func (db ConfigurationVersionDB) Delete(id string) error {
+	tx := db.MustBegin()
+	defer tx.Rollback()
+
+	cv, err := getConfigurationVersion(tx, otf.ConfigurationVersionGetOptions{ID: otf.String(id)})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM configuration_versions WHERE id = $1", cv.Model.ID)
+	if err != nil {
+		return fmt.Errorf("unable to delete configuration_version: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	selectBuilder := psql.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).

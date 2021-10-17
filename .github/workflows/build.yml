@@ -11,6 +11,21 @@ on:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    # Service containers to run with `goreleaser`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       -
         name: Checkout
@@ -36,8 +51,13 @@ jobs:
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
           sudo update-ca-certificates
           make go-tfe-tests e2e
+        env:
+          # The hostname used to communicate with the PostgreSQL service container
+          OTF_DATABASE: postgres://postgres:postgres@postgres/postgres
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
+        env:
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@postgres/postgres

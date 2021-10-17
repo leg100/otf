@@ -1,8 +1,8 @@
 package sql
 
 import (
-	"fmt"
-	"strings"
+	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -13,42 +13,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
+
 type newTestStateVersionOption func(*otf.StateVersion) error
 
-func connStr(dbname string) string {
-	return fmt.Sprintf("postgres:///%s?host=/var/run/postgresql", dbname)
-}
-
 func newTestDB(t *testing.T) *sqlx.DB {
-	db, err := sqlx.Connect("postgres", "postgres:///postgres?host=/var/run/postgresql")
+	urlStr := os.Getenv(TestDatabaseURL)
+	if urlStr == "" {
+		t.Fatalf("%s must be set", TestDatabaseURL)
+	}
+
+	u, err := url.Parse(urlStr)
 	require.NoError(t, err)
 
-	dbname := "db_" + strings.ReplaceAll(uuid.NewString(), "-", "_")
+	require.Equal(t, "postgres", u.Scheme)
 
-	_, err = db.Exec(fmt.Sprint("CREATE DATABASE ", dbname))
+	// We set both postgres and test fixtures to use TZ so that we can test for
+	// timestamp equality between the two. (A go time.Time may use "Local"
+	// whereas postgres may set "Europe/London", which would fail an equality
+	// test).
+	q := u.Query()
+	q.Add("TimeZone", "UTC")
+	u.RawQuery = q.Encode()
+
+	t.Logf("connecting to postgres with %s", u.String())
+
+	db, err := New(logr.Discard(), u.String())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		if t.Failed() {
-			t.Log("database: ", connStr(dbname))
-		} else {
-			_, err := db.Exec(fmt.Sprint("DROP DATABASE ", dbname))
-			if err != nil {
-				t.Log(fmt.Errorf("unable to drop database %s: %w", dbname, err))
-			}
-		}
-	})
-
-	connStr := fmt.Sprintf("postgres:///%s?host=/var/run/postgresql&TimeZone=UTC", dbname)
-	newdb, err := New(logr.Discard(), connStr)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := newdb.Close()
+		err := db.Close()
 		require.NoError(t, err)
 	})
 
-	return newdb
+	return db
 }
 
 // newTestModel constructs a new model obj with timestamps suitable for unit
@@ -143,6 +141,10 @@ func createTestOrganization(t *testing.T, db *sqlx.DB) *otf.Organization {
 	org, err := odb.Create(newTestOrganization())
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		odb.Delete(org.Name)
+	})
+
 	return org
 }
 
@@ -151,6 +153,10 @@ func createTestWorkspace(t *testing.T, db *sqlx.DB, org *otf.Organization) *otf.
 
 	ws, err := wdb.Create(newTestWorkspace(org))
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		wdb.Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
+	})
 
 	return ws
 }
@@ -161,6 +167,10 @@ func createTestConfigurationVersion(t *testing.T, db *sqlx.DB, ws *otf.Workspace
 	cv, err := cdb.Create(newTestConfigurationVersion(ws))
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		cdb.Delete(cv.ID)
+	})
+
 	return cv
 }
 
@@ -170,6 +180,10 @@ func createTestStateVersion(t *testing.T, db *sqlx.DB, ws *otf.Workspace, opts .
 	sv, err := sdb.Create(newTestStateVersion(ws, opts...))
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		sdb.Delete(sv.ID)
+	})
+
 	return sv
 }
 
@@ -178,6 +192,10 @@ func createTestRun(t *testing.T, db *sqlx.DB, ws *otf.Workspace, cv *otf.Configu
 
 	run, err := rdb.Create(newTestRun(ws, cv))
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		rdb.Delete(run.ID)
+	})
 
 	return run
 }

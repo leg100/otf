@@ -15,10 +15,8 @@ func TestConfigurationVersion_Create(t *testing.T) {
 
 	cdb := NewConfigurationVersionDB(db)
 
-	cv, err := cdb.Create(newTestConfigurationVersion(ws))
+	_, err := cdb.Create(newTestConfigurationVersion(ws))
 	require.NoError(t, err)
-
-	assert.Equal(t, int64(1), cv.Model.ID)
 }
 
 func TestConfigurationVersion_Update(t *testing.T) {

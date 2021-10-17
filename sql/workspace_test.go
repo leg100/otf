@@ -14,10 +14,8 @@ func TestWorkspace_Create(t *testing.T) {
 
 	wdb := NewWorkspaceDB(db)
 
-	ws, err := wdb.Create(newTestWorkspace(org))
+	_, err := wdb.Create(newTestWorkspace(org))
 	require.NoError(t, err)
-
-	assert.Equal(t, int64(1), ws.Model.ID)
 }
 
 func TestWorkspace_Update(t *testing.T) {
@@ -104,42 +102,43 @@ func TestWorkspace_List(t *testing.T) {
 	tests := []struct {
 		name string
 		opts otf.WorkspaceListOptions
-		want func(*testing.T, *otf.WorkspaceList, ...*otf.Workspace)
+		want func(*testing.T, *otf.WorkspaceList)
 	}{
 		{
 			name: "default",
 			opts: otf.WorkspaceListOptions{},
-			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
-				assert.Equal(t, 2, len(l.Items))
-				assert.Equal(t, created, l.Items)
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Contains(t, l.Items, ws1, ws2)
 			},
 		},
 		{
 			name: "filter by org",
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)},
-			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 2, len(l.Items))
-				assert.Equal(t, created, l.Items)
+				assert.Contains(t, l.Items, ws1)
+				assert.Contains(t, l.Items, ws2)
 			},
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String(ws1.Name[:2])},
-			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+			opts: otf.WorkspaceListOptions{Prefix: otf.String(ws1.Name[:5])},
+			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 1, len(l.Items))
+				assert.Equal(t, ws1, l.Items[0])
 			},
 		},
 		{
 			name: "filter by non-existent org",
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("non-existent")},
-			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
 		{
 			name: "filter by non-existent prefix",
 			opts: otf.WorkspaceListOptions{Prefix: otf.String("xyz")},
-			want: func(t *testing.T, l *otf.WorkspaceList, created ...*otf.Workspace) {
+			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
@@ -150,7 +149,7 @@ func TestWorkspace_List(t *testing.T) {
 			results, err := wdb.List(tt.opts)
 			require.NoError(t, err)
 
-			tt.want(t, results, ws1, ws2)
+			tt.want(t, results)
 		})
 	}
 }
@@ -190,13 +189,13 @@ func TestWorkspace_Delete(t *testing.T) {
 			err := wdb.Delete(tt.spec(ws))
 			require.NoError(t, err)
 
-			results, err := wdb.List(otf.WorkspaceListOptions{})
+			results, err := wdb.List(otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(results.Items))
 
 			// Test ON CASCADE DELETE functionality for runs
-			rl, err := rdb.List(otf.RunListOptions{})
+			rl, err := rdb.List(otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(rl.Items))

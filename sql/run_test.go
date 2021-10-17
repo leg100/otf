@@ -20,15 +20,15 @@ func TestRun_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ensure primary keys populated
-	assert.Equal(t, int64(1), run.Model.ID)
-	assert.Equal(t, int64(1), run.Plan.Model.ID)
-	assert.Equal(t, int64(1), run.Apply.Model.ID)
+	assert.NotEmpty(t, run.Model.ID)
+	assert.NotEmpty(t, run.Plan.Model.ID)
+	assert.NotEmpty(t, run.Apply.Model.ID)
 
 	// Ensure foreign keys populated
-	assert.Equal(t, int64(1), run.Plan.RunID)
-	assert.Equal(t, int64(1), run.Apply.RunID)
-	assert.Equal(t, int64(1), run.Workspace.Model.ID)
-	assert.Equal(t, int64(1), run.ConfigurationVersion.Model.ID)
+	assert.NotEmpty(t, run.Plan.RunID)
+	assert.NotEmpty(t, run.Apply.RunID)
+	assert.NotEmpty(t, run.Workspace.Model.ID)
+	assert.NotEmpty(t, run.ConfigurationVersion.Model.ID)
 }
 
 func TestRun_Update(t *testing.T) {
@@ -96,7 +96,6 @@ func TestRun_List(t *testing.T) {
 			name: "default",
 			opts: otf.RunListOptions{},
 			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				assert.Equal(t, 2, len(l.Items))
 				for _, c := range created {
 					// Assertion won't succeed unless transitive relations are
 					// nil (resources retrieved from the DB only possess
@@ -117,14 +116,14 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "filter by status - hit",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID), Statuses: []otf.RunStatus{otf.RunPending}},
 			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				assert.Equal(t, 2, len(l.Items))
+				assert.Equal(t, 1, len(l.Items))
 			},
 		},
 		{
 			name: "filter by status - miss",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunApplied}},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID), Statuses: []otf.RunStatus{otf.RunApplied}},
 			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
 				assert.Equal(t, 0, len(l.Items))
 			},
