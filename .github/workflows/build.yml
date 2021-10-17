@@ -49,11 +49,11 @@ jobs:
           make go-tfe-tests e2e
         env:
           # The hostname used to communicate with the PostgreSQL service container
-          OTF_DATABASE: postgres://postgres:postgres@localhost/postgres
+          OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=allow
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
         env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=allow
