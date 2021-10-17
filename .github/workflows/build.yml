@@ -37,10 +37,15 @@ jobs:
         with:
           fetch-depth: 0
       -
+        name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.4
+      -
         name: E2E tests
         run: |
-          cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
-          update-ca-certificates
+          sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
+          sudo update-ca-certificates
           make go-tfe-tests e2e
         env:
           # The hostname used to communicate with the PostgreSQL service container
