@@ -28,6 +28,9 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     steps:
       -
         name: Checkout
@@ -42,11 +45,11 @@ jobs:
           make go-tfe-tests e2e
         env:
           # The hostname used to communicate with the PostgreSQL service container
-          OTF_DATABASE: postgres://postgres:postgres@postgres/postgres
+          OTF_DATABASE: postgres://postgres:postgres@localhost/postgres
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
         env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@postgres/postgres
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres
