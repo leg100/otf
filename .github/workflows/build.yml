@@ -10,9 +10,8 @@ on:
 
 jobs:
   goreleaser:
-    # Containers must run in Linux based operating systems
+    # You must use a Linux environment when using service containers or container jobs
     runs-on: ubuntu-latest
-    container: golang:1.16-bullseye
     # Service containers to run with `goreleaser`
     services:
       # Label used to access the service container
