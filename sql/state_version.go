@@ -1,10 +1,9 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 )
@@ -17,11 +16,11 @@ var (
 
 	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
 
-	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id)",
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id) RETURNING id",
 		strings.Join(stateVersionColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
 
-	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
+	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s) RETURNING id",
 		strings.Join(stateVersionOutputColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionOutputColumnsWithoutID, ":"), ", "))
 )
@@ -42,24 +41,22 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	defer tx.Rollback()
 
 	// Insert state_version
-	result, err := tx.NamedExec(insertStateVersionSQL, sv)
+	sql, args, err := tx.BindNamed(insertStateVersionSQL, sv)
 	if err != nil {
 		return nil, err
 	}
-	sv.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := tx.Get(&sv.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
 		svo.StateVersionID = sv.Model.ID
-		result, err := tx.NamedExec(insertStateVersionOutputSQL, svo)
+		sql, args, err := tx.BindNamed(insertStateVersionOutputSQL, svo)
 		if err != nil {
 			return nil, err
 		}
-		svo.Model.ID, err = result.LastInsertId()
-		if err != nil {
+		if err := tx.Get(&svo.Model.ID, sql, args...); err != nil {
 			return nil, err
 		}
 	}
@@ -75,7 +72,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, fmt.Errorf("missing required option: organization")
 	}
 
-	selectBuilder := sq.Select().From("state_versions").
+	selectBuilder := psql.Select().From("state_versions").
 		Join("workspaces ON workspaces.id = state_versions.workspace_id").
 		Join("organizations ON organizations.id = workspaces.organization_id").
 		Where("workspaces.name = ?", *opts.Workspace).
@@ -109,7 +106,29 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 }
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	selectBuilder := sq.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+	return getStateVersion(s.DB, opts)
+}
+
+// Delete deletes a state version from the DB
+func (s StateVersionService) Delete(id string) error {
+	tx := s.MustBegin()
+	defer tx.Rollback()
+
+	sv, err := getStateVersion(tx, otf.StateVersionGetOptions{ID: otf.String(id)})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM state_versions WHERE id = $1", sv.Model.ID)
+	if err != nil {
+		return fmt.Errorf("unable to delete state_version: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
+	selectBuilder := psql.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
 		Join("workspaces ON workspaces.id = state_versions.workspace_id")
@@ -132,19 +151,19 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 	}
 
 	sv := otf.StateVersion{}
-	if err := s.DB.Get(&sv, sql, args...); err != nil {
+	if err := getter.Get(&sv, sql, args...); err != nil {
 		return nil, databaseError(err)
 	}
 
-	if err := s.attachOutputs(&sv); err != nil {
+	if err := attachOutputs(getter, &sv); err != nil {
 		return nil, err
 	}
 
 	return &sv, nil
 }
 
-func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
-	selectBuilder := sq.Select("*").
+func attachOutputs(getter Getter, sv *otf.StateVersion) error {
+	selectBuilder := psql.Select("*").
 		From("state_version_outputs").
 		Where("state_version_id = ? ", sv.Model.ID)
 
@@ -154,7 +173,7 @@ func (s StateVersionService) attachOutputs(sv *otf.StateVersion) error {
 	}
 
 	outputs := []*otf.StateVersionOutput{}
-	if err := s.DB.Select(&outputs, sql, args...); err != nil {
+	if err := getter.Select(&outputs, sql, args...); err != nil {
 		return err
 	}
 

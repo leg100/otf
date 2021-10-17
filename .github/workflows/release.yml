@@ -7,44 +7,40 @@ on:
 
 jobs:
   goreleaser:
+    # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
+    container: golang:1.16-bullseye
+    # Service containers to run with `goreleaser`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      -
-        name: OSXCross for CGO Support
-        run: |
-          mkdir ../../osxcross
-          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
-      -
-        name: Downgrade libssl
-        run: |
-          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' | sudo tee -a /etc/apt/sources.list
-          sudo apt update && apt-cache policy libssl1.0-dev
-          sudo apt-get install libssl1.0-dev
       -
         name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
       -
-        name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16.4
-      -
-        name: Cache Go deps
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      -
         name: E2E tests
         run: |
-          sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
-          sudo update-ca-certificates
+          cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
+          update-ca-certificates
           make e2e
           make go-tfe-tests e2e
+        env:
+          # The hostname used to communicate with the PostgreSQL service container
+          OTF_DATABASE: postgres://postgres:postgres@postgres/postgres
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -52,3 +48,4 @@ jobs:
           args: release --skip-sign
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@postgres/postgres

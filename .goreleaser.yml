@@ -2,56 +2,38 @@ before:
   hooks:
     - make unit
 builds:
-  - id: linux-build-daemon
-    env:
-    - CGO_ENABLED=1
+  - id: otfd
     ldflags:
     - -s
     - '-X ".Version={{ .Version }}"'
     - '-X ".Commit={{ .Commit }}"'
     main: ./cmd/otfd
     binary: otfd
-    targets:
-    - linux_amd64
-  - id: linux-build-client
     env:
-    - CGO_ENABLED=1
+      - CGO_ENABLED=0
+    goos:
+    - linux
+    - darwin
+    goarch:
+    - 386
+    - amd64
+    - arm64
+  - id: otf
     ldflags:
     - -s
     - '-X ".Version={{ .Version }}"'
     - '-X ".Commit={{ .Commit }}"'
     main: ./cmd/otf
     binary: otf
-    targets:
-    - linux_amd64
-  - id: darwin-build-daemon
-    ldflags:
-    - -s
-    - '-X ".Version={{ .Version }}"'
-    - '-X ".Commit={{ .Commit }}"'
     env:
-    - CGO_ENABLED=1
-    - CC=/home/runner/work/osxcross/target/bin/o64-clang
-    - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
-    main: ./cmd/otfd
-    binary: otfd
-    targets:
-    - darwin_amd64
-    - darwin_arm64
-  - id: darwin-build-client
-    ldflags:
-    - -s
-    - '-X ".Version={{ .Version }}"'
-    - '-X ".Commit={{ .Commit }}"'
-    env:
-    - CGO_ENABLED=1
-    - CC=/home/runner/work/osxcross/target/bin/o64-clang
-    - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
-    main: ./cmd/otf
-    binary: otf
-    targets:
-    - darwin_amd64
-    - darwin_arm64
+      - CGO_ENABLED=0
+    goos:
+    - linux
+    - darwin
+    goarch:
+    - 386
+    - amd64
+    - arm64
 archives:
 - format: zip
   files:

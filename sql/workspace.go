@@ -1,10 +1,9 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
@@ -16,7 +15,7 @@ var (
 	workspaceColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "allow_destroy_plan", "auto_apply", "can_queue_destroy_plan", "description", "environment", "execution_mode", "file_triggers_enabled", "global_remote_state", "locked", "migration_environment", "name", "queue_all_runs", "speculative_enabled", "source_name", "source_url", "structured_run_output_enabled", "terraform_version", "trigger_prefixes", "working_directory"}
 	workspaceColumns          = append(workspaceColumnsWithoutID, "id")
 
-	insertWorkspaceSQL = fmt.Sprintf("INSERT INTO workspaces (%s, organization_id) VALUES (%s, :organizations.id)",
+	insertWorkspaceSQL = fmt.Sprintf("INSERT INTO workspaces (%s, organization_id) VALUES (%s, :organizations.id) RETURNING id",
 		strings.Join(workspaceColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(workspaceColumnsWithoutID, ":"), ", "))
 )
@@ -35,12 +34,11 @@ func NewWorkspaceDB(db *sqlx.DB) *WorkspaceDB {
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	// Insert workspace
-	result, err := db.NamedExec(insertWorkspaceSQL, ws)
+	sql, args, err := db.BindNamed(insertWorkspaceSQL, ws)
 	if err != nil {
 		return nil, err
 	}
-	ws.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := db.DB.Get(&ws.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +82,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	selectBuilder := sq.Select().
+	selectBuilder := psql.Select().
 		From("workspaces").
 		Join("organizations ON organizations.id = workspaces.organization_id")
 
@@ -139,7 +137,7 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM workspaces WHERE id = ?", ws.Model.ID)
+	_, err = tx.Exec("DELETE FROM workspaces WHERE id = $1", ws.Model.ID)
 	if err != nil {
 		return fmt.Errorf("unable to delete workspace: %w", err)
 	}
@@ -148,7 +146,7 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 }
 
 func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
-	selectBuilder := sq.Select(asColumnList("workspaces", false, workspaceColumns...)).
+	selectBuilder := psql.Select(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
 		From("workspaces").
 		Join("organizations ON organizations.id = workspaces.organization_id")

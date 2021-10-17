@@ -1,10 +1,9 @@
-package sqlite
+package sql
 
 import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
@@ -24,7 +23,7 @@ var (
 	}
 	organizationColumns = append(organizationColumnsWithoutID, "id")
 
-	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s)",
+	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s) RETURNING id",
 		strings.Join(organizationColumnsWithoutID, ", "),
 		strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ", "))
 )
@@ -42,12 +41,11 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
 	// Insert
-	result, err := db.NamedExec(insertOrganizationSQL, org)
+	sql, args, err := db.BindNamed(insertOrganizationSQL, org)
 	if err != nil {
 		return nil, err
 	}
-	org.Model.ID, err = result.LastInsertId()
-	if err != nil {
+	if err := db.DB.Get(&org.Model.ID, sql, args...); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +88,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	selectBuilder := sq.Select().From("organizations")
+	selectBuilder := psql.Select().From("organizations")
 
 	var count int
 	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
@@ -123,7 +121,7 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 }
 
 func (db OrganizationDB) Delete(name string) error {
-	result, err := db.Exec("DELETE FROM organizations WHERE name = ?", name)
+	result, err := db.Exec("DELETE FROM organizations WHERE name = $1", name)
 	if err != nil {
 		return err
 	}
@@ -138,7 +136,7 @@ func (db OrganizationDB) Delete(name string) error {
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {
-	selectBuilder := sq.Select(strings.Join(organizationColumns, ",")).
+	selectBuilder := psql.Select(strings.Join(organizationColumns, ",")).
 		From("organizations").
 		Where("name = ?", name)
 
@@ -149,7 +147,7 @@ func getOrganization(getter Getter, name string) (*otf.Organization, error) {
 
 	var org otf.Organization
 	if err := getter.Get(&org, sql, args...); err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	return &org, nil
