@@ -56,4 +56,4 @@ jobs:
         with:
           args: release --rm-dist --snapshot --skip-sign
         env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=allow
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
