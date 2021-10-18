@@ -66,5 +66,10 @@ vet:
 # Build docker image
 .PHONY: image
 image: build
-	docker build -f _build/Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest .
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
 
+# Push docker image
+.PHONY: push
+push: image
+	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
+	docker push $(IMAGE_TARGET)
