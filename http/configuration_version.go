@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -66,7 +67,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	WriteResponse(w, r, s.ConfigurationVersionJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, ConfigurationVersionJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +79,7 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	WriteResponse(w, r, s.ConfigurationVersionJSONAPIObject(obj))
+	WriteResponse(w, r, ConfigurationVersionJSONAPIObject(obj))
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -116,14 +117,14 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 
 // ConfigurationVersionJSONAPIObject converts a ConfigurationVersion to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion) *ConfigurationVersion {
+func ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion) *ConfigurationVersion {
 	obj := &ConfigurationVersion{
 		ID:            cv.ID,
 		AutoQueueRuns: cv.AutoQueueRuns,
 		Speculative:   cv.Speculative,
 		Source:        cv.Source,
 		Status:        cv.Status,
-		UploadURL:     s.GetURL(UploadConfigurationVersionRoute, cv.ID),
+		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID),
 	}
 
 	for k, v := range cv.StatusTimestamps {
@@ -150,7 +151,7 @@ func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *otf.ConfigurationVer
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, s.ConfigurationVersionJSONAPIObject(item))
+		obj.Items = append(obj.Items, ConfigurationVersionJSONAPIObject(item))
 	}
 
 	return obj

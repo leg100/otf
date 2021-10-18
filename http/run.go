@@ -119,7 +119,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.RunJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, RunJSONAPIObject(r, obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +131,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.RunJSONAPIObject(obj))
+	WriteResponse(w, r, RunJSONAPIObject(r, obj))
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +152,7 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.RunListJSONAPIObject(obj))
+	WriteResponse(w, r, RunListJSONAPIObject(r, obj))
 }
 
 func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
@@ -315,7 +315,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID strin
 
 // RunJSONAPIObject converts a Run to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
+func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 	result := &Run{
 		ID: r.ID,
 		Actions: &RunActions{
@@ -345,10 +345,10 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 		TargetAddrs:     r.TargetAddrs,
 
 		// Relations
-		Apply:                s.ApplyJSONAPIObject(r.Apply),
-		ConfigurationVersion: s.ConfigurationVersionJSONAPIObject(r.ConfigurationVersion),
-		Plan:                 s.PlanJSONAPIObject(r.Plan),
-		Workspace:            s.WorkspaceJSONAPIObject(r.Workspace),
+		Apply:                ApplyJSONAPIObject(req, r.Apply),
+		ConfigurationVersion: ConfigurationVersionJSONAPIObject(r.ConfigurationVersion),
+		Plan:                 PlanJSONAPIObject(req, r.Plan),
+		Workspace:            WorkspaceJSONAPIObject(r.Workspace),
 
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &User{
@@ -394,12 +394,12 @@ func (s *Server) RunJSONAPIObject(r *otf.Run) *Run {
 
 // RunListJSONAPIObject converts a RunList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) RunListJSONAPIObject(cvl *otf.RunList) *RunList {
+func RunListJSONAPIObject(req *http.Request, cvl *otf.RunList) *RunList {
 	obj := &RunList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, s.RunJSONAPIObject(item))
+		obj.Items = append(obj.Items, RunJSONAPIObject(req, item))
 	}
 
 	return obj

@@ -116,7 +116,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +132,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +147,7 @@ func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +170,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceListJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceListJSONAPIObject(obj))
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +193,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +215,7 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -236,7 +236,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +251,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.WorkspaceJSONAPIObject(obj))
+	WriteResponse(w, r, WorkspaceJSONAPIObject(obj))
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -283,7 +283,7 @@ func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 
 // WorkspaceJSONAPIObject converts a Workspace to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
+func WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
 	obj := &Workspace{
 		ID: ws.ID,
 		Actions: &otf.WorkspaceActions{
@@ -331,7 +331,7 @@ func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
 	}
 
 	if ws.Organization != nil {
-		obj.Organization = s.OrganizationJSONAPIObject(ws.Organization)
+		obj.Organization = OrganizationJSONAPIObject(ws.Organization)
 	}
 
 	return obj
@@ -339,12 +339,12 @@ func (s *Server) WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
 
 // WorkspaceListJSONAPIObject converts a WorkspaceList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) WorkspaceListJSONAPIObject(cvl *otf.WorkspaceList) *WorkspaceList {
+func WorkspaceListJSONAPIObject(cvl *otf.WorkspaceList) *WorkspaceList {
 	obj := &WorkspaceList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, s.WorkspaceJSONAPIObject(item))
+		obj.Items = append(obj.Items, WorkspaceJSONAPIObject(item))
 	}
 
 	return obj

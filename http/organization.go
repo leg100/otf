@@ -61,7 +61,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +73,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +90,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.OrganizationListJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationListJSONAPIObject(obj))
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +108,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +136,7 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 
 // OrganizationJSONAPIObject converts a Organization to a struct
 // that can be marshalled into a JSON-API object
-func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *Organization {
+func OrganizationJSONAPIObject(org *otf.Organization) *Organization {
 	obj := &Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
@@ -152,12 +152,12 @@ func (s *Server) OrganizationJSONAPIObject(org *otf.Organization) *Organization 
 
 // OrganizationListJSONAPIObject converts a OrganizationList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
+func OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
 	obj := &OrganizationList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, s.OrganizationJSONAPIObject(item))
+		obj.Items = append(obj.Items, OrganizationJSONAPIObject(item))
 	}
 
 	return obj

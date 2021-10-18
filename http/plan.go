@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -52,7 +53,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.PlanJSONAPIObject(obj))
+	WriteResponse(w, r, PlanJSONAPIObject(r, obj))
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
@@ -94,11 +95,11 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 
 // PlanJSONAPIObject converts a Plan to a struct that can be
 // marshalled into a JSON-API object
-func (s *Server) PlanJSONAPIObject(p *otf.Plan) *Plan {
+func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 	result := &Plan{
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
-		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ID),
+		LogReadURL:           buildAbsoluteURI(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
 		ResourceAdditions:    p.ResourceAdditions,
 		ResourceChanges:      p.ResourceChanges,
 		ResourceDestructions: p.ResourceDestructions,

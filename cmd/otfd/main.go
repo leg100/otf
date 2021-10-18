@@ -21,7 +21,6 @@ import (
 
 const (
 	DefaultAddress  = ":8080"
-	DefaultHostname = "localhost:8080"
 	DefaultDatabase = "postgres:///otf?host=/var/run/postgresql"
 	DefaultDataDir  = "~/.otf-data"
 	DefaultLogLevel = "info"
@@ -58,7 +57,6 @@ func main() {
 	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
