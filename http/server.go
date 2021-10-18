@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -23,8 +22,8 @@ const (
 	jsonApplication = "application/json"
 
 	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/upload"
-	GetPlanLogsRoute                WebRoute = "/plans/%v/logs"
-	GetApplyLogsRoute               WebRoute = "/applies/%v/logs"
+	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
+	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
 
 type WebRoute string
@@ -44,9 +43,6 @@ type Server struct {
 
 	// Listening Address in the form <ip>:<port>
 	Addr string
-
-	// Hostname, used within absolute URL links, defaults to localhost
-	Hostname string
 
 	OrganizationService         otf.OrganizationService
 	WorkspaceService            otf.WorkspaceService
@@ -157,17 +153,6 @@ func NewRouter(server *Server) *negroni.Negroni {
 	n.UseHandler(router)
 
 	return n
-}
-
-// GetURL returns an absolute URL corresponding to the given route and params
-func (s *Server) GetURL(route WebRoute, param ...interface{}) string {
-	url := &url.URL{
-		Scheme: "https",
-		Host:   s.Hostname,
-		Path:   fmt.Sprintf(string(route), param...),
-	}
-
-	return url.String()
 }
 
 func (s *Server) SetupRoutes() {

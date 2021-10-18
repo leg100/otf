@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -51,7 +52,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.ApplyJSONAPIObject(obj))
+	WriteResponse(w, r, ApplyJSONAPIObject(r, obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
@@ -78,10 +79,10 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 // ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *Apply {
+func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
 		ID:                   a.ID,
-		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ID),
+		LogReadURL:           buildAbsoluteURI(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
 		ResourceAdditions:    a.ResourceAdditions,
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,
