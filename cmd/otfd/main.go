@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
+	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -180,6 +181,11 @@ func newLogger(lvl string) (*zerolog.Logger, error) {
 		TimeFormat: time.RFC3339,
 	}
 	zerolog.DurationFieldInteger = true
+
+	// Disable color if stdout is not a tty
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		consoleWriter.NoColor = true
+	}
 
 	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
 
