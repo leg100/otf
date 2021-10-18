@@ -1,30 +1,21 @@
 package main
 
 import (
-	"os"
-
 	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func WorkspaceCommand() *cobra.Command {
-	cfg, err := http.NewConfig(LoadCredentials)
-	if err != nil {
-		panic(err.Error())
-	}
-
+func WorkspaceCommand(factory http.ClientFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspaces",
 		Short: "Workspace management",
 	}
-	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
-	cmd.Flags().StringVar(&cfg.Token, "token", os.Getenv("OTF_TOKEN"), "Authentication token")
 
-	cmd.AddCommand(WorkspaceListCommand(cfg))
-	cmd.AddCommand(WorkspaceShowCommand(cfg))
-	cmd.AddCommand(WorkspaceEditCommand(cfg))
-	cmd.AddCommand(WorkspaceLockCommand(cfg))
-	cmd.AddCommand(WorkspaceUnlockCommand(cfg))
+	cmd.AddCommand(WorkspaceListCommand(factory))
+	cmd.AddCommand(WorkspaceShowCommand(factory))
+	cmd.AddCommand(WorkspaceEditCommand(factory))
+	cmd.AddCommand(WorkspaceLockCommand(factory))
+	cmd.AddCommand(WorkspaceUnlockCommand(factory))
 
 	return cmd
 }
