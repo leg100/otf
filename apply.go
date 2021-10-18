@@ -75,12 +75,12 @@ func (a *Apply) Do(run *Run, exe *Executor) error {
 func (a *Apply) UpdateResources(bs BlobStore) error {
 	logs, err := bs.Get(a.LogsBlobID)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading apply logs: %w", err)
 	}
 
 	resources, err := parseApplyOutput(string(logs))
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing apply output: %w", err)
 	}
 
 	a.Resources = resources

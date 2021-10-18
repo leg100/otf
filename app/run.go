@@ -235,10 +235,17 @@ func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error
 func (s RunService) GetPlanLogs(planID string, opts otf.GetChunkOptions) ([]byte, error) {
 	run, err := s.db.Get(otf.RunGetOptions{PlanID: &planID})
 	if err != nil {
-		s.Error(err, "retrieving plan logs")
+		s.Error(err, "retrieving run", "plan_id", planID)
 		return nil, err
 	}
-	return s.bs.GetChunk(run.Plan.LogsBlobID, opts)
+
+	logs, err := s.bs.GetChunk(run.Plan.LogsBlobID, opts)
+	if err != nil {
+		s.Error(err, "reading plan logs", "plan_id", planID, "blob_id", run.Plan.LogsBlobID)
+		return nil, err
+	}
+
+	return logs, nil
 }
 
 // GetApplyLogs returns logs from the apply of the run identified by id. The

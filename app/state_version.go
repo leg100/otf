@@ -65,8 +65,15 @@ func (s StateVersionService) Get(id string) (*otf.StateVersion, error) {
 func (s StateVersionService) Download(id string) ([]byte, error) {
 	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id})
 	if err != nil {
+		s.Error(err, "retrieving state version", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
 		return nil, err
 	}
 
-	return s.bs.Get(sv.BlobID)
+	state, err := s.bs.Get(sv.BlobID)
+	if err != nil {
+		s.Error(err, "reading state file", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
+		return nil, err
+	}
+
+	return state, nil
 }
