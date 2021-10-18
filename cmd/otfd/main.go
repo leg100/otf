@@ -12,7 +12,7 @@ import (
 	"github.com/leg100/otf/filestore"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/sqlite"
+	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
@@ -22,14 +22,14 @@ import (
 const (
 	DefaultAddress  = ":8080"
 	DefaultHostname = "localhost:8080"
-	DefaultDBPath   = "otf.db"
+	DefaultDatabase = "postgres:///otf?host=/var/run/postgresql"
 	DefaultDataDir  = "~/.otf-data"
 	DefaultLogLevel = "info"
 )
 
 var (
-	// DBPath is the path to the sqlite database file
-	DBPath string
+	// database is the postgres connection string
+	database string
 	// DataDir is the path to the directory used for storing OTF-related data
 	DataDir string
 )
@@ -57,7 +57,7 @@ func main() {
 	cmd.Flags().BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
-	cmd.Flags().StringVar(&DBPath, "db-path", DefaultDBPath, "Path to SQLite database file")
+	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
@@ -107,18 +107,18 @@ func main() {
 	}
 	logger.Info("filestore started", "path", fs.Path)
 
-	// Setup sqlite db
-	db, err := sqlite.New(logger, DBPath, sqlite.WithZeroLogger(zerologger))
+	// Setup postgres connection
+	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
 
-	organizationStore := sqlite.NewOrganizationDB(db)
-	workspaceStore := sqlite.NewWorkspaceDB(db)
-	stateVersionStore := sqlite.NewStateVersionDB(db)
-	runStore := sqlite.NewRunDB(db)
-	configurationVersionStore := sqlite.NewConfigurationVersionDB(db)
+	organizationStore := sql.NewOrganizationDB(db)
+	workspaceStore := sql.NewWorkspaceDB(db)
+	stateVersionStore := sql.NewStateVersionDB(db)
+	runStore := sql.NewRunDB(db)
+	configurationVersionStore := sql.NewConfigurationVersionDB(db)
 
 	eventService := inmem.NewEventService(logger)
 

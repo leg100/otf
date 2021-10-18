@@ -1,7 +1,7 @@
 /*
-Package sqlite implements persistent storage using the sqlite database.
+Package sql implements persistent storage using the sql database.
 */
-package sqlite
+package sql
 
 import (
 	"database/sql"
@@ -18,16 +18,21 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/leg100/otf"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
+
+	_ "github.com/lib/pq"
 )
 
 //go:embed migrations/*.sql
 var fs embed.FS
 
+// psql is our SQL builder, customized to use postgres placeholders ($N).
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
 type Getter interface {
 	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
 }
 
 type StructScannable interface {
@@ -57,36 +62,26 @@ func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
 		o()
 	}
 
-	db, err := sqlx.Open("sqlite3", path)
+	db, err := sqlx.Open("postgres", path)
 	if err != nil {
-		return nil, err
+		return db, err
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, err
+		return db, err
 	}
 
 	// Map struct field names from CamelCase to snake_case.
 	db.MapperFunc(strcase.ToSnake)
 
-	// Avoid "database is locked" errors:
-	// https://github.com/mattn/go-sqlite3/issues/274
-	db.SetMaxOpenConns(1)
-
-	// Enable WAL. SQLite performs better with the WAL because it allows
-	// multiple readers to operate while data is being written.
-	db.Exec(`PRAGMA journal_mode = wal;`)
-
-	db.Exec(`PRAGMA foreign_keys = ON;`)
-
 	goose.SetBaseFS(fs)
 
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return nil, fmt.Errorf("setting sqlite3 dialect for migrations: %w", err)
+	if err := goose.SetDialect("postgres"); err != nil {
+		return db, fmt.Errorf("setting postgres dialect for migrations: %w", err)
 	}
 
 	if err := goose.Up(db.DB, "migrations"); err != nil {
-		return nil, fmt.Errorf("unable to migrate database: %w", err)
+		return db, fmt.Errorf("unable to migrate database: %w", err)
 	}
 
 	return db, nil
@@ -157,7 +152,7 @@ func update(mapper *reflectx.Mapper, tx sqlx.Execer, table string, before, after
 	after.SetUpdatedAt(now)
 	updates["updated_at"] = now
 
-	sql := sq.Update(table).Where("id = ?", before.GetInternalID())
+	sql := psql.Update(table).Where("id = ?", before.GetInternalID())
 
 	query, args, err := sql.SetMap(updates).ToSql()
 	if err != nil {
@@ -180,9 +175,9 @@ func asColumnList(table string, prefix bool, cols ...string) (sql string) {
 	var asLines []string
 	for _, c := range cols {
 		if prefix {
-			asLines = append(asLines, fmt.Sprintf("%s.%s AS '%[1]s.%s'", table, c))
+			asLines = append(asLines, fmt.Sprintf("%s.%s AS \"%[1]s.%s\"", table, c))
 		} else {
-			asLines = append(asLines, fmt.Sprintf("%s.%s AS '%[2]s'", table, c))
+			asLines = append(asLines, fmt.Sprintf("%s.%s AS \"%[2]s\"", table, c))
 		}
 	}
 	return strings.Join(asLines, ",")

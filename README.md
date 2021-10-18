@@ -16,7 +16,7 @@ These steps will get you started with running everything on your local system. Y
 ![demo](https://user-images.githubusercontent.com/75728/133922405-b8474369-28ea-4772-b4bf-9131dc366f1d.gif)
 
 1. Download a [release](https://github.com/leg100/otf/releases). The zip file contains two binaries: a daemon and a client, `otfd` and `otf`. Extract them to a directory in your `PATH`, e.g. `/usr/local/bin`.
-1. Generate SSL cert and key. For example, to generate a self-signed cert and key for localhost:
+1. Generate SSL cert and key. For example, to generate a self-signed cert and key for localhost using `openssl`:
 
     ```bash
     openssl req -x509 -newkey rsa:4096 -sha256 -keyout key.pem -out cert.crt -days 365 -nodes -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost'
@@ -29,6 +29,12 @@ These steps will get you started with running everything on your local system. Y
     sudo update-ca-certificates
     ```
     
+1. Ensure you have access to a postgresql server. oTF assumes it's running locally on a unix domain socket in `/var/run/postgresql`. Create a database named `otf`:
+
+    ```bash
+    createdb otfd
+    ```
+
 1. Run the oTF daemon:
 
     ```bash
@@ -36,6 +42,8 @@ These steps will get you started with running everything on your local system. Y
     ```
    
    The daemon runs in the foreground and can be left to run.
+
+   Note: you can customise the postgres connection string by passing it via the flag `--database`.
       
 1. In another terminal, login to your OTF server (this merely adds some dummy credentials to `~/.terraform.d/credentials.tfrc.json`):
 
