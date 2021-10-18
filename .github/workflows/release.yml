@@ -42,6 +42,9 @@ jobs:
           # The hostname used to communicate with the PostgreSQL service container
           OTF_DATABASE: postgres://postgres:postgres@postgres/postgres
       -
+        name: login to docker hub
+        run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u leg100 --password-stdin
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -49,3 +52,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OTF_TEST_DATABASE_URL: postgres://postgres:postgres@postgres/postgres
+
