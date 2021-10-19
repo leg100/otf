@@ -29,9 +29,9 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string `db:"external_id"`
+	ID string `db:"plan_id"`
 
-	Model
+	Timestamps
 
 	Resources
 
@@ -47,22 +47,26 @@ type Plan struct {
 	// PlanJSONBlobID is the blob ID of the execution plan file in json format
 	PlanJSONBlobID string
 
-	RunID int64
+	RunID string
 }
+
+func (p *Plan) GetID() string  { return p.ID }
+func (p *Plan) String() string { return p.ID }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
 }
 
-func newPlan() *Plan {
+func newPlan(runID string) *Plan {
 	return &Plan{
-		ID:               GenerateID("plan"),
-		Model:            NewModel(),
+		ID:               NewID("plan"),
+		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
 		PlanFileBlobID:   NewBlobID(),
 		PlanJSONBlobID:   NewBlobID(),
+		RunID:            runID,
 	}
 }
 

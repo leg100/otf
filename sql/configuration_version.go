@@ -12,13 +12,21 @@ import (
 var (
 	_ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
 
-	configurationVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "auto_queue_runs", "source", "speculative", "status", "status_timestamps", "blob_id"}
+	configurationVersionColumns = []string{
+		"configuration_version_id",
+		"created_at",
+		"updated_at",
+		"auto_queue_runs",
+		"source",
+		"speculative",
+		"status",
+		"status_timestamps",
+		"blob_id",
+	}
 
-	configurationVersionColumns = append(configurationVersionColumnsWithoutID, "id")
-
-	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.id) RETURNING id",
-		strings.Join(configurationVersionColumnsWithoutID, ", "),
-		strings.Join(otf.PrefixSlice(configurationVersionColumnsWithoutID, ":"), ", "))
+	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.workspace_id)",
+		strings.Join(configurationVersionColumns, ", "),
+		strings.Join(otf.PrefixSlice(configurationVersionColumns, ":"), ", "))
 )
 
 type ConfigurationVersionDB struct {
@@ -36,7 +44,8 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	if err != nil {
 		return nil, err
 	}
-	if err := db.DB.Get(&cv.Model.ID, sql, args...); err != nil {
+	_, err = db.Exec(sql, args...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -67,7 +76,7 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 		return nil, err
 	}
 
-	updated, err := update(db.Mapper, tx, "configuration_versions", before.(*otf.ConfigurationVersion), cv)
+	updated, err := update(db.Mapper, tx, "configuration_versions", "configuration_version_id", before.(*otf.ConfigurationVersion), cv)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +91,8 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	selectBuilder := psql.Select().
 		From("configuration_versions").
-		Join("workspaces ON workspaces.id = configuration_versions.workspace_id").
-		Where("workspaces.external_id = ?", workspaceID)
+		Join("workspaces USING (workspace_id)").
+		Where("workspaces.workspace_id = ?", workspaceID)
 
 	var count int
 	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
@@ -126,7 +135,7 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM configuration_versions WHERE id = $1", cv.Model.ID)
+	_, err = tx.Exec("DELETE FROM configuration_versions WHERE id = $1", cv.ID)
 	if err != nil {
 		return fmt.Errorf("unable to delete configuration_version: %w", err)
 	}
@@ -137,16 +146,16 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	selectBuilder := psql.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Join("workspaces ON workspaces.id = configuration_versions.workspace_id").
+		Join("workspaces USING (workspace_id)").
 		From("configuration_versions")
 
 	switch {
 	case opts.ID != nil:
 		// Get config version by ID
-		selectBuilder = selectBuilder.Where("configuration_versions.external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("configuration_versions.configuration_version_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest config version for given workspace
-		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
 	}

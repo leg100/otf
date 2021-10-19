@@ -36,8 +36,6 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	q.Add("TimeZone", "UTC")
 	u.RawQuery = q.Encode()
 
-	t.Logf("connecting to postgres with %s", u.String())
-
 	db, err := New(logr.Discard(), u.String())
 	require.NoError(t, err)
 
@@ -49,13 +47,12 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	return db
 }
 
-// newTestModel constructs a new model obj with timestamps suitable for unit
-// tests interfacing with postgres; tests may want to test for equality with
-// timestamps retrieved from postgres, and so the timestamps must be of a
-// certain precision and timezone.
-func newTestModel() otf.Model {
+// newTestTimestamps constructs timestamps suitable for unit tests interfacing with
+// postgres; tests may want to test for equality with timestamps retrieved from
+// postgres, and so the timestamps must be of a certain precision and timezone.
+func newTestTimestamps() otf.Timestamps {
 	now := time.Now().Round(time.Millisecond).UTC()
-	return otf.Model{
+	return otf.Timestamps{
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -63,17 +60,17 @@ func newTestModel() otf.Model {
 
 func newTestOrganization() *otf.Organization {
 	return &otf.Organization{
-		ID:    otf.GenerateID("org"),
-		Model: newTestModel(),
-		Name:  uuid.NewString(),
-		Email: "sysadmin@automatize.co.uk",
+		ID:         otf.NewID("org"),
+		Timestamps: newTestTimestamps(),
+		Name:       uuid.NewString(),
+		Email:      "sysadmin@automatize.co.uk",
 	}
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return &otf.Workspace{
-		ID:           otf.GenerateID("ws"),
-		Model:        newTestModel(),
+		ID:           otf.NewID("ws"),
+		Timestamps:   newTestTimestamps(),
 		Name:         uuid.NewString(),
 		Organization: org,
 	}
@@ -81,8 +78,8 @@ func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
-		ID:               otf.GenerateID("cv"),
-		Model:            newTestModel(),
+		ID:               otf.NewID("cv"),
+		Timestamps:       newTestTimestamps(),
 		Status:           otf.ConfigurationPending,
 		StatusTimestamps: make(otf.TimestampMap),
 		Workspace:        ws,
@@ -91,9 +88,9 @@ func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 
 func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
 	sv := &otf.StateVersion{
-		ID:        otf.GenerateID("sv"),
-		Model:     newTestModel(),
-		Workspace: ws,
+		ID:         otf.NewID("sv"),
+		Timestamps: newTestTimestamps(),
+		Workspace:  ws,
 	}
 	for _, o := range opts {
 		o(sv)
@@ -104,7 +101,7 @@ func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
 	return func(sv *otf.StateVersion) error {
 		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
-			ID:        otf.GenerateID("svo"),
+			ID:        otf.NewID("wsout"),
 			Name:      name,
 			Type:      outputType,
 			Value:     value,
@@ -115,20 +112,23 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	id := otf.NewID("run")
 	return &otf.Run{
-		ID:               otf.GenerateID("run"),
-		Model:            newTestModel(),
+		ID:               id,
+		Timestamps:       newTestTimestamps(),
 		Status:           otf.RunPending,
 		StatusTimestamps: make(otf.TimestampMap),
 		Plan: &otf.Plan{
-			ID:               otf.GenerateID("plan"),
-			Model:            newTestModel(),
+			ID:               otf.NewID("plan"),
+			Timestamps:       newTestTimestamps(),
 			StatusTimestamps: make(otf.TimestampMap),
+			RunID:            id,
 		},
 		Apply: &otf.Apply{
-			ID:               otf.GenerateID("apply"),
-			Model:            newTestModel(),
+			ID:               otf.NewID("apply"),
+			Timestamps:       newTestTimestamps(),
 			StatusTimestamps: make(otf.TimestampMap),
+			RunID:            id,
 		},
 		Workspace:            ws,
 		ConfigurationVersion: cv,

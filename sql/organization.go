@@ -12,20 +12,19 @@ import (
 var (
 	_ otf.OrganizationStore = (*OrganizationDB)(nil)
 
-	organizationColumnsWithoutID = []string{
+	organizationColumns = []string{
+		"organization_id",
 		"created_at",
 		"updated_at",
-		"external_id",
 		"name",
 		"email",
 		"session_remember",
 		"session_timeout",
 	}
-	organizationColumns = append(organizationColumnsWithoutID, "id")
 
-	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s) RETURNING id",
-		strings.Join(organizationColumnsWithoutID, ", "),
-		strings.Join(otf.PrefixSlice(organizationColumnsWithoutID, ":"), ", "))
+	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s)",
+		strings.Join(organizationColumns, ", "),
+		strings.Join(otf.PrefixSlice(organizationColumns, ":"), ", "))
 )
 
 type OrganizationDB struct {
@@ -45,7 +44,8 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 	if err != nil {
 		return nil, err
 	}
-	if err := db.DB.Get(&org.Model.ID, sql, args...); err != nil {
+	_, err = db.Exec(sql, args...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	updated, err := update(db.Mapper, tx, "organizations", before.(*otf.Organization), org)
+	updated, err := update(db.Mapper, tx, "organizations", "organization_id", before.(*otf.Organization), org)
 	if err != nil {
 		return nil, err
 	}

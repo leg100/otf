@@ -292,7 +292,7 @@ func WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
 		AllowDestroyPlan:     ws.AllowDestroyPlan,
 		AutoApply:            ws.AutoApply,
 		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan,
-		CreatedAt:            ws.Model.CreatedAt,
+		CreatedAt:            ws.CreatedAt,
 		Description:          ws.Description,
 		Environment:          ws.Environment,
 		ExecutionMode:        ws.ExecutionMode,
@@ -322,7 +322,7 @@ func WorkspaceJSONAPIObject(ws *otf.Workspace) *Workspace {
 		TriggerPrefixes:            ws.TriggerPrefixes,
 		VCSRepo:                    ws.VCSRepo,
 		WorkingDirectory:           ws.WorkingDirectory,
-		UpdatedAt:                  ws.Model.UpdatedAt,
+		UpdatedAt:                  ws.UpdatedAt,
 	}
 
 	if ws.ExecutionMode == "remote" {

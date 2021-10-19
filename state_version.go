@@ -13,9 +13,9 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string `db:"external_id"`
+	ID string `db:"state_version_id"`
 
-	Model
+	Timestamps
 
 	Serial       int64
 	VCSCommitSHA string
@@ -33,6 +33,9 @@ type StateVersion struct {
 	// State version has many outputs
 	Outputs []*StateVersionOutput `db:"state_version_outputs"`
 }
+
+func (sv *StateVersion) GetID() string  { return sv.ID }
+func (sv *StateVersion) String() string { return sv.ID }
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
@@ -107,9 +110,9 @@ type StateVersionFactory struct {
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
-		ID:     GenerateID("sv"),
-		Model:  NewModel(),
-		Serial: *opts.Serial,
+		ID:         NewID("sv"),
+		Timestamps: NewTimestamps(),
+		Serial:     *opts.Serial,
 	}
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})
@@ -135,7 +138,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 
 	for k, v := range state.Outputs {
 		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			ID:    GenerateID("wsout"),
+			ID:    NewID("wsout"),
 			Name:  k,
 			Type:  v.Type,
 			Value: v.Value,

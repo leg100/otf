@@ -20,15 +20,15 @@ func TestRun_Create(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ensure primary keys populated
-	assert.NotEmpty(t, run.Model.ID)
-	assert.NotEmpty(t, run.Plan.Model.ID)
-	assert.NotEmpty(t, run.Apply.Model.ID)
+	assert.NotEmpty(t, run.ID)
+	assert.NotEmpty(t, run.Plan.ID)
+	assert.NotEmpty(t, run.Apply.ID)
 
 	// Ensure foreign keys populated
 	assert.NotEmpty(t, run.Plan.RunID)
 	assert.NotEmpty(t, run.Apply.RunID)
-	assert.NotEmpty(t, run.Workspace.Model.ID)
-	assert.NotEmpty(t, run.ConfigurationVersion.Model.ID)
+	assert.NotEmpty(t, run.Workspace.ID)
+	assert.NotEmpty(t, run.ConfigurationVersion.ID)
 }
 
 func TestRun_Update(t *testing.T) {
