@@ -1,14 +1,22 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS blobs (
     id serial,
-    created_at timestamptz,
-    updated_at timestamptz,
     external_id text,
     blob bytea,
-    _offset integer,
     PRIMARY KEY (id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_blobs_external_id ON blobs(external_id);
+
+CREATE TABLE IF NOT EXISTS logs (
+    id serial,
+    external_id text,
+    chunk bytea,
+    sequence serial,
+    start boolean,
+    _end boolean,
+    PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS idx_logs_external_id ON logs(external_id);
 
 CREATE TABLE IF NOT EXISTS organizations (
     id serial,
@@ -102,10 +110,10 @@ CREATE TABLE IF NOT EXISTS applies (
     resource_destructions integer,
     status text,
     status_timestamps text,
-    logs_blob_id integer,
+    logs_id integer,
     run_id serial,
     PRIMARY KEY (id),
-    CONSTRAINT fk_applies_blob FOREIGN KEY (logs_blob_id) REFERENCES blobs(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_applies_log FOREIGN KEY (logs_id) REFERENCES logs(id) ON UPDATE CASCADE,
     CONSTRAINT fk_runs_apply FOREIGN KEY (run_id) REFERENCES runs(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_applies_external_id ON applies(external_id);
@@ -120,12 +128,12 @@ CREATE TABLE IF NOT EXISTS plans (
     resource_destructions integer,
     status text,
     status_timestamps text,
-    logs_blob_id integer,
+    logs_id integer,
     plan_file_blob_id integer,
     plan_json_blob_id integer,
     run_id serial,
     PRIMARY KEY (id),
-    CONSTRAINT fk_plans_blob_logs FOREIGN KEY (logs_blob_id) REFERENCES blobs(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_plans_logs FOREIGN KEY (logs_id) REFERENCES logs(id) ON UPDATE CASCADE,
     CONSTRAINT fk_plans_blob_file FOREIGN KEY (plan_file_blob_id) REFERENCES blobs(id) ON UPDATE CASCADE,
     CONSTRAINT fk_plans_blob_json FOREIGN KEY (plan_json_blob_id) REFERENCES blobs(id) ON UPDATE CASCADE,
     CONSTRAINT fk_runs_plan FOREIGN KEY (run_id) REFERENCES runs(id) ON UPDATE CASCADE ON DELETE CASCADE

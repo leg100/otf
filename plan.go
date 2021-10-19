@@ -39,13 +39,13 @@ type Plan struct {
 	StatusTimestamps TimestampMap
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
-	LogsBlobID string
+	LogsBlobID int64
 
 	// PlanFileBlobID is the blob ID of the execution plan file in binary format
-	PlanFileBlobID string
+	PlanFileBlobID int64
 
 	// PlanJSONBlobID is the blob ID of the execution plan file in json format
-	PlanJSONBlobID string
+	PlanJSONBlobID int64
 
 	RunID int64
 }
@@ -60,9 +60,6 @@ func newPlan() *Plan {
 		ID:               GenerateID("plan"),
 		Model:            NewModel(),
 		StatusTimestamps: make(TimestampMap),
-		LogsBlobID:       NewBlobID(),
-		PlanFileBlobID:   NewBlobID(),
-		PlanJSONBlobID:   NewBlobID(),
 	}
 }
 
