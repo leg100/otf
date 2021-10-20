@@ -11,18 +11,32 @@ import (
 var (
 	_ otf.StateVersionStore = (*StateVersionService)(nil)
 
-	stateVersionColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "serial", "blob_id"}
-	stateVersionColumns          = append(stateVersionColumnsWithoutID, "id")
+	stateVersionColumns = []string{
+		"state_version_id",
+		"created_at",
+		"updated_at",
+		"serial",
+		"blob_id",
+	}
 
-	stateVersionOutputColumnsWithoutID = []string{"created_at", "updated_at", "external_id", "name", "sensitive", "type", "value", "state_version_id"}
+	stateVersionOutputColumns = []string{
+		"state_version_output_id",
+		"created_at",
+		"updated_at",
+		"name",
+		"sensitive",
+		"type",
+		"value",
+		"state_version_id",
+	}
 
-	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.id) RETURNING id",
-		strings.Join(stateVersionColumnsWithoutID, ", "),
-		strings.Join(otf.PrefixSlice(stateVersionColumnsWithoutID, ":"), ", "))
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.workspace_id)",
+		strings.Join(stateVersionColumns, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionColumns, ":"), ", "))
 
-	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s) RETURNING id",
-		strings.Join(stateVersionOutputColumnsWithoutID, ", "),
-		strings.Join(otf.PrefixSlice(stateVersionOutputColumnsWithoutID, ":"), ", "))
+	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
+		strings.Join(stateVersionOutputColumns, ", "),
+		strings.Join(otf.PrefixSlice(stateVersionOutputColumns, ":"), ", "))
 )
 
 type StateVersionService struct {
@@ -45,18 +59,20 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	if err != nil {
 		return nil, err
 	}
-	if err := tx.Get(&sv.Model.ID, sql, args...); err != nil {
+	_, err = tx.Exec(sql, args...)
+	if err != nil {
 		return nil, err
 	}
 
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
-		svo.StateVersionID = sv.Model.ID
+		svo.StateVersionID = sv.ID
 		sql, args, err := tx.BindNamed(insertStateVersionOutputSQL, svo)
 		if err != nil {
 			return nil, err
 		}
-		if err := tx.Get(&svo.Model.ID, sql, args...); err != nil {
+		_, err = tx.Exec(sql, args...)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -73,8 +89,8 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 	}
 
 	selectBuilder := psql.Select().From("state_versions").
-		Join("workspaces ON workspaces.id = state_versions.workspace_id").
-		Join("organizations ON organizations.id = workspaces.organization_id").
+		Join("workspaces USING (workspace_id)").
+		Join("organizations USING (organization_id)").
 		Where("workspaces.name = ?", *opts.Workspace).
 		Where("organizations.name = ?", *opts.Organization)
 
@@ -119,7 +135,7 @@ func (s StateVersionService) Delete(id string) error {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM state_versions WHERE id = $1", sv.Model.ID)
+	_, err = tx.Exec("DELETE FROM state_versions WHERE id = $1", sv.ID)
 	if err != nil {
 		return fmt.Errorf("unable to delete state_version: %w", err)
 	}
@@ -131,15 +147,15 @@ func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.State
 	selectBuilder := psql.Select(asColumnList("state_versions", false, stateVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
-		Join("workspaces ON workspaces.id = state_versions.workspace_id")
+		Join("workspaces USING (workspace_id)")
 
 	switch {
 	case opts.ID != nil:
 		// Get state version by ID
-		selectBuilder = selectBuilder.Where("state_versions.external_id = ?", *opts.ID)
+		selectBuilder = selectBuilder.Where("state_versions.state_version_id = ?", *opts.ID)
 	case opts.WorkspaceID != nil:
 		// Get latest state version for given workspace
-		selectBuilder = selectBuilder.Where("workspaces.external_id = ?", *opts.WorkspaceID)
+		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
 		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
 	default:
 		return nil, otf.ErrInvalidWorkspaceSpecifier
@@ -165,7 +181,7 @@ func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.State
 func attachOutputs(getter Getter, sv *otf.StateVersion) error {
 	selectBuilder := psql.Select("*").
 		From("state_version_outputs").
-		Where("state_version_id = ? ", sv.Model.ID)
+		Where("state_version_id = ? ", sv.ID)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {

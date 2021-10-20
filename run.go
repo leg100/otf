@@ -59,9 +59,9 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string `db:"external_id" jsonapi:"primary,runs"`
+	ID string `db:"run_id" jsonapi:"primary,runs"`
 
-	Model
+	Timestamps
 
 	IsDestroy        bool
 	Message          string
@@ -247,15 +247,14 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
+func (r *Run) GetID() string  { return r.ID }
+func (r *Run) String() string { return r.ID }
+
 func (o RunCreateOptions) Valid() error {
 	if o.Workspace == nil {
 		return errors.New("workspace is required")
 	}
 	return nil
-}
-
-func (r *Run) GetID() string {
-	return r.ID
 }
 
 func (r *Run) GetStatus() string {
@@ -493,7 +492,7 @@ func (r *Run) Do(exe *Executor) error {
 	}
 
 	if err := exe.RunCLI("terraform", "init", "-no-color"); err != nil {
-		return err
+		return fmt.Errorf("running terraform init: %w", err)
 	}
 
 	phase, err := r.ActivePhase()
@@ -617,15 +616,16 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 		return nil, errors.New("workspace is required")
 	}
 
+	id := NewID("run")
 	run := Run{
-		ID:               GenerateID("run"),
-		Model:            NewModel(),
+		ID:               id,
+		Timestamps:       NewTimestamps(),
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
 		StatusTimestamps: make(TimestampMap),
-		Plan:             newPlan(),
-		Apply:            newApply(),
+		Plan:             newPlan(id),
+		Apply:            newApply(id),
 	}
 
 	run.UpdateStatus(RunPending)

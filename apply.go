@@ -25,9 +25,9 @@ type ApplyService interface {
 }
 
 type Apply struct {
-	ID string `db:"external_id"`
+	ID string `db:"apply_id"`
 
-	Model
+	Timestamps
 
 	Resources
 
@@ -37,15 +37,20 @@ type Apply struct {
 	// Logs is the blob ID for the log output from a terraform apply
 	LogsBlobID string
 
-	RunID int64
+	RunID string
 }
 
-func newApply() *Apply {
+func (a *Apply) GetID() string { return a.ID }
+
+func (a *Apply) String() string { return a.ID }
+
+func newApply(runID string) *Apply {
 	return &Apply{
-		ID:               GenerateID("apply"),
-		Model:            NewModel(),
+		ID:               NewID("apply"),
+		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
 		LogsBlobID:       NewBlobID(),
+		RunID:            runID,
 	}
 }
 

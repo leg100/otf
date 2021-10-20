@@ -48,7 +48,7 @@ func (e *EventService) Subscribe(id string) (otf.Subscription, error) {
 	// for each user so we can easily delete them.
 	e.subs[id] = sub
 
-	e.Info("subscription created", "subscriber", id)
+	e.Info("created subscription", "subscriber", id)
 
 	return sub, nil
 }

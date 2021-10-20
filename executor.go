@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -127,11 +128,19 @@ func (e *Executor) RunCLI(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = e.Path
 	cmd.Stdout = e.out
-	cmd.Stderr = e.out
+
+	stderr := new(bytes.Buffer)
+	errWriter := io.MultiWriter(e.out, stderr)
+	cmd.Stderr = errWriter
 
 	e.proc = cmd.Process
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		e.Error(err, "running CLI step", "stderr", stderr.String())
+		return err
+	}
+
+	return nil
 }
 
 // RunFunc invokes a func in the executor.

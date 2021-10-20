@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -29,9 +31,9 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string `db:"external_id"`
+	ID string `db:"plan_id"`
 
-	Model
+	Timestamps
 
 	Resources
 
@@ -39,27 +41,34 @@ type Plan struct {
 	StatusTimestamps TimestampMap
 
 	// LogsBlobID is the blob ID for the log output from a terraform plan
-	LogsBlobID int64
+	LogsBlobID string
 
 	// PlanFileBlobID is the blob ID of the execution plan file in binary format
-	PlanFileBlobID int64
+	PlanFileBlobID string
 
 	// PlanJSONBlobID is the blob ID of the execution plan file in json format
-	PlanJSONBlobID int64
+	PlanJSONBlobID string
 
-	RunID int64
+	RunID string
 }
+
+func (p *Plan) GetID() string  { return p.ID }
+func (p *Plan) String() string { return p.ID }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
 }
 
-func newPlan() *Plan {
+func newPlan(runID string) *Plan {
 	return &Plan{
-		ID:               GenerateID("plan"),
-		Model:            NewModel(),
+		ID:               NewID("plan"),
+		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
+		LogsBlobID:       uuid.NewString(),
+		PlanFileBlobID:   uuid.NewString(),
+		PlanJSONBlobID:   uuid.NewString(),
+		RunID:            runID,
 	}
 }
 
