@@ -53,12 +53,16 @@ func main() {
 
 	var help bool
 
+	// Toggle log colors. Must be one of auto, true, or false.
+	var logColor string
+
 	cmd.Flags().StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 	cmd.Flags().BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
+	cmd.Flags().StringVar(&logColor, "log-color", "auto", "Toggle log colors: auto, true or false. Auto enables colors if using a TTY.")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
@@ -84,7 +88,7 @@ func main() {
 	}
 
 	// Setup logger
-	zerologger, err := newLogger(*logLevel)
+	zerologger, err := newLogger(*logLevel, logColor)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -169,7 +173,7 @@ func main() {
 	}
 }
 
-func newLogger(lvl string) (*zerolog.Logger, error) {
+func newLogger(lvl, color string) (*zerolog.Logger, error) {
 	zlvl, err := zerolog.ParseLevel(lvl)
 	if err != nil {
 		return nil, err
@@ -182,9 +186,18 @@ func newLogger(lvl string) (*zerolog.Logger, error) {
 	}
 	zerolog.DurationFieldInteger = true
 
-	// Disable color if stdout is not a tty
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
+	switch color {
+	case "auto":
+		// Disable color if stdout is not a tty
+		if !isatty.IsTerminal(os.Stdout.Fd()) {
+			consoleWriter.NoColor = true
+		}
+	case "true":
+		consoleWriter.NoColor = false
+	case "false":
 		consoleWriter.NoColor = true
+	default:
+		return nil, fmt.Errorf("invalid choice for log color: %s. Must be one of auto, true, or false", color)
 	}
 
 	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
