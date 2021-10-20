@@ -108,7 +108,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	logger.Info("filestore started", "path", fs.Path)
+	logger.Info("started filestore", "path", fs.Path)
 
 	// Setup postgres connection
 	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
@@ -164,7 +164,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("server started", "address", server.Addr, "ssl", server.SSL)
+	logger.Info("started server", "address", server.Addr, "ssl", server.SSL)
 
 	// Block until Ctrl-C received.
 	if err := server.Wait(ctx); err != nil {
