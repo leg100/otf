@@ -21,7 +21,7 @@ func NewBlobDB(db *sqlx.DB) *BlobDB {
 
 // Put persists a Blob to the DB.
 func (db BlobDB) Put(id string, blob []byte) error {
-	sql := "INSERT INTO blobs (external_id, blob) VALUES (?, ?)"
+	sql := "INSERT INTO blobs (blob_id, blob) VALUES (?, ?)"
 
 	_, err := db.Exec(sql, id, blob)
 	if err != nil {
@@ -32,7 +32,7 @@ func (db BlobDB) Put(id string, blob []byte) error {
 }
 
 func (db BlobDB) Get(id string) ([]byte, error) {
-	var sql = "SELECT blob FROM blobs WHERE external_id = ?"
+	var sql = "SELECT blob FROM blobs WHERE blob_id = ?"
 	var blob []byte
 
 	if err := db.DB.Get(&blob, sql, id); err != nil {
