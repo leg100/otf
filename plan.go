@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -40,14 +38,14 @@ type Plan struct {
 	Status           PlanStatus
 	StatusTimestamps TimestampMap
 
-	// LogsBlobID is the blob ID for the log output from a terraform plan
-	LogsBlobID string
+	// LogID is the log ID for the log output from a terraform plan
+	LogID string
 
-	// PlanFileBlobID is the blob ID of the execution plan file in binary format
-	PlanFileBlobID string
+	// PlanFile is the blob ID of the execution plan file in binary format
+	PlanFile []byte
 
-	// PlanJSONBlobID is the blob ID of the execution plan file in json format
-	PlanJSONBlobID string
+	// PlanJSON is the blob ID of the execution plan file in json format
+	PlanJSON []byte
 
 	RunID string
 }
@@ -58,6 +56,8 @@ func (p *Plan) String() string { return p.ID }
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
+
+	ChunkStore
 }
 
 func newPlan(runID string) *Plan {
@@ -65,9 +65,6 @@ func newPlan(runID string) *Plan {
 		ID:               NewID("plan"),
 		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
-		LogsBlobID:       uuid.NewString(),
-		PlanFileBlobID:   uuid.NewString(),
-		PlanJSONBlobID:   uuid.NewString(),
 		RunID:            runID,
 	}
 }
@@ -81,7 +78,7 @@ func (p *Plan) HasChanges() bool {
 }
 
 func (p *Plan) GetLogsBlobID() string {
-	return p.LogsBlobID
+	return p.LogID
 }
 
 func (p *Plan) Do(run *Run, exe *Executor) error {

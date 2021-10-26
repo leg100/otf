@@ -9,16 +9,14 @@ var _ otf.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 
 type ConfigurationVersionService struct {
 	db otf.ConfigurationVersionStore
-	bs otf.BlobStore
 
 	logr.Logger
 
 	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, bs otf.BlobStore) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
-		bs:     bs,
 		db:     db,
 		Logger: logger,
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
@@ -72,26 +70,28 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.Configu
 	return s.db.Get(otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 }
 
-// Upload a configuration version blob
-func (s ConfigurationVersionService) Upload(id string, configuration []byte) error {
+// Upload a configuration version tarball
+func (s ConfigurationVersionService) Upload(id string, config []byte) error {
 	_, err := s.db.Update(id, func(cv *otf.ConfigurationVersion) error {
-		if err := s.bs.Put(cv.BlobID, configuration); err != nil {
-			return err
-		}
-
+		cv.Config = config
 		cv.Status = otf.ConfigurationUploaded
 
 		return nil
 	})
 
-	return err
+	if err != nil {
+		s.Error(err, "uploading configuration version")
+		return err
+	}
+
+	return nil
 }
 
 func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
-	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
+	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id, Config: true})
 	if err != nil {
 		return nil, err
 	}
 
-	return s.bs.Get(cv.BlobID)
+	return cv.Config, nil
 }

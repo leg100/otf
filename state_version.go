@@ -21,8 +21,8 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	// BlobID is ID of the binary object containing the state
-	BlobID string
+	// State is state file itself. Note: not always populated.
+	State []byte
 
 	// State version belongs to a workspace
 	Workspace *Workspace `db:"workspaces"`
@@ -65,6 +65,9 @@ type StateVersionGetOptions struct {
 
 	// Get current state version belonging to workspace with this ID
 	WorkspaceID *string
+
+	// State toggles retrieving the actual state file too.
+	State bool
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -105,7 +108,6 @@ type StateVersionCreateOptions struct {
 
 type StateVersionFactory struct {
 	WorkspaceService WorkspaceService
-	BlobStore        BlobStore
 }
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
@@ -121,17 +123,12 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 	}
 	sv.Workspace = ws
 
-	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err
 	}
 
-	sv.BlobID = NewBlobID()
-	if err := f.BlobStore.Put(sv.BlobID, decoded); err != nil {
-		return nil, err
-	}
-
-	state, err := Parse(decoded)
+	state, err := Parse(sv.State)
 	if err != nil {
 		return nil, err
 	}

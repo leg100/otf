@@ -1,17 +1,22 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS blobs (
-    blob_id uuid,
-    blob bytea,
-    PRIMARY KEY (blob_id)
-);
-
-CREATE TABLE IF NOT EXISTS logs (
-    log_id uuid,
+CREATE TABLE IF NOT EXISTS plan_logs (
+    plan_id text,
     chunk_id serial,
     chunk bytea,
+    size integer,
     start boolean,
     _end boolean,
-    PRIMARY KEY (log_id)
+    PRIMARY KEY (plan_id, chunk_id)
+);
+
+CREATE TABLE IF NOT EXISTS apply_logs (
+    apply_id text,
+    chunk_id serial,
+    chunk bytea,
+    size integer,
+    start boolean,
+    _end boolean,
+    PRIMARY KEY (apply_id, chunk_id)
 );
 
 CREATE TABLE IF NOT EXISTS organizations (
@@ -61,7 +66,7 @@ CREATE TABLE IF NOT EXISTS configuration_versions (
     speculative boolean,
     status text,
     status_timestamps text,
-    blob_id uuid REFERENCES blobs ON UPDATE CASCADE,
+    config bytea,
     workspace_id text REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (configuration_version_id)
 );
@@ -92,7 +97,6 @@ CREATE TABLE IF NOT EXISTS applies (
     resource_destructions integer,
     status text,
     status_timestamps text,
-    log_id uuid REFERENCES logs ON UPDATE CASCADE,
     run_id text REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (apply_id)
 );
@@ -106,9 +110,8 @@ CREATE TABLE IF NOT EXISTS plans (
     resource_destructions integer,
     status text,
     status_timestamps text,
-    log_id uuid REFERENCES logs ON UPDATE CASCADE,
-    plan_file_blob_id uuid REFERENCES blobs (blob_id) ON UPDATE CASCADE,
-    plan_json_blob_id uuid REFERENCES blobs (blob_id) ON UPDATE CASCADE,
+    plan_file bytea,
+    plan_json bytea,
     run_id text REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (plan_id)
 );
@@ -120,7 +123,7 @@ CREATE TABLE IF NOT EXISTS state_versions (
     serial integer,
     vcs_commit_sha text,
     vcs_commit_url text,
-    blob_id uuid REFERENCES blobs ON UPDATE CASCADE,
+    state bytea,
     workspace_id text REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (state_version_id)
 );

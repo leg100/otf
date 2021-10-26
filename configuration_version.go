@@ -45,8 +45,9 @@ type ConfigurationVersion struct {
 	Status           ConfigurationStatus
 	StatusTimestamps TimestampMap
 
-	// BlobID is the ID of the blob containing the configuration
-	BlobID string
+	// Config is a tarball of the uploaded configuration. Note: this is not
+	// necessarily populated.
+	Config []byte
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
@@ -93,6 +94,9 @@ type ConfigurationVersionGetOptions struct {
 
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
+
+	// Config toggles whether to retrieve the tarball of config files too.
+	Config bool
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a
@@ -126,7 +130,6 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        ConfigurationPending,
 		Source:        DefaultConfigurationSource,
-		BlobID:        NewBlobID(),
 	}
 
 	if opts.AutoQueueRuns != nil {

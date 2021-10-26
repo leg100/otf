@@ -41,6 +41,9 @@ type JobFinishOptions struct {
 
 // RunUploadLogsOptions represents the options for uploading logs for a run.
 type RunUploadLogsOptions struct {
+	// Start indicates this is the first chunk
+	Start bool `schema:"start"`
+
 	// End indicates this is the last and final chunk
 	End bool `schema:"end"`
 }

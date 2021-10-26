@@ -36,7 +36,7 @@ var (
 		"resource_destructions",
 		"status",
 		"status_timestamps",
-		"logs_blob_id",
+		"log_id",
 		"plan_file_blob_id",
 		"plan_json_blob_id",
 		"run_id",
@@ -51,7 +51,7 @@ var (
 		"resource_destructions",
 		"status",
 		"status_timestamps",
-		"logs_blob_id",
+		"log_id",
 		"run_id",
 	}
 
@@ -234,6 +234,16 @@ func (db RunDB) Delete(id string) error {
 }
 
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
+	planColumns := planColumns
+
+	if opts.IncludePlanFile {
+		planColumns = append(planColumns, "plan_file")
+	}
+
+	if opts.IncludePlanJSON {
+		planColumns = append(planColumns, "plan_json")
+	}
+
 	selectBuilder := psql.Select(asColumnList("runs", false, runColumns...)).
 		Columns(asColumnList("plans", true, planColumns...)).
 		Columns(asColumnList("applies", true, applyColumns...)).

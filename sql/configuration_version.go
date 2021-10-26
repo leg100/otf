@@ -21,7 +21,6 @@ var (
 		"speculative",
 		"status",
 		"status_timestamps",
-		"blob_id",
 	}
 
 	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.workspace_id)",
@@ -144,7 +143,13 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 }
 
 func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	selectBuilder := psql.Select(asColumnList("configuration_versions", false, configurationVersionColumns...)).
+	columns := configurationVersionColumns
+
+	if opts.Config {
+		columns = append(columns, "config")
+	}
+
+	selectBuilder := psql.Select(asColumnList("configuration_versions", false, columns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		Join("workspaces USING (workspace_id)").
 		From("configuration_versions")

@@ -230,6 +230,13 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+
+	// IncludePlanFile toggles including the plan file in the retrieved run.
+	IncludePlanFile bool
+
+	// IncludePlanFile toggles including the plan file, in JSON format, in the
+	// retrieved run.
+	IncludePlanJSON bool
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -398,11 +405,11 @@ func (r *Run) Start() error {
 
 // Finish updates the run to reflect the current phase having finished. An event
 // is emitted reflecting the run's new status.
-func (r *Run) Finish(bs BlobStore) (*Event, error) {
+func (r *Run) Finish(bs BlobStore, ls ChunkStore) (*Event, error) {
 	if r.Status == RunApplying {
 		r.UpdateStatus(RunApplied)
 
-		if err := r.Apply.UpdateResources(bs); err != nil {
+		if err := r.Apply.UpdateResources(ls); err != nil {
 			return nil, err
 		}
 

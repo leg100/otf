@@ -34,8 +34,8 @@ type Apply struct {
 	Status           ApplyStatus
 	StatusTimestamps TimestampMap
 
-	// Logs is the blob ID for the log output from a terraform apply
-	LogsBlobID string
+	// Log is the log ID for the log output from a terraform apply
+	LogID string
 
 	RunID string
 }
@@ -49,13 +49,13 @@ func newApply(runID string) *Apply {
 		ID:               NewID("apply"),
 		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
-		LogsBlobID:       NewBlobID(),
+		LogID:            NewBlobID(),
 		RunID:            runID,
 	}
 }
 
 func (a *Apply) GetLogsBlobID() string {
-	return a.LogsBlobID
+	return a.LogID
 }
 
 func (a *Apply) Do(run *Run, exe *Executor) error {
@@ -74,11 +74,11 @@ func (a *Apply) Do(run *Run, exe *Executor) error {
 	return nil
 }
 
-// UpdateResources parses the output from terraform apply to determine the
+// UpdateResources parses log output from terraform apply to determine the
 // number and type of resource changes applied and updates the apply object
 // accordingly.
-func (a *Apply) UpdateResources(bs BlobStore) error {
-	logs, err := bs.Get(a.LogsBlobID)
+func (a *Apply) UpdateResources(ls ChunkStore) error {
+	logs, err := ls.GetChunk(a.LogID, GetChunkOptions{})
 	if err != nil {
 		return fmt.Errorf("reading apply logs: %w", err)
 	}

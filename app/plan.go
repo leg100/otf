@@ -1,20 +1,26 @@
 package app
 
 import (
+	"context"
+
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
 var _ otf.PlanService = (*PlanService)(nil)
 
 type PlanService struct {
-	bs otf.BlobStore
 	db otf.RunStore
+	otf.ChunkStore
+
+	logr.Logger
 }
 
-func NewPlanService(db otf.RunStore, bs otf.BlobStore) *PlanService {
+func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger) *PlanService {
 	return &PlanService{
-		bs: bs,
-		db: db,
+		db:         db,
+		ChunkStore: logs,
+		Logger:     logger,
 	}
 }
 
@@ -32,5 +38,27 @@ func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.bs.Get(run.Plan.PlanJSONBlobID)
+	return run.Plan.PlanJSON, nil
+}
+
+// GetPlanLogs reads a chunk of logs for a terraform plan.
+func (s PlanService) GetPlanLogs(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+	logs, err := s.GetChunk(ctx, id, opts)
+	if err != nil {
+		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
+		return nil, err
+	}
+
+	return logs, nil
+}
+
+// PutPlanLogs writes a chunk of logs for a terraform plan.
+func (s PlanService) PutPlanLogs(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
+	err := s.PutChunk(ctx, id, chunk, opts)
+	if err != nil {
+		s.Error(err, "writing plan logs", "id", id, "start", opts.Start, "end", opts.End)
+		return err
+	}
+
+	return nil
 }

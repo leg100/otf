@@ -11,6 +11,10 @@ type JobWriter struct {
 	// JobLogsUploader uploads a chunk of logs to the server
 	JobLogsUploader
 
+	// started is used internally by the writer to determine whether the first
+	// write has been prefixed with the start marker (STX).
+	started bool
+
 	// ID of job
 	ID string
 
@@ -21,8 +25,17 @@ type JobWriter struct {
 
 // Write uploads a chunk of logs to the server.
 func (jw *JobWriter) Write(p []byte) (int, error) {
-	if err := jw.UploadLogs(jw.ctx, jw.ID, p, RunUploadLogsOptions{}); err != nil {
+	opts := RunUploadLogsOptions{}
+
+	// First chunk is prefixed with STX
+	if !jw.started {
+		jw.started = true
+		opts.Start = true
+	}
+
+	if err := jw.UploadLogs(jw.ctx, jw.ID, p, opts); err != nil {
 		jw.Error(err, "unable to write logs")
+		jw.started = false
 		return 0, err
 	}
 

@@ -81,7 +81,7 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.RunService.GetPlanLogs(vars["id"], opts)
+	logs, err := s.PlanService.GetPlanLogs(vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
