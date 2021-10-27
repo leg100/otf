@@ -191,6 +191,26 @@ func (s RunService) GetPlanFile(ctx context.Context, runID string, opts otf.Plan
 	}
 }
 
+// UploadPlanJSON persists a run's JSON-formatted plan file before parsing it
+// and updating the Run's Plan with a summary of planned resource changes. The
+// plan file is expected to have been produced using `terraform show -json
+// plan_file`.
+func (s RunService) UploadPlanJSON(ctx context.Context, id string, plan []byte) error {
+	_, err := s.db.Update(id, func(run *otf.Run) error {
+		run.Plan.PlanJSON = plan
+
+		return run.Plan.Summarize()
+	})
+	if err != nil {
+		s.Error(err, "uploading plan file in json format", "id", id)
+		return err
+	}
+
+	s.V(0).Info("uploaded plan file in json format", "id", id)
+
+	return nil
+}
+
 // UploadPlanFile persists a run's plan file. The plan file is expected to have
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then set json to true.

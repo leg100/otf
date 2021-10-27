@@ -101,17 +101,15 @@ func (p *Plan) Do(run *Run, exe *Executor) error {
 	return nil
 }
 
-// UpdateResources parses the plan file produced from terraform plan to
-// determine the number and type of resource changes planned and updates the
-// plan object accordingly.
-func (p *Plan) UpdateResources(bs BlobStore) error {
-	jsonFile, err := bs.Get(p.PlanJSONBlobID)
-	if err != nil {
-		return err
+// Summarize produces a summary of planned changes and updates the object with
+// the summary.
+func (p *Plan) Summarize() error {
+	if p.PlanJSON == nil {
+		return fmt.Errorf("plan obj is missing the json formatted plan file")
 	}
 
 	planFile := PlanFile{}
-	if err := json.Unmarshal(jsonFile, &planFile); err != nil {
+	if err := json.Unmarshal(p.PlanJSON, &planFile); err != nil {
 		return err
 	}
 

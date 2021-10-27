@@ -118,6 +118,12 @@ type RunService interface {
 	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
 
+	// UploadPlanJSON uploads a plan file in json format. In addition to making
+	// it available for downloading, the server parses the plan file and updates
+	// the Run's Plan object with a summary of resource updates (additions,
+	// changes and destructions).
+	UploadPlanJSON(ctx context.Context, runID string, plan []byte) error
+
 	JobService
 }
 
