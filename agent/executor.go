@@ -1,4 +1,4 @@
-package otf
+package agent
 
 import (
 	"bytes"
@@ -9,16 +9,17 @@ import (
 	"os/exec"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 )
 
 // Executor executes a job, providing it with services, temp directory etc,
 // capturing its stdout
 type Executor struct {
-	JobService
+	otf.JobService
 
-	RunService                  RunService
-	ConfigurationVersionService ConfigurationVersionService
-	StateVersionService         StateVersionService
+	RunService                  otf.RunService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
 
 	// Current working directory
 	Path string
@@ -46,7 +47,7 @@ type Executor struct {
 type ExecutorFunc func(context.Context, *Executor) error
 
 // NewExecutor constructs an Executor.
-func NewExecutor(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Executor, error) {
+func NewExecutor(logger logr.Logger, rs otf.RunService, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, agentID string) (*Executor, error) {
 	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
 		return nil, err
@@ -63,21 +64,35 @@ func NewExecutor(logger logr.Logger, rs RunService, cvs ConfigurationVersionServ
 	}, nil
 }
 
+func (e *Executor) GetConfigurationVersionService() otf.ConfigurationVersionService {
+	return e.ConfigurationVersionService
+}
+
+func (e *Executor) GetStateVersionService() otf.StateVersionService {
+	return e.StateVersionService
+}
+
+func (e *Executor) GetRunService() otf.RunService {
+	return e.RunService
+}
+
+func (e *Executor) GetPath() string {
+	return e.Path
+}
+
 // Execute performs the full lifecycle of executing a job: marking it as
 // started, running the job, and then marking it as finished. Its logs are
 // captured and forwarded.
-func (e *Executor) Execute(job Job) (err error) {
-	job, err = e.Start(job.GetID(), JobStartOptions{AgentID: e.agentID})
+func (e *Executor) Execute(job otf.Job) (err error) {
+	job, err = e.Start(job.GetID(), otf.JobStartOptions{AgentID: e.agentID})
 	if err != nil {
 		return fmt.Errorf("unable to start job: %w", err)
 	}
 
-	e.out = &JobWriter{
+	e.out = &otf.JobWriter{
 		ID:              job.GetID(),
 		JobLogsUploader: e.JobService,
 		Logger:          e.Logger,
-		// TODO: pass in proper context
-		ctx: context.Background(),
 	}
 
 	// Record whether job errored
@@ -97,7 +112,7 @@ func (e *Executor) Execute(job Job) (err error) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = e.Finish(job.GetID(), JobFinishOptions{Errored: errored})
+	_, err = e.Finish(job.GetID(), otf.JobFinishOptions{Errored: errored})
 	if err != nil {
 		e.Error(err, "finishing job")
 		return err
@@ -144,7 +159,7 @@ func (e *Executor) RunCLI(name string, args ...string) error {
 }
 
 // RunFunc invokes a func in the executor.
-func (e *Executor) RunFunc(fn ExecutorFunc) error {
+func (e *Executor) RunFunc(fn otf.EnvironmentFunc) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}

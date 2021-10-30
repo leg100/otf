@@ -30,8 +30,8 @@ type SpoolerDaemon struct {
 	// Queue of cancelation requests
 	cancelations chan otf.Job
 
-	// EventService allows subscribing to stream of events
-	otf.EventService
+	// Subscriber allows subscribing to stream of events
+	Subscriber
 
 	// Logger for logging various events
 	logr.Logger
@@ -39,6 +39,10 @@ type SpoolerDaemon struct {
 
 type RunLister interface {
 	List(otf.RunListOptions) (*otf.RunList, error)
+}
+
+type Subscriber interface {
+	Subscribe(id string) (otf.Subscription, error)
 }
 
 const (
@@ -53,7 +57,7 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
@@ -69,7 +73,7 @@ func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*Spooler
 	return &SpoolerDaemon{
 		queue:        queue,
 		cancelations: make(chan otf.Job, SpoolerCapacity),
-		EventService: es,
+		Subscriber:   sub,
 		Logger:       logger,
 	}, nil
 }

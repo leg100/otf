@@ -13,7 +13,7 @@ type Job interface {
 	// GetStatus gets the status of the job
 	GetStatus() string
 	// Do does the piece of work in an execution environment
-	Do(*Executor) error
+	Do(Environment) error
 }
 
 type JobService interface {

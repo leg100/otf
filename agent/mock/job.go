@@ -10,10 +10,10 @@ import (
 type Job struct {
 	ID     string
 	Status string
-	DoFn   func(*otf.Executor) error
+	DoFn   func(otf.Environment) error
 }
 
-func (j *Job) Do(exe *otf.Executor) error {
+func (j *Job) Do(exe otf.Environment) error {
 	return j.DoFn(exe)
 }
 

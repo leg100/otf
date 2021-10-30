@@ -26,7 +26,7 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) handleJob(ctx context.Context, job otf.Job) {
 	log := w.Logger.WithValues("job", job.GetID())
 
-	env, err := otf.NewExecutor(
+	env, err := NewExecutor(
 		log,
 		w.RunService,
 		w.ConfigurationVersionService,
