@@ -20,7 +20,6 @@ type RunService struct {
 	GetApplyLogsFn   func(id string, opts otf.GetChunkOptions) ([]byte, error)
 	EnqueuePlanFn    func(id string) error
 	UpdateStatusFn   func(id string, status otf.RunStatus) (*otf.Run, error)
-	UploadLogsFn     func(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error
 	StartFn          func(id string, opts otf.JobStartOptions) (otf.Job, error)
 	FinishFn         func(id string, opts otf.JobFinishOptions) (otf.Job, error)
 	GetPlanFileFn    func(ctx context.Context, id string, opts otf.PlanFileOptions) ([]byte, error)
@@ -69,10 +68,6 @@ func (s RunService) EnqueuePlan(id string) error {
 
 func (s RunService) UpdateStatus(id string, status otf.RunStatus) (*otf.Run, error) {
 	return s.UpdateStatusFn(id, status)
-}
-
-func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error {
-	return s.UploadLogsFn(ctx, id, logs, opts)
 }
 
 func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) {

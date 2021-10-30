@@ -31,16 +31,16 @@ type Change struct {
 type ChangeAction string
 
 // Changes provides a tally of the types of changes proposed in the plan file.
-func (pf *PlanFile) Changes() (adds int, updates int, deletes int) {
+func (pf *PlanFile) Changes() (tally Resources) {
 	for _, rc := range pf.ResourcesChanges {
 		for _, action := range rc.Change.Actions {
 			switch action {
 			case CreateAction:
-				adds++
+				tally.ResourceAdditions++
 			case UpdateAction:
-				updates++
+				tally.ResourceChanges++
 			case DeleteAction:
-				deletes++
+				tally.ResourceDestructions++
 			}
 		}
 	}

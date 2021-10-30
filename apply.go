@@ -22,6 +22,8 @@ type ApplyStatus string
 
 type ApplyService interface {
 	Get(id string) (*Apply, error)
+
+	JobService
 }
 
 type Apply struct {
@@ -34,14 +36,11 @@ type Apply struct {
 	Status           ApplyStatus
 	StatusTimestamps TimestampMap
 
-	// Log is the log ID for the log output from a terraform apply
-	LogID string
-
+	// RunID is the ID of the Run the Apply belongs to.
 	RunID string
 }
 
-func (a *Apply) GetID() string { return a.ID }
-
+func (a *Apply) GetID() string  { return a.ID }
 func (a *Apply) String() string { return a.ID }
 
 func newApply(runID string) *Apply {
@@ -49,17 +48,16 @@ func newApply(runID string) *Apply {
 		ID:               NewID("apply"),
 		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
-		LogID:            NewBlobID(),
 		RunID:            runID,
 	}
 }
 
-func (a *Apply) GetLogsBlobID() string {
-	return a.LogID
-}
+func (a *Apply) Do(exe *Execution) error {
+	if err := exe.Run.setup(exe); err != nil {
+		return err
+	}
 
-func (a *Apply) Do(run *Run, exe *Executor) error {
-	if err := exe.RunFunc(run.downloadPlanFile); err != nil {
+	if err := exe.RunFunc(exe.Run.downloadPlanFile); err != nil {
 		return err
 	}
 
@@ -67,30 +65,30 @@ func (a *Apply) Do(run *Run, exe *Executor) error {
 		return err
 	}
 
-	if err := exe.RunFunc(run.uploadState); err != nil {
+	if err := exe.RunFunc(exe.Run.uploadState); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// UpdateResources parses log output from terraform apply to determine the
-// number and type of resource changes applied and updates the apply object
-// accordingly.
-func (a *Apply) UpdateResources(ls ChunkStore) error {
-	logs, err := ls.GetChunk(a.LogID, GetChunkOptions{})
-	if err != nil {
-		return fmt.Errorf("reading apply logs: %w", err)
+// Start updates the run to reflect its apply having started
+func (a *Apply) Start(run *Run) error {
+	if run.Status != RunApplyQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
 
-	resources, err := parseApplyOutput(string(logs))
-	if err != nil {
-		return fmt.Errorf("parsing apply output: %w", err)
-	}
-
-	a.Resources = resources
+	run.UpdateStatus(RunApplying)
 
 	return nil
+}
+
+// Finish updates the run to reflect its apply having finished. An event is
+// returned reflecting the run's new status.
+func (a *Apply) Finish(run *Run) (*Event, error) {
+	run.UpdateStatus(RunApplied)
+
+	return &Event{Payload: run, Type: EventRunApplied}, nil
 }
 
 func (a *Apply) UpdateStatus(status ApplyStatus) {

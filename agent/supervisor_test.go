@@ -13,7 +13,7 @@ import (
 )
 
 // TestSupervisor_Start tests starting up the supervisor and tests it handling a
-// single job
+// single run
 func TestSupervisor_Start(t *testing.T) {
 	want := &agentmock.Job{
 		ID:     "run-123",

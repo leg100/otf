@@ -33,10 +33,10 @@ func (s ApplyService) Get(id string) (*otf.Apply, error) {
 }
 
 // GetApplyLogs reads a chunk of logs for a terraform apply.
-func (s ApplyService) GetApplyLogs(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
 	logs, err := s.GetChunk(ctx, id, opts)
 	if err != nil {
-		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
+		s.Error(err, "reading apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
 		return nil, err
 	}
 
@@ -44,10 +44,32 @@ func (s ApplyService) GetApplyLogs(ctx context.Context, id string, opts otf.GetC
 }
 
 // UploadLogs writes a chunk of logs for a terraform apply.
-func (s ApplyService) PutApplyLogs(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
+func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
 	err := s.PutChunk(ctx, id, chunk, opts)
 	if err != nil {
-		s.Error(err, "writing plan logs", "id", id, "start", opts.Start, "end", opts.End)
+		s.Error(err, "writing apply logs", "id", id, "start", opts.Start, "end", opts.End)
+		return err
+	}
+
+	if !opts.End {
+		return nil
+	}
+
+	// Last chunk uploaded. A summary of applied changes can now be parsed from
+	// the full logs and set on the apply obj.
+	logs, err := s.GetChunk(ctx, id, otf.GetChunkOptions{})
+	if err != nil {
+		s.Error(err, "reading apply logs", "id", id)
+		return err
+	}
+
+	_, err = s.db.Update(otf.RunUpdateOptions{ApplyID: otf.String(id)}, func(run *otf.Run) (err error) {
+		run.Apply.Resources, err = otf.ParseApplyOutput(string(logs))
+
+		return err
+	})
+	if err != nil {
+		s.Error(err, "summarising applied changes", "id", id)
 		return err
 	}
 

@@ -11,17 +11,31 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// Executor executes a job, providing it with services, temp directory etc,
-// capturing its stdout
+// Executor spawns Executions
 type Executor struct {
-	JobService
-
 	RunService                  RunService
 	ConfigurationVersionService ConfigurationVersionService
 	StateVersionService         StateVersionService
 
+	logr.Logger
+
+	// AgentID is the ID of the agent hosting the executor
+	AgentID string
+}
+
+// Execution is made available to the Run Job so that it can interact
+// with OTF services and write to the local filesystem, use the logger, etc.
+
+// Execution executes a Run Job.
+type Execution struct {
+	// Executor is the executor that spawned this execution
+	*Executor
+
 	// Current working directory
 	Path string
+
+	// Run containing the Job to be executed
+	Run *Run
 
 	// Whether cancelation has been triggered
 	canceled bool
@@ -34,58 +48,47 @@ type Executor struct {
 
 	// CLI process output is written to this
 	out io.WriteCloser
-
-	// logger
-	logr.Logger
-
-	// agentID is the ID of the agent hosting the execution executor
-	agentID string
 }
 
 // ExecutorFunc is a func that can be invoked in the executor
-type ExecutorFunc func(context.Context, *Executor) error
+type ExecutorFunc func(context.Context, *Execution) error
 
 // NewExecutor constructs an Executor.
-func NewExecutor(logger logr.Logger, rs RunService, cvs ConfigurationVersionService, svs StateVersionService, agentID string) (*Executor, error) {
-	path, err := os.MkdirTemp("", "otf-plan")
-	if err != nil {
-		return nil, err
+func (e *Executor) NewExecution(run *Run) *Execution {
+	out := &JobWriter{
+		Job:    run.Job,
+		Logger: e.Logger,
+		// TODO: pass in proper context
+		ctx: context.Background(),
 	}
 
-	return &Executor{
-		RunService:                  rs,
-		JobService:                  rs,
-		ConfigurationVersionService: cvs,
-		StateVersionService:         svs,
-		Path:                        path,
-		agentID:                     agentID,
-		Logger:                      logger,
-	}, nil
+	return &Execution{
+		Executor: e,
+		Run:      run,
+		out:      out,
+	}
 }
 
 // Execute performs the full lifecycle of executing a job: marking it as
 // started, running the job, and then marking it as finished. Its logs are
 // captured and forwarded.
-func (e *Executor) Execute(job Job) (err error) {
-	job, err = e.Start(job.GetID(), JobStartOptions{AgentID: e.agentID})
+func (e *Execution) Execute() (err error) {
+	e.Path, err = os.MkdirTemp("", "otf-plan")
 	if err != nil {
-		return fmt.Errorf("unable to start job: %w", err)
+		return err
 	}
 
-	e.out = &JobWriter{
-		ID:              job.GetID(),
-		JobLogsUploader: e.JobService,
-		Logger:          e.Logger,
-		// TODO: pass in proper context
-		ctx: context.Background(),
+	run, err := e.Run.Job.Start(context.Background(), e.Run.Job.GetID(), JobStartOptions{AgentID: e.AgentID})
+	if err != nil {
+		return fmt.Errorf("unable to start job: %w", err)
 	}
 
 	// Record whether job errored
 	var errored bool
 
-	e.Info("executing job", "status", job.GetStatus())
+	e.Info("executing job", "status", run.GetStatus())
 
-	if err := job.Do(e); err != nil {
+	if err := run.Job.Do(e); err != nil {
 		errored = true
 		e.Error(err, "unable to execute job")
 	}
@@ -97,7 +100,7 @@ func (e *Executor) Execute(job Job) (err error) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = e.Finish(job.GetID(), JobFinishOptions{Errored: errored})
+	_, err = run.Job.Finish(context.Background(), run.Job.GetID(), JobFinishOptions{Errored: errored})
 	if err != nil {
 		e.Error(err, "finishing job")
 		return err
@@ -108,11 +111,15 @@ func (e *Executor) Execute(job Job) (err error) {
 	return nil
 }
 
+func (e *Execution) GetID() string {
+	return e.Run.Job.GetID()
+}
+
 // Cancel terminates execution. Force controls whether termination is graceful
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *Executor) Cancel(force bool) {
+func (e *Execution) Cancel(force bool) {
 	e.canceled = true
 
 	e.cancelCLI(force)
@@ -120,7 +127,7 @@ func (e *Executor) Cancel(force bool) {
 }
 
 // RunCLI executes a CLI process in the executor.
-func (e *Executor) RunCLI(name string, args ...string) error {
+func (e *Execution) RunCLI(name string, args ...string) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
@@ -144,7 +151,7 @@ func (e *Executor) RunCLI(name string, args ...string) error {
 }
 
 // RunFunc invokes a func in the executor.
-func (e *Executor) RunFunc(fn ExecutorFunc) error {
+func (e *Execution) RunFunc(fn ExecutorFunc) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
@@ -156,7 +163,7 @@ func (e *Executor) RunFunc(fn ExecutorFunc) error {
 	return fn(ctx, e)
 }
 
-func (e *Executor) cancelCLI(force bool) {
+func (e *Execution) cancelCLI(force bool) {
 	if e.proc == nil {
 		return
 	}
@@ -168,7 +175,7 @@ func (e *Executor) cancelCLI(force bool) {
 	}
 }
 
-func (e *Executor) cancelFunc(force bool) {
+func (e *Execution) cancelFunc(force bool) {
 	// Don't cancel a func's context unless forced
 	if !force {
 		return

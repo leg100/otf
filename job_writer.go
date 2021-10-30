@@ -8,8 +8,8 @@ import (
 
 // JobWriter writes logs on behalf of a job.
 type JobWriter struct {
-	// JobLogsUploader uploads a chunk of logs to the server
-	JobLogsUploader
+	// Job to write logs on behalf of.
+	Job
 
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).
@@ -25,7 +25,7 @@ type JobWriter struct {
 
 // Write uploads a chunk of logs to the server.
 func (jw *JobWriter) Write(p []byte) (int, error) {
-	opts := RunUploadLogsOptions{}
+	opts := PutChunkOptions{}
 
 	// First chunk is prefixed with STX
 	if !jw.started {
@@ -33,7 +33,7 @@ func (jw *JobWriter) Write(p []byte) (int, error) {
 		opts.Start = true
 	}
 
-	if err := jw.UploadLogs(jw.ctx, jw.ID, p, opts); err != nil {
+	if err := jw.PutChunk(jw.ctx, jw.ID, p, opts); err != nil {
 		jw.Error(err, "unable to write logs")
 		jw.started = false
 		return 0, err
@@ -44,9 +44,9 @@ func (jw *JobWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (jw *JobWriter) Close() error {
-	opts := RunUploadLogsOptions{End: true}
+	opts := PutChunkOptions{End: true}
 
-	if err := jw.UploadLogs(jw.ctx, jw.ID, nil, opts); err != nil {
+	if err := jw.PutChunk(jw.ctx, jw.ID, nil, opts); err != nil {
 		jw.Error(err, "unable to close logs")
 
 		return err

@@ -2,47 +2,33 @@ package agent
 
 import (
 	"context"
-
-	"github.com/leg100/otf"
 )
 
-// Worker sequentially executes jobs on behalf of a supervisor.
+// Worker sequentially executes runs on behalf of a supervisor.
 type Worker struct {
 	*Supervisor
 }
 
-// Start starts the worker which waits for jobs to execute.
+// Start starts the worker which waits for runs to execute.
 func (w *Worker) Start(ctx context.Context) {
 	for {
 		select {
-		case job := <-w.GetJob():
-			w.handleJob(ctx, job)
+		case exe := <-w.GetExecutable():
+			w.handle(ctx, exe)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (w *Worker) handleJob(ctx context.Context, job otf.Job) {
-	log := w.Logger.WithValues("job", job.GetID())
+func (w *Worker) handle(ctx context.Context, exe Executable) {
+	log := w.Logger.WithValues("job", exe.GetID())
 
-	env, err := otf.NewExecutor(
-		log,
-		w.RunService,
-		w.ConfigurationVersionService,
-		w.StateVersionService,
-		DefaultID,
-	)
-	if err != nil {
-		log.Error(err, "unable to create execution environment")
-		return
-	}
+	// Check executable in with the supervisor for duration of execution.
+	w.CheckIn(run.GetID(), exe)
+	defer w.CheckOut(run.GetID())
 
-	// Check job in with the supervisor for duration of job.
-	w.CheckIn(job.GetID(), env)
-	defer w.CheckOut(job.GetID())
-
-	if err := env.Execute(job); err != nil {
-		log.Error(err, "job execution failed")
+	if err := exe.Execute(); err != nil {
+		log.Error(err, "run execution failed")
 	}
 }

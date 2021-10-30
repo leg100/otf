@@ -47,6 +47,7 @@ type Plan struct {
 	// PlanJSON is the blob ID of the execution plan file in json format
 	PlanJSON []byte
 
+	// RunID is the ID of the Run the Plan belongs to.
 	RunID string
 }
 
@@ -56,6 +57,8 @@ func (p *Plan) String() string { return p.ID }
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
+
+	JobService
 
 	ChunkStore
 }
@@ -81,7 +84,11 @@ func (p *Plan) GetLogsBlobID() string {
 	return p.LogID
 }
 
-func (p *Plan) Do(run *Run, exe *Executor) error {
+func (p *Plan) Do(exe *Execution) error {
+	if err := exe.Run.setup(exe); err != nil {
+		return err
+	}
+
 	if err := exe.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}
@@ -90,11 +97,11 @@ func (p *Plan) Do(run *Run, exe *Executor) error {
 		return err
 	}
 
-	if err := exe.RunFunc(run.uploadPlan); err != nil {
+	if err := exe.RunFunc(exe.Run.uploadPlan); err != nil {
 		return err
 	}
 
-	if err := exe.RunFunc(run.uploadJSONPlan); err != nil {
+	if err := exe.RunFunc(exe.Run.uploadJSONPlan); err != nil {
 		return err
 	}
 
@@ -103,7 +110,7 @@ func (p *Plan) Do(run *Run, exe *Executor) error {
 
 // Summarize produces a summary of planned changes and updates the object with
 // the summary.
-func (p *Plan) Summarize() error {
+func (p *Plan) CalculateTotals() error {
 	if p.PlanJSON == nil {
 		return fmt.Errorf("plan obj is missing the json formatted plan file")
 	}
@@ -114,14 +121,39 @@ func (p *Plan) Summarize() error {
 	}
 
 	// Parse plan output
-	adds, updates, deletes := planFile.Changes()
-
-	// Update status
-	p.ResourceAdditions = adds
-	p.ResourceChanges = updates
-	p.ResourceDestructions = deletes
+	p.Resources = planFile.Changes()
 
 	return nil
+}
+
+// Start updates the plan to reflect its plan having started
+func (p *Plan) Start(run *Run) error {
+	if run.Status != RunPlanQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
+	}
+
+	run.UpdateStatus(RunPlanning)
+
+	return nil
+}
+
+// Finish updates the run to reflect its plan having finished. An event is
+// returned reflecting the run's new status.
+func (p *Plan) Finish(run *Run) (*Event, error) {
+	// Speculative plan, proceed no further
+	if run.ConfigurationVersion.Speculative {
+		run.UpdateStatus(RunPlannedAndFinished)
+		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
+	}
+
+	run.UpdateStatus(RunPlanned)
+
+	if run.Workspace.AutoApply {
+		run.UpdateStatus(RunApplyQueued)
+		return &Event{Type: EventApplyQueued, Payload: run}, nil
+	}
+
+	return &Event{Payload: run, Type: EventRunPlanned}, nil
 }
 
 func (p *Plan) UpdateStatus(status PlanStatus) {

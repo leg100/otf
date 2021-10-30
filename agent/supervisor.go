@@ -18,9 +18,7 @@ type Supervisor struct {
 
 	logr.Logger
 
-	RunService                  otf.RunService
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
+	otf.Executor
 
 	Spooler
 
@@ -30,13 +28,16 @@ type Supervisor struct {
 // NewSupervisor is the constructor for Supervisor
 func NewSupervisor(spooler Spooler, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		Spooler:                     spooler,
-		RunService:                  rs,
-		StateVersionService:         svs,
-		ConfigurationVersionService: cvs,
-		Logger:                      logger,
-		concurrency:                 concurrency,
-		Terminator:                  NewTerminator(),
+		Spooler: spooler,
+		Executor: otf.Executor{
+			RunService:                  rs,
+			StateVersionService:         svs,
+			ConfigurationVersionService: cvs,
+			Logger:                      logger,
+			AgentID:                     DefaultID,
+		},
+		concurrency: concurrency,
+		Terminator:  NewTerminator(),
 	}
 }
 
@@ -49,9 +50,9 @@ func (s *Supervisor) Start(ctx context.Context) {
 
 	for {
 		select {
-		case job := <-s.GetCancelation():
+		case run := <-s.GetCancelation():
 			// TODO: support force cancelations too.
-			s.Cancel(job.GetID(), false)
+			s.Cancel(run.GetID(), false)
 		case <-ctx.Done():
 			return
 		}

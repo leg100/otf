@@ -62,3 +62,42 @@ func (s PlanService) PutPlanLogs(ctx context.Context, id string, chunk []byte, o
 
 	return nil
 }
+
+// Start marks a plan as having started
+func (s PlanService) Start(ctx context.Context, id string, opts otf.JobStartOptions) (otf.Job, error) {
+	run, err := s.db.Update(otf.RunUpdateOptions{PlanID: otf.String(id)}, func(run *otf.Run) error {
+		return run.Plan.Start(run)
+	})
+	if err != nil {
+		s.Error(err, "starting plan")
+		return nil, err
+	}
+
+	s.V(0).Info("started plan", "id", run.ID)
+
+	return run, nil
+}
+
+// Finish marks a plan as having finished.  An event is emitted to notify any
+// subscribers of the new state.
+func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error) {
+	var event *otf.Event
+
+	run, err := s.db.Update(otf.RunUpdateOptions{PlanID: otf.String(id)}, func(run *otf.Run) (err error) {
+		event, err = run.Plan.Finish(run)
+		if err != nil {
+			return err
+		}
+		return err
+	})
+	if err != nil {
+		s.Error(err, "finishing plan", "id", id)
+		return nil, err
+	}
+
+	s.V(0).Info("finished plan", "id", id)
+
+	s.es.Publish(*event)
+
+	return run, nil
+}
