@@ -27,6 +27,14 @@ func TestMain(t *testing.T) {
 			args: []string{"login", "-h"},
 		},
 		{
+			name: "login and address",
+			args: []string{"login", "-h", "--address", "test.abc:1234"},
+		},
+		{
+			name: "address",
+			args: []string{"--address", "test.abc:1234"},
+		},
+		{
 			name: "organization new",
 			args: []string{"organizations", "new", "-h"},
 		},

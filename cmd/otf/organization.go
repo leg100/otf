@@ -1,26 +1,17 @@
 package main
 
 import (
-	"os"
-
 	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
-func OrganizationCommand() *cobra.Command {
-	cfg, err := http.NewConfig(LoadCredentials)
-	if err != nil {
-		panic(err.Error())
-	}
-
+func OrganizationCommand(factory http.ClientFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "organizations",
 		Short: "Organization management",
 	}
-	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
-	cmd.Flags().StringVar(&cfg.Token, "token", os.Getenv("OTF_TOKEN"), "Authentication token")
 
-	cmd.AddCommand(OrganizationNewCommand(cfg))
+	cmd.AddCommand(OrganizationNewCommand(factory))
 
 	return cmd
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,23 +10,9 @@ import (
 func TestLoginCommand(t *testing.T) {
 	var store KVStore = KVMap(make(map[string]string))
 
-	cmd := LoginCommand(store)
+	cmd := LoginCommand(store, "localhost:8080")
 	require.NoError(t, cmd.Execute())
 
 	token, _ := store.Load("localhost:8080")
-	assert.Equal(t, "dummy", token)
-}
-
-func TestLoginCommandWithExplicitAddress(t *testing.T) {
-	// Ensure env var doesn't interfere with test
-	os.Unsetenv("OTF_ADDRESS")
-
-	var store KVStore = KVMap(make(map[string]string))
-
-	cmd := LoginCommand(store)
-	cmd.SetArgs([]string{"--address", "otf.dev:8080"})
-	require.NoError(t, cmd.Execute())
-
-	token, _ := store.Load("otf.dev:8080")
 	assert.Equal(t, "dummy", token)
 }

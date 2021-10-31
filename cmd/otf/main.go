@@ -6,6 +6,7 @@ import (
 	"os"
 
 	cmdutil "github.com/leg100/otf/cmd"
+	"github.com/leg100/otf/http"
 	"github.com/spf13/cobra"
 )
 
@@ -21,11 +22,20 @@ func main() {
 }
 
 func Run(ctx context.Context, args []string) error {
+	cfg, err := http.NewConfig(LoadCredentials)
+	if err != nil {
+		return err
+	}
+
 	cmd := &cobra.Command{
 		Use:           "otf",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Run:           func(cmd *cobra.Command, args []string) {},
 	}
+
+	cmd.PersistentFlags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
+
 	cmd.SetArgs(args)
 
 	store, err := NewCredentialsStore()
@@ -33,9 +43,9 @@ func Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	cmd.AddCommand(LoginCommand(store))
-	cmd.AddCommand(OrganizationCommand())
-	cmd.AddCommand(WorkspaceCommand())
+	cmd.AddCommand(LoginCommand(store, cfg.Address))
+	cmd.AddCommand(OrganizationCommand(cfg))
+	cmd.AddCommand(WorkspaceCommand(cfg))
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
