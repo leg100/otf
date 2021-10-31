@@ -1,5 +1,8 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
+RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
+IMAGE_NAME = otf
+IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
 	-X '.Version=$(VERSION)'	\
 	-X '.Commit=$(GIT_COMMIT)'	\
@@ -26,7 +29,7 @@ unit:
 
 .PHONY: build
 build:
-	go build -o _build/ -ldflags $(LD_FLAGS) ./...
+	CGO_ENABLED=0 go build -o _build/ -ldflags $(LD_FLAGS) ./...
 	chmod -R +x _build/*
 
 .PHONY: install
@@ -59,3 +62,14 @@ fmt:
 .PHONY: vet
 vet:
 	go vet ./...
+
+# Build docker image
+.PHONY: image
+image: build
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
+
+# Push docker image
+.PHONY: push
+push: image
+	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
+	docker push $(IMAGE_TARGET)

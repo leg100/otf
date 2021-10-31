@@ -38,6 +38,16 @@ archives:
 - format: zip
   files:
   - none*
+dockers:
+- goos: linux
+  goarch: amd64
+  ids:
+  - otfd
+  image_templates:
+  - "leg100/otf:latest"
+  - "leg100/otf:{{ .Version }}"
+  skip_push: auto
+  dockerfile: Dockerfile
 checksum:
   name_template: 'checksums.txt'
 snapshot:
