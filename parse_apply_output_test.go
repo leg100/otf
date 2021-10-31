@@ -19,7 +19,7 @@ func TestParseApplyOutputChanges(t *testing.T) {
 	output, err := os.ReadFile("testdata/apply.txt")
 	require.NoError(t, err)
 
-	apply, err := parseApplyOutput(string(output))
+	apply, err := ParseApplyOutput(string(output))
 	require.NoError(t, err)
 	assert.Equal(t, want, apply)
 }
@@ -34,7 +34,7 @@ func TestParseApplyOutputNoChanges(t *testing.T) {
 	output, err := ioutil.ReadFile("testdata/apply_no_changes.txt")
 	require.NoError(t, err)
 
-	apply, err := parseApplyOutput(string(output))
+	apply, err := ParseApplyOutput(string(output))
 	require.NoError(t, err)
 	assert.Equal(t, want, apply)
 }

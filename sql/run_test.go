@@ -40,7 +40,7 @@ func TestRun_Update(t *testing.T) {
 
 	rdb := NewRunDB(db)
 
-	_, err := rdb.Update(run.ID, func(run *otf.Run) error {
+	_, err := rdb.Update(otf.RunGetOptions{ID: &run.ID}, func(run *otf.Run) error {
 		run.Status = otf.RunPlanQueued
 		run.Plan.Status = otf.PlanQueued
 		return nil

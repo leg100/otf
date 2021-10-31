@@ -22,6 +22,8 @@ type ApplyStatus string
 
 type ApplyService interface {
 	Get(id string) (*Apply, error)
+
+	JobService
 }
 
 type Apply struct {
@@ -34,31 +36,28 @@ type Apply struct {
 	Status           ApplyStatus
 	StatusTimestamps TimestampMap
 
-	// Logs is the blob ID for the log output from a terraform apply
-	LogsBlobID string
-
+	// RunID is the ID of the Run the Apply belongs to.
 	RunID string
 }
 
-func (a *Apply) GetID() string { return a.ID }
-
-func (a *Apply) String() string { return a.ID }
+func (a *Apply) GetID() string     { return a.ID }
+func (a *Apply) GetStatus() string { return string(a.Status) }
+func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
 		ID:               NewID("apply"),
 		Timestamps:       NewTimestamps(),
 		StatusTimestamps: make(TimestampMap),
-		LogsBlobID:       NewBlobID(),
 		RunID:            runID,
 	}
 }
 
-func (a *Apply) GetLogsBlobID() string {
-	return a.LogsBlobID
-}
-
 func (a *Apply) Do(run *Run, env Environment) error {
+	if err := run.Do(env); err != nil {
+		return err
+	}
+
 	if err := env.RunFunc(run.downloadPlanFile); err != nil {
 		return err
 	}
@@ -74,23 +73,23 @@ func (a *Apply) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// UpdateResources parses the output from terraform apply to determine the
-// number and type of resource changes applied and updates the apply object
-// accordingly.
-func (a *Apply) UpdateResources(bs BlobStore) error {
-	logs, err := bs.Get(a.LogsBlobID)
-	if err != nil {
-		return fmt.Errorf("reading apply logs: %w", err)
+// Start updates the run to reflect its apply having started
+func (a *Apply) Start(run *Run) error {
+	if run.Status != RunApplyQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
 
-	resources, err := parseApplyOutput(string(logs))
-	if err != nil {
-		return fmt.Errorf("parsing apply output: %w", err)
-	}
-
-	a.Resources = resources
+	run.UpdateStatus(RunApplying)
 
 	return nil
+}
+
+// Finish updates the run to reflect its apply having finished. An event is
+// returned reflecting the run's new status.
+func (a *Apply) Finish(run *Run) (*Event, error) {
+	run.UpdateStatus(RunApplied)
+
+	return &Event{Payload: run, Type: EventRunApplied}, nil
 }
 
 func (a *Apply) UpdateStatus(status ApplyStatus) {

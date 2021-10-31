@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-retryablehttp v0.5.2
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/iancoleman/strcase v0.2.0

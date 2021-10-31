@@ -123,6 +123,8 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 			Timestamps:       newTestTimestamps(),
 			StatusTimestamps: make(otf.TimestampMap),
 			RunID:            id,
+			PlanFile:         []byte{},
+			PlanJSON:         []byte{},
 		},
 		Apply: &otf.Apply{
 			ID:               otf.NewID("apply"),

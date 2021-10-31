@@ -85,13 +85,6 @@ type RunStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-// Phase implementations represent the phases that make up a run: a plan and an
-// apply.
-type Phase interface {
-	GetLogsBlobID() string
-	Do(*Run, Environment) error
-}
-
 // RunFactory is a factory for constructing Run objects.
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
@@ -113,12 +106,9 @@ type RunService interface {
 	Cancel(id string, opts RunCancelOptions) error
 	ForceCancel(id string, opts RunForceCancelOptions) error
 	EnqueuePlan(id string) error
-	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
-	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
+
 	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
-
-	JobService
 }
 
 // RunCreateOptions represents the options for creating a new run.
@@ -210,7 +200,7 @@ type RunStore interface {
 	List(opts RunListOptions) (*RunList, error)
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
-	Update(id string, fn func(*Run) error) (*Run, error)
+	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
 }
 
 // RunList represents a list of runs.
@@ -230,6 +220,13 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+
+	// IncludePlanFile toggles including the plan file in the retrieved run.
+	IncludePlanFile bool
+
+	// IncludePlanFile toggles including the plan file, in JSON format, in the
+	// retrieved run.
+	IncludePlanJSON bool
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -370,70 +367,6 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
-// ActivePhase retrieves the currently active phase
-func (r *Run) ActivePhase() (Phase, error) {
-	switch r.Status {
-	case RunPlanning:
-		return r.Plan, nil
-	case RunApplying:
-		return r.Apply, nil
-	default:
-		return nil, fmt.Errorf("invalid run status: %s", r.Status)
-	}
-}
-
-// Start starts a run phase.
-func (r *Run) Start() error {
-	switch r.Status {
-	case RunPlanQueued:
-		r.UpdateStatus(RunPlanning)
-	case RunApplyQueued:
-		r.UpdateStatus(RunApplying)
-	default:
-		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status)
-	}
-
-	return nil
-}
-
-// Finish updates the run to reflect the current phase having finished. An event
-// is emitted reflecting the run's new status.
-func (r *Run) Finish(bs BlobStore) (*Event, error) {
-	if r.Status == RunApplying {
-		r.UpdateStatus(RunApplied)
-
-		if err := r.Apply.UpdateResources(bs); err != nil {
-			return nil, err
-		}
-
-		return &Event{Payload: r, Type: EventRunApplied}, nil
-	}
-
-	// Only remaining valid status is planning
-	if r.Status != RunPlanning {
-		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.Status)
-	}
-
-	if err := r.Plan.UpdateResources(bs); err != nil {
-		return nil, err
-	}
-
-	// Speculative plan, proceed no further
-	if r.ConfigurationVersion.Speculative {
-		r.UpdateStatus(RunPlannedAndFinished)
-		return &Event{Payload: r, Type: EventRunPlannedAndFinished}, nil
-	}
-
-	r.UpdateStatus(RunPlanned)
-
-	if r.Workspace.AutoApply {
-		r.UpdateStatus(RunApplyQueued)
-		return &Event{Type: EventApplyQueued, Payload: r}, nil
-	}
-
-	return &Event{Payload: r, Type: EventRunPlanned}, nil
-}
-
 // UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status RunStatus) {
 	switch status {
@@ -478,6 +411,7 @@ func (r *Run) setTimestamp(status RunStatus) {
 	r.StatusTimestamps[string(status)] = time.Now()
 }
 
+// Do invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) Do(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
@@ -496,15 +430,6 @@ func (r *Run) Do(env Environment) error {
 
 	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
-	}
-
-	phase, err := r.ActivePhase()
-	if err != nil {
-		return err
-	}
-
-	if err := phase.Do(r, env); err != nil {
-		return err
 	}
 
 	return nil

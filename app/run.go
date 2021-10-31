@@ -12,7 +12,6 @@ var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
 	db otf.RunStore
-	bs otf.BlobStore
 	es otf.EventService
 
 	logr.Logger
@@ -20,9 +19,8 @@ type RunService struct {
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, bs otf.BlobStore, es otf.EventService) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService) *RunService {
 	return &RunService{
-		bs:     bs,
 		db:     db,
 		es:     es,
 		Logger: logger,
@@ -87,7 +85,7 @@ func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
 }
 
 func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.Update(id, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunApplyQueued)
 
 		return nil
@@ -105,7 +103,7 @@ func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
 }
 
 func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.Update(id, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -123,14 +121,14 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.Update(id, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.Update(id, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		if err := run.ForceCancel(); err != nil {
 			return err
 		}
@@ -146,7 +144,7 @@ func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error
 }
 
 func (s RunService) EnqueuePlan(id string) error {
-	run, err := s.db.Update(id, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunPlanQueued)
 		return nil
 	})
@@ -163,136 +161,102 @@ func (s RunService) EnqueuePlan(id string) error {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s RunService) GetPlanFile(ctx context.Context, id string, opts otf.PlanFileOptions) ([]byte, error) {
-	bid, err := s.getPlanFileBlobID(ctx, id, opts)
+func (s RunService) GetPlanFile(ctx context.Context, runID string, opts otf.PlanFileOptions) ([]byte, error) {
+	switch opts.Format {
+	case otf.PlanJSONFormat:
+		return s.getJSONPlanFile(ctx, runID)
+	case otf.PlanBinaryFormat:
+		return s.getBinaryPlanFile(ctx, runID)
+	default:
+		return nil, fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+	}
+}
+
+// GetPlanFile returns the plan file in json format for the run.
+func (s RunService) getJSONPlanFile(ctx context.Context, runID string) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanJSON: true})
 	if err != nil {
+		s.Error(err, "retrieving json plan file", "id", runID)
 		return nil, err
 	}
 
-	pfile, err := s.bs.Get(bid)
+	return run.Plan.PlanJSON, nil
+}
+
+// GetPlanFile returns the plan file in json format for the run.
+func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanFile: true})
 	if err != nil {
-		s.Error(err, "retrieving plan file", "id", id)
+		s.Error(err, "retrieving binary plan file", "id", runID)
+		return nil, err
 	}
 
-	s.V(2).Info("retrieved plan file", "id", id)
+	return run.Plan.PlanFile, nil
+}
 
-	return pfile, nil
+// UploadPlanJSON persists a run's JSON-formatted plan file before parsing it
+// and updating the Run's Plan with a summary of planned resource changes. The
+// plan file is expected to have been produced using `terraform show -json
+// plan_file`.
+func (s RunService) UploadPlanJSON(ctx context.Context, id string, plan []byte) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+		run.Plan.PlanJSON = plan
+
+		return run.Plan.CalculateTotals()
+	})
+	if err != nil {
+		s.Error(err, "uploading plan file in json format", "id", id)
+		return err
+	}
+
+	s.V(0).Info("uploaded plan file in json format", "id", id)
+
+	return nil
 }
 
 // UploadPlanFile persists a run's plan file. The plan file is expected to have
 // been produced using `terraform plan`. If the plan file is JSON serialized
-// then set json to true.
+// then its parsed for a summary of planned changes and the Plan object is
+// updated accordingly.
 func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error {
-	bid, err := s.getPlanFileBlobID(ctx, id, opts)
-	if err != nil {
-		return err
-	}
-
-	return s.bs.Put(bid, plan)
-}
-
-// Start marks a run phase (plan, apply) as started.
-func (s RunService) Start(id string, opts otf.JobStartOptions) (otf.Job, error) {
-	run, err := s.db.Update(id, func(run *otf.Run) error {
-		return run.Start()
-	})
-	if err != nil {
-		s.Error(err, "starting run")
-		return nil, err
-	}
-
-	s.V(0).Info("started run", "id", run.ID)
-
-	return run, nil
-}
-
-// Finish marks a run phase (plan, apply) as finished.  An event is emitted to
-// notify any subscribers of the new run state.
-func (s RunService) Finish(id string, opts otf.JobFinishOptions) (otf.Job, error) {
-	var event *otf.Event
-
-	run, err := s.db.Update(id, func(run *otf.Run) (err error) {
-		event, err = run.Finish(s.bs)
-		if err != nil {
-			return err
-		}
-		return err
-	})
-	if err != nil {
-		s.Error(err, "finishing run", "id", id)
-		return nil, err
-	}
-
-	s.V(0).Info("finished run", "id", id)
-
-	s.es.Publish(*event)
-
-	return run, nil
-}
-
-// GetPlanLogs returns logs from the plan of the run identified by id. The
-// options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetPlanLogs(planID string, opts otf.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &planID})
-	if err != nil {
-		s.Error(err, "retrieving run", "plan_id", planID)
-		return nil, err
-	}
-
-	logs, err := s.bs.GetChunk(run.Plan.LogsBlobID, opts)
-	if err != nil {
-		s.Error(err, "reading plan logs", "plan_id", planID, "blob_id", run.Plan.LogsBlobID)
-		return nil, err
-	}
-
-	return logs, nil
-}
-
-// GetApplyLogs returns logs from the apply of the run identified by id. The
-// options specifies the limit and offset bytes of the logs to retrieve.
-func (s RunService) GetApplyLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ApplyID: &id})
-	if err != nil {
-		return nil, err
-	}
-	return s.bs.GetChunk(run.Apply.LogsBlobID, opts)
-}
-
-// UploadLogs writes a chunk of logs for a run.
-func (s RunService) UploadLogs(ctx context.Context, id string, logs []byte, opts otf.RunUploadLogsOptions) error {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
-	if err != nil {
-		s.Error(err, "retrieving run for uploading logs")
-		return err
-	}
-
-	// Determine currently active phase to upload logs for: plan or apply.
-	active, err := run.ActivePhase()
-	if err != nil {
-		return fmt.Errorf("attempted to upload logs to an inactive run: %w", err)
-	}
-
-	s.V(2).Info("uploaded log chunk", "id", run.ID, "end", opts.End)
-
-	return s.bs.PutChunk(active.GetLogsBlobID(), logs, otf.PutChunkOptions(opts))
-}
-
-func (s RunService) getPlanFileBlobID(ctx context.Context, id string, opts otf.PlanFileOptions) (string, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
-	if err != nil {
-		return "", err
-	}
-
-	var bid string // Blob ID
-
 	switch opts.Format {
 	case otf.PlanJSONFormat:
-		bid = run.Plan.PlanJSONBlobID
+		return s.putJSONPlanFile(ctx, id, plan)
 	case otf.PlanBinaryFormat:
-		bid = run.Plan.PlanFileBlobID
+		return s.putBinaryPlanFile(ctx, id, plan)
 	default:
-		return "", fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+	}
+}
+
+func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+		run.Plan.PlanFile = plan
+
+		return nil
+	})
+	if err != nil {
+		s.Error(err, "uploading binary plan file", "id", id)
+		return err
 	}
 
-	return bid, nil
+	s.V(0).Info("uploaded binary plan file", "id", id)
+
+	return nil
+}
+
+func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+		run.Plan.PlanJSON = plan
+
+		return run.Plan.CalculateTotals()
+	})
+	if err != nil {
+		s.Error(err, "uploading json plan file", "id", id)
+		return err
+	}
+
+	s.V(0).Info("uploaded json plan file", "id", id)
+
+	return nil
 }

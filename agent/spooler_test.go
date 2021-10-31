@@ -44,26 +44,26 @@ func TestSpooler_Start(t *testing.T) {
 	<-done
 }
 
-// TestSpooler_GetJob tests retrieving a job from the spooler with a
+// TestSpooler_GetRun tests retrieving a job from the spooler with a
 // pre-populated queue
-func TestSpooler_GetJob(t *testing.T) {
+func TestSpooler_GetRun(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
-	spooler := &SpoolerDaemon{queue: make(chan otf.Job, 1)}
+	spooler := &SpoolerDaemon{queue: make(chan *otf.Run, 1)}
 	spooler.queue <- want
 
-	assert.Equal(t, want, <-spooler.GetJob())
+	assert.Equal(t, want, <-spooler.GetRun())
 }
 
-// TestSpooler_GetJobFromEvent tests retrieving a job from the spooler after an
+// TestSpooler_GetRunFromEvent tests retrieving a job from the spooler after an
 // event is received
-func TestSpooler_GetJobFromEvent(t *testing.T) {
+func TestSpooler_GetRunFromEvent(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		queue:      make(chan otf.Job, 1),
+		queue:      make(chan *otf.Run, 1),
 		Subscriber: &testSubscriber{sub: sub},
 		Logger:     logr.Discard(),
 	}
@@ -73,18 +73,18 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 	// send event
 	sub.c <- otf.Event{Type: otf.EventPlanQueued, Payload: want}
 
-	assert.Equal(t, want, <-spooler.GetJob())
+	assert.Equal(t, want, <-spooler.GetRun())
 }
 
-// TestSpooler_GetJobFromCancelation tests retrieving a job from the spooler
+// TestSpooler_GetRunFromCancelation tests retrieving a job from the spooler
 // after a cancelation is received
-func TestSpooler_GetJobFromCancelation(t *testing.T) {
+func TestSpooler_GetRunFromCancelation(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunCanceled}
 
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		cancelations: make(chan otf.Job, 1),
+		cancelations: make(chan *otf.Run, 1),
 		Subscriber:   &testSubscriber{sub: sub},
 		Logger:       logr.Discard(),
 	}

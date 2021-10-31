@@ -10,7 +10,7 @@ var (
 	applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.$`)
 )
 
-func parseApplyOutput(output string) (Resources, error) {
+func ParseApplyOutput(output string) (Resources, error) {
 	matches := applyChangesRegex.FindStringSubmatch(output)
 	if matches == nil {
 		return Resources{}, fmt.Errorf("regexes unexpectedly did not match apply output")

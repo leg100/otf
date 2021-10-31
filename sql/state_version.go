@@ -16,7 +16,6 @@ var (
 		"created_at",
 		"updated_at",
 		"serial",
-		"blob_id",
 	}
 
 	stateVersionOutputColumns = []string{
@@ -30,7 +29,7 @@ var (
 		"state_version_id",
 	}
 
-	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, workspace_id) VALUES (%s, :workspaces.workspace_id)",
+	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, state, workspace_id) VALUES (%s, :state, :workspaces.workspace_id)",
 		strings.Join(stateVersionColumns, ", "),
 		strings.Join(otf.PrefixSlice(stateVersionColumns, ":"), ", "))
 
@@ -144,7 +143,13 @@ func (s StateVersionService) Delete(id string) error {
 }
 
 func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	selectBuilder := psql.Select(asColumnList("state_versions", false, stateVersionColumns...)).
+	columns := stateVersionColumns
+
+	if opts.State {
+		columns = append(columns, "state")
+	}
+
+	selectBuilder := psql.Select(asColumnList("state_versions", false, columns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		From("state_versions").
 		Join("workspaces USING (workspace_id)")

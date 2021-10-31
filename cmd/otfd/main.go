@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/filestore"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
@@ -103,13 +102,6 @@ func main() {
 		}
 	}
 
-	// Setup filestore
-	fs, err := filestore.NewFilestore(DataDir)
-	if err != nil {
-		panic(err.Error())
-	}
-	logger.Info("started filestore", "path", fs.Path)
-
 	// Setup postgres connection
 	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
 	if err != nil {
@@ -122,16 +114,18 @@ func main() {
 	stateVersionStore := sql.NewStateVersionDB(db)
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
+	planLogStore := sql.NewPlanLogDB(db)
+	applyLogStore := sql.NewApplyLogDB(db)
 
 	eventService := inmem.NewEventService(logger)
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, fs)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, fs)
-	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
-	server.PlanService = app.NewPlanService(runStore, fs)
-	server.ApplyService = app.NewApplyService(runStore)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService)
+	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService)
+	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService)
 	server.EventService = eventService
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
@@ -148,6 +142,8 @@ func main() {
 		server.ConfigurationVersionService,
 		server.StateVersionService,
 		server.RunService,
+		server.PlanService,
+		server.ApplyService,
 		eventService,
 	)
 	if err != nil {

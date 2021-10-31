@@ -73,8 +73,9 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
 	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
+	router.HandleFunc("/plans/{id}/logs", server.UploadPlanLogs).Methods("PUT")
 	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
-	router.HandleFunc("/runs/{id}/logs", server.UploadLogs).Methods("PUT")
+	router.HandleFunc("/applies/{id}/logs", server.UploadApplyLogs).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", server.UploadPlanFile).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
 

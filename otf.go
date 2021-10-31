@@ -18,6 +18,15 @@ const (
 	DefaultUsername = "otf"
 
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
+
+	// ChunkMaxLimit is maximum permissible size of a chunk
+	ChunkMaxLimit = 65536
+
+	// ChunkStartMarker is the special byte that prefixes the first chunk
+	ChunkStartMarker = byte(2)
+
+	// ChunkEndMarker is the special byte that suffixes the last chunk
+	ChunkEndMarker = byte(3)
 )
 
 // A regular expression used to validate common string ID patterns.
