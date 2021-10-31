@@ -9,15 +9,15 @@ import (
 
 var _ Spooler = (*SpoolerDaemon)(nil)
 
-// Spooler is a daemon from which executions can be retrieved
+// Spooler is a daemon from which enqueued runs can be retrieved
 type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 
-	// GetRun receives spooled executions
+	// GetRun receives spooled runs
 	GetRun() <-chan *otf.Run
 
-	// GetCancelation receives cancelation request for a job
+	// GetCancelation receives requests to cancel runs
 	GetCancelation() <-chan *otf.Run
 }
 
