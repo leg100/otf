@@ -36,9 +36,8 @@ var (
 		"resource_destructions",
 		"status",
 		"status_timestamps",
-		"log_id",
-		"plan_file_blob_id",
-		"plan_json_blob_id",
+		"plan_file",
+		"plan_json",
 		"run_id",
 	}
 
@@ -51,7 +50,6 @@ var (
 		"resource_destructions",
 		"status",
 		"status_timestamps",
-		"log_id",
 		"run_id",
 	}
 
@@ -120,11 +118,11 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 // the DB, the supplied func is invoked on the run, and the updated run is
 // persisted back to the DB. The returned Run includes any changes, including a
 // new UpdatedAt value.
-func (db RunDB) Update(id string, fn func(*otf.Run) error) (*otf.Run, error) {
+func (db RunDB) Update(opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
-	run, err := getRun(tx, otf.RunGetOptions{ID: &id})
+	run, err := getRun(tx, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -51,16 +51,15 @@ type Plan struct {
 	RunID string
 }
 
-func (p *Plan) GetID() string  { return p.ID }
-func (p *Plan) String() string { return p.ID }
+func (p *Plan) GetID() string     { return p.ID }
+func (p *Plan) GetStatus() string { return string(p.Status) }
+func (p *Plan) String() string    { return p.ID }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
 	GetPlanJSON(id string) ([]byte, error)
 
 	JobService
-
-	ChunkStore
 }
 
 func newPlan(runID string) *Plan {
@@ -85,6 +84,10 @@ func (p *Plan) GetLogsBlobID() string {
 }
 
 func (p *Plan) Do(run *Run, env Environment) error {
+	if err := run.Do(env); err != nil {
+		return err
+	}
+
 	if err := env.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}

@@ -11,16 +11,20 @@ var _ otf.ApplyService = (*ApplyService)(nil)
 
 type ApplyService struct {
 	db otf.RunStore
-	otf.ChunkStore
+
+	logs otf.ChunkStore
+
+	otf.EventService
 
 	logr.Logger
 }
 
-func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger) *ApplyService {
+func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService) *ApplyService {
 	return &ApplyService{
-		db:         db,
-		ChunkStore: logs,
-		Logger:     logger,
+		db:           db,
+		EventService: es,
+		logs:         logs,
+		Logger:       logger,
 	}
 }
 
@@ -34,7 +38,7 @@ func (s ApplyService) Get(id string) (*otf.Apply, error) {
 
 // GetApplyLogs reads a chunk of logs for a terraform apply.
 func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
-	logs, err := s.GetChunk(ctx, id, opts)
+	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
 		return nil, err
@@ -45,7 +49,7 @@ func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunk
 
 // UploadLogs writes a chunk of logs for a terraform apply.
 func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
-	err := s.PutChunk(ctx, id, chunk, opts)
+	err := s.logs.PutChunk(ctx, id, chunk, opts)
 	if err != nil {
 		s.Error(err, "writing apply logs", "id", id, "start", opts.Start, "end", opts.End)
 		return err
@@ -57,13 +61,13 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opt
 
 	// Last chunk uploaded. A summary of applied changes can now be parsed from
 	// the full logs and set on the apply obj.
-	logs, err := s.GetChunk(ctx, id, otf.GetChunkOptions{})
+	logs, err := s.logs.GetChunk(ctx, id, otf.GetChunkOptions{})
 	if err != nil {
 		s.Error(err, "reading apply logs", "id", id)
 		return err
 	}
 
-	_, err = s.db.Update(otf.RunUpdateOptions{ApplyID: otf.String(id)}, func(run *otf.Run) (err error) {
+	_, err = s.db.Update(otf.RunGetOptions{ApplyID: otf.String(id)}, func(run *otf.Run) (err error) {
 		run.Apply.Resources, err = otf.ParseApplyOutput(string(logs))
 
 		return err
@@ -74,4 +78,43 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opt
 	}
 
 	return nil
+}
+
+// Start marks a apply as having started
+func (s ApplyService) Start(ctx context.Context, id string, opts otf.JobStartOptions) (*otf.Run, error) {
+	run, err := s.db.Update(otf.RunGetOptions{ApplyID: otf.String(id)}, func(run *otf.Run) error {
+		return run.Apply.Start(run)
+	})
+	if err != nil {
+		s.Error(err, "starting apply")
+		return nil, err
+	}
+
+	s.V(0).Info("started apply", "id", run.ID)
+
+	return run, nil
+}
+
+// Finish marks a apply as having finished.  An event is emitted to notify any
+// subscribers of the new state.
+func (s ApplyService) Finish(ctx context.Context, id string, opts otf.JobFinishOptions) (*otf.Run, error) {
+	var event *otf.Event
+
+	run, err := s.db.Update(otf.RunGetOptions{ApplyID: otf.String(id)}, func(run *otf.Run) (err error) {
+		event, err = run.Apply.Finish(run)
+		if err != nil {
+			return err
+		}
+		return err
+	})
+	if err != nil {
+		s.Error(err, "finishing apply", "id", id)
+		return nil, err
+	}
+
+	s.V(0).Info("finished apply", "id", id)
+
+	s.Publish(*event)
+
+	return run, nil
 }

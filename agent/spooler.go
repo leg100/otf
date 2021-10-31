@@ -7,17 +7,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// ExecutionFactory makes executions from runs
-type ExecutionFactory interface {
-	NewExecution(*otf.Run) *otf.Run
-}
-
-// Executable is an identifiable execution
-type Executable interface {
-	Execute() error
-	GetID() string
-}
-
 var _ Spooler = (*SpoolerDaemon)(nil)
 
 // Spooler is a daemon from which executions can be retrieved
@@ -25,19 +14,16 @@ type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 
-	// GetExecutable receives spooled executions
-	GetExecutable() <-chan Executable
+	// Get*otf.Run receives spooled executions
+	GetRun() <-chan *otf.Run
 
 	// GetCancelation receives cancelation request for a job
-	GetCancelation() <-chan Executable
+	GetCancelation() <-chan *otf.Run
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
-	// ExecutionFactory makes executions out of runs
-	ExecutionFactory
-
 	// Queue of queued jobs
 	queue chan *otf.Run
 
@@ -71,7 +57,7 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger, exeFactory ExecutionFactory) (*SpoolerDaemon, error) {
+func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
@@ -79,9 +65,9 @@ func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger, exeFactory Exe
 	}
 
 	// Populate queue
-	queue := make(chan Executable, SpoolerCapacity)
+	queue := make(chan *otf.Run, SpoolerCapacity)
 	for _, r := range runs.Items {
-		queue <- exeFactory.NewExecution(r)
+		queue <- r
 	}
 
 	return &SpoolerDaemon{
@@ -112,12 +98,12 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 }
 
 // GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetExecutable() <-chan Executable {
+func (s *SpoolerDaemon) GetRun() <-chan *otf.Run {
 	return s.queue
 }
 
 // GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan Executable {
+func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
 	return s.cancelations
 }
 
@@ -128,9 +114,9 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 
 		switch ev.Type {
 		case otf.EventPlanQueued, otf.EventApplyQueued:
-			s.queue <- s.NewExecution(obj)
+			s.queue <- obj
 		case otf.EventRunCanceled:
-			s.cancelations <- s.NewExecution(obj)
+			s.cancelations <- obj
 		}
 	}
 }

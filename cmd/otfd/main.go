@@ -115,6 +115,7 @@ func main() {
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
 	planLogStore := sql.NewPlanLogDB(db)
+	applyLogStore := sql.NewApplyLogDB(db)
 
 	eventService := inmem.NewEventService(logger)
 
@@ -123,8 +124,8 @@ func main() {
 	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService)
 	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService)
 	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService)
-	server.PlanService = app.NewPlanService(runStore, planLogStore)
-	server.ApplyService = app.NewApplyService(runStore)
+	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService)
+	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService)
 	server.EventService = eventService
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
@@ -141,6 +142,8 @@ func main() {
 		server.ConfigurationVersionService,
 		server.StateVersionService,
 		server.RunService,
+		server.PlanService,
+		server.ApplyService,
 		eventService,
 	)
 	if err != nil {

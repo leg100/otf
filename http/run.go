@@ -155,28 +155,6 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, r, RunListJSONAPIObject(r, obj))
 }
 
-func (s *Server) UploadLogs(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	var opts otf.RunUploadLogsOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	if err := s.RunService.UploadLogs(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-}
-
 func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 

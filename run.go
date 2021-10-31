@@ -78,10 +78,6 @@ type Run struct {
 	Apply                *Apply                `db:"applies"`
 	Workspace            *Workspace            `db:"workspaces"`
 	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
-
-	// Job - an application of the Strategy pattern. Depending on the status of
-	// the run, this is either a Plan or an Apply.
-	Job Job
 }
 
 type RunStatusTimestamp struct {
@@ -204,7 +200,7 @@ type RunStore interface {
 	List(opts RunListOptions) (*RunList, error)
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
-	Update(opts RunUpdateOptions, fn func(*Run) error) (*Run, error)
+	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
 }
 
 // RunList represents a list of runs.
@@ -246,19 +242,6 @@ type RunListOptions struct {
 
 	// Filter by workspace ID
 	WorkspaceID *string
-}
-
-// RunUpdateOptions are options for updating a Run. Either ID or ApplyID or
-// PlanID must be specfiied.
-type RunUpdateOptions struct {
-	// ID of run to retrieve
-	ID *string
-
-	// Get run via apply ID
-	ApplyID *string
-
-	// Get run via plan ID
-	PlanID *string
 }
 
 func (r *Run) GetID() string  { return r.ID }
@@ -424,11 +407,22 @@ func (r *Run) UpdateStatus(status RunStatus) {
 	// accordingly
 }
 
+func (r *Run) GetJob() (Job, error) {
+	switch r.Status {
+	case RunPlanQueued, RunPlanning:
+		return r.Plan, nil
+	case RunApplyQueued, RunApplying:
+		return r.Apply, nil
+	default:
+		return nil, fmt.Errorf("attempted to retrieve active job for run but run as an invalid status: %s", r.Status)
+	}
+}
+
 func (r *Run) setTimestamp(status RunStatus) {
 	r.StatusTimestamps[string(status)] = time.Now()
 }
 
-// setup invokes the necessary steps before a plan or apply can proceed.
+// Do invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) Do(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
@@ -447,10 +441,6 @@ func (r *Run) Do(env Environment) error {
 
 	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
-	}
-
-	if err := r.Job.Do(r, env); err != nil {
-		return err
 	}
 
 	return nil

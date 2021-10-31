@@ -1,6 +1,9 @@
 package otf
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type ErrJobAlreadyStarted error
 
@@ -8,9 +11,6 @@ type ErrJobAlreadyStarted error
 type Job interface {
 	// Do does the piece of work in an execution environment
 	Do(*Run, Environment) error
-
-	// JobService provides methods for updating the status of the job.
-	JobService
 
 	// GetID gets the ID of the Job
 	GetID() string
@@ -37,4 +37,22 @@ type JobStartOptions struct {
 
 type JobFinishOptions struct {
 	Errored bool
+}
+
+// JobSelector selects the appropriate job and job service for a Run
+type JobSelector struct {
+	PlanService  PlanService
+	ApplyService ApplyService
+}
+
+// GetJob returns the appropriate job and job service for the Run
+func (jsp *JobSelector) GetJob(run *Run) (Job, JobService, error) {
+	switch run.Status {
+	case RunPlanQueued, RunPlanning:
+		return run.Plan, jsp.PlanService, nil
+	case RunApplyQueued, RunApplying:
+		return run.Apply, jsp.ApplyService, nil
+	default:
+		return nil, nil, fmt.Errorf("attempted to retrieve active job for run but run as an invalid status: %s", run.Status)
+	}
 }

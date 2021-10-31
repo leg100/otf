@@ -13,12 +13,18 @@ const (
 
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
+	RunService                  otf.RunService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
+
+	otf.JobSelector
+
 	// concurrency is the max number of concurrent workers
 	concurrency int
 
 	logr.Logger
 
-	otf.Executor
+	AgentID string
 
 	Spooler
 
@@ -26,18 +32,20 @@ type Supervisor struct {
 }
 
 // NewSupervisor is the constructor for Supervisor
-func NewSupervisor(spooler Spooler, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, logger logr.Logger, concurrency int) *Supervisor {
+func NewSupervisor(spooler Spooler, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, ps otf.PlanService, as otf.ApplyService, logger logr.Logger, concurrency int) *Supervisor {
 	return &Supervisor{
-		Spooler: spooler,
-		Executor: otf.Executor{
-			RunService:                  rs,
-			StateVersionService:         svs,
-			ConfigurationVersionService: cvs,
-			Logger:                      logger,
-			AgentID:                     DefaultID,
+		Spooler:             spooler,
+		RunService:          rs,
+		StateVersionService: svs,
+		JobSelector: otf.JobSelector{
+			PlanService:  ps,
+			ApplyService: as,
 		},
-		concurrency: concurrency,
-		Terminator:  NewTerminator(),
+		ConfigurationVersionService: cvs,
+		Logger:                      logger,
+		AgentID:                     DefaultID,
+		concurrency:                 concurrency,
+		Terminator:                  NewTerminator(),
 	}
 }
 

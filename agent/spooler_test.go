@@ -63,19 +63,9 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-<<<<<<< HEAD
-		queue: make(chan *otf.Run, 1),
-		EventService: &mock.EventService{
-			SubscribeFn: func(id string) otf.Subscription {
-				return &sub
-			},
-		},
-		Logger: logr.Discard(),
-=======
-		queue:      make(chan otf.Job, 1),
+		queue:      make(chan *otf.Run, 1),
 		Subscriber: &testSubscriber{sub: sub},
 		Logger:     logr.Discard(),
->>>>>>> master
 	}
 
 	go spooler.Start(context.Background())
@@ -94,19 +84,9 @@ func TestSpooler_GetRunFromCancelation(t *testing.T) {
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-<<<<<<< HEAD
 		cancelations: make(chan *otf.Run, 1),
-		EventService: &mock.EventService{
-			SubscribeFn: func(id string) otf.Subscription {
-				return &sub
-			},
-		},
-		Logger: logr.Discard(),
-=======
-		cancelations: make(chan otf.Job, 1),
 		Subscriber:   &testSubscriber{sub: sub},
 		Logger:       logr.Discard(),
->>>>>>> master
 	}
 
 	go spooler.Start(context.Background())

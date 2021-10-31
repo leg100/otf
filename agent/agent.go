@@ -28,39 +28,39 @@ type Agent struct {
 	// to.
 	ServerAddr string
 
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
-
 	Spooler
 
 	*Supervisor
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, es otf.EventService) (*Agent, error) {
+func NewAgent(logger logr.Logger,
+	cvs otf.ConfigurationVersionService,
+	svs otf.StateVersionService,
+	rs otf.RunService,
+	ps otf.PlanService,
+	as otf.ApplyService,
+	sub Subscriber) (*Agent, error) {
+
 	logger = logger.WithValues("component", "agent")
 
-	executor := otf.Executor{
-		RunService:                  rs,
-		StateVersionService:         svs,
-		ConfigurationVersionService: cvs,
-		Logger:                      logger,
-		AgentID:                     DefaultID,
-	}
-
-	spooler, err := NewSpooler(rs, es, logger, &executor)
+	spooler, err := NewSpooler(rs, sub, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	supervisor := NewSupervisor(
+		spooler,
+		cvs,
+		svs,
+		rs,
+		ps,
+		as,
+		logger, DefaultConcurrency)
+
 	return &Agent{
-		Spooler: spooler,
-		Supervisor: NewSupervisor(
-			spooler,
-			cvs,
-			svs,
-			rs,
-			logger, DefaultConcurrency),
+		Spooler:    spooler,
+		Supervisor: supervisor,
 	}, nil
 }
 

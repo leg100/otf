@@ -85,7 +85,7 @@ func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
 }
 
 func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunApplyQueued)
 
 		return nil
@@ -103,7 +103,7 @@ func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
 }
 
 func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -121,14 +121,14 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		if err := run.ForceCancel(); err != nil {
 			return err
 		}
@@ -144,7 +144,7 @@ func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error
 }
 
 func (s RunService) EnqueuePlan(id string) error {
-	run, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunPlanQueued)
 		return nil
 	})
@@ -199,7 +199,7 @@ func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte
 // plan file is expected to have been produced using `terraform show -json
 // plan_file`.
 func (s RunService) UploadPlanJSON(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.Plan.PlanJSON = plan
 
 		return run.Plan.CalculateTotals()
@@ -230,7 +230,7 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 }
 
 func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.Plan.PlanFile = plan
 
 		return nil
@@ -246,7 +246,7 @@ func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byt
 }
 
 func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunUpdateOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.Plan.PlanJSON = plan
 
 		return run.Plan.CalculateTotals()

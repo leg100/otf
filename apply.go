@@ -40,8 +40,9 @@ type Apply struct {
 	RunID string
 }
 
-func (a *Apply) GetID() string  { return a.ID }
-func (a *Apply) String() string { return a.ID }
+func (a *Apply) GetID() string     { return a.ID }
+func (a *Apply) GetStatus() string { return string(a.Status) }
+func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
@@ -53,6 +54,10 @@ func newApply(runID string) *Apply {
 }
 
 func (a *Apply) Do(run *Run, env Environment) error {
+	if err := run.Do(env); err != nil {
+		return err
+	}
+
 	if err := env.RunFunc(run.downloadPlanFile); err != nil {
 		return err
 	}
