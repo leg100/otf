@@ -1,4 +1,4 @@
-package otf
+package agent
 
 import (
 	"bytes"
@@ -9,33 +9,29 @@ import (
 	"os/exec"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 )
 
-// Executor spawns Executions
-type Executor struct {
-	RunService                  RunService
-	ConfigurationVersionService ConfigurationVersionService
-	StateVersionService         StateVersionService
+var _ otf.Environment = (*Environment)(nil)
+
+// Execution is made available to the Run Job so that it can interact with OTF
+// services and write to the local filesystem, use the logger, etc.
+
+// Environment provides an execution environment for agent jobs.
+type Environment struct {
+	otf.JobService
+
+	RunService                  otf.RunService
+	ConfigurationVersionService otf.ConfigurationVersionService
+	StateVersionService         otf.StateVersionService
 
 	logr.Logger
 
 	// AgentID is the ID of the agent hosting the executor
 	AgentID string
-}
-
-// Execution is made available to the Run Job so that it can interact
-// with OTF services and write to the local filesystem, use the logger, etc.
-
-// Execution executes a Run Job.
-type Execution struct {
-	// Executor is the executor that spawned this execution
-	*Executor
 
 	// Current working directory
 	Path string
-
-	// Run containing the Job to be executed
-	Run *Run
 
 	// Whether cancelation has been triggered
 	canceled bool
@@ -50,30 +46,27 @@ type Execution struct {
 	out io.WriteCloser
 }
 
-// ExecutorFunc is a func that can be invoked in the executor
-type ExecutorFunc func(context.Context, *Execution) error
+// Execute performs the full lifecycle of executing a job: marking it as
+// started, running the job, and then marking it as finished. Its logs are
+// captured and forwarded.
+func NewEnvironment(
+	rs otf.RunService,
+	cvs otf.ConfigurationVersionService,
+	svs otf.StateVersionService,
+	logger logr.Logger) *Environment {
 
-// NewExecutor constructs an Executor.
-func (e *Executor) NewExecution(run *Run) *Execution {
 	out := &JobWriter{
 		Job:    run.Job,
 		Logger: e.Logger,
 		// TODO: pass in proper context
 		ctx: context.Background(),
+	path, err := os.MkdirTemp("", "otf-plan")
+	if err != nil {
+		return nil, err
 	}
 
-	return &Execution{
-		Executor: e,
-		Run:      run,
-		out:      out,
-	}
-}
-
-// Execute performs the full lifecycle of executing a job: marking it as
-// started, running the job, and then marking it as finished. Its logs are
-// captured and forwarded.
-func (e *Execution) Execute() (err error) {
 	e.Path, err = os.MkdirTemp("", "otf-plan")
+	job, err = e.Start(job.GetID(), otf.JobStartOptions{AgentID: e.agentID})
 	if err != nil {
 		return err
 	}
@@ -108,10 +101,32 @@ func (e *Execution) Execute() (err error) {
 
 	e.Info("finished job")
 
-	return nil
+	return &Execution{
+		Executor: e,
+		Run:      run,
+		out:      out,
+	}
+}
 }
 
-func (e *Execution) GetID() string {
+func (e Environment) GetConfigurationVersionService() otf.ConfigurationVersionService {
+	return e.ConfigurationVersionService
+}
+
+func (e Environment) GetStateVersionService() otf.StateVersionService {
+	return e.StateVersionService
+}
+
+func (e Environment) GetRunService() otf.RunService {
+	return e.RunService
+}
+
+func (e Environment) GetPath() string {
+	return e.Path
+}
+
+
+func (e *Environment) GetID() string {
 	return e.Run.Job.GetID()
 }
 
@@ -119,7 +134,7 @@ func (e *Execution) GetID() string {
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *Execution) Cancel(force bool) {
+func (e *Environment) Cancel(force bool) {
 	e.canceled = true
 
 	e.cancelCLI(force)
@@ -127,7 +142,7 @@ func (e *Execution) Cancel(force bool) {
 }
 
 // RunCLI executes a CLI process in the executor.
-func (e *Execution) RunCLI(name string, args ...string) error {
+func (e *Environment) RunCLI(name string, args ...string) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}
@@ -151,7 +166,7 @@ func (e *Execution) RunCLI(name string, args ...string) error {
 }
 
 // RunFunc invokes a func in the executor.
-func (e *Execution) RunFunc(fn ExecutorFunc) error {
+func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")
 	}

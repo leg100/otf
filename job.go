@@ -6,8 +6,8 @@ type ErrJobAlreadyStarted error
 
 // Job is either a Run's Plan or Apply.
 type Job interface {
-	// Do performs the task of work in an execution environment
-	Do(*Execution) error
+	// Do does the piece of work in an execution environment
+	Do(*Run, Environment) error
 
 	// JobService provides methods for updating the status of the job.
 	JobService

@@ -84,24 +84,24 @@ func (p *Plan) GetLogsBlobID() string {
 	return p.LogID
 }
 
-func (p *Plan) Do(exe *Execution) error {
-	if err := exe.Run.setup(exe); err != nil {
+func (p *Plan) Do(run *Run, env Environment) error {
+	if err := env.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}
 
-	if err := exe.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
 
-	if err := exe.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
+	if err := env.RunFunc(run.uploadPlan); err != nil {
 		return err
 	}
 
-	if err := exe.RunFunc(exe.Run.uploadPlan); err != nil {
+	if err := env.RunFunc(run.uploadPlan); err != nil {
 		return err
 	}
 
-	if err := exe.RunFunc(exe.Run.uploadJSONPlan); err != nil {
+	if err := env.RunFunc(run.uploadJSONPlan); err != nil {
 		return err
 	}
 

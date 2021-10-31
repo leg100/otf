@@ -9,7 +9,7 @@ import (
 
 // ExecutionFactory makes executions from runs
 type ExecutionFactory interface {
-	NewExecution(*otf.Run) *otf.Execution
+	NewExecution(*otf.Run) *otf.Run
 }
 
 // Executable is an identifiable execution
@@ -39,13 +39,13 @@ type SpoolerDaemon struct {
 	ExecutionFactory
 
 	// Queue of queued jobs
-	queue chan Executable
+	queue chan *otf.Run
 
 	// Queue of cancelation requests
-	cancelations chan Executable
+	cancelations chan *otf.Run
 
-	// EventService allows subscribing to stream of events
-	otf.EventService
+	// Subscriber allows subscribing to stream of events
+	Subscriber
 
 	// Logger for logging various events
 	logr.Logger
@@ -53,6 +53,10 @@ type SpoolerDaemon struct {
 
 type RunLister interface {
 	List(otf.RunListOptions) (*otf.RunList, error)
+}
+
+type Subscriber interface {
+	Subscribe(id string) (otf.Subscription, error)
 }
 
 const (
@@ -67,7 +71,7 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger, exeFactory ExecutionFactory) (*SpoolerDaemon, error) {
+func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger, exeFactory ExecutionFactory) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
@@ -82,8 +86,8 @@ func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger, exeFactor
 
 	return &SpoolerDaemon{
 		queue:        queue,
-		cancelations: make(chan Executable, SpoolerCapacity),
-		EventService: es,
+		cancelations: make(chan *otf.Run, SpoolerCapacity),
+		Subscriber:   sub,
 		Logger:       logger,
 	}, nil
 }

@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+
+	"github.com/leg100/otf"
 )
 
 // Worker sequentially executes runs on behalf of a supervisor.
@@ -21,14 +23,26 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 }
 
-func (w *Worker) handle(ctx context.Context, exe Executable) {
-	log := w.Logger.WithValues("job", exe.GetID())
+func (w *Worker) handle(ctx context.Context, run *otf.Run) {
+	log := w.Logger.WithValues("job", run.Job.GetID())
+
+	env, err := NewEnvironment(
+		w.RunService,
+		w.ConfigurationVersionService,
+		w.StateVersionService,
+		log,
+		DefaultID,
+	)
+	if err != nil {
+		log.Error(err, "unable to create execution environment")
+		return
+	}
 
 	// Check executable in with the supervisor for duration of execution.
-	w.CheckIn(run.GetID(), exe)
+	w.CheckIn(run.GetID(), env)
 	defer w.CheckOut(run.GetID())
 
-	if err := exe.Execute(); err != nil {
+	if err := run.Do(env); err != nil {
 		log.Error(err, "run execution failed")
 	}
 }

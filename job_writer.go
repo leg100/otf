@@ -19,8 +19,6 @@ type JobWriter struct {
 	ID string
 
 	logr.Logger
-
-	ctx context.Context
 }
 
 // Write uploads a chunk of logs to the server.
@@ -33,7 +31,7 @@ func (jw *JobWriter) Write(p []byte) (int, error) {
 		opts.Start = true
 	}
 
-	if err := jw.PutChunk(jw.ctx, jw.ID, p, opts); err != nil {
+	if err := jw.PutChunk(context.Background(), jw.ID, p, opts); err != nil {
 		jw.Error(err, "unable to write logs")
 		jw.started = false
 		return 0, err
@@ -46,7 +44,7 @@ func (jw *JobWriter) Write(p []byte) (int, error) {
 func (jw *JobWriter) Close() error {
 	opts := PutChunkOptions{End: true}
 
-	if err := jw.PutChunk(jw.ctx, jw.ID, nil, opts); err != nil {
+	if err := jw.PutChunk(context.Background(), jw.ID, nil, opts); err != nil {
 		jw.Error(err, "unable to close logs")
 
 		return err

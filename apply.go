@@ -52,20 +52,16 @@ func newApply(runID string) *Apply {
 	}
 }
 
-func (a *Apply) Do(exe *Execution) error {
-	if err := exe.Run.setup(exe); err != nil {
+func (a *Apply) Do(run *Run, env Environment) error {
+	if err := env.RunFunc(run.downloadPlanFile); err != nil {
 		return err
 	}
 
-	if err := exe.RunFunc(exe.Run.downloadPlanFile); err != nil {
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
 		return err
 	}
 
-	if err := exe.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
-		return err
-	}
-
-	if err := exe.RunFunc(exe.Run.uploadState); err != nil {
+	if err := env.RunFunc(run.uploadState); err != nil {
 		return err
 	}
 
