@@ -142,7 +142,7 @@ func doDiffIndex(v1, v2 reflect.Value, idx [][]int, n []int) [][]int {
 // between two structs. If the value in after is different from before then it
 // is included in the UPDATE. If all fields are identical no UPDATE is
 // performed.
-func update(mapper *reflectx.Mapper, tx sqlx.Execer, table string, before, after otf.Updateable) (bool, error) {
+func update(mapper *reflectx.Mapper, tx sqlx.Execer, table, idCol string, before, after otf.Updateable) (bool, error) {
 	updates := FindUpdates(mapper, before, after)
 	if len(updates) == 0 {
 		return false, nil
@@ -152,7 +152,7 @@ func update(mapper *reflectx.Mapper, tx sqlx.Execer, table string, before, after
 	after.SetUpdatedAt(now)
 	updates["updated_at"] = now
 
-	sql := psql.Update(table).Where("id = ?", before.GetInternalID())
+	sql := psql.Update(table).Where(fmt.Sprintf("%s = ?", idCol), before.GetID())
 
 	query, args, err := sql.SetMap(updates).ToSql()
 	if err != nil {

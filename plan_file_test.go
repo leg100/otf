@@ -44,9 +44,9 @@ func TestPlanFile_Changes(t *testing.T) {
 	file := PlanFile{}
 	require.NoError(t, json.Unmarshal(data, &file))
 
-	adds, updates, deletes := file.Changes()
+	changes := file.Changes()
 
-	assert.Equal(t, 2, adds)
-	assert.Equal(t, 0, updates)
-	assert.Equal(t, 0, deletes)
+	assert.Equal(t, 2, changes.ResourceAdditions)
+	assert.Equal(t, 0, changes.ResourceChanges)
+	assert.Equal(t, 0, changes.ResourceDestructions)
 }

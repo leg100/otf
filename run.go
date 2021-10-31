@@ -59,9 +59,9 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string `db:"external_id" jsonapi:"primary,runs"`
+	ID string `db:"run_id" jsonapi:"primary,runs"`
 
-	Model
+	Timestamps
 
 	IsDestroy        bool
 	Message          string
@@ -85,13 +85,6 @@ type RunStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-// Phase implementations represent the phases that make up a run: a plan and an
-// apply.
-type Phase interface {
-	GetLogsBlobID() string
-	Do(*Run, *Executor) error
-}
-
 // RunFactory is a factory for constructing Run objects.
 type RunFactory struct {
 	ConfigurationVersionService ConfigurationVersionService
@@ -113,12 +106,9 @@ type RunService interface {
 	Cancel(id string, opts RunCancelOptions) error
 	ForceCancel(id string, opts RunForceCancelOptions) error
 	EnqueuePlan(id string) error
-	GetPlanLogs(id string, opts GetChunkOptions) ([]byte, error)
-	GetApplyLogs(id string, opts GetChunkOptions) ([]byte, error)
+
 	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
-
-	JobService
 }
 
 // RunCreateOptions represents the options for creating a new run.
@@ -210,7 +200,7 @@ type RunStore interface {
 	List(opts RunListOptions) (*RunList, error)
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
-	Update(id string, fn func(*Run) error) (*Run, error)
+	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
 }
 
 // RunList represents a list of runs.
@@ -230,6 +220,13 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+
+	// IncludePlanFile toggles including the plan file in the retrieved run.
+	IncludePlanFile bool
+
+	// IncludePlanFile toggles including the plan file, in JSON format, in the
+	// retrieved run.
+	IncludePlanJSON bool
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -247,15 +244,14 @@ type RunListOptions struct {
 	WorkspaceID *string
 }
 
+func (r *Run) GetID() string  { return r.ID }
+func (r *Run) String() string { return r.ID }
+
 func (o RunCreateOptions) Valid() error {
 	if o.Workspace == nil {
 		return errors.New("workspace is required")
 	}
 	return nil
-}
-
-func (r *Run) GetID() string {
-	return r.ID
 }
 
 func (r *Run) GetStatus() string {
@@ -371,70 +367,6 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
-// ActivePhase retrieves the currently active phase
-func (r *Run) ActivePhase() (Phase, error) {
-	switch r.Status {
-	case RunPlanning:
-		return r.Plan, nil
-	case RunApplying:
-		return r.Apply, nil
-	default:
-		return nil, fmt.Errorf("invalid run status: %s", r.Status)
-	}
-}
-
-// Start starts a run phase.
-func (r *Run) Start() error {
-	switch r.Status {
-	case RunPlanQueued:
-		r.UpdateStatus(RunPlanning)
-	case RunApplyQueued:
-		r.UpdateStatus(RunApplying)
-	default:
-		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status)
-	}
-
-	return nil
-}
-
-// Finish updates the run to reflect the current phase having finished. An event
-// is emitted reflecting the run's new status.
-func (r *Run) Finish(bs BlobStore) (*Event, error) {
-	if r.Status == RunApplying {
-		r.UpdateStatus(RunApplied)
-
-		if err := r.Apply.UpdateResources(bs); err != nil {
-			return nil, err
-		}
-
-		return &Event{Payload: r, Type: EventRunApplied}, nil
-	}
-
-	// Only remaining valid status is planning
-	if r.Status != RunPlanning {
-		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.Status)
-	}
-
-	if err := r.Plan.UpdateResources(bs); err != nil {
-		return nil, err
-	}
-
-	// Speculative plan, proceed no further
-	if r.ConfigurationVersion.Speculative {
-		r.UpdateStatus(RunPlannedAndFinished)
-		return &Event{Payload: r, Type: EventRunPlannedAndFinished}, nil
-	}
-
-	r.UpdateStatus(RunPlanned)
-
-	if r.Workspace.AutoApply {
-		r.UpdateStatus(RunApplyQueued)
-		return &Event{Type: EventApplyQueued, Payload: r}, nil
-	}
-
-	return &Event{Payload: r, Type: EventRunPlanned}, nil
-}
-
 // UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status RunStatus) {
 	switch status {
@@ -479,44 +411,39 @@ func (r *Run) setTimestamp(status RunStatus) {
 	r.StatusTimestamps[string(status)] = time.Now()
 }
 
-func (r *Run) Do(exe *Executor) error {
-	if err := exe.RunFunc(r.downloadConfig); err != nil {
+// Do invokes the necessary steps before a plan or apply can proceed.
+func (r *Run) Do(env Environment) error {
+	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
 	}
 
-	if err := exe.RunFunc(deleteBackendConfigFromDirectory); err != nil {
-		return err
-	}
-
-	if err := exe.RunFunc(r.downloadState); err != nil {
-		return err
-	}
-
-	if err := exe.RunCLI("terraform", "init", "-no-color"); err != nil {
-		return err
-	}
-
-	phase, err := r.ActivePhase()
+	err := env.RunFunc(func(ctx context.Context, env Environment) error {
+		return deleteBackendConfigFromDirectory(ctx, env.GetPath())
+	})
 	if err != nil {
 		return err
 	}
 
-	if err := phase.Do(r, exe); err != nil {
+	if err := env.RunFunc(r.downloadState); err != nil {
 		return err
+	}
+
+	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
+		return fmt.Errorf("running terraform init: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) downloadConfig(ctx context.Context, exe *Executor) error {
+func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := exe.ConfigurationVersionService.Download(r.ConfigurationVersion.ID)
+	cv, err := env.GetConfigurationVersionService().Download(r.ConfigurationVersion.ID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 
 	// Decompress and untar config
-	if err := Unpack(bytes.NewBuffer(cv), exe.Path); err != nil {
+	if err := Unpack(bytes.NewBuffer(cv), env.GetPath()); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 
@@ -525,70 +452,70 @@ func (r *Run) downloadConfig(ctx context.Context, exe *Executor) error {
 
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, exe *Executor) error {
-	state, err := exe.StateVersionService.Current(r.Workspace.ID)
+func (r *Run) downloadState(ctx context.Context, env Environment) error {
+	state, err := env.GetStateVersionService().Current(r.Workspace.ID)
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
 
-	statefile, err := exe.StateVersionService.Download(state.ID)
+	statefile, err := env.GetStateVersionService().Download(state.ID)
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(exe.Path, LocalStateFilename), statefile, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(env.GetPath(), LocalStateFilename), statefile, 0644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) uploadPlan(ctx context.Context, exe *Executor) error {
-	file, err := os.ReadFile(filepath.Join(exe.Path, PlanFilename))
+func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
+	file, err := os.ReadFile(filepath.Join(env.GetPath(), PlanFilename))
 	if err != nil {
 		return err
 	}
 
 	opts := PlanFileOptions{Format: PlanBinaryFormat}
 
-	if err := exe.RunService.UploadPlanFile(ctx, r.ID, file, opts); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, file, opts); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) uploadJSONPlan(ctx context.Context, exe *Executor) error {
-	jsonFile, err := os.ReadFile(filepath.Join(exe.Path, JSONPlanFilename))
+func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
+	jsonFile, err := os.ReadFile(filepath.Join(env.GetPath(), JSONPlanFilename))
 	if err != nil {
 		return err
 	}
 
 	opts := PlanFileOptions{Format: PlanJSONFormat}
 
-	if err := exe.RunService.UploadPlanFile(ctx, r.ID, jsonFile, opts); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, jsonFile, opts); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
 	return nil
 }
 
-func (r *Run) downloadPlanFile(ctx context.Context, exe *Executor) error {
+func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 	opts := PlanFileOptions{Format: PlanBinaryFormat}
 
-	plan, err := exe.RunService.GetPlanFile(ctx, r.ID, opts)
+	plan, err := env.GetRunService().GetPlanFile(ctx, r.ID, opts)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(exe.Path, PlanFilename), plan, 0644)
+	return os.WriteFile(filepath.Join(env.GetPath(), PlanFilename), plan, 0644)
 }
 
 // uploadState reads, parses, and uploads state
-func (r *Run) uploadState(ctx context.Context, exe *Executor) error {
-	stateFile, err := os.ReadFile(filepath.Join(exe.Path, LocalStateFilename))
+func (r *Run) uploadState(ctx context.Context, env Environment) error {
+	stateFile, err := os.ReadFile(filepath.Join(env.GetPath(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
@@ -598,7 +525,7 @@ func (r *Run) uploadState(ctx context.Context, exe *Executor) error {
 		return err
 	}
 
-	_, err = exe.StateVersionService.Create(r.Workspace.ID, StateVersionCreateOptions{
+	_, err = env.GetStateVersionService().Create(r.Workspace.ID, StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,
@@ -617,15 +544,16 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 		return nil, errors.New("workspace is required")
 	}
 
+	id := NewID("run")
 	run := Run{
-		ID:               GenerateID("run"),
-		Model:            NewModel(),
+		ID:               id,
+		Timestamps:       NewTimestamps(),
 		Refresh:          DefaultRefresh,
 		ReplaceAddrs:     opts.ReplaceAddrs,
 		TargetAddrs:      opts.TargetAddrs,
 		StatusTimestamps: make(TimestampMap),
-		Plan:             newPlan(),
-		Apply:            newApply(),
+		Plan:             newPlan(id),
+		Apply:            newApply(id),
 	}
 
 	run.UpdateStatus(RunPending)

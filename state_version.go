@@ -13,16 +13,16 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string `db:"external_id"`
+	ID string `db:"state_version_id"`
 
-	Model
+	Timestamps
 
 	Serial       int64
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	// BlobID is ID of the binary object containing the state
-	BlobID string
+	// State is state file itself. Note: not always populated.
+	State []byte
 
 	// State version belongs to a workspace
 	Workspace *Workspace `db:"workspaces"`
@@ -33,6 +33,9 @@ type StateVersion struct {
 	// State version has many outputs
 	Outputs []*StateVersionOutput `db:"state_version_outputs"`
 }
+
+func (sv *StateVersion) GetID() string  { return sv.ID }
+func (sv *StateVersion) String() string { return sv.ID }
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
@@ -62,6 +65,9 @@ type StateVersionGetOptions struct {
 
 	// Get current state version belonging to workspace with this ID
 	WorkspaceID *string
+
+	// State toggles retrieving the actual state file too.
+	State bool
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -102,14 +108,13 @@ type StateVersionCreateOptions struct {
 
 type StateVersionFactory struct {
 	WorkspaceService WorkspaceService
-	BlobStore        BlobStore
 }
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
-		ID:     GenerateID("sv"),
-		Model:  NewModel(),
-		Serial: *opts.Serial,
+		ID:         NewID("sv"),
+		Timestamps: NewTimestamps(),
+		Serial:     *opts.Serial,
 	}
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})
@@ -118,24 +123,19 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 	}
 	sv.Workspace = ws
 
-	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
+	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err
 	}
 
-	sv.BlobID = NewBlobID()
-	if err := f.BlobStore.Put(sv.BlobID, decoded); err != nil {
-		return nil, err
-	}
-
-	state, err := Parse(decoded)
+	state, err := Parse(sv.State)
 	if err != nil {
 		return nil, err
 	}
 
 	for k, v := range state.Outputs {
 		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			ID:    GenerateID("wsout"),
+			ID:    NewID("wsout"),
 			Name:  k,
 			Type:  v.Type,
 			Value: v.Value,
@@ -145,6 +145,6 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 	return &sv, nil
 }
 
-func (r *StateVersion) DownloadURL() string {
-	return fmt.Sprintf("/state-versions/%s/download", r.ID)
+func (sv *StateVersion) DownloadURL() string {
+	return fmt.Sprintf("/state-versions/%s/download", sv.ID)
 }
