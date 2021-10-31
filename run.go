@@ -407,17 +407,6 @@ func (r *Run) UpdateStatus(status RunStatus) {
 	// accordingly
 }
 
-func (r *Run) GetJob() (Job, error) {
-	switch r.Status {
-	case RunPlanQueued, RunPlanning:
-		return r.Plan, nil
-	case RunApplyQueued, RunApplying:
-		return r.Apply, nil
-	default:
-		return nil, fmt.Errorf("attempted to retrieve active job for run but run as an invalid status: %s", r.Status)
-	}
-}
-
 func (r *Run) setTimestamp(status RunStatus) {
 	r.StatusTimestamps[string(status)] = time.Now()
 }

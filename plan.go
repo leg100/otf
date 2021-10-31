@@ -38,9 +38,6 @@ type Plan struct {
 	Status           PlanStatus
 	StatusTimestamps TimestampMap
 
-	// LogID is the log ID for the log output from a terraform plan
-	LogID string
-
 	// PlanFile is the blob ID of the execution plan file in binary format
 	PlanFile []byte
 
@@ -77,10 +74,6 @@ func (p *Plan) HasChanges() bool {
 		return true
 	}
 	return false
-}
-
-func (p *Plan) GetLogsBlobID() string {
-	return p.LogID
 }
 
 func (p *Plan) Do(run *Run, env Environment) error {
