@@ -9,29 +9,29 @@ import (
 
 var _ Spooler = (*SpoolerDaemon)(nil)
 
-// Spooler is a daemon from which jobs can be retrieved
+// Spooler is a daemon from which enqueued runs can be retrieved
 type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 
-	// GetJob receives spooled job
-	GetJob() <-chan otf.Job
+	// GetRun receives spooled runs
+	GetRun() <-chan *otf.Run
 
-	// GetCancelation receives cancelation request for a job
-	GetCancelation() <-chan otf.Job
+	// GetCancelation receives requests to cancel runs
+	GetCancelation() <-chan *otf.Run
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
-	queue chan otf.Job
+	queue chan *otf.Run
 
 	// Queue of cancelation requests
-	cancelations chan otf.Job
+	cancelations chan *otf.Run
 
-	// EventService allows subscribing to stream of events
-	otf.EventService
+	// Subscriber allows subscribing to stream of events
+	Subscriber
 
 	// Logger for logging various events
 	logr.Logger
@@ -39,6 +39,10 @@ type SpoolerDaemon struct {
 
 type RunLister interface {
 	List(otf.RunListOptions) (*otf.RunList, error)
+}
+
+type Subscriber interface {
+	Subscribe(id string) (otf.Subscription, error)
 }
 
 const (
@@ -53,7 +57,7 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
@@ -61,15 +65,15 @@ func NewSpooler(rl RunLister, es otf.EventService, logger logr.Logger) (*Spooler
 	}
 
 	// Populate queue
-	queue := make(chan otf.Job, SpoolerCapacity)
+	queue := make(chan *otf.Run, SpoolerCapacity)
 	for _, r := range runs.Items {
 		queue <- r
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
-		cancelations: make(chan otf.Job, SpoolerCapacity),
-		EventService: es,
+		cancelations: make(chan *otf.Run, SpoolerCapacity),
+		Subscriber:   sub,
 		Logger:       logger,
 	}, nil
 }
@@ -93,13 +97,13 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 	}
 }
 
-// GetJob returns a channel of queued jobs
-func (s *SpoolerDaemon) GetJob() <-chan otf.Job {
+// GetRun returns a channel of queued runs
+func (s *SpoolerDaemon) GetRun() <-chan *otf.Run {
 	return s.queue
 }
 
 // GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan otf.Job {
+func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
 	return s.cancelations
 }
 

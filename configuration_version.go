@@ -35,9 +35,9 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID string `db:"external_id" jsonapi:"primary,configuration-versions"`
+	ID string `db:"configuration_version_id" jsonapi:"primary,configuration-versions"`
 
-	Model
+	Timestamps
 
 	AutoQueueRuns    bool
 	Source           ConfigurationSource
@@ -45,8 +45,9 @@ type ConfigurationVersion struct {
 	Status           ConfigurationStatus
 	StatusTimestamps TimestampMap
 
-	// BlobID is the ID of the blob containing the configuration
-	BlobID string
+	// Config is a tarball of the uploaded configuration. Note: this is not
+	// necessarily populated.
+	Config []byte
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
@@ -93,6 +94,9 @@ type ConfigurationVersionGetOptions struct {
 
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
+
+	// Config toggles whether to retrieve the tarball of config files too.
+	Config bool
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a
@@ -115,15 +119,17 @@ type ConfigurationVersionFactory struct {
 	WorkspaceService WorkspaceService
 }
 
+func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
+func (cv *ConfigurationVersion) String() string { return cv.ID }
+
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID:            GenerateID("cv"),
-		Model:         NewModel(),
+		ID:            NewID("cv"),
+		Timestamps:    NewTimestamps(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        ConfigurationPending,
 		Source:        DefaultConfigurationSource,
-		BlobID:        NewBlobID(),
 	}
 
 	if opts.AutoQueueRuns != nil {

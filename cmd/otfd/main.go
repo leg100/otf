@@ -9,11 +9,11 @@ import (
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
-	"github.com/leg100/otf/filestore"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
+	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -21,7 +21,6 @@ import (
 
 const (
 	DefaultAddress  = ":8080"
-	DefaultHostname = "localhost:8080"
 	DefaultDatabase = "postgres:///otf?host=/var/run/postgresql"
 	DefaultDataDir  = "~/.otf-data"
 	DefaultLogLevel = "info"
@@ -53,13 +52,16 @@ func main() {
 
 	var help bool
 
+	// Toggle log colors. Must be one of auto, true, or false.
+	var logColor string
+
 	cmd.Flags().StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
 	cmd.Flags().BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
 	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&server.Hostname, "hostname", DefaultHostname, "Hostname used within absolute URL links")
 	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
+	cmd.Flags().StringVar(&logColor, "log-color", "auto", "Toggle log colors: auto, true or false. Auto enables colors if using a TTY.")
 	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
@@ -85,7 +87,7 @@ func main() {
 	}
 
 	// Setup logger
-	zerologger, err := newLogger(*logLevel)
+	zerologger, err := newLogger(*logLevel, logColor)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -100,13 +102,6 @@ func main() {
 		}
 	}
 
-	// Setup filestore
-	fs, err := filestore.NewFilestore(DataDir)
-	if err != nil {
-		panic(err.Error())
-	}
-	logger.Info("filestore started", "path", fs.Path)
-
 	// Setup postgres connection
 	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
 	if err != nil {
@@ -119,16 +114,18 @@ func main() {
 	stateVersionStore := sql.NewStateVersionDB(db)
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
+	planLogStore := sql.NewPlanLogDB(db)
+	applyLogStore := sql.NewApplyLogDB(db)
 
 	eventService := inmem.NewEventService(logger)
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, fs)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, fs)
-	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, fs, eventService)
-	server.PlanService = app.NewPlanService(runStore, fs)
-	server.ApplyService = app.NewApplyService(runStore)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService)
+	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService)
+	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService)
 	server.EventService = eventService
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
@@ -145,6 +142,8 @@ func main() {
 		server.ConfigurationVersionService,
 		server.StateVersionService,
 		server.RunService,
+		server.PlanService,
+		server.ApplyService,
 		eventService,
 	)
 	if err != nil {
@@ -161,7 +160,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("server started", "address", server.Addr, "ssl", server.SSL)
+	logger.Info("started server", "address", server.Addr, "ssl", server.SSL)
 
 	// Block until Ctrl-C received.
 	if err := server.Wait(ctx); err != nil {
@@ -170,7 +169,7 @@ func main() {
 	}
 }
 
-func newLogger(lvl string) (*zerolog.Logger, error) {
+func newLogger(lvl, color string) (*zerolog.Logger, error) {
 	zlvl, err := zerolog.ParseLevel(lvl)
 	if err != nil {
 		return nil, err
@@ -182,6 +181,20 @@ func newLogger(lvl string) (*zerolog.Logger, error) {
 		TimeFormat: time.RFC3339,
 	}
 	zerolog.DurationFieldInteger = true
+
+	switch color {
+	case "auto":
+		// Disable color if stdout is not a tty
+		if !isatty.IsTerminal(os.Stdout.Fd()) {
+			consoleWriter.NoColor = true
+		}
+	case "true":
+		consoleWriter.NoColor = false
+	case "false":
+		consoleWriter.NoColor = true
+	default:
+		return nil, fmt.Errorf("invalid choice for log color: %s. Must be one of auto, true, or false", color)
+	}
 
 	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
 

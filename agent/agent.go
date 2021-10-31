@@ -20,8 +20,6 @@ type Agent struct {
 	// ID uniquely identifies the agent.
 	ID string
 
-	logr.Logger
-
 	// DataDir stores artefacts relating to runs, i.e. downloaded plugins,
 	// modules (?), configuration versions, state, etc.
 	DataDir string
@@ -30,32 +28,39 @@ type Agent struct {
 	// to.
 	ServerAddr string
 
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
-
 	Spooler
 
 	*Supervisor
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, es otf.EventService) (*Agent, error) {
+func NewAgent(logger logr.Logger,
+	cvs otf.ConfigurationVersionService,
+	svs otf.StateVersionService,
+	rs otf.RunService,
+	ps otf.PlanService,
+	as otf.ApplyService,
+	sub Subscriber) (*Agent, error) {
+
 	logger = logger.WithValues("component", "agent")
 
-	spooler, err := NewSpooler(rs, es, logger)
+	spooler, err := NewSpooler(rs, sub, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	supervisor := NewSupervisor(
+		spooler,
+		cvs,
+		svs,
+		rs,
+		ps,
+		as,
+		logger, DefaultConcurrency)
+
 	return &Agent{
-		Logger:  logger,
-		Spooler: spooler,
-		Supervisor: NewSupervisor(
-			spooler,
-			cvs,
-			svs,
-			rs,
-			logger, DefaultConcurrency),
+		Spooler:    spooler,
+		Supervisor: supervisor,
 	}, nil
 }
 
@@ -65,5 +70,4 @@ func (a *Agent) Start(ctx context.Context) {
 	go a.Spooler.Start(ctx)
 
 	a.Supervisor.Start(ctx)
-
 }

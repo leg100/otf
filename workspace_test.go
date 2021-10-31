@@ -20,10 +20,6 @@ func TestWorkspaceSpecifier_Valid(t *testing.T) {
 			spec: WorkspaceSpecifier{ID: String("ws-123")},
 		},
 		{
-			name: "valid internal id",
-			spec: WorkspaceSpecifier{InternalID: Int64(123)},
-		},
-		{
 			name: "valid organization and workspace name",
 			spec: WorkspaceSpecifier{OrganizationName: String("org-123"), Name: String("default")},
 		},

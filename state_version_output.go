@@ -1,9 +1,9 @@
 package otf
 
 type StateVersionOutput struct {
-	ID string `db:"external_id"`
+	ID string `db:"state_version_output_id"`
 
-	Model
+	Timestamps
 
 	Name      string
 	Sensitive bool
@@ -11,7 +11,9 @@ type StateVersionOutput struct {
 	Value     string
 
 	// StateVersionOutput belongs to State Version
-	StateVersionID int64
+	StateVersionID string
 }
 
 type StateVersionOutputList []*StateVersionOutput
+
+func (svo *StateVersionOutput) String() string { return svo.ID }

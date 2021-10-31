@@ -1,6 +1,9 @@
 package http
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -51,7 +54,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.ApplyJSONAPIObject(obj))
+	WriteResponse(w, r, ApplyJSONAPIObject(r, obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +67,7 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.RunService.GetApplyLogs(vars["id"], opts)
+	logs, err := s.ApplyService.GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -76,12 +79,34 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var opts otf.PutChunkOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.ApplyService.PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+}
+
 // ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) ApplyJSONAPIObject(a *otf.Apply) *Apply {
+func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
 		ID:                   a.ID,
-		LogReadURL:           s.GetURL(GetApplyLogsRoute, a.ID),
+		LogReadURL:           buildAbsoluteURI(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
 		ResourceAdditions:    a.ResourceAdditions,
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,

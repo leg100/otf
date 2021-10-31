@@ -6,34 +6,17 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type mockRunLister struct {
-	runs []*otf.Run
-}
-
-func (l *mockRunLister) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	return &otf.RunList{Items: l.runs}, nil
-}
-
-type mockSubscription struct {
-	c chan otf.Event
-}
-
-func (s *mockSubscription) C() <-chan otf.Event { return s.c }
-
-func (s *mockSubscription) Close() error { return nil }
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
 	spooler, err := NewSpooler(
-		&mockRunLister{runs: []*otf.Run{want}},
-		&mock.EventService{},
+		&testRunLister{runs: []*otf.Run{want}},
+		&testSubscriber{},
 		logr.Discard(),
 	)
 	require.NoError(t, err)
@@ -41,15 +24,11 @@ func TestSpooler_New(t *testing.T) {
 	assert.Equal(t, want, <-spooler.queue)
 }
 
-// TestSpooler_Start tests the spooler daemon start op
+// TestSpooler_Start starts the spooler and immediately cancels it.
 func TestSpooler_Start(t *testing.T) {
 	spooler := &SpoolerDaemon{
-		EventService: &mock.EventService{
-			SubscribeFn: func(id string) otf.Subscription {
-				return &mockSubscription{}
-			},
-		},
-		Logger: logr.Discard(),
+		Subscriber: &testSubscriber{},
+		Logger:     logr.Discard(),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -65,32 +44,28 @@ func TestSpooler_Start(t *testing.T) {
 	<-done
 }
 
-// TestSpooler_GetJob tests retrieving a job from the spooler with a
+// TestSpooler_GetRun tests retrieving a job from the spooler with a
 // pre-populated queue
-func TestSpooler_GetJob(t *testing.T) {
+func TestSpooler_GetRun(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
-	spooler := &SpoolerDaemon{queue: make(chan otf.Job, 1)}
+	spooler := &SpoolerDaemon{queue: make(chan *otf.Run, 1)}
 	spooler.queue <- want
 
-	assert.Equal(t, want, <-spooler.GetJob())
+	assert.Equal(t, want, <-spooler.GetRun())
 }
 
-// TestSpooler_GetJobFromEvent tests retrieving a job from the spooler after an
+// TestSpooler_GetRunFromEvent tests retrieving a job from the spooler after an
 // event is received
-func TestSpooler_GetJobFromEvent(t *testing.T) {
+func TestSpooler_GetRunFromEvent(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunPlanQueued}
 
-	sub := mockSubscription{c: make(chan otf.Event, 1)}
+	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		queue: make(chan otf.Job, 1),
-		EventService: &mock.EventService{
-			SubscribeFn: func(id string) otf.Subscription {
-				return &sub
-			},
-		},
-		Logger: logr.Discard(),
+		queue:      make(chan *otf.Run, 1),
+		Subscriber: &testSubscriber{sub: sub},
+		Logger:     logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())
@@ -98,24 +73,20 @@ func TestSpooler_GetJobFromEvent(t *testing.T) {
 	// send event
 	sub.c <- otf.Event{Type: otf.EventPlanQueued, Payload: want}
 
-	assert.Equal(t, want, <-spooler.GetJob())
+	assert.Equal(t, want, <-spooler.GetRun())
 }
 
-// TestSpooler_GetJobFromCancelation tests retrieving a job from the spooler
+// TestSpooler_GetRunFromCancelation tests retrieving a job from the spooler
 // after a cancelation is received
-func TestSpooler_GetJobFromCancelation(t *testing.T) {
+func TestSpooler_GetRunFromCancelation(t *testing.T) {
 	want := &otf.Run{ID: "run-123", Status: otf.RunCanceled}
 
-	sub := mockSubscription{c: make(chan otf.Event, 1)}
+	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		cancelations: make(chan otf.Job, 1),
-		EventService: &mock.EventService{
-			SubscribeFn: func(id string) otf.Subscription {
-				return &sub
-			},
-		},
-		Logger: logr.Discard(),
+		cancelations: make(chan *otf.Run, 1),
+		Subscriber:   &testSubscriber{sub: sub},
+		Logger:       logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())

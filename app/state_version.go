@@ -9,19 +9,16 @@ var _ otf.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
 	db otf.StateVersionStore
-	bs otf.BlobStore
 	*otf.StateVersionFactory
 
 	logr.Logger
 }
 
-func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, wss otf.WorkspaceService, bs otf.BlobStore) *StateVersionService {
+func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, wss otf.WorkspaceService) *StateVersionService {
 	return &StateVersionService{
-		bs:     bs,
 		db:     db,
 		Logger: logger,
 		StateVersionFactory: &otf.StateVersionFactory{
-			BlobStore:        bs,
 			WorkspaceService: wss,
 		},
 	}
@@ -63,10 +60,11 @@ func (s StateVersionService) Get(id string) (*otf.StateVersion, error) {
 }
 
 func (s StateVersionService) Download(id string) ([]byte, error) {
-	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id})
+	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id, State: true})
 	if err != nil {
+		s.Error(err, "retrieving state version", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
 		return nil, err
 	}
 
-	return s.bs.Get(sv.BlobID)
+	return sv.State, nil
 }

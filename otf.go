@@ -4,7 +4,6 @@ Package otf is responsible for domain logic.
 package otf
 
 import (
-	"fmt"
 	"math/rand"
 	"regexp"
 	"time"
@@ -19,6 +18,15 @@ const (
 	DefaultUsername = "otf"
 
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
+
+	// ChunkMaxLimit is maximum permissible size of a chunk
+	ChunkMaxLimit = 65536
+
+	// ChunkStartMarker is the special byte that prefixes the first chunk
+	ChunkStartMarker = byte(2)
+
+	// ChunkEndMarker is the special byte that suffixes the last chunk
+	ChunkEndMarker = byte(3)
 )
 
 // A regular expression used to validate common string ID patterns.
@@ -29,7 +37,7 @@ var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
 // Updateable is an obj that records when it was updated.
 type Updateable interface {
-	GetInternalID() int64
+	GetID() string
 	SetUpdatedAt(time.Time)
 }
 
@@ -44,9 +52,10 @@ func TimeNow() *time.Time {
 	return &t
 }
 
-// GenerateID generates a unique identifier with the given prefix
-func GenerateID(prefix string) string {
-	return fmt.Sprintf("%s-%s", prefix, GenerateRandomString(16))
+// NewID constructs resource IDs, which are composed of the resource type and a
+// random 16 character string, separated by a hyphen.
+func NewID(rtype string) string {
+	return rtype + "-" + GenerateRandomString(16)
 }
 
 // GenerateRandomString generates a random string composed of alphanumeric
@@ -126,23 +135,18 @@ func validSemanticVersion(v string) bool {
 	return reSemanticVersion.MatchString(v)
 }
 
-type Model struct {
-	ID        int64
+type Timestamps struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func (m *Model) GetInternalID() int64 {
-	return m.ID
-}
-
-func (m *Model) SetUpdatedAt(t time.Time) {
+func (m *Timestamps) SetUpdatedAt(t time.Time) {
 	m.UpdatedAt = t
 }
 
-func NewModel() Model {
+func NewTimestamps() Timestamps {
 	now := time.Now()
-	return Model{
+	return Timestamps{
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

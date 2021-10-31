@@ -1,6 +1,9 @@
 package http
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -52,7 +55,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.PlanJSONAPIObject(obj))
+	WriteResponse(w, r, PlanJSONAPIObject(r, obj))
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +83,7 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.RunService.GetPlanLogs(vars["id"], opts)
+	logs, err := s.PlanService.GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -92,13 +95,35 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var opts otf.PutChunkOptions
+
+	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err := s.PlanService.PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+}
+
 // PlanJSONAPIObject converts a Plan to a struct that can be
 // marshalled into a JSON-API object
-func (s *Server) PlanJSONAPIObject(p *otf.Plan) *Plan {
+func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 	result := &Plan{
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
-		LogReadURL:           s.GetURL(GetPlanLogsRoute, p.ID),
+		LogReadURL:           buildAbsoluteURI(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
 		ResourceAdditions:    p.ResourceAdditions,
 		ResourceChanges:      p.ResourceChanges,
 		ResourceDestructions: p.ResourceDestructions,

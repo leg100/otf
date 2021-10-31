@@ -42,7 +42,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.StateVersionListJSONAPIObject(obj))
+	WriteResponse(w, r, StateVersionListJSONAPIObject(obj))
 }
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.StateVersionJSONAPIObject(obj))
+	WriteResponse(w, r, StateVersionJSONAPIObject(obj))
 }
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.StateVersionJSONAPIObject(obj))
+	WriteResponse(w, r, StateVersionJSONAPIObject(obj))
 }
 
 func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, s.StateVersionJSONAPIObject(obj))
+	WriteResponse(w, r, StateVersionJSONAPIObject(obj))
 }
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -101,13 +101,13 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 
 // StateVersionJSONAPIObject converts a StateVersion to a struct that can be
 // marshalled into a JSON-API object
-func (s *Server) StateVersionJSONAPIObject(r *otf.StateVersion) *StateVersion {
+func StateVersionJSONAPIObject(r *otf.StateVersion) *StateVersion {
 	obj := &StateVersion{
 		ID:          r.ID,
-		CreatedAt:   r.Model.CreatedAt,
+		CreatedAt:   r.CreatedAt,
 		DownloadURL: r.DownloadURL(),
 		Serial:      r.Serial,
-		Outputs:     s.StateVersionOutputListJSONAPIObject(r.Outputs),
+		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs),
 	}
 
 	return obj
@@ -115,12 +115,12 @@ func (s *Server) StateVersionJSONAPIObject(r *otf.StateVersion) *StateVersion {
 
 // StateVersionListJSONAPIObject converts a StateVersionList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *StateVersionList {
+func StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *StateVersionList {
 	obj := &StateVersionList{
 		Pagination: cvl.Pagination,
 	}
 	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, s.StateVersionJSONAPIObject(item))
+		obj.Items = append(obj.Items, StateVersionJSONAPIObject(item))
 	}
 
 	return obj
@@ -128,7 +128,7 @@ func (s *Server) StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *State
 
 // StateVersionOutputJSONAPIObject converts a StateVersionOutput to a struct that can be marshalled into a
 // JSON-API object
-func (s *Server) StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *StateVersionOutput {
+func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *StateVersionOutput {
 	obj := &StateVersionOutput{
 		ID:        svo.ID,
 		Name:      svo.Name,
@@ -142,10 +142,10 @@ func (s *Server) StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *S
 
 // StateVersionOutputListJSONAPIObject converts a StateVersionOutputList to
 // a struct that can be marshalled into a JSON-API object
-func (s *Server) StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*StateVersionOutput {
+func StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*StateVersionOutput {
 	var obj []*StateVersionOutput
 	for _, item := range svol {
-		obj = append(obj, s.StateVersionOutputJSONAPIObject(item))
+		obj = append(obj, StateVersionOutputJSONAPIObject(item))
 	}
 
 	return obj

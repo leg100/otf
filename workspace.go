@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 const (
@@ -22,9 +21,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"external_id" jsonapi:"primary,workspaces"`
+	ID string `db:"workspace_id" jsonapi:"primary,workspaces"`
 
-	Model
+	Timestamps
 
 	AllowDestroyPlan           bool
 	AutoApply                  bool
@@ -272,10 +271,7 @@ type WorkspaceStore interface {
 // *or* both Name and OrganizationName must be specfiied.
 type WorkspaceSpecifier struct {
 	// Specify workspace using its ID
-	ID *string
-
-	// Specify workspace using its internal ID
-	InternalID *int64
+	ID *string `db:"workspace_id"`
 
 	// Specify workspace using its name and organization
 	Name             *string
@@ -328,10 +324,13 @@ type WorkspacePermissions struct {
 	CanUpdateVariable bool `json:"can-update-variable"`
 }
 
+func (ws *Workspace) GetID() string  { return ws.ID }
+func (ws *Workspace) String() string { return ws.ID }
+
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
-		ID:                  GenerateID("ws"),
-		Model:               NewModel(),
+		ID:                  NewID("ws"),
+		Timestamps:          NewTimestamps(),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       DefaultExecutionMode,
@@ -508,8 +507,6 @@ func (spec *WorkspaceSpecifier) String() string {
 	switch {
 	case spec.ID != nil:
 		return *spec.ID
-	case spec.InternalID != nil:
-		return strconv.Itoa(int(*spec.InternalID))
 	case spec.Name != nil && spec.OrganizationName != nil:
 		return *spec.OrganizationName + "/" + *spec.Name
 	default:
@@ -518,10 +515,6 @@ func (spec *WorkspaceSpecifier) String() string {
 }
 
 func (spec *WorkspaceSpecifier) Valid() error {
-	if spec.InternalID != nil {
-		return nil
-	}
-
 	if spec.ID != nil {
 		if *spec.ID == "" {
 			return fmt.Errorf("id is an empty string")
