@@ -36,7 +36,7 @@ func (s ApplyService) Get(id string) (*otf.Apply, error) {
 	return run.Apply, nil
 }
 
-// GetApplyLogs reads a chunk of logs for a terraform apply.
+// GetChunk reads a chunk of logs for a terraform apply.
 func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
@@ -47,7 +47,7 @@ func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunk
 	return logs, nil
 }
 
-// UploadLogs writes a chunk of logs for a terraform apply.
+// PutChunk writes a chunk of logs for a terraform apply.
 func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
 	err := s.logs.PutChunk(ctx, id, chunk, opts)
 	if err != nil {

@@ -9,7 +9,6 @@ var _ otf.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
 	db otf.StateVersionStore
-	bs otf.BlobStore
 	*otf.StateVersionFactory
 
 	logr.Logger

@@ -145,6 +145,6 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 	return &sv, nil
 }
 
-func (r *StateVersion) DownloadURL() string {
-	return fmt.Sprintf("/state-versions/%s/download", r.ID)
+func (sv *StateVersion) DownloadURL() string {
+	return fmt.Sprintf("/state-versions/%s/download", sv.ID)
 }

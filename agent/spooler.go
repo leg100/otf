@@ -14,7 +14,7 @@ type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 
-	// Get*otf.Run receives spooled executions
+	// GetRun receives spooled executions
 	GetRun() <-chan *otf.Run
 
 	// GetCancelation receives cancelation request for a job

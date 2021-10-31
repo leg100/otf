@@ -104,8 +104,8 @@ func (p *Plan) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// Summarize produces a summary of planned changes and updates the object with
-// the summary.
+// CalculateTotals produces a summary of planned changes and updates the object
+// with the summary.
 func (p *Plan) CalculateTotals() error {
 	if p.PlanJSON == nil {
 		return fmt.Errorf("plan obj is missing the json formatted plan file")

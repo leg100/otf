@@ -13,14 +13,14 @@ import (
 	"github.com/leg100/otf"
 )
 
-type Doer interface {
-	Do(otf.Environment) error
-}
+// Environment is an implementation of an execution environment
+var _ otf.Environment = (*Environment)(nil)
 
 // Execution is made available to the Run Job so that it can interact with OTF
 // services and write to the local filesystem, use the logger, etc.
 
-// Execution executes a Run Job.
+// Environment provides an execution environment for a running a run job,
+// providing a working directory, capturing logs etc.
 type Environment struct {
 	otf.JobService
 
