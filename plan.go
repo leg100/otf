@@ -31,11 +31,16 @@ type PlanStatus string
 type Plan struct {
 	ID string `db:"plan_id"`
 
+	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
 
+	// Resources is a summary of planned resource changes
 	Resources
 
-	Status           PlanStatus
+	// Status is the current status
+	Status PlanStatus
+
+	// StatusTimestamps records timestamps of status transitions
 	StatusTimestamps TimestampMap
 
 	// PlanFile is the blob ID of the execution plan file in binary format
@@ -76,6 +81,7 @@ func (p *Plan) HasChanges() bool {
 	return false
 }
 
+// Do performs a terraform plan
 func (p *Plan) Do(run *Run, env Environment) error {
 	if err := run.Do(env); err != nil {
 		return err

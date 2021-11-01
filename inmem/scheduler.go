@@ -94,20 +94,20 @@ func (s *Scheduler) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Workspace:
 		switch ev.Type {
-		case otf.WorkspaceCreated:
+		case otf.EventWorkspaceCreated:
 			s.Queues[obj.ID] = &otf.WorkspaceQueue{PlanEnqueuer: s.RunService}
-		case otf.WorkspaceDeleted:
+		case otf.EventWorkspaceDeleted:
 			delete(s.Queues, obj.ID)
 		}
 	case *otf.Run:
 		queue := s.Queues[obj.Workspace.ID]
 
 		switch ev.Type {
-		case otf.RunCreated:
+		case otf.EventRunCreated:
 			if err := queue.Add(obj); err != nil {
 				s.Error(err, "unable to enqueue run", "run", obj.ID)
 			}
-		case otf.RunCompleted:
+		case otf.EventRunCompleted:
 			if err := queue.Remove(obj); err != nil {
 				s.Error(err, "unable to dequeue run", "run", obj.ID)
 			}

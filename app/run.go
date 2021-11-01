@@ -53,7 +53,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 
 	s.V(1).Info("created run", "id", run.ID)
 
-	s.es.Publish(otf.Event{Type: otf.RunCreated, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
 	return run, nil
 }
@@ -113,7 +113,7 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 
 	s.V(0).Info("discarded run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.RunCompleted, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.EventRunCompleted, Payload: run})
 
 	return err
 }

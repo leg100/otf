@@ -23,6 +23,7 @@ var (
 type Workspace struct {
 	ID string `db:"workspace_id" jsonapi:"primary,workspaces"`
 
+	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
 
 	AllowDestroyPlan           bool
@@ -484,12 +485,7 @@ func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, er
 	return ws, nil
 }
 
-func (ws *Workspace) Actions() *WorkspaceActions {
-	return &WorkspaceActions{
-		IsDestroyable: false,
-	}
-}
-
+// ToggleLock toggles the workspace lock.
 func (ws *Workspace) ToggleLock(lock bool) error {
 	if lock && ws.Locked {
 		return ErrWorkspaceAlreadyLocked

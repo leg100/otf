@@ -20,20 +20,27 @@ const (
 // ApplyStatus represents an apply state.
 type ApplyStatus string
 
+// ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(id string) (*Apply, error)
 
 	JobService
 }
 
+// Apply represents a terraform apply
 type Apply struct {
 	ID string `db:"apply_id"`
 
+	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
 
+	// Resources is a summary of applied resource changes
 	Resources
 
-	Status           ApplyStatus
+	// Status is the current status
+	Status ApplyStatus
+
+	// StatusTimestamps records timestamps of status transitions
 	StatusTimestamps TimestampMap
 
 	// RunID is the ID of the Run the Apply belongs to.
@@ -53,6 +60,7 @@ func newApply(runID string) *Apply {
 	}
 }
 
+// Do performs a terraform apply
 func (a *Apply) Do(run *Run, env Environment) error {
 	if err := run.Do(env); err != nil {
 		return err

@@ -84,7 +84,7 @@ func TestScheduler_AddWorkspace(t *testing.T) {
 	}
 
 	scheduler.handleEvent(otf.Event{
-		Type:    otf.WorkspaceCreated,
+		Type:    otf.EventWorkspaceCreated,
 		Payload: &otf.Workspace{ID: "ws-123"},
 	})
 
@@ -100,7 +100,7 @@ func TestScheduler_RemoveWorkspace(t *testing.T) {
 	}
 
 	scheduler.handleEvent(otf.Event{
-		Type:    otf.WorkspaceDeleted,
+		Type:    otf.EventWorkspaceDeleted,
 		Payload: &otf.Workspace{ID: "ws-123"},
 	})
 
@@ -116,7 +116,7 @@ func TestScheduler_AddRun(t *testing.T) {
 	}
 
 	scheduler.handleEvent(otf.Event{
-		Type: otf.RunCreated,
+		Type: otf.EventRunCreated,
 		Payload: &otf.Run{
 			ID: "ws-123",
 			Workspace: &otf.Workspace{
@@ -145,7 +145,7 @@ func TestScheduler_RemoveRun(t *testing.T) {
 	require.NotNil(t, scheduler)
 
 	scheduler.handleEvent(otf.Event{
-		Type: otf.RunCompleted,
+		Type: otf.EventRunCompleted,
 		Payload: &otf.Run{
 			ID: "run-123",
 			Workspace: &otf.Workspace{

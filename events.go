@@ -1,12 +1,12 @@
 package otf
 
 const (
-	OrganizationCreated        EventType = "organization_created"
-	OrganizationDeleted        EventType = "organization_deleted"
-	WorkspaceCreated           EventType = "workspace_created"
-	WorkspaceDeleted           EventType = "workspace_deleted"
-	RunCreated                 EventType = "run_created"
-	RunCompleted               EventType = "run_completed"
+	EventOrganizationCreated   EventType = "organization_created"
+	EventOrganizationDeleted   EventType = "organization_deleted"
+	EventWorkspaceCreated      EventType = "workspace_created"
+	EventWorkspaceDeleted      EventType = "workspace_deleted"
+	EventRunCreated            EventType = "run_created"
+	EventRunCompleted          EventType = "run_completed"
 	EventRunCanceled           EventType = "run_canceled"
 	EventRunApplied            EventType = "run_applied"
 	EventRunPlanned            EventType = "run_planned"
@@ -16,13 +16,16 @@ const (
 	EventError                 EventType = "error"
 )
 
+// EventType identifies the type of event
 type EventType string
 
+// Event represents an event in the lifecycle of an oTF resource
 type Event struct {
 	Type    EventType
 	Payload interface{}
 }
 
+// EventService allows interacting with events
 type EventService interface {
 	Publish(Event)
 	Subscribe(id string) (Subscription, error)

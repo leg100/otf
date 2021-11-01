@@ -46,7 +46,7 @@ func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.W
 
 	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name)
 
-	s.es.Publish(otf.Event{Type: otf.WorkspaceCreated, Payload: ws})
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
 	return ws, nil
 }
@@ -99,7 +99,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifie
 		return err
 	}
 
-	s.es.Publish(otf.Event{Type: otf.WorkspaceDeleted, Payload: ws})
+	s.es.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
 	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name)
 

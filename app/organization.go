@@ -36,7 +36,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	s.es.Publish(otf.Event{Type: otf.OrganizationCreated, Payload: org})
+	s.es.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
 	s.V(0).Info("created organization", "id", org.ID, "name", org.Name)
 
