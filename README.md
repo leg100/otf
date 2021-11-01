@@ -5,7 +5,7 @@ An open source alternative to terraform enterprise.
 Functionality is currently limited:
 
 * Remote execution mode (plans and applies run remotely)
-* State backend (state stored on disk)
+* State backend (state stored in postgresql)
 * Workspace management (supports `terraform workspace` commands)
 * No web frontend; CLI/API support only.
 
