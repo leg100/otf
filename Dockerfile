@@ -1,7 +1,7 @@
 FROM alpine:3.14
 
 # Terraform version must be kept in sync with otf.DefaultTerraformVersion
-ARG TERRAFORM_VERSION=0.15.3
+ARG TERRAFORM_VERSION=1.0.10
 
 # Install terraform
 RUN apk add curl && \
