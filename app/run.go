@@ -179,48 +179,6 @@ func (s RunService) GetPlanFile(ctx context.Context, runID string, opts otf.Plan
 	}
 }
 
-// GetPlanFile returns the plan file in json format for the run.
-func (s RunService) getJSONPlanFile(ctx context.Context, runID string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanJSON: true})
-	if err != nil {
-		s.Error(err, "retrieving json plan file", "id", runID)
-		return nil, err
-	}
-
-	return run.Plan.PlanJSON, nil
-}
-
-// GetPlanFile returns the plan file in json format for the run.
-func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanFile: true})
-	if err != nil {
-		s.Error(err, "retrieving binary plan file", "id", runID)
-		return nil, err
-	}
-
-	return run.Plan.PlanFile, nil
-}
-
-// UploadPlanJSON persists a run's JSON-formatted plan file before parsing it
-// and updating the Run's Plan with a summary of planned resource changes. The
-// plan file is expected to have been produced using `terraform show -json
-// plan_file`.
-func (s RunService) UploadPlanJSON(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.Plan.PlanJSON = plan
-
-		return run.Plan.CalculateTotals()
-	})
-	if err != nil {
-		s.Error(err, "uploading plan file in json format", "id", id)
-		return err
-	}
-
-	s.V(0).Info("uploaded plan file in json format", "id", id)
-
-	return nil
-}
-
 // UploadPlanFile persists a run's plan file. The plan file is expected to have
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then its parsed for a summary of planned changes and the Plan object is
@@ -267,6 +225,28 @@ func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, erro
 	}()
 
 	return r, nil
+}
+
+// GetPlanFile returns the plan file in json format for the run.
+func (s RunService) getJSONPlanFile(ctx context.Context, runID string) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanJSON: true})
+	if err != nil {
+		s.Error(err, "retrieving json plan file", "id", runID)
+		return nil, err
+	}
+
+	return run.Plan.PlanJSON, nil
+}
+
+// GetPlanFile returns the plan file in json format for the run.
+func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte, error) {
+	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanFile: true})
+	if err != nil {
+		s.Error(err, "retrieving binary plan file", "id", runID)
+		return nil, err
+	}
+
+	return run.Plan.PlanFile, nil
 }
 
 func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
