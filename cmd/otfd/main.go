@@ -123,7 +123,7 @@ func main() {
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
 	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService)
 	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService)
-	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService, planLogStore, applyLogStore)
 	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService)
 	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService)
 	server.EventService = eventService

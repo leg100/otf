@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"io"
 
 	"github.com/leg100/otf"
 )
@@ -16,14 +17,13 @@ type RunService struct {
 	DiscardFn        func(id string, opts otf.RunDiscardOptions) error
 	CancelFn         func(id string, opts otf.RunCancelOptions) error
 	ForceCancelFn    func(id string, opts otf.RunForceCancelOptions) error
-	GetPlanLogsFn    func(id string, opts otf.GetChunkOptions) ([]byte, error)
-	GetApplyLogsFn   func(id string, opts otf.GetChunkOptions) ([]byte, error)
 	EnqueuePlanFn    func(id string) error
 	UpdateStatusFn   func(id string, status otf.RunStatus) (*otf.Run, error)
 	StartFn          func(id string, opts otf.JobStartOptions) (otf.Job, error)
 	FinishFn         func(id string, opts otf.JobFinishOptions) (otf.Job, error)
 	GetPlanFileFn    func(ctx context.Context, id string, opts otf.PlanFileOptions) ([]byte, error)
 	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error
+	GetLogsFn        func(ctx context.Context, runID string) (io.ReadCloser, error)
 }
 
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
@@ -54,12 +54,8 @@ func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error
 	return s.ForceCancelFn(id, opts)
 }
 
-func (s RunService) GetPlanLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
-	return s.GetPlanLogsFn(id, opts)
-}
-
-func (s RunService) GetApplyLogs(id string, opts otf.GetChunkOptions) ([]byte, error) {
-	return s.GetApplyLogsFn(id, opts)
+func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, error) {
+	return s.GetLogsFn(ctx, id)
 }
 
 func (s RunService) EnqueuePlan(id string) error {

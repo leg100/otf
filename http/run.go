@@ -278,6 +278,25 @@ func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
 	s.getPlanFile(w, r, vars["id"], opts)
 }
 
+// GetRunLogs gets the logs for a run, combining the logs of both its plan and
+// then its apply.
+func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	logs, err := s.RunService.GetLogs(r.Context(), vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+	if _, err := io.Copy(w, logs); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts otf.PlanFileOptions) {
 	json, err := s.RunService.GetPlanFile(r.Context(), runID, opts)
 	if err != nil {

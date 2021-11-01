@@ -79,6 +79,8 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router.HandleFunc("/runs/{id}/plan", server.UploadPlanFile).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
 
+	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
+
 	// Websocket connections
 	server.registerEventRoutes(router)
 
