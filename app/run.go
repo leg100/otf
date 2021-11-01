@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -14,16 +16,21 @@ type RunService struct {
 	db otf.RunStore
 	es otf.EventService
 
+	planLogs  otf.ChunkStore
+	applyLogs otf.ChunkStore
+
 	logr.Logger
 
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore) *RunService {
 	return &RunService{
-		db:     db,
-		es:     es,
-		Logger: logger,
+		db:        db,
+		es:        es,
+		planLogs:  planLogs,
+		applyLogs: applyLogs,
+		Logger:    logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -227,6 +234,39 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 	default:
 		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
+}
+
+// GetLogs gets the logs for a run, combining the logs of both its plan and
+// apply.
+func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, error) {
+	run, err := s.Get(id)
+	if err != nil {
+		s.Error(err, "getting run for reading logs", "id", id)
+		return nil, err
+	}
+
+	r, w := io.Pipe()
+
+	// Stream logs in background routine
+	go func() {
+		defer w.Close()
+
+		// Get plan logs
+		if err := otf.Stream(ctx, run.Plan.ID, s.planLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
+			s.Error(err, "retrieving plan logs")
+			w.Write([]byte("unable to retrieve plan logs: " + err.Error()))
+			return
+		}
+
+		// ...and then apply logs
+		if err := otf.Stream(ctx, run.Apply.ID, s.applyLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
+			s.Error(err, "retrieving apply logs")
+			w.Write([]byte("unable to retrieve apply logs: " + err.Error()))
+			return
+		}
+	}()
+
+	return r, nil
 }
 
 func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
