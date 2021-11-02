@@ -11,7 +11,7 @@ import (
 
 func TestParseApplyOutputChanges(t *testing.T) {
 	want := Resources{
-		ResourceAdditions:    2,
+		ResourceAdditions:    1,
 		ResourceChanges:      0,
 		ResourceDestructions: 0,
 	}

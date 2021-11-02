@@ -433,7 +433,7 @@ func (r *Run) Do(env Environment) error {
 		return err
 	}
 
-	if err := env.RunCLI("terraform", "init", "-no-color"); err != nil {
+	if err := env.RunCLI("terraform", "init"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
 	}
 
