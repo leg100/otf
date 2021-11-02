@@ -50,12 +50,6 @@ These steps will get you started with running everything on your local system. Y
    ```bash
    otf login
    ```
-   
-1. Create an organization:
-
-   ```bash
-   otf organizations new mycorp --email=sysadmin@mycorp.co
-   ```
 
 1. Configure the terraform backend and define a resource:
 
@@ -64,7 +58,7 @@ These steps will get you started with running everything on your local system. Y
     terraform {
       backend "remote" {
         hostname = "localhost:8080"
-        organization = "mycorp"
+        organization = "default"
 
         workspaces {
           name = "dev"
