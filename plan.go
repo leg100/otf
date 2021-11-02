@@ -142,8 +142,7 @@ func (p *Plan) Start(run *Run) error {
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
 func (p *Plan) Finish(run *Run) (*Event, error) {
-	// Speculative plan, proceed no further
-	if run.ConfigurationVersion.Speculative {
+	if !p.HasChanges() || run.IsSpeculative() {
 		run.UpdateStatus(RunPlannedAndFinished)
 		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
 	}

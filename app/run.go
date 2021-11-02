@@ -216,12 +216,12 @@ func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, erro
 			return
 		}
 
-		if run.IsSpeculative() {
-			// Speculative runs have no apply.
+		if !run.Plan.HasChanges() || run.IsSpeculative() {
+			// no apply
 			return
 		}
 
-		// ...and then apply logs
+		// Get apply logs
 		if err := otf.Stream(ctx, run.Apply.ID, s.applyLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
 			s.Error(err, "retrieving apply logs")
 			w.Write([]byte("unable to retrieve apply logs: " + err.Error()))
