@@ -87,7 +87,7 @@ func (p *Plan) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunCLI("terraform", "plan", "-no-color", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+	if err := env.RunCLI("terraform", "plan", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}
 

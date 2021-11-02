@@ -70,7 +70,7 @@ func (a *Apply) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply -no-color %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
 		return err
 	}
 
