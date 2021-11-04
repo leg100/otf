@@ -3,6 +3,7 @@ package otf
 import (
 	"container/list"
 	"fmt"
+	"sync"
 )
 
 // LRUCache provides a least-recently-used cache
@@ -15,6 +16,8 @@ type LRUCache struct {
 
 	// capacity is max size of cache in bytes
 	capacity int
+
+	mu sync.Mutex
 
 	// usage is number of bytes the cache is currently using
 	usage int
@@ -44,15 +47,41 @@ func (c *LRUCache) Get(key string) ([]byte, error) {
 }
 
 func (c *LRUCache) Put(key string, data []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	for {
-		if c.usage + len(data) > c.capacity {
-			// 
+		if c.usage+len(data) > c.capacity {
+			if err := c.evict(); err != nil {
+				return err
+			}
+		} else {
+			break
+		}
+	}
 
 	if err := c.KVStore.Put(key, data); err != nil {
 		return err
 	}
 
 	c.EvictList.Add(key)
+
+	return nil
+}
+
+func (c *LRUCache) evict() error {
+	key := c.EvictList.Oldest()
+	if key == nil {
+		return fmt.Errorf("LRU evictor is empty")
+	}
+
+	if err := c.KVStore.Delete(*key); err != nil {
+		return err
+	}
+
+	if err := c.EvictList.Evict(*key); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -87,6 +116,15 @@ func (l *EvictList) Evict(key string) error {
 	l.Remove(val)
 
 	return nil
+}
+
+func (l *EvictList) Oldest() *string {
+	val := l.Back().Value
+	if val == nil {
+		return nil
+	}
+
+	return val.(*string)
 }
 
 func (l *EvictList) Freshen(key string) error {
