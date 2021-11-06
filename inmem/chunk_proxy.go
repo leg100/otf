@@ -21,7 +21,7 @@ func NewChunkProxy(cache otf.Cache, backend otf.ChunkStore) (otf.ChunkStore, err
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
 func (c *ChunkProxy) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
-	if all, err := c.cache.Get(id); err == nil {
+	if all, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
 		return otf.GetChunk(all, opts), nil
 	}
 
