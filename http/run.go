@@ -1,11 +1,13 @@
 package http
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/acarl005/stripansi"
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
@@ -291,9 +293,14 @@ func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
-	if _, err := io.Copy(w, logs); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	// Strip ansi color codes, line-by-line
+	scanner := bufio.NewScanner(logs)
+	for scanner.Scan() {
+		stripped := stripansi.Strip(scanner.Text())
+		w.Write([]byte(stripped + "\n"))
+	}
+	if err := scanner.Err(); err != nil {
+		w.Write([]byte("error encountered whilst streaming logs: " + err.Error()))
 	}
 }
 
