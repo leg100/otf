@@ -1,4 +1,4 @@
-package app
+package inmem
 
 import (
 	"context"
@@ -47,4 +47,14 @@ func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts otf.GetCh
 		return s.store[id][opts.Offset:], nil
 	}
 	return s.store[id][opts.Offset : opts.Offset+opts.Limit], nil
+}
+
+func (s *testChunkStore) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
+	if val, ok := s.store[id]; ok {
+		s.store[id] = append(val, chunk...)
+	} else {
+		s.store[id] = chunk
+	}
+
+	return nil
 }

@@ -41,10 +41,6 @@ func (s ApplyService) Get(id string) (*otf.Apply, error) {
 
 // GetChunk reads a chunk of logs for a terraform apply.
 func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
-	if chunk, err := s.cache.GetChunk(otf.LogCacheKey(id), opts); err == nil {
-		return chunk, nil
-	}
-
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
@@ -60,10 +56,6 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opt
 	if err != nil {
 		s.Error(err, "writing apply logs", "id", id, "start", opts.Start, "end", opts.End)
 		return err
-	}
-
-	if err := cacheLogChunk(ctx, s.cache, s.logs, id, chunk, opts.Start); err != nil {
-		s.Error(err, "caching log chunk", "id", id)
 	}
 
 	if !opts.End {

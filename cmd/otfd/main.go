@@ -115,10 +115,17 @@ func main() {
 	stateVersionStore := sql.NewStateVersionDB(db)
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
-	planLogStore := sql.NewPlanLogDB(db)
-	applyLogStore := sql.NewApplyLogDB(db)
-
 	eventService := inmem.NewEventService(logger)
+
+	planLogStore, err := inmem.NewChunkProxy(cache, sql.NewPlanLogDB(db))
+	if err != nil {
+		panic(fmt.Sprintf("unable to instantiate plan log store: %s", err.Error()))
+	}
+
+	applyLogStore, err := inmem.NewChunkProxy(cache, sql.NewApplyLogDB(db))
+	if err != nil {
+		panic(fmt.Sprintf("unable to instantiate apply log store: %s", err.Error()))
+	}
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)

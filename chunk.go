@@ -34,6 +34,24 @@ type PutChunkOptions struct {
 	End bool `schema:"end"`
 }
 
+// GetChunk returns a chunk of data.
+func GetChunk(data []byte, opts GetChunkOptions) []byte {
+	if opts.Limit == 0 {
+		return data[opts.Offset:]
+	}
+
+	if opts.Limit > ChunkMaxLimit {
+		opts.Limit = ChunkMaxLimit
+	}
+
+	// Adjust limit if it extends beyond size of value
+	if (opts.Offset + opts.Limit) > len(data) {
+		opts.Limit = len(data) - opts.Offset
+	}
+
+	return data[opts.Offset:(opts.Offset + opts.Limit)]
+}
+
 // Stream retrieves chunks from the chunk store for an entity with id at regular
 // intervals, and writes them to w, until the last chunk is retrieved.
 func Stream(ctx context.Context, id string, store ChunkStore, w io.Writer, interval time.Duration, limit int) error {
@@ -63,6 +81,7 @@ func Stream(ctx context.Context, id string, store ChunkStore, w io.Writer, inter
 // chunker writes chunks from the store to the wrapped writer
 type chunker struct {
 	ChunkStore
+	cache         Cache
 	offset, limit int
 	w             io.Writer
 	id            string

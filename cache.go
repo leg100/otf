@@ -12,9 +12,6 @@ var DefaultCacheTTL = 10 * time.Minute
 type Cache interface {
 	Get(key string) ([]byte, error)
 	Set(key string, val []byte) error
-
-	GetChunk(key string, opts GetChunkOptions) ([]byte, error)
-	AppendChunk(key string, val []byte) error
 }
 
 // Funcs for generating unique keys for cache entries.

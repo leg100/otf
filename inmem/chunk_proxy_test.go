@@ -1,21 +1,21 @@
-package app
+package inmem
 
 import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestCacheLogChunk checks that cacheLogChunk() does indeed ensure the cached
-// content matches the store content after caching a chunk.
-func TestCacheLogChunk(t *testing.T) {
+// TestChunkProxy_PutChunk ensures PutChunk() leaves both the backend and the
+// cache with identical content, handling the case where the cache is empty and
+// needs re-populating.
+func TestChunkProxy_PutChunk(t *testing.T) {
 	tests := []struct {
 		name  string
 		start bool
-		// chunk being cached
-		chunk string
 		// existing store content
 		store string
 		// existing cache content
@@ -24,19 +24,17 @@ func TestCacheLogChunk(t *testing.T) {
 		{
 			name:  "first chunk",
 			start: true,
-			chunk: "first",
-			store: "first",
+			store: "",
+			cache: "",
 		},
 		{
 			name:  "second chunk",
-			chunk: "_second",
-			store: "first_second",
+			store: "first",
 			cache: "first",
 		},
 		{
-			name:  "second chunk but empty cache",
-			chunk: "_second",
-			store: "first_second",
+			name:  "second chunk, empty cache",
+			store: "first",
 			cache: "",
 		},
 	}
@@ -50,7 +48,10 @@ func TestCacheLogChunk(t *testing.T) {
 			cache.cache["key.log"] = []byte(tt.cache)
 		}
 
-		err := cacheLogChunk(context.Background(), cache, store, "key", []byte(tt.chunk), tt.start)
+		proxy, err := NewChunkProxy(cache, store)
+		require.NoError(t, err)
+
+		err = proxy.PutChunk(context.Background(), "key", []byte("_new_chunk"), otf.PutChunkOptions{Start: tt.start})
 		require.NoError(t, err)
 
 		// expect cache to have identical content to store
