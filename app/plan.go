@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -16,14 +17,17 @@ type PlanService struct {
 
 	otf.EventService
 
+	cache otf.Cache
+
 	logr.Logger
 }
 
-func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService) *PlanService {
+func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *PlanService {
 	return &PlanService{
 		db:           db,
 		EventService: es,
 		logs:         logs,
+		cache:        cache,
 		Logger:       logger,
 	}
 }
@@ -36,17 +40,33 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 	return run.Plan, nil
 }
 
+func jsonPlanCacheKey(id string) string   { return fmt.Sprintf("%s.json", id) }
+func binaryPlanCacheKey(id string) string { return fmt.Sprintf("%s.bin", id) }
+
 // GetPlanJSON returns the JSON formatted plan file for the plan.
 func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
+	if plan, err := s.cache.Get(otf.JSONPlanCacheKey(id)); err == nil {
+		return plan, nil
+	}
+
 	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
+
+	if err := s.cache.Set(otf.JSONPlanCacheKey(id), run.Plan.PlanJSON); err != nil {
+		return nil, fmt.Errorf("caching plan: %w", err)
+	}
+
 	return run.Plan.PlanJSON, nil
 }
 
 // GetChunk reads a chunk of logs for a terraform plan.
 func (s PlanService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+	if chunk, err := s.cache.GetChunk(otf.LogCacheKey(id), opts); err == nil {
+		return chunk, nil
+	}
+
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
@@ -62,6 +82,10 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk []byte, opts
 	if err != nil {
 		s.Error(err, "writing plan logs", "id", id, "start", opts.Start, "end", opts.End)
 		return err
+	}
+
+	if err := cacheLogChunk(ctx, s.cache, s.logs, id, chunk, opts.Start); err != nil {
+		s.Error(err, "caching log chunk", "id", id)
 	}
 
 	return nil
