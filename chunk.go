@@ -35,9 +35,13 @@ type PutChunkOptions struct {
 }
 
 // GetChunk returns a chunk of data.
-func GetChunk(data []byte, opts GetChunkOptions) []byte {
+func GetChunk(data []byte, opts GetChunkOptions) ([]byte, error) {
+	if opts.Offset > len(data) {
+		return nil, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, len(data))
+	}
+
 	if opts.Limit == 0 {
-		return data[opts.Offset:]
+		return data[opts.Offset:], nil
 	}
 
 	if opts.Limit > ChunkMaxLimit {
@@ -49,7 +53,7 @@ func GetChunk(data []byte, opts GetChunkOptions) []byte {
 		opts.Limit = len(data) - opts.Offset
 	}
 
-	return data[opts.Offset:(opts.Offset + opts.Limit)]
+	return data[opts.Offset:(opts.Offset + opts.Limit)], nil
 }
 
 // Stream retrieves chunks from the chunk store for an entity with id at regular

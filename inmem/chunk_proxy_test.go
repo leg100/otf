@@ -58,3 +58,37 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 		assert.Equal(t, string(store.store["key"]), string(cache.cache["key.log"]))
 	}
 }
+
+// TestChunkProxy_GetChunk_FromCache tests retrieving a chunk from the cache.
+func TestChunkProxy_GetChunk_FromCache(t *testing.T) {
+	store := newTestChunkStore()
+	cache := newTestCache()
+
+	proxy, err := NewChunkProxy(cache, store)
+	require.NoError(t, err)
+
+	cache.cache["key.log"] = []byte("abcdefghijkl")
+
+	chunk, err := proxy.GetChunk(context.Background(), "key", otf.GetChunkOptions{})
+	require.NoError(t, err)
+
+	assert.Equal(t, "abcdefghijkl", string(chunk))
+}
+
+// TestChunkProxy_GetChunk_FromStore tests retrieving a chunk from the backend
+// store, and that the cache is re-populated.
+func TestChunkProxy_GetChunk_FromStore(t *testing.T) {
+	store := newTestChunkStore()
+	cache := newTestCache()
+
+	proxy, err := NewChunkProxy(cache, store)
+	require.NoError(t, err)
+
+	store.store["key"] = []byte("abcdefghijkl")
+
+	chunk, err := proxy.GetChunk(context.Background(), "key", otf.GetChunkOptions{})
+	require.NoError(t, err)
+
+	assert.Equal(t, "abcdefghijkl", string(chunk))
+	assert.Equal(t, "abcdefghijkl", string(cache.cache["key.log"]))
+}

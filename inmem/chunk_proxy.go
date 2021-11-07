@@ -22,7 +22,7 @@ func NewChunkProxy(cache otf.Cache, backend otf.ChunkStore) (otf.ChunkStore, err
 // using the backend store.
 func (c *ChunkProxy) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
 	if all, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
-		return otf.GetChunk(all, opts), nil
+		return otf.GetChunk(all, opts)
 	}
 
 	// Get all chunks from backend
@@ -37,7 +37,7 @@ func (c *ChunkProxy) GetChunk(ctx context.Context, id string, opts otf.GetChunkO
 	}
 
 	// Return requested chunk
-	return otf.GetChunk(all, opts), nil
+	return otf.GetChunk(all, opts)
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.

@@ -13,7 +13,7 @@ type testCache struct {
 	otf.Cache
 }
 
-//func newTestCache(
+func newTestCache() *testCache { return &testCache{cache: make(map[string][]byte)} }
 
 func (c *testCache) Set(key string, val []byte) error {
 	c.cache[key] = val
@@ -41,6 +41,8 @@ type testChunkStore struct {
 
 	otf.ChunkStore
 }
+
+func newTestChunkStore() *testChunkStore { return &testChunkStore{store: make(map[string][]byte)} }
 
 func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
 	if opts.Limit == 0 {
