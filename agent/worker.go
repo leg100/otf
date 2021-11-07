@@ -40,6 +40,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		w.StateVersionService,
 		js,
 		job,
+		w.environmentVariables,
 	)
 	if err != nil {
 		log.Error(err, "unable to create execution environment")
