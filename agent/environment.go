@@ -44,6 +44,8 @@ type Environment struct {
 
 	// CLI process output is written to this
 	out io.WriteCloser
+
+	environmentVariables []string
 }
 
 func NewEnvironment(
@@ -52,7 +54,8 @@ func NewEnvironment(
 	cvs otf.ConfigurationVersionService,
 	svs otf.StateVersionService,
 	js otf.JobService,
-	job otf.Job) (*Environment, error) {
+	job otf.Job,
+	environmentVariables []string) (*Environment, error) {
 
 	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
@@ -72,6 +75,7 @@ func NewEnvironment(
 		StateVersionService:         svs,
 		out:                         out,
 		path:                        path,
+		environmentVariables:        environmentVariables,
 	}, nil
 }
 
@@ -126,6 +130,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = e.path
 	cmd.Stdout = e.out
+	cmd.Env = e.environmentVariables
 
 	stderr := new(bytes.Buffer)
 	errWriter := io.MultiWriter(e.out, stderr)
