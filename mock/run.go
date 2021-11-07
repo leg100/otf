@@ -23,7 +23,7 @@ type RunService struct {
 	FinishFn         func(id string, opts otf.JobFinishOptions) (otf.Job, error)
 	GetPlanFileFn    func(ctx context.Context, id string, opts otf.PlanFileOptions) ([]byte, error)
 	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error
-	GetLogsFn        func(ctx context.Context, runID string) (io.ReadCloser, error)
+	GetLogsFn        func(ctx context.Context, runID string) (io.Reader, error)
 }
 
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
@@ -54,7 +54,7 @@ func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error
 	return s.ForceCancelFn(id, opts)
 }
 
-func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, error) {
+func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
 	return s.GetLogsFn(ctx, id)
 }
 
