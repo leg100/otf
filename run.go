@@ -110,7 +110,7 @@ type RunService interface {
 
 	// GetLogs gets the logs for a run, combining the logs of both its plan and
 	// apply.
-	GetLogs(ctx context.Context, runID string) (io.ReadCloser, error)
+	GetLogs(ctx context.Context, runID string) (io.Reader, error)
 
 	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error

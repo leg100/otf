@@ -37,18 +37,22 @@ func NewRunStreamer(run *Run, planLogsStore, applyLogsStore ChunkStore, interval
 func (s *RunStreamer) Stream(ctx context.Context) {
 	defer s.w.Close()
 
-	if err := s.stream(ctx, s.planLogsStore, s.run.Plan.ID, s.w); err != nil {
-		handleStreamError(err, s.w)
+	// stream plan logs, ignore EOF because we may want to stream apply logs too
+	err := s.stream(ctx, s.planLogsStore, s.run.Plan.ID, s.w)
+	if err != nil && err != io.EOF {
+		s.w.Write([]byte(fmt.Sprintf("stream error: %s", err.Error())))
 		return
 	}
 
 	if !s.run.Plan.HasChanges() || s.run.IsSpeculative() {
-		// no apply
 		return
 	}
 
-	if err := s.stream(ctx, s.applyLogsStore, s.run.Apply.ID, s.w); err != nil {
-		handleStreamError(err, s.w)
+	s.w.Write([]byte("\n"))
+
+	err = s.stream(ctx, s.applyLogsStore, s.run.Apply.ID, s.w)
+	if err != nil && err != io.EOF {
+		s.w.Write([]byte(fmt.Sprintf("stream error: %s", err.Error())))
 		return
 	}
 }
@@ -109,13 +113,4 @@ func writeChunk(chunk []byte, w io.Writer) error {
 	}
 
 	return eof
-}
-
-func handleStreamError(err error, w io.Writer) {
-	if err == io.EOF {
-		return
-	} else if err != nil {
-		w.Write([]byte(fmt.Sprintf("stream error: %s", err.Error())))
-		return
-	}
 }
