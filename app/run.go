@@ -269,7 +269,7 @@ func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byt
 	}
 
 	if err := s.cache.Set(otf.BinaryPlanCacheKey(id), plan); err != nil {
-		return err
+		return fmt.Errorf("caching plan: %w", err)
 	}
 
 	s.V(0).Info("uploaded binary plan file", "id", id)
@@ -289,7 +289,7 @@ func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte)
 	}
 
 	if err := s.cache.Set(otf.JSONPlanCacheKey(id), plan); err != nil {
-		return err
+		return fmt.Errorf("caching plan: %w", err)
 	}
 
 	s.V(0).Info("uploaded json plan file", "id", id)
