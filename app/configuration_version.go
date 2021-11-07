@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
@@ -10,14 +12,17 @@ var _ otf.ConfigurationVersionService = (*ConfigurationVersionService)(nil)
 type ConfigurationVersionService struct {
 	db otf.ConfigurationVersionStore
 
+	cache otf.Cache
+
 	logr.Logger
 
 	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, cache otf.Cache) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		db:     db,
+		cache:  cache,
 		Logger: logger,
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
@@ -79,6 +84,10 @@ func (s ConfigurationVersionService) Upload(id string, config []byte) error {
 		return nil
 	})
 
+	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), config); err != nil {
+		return fmt.Errorf("caching configuration version tarball: %w", err)
+	}
+
 	if err != nil {
 		s.Error(err, "uploading configuration version")
 		return err
@@ -88,9 +97,17 @@ func (s ConfigurationVersionService) Upload(id string, config []byte) error {
 }
 
 func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
+	if config, err := s.cache.Get(otf.ConfigVersionCacheKey(id)); err == nil {
+		return config, nil
+	}
+
 	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id, Config: true})
 	if err != nil {
 		return nil, err
+	}
+
+	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), cv.Config); err != nil {
+		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
 
 	return cv.Config, nil

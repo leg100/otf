@@ -63,22 +63,5 @@ func getChunk(ctx context.Context, db Getter, table, idCol, idVal string, opts o
 		}
 	}
 
-	if opts.Offset > len(merged) {
-		return nil, fmt.Errorf("offset greater than size of logs: %d > %d", opts.Offset, len(merged))
-	}
-
-	if opts.Limit == 0 {
-		return merged[opts.Offset:], nil
-	}
-
-	if opts.Limit > otf.ChunkMaxLimit {
-		opts.Limit = otf.ChunkMaxLimit
-	}
-
-	// Adjust limit if it extends beyond size of logs
-	if (opts.Offset + opts.Limit) > len(merged) {
-		opts.Limit = len(merged) - opts.Offset
-	}
-
-	return merged[opts.Offset:(opts.Offset + opts.Limit)], nil
+	return otf.GetChunk(merged, opts)
 }

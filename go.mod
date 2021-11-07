@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/allegro/bigcache v1.2.1
 	github.com/go-logr/logr v1.0.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0
@@ -22,7 +23,6 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/mattn/go-isatty v0.0.3
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mitchellh/go-homedir v1.1.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pressly/goose/v3 v3.1.0
 	github.com/rs/zerolog v1.23.0
