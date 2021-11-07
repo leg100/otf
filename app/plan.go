@@ -40,9 +40,6 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 	return run.Plan, nil
 }
 
-func jsonPlanCacheKey(id string) string   { return fmt.Sprintf("%s.json", id) }
-func binaryPlanCacheKey(id string) string { return fmt.Sprintf("%s.bin", id) }
-
 // GetPlanJSON returns the JSON formatted plan file for the plan.
 func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
 	if plan, err := s.cache.Get(otf.JSONPlanCacheKey(id)); err == nil {

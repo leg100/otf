@@ -81,7 +81,6 @@ func Stream(ctx context.Context, id string, store ChunkStore, w io.Writer, inter
 // chunker writes chunks from the store to the wrapped writer
 type chunker struct {
 	ChunkStore
-	cache         Cache
 	offset, limit int
 	w             io.Writer
 	id            string

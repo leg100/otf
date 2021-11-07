@@ -12,7 +12,7 @@ type CacheConfig struct {
 	TTL  time.Duration
 }
 
-func NewCache(config CacheConfig) (otf.Cache, error) {
+func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 	defaults := bigcache.DefaultConfig(otf.DefaultCacheTTL)
 
 	if config.TTL != 0 {

@@ -213,7 +213,7 @@ func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, erro
 		defer w.Close()
 
 		// Get plan logs
-		if err := otf.Stream(ctx, run.Plan.ID, s.planLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
+		if err := otf.Stream(ctx, run.Plan.ID, s.planLogs, w, time.Millisecond, 0); err != nil {
 			s.Error(err, "retrieving plan logs")
 			w.Write([]byte("unable to retrieve plan logs: " + err.Error()))
 			return
