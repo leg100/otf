@@ -19,17 +19,20 @@ type RunService struct {
 	planLogs  otf.ChunkStore
 	applyLogs otf.ChunkStore
 
+	cache otf.Cache
+
 	logr.Logger
 
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore, cache otf.Cache) *RunService {
 	return &RunService{
 		db:        db,
 		es:        es,
 		planLogs:  planLogs,
 		applyLogs: applyLogs,
+		cache:     cache,
 		Logger:    logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
@@ -265,6 +268,10 @@ func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byt
 		return err
 	}
 
+	if err := s.cache.Set(otf.BinaryPlanCacheKey(id), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
+	}
+
 	s.V(0).Info("uploaded binary plan file", "id", id)
 
 	return nil
@@ -279,6 +286,10 @@ func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte)
 	if err != nil {
 		s.Error(err, "uploading json plan file", "id", id)
 		return err
+	}
+
+	if err := s.cache.Set(otf.JSONPlanCacheKey(id), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
 	}
 
 	s.V(0).Info("uploaded json plan file", "id", id)

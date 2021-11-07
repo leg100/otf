@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -16,14 +17,17 @@ type PlanService struct {
 
 	otf.EventService
 
+	cache otf.Cache
+
 	logr.Logger
 }
 
-func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService) *PlanService {
+func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *PlanService {
 	return &PlanService{
 		db:           db,
 		EventService: es,
 		logs:         logs,
+		cache:        cache,
 		Logger:       logger,
 	}
 }
@@ -38,10 +42,19 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 
 // GetPlanJSON returns the JSON formatted plan file for the plan.
 func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
+	if plan, err := s.cache.Get(otf.JSONPlanCacheKey(id)); err == nil {
+		return plan, nil
+	}
+
 	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
+
+	if err := s.cache.Set(otf.JSONPlanCacheKey(id), run.Plan.PlanJSON); err != nil {
+		return nil, fmt.Errorf("caching plan: %w", err)
+	}
+
 	return run.Plan.PlanJSON, nil
 }
 

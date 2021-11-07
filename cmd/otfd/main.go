@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
@@ -14,7 +15,6 @@ import (
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
 	"github.com/mattn/go-isatty"
-	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -29,8 +29,6 @@ const (
 var (
 	// database is the postgres connection string
 	database string
-	// DataDir is the path to the directory used for storing OTF-related data
-	DataDir string
 )
 
 func main() {
@@ -39,6 +37,8 @@ func main() {
 	cmdutil.CatchCtrlC(cancel)
 
 	server := http.NewServer()
+
+	cacheConfig := inmem.CacheConfig{}
 
 	cmd := &cobra.Command{
 		Use:           "otfd",
@@ -62,7 +62,8 @@ func main() {
 	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	cmd.Flags().StringVar(&logColor, "log-color", "auto", "Toggle log colors: auto, true or false. Auto enables colors if using a TTY.")
-	cmd.Flags().StringVar(&DataDir, "data-dir", DefaultDataDir, "Path to directory for storing OTF related data")
+	cmd.Flags().IntVar(&cacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
+	cmd.Flags().DurationVar(&cacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
@@ -77,13 +78,6 @@ func main() {
 			panic(err.Error())
 		}
 		os.Exit(0)
-	}
-
-	// DataDir: Expand ~ to home dir
-	var err error
-	DataDir, err = homedir.Expand(DataDir)
-	if err != nil {
-		panic(err.Error())
 	}
 
 	// Setup logger
@@ -102,6 +96,13 @@ func main() {
 		}
 	}
 
+	// Setup cache
+	cache, err := inmem.NewCache(cacheConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	logger.Info("started cache", "max_size", cacheConfig.Size, "ttl", cacheConfig.TTL.String())
+
 	// Setup postgres connection
 	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
 	if err != nil {
@@ -114,19 +115,27 @@ func main() {
 	stateVersionStore := sql.NewStateVersionDB(db)
 	runStore := sql.NewRunDB(db)
 	configurationVersionStore := sql.NewConfigurationVersionDB(db)
-	planLogStore := sql.NewPlanLogDB(db)
-	applyLogStore := sql.NewApplyLogDB(db)
-
 	eventService := inmem.NewEventService(logger)
+
+	planLogStore, err := inmem.NewChunkProxy(cache, sql.NewPlanLogDB(db))
+	if err != nil {
+		panic(fmt.Sprintf("unable to instantiate plan log store: %s", err.Error()))
+	}
+
+	applyLogStore, err := inmem.NewChunkProxy(cache, sql.NewApplyLogDB(db))
+	if err != nil {
+		panic(fmt.Sprintf("unable to instantiate apply log store: %s", err.Error()))
+	}
 
 	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
 	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService)
-	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService, planLogStore, applyLogStore)
-	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService)
-	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService)
+	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, cache)
+	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, cache)
+	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService, planLogStore, applyLogStore, cache)
+	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService, cache)
+	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService, cache)
 	server.EventService = eventService
+	server.CacheService = cache
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {

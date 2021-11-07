@@ -99,10 +99,6 @@ func (p *Plan) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunFunc(run.uploadPlan); err != nil {
-		return err
-	}
-
 	if err := env.RunFunc(run.uploadJSONPlan); err != nil {
 		return err
 	}

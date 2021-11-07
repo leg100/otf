@@ -16,14 +16,17 @@ type ApplyService struct {
 
 	otf.EventService
 
+	cache otf.Cache
+
 	logr.Logger
 }
 
-func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService) *ApplyService {
+func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *ApplyService {
 	return &ApplyService{
 		db:           db,
 		EventService: es,
 		logs:         logs,
+		cache:        cache,
 		Logger:       logger,
 	}
 }
