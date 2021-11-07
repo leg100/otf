@@ -199,40 +199,17 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 
 // GetLogs gets the logs for a run, combining the logs of both its plan and
 // apply.
-func (s RunService) GetLogs(ctx context.Context, id string) (io.ReadCloser, error) {
+func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
 	run, err := s.Get(id)
 	if err != nil {
 		s.Error(err, "getting run for reading logs", "id", id)
 		return nil, err
 	}
 
-	r, w := io.Pipe()
+	streamer := otf.NewRunStreamer(run, s.planLogs, s.applyLogs, time.Millisecond*500)
+	go streamer.Stream(ctx)
 
-	// Stream logs in background routine
-	go func() {
-		defer w.Close()
-
-		// Get plan logs
-		if err := otf.Stream(ctx, run.Plan.ID, s.planLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
-			s.Error(err, "retrieving plan logs")
-			w.Write([]byte("unable to retrieve plan logs: " + err.Error()))
-			return
-		}
-
-		if !run.Plan.HasChanges() || run.IsSpeculative() {
-			// no apply
-			return
-		}
-
-		// Get apply logs
-		if err := otf.Stream(ctx, run.Apply.ID, s.applyLogs, w, time.Second, otf.ChunkMaxLimit); err != nil {
-			s.Error(err, "retrieving apply logs")
-			w.Write([]byte("unable to retrieve apply logs: " + err.Error()))
-			return
-		}
-	}()
-
-	return r, nil
+	return streamer, nil
 }
 
 // GetPlanFile returns the plan file in json format for the run.
