@@ -17,5 +17,5 @@ func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts GetChunkO
 		return nil, fmt.Errorf("no object found with id: %s", id)
 	}
 
-	return data[opts.Offset:(opts.Offset + opts.Limit)], nil
+	return GetChunk(data, opts)
 }
