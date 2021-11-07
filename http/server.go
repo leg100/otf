@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
@@ -52,6 +53,7 @@ type Server struct {
 	RunService                  otf.RunService
 	PlanService                 otf.PlanService
 	ApplyService                otf.ApplyService
+	CacheService                *bigcache.BigCache
 }
 
 // NewServer is the constructor for Server
@@ -69,6 +71,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
+	router.HandleFunc("/metrics/cache.json", server.CacheStats)
 
 	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")

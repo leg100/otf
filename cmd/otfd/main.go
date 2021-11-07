@@ -135,6 +135,7 @@ func main() {
 	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService, cache)
 	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService, cache)
 	server.EventService = eventService
+	server.CacheService = cache
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
