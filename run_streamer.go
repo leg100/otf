@@ -64,7 +64,7 @@ func (s *RunStreamer) Read(p []byte) (int, error) {
 
 // stream streams chunks of data, from a store at intermittent intervals to
 // prevent thrashing the store.
-func (c *RunStreamer) stream(ctx context.Context, store ChunkStore, id string, w io.Writer) error {
+func (s *RunStreamer) stream(ctx context.Context, store ChunkStore, id string, w io.Writer) error {
 	offset := 0
 
 	for {
@@ -82,7 +82,7 @@ func (c *RunStreamer) stream(ctx context.Context, store ChunkStore, id string, w
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(c.interval):
+		case <-time.After(s.interval):
 			// Pause to prevent thrashing store
 		}
 	}
