@@ -23,18 +23,20 @@ type JobWriter struct {
 
 // Write uploads a chunk of logs to the server.
 func (w *JobWriter) Write(p []byte) (int, error) {
-	opts := PutChunkOptions{}
+	// is this the first chunk to be written?
+	var firstChunk bool
 
-	// First chunk is prefixed with STX
 	if !w.started {
-		w.started = true
-		opts.Start = true
+		firstChunk = true
 	}
 
-	if err := w.PutChunk(context.Background(), w.ID, p, opts); err != nil {
+	if err := w.PutChunk(context.Background(), w.ID, p, PutChunkOptions{Start: firstChunk}); err != nil {
 		w.Error(err, "unable to write logs")
-		w.started = false
 		return 0, err
+	}
+
+	if firstChunk {
+		w.started = true
 	}
 
 	return len(p), nil
