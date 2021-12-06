@@ -3,6 +3,10 @@ package http
 import (
 	"context"
 	"fmt"
+
+	"github.com/felixge/httpsnoop"
+	"github.com/gorilla/handlers"
+
 	"net"
 	"net/http"
 	"time"
@@ -12,7 +16,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/urfave/negroni"
 )
 
 const (
@@ -66,9 +69,17 @@ func NewServer() *Server {
 	return s
 }
 
-// NewRouter constructs a negroni-wrapped HTTP router
-func NewRouter(server *Server) *negroni.Negroni {
+// NewRouter constructs an HTTP router
+func NewRouter(server *Server) *mux.Router {
 	router := mux.NewRouter()
+
+	// Catch panics and return 500s
+	router.Use(handlers.RecoveryHandler())
+
+	// Optionally enable HTTP request logging
+	if server.EnableRequestLogging {
+		router.Use(server.loggingMiddleware)
+	}
 
 	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
 	router.HandleFunc("/metrics/cache.json", server.CacheStats)
@@ -145,20 +156,7 @@ func NewRouter(server *Server) *negroni.Negroni {
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
-	// Setup negroni and middleware
-	n := negroni.New()
-
-	// Catch panics and return 500s
-	n.Use(negroni.NewRecovery())
-
-	// Optionally enable HTTP request logging
-	if server.EnableRequestLogging {
-		n.UseFunc(NewLogHandler(server.Logger))
-	}
-
-	n.UseHandler(router)
-
-	return n
+	return router
 }
 
 func (s *Server) SetupRoutes() {
@@ -212,18 +210,15 @@ func (s *Server) Close() error {
 	return s.server.Shutdown(ctx)
 }
 
-// NewLogHandler returns negroni middleware that logs HTTP requests
-func NewLogHandler(logger logr.Logger) negroni.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-		start := time.Now()
+// newLoggingMiddleware returns middleware that logs HTTP requests
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m := httpsnoop.CaptureMetrics(next, w, r)
 
-		next(rw, r)
-
-		res := rw.(negroni.ResponseWriter)
-		logger.Info("request",
-			"duration", time.Since(start).Milliseconds(),
-			"status", res.Status(),
+		s.Logger.Info("request",
+			"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+			"status", m.Code,
 			"method", r.Method,
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
-	}
+	})
 }
