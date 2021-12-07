@@ -74,7 +74,7 @@ func NewRouter(server *Server) *mux.Router {
 	router := mux.NewRouter()
 
 	// Catch panics and return 500s
-	router.Use(handlers.RecoveryHandler())
+	router.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
 	// Optionally enable HTTP request logging
 	if server.EnableRequestLogging {
