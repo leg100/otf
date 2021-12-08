@@ -4,8 +4,9 @@ RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = otf
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
-	-X '.Version=$(VERSION)'	\
-	-X '.Commit=$(GIT_COMMIT)'	\
+	-X 'github.com/leg100/otf.Version=$(VERSION)'	\
+	-X 'github.com/leg100/otf.Commit=$(GIT_COMMIT)'	\
+	-X 'github.com/leg100/otf.Built=$(shell date +%s)'	\
 	" \
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
