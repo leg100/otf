@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{ range .Stylesheets }}
+  <link rel="stylesheet" href="/{{ . }}">
+  {{ end }}
+  <title>oTF</title>
+</head>
+<body>
+  <header>
+    <nav class="navbar navbar-dark navbar-bg-color">
+      <div class="container-fluid">
+        <span class="navbar-brand h1">oTF</span>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <div class="container">
+      <h1 class="mt-5">{{ .Title }}</h1>
+
+      {{ range .FlashMessages }}
+      <div class="alert alert-primary alert-dismissible" role="alert">
+        {{ . }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {{ end }}
+
+      {{ template "content" . }}
+    </div>
+  </main>
+  <script src="/static/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+</body>
+</html>

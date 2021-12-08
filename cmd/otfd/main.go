@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/assets"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
@@ -51,6 +52,7 @@ func main() {
 	}
 
 	var help bool
+	var devMode bool
 
 	// Toggle log colors. Must be one of auto, true, or false.
 	var logColor string
@@ -65,6 +67,7 @@ func main() {
 	cmd.Flags().IntVar(&cacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
 	cmd.Flags().DurationVar(&cacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
+	cmd.Flags().BoolVar(&devMode, "dev-mode", false, "Enable developer mode.")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
@@ -136,6 +139,11 @@ func main() {
 	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService, cache)
 	server.EventService = eventService
 	server.CacheService = cache
+
+	if devMode {
+		server.Server = assets.NewDevServer()
+		logger.Info("enabled developer mode")
+	}
 
 	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
 	if err != nil {
