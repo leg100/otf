@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -33,6 +34,8 @@ const (
 
 var (
 	embeddedAssetServer assets.Server
+
+	sessionManager = scs.New()
 )
 
 // Load embedded templates at startup
@@ -176,6 +179,9 @@ func NewRouter(server *Server) *mux.Router {
 
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
+
+	// User routes
+	sub.HandleFunc("/", server.GetProfile).Methods("GET")
 
 	return router
 }
