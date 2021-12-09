@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/assets"
 )
 
 const (
@@ -29,6 +30,20 @@ const (
 	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
 	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
+
+var (
+	embeddedAssetServer assets.Server
+)
+
+// Load embedded templates at startup
+func init() {
+	server, err := assets.NewEmbeddedServer()
+	if err != nil {
+		panic("unable to load embedded assets: " + err.Error())
+	}
+
+	embeddedAssetServer = server
+}
 
 type WebRoute string
 
@@ -57,6 +72,8 @@ type Server struct {
 	PlanService                 otf.PlanService
 	ApplyService                otf.ApplyService
 	CacheService                *bigcache.BigCache
+
+	assets.Server
 }
 
 // NewServer is the constructor for Server
@@ -64,6 +81,7 @@ func NewServer() *Server {
 	s := &Server{
 		server: &http.Server{},
 		err:    make(chan error),
+		Server: embeddedAssetServer,
 	}
 
 	return s
@@ -94,6 +112,7 @@ func NewRouter(server *Server) *mux.Router {
 	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
+	router.PathPrefix("/static/").Handler(http.FileServer(server.GetStaticFS())).Methods("GET")
 
 	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
 

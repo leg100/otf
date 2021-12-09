@@ -1,0 +1,75 @@
+{{ define "content" }}
+  <hr class="my-1">
+
+  <div class="my-3">
+    <p>
+      <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#createToken" aria-expanded="false" aria-controls="createToken">
+        Create token
+      </button>
+    </p>
+    <div class="collapse" id="createToken">
+      <div class="card card-body">
+        <form action="/app/settings/tokens", method="POST">
+          <div class="mb-2">
+            <label for="description" class="form-label">Description</label>
+            <input type="text" class="form-control" name="description" id="description" required>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            Create
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <div class="my-3 d-grid gap-2">
+    {{ range .Tokens }}
+    <div class="d-flex bg-light border align-items-center">
+      <div class="p-2 flex-grow-1">
+        <span><strong>{{ .Description }}</strong></span>
+      </div>
+      <div class="p-2">
+        <span>Created {{ ago .CreatedAt }} ago</span>
+          <button class="btn btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#deleteTokenModal">
+            <svg width="1em" height="1em" fill="currentColor" alt="Delete">
+              <use href="/static/icons/bootstrap-icons.svg#trash">
+            </svg>
+          </button>
+      </div>
+    </div>
+
+    <!-- Delete Token Modal -->
+    <div class="modal fade" id="deleteTokenModal" tabindex="-1" aria-labelledby="deleteTokenLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteTokenLabel">Deleting token {{ .Description }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Any integrations using this token will stop working immediately.
+
+This operation cannot be undone. Are you sure?
+          </div>
+          <div class="modal-footer">
+            <form class="d-inline-block" action="/app/settings/tokens/delete" method="POST">
+              <button type="submit" class="btn btn-danger">Delete</button>
+              <input type="hidden" name="id" value="{{ .ID }}" required>
+            </form>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{ else }}
+    <div class="row">
+      <div class="col">
+        <strong>No tokens</strong>
+      </div>
+    </div>
+  {{ end }}
+  </div>
+
+{{ end }}

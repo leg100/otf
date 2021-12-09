@@ -3,6 +3,9 @@ module github.com/leg100/otf
 go 1.16
 
 require (
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/allegro/bigcache v1.2.1
@@ -18,7 +21,9 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-retryablehttp v0.5.2
 	github.com/hashicorp/hcl/v2 v2.10.0
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/iancoleman/strcase v0.2.0
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jmoiron/sqlx v1.3.1
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
