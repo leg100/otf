@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/leg100/otf/http/assets"
+	"github.com/leg100/otf/http/html/assets"
 )
 
 // User represents a Terraform Enterprise user.
@@ -33,14 +33,7 @@ type TwoFactor struct {
 }
 
 func (s *Server) GetProfile(w http.ResponseWriter, r *http.Request) {
-	tokens, err := s.TokenService.List(r.Context())
-	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
-		return
-	}
-
-	opts := TokenListTemplateOptions{
-		Tokens:                tokens,
+	opts := GetProfileTemplateOptions{
 		LayoutTemplateOptions: s.NewLayoutTemplateOptions("Tokens", w, r),
 	}
 
@@ -51,9 +44,8 @@ func (s *Server) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) NewLayoutTemplateOptions(title string, w http.ResponseWriter, r *http.Request) assets.LayoutTemplateOptions {
 	return assets.LayoutTemplateOptions{
-		Title:         title,
-		FlashMessages: s.GetFlashMessages(w, r),
-		Stylesheets:   s.Links(),
+		Title:       title,
+		Stylesheets: s.Links(),
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
-	"github.com/leg100/otf/http/assets"
+	"github.com/leg100/otf/http/html/assets"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
@@ -69,6 +69,9 @@ func main() {
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 	cmd.Flags().BoolVar(&devMode, "dev-mode", false, "Enable developer mode.")
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
+
+	cmd.Flags().StringVar(&server.HTMLConfig.GithubClientID, "github-client-id", "", "Github Client ID")
+	cmd.Flags().StringVar(&server.HTMLConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 

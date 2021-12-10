@@ -11,13 +11,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/assets"
+	"github.com/leg100/otf/http/html"
+	"github.com/leg100/otf/http/html/assets"
 )
 
 const (
@@ -31,22 +31,6 @@ const (
 	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
 	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
-
-var (
-	embeddedAssetServer assets.Server
-
-	sessionManager = scs.New()
-)
-
-// Load embedded templates at startup
-func init() {
-	server, err := assets.NewEmbeddedServer()
-	if err != nil {
-		panic("unable to load embedded assets: " + err.Error())
-	}
-
-	embeddedAssetServer = server
-}
 
 type WebRoute string
 
@@ -77,14 +61,16 @@ type Server struct {
 	CacheService                *bigcache.BigCache
 
 	assets.Server
+
+	HTMLConfig *html.Config
 }
 
 // NewServer is the constructor for Server
 func NewServer() *Server {
 	s := &Server{
-		server: &http.Server{},
-		err:    make(chan error),
-		Server: embeddedAssetServer,
+		server:     &http.Server{},
+		err:        make(chan error),
+		HTMLConfig: &html.Config{},
 	}
 
 	return s
@@ -180,8 +166,8 @@ func NewRouter(server *Server) *mux.Router {
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
-	// User routes
-	sub.HandleFunc("/", server.GetProfile).Methods("GET")
+	// Add web app routes.
+	html.New(router, server.HTMLConfig)
 
 	return router
 }

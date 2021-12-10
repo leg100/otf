@@ -8,7 +8,9 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/allegro/bigcache v1.2.1
+	github.com/dghubble/gologin/v2 v2.3.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.0.0
 	github.com/google/go-cmp v0.5.6 // indirect
@@ -36,6 +38,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
