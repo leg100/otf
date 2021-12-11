@@ -51,7 +51,7 @@ func NewEmbeddedServer() (*EmbeddedServer, error) {
 		server.templates[filepath.Base(p)] = template
 	}
 
-	server.links, err = CacheBustingPaths(embedded, filepath.Join(stylesheetDir, "*.css"))
+	server.links, err = cacheBustingPaths(embedded, filepath.Join(stylesheetDir, "*.css"))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read embedded stylesheets directory: %w", err)
 	}

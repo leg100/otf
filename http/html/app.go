@@ -103,7 +103,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		LayoutTemplateOptions: assets.NewLayoutTemplateOptions("Tokens", w, r),
 	}
 
-	if err := s.GetTemplate("login.tmpl").Execute(w, assetServer.LayoutOptions("Login")); err != nil {
+	if err := assetServer.RenderTemplate(r.Context(), "login.tmpl", w, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

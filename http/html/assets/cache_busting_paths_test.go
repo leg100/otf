@@ -22,7 +22,7 @@ func TestCacheBustingPaths(t *testing.T) {
 		"test/c.txt?v=50ae61e841fac4e8f9e40baf2ad36ec868922ea48368c18f9535e47db56dd7fb",
 	}
 
-	paths, err := CacheBustingPaths(fs, "**/*.txt")
+	paths, err := cacheBustingPaths(fs, "**/*.txt")
 	require.NoError(t, err)
 	assert.Equal(t, want, paths)
 }

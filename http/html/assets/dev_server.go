@@ -56,7 +56,7 @@ func (s *DevServer) LayoutOptions(title string) *LayoutTemplateOptions {
 }
 
 func (s *DevServer) links() []string {
-	links, err := CacheBustingPaths(os.DirFS(s.root), filepath.Join(stylesheetDir, "*.css"))
+	links, err := cacheBustingPaths(os.DirFS(s.root), filepath.Join(stylesheetDir, "*.css"))
 	if err != nil {
 		panic("unable to read embedded stylesheets directory: " + err.Error())
 	}

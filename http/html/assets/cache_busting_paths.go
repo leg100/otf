@@ -8,11 +8,11 @@ import (
 	"net/url"
 )
 
-// CacheBustingPaths walks fs for files matching pattern, such as CSS files, and
+// cacheBustingPaths walks fs for files matching pattern, such as CSS files, and
 // returns a list of cache-busting relative URLs for each file. A query string
 // is appended to each path, v=hash, where hash is the SHA256 of the contents of
 // the file.
-func CacheBustingPaths(root fs.FS, pattern string) ([]string, error) {
+func cacheBustingPaths(root fs.FS, pattern string) ([]string, error) {
 	var paths []string
 
 	matches, err := fs.Glob(root, pattern)
