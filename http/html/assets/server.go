@@ -2,6 +2,7 @@ package assets
 
 import (
 	"html/template"
+	"io"
 	"net/http"
 )
 
@@ -15,9 +16,9 @@ const (
 // Server provides the means to retrieve http assets (templates and static files
 // such as CSS).
 type Server interface {
-	GetTemplate(string) *template.Template
+	RenderTemplate(name string, w io.Writer, data interface{}) error
 	GetStaticFS() http.FileSystem
-	Links() []string
+	LayoutOptions() *LayoutTemplateOptions
 }
 
 type LayoutTemplateOptions struct {

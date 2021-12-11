@@ -20,33 +20,15 @@ const (
 )
 
 var (
-	embeddedAssetServer assets.Server
+	assetServer assets.Server
 
 	sessions = scs.New()
-
-	homeHtml = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Github Example</title>
-    <style>
-      a.button {
-        text-decoration: none;
-      }
-    </style>
-  </head>
-
-  <body>
-    <a href="/github/login" class="button">Login with Github</a>
-  </body>
-</html>
-`
 )
 
 type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
+	DevMode            bool
 }
 
 // Load embedded templates at startup
@@ -56,11 +38,15 @@ func init() {
 		panic("unable to load embedded assets: " + err.Error())
 	}
 
-	embeddedAssetServer = server
+	assetServer = server
 }
 
 // New configures and adds the app to the HTTP mux.
 func New(router *mux.Router, config *Config) {
+	if config.DevMode {
+		assetServer = assets.NewDevServer()
+	}
+
 	// 1. Register LoginHandler and CallbackHandler
 	oauth2Config := &oauth2.Config{
 		ClientID:     config.GithubClientID,
@@ -72,6 +58,7 @@ func New(router *mux.Router, config *Config) {
 
 	router = router.NewRoute().Subrouter()
 
+	// Enable sessions middleware
 	router.Use(sessions.LoadAndSave)
 
 	router.HandleFunc("/profile", profileHandler).Methods("GET")
@@ -80,6 +67,7 @@ func New(router *mux.Router, config *Config) {
 	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(oauth2Config, nil)))
 	router.Handle("/github/callback", github.StateHandler(stateConfig, github.CallbackHandler(oauth2Config, issueSession(), nil)))
 
+	router.HandleFunc("/login", loginHandler).Methods("GET")
 	router.HandleFunc("/logout", logoutHandler).Methods("POST")
 }
 
@@ -108,6 +96,16 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	io.WriteString(w, "You are logged in as: "+username)
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	opts := GetProfileTemplateOptions{
+		LayoutTemplateOptions: assets.NewLayoutTemplateOptions("Tokens", w, r),
+	}
+
+	if err := s.GetTemplate("login.tmpl").Execute(w, assetServer.LayoutOptions("Login")); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
