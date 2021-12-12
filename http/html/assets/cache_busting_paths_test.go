@@ -16,15 +16,23 @@ func TestCacheBustingPaths(t *testing.T) {
 		"/test/b.txt", "def",
 		"/test/c.txt", "ghi",
 	)
-	want := []string{
+	_ = []string{
 		"test/a.txt?v=ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		"test/b.txt?v=cb8379ac2098aa165029e3938a51da0bcecfc008fd6795f401178647f96c5b34",
 		"test/c.txt?v=50ae61e841fac4e8f9e40baf2ad36ec868922ea48368c18f9535e47db56dd7fb",
 	}
 
-	paths, err := cacheBustingPaths(fs, "**/*.txt")
+	static := StaticFS{fs}
+
+	// a
+
+	name, err := static.AppendHash("/test/a.txt")
 	require.NoError(t, err)
-	assert.Equal(t, want, paths)
+	assert.Equal(t, "/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt", name)
+
+	contents, err := static.Open("/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt")
+	require.NoError(t, err)
+	assert.Equal(t, "abc", string(contents))
 }
 
 // newTestFilesystem creates a temporary filesystem consisting of paths of files

@@ -2,45 +2,65 @@ package assets
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
+	"fmt"
 	"io"
 	"io/fs"
-	"net/url"
+	"strings"
 )
 
-// cacheBustingPaths walks fs for files matching pattern, such as CSS files, and
-// returns a list of cache-busting relative URLs for each file. A query string
-// is appended to each path, v=hash, where hash is the SHA256 of the contents of
-// the file.
-func cacheBustingPaths(root fs.FS, pattern string) ([]string, error) {
-	var paths []string
+// StaticFS provides a filesystem for accessing static assets. Handles creating
+// and looking up paths containing "cache busting" hashes.
+type StaticFS struct {
+	// Wrapped is the underlying filesystem.
+	wrapped fs.FS
+}
 
-	matches, err := fs.Glob(root, pattern)
+// NewStaticFS constructs a StaticFS, wrapping the passed filesystem.
+func NewStaticFS(wrap fs.FS) *StaticFS {
+	return &StaticFS{wrap}
+}
+
+// Open opens the named file after stripping the hash from the name.
+func (fs *StaticFS) Open(name string) ([]byte, error) {
+	parts := strings.Split(name, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("expected two dots in path: %s", name)
+	}
+
+	// new name without hash
+	name = fmt.Sprintf("%s.%s", parts[0], parts[1])
+
+	f, err := fs.wrapped.Open(name)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, m := range matches {
-		f, err := root.Open(m)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
+	return io.ReadAll(f)
+}
 
-		h := sha256.New()
-		_, err = io.Copy(h, f)
-		if err != nil {
-			return nil, err
-		}
-
-		u := url.URL{Path: m}
-
-		q := u.Query()
-		q.Add("v", hex.EncodeToString(h.Sum(nil)))
-		u.RawQuery = q.Encode()
-
-		paths = append(paths, u.String())
+// AppendHash inserts a hash of the named file into its filename, before the
+// filename extension: <path>.<ext> -> <path>.<hash>.<ext>, where <hash> is the
+// hex format of the SHA256 hash of the contents of the file.
+func (fs *StaticFS) AppendHash(name string) (string, error) {
+	f, err := fs.wrapped.Open(name)
+	if err != nil {
+		return "", err
 	}
 
-	return paths, nil
+	// TODO: this is an expensive operation to perform if this method is to be
+	// called everytime a template is rendered; consider caching result.
+	h := sha256.New()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+
+	parts := strings.Split(name, ".")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("expected one dot in path: %s", name)
+	}
+
+	nameWithHash := fmt.Sprintf("%s.%s.%s", parts[0], h.Sum(nil), parts[1])
+
+	return nameWithHash, nil
 }

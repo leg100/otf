@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  {{ range .Stylesheets }}
-  <link rel="stylesheet" href="/{{ . }}">
-  {{ end }}
+  <link rel="stylesheet" href="{{ asset "/static/css/custom.css" }}">
+  <link rel="stylesheet" href="{{ asset "/static/css/bootstrap-icons.css" }}">
   <title>oTF</title>
 </head>
 <body>
@@ -30,6 +29,6 @@
       {{ template "content" .Content }}
     </div>
   </main>
-  <script src="/static/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+  <script src="{{ asset "/static/js/bootstrap.bundle.min.js" }}" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
 </body>
 </html>
