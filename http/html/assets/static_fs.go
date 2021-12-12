@@ -21,7 +21,7 @@ func NewStaticFS(wrap fs.FS) *StaticFS {
 }
 
 // Open opens the named file after stripping the hash from the name.
-func (fs *StaticFS) Open(name string) ([]byte, error) {
+func (fs *StaticFS) Open(name string) (fs.File, error) {
 	parts := strings.Split(name, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("expected two dots in path: %s", name)
@@ -30,12 +30,7 @@ func (fs *StaticFS) Open(name string) ([]byte, error) {
 	// new name without hash
 	name = fmt.Sprintf("%s.%s", parts[0], parts[1])
 
-	f, err := fs.wrapped.Open(name)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.ReadAll(f)
+	return fs.wrapped.Open(name)
 }
 
 // AppendHash inserts a hash of the named file into its filename, before the

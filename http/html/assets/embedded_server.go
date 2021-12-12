@@ -4,11 +4,8 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"net/http"
 	"path/filepath"
-
-	"github.com/Masterminds/sprig"
 )
 
 var (
@@ -21,34 +18,22 @@ type EmbeddedServer struct {
 	// templates maps template names to parsed contents
 	templates map[string]*template.Template
 
-	// The embedded filesystem
-	filesystem embed.FS
+	// filesystem containing static assets
+	static *StaticFS
 
 	// relative paths to stylesheets for use in <link...> tags
 	links []string
 }
 
 func NewEmbeddedServer() (*EmbeddedServer, error) {
-	pattern := fmt.Sprintf("%s/*.tmpl", contentTemplatesDir)
-
-	paths, err := fs.Glob(embedded, pattern)
+	cache, err := newTemplateCache(embedded, contentTemplatesGlob, layoutTemplatePath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read embedded templates directory: %w", err)
+		return nil, err
 	}
 
 	server := EmbeddedServer{
-		templates:  make(map[string]*template.Template, len(paths)),
-		filesystem: embedded,
-	}
-
-	name := filepath.Base(layoutTemplatePath)
-	for _, p := range paths {
-		template, err := template.New(name).Funcs(sprig.FuncMap()).ParseFS(embedded, layoutTemplatePath, p)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse embedded template: %w", err)
-		}
-
-		server.templates[filepath.Base(p)] = template
+		templates: cache,
+		static:    NewStaticFS(embedded),
 	}
 
 	server.links, err = cacheBustingPaths(embedded, filepath.Join(stylesheetDir, "*.css"))
@@ -64,7 +49,7 @@ func (s *EmbeddedServer) GetTemplate(name string) *template.Template {
 }
 
 func (s *EmbeddedServer) GetStaticFS() http.FileSystem {
-	return http.FS(s.filesystem)
+	return http.FS(s.static)
 }
 
 func (s *EmbeddedServer) Links() []string {
