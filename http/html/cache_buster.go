@@ -40,6 +40,13 @@ func (cb *cacheBuster) Open(name string) (http.File, error) {
 // extension: <path>.<ext> -> <path>.<hash>.<ext>, where <hash> is the hex
 // format of the SHA256 hash of the contents of the file.
 func (cb *cacheBuster) Path(name string) (string, error) {
+	var leadingSlash bool
+
+	if strings.HasPrefix(name, "/") {
+		leadingSlash = true
+		name = strings.TrimPrefix(name, "/")
+	}
+
 	f, err := cb.FS.Open(name)
 	if err != nil {
 		return "", err
@@ -59,6 +66,10 @@ func (cb *cacheBuster) Path(name string) (string, error) {
 	}
 
 	nameWithHash := fmt.Sprintf("%s.%x.%s", parts[0], h.Sum(nil), parts[1])
+
+	if leadingSlash {
+		nameWithHash = "/" + nameWithHash
+	}
 
 	return nameWithHash, nil
 }

@@ -79,14 +79,13 @@ func (app *application) AddRoutes(router *mux.Router) {
 	// Enable sessions middleware
 	router.Use(app.sessions.LoadAndSave)
 
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
-
 	stateConfig := gologin.DebugOnlyCookieConfig
 	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
 	router.Handle("/github/callback", github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, app.issueSession(), nil)))
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
 }
 
 // render wraps calls to the template renderer, adding common data such as a
