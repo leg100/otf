@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ asset "/static/css/custom.css" }}">
-  <link rel="stylesheet" href="{{ asset "/static/css/bootstrap-icons.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/custom.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/bootstrap-icons.css" }}">
   <title>oTF</title>
 </head>
 <body>
@@ -19,7 +19,7 @@
     <div class="container">
       <h1 class="mt-5">{{ .Title }}</h1>
 
-      {{ range .FlashMessages }}
+      {{ if .Flash }}
       <div class="alert alert-primary alert-dismissible" role="alert">
         {{ . }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -29,6 +29,6 @@
       {{ template "content" .Content }}
     </div>
   </main>
-  <script src="{{ asset "/static/js/bootstrap.bundle.min.js" }}" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+  <script src="{{ addHash "/static/js/bootstrap.bundle.min.js" }}"></script>
 </body>
 </html>

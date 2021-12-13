@@ -1,4 +1,4 @@
-package assets
+package html
 
 import (
 	"io/fs"
@@ -22,17 +22,16 @@ func TestCacheBustingPaths(t *testing.T) {
 		"test/c.txt?v=50ae61e841fac4e8f9e40baf2ad36ec868922ea48368c18f9535e47db56dd7fb",
 	}
 
-	static := StaticFS{fs}
+	static := cacheBuster{fs}
 
 	// a
 
-	name, err := static.AppendHash("/test/a.txt")
+	path, err := static.Path("/test/a.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt", name)
+	assert.Equal(t, "/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt", path)
 
-	contents, err := static.Open("/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt")
+	_, err = static.Open("/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "abc", string(contents))
 }
 
 // newTestFilesystem creates a temporary filesystem consisting of paths of files

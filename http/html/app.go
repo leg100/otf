@@ -1,6 +1,8 @@
 package html
 
 import (
+	"context"
+	"html/template"
 	"io"
 	"net/http"
 
@@ -11,19 +13,21 @@ import (
 	"github.com/dghubble/gologin/v2"
 	"github.com/dghubble/gologin/v2/github"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf/http/html/assets"
 )
 
 const (
 	sessionUserKey  = "githubID"
 	sessionUsername = "githubUsername"
+	sessionFlashKey = "flash"
 )
 
-var (
-	assetServer assets.Server
+type Application struct {
+	sessions *scs.SessionManager
 
-	sessions = scs.New()
-)
+	oauth2Config *oauth2.Config
+
+	renderer
+}
 
 type Config struct {
 	GithubClientID     string
@@ -31,22 +35,8 @@ type Config struct {
 	DevMode            bool
 }
 
-// Load embedded templates at startup
-func init() {
-	server, err := assets.NewEmbeddedServer()
-	if err != nil {
-		panic("unable to load embedded assets: " + err.Error())
-	}
-
-	assetServer = server
-}
-
-// New configures and adds the app to the HTTP mux.
-func New(router *mux.Router, config *Config) {
-	if config.DevMode {
-		assetServer = assets.NewDevServer()
-	}
-
+// NewApplication constructs a new application with the given config
+func NewApplication(config *Config) (*Application, error) {
 	// 1. Register LoginHandler and CallbackHandler
 	oauth2Config := &oauth2.Config{
 		ClientID:     config.GithubClientID,
@@ -56,23 +46,54 @@ func New(router *mux.Router, config *Config) {
 		Scopes:       []string{"user:email", "read:org"},
 	}
 
+	renderer, err := newRenderer(config.DevMode)
+	if err != nil {
+		return nil, err
+	}
+
+	app := &Application{
+		sessions:     scs.New(),
+		oauth2Config: oauth2Config,
+		renderer:     renderer,
+	}
+
+	return app, nil
+}
+
+// AddRoutes adds application routes and middleware to an HTTP multiplexer.
+func (app *Application) AddRoutes(router *mux.Router) {
 	router = router.NewRoute().Subrouter()
 
 	// Enable sessions middleware
-	router.Use(sessions.LoadAndSave)
+	router.Use(app.sessions.LoadAndSave)
 
-	router.HandleFunc("/profile", profileHandler).Methods("GET")
+	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
 
 	stateConfig := gologin.DebugOnlyCookieConfig
-	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(oauth2Config, nil)))
-	router.Handle("/github/callback", github.StateHandler(stateConfig, github.CallbackHandler(oauth2Config, issueSession(), nil)))
+	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
+	router.Handle("/github/callback", github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, app.issueSession(), nil)))
 
-	router.HandleFunc("/login", loginHandler).Methods("GET")
-	router.HandleFunc("/logout", logoutHandler).Methods("POST")
+	router.HandleFunc("/login", app.loginHandler).Methods("GET")
+	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+}
+
+// render wraps calls to the template renderer, adding common data such as a
+// flash message.
+func (app *Application) render(ctx context.Context, name string, w io.Writer, content interface{}) error {
+	data := TemplateData{
+		Content: content,
+	}
+
+	// Get flash msg
+	if msg := app.sessions.GetString(ctx, sessionFlashKey); msg != "" {
+		data.Flash = template.HTML(msg)
+	}
+
+	return app.renderTemplate(name, w, data)
 }
 
 // issueSession issues a cookie session after successful Github login
-func issueSession() http.Handler {
+func (app *Application) issueSession() http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		githubUser, err := github.UserFromContext(r.Context())
 		if err != nil {
@@ -80,36 +101,32 @@ func issueSession() http.Handler {
 			return
 		}
 
-		sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
-		sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
+		app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
+		app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
 
 		http.Redirect(w, r, "/profile", http.StatusFound)
 	}
 	return http.HandlerFunc(fn)
 }
 
-func profileHandler(w http.ResponseWriter, r *http.Request) {
-	username := sessions.GetString(r.Context(), sessionUsername)
+func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
+	username := app.sessions.GetString(r.Context(), sessionUsername)
 	if username == "" {
-		io.WriteString(w, homeHtml)
+		io.WriteString(w, "")
 		return
 	}
 
 	io.WriteString(w, "You are logged in as: "+username)
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	opts := GetProfileTemplateOptions{
-		LayoutTemplateOptions: assets.NewLayoutTemplateOptions("Tokens", w, r),
-	}
-
-	if err := assetServer.RenderTemplate(r.Context(), "login.tmpl", w, nil); err != nil {
+func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
+	if err := app.render(r.Context(), "login.tmpl", w, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	if err := sessions.Destroy(r.Context()); err != nil {
+func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	if err := app.sessions.Destroy(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
