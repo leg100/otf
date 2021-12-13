@@ -26,9 +26,9 @@ func TestCacheBustingPaths(t *testing.T) {
 
 	// a
 
-	path, err := static.Path("/test/a.txt")
+	path, err := static.Path("test/a.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt", path)
+	assert.Equal(t, "test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt", path)
 
 	_, err = static.Open("/test/a.ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.txt")
 	require.NoError(t, err)

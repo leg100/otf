@@ -23,10 +23,7 @@ type templateData struct {
 	Content interface{}
 }
 
-// newTemplateCache populates a cache of templates: the pattern is used as a
-// glob to lookup templates in fsys, and each template is combined with the
-// layout template. The cache is keyed according to the basename of the
-// template.
+// newTemplateCache populates a cache of templates.
 func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
@@ -41,7 +38,7 @@ func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*templat
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		template, err := template.New(name).Funcs(functions).ParseFS(templates, page, layoutTemplatePath)
+		template, err := template.New(name).Funcs(functions).ParseFS(templates, layoutTemplatePath, page)
 		if err != nil {
 			return nil, err
 		}

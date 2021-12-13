@@ -1,8 +1,10 @@
 package html
 
 import (
+	"fmt"
 	"html/template"
 	"io"
+	"strings"
 )
 
 // renderer is capable of locating and rendering a template.
@@ -14,17 +16,11 @@ type renderer interface {
 // performance.
 type embeddedRenderer struct {
 	cache map[string]*template.Template
-
-	// filesystem containing static assets
-	static *cacheBuster
 }
 
 // devRenderer renders templates located on disk. No cache is used; ideal for
 // development purposes with something like livereload.
-type devRenderer struct {
-	// filesystem containing static assets
-	static *cacheBuster
-}
+type devRenderer struct{}
 
 func newRenderer(devMode bool) (renderer, error) {
 	if devMode {
@@ -49,7 +45,7 @@ func newEmbeddedRenderer() (*embeddedRenderer, error) {
 }
 
 func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
-	return r.cache[name].Execute(w, data)
+	return renderTemplateFromCache(r.cache, name, w, data)
 }
 
 func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
@@ -60,5 +56,19 @@ func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData
 		return err
 	}
 
-	return cache[name].Execute(w, data)
+	return renderTemplateFromCache(cache, name, w, data)
+}
+
+func renderTemplateFromCache(cache map[string]*template.Template, name string, w io.Writer, data templateData) error {
+	tmpl, ok := cache[name]
+	if !ok {
+		return fmt.Errorf("unable to locate template: %s", name)
+	}
+
+	bldr := strings.Builder{}
+	tmpl.Execute(&bldr, data)
+
+	fmt.Println(bldr.String())
+
+	return tmpl.Execute(w, data)
 }

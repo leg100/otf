@@ -122,9 +122,10 @@ func (app *application) issueSession() http.Handler {
 }
 
 func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: use middleware instead, i.e. isAuth()
 	username := app.sessions.GetString(r.Context(), sessionUsername)
 	if username == "" {
-		io.WriteString(w, "")
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 

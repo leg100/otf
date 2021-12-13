@@ -22,7 +22,8 @@ type cacheBuster struct {
 	fs.FS
 }
 
-// Open opens the named file after stripping the hash from the name.
+// Open strips the hash from the name before opening it in the wrapped
+// filesystem.
 func (cb *cacheBuster) Open(name string) (http.File, error) {
 	parts := strings.Split(name, ".")
 	if len(parts) != 3 {
@@ -57,7 +58,7 @@ func (cb *cacheBuster) Path(name string) (string, error) {
 		return "", fmt.Errorf("expected one dot in path: %s", name)
 	}
 
-	nameWithHash := fmt.Sprintf("%s.%s.%s", parts[0], h.Sum(nil), parts[1])
+	nameWithHash := fmt.Sprintf("%s.%x.%s", parts[0], h.Sum(nil), parts[1])
 
 	return nameWithHash, nil
 }

@@ -59,15 +59,15 @@ type Server struct {
 	ApplyService                otf.ApplyService
 	CacheService                *bigcache.BigCache
 
-	HTMLConfig *html.Config
+	ApplicationConfig *html.Config
 }
 
 // NewServer is the constructor for Server
 func NewServer() *Server {
 	s := &Server{
-		server:     &http.Server{},
-		err:        make(chan error),
-		HTMLConfig: &html.Config{},
+		server:            &http.Server{},
+		err:               make(chan error),
+		ApplicationConfig: &html.Config{},
 	}
 
 	return s
@@ -163,7 +163,11 @@ func NewRouter(server *Server) *mux.Router {
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
 	// Add web app routes.
-	app, err := html.NewApplication(router, server.HTMLConfig)
+	app, err := html.NewApplication(server.ApplicationConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	app.AddRoutes(router)
 
 	return router
 }
