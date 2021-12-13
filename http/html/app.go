@@ -21,14 +21,22 @@ const (
 	sessionFlashKey = "flash"
 )
 
-type Application struct {
+// application is the oTF web app.
+type application struct {
+	// Sessions manager
 	sessions *scs.SessionManager
 
+	// OAuth2 configuration for authorization
 	oauth2Config *oauth2.Config
 
+	// HTML template renderer
 	renderer
+
+	// Static asset server
+	staticServer http.FileSystem
 }
 
+// Config is the web app configuration.
 type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
@@ -36,8 +44,12 @@ type Config struct {
 }
 
 // NewApplication constructs a new application with the given config
-func NewApplication(config *Config) (*Application, error) {
-	// 1. Register LoginHandler and CallbackHandler
+func NewApplication(config *Config) (*application, error) {
+	renderer, err := newRenderer(config.DevMode)
+	if err != nil {
+		return nil, err
+	}
+
 	oauth2Config := &oauth2.Config{
 		ClientID:     config.GithubClientID,
 		ClientSecret: config.GithubClientSecret,
@@ -46,23 +58,23 @@ func NewApplication(config *Config) (*Application, error) {
 		Scopes:       []string{"user:email", "read:org"},
 	}
 
-	renderer, err := newRenderer(config.DevMode)
-	if err != nil {
-		return nil, err
-	}
-
-	app := &Application{
+	app := &application{
 		sessions:     scs.New(),
 		oauth2Config: oauth2Config,
 		renderer:     renderer,
+		staticServer: newStaticServer(config.DevMode),
 	}
 
 	return app, nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) AddRoutes(router *mux.Router) {
+func (app *application) AddRoutes(router *mux.Router) {
 	router = router.NewRoute().Subrouter()
+
+	// Static assets (JS, CSS, etc). Ensure this is before enabling sessions
+	// middleware to avoid setting cookies unnecessarily.
+	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
 	// Enable sessions middleware
 	router.Use(app.sessions.LoadAndSave)
@@ -79,8 +91,8 @@ func (app *Application) AddRoutes(router *mux.Router) {
 
 // render wraps calls to the template renderer, adding common data such as a
 // flash message.
-func (app *Application) render(ctx context.Context, name string, w io.Writer, content interface{}) error {
-	data := TemplateData{
+func (app *application) render(ctx context.Context, name string, w io.Writer, content interface{}) error {
+	data := templateData{
 		Content: content,
 	}
 
@@ -93,7 +105,7 @@ func (app *Application) render(ctx context.Context, name string, w io.Writer, co
 }
 
 // issueSession issues a cookie session after successful Github login
-func (app *Application) issueSession() http.Handler {
+func (app *application) issueSession() http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		githubUser, err := github.UserFromContext(r.Context())
 		if err != nil {
@@ -109,7 +121,7 @@ func (app *Application) issueSession() http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := app.sessions.GetString(r.Context(), sessionUsername)
 	if username == "" {
 		io.WriteString(w, "")
@@ -119,13 +131,13 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "You are logged in as: "+username)
 }
 
-func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.render(r.Context(), "login.tmpl", w, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.sessions.Destroy(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

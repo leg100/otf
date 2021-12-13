@@ -5,10 +5,13 @@ import (
 	"io"
 )
 
+// renderer is capable of locating and rendering a template.
 type renderer interface {
-	renderTemplate(name string, w io.Writer, data TemplateData) error
+	renderTemplate(name string, w io.Writer, data templateData) error
 }
 
+// embeddedRenderer renders templates embedded in the go bin. Uses cache for
+// performance.
 type embeddedRenderer struct {
 	cache map[string]*template.Template
 
@@ -16,6 +19,8 @@ type embeddedRenderer struct {
 	static *cacheBuster
 }
 
+// devRenderer renders templates located on disk. No cache is used; ideal for
+// development purposes with something like livereload.
 type devRenderer struct {
 	// filesystem containing static assets
 	static *cacheBuster
@@ -43,11 +48,11 @@ func newEmbeddedRenderer() (*embeddedRenderer, error) {
 	return &renderer, nil
 }
 
-func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data TemplateData) error {
+func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
 	return r.cache[name].Execute(w, data)
 }
 
-func (r *devRenderer) renderTemplate(name string, w io.Writer, data TemplateData) error {
+func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
 	static := &cacheBuster{localDisk}
 
 	cache, err := newTemplateCache(localDisk, static)

@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	// Paths to static assets in relation to the package directory
+	// Paths to static assets relative to the templates filesystem. For use with
+	// the newTemplateCache function below.
 	layoutTemplatePath   = "static/templates/layout.tmpl"
 	contentTemplatesGlob = "static/templates/content/*.tmpl"
 )
 
-type TemplateData struct {
+type templateData struct {
 	// Flash message to render. Optional.
 	Flash template.HTML
 

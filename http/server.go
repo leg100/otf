@@ -17,7 +17,6 @@ import (
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
-	"github.com/leg100/otf/http/html/assets"
 )
 
 const (
@@ -60,8 +59,6 @@ type Server struct {
 	ApplyService                otf.ApplyService
 	CacheService                *bigcache.BigCache
 
-	assets.Server
-
 	HTMLConfig *html.Config
 }
 
@@ -101,7 +98,6 @@ func NewRouter(server *Server) *mux.Router {
 	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
-	router.PathPrefix("/static/").Handler(http.FileServer(server.GetStaticFS())).Methods("GET")
 
 	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
 
@@ -167,7 +163,7 @@ func NewRouter(server *Server) *mux.Router {
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
 	// Add web app routes.
-	html.New(router, server.HTMLConfig)
+	app, err := html.NewApplication(router, server.HTMLConfig)
 
 	return router
 }
