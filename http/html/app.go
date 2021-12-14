@@ -1,7 +1,6 @@
 package html
 
 import (
-	"context"
 	"html/template"
 	"io"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"github.com/dghubble/gologin/v2/github"
 	"github.com/gorilla/mux"
 )
+
+var githubScopes = []string{"user:email", "read:org"}
 
 // application is the oTF web app.
 type application struct {
@@ -30,15 +31,12 @@ type application struct {
 	staticServer http.FileSystem
 }
 
-// Config is the web app configuration.
-type Config struct {
-	GithubClientID     string
-	GithubClientSecret string
-	DevMode            bool
-}
-
 // NewApplication constructs a new application with the given config
 func NewApplication(config *Config) (*application, error) {
+	if err := config.validate(); err != nil {
+		return nil, err
+	}
+
 	renderer, err := newRenderer(config.DevMode)
 	if err != nil {
 		return nil, err
@@ -47,9 +45,9 @@ func NewApplication(config *Config) (*application, error) {
 	oauth2Config := &oauth2.Config{
 		ClientID:     config.GithubClientID,
 		ClientSecret: config.GithubClientSecret,
-		RedirectURL:  "https://localhost:8080/github/callback",
+		RedirectURL:  config.GithubRedirectURL,
 		Endpoint:     githubOAuth2.Endpoint,
-		Scopes:       []string{"user:email", "read:org"},
+		Scopes:       githubScopes,
 	}
 
 	app := &application{
@@ -75,7 +73,7 @@ func (app *application) AddRoutes(router *mux.Router) {
 
 	stateConfig := gologin.DebugOnlyCookieConfig
 	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
-	router.Handle("/github/callback", github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, app.issueSession(), nil)))
+	router.Handle(githubCallbackPath, github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, app.issueSession(), nil)))
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
@@ -86,15 +84,16 @@ func (app *application) AddRoutes(router *mux.Router) {
 	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
 }
 
-// render wraps calls to the template renderer, adding common data such as a
-// flash message.
-func (app *application) render(ctx context.Context, name string, w io.Writer, content interface{}) error {
+// render wraps calls to the template renderer, adding common data to the
+// template
+func (app *application) render(r *http.Request, name string, w io.Writer, content interface{}) error {
 	data := templateData{
-		Content: content,
+		Content:         content,
+		IsAuthenticated: app.isAuthenticated(r),
 	}
 
 	// Get flash msg
-	if msg := app.sessions.GetString(ctx, sessionFlashKey); msg != "" {
+	if msg := app.sessions.PopString(r.Context(), sessionFlashKey); msg != "" {
 		data.Flash = template.HTML(msg)
 	}
 

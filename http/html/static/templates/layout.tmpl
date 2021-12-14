@@ -13,6 +13,15 @@
     <nav class="navbar navbar-dark navbar-bg-color">
       <div class="container-fluid">
         <span class="navbar-brand h1">oTF</span>
+        <ul class="navbar-nav">
+          {{ if .IsAuthenticated }}
+          <li class="nav-item">
+            <form action="/logout" method="POST">
+              <button type="submit" class="nav-link button">Logout</button>
+            </form>
+          </li>
+        {{ end }}
+        </ul>
       </div>
     </nav>
   </header>

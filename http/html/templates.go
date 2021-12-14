@@ -19,6 +19,9 @@ type templateData struct {
 	// Flash message to render. Optional.
 	Flash template.HTML
 
+	// Indicates whether user is currently authenticated or not
+	IsAuthenticated bool
+
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
 }
