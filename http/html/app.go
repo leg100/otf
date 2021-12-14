@@ -15,12 +15,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	sessionUserKey  = "githubID"
-	sessionUsername = "githubUsername"
-	sessionFlashKey = "flash"
-)
-
 // application is the oTF web app.
 type application struct {
 	// Sessions manager
@@ -85,6 +79,10 @@ func (app *application) AddRoutes(router *mux.Router) {
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+
+	router = router.NewRoute().Subrouter()
+	router.Use(app.requireAuthentication)
+
 	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
 }
 
@@ -101,47 +99,4 @@ func (app *application) render(ctx context.Context, name string, w io.Writer, co
 	}
 
 	return app.renderTemplate(name, w, data)
-}
-
-// issueSession issues a cookie session after successful Github login
-func (app *application) issueSession() http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		githubUser, err := github.UserFromContext(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
-		app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
-
-		http.Redirect(w, r, "/profile", http.StatusFound)
-	}
-	return http.HandlerFunc(fn)
-}
-
-func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: use middleware instead, i.e. isAuth()
-	username := app.sessions.GetString(r.Context(), sessionUsername)
-	if username == "" {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	io.WriteString(w, "You are logged in as: "+username)
-}
-
-func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.render(r.Context(), "login.tmpl", w, nil); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.sessions.Destroy(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/", http.StatusFound)
 }

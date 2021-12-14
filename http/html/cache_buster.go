@@ -14,7 +14,8 @@ import (
 var (
 	_ http.FileSystem = (*cacheBuster)(nil)
 
-	cacheBusterMatch = regexp.MustCompile(`([0-9a-f]{32}\.)`)
+	// regexp for a hex-formatted sha256 hash sum
+	sha256re = regexp.MustCompile(`[0-9a-f]{32}`)
 )
 
 // cacheBuster provides a cache-busting filesystem wrapper, mapping paths with a
@@ -31,14 +32,18 @@ type cacheBuster struct {
 // Open strips the hash from the name before opening it in the wrapped
 // filesystem.
 func (cb *cacheBuster) Open(fname string) (http.File, error) {
-	cacheBusterMatch.FindReaderIndex
+	var partsSansHash []string
+
+	// Reconstruct filename without hash
 	parts := strings.Split(fname, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("expected two dots in path: %s", fname)
+	for _, p := range parts {
+		if !sha256re.MatchString(p) {
+			partsSansHash = append(partsSansHash, p)
+		}
 	}
 
 	// new name without hash
-	fname = fmt.Sprintf("%s.%s", parts[0], parts[2])
+	fname = strings.Join(partsSansHash, ".")
 
 	return http.FS(cb.FS).Open(fname)
 }
