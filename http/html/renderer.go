@@ -1,10 +1,10 @@
 package html
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io"
-	"strings"
 )
 
 // renderer is capable of locating and rendering a template.
@@ -65,10 +65,14 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 		return fmt.Errorf("unable to locate template: %s", name)
 	}
 
-	bldr := strings.Builder{}
-	tmpl.Execute(&bldr, data)
+	// Render tmpl out to a tmp buffer first to prevent error messages from
+	// being written to browser
+	buf := new(bytes.Buffer)
 
-	fmt.Println(bldr.String())
+	if err := tmpl.Execute(buf, data); err != nil {
+		return err
+	}
 
-	return tmpl.Execute(w, data)
+	_, err := buf.WriteTo(w)
+	return err
 }
