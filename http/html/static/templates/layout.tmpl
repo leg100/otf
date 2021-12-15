@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ addHash "/static/css/custom.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/bootstrap-icons.css" }}">
-  <title>oTF</title>
+  <title>{{ .Title }} | oTF</title>
 </head>
 <body>
   <header>
@@ -17,7 +17,7 @@
           {{ if .IsAuthenticated }}
           <li class="nav-item">
             <form action="/logout" method="POST">
-              <button type="submit" class="nav-link button">Logout</button>
+              <button type="submit" class="btn btn-dark">Logout</button>
             </form>
           </li>
         {{ end }}
@@ -25,20 +25,41 @@
       </div>
     </nav>
   </header>
-  <main>
-    <div class="container">
-      <h1 class="mt-5">oTF</h1>
+  <div class="container">
+    <div class="row">
+      {{ if .Sidebar }}
+      <nav class="col-md-3 sidebar">
+        <h4 class="mt-5">User Settings</h1>
 
-      {{ if .Flash }}
-      <div class="alert alert-primary alert-dismissible" role="alert">
-        {{ . }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
+        <hr class="my-3">
+
+        <ul class="nav flex-column">
+        {{ range .SidebarMenu }}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ .Link }}">{{ .Name }}</a>
+          </li>
+        {{ end }}
+        </ul>
+      </nav>
       {{ end }}
+      <main class="col">
+        <div class="container">
+          <h1 class="mt-5">{{ .Title }}</h1>
 
-      {{ template "content" .Content }}
+          <hr class="my-3">
+
+          {{ if .Flash }}
+          <div class="alert alert-primary alert-dismissible" role="alert">
+            {{ . }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {{ end }}
+
+          {{ template "content" .Content }}
+        </div>
+      </main>
     </div>
-  </main>
+  </div>
   <script src="{{ addHash "/static/js/bootstrap.bundle.min.js" }}"></script>
 </body>
 </html>

@@ -69,7 +69,11 @@ func main() {
 	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
 	cmd.Flags().StringVar(&server.ApplicationConfig.GithubClientID, "github-client-id", "", "Github Client ID")
+	cmd.MarkFlagRequired("github-client-id")
 	cmd.Flags().StringVar(&server.ApplicationConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
+	cmd.MarkFlagRequired("github-client-secret")
+	cmd.Flags().StringVar(&server.ApplicationConfig.GithubRedirectURL, "github-redirect-url", "", "Github redirect URL")
+	cmd.MarkFlagRequired("github-redirect-url")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 

@@ -11118,6 +11118,10 @@ textarea.form-control-lg {
     display: none !important;
   }
 }
+body {
+  background-color: #F6F9F6;
+}
+
 .navbar-bg-color {
   background-color: #8E3339;
 }

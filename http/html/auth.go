@@ -1,7 +1,9 @@
 package html
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/dghubble/gologin/v2/github"
 )
@@ -12,8 +14,26 @@ const (
 	sessionFlashKey = "flash"
 )
 
+var (
+	userSidebar = withSidebar("User Settings",
+		sidebarItem{
+			Name: "Sessions",
+			Link: "/sessions",
+		},
+		sidebarItem{
+			Name: "Tokens",
+			Link: "/tokens",
+		},
+	)
+)
+
 type Profile struct {
 	Username string
+}
+
+type Session struct {
+	Token   string
+	Expires time.Time
 }
 
 // issueSession issues a cookie session after successful Github login
@@ -49,15 +69,6 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	username := app.sessions.GetString(r.Context(), sessionUsername)
-	prof := Profile{Username: username}
-
-	if err := app.render(r, "profile.tmpl", w, &prof); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.render(r, "login.tmpl", w, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,4 +82,38 @@ func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
+	username := app.sessions.GetString(r.Context(), sessionUsername)
+	prof := Profile{Username: username}
+
+	if err := app.render(r, "profile.tmpl", w, &prof); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
+	var sessions []Session
+
+	currentUser := app.sessions.GetString(r.Context(), sessionUsername)
+
+	err := app.sessions.Iterate(r.Context(), func(ctx context.Context) error {
+		user := app.sessions.GetString(ctx, sessionUsername)
+		if user == currentUser {
+			sessions = append(sessions, Session{
+				Token: app.sessions.Token(ctx),
+			})
+		}
+
+		return nil
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := app.render(r, "sessions.tmpl", w, &sessions); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

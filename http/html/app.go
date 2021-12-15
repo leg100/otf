@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"golang.org/x/oauth2"
 	githubOAuth2 "golang.org/x/oauth2/github"
@@ -82,14 +84,20 @@ func (app *application) AddRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
 	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
+	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
 }
 
 // render wraps calls to the template renderer, adding common data to the
 // template
-func (app *application) render(r *http.Request, name string, w io.Writer, content interface{}) error {
+func (app *application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
 	data := templateData{
+		Title:           strings.Title(filenameWithoutExtension(name)),
 		Content:         content,
 		IsAuthenticated: app.isAuthenticated(r),
+	}
+
+	for _, o := range opts {
+		o(&data)
 	}
 
 	// Get flash msg
@@ -98,4 +106,8 @@ func (app *application) render(r *http.Request, name string, w io.Writer, conten
 	}
 
 	return app.renderTemplate(name, w, data)
+}
+
+func filenameWithoutExtension(fname string) string {
+	return strings.TrimSuffix(fname, filepath.Ext(fname))
 }
