@@ -1,0 +1,7 @@
+{{ template "layout" . }}
+
+{{ template "sidebar" . }}
+
+{{ define "content" }}
+  <p>You are logged in as {{ .Username }}</p>
+{{ end }}
