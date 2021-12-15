@@ -11,6 +11,7 @@ import (
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/leg100/zerologr"
@@ -72,7 +73,7 @@ func main() {
 	cmd.MarkFlagRequired("github-client-id")
 	cmd.Flags().StringVar(&server.ApplicationConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
 	cmd.MarkFlagRequired("github-client-secret")
-	cmd.Flags().StringVar(&server.ApplicationConfig.GithubRedirectURL, "github-redirect-url", "", "Github redirect URL")
+	cmd.Flags().StringVar(&server.ApplicationConfig.GithubRedirectURL, "github-redirect-url", html.DefaultGithubRedirectURL, "Github redirect URL")
 	cmd.MarkFlagRequired("github-redirect-url")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())

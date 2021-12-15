@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	githubCallbackPath = "/github/callback"
+	githubCallbackPath       = "/github/callback"
+	DefaultGithubRedirectURL = "https://localhost" + githubCallbackPath
 )
 
 // Config is the web app configuration.
