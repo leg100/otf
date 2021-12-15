@@ -27,14 +27,14 @@
   </header>
   <div class="container">
     <div class="row">
-      {{ if .Sidebar }}
+      {{ with .Sidebar }}
       <nav class="col-md-3 sidebar">
-        <h4 class="mt-5">User Settings</h1>
+        <h4 class="mt-5">{{ .Title }}</h1>
 
         <hr class="my-3">
 
         <ul class="nav flex-column">
-        {{ range .SidebarMenu }}
+        {{ range .Items }}
           <li class="nav-item">
             <a class="nav-link" href="{{ .Link }}">{{ .Name }}</a>
           </li>

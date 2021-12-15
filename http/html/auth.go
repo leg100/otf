@@ -88,7 +88,7 @@ func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := app.sessions.GetString(r.Context(), sessionUsername)
 	prof := Profile{Username: username}
 
-	if err := app.render(r, "profile.tmpl", w, &prof); err != nil {
+	if err := app.render(r, "profile.tmpl", w, &prof, userSidebar); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
