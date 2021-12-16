@@ -1,7 +1,17 @@
 {{ template "layout" . }}
 
-{{ template "sidebar" . }}
-
 {{ define "content" }}
-  <p>You are logged in as {{ .Username }}</p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Token</th>
+    </thead>
+    <tbody>
+      {{ range . }}
+      <tr>
+        <td>{{ .Token }}<td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
 {{ end }}

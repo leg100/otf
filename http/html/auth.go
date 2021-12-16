@@ -17,6 +17,10 @@ const (
 var (
 	userSidebar = withSidebar("User Settings",
 		sidebarItem{
+			Name: "Profile",
+			Link: "/profile",
+		},
+		sidebarItem{
 			Name: "Sessions",
 			Link: "/sessions",
 		},
@@ -113,7 +117,7 @@ func (app *application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := app.render(r, "sessions.tmpl", w, &sessions); err != nil {
+	if err := app.render(r, "sessions.tmpl", w, &sessions, userSidebar); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

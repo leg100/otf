@@ -29,6 +29,8 @@ github.com/agext/levenshtein v1.2.1 h1:QmvMAjj2aEICytGiWzmxoE0x2KZvE0fvmqMOfy2tj
 github.com/agext/levenshtein v1.2.1/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
+github.com/alexedwards/scs/postgresstore v0.0.0-20211203064041-370cc303b69f h1:5jiSGWqKk8pJrjaN/KEANWe/4I767+d6FiKoDGpChik=
+github.com/alexedwards/scs/postgresstore v0.0.0-20211203064041-370cc303b69f/go.mod h1:TDDdV/xnjj+/4zBQ9a2k+i2AbuAdY7SQjPUh5zoTZ3M=
 github.com/alexedwards/scs/v2 v2.5.0 h1:zgxOfNFmiJyXG7UPIuw1g2b9LWBeRLh3PjfB9BDmfL4=
 github.com/alexedwards/scs/v2 v2.5.0/go.mod h1:ToaROZxyKukJKT/xLcVQAChi5k6+Pn1Gvmdl7h3RRj8=
 github.com/allegro/bigcache v1.2.1 h1:hg1sY1raCwic3Vnsvje6TT7/pnZba83LeFck5NrFKSc=
@@ -201,6 +203,7 @@ github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5 h1:i08aLIx3Mpb9BRm
 github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5/go.mod h1:vI53dtVFNGGmrWWiUmm9CsqxbMFO/hIG4MrM7AiY1Qs=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
+github.com/lib/pq v1.4.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.10.2/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lib/pq v1.10.3 h1:v9QZf2Sn6AmjXtQeFpdoq/eaNtYP6IN+7lcrygsIAtg=
 github.com/lib/pq v1.10.3/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=

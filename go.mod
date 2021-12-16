@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/alexedwards/scs/postgresstore v0.0.0-20211203064041-370cc303b69f
 	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/dghubble/gologin/v2 v2.3.0
