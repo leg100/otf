@@ -66,7 +66,7 @@ func NewAgent(logger logr.Logger,
 
 // Start starts the agent daemon
 func (a *Agent) Start(ctx context.Context) {
-	// start spooler in background
+	// start spooler in background TODO: error not handled
 	go a.Spooler.Start(ctx)
 
 	a.Supervisor.Start(ctx)
