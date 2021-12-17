@@ -92,7 +92,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 }
 
 // NewRouter constructs an HTTP router
-func (server *Server) routes(cfg ServerConfig) http.Handler {
+func (s *Server) routes(cfg ServerConfig) http.Handler {
 	router := mux.NewRouter()
 
 	// Catch panics and return 500s
@@ -100,30 +100,30 @@ func (server *Server) routes(cfg ServerConfig) http.Handler {
 
 	// Optionally enable HTTP request logging
 	if cfg.EnableRequestLogging {
-		router.Use(server.loggingMiddleware)
+		router.Use(s.loggingMiddleware)
 	}
 
 	// Add web app routes.
-	server.webApp.AddRoutes(router)
+	s.webApp.AddRoutes(router)
 
-	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
-	router.HandleFunc("/metrics/cache.json", server.CacheStats)
+	router.HandleFunc("/.well-known/terraform.json", s.WellKnown)
+	router.HandleFunc("/metrics/cache.json", s.CacheStats)
 
-	router.HandleFunc("/state-versions/{id}/download", server.DownloadStateVersion).Methods("GET")
-	router.HandleFunc("/configuration-versions/{id}/upload", server.UploadConfigurationVersion).Methods("PUT")
-	router.HandleFunc("/plans/{id}/logs", server.GetPlanLogs).Methods("GET")
-	router.HandleFunc("/plans/{id}/logs", server.UploadPlanLogs).Methods("PUT")
-	router.HandleFunc("/applies/{id}/logs", server.GetApplyLogs).Methods("GET")
-	router.HandleFunc("/applies/{id}/logs", server.UploadApplyLogs).Methods("PUT")
-	router.HandleFunc("/runs/{id}/plan", server.UploadPlanFile).Methods("PUT")
-	router.HandleFunc("/runs/{id}/plan", server.GetPlanFile).Methods("GET")
+	router.HandleFunc("/state-versions/{id}/download", s.DownloadStateVersion).Methods("GET")
+	router.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion).Methods("PUT")
+	router.HandleFunc("/plans/{id}/logs", s.GetPlanLogs).Methods("GET")
+	router.HandleFunc("/plans/{id}/logs", s.UploadPlanLogs).Methods("PUT")
+	router.HandleFunc("/applies/{id}/logs", s.GetApplyLogs).Methods("GET")
+	router.HandleFunc("/applies/{id}/logs", s.UploadApplyLogs).Methods("PUT")
+	router.HandleFunc("/runs/{id}/plan", s.UploadPlanFile).Methods("PUT")
+	router.HandleFunc("/runs/{id}/plan", s.GetPlanFile).Methods("GET")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
 
-	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", server.GetRunLogs).Methods("GET")
+	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", s.GetRunLogs).Methods("GET")
 
 	// Websocket connections
-	server.registerEventRoutes(router)
+	s.registerEventRoutes(router)
 
 	// Filter json-api requests
 	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
@@ -136,52 +136,52 @@ func (server *Server) routes(cfg ServerConfig) http.Handler {
 	})
 
 	// Organization routes
-	sub.HandleFunc("/organizations", server.ListOrganizations).Methods("GET")
-	sub.HandleFunc("/organizations", server.CreateOrganization).Methods("POST")
-	sub.HandleFunc("/organizations/{name}", server.GetOrganization).Methods("GET")
-	sub.HandleFunc("/organizations/{name}", server.UpdateOrganization).Methods("PATCH")
-	sub.HandleFunc("/organizations/{name}", server.DeleteOrganization).Methods("DELETE")
-	sub.HandleFunc("/organizations/{name}/entitlement-set", server.GetEntitlements).Methods("GET")
+	sub.HandleFunc("/organizations", s.ListOrganizations).Methods("GET")
+	sub.HandleFunc("/organizations", s.CreateOrganization).Methods("POST")
+	sub.HandleFunc("/organizations/{name}", s.GetOrganization).Methods("GET")
+	sub.HandleFunc("/organizations/{name}", s.UpdateOrganization).Methods("PATCH")
+	sub.HandleFunc("/organizations/{name}", s.DeleteOrganization).Methods("DELETE")
+	sub.HandleFunc("/organizations/{name}/entitlement-set", s.GetEntitlements).Methods("GET")
 
 	// Workspace routes
-	sub.HandleFunc("/organizations/{org}/workspaces", server.ListWorkspaces).Methods("GET")
-	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.GetWorkspace).Methods("GET")
-	sub.HandleFunc("/organizations/{org}/workspaces", server.CreateWorkspace).Methods("POST")
-	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.UpdateWorkspace).Methods("PATCH")
-	sub.HandleFunc("/organizations/{org}/workspaces/{name}", server.DeleteWorkspace).Methods("DELETE")
-	sub.HandleFunc("/workspaces/{id}", server.UpdateWorkspaceByID).Methods("PATCH")
-	sub.HandleFunc("/workspaces/{id}", server.GetWorkspaceByID).Methods("GET")
-	sub.HandleFunc("/workspaces/{id}", server.DeleteWorkspaceByID).Methods("DELETE")
-	sub.HandleFunc("/workspaces/{id}/actions/lock", server.LockWorkspace).Methods("POST")
-	sub.HandleFunc("/workspaces/{id}/actions/unlock", server.UnlockWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{org}/workspaces", s.ListWorkspaces).Methods("GET")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", s.GetWorkspace).Methods("GET")
+	sub.HandleFunc("/organizations/{org}/workspaces", s.CreateWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", s.UpdateWorkspace).Methods("PATCH")
+	sub.HandleFunc("/organizations/{org}/workspaces/{name}", s.DeleteWorkspace).Methods("DELETE")
+	sub.HandleFunc("/workspaces/{id}", s.UpdateWorkspaceByID).Methods("PATCH")
+	sub.HandleFunc("/workspaces/{id}", s.GetWorkspaceByID).Methods("GET")
+	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspaceByID).Methods("DELETE")
+	sub.HandleFunc("/workspaces/{id}/actions/lock", s.LockWorkspace).Methods("POST")
+	sub.HandleFunc("/workspaces/{id}/actions/unlock", s.UnlockWorkspace).Methods("POST")
 
 	// StateVersion routes
-	sub.HandleFunc("/workspaces/{workspace_id}/state-versions", server.CreateStateVersion).Methods("POST")
-	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", server.CurrentStateVersion).Methods("GET")
-	sub.HandleFunc("/state-versions/{id}", server.GetStateVersion).Methods("GET")
-	sub.HandleFunc("/state-versions", server.ListStateVersions).Methods("GET")
+	sub.HandleFunc("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion).Methods("POST")
+	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion).Methods("GET")
+	sub.HandleFunc("/state-versions/{id}", s.GetStateVersion).Methods("GET")
+	sub.HandleFunc("/state-versions", s.ListStateVersions).Methods("GET")
 
 	// ConfigurationVersion routes
-	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.CreateConfigurationVersion).Methods("POST")
-	sub.HandleFunc("/configuration-versions/{id}", server.GetConfigurationVersion).Methods("GET")
-	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", server.ListConfigurationVersions).Methods("GET")
+	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion).Methods("POST")
+	sub.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion).Methods("GET")
+	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions).Methods("GET")
 
 	// Run routes
-	sub.HandleFunc("/runs", server.CreateRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/apply", server.ApplyRun).Methods("POST")
-	sub.HandleFunc("/workspaces/{workspace_id}/runs", server.ListRuns).Methods("GET")
-	sub.HandleFunc("/runs/{id}", server.GetRun).Methods("GET")
-	sub.HandleFunc("/runs/{id}/actions/discard", server.DiscardRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/cancel", server.CancelRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/force-cancel", server.ForceCancelRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/plan/json-output", server.GetJSONPlanByRunID).Methods("GET")
+	sub.HandleFunc("/runs", s.CreateRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/apply", s.ApplyRun).Methods("POST")
+	sub.HandleFunc("/workspaces/{workspace_id}/runs", s.ListRuns).Methods("GET")
+	sub.HandleFunc("/runs/{id}", s.GetRun).Methods("GET")
+	sub.HandleFunc("/runs/{id}/actions/discard", s.DiscardRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/cancel", s.CancelRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/actions/force-cancel", s.ForceCancelRun).Methods("POST")
+	sub.HandleFunc("/runs/{id}/plan/json-output", s.GetJSONPlanByRunID).Methods("GET")
 
 	// Plan routes
-	sub.HandleFunc("/plans/{id}", server.GetPlan).Methods("GET")
-	sub.HandleFunc("/plans/{id}/json-output", server.GetPlanJSON).Methods("GET")
+	sub.HandleFunc("/plans/{id}", s.GetPlan).Methods("GET")
+	sub.HandleFunc("/plans/{id}/json-output", s.GetPlanJSON).Methods("GET")
 
 	// Apply routes
-	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
+	sub.HandleFunc("/applies/{id}", s.GetApply).Methods("GET")
 
 	return router
 }
