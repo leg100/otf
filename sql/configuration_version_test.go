@@ -13,9 +13,7 @@ func TestConfigurationVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	cdb := NewConfigurationVersionDB(db)
-
-	_, err := cdb.Create(newTestConfigurationVersion(ws))
+	_, err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(ws))
 	require.NoError(t, err)
 }
 
@@ -25,9 +23,7 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	cdb := NewConfigurationVersionDB(db)
-
-	updated, err := cdb.Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
+	updated, err := db.ConfigurationVersionStore().Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
 		cv.Status = otf.ConfigurationUploaded
 		return nil
 	})
@@ -41,8 +37,6 @@ func TestConfigurationVersion_Get(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
-
-	cdb := NewConfigurationVersionDB(db)
 
 	tests := []struct {
 		name string
@@ -60,7 +54,7 @@ func TestConfigurationVersion_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := cdb.Get(tt.opts)
+			got, err := db.ConfigurationVersionStore().Get(tt.opts)
 			require.NoError(t, err)
 
 			// Assertion won't succeed unless both have a workspace with a nil
@@ -79,8 +73,6 @@ func TestConfigurationVersion_List(t *testing.T) {
 
 	cv1 := createTestConfigurationVersion(t, db, ws)
 	cv2 := createTestConfigurationVersion(t, db, ws)
-
-	cdb := NewConfigurationVersionDB(db)
 
 	tests := []struct {
 		name        string
@@ -112,7 +104,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := cdb.List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
+			results, err := db.ConfigurationVersionStore().List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
 			require.NoError(t, err)
 
 			tt.want(t, results, cv1, cv2)

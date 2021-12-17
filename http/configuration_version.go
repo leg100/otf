@@ -61,7 +61,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	obj, err := s.ConfigurationVersionService.Create(vars["workspace_id"], opts)
+	obj, err := s.ConfigurationVersionService().Create(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -73,7 +73,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.ConfigurationVersionService.Get(vars["id"])
+	obj, err := s.ConfigurationVersionService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -91,7 +91,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	obj, err := s.ConfigurationVersionService.List(vars["workspace_id"], opts)
+	obj, err := s.ConfigurationVersionService().List(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -109,7 +109,7 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := s.ConfigurationVersionService.Upload(vars["id"], buf.Bytes()); err != nil {
+	if err := s.ConfigurationVersionService().Upload(vars["id"], buf.Bytes()); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

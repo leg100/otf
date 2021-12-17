@@ -12,6 +12,7 @@ require (
 	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/dghubble/gologin/v2 v2.3.0
+	github.com/fatih/color v1.7.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.0.0
 	github.com/google/go-cmp v0.5.6 // indirect

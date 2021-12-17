@@ -14,9 +14,7 @@ func TestRun_Create(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	rdb := NewRunDB(db)
-
-	run, err := rdb.Create(newTestRun(ws, cv))
+	run, err := db.RunStore().Create(newTestRun(ws, cv))
 	require.NoError(t, err)
 
 	// Ensure primary keys populated
@@ -38,16 +36,14 @@ func TestRun_Update(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	rdb := NewRunDB(db)
-
-	_, err := rdb.Update(otf.RunGetOptions{ID: &run.ID}, func(run *otf.Run) error {
+	_, err := db.RunStore().Update(otf.RunGetOptions{ID: &run.ID}, func(run *otf.Run) error {
 		run.Status = otf.RunPlanQueued
 		run.Plan.Status = otf.PlanQueued
 		return nil
 	})
 	require.NoError(t, err)
 
-	got, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
+	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID)})
 	require.NoError(t, err)
 
 	assert.Equal(t, otf.RunPlanQueued, got.Status)
@@ -61,9 +57,7 @@ func TestRun_Get(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	rdb := NewRunDB(db)
-
-	got, err := rdb.Get(otf.RunGetOptions{ID: otf.String(run.ID)})
+	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID)})
 	require.NoError(t, err)
 
 	// Assertion won't succeed unless transitive relations are nil (resources
@@ -84,8 +78,6 @@ func TestRun_List(t *testing.T) {
 	ws2 := createTestWorkspace(t, db, org)
 	cv2 := createTestConfigurationVersion(t, db, ws2)
 	run2 := createTestRun(t, db, ws2, cv2)
-
-	rdb := NewRunDB(db)
 
 	tests := []struct {
 		name string
@@ -132,7 +124,7 @@ func TestRun_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := rdb.List(tt.opts)
+			results, err := db.RunStore().List(tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results, run1, run2)

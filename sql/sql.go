@@ -5,7 +5,6 @@ package sql
 
 import (
 	"database/sql"
-	"embed"
 	"errors"
 	"fmt"
 	"reflect"
@@ -13,19 +12,12 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/go-logr/logr"
-	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/leg100/otf"
-	"github.com/pressly/goose/v3"
-	"github.com/rs/zerolog"
 
 	_ "github.com/lib/pq"
 )
-
-//go:embed migrations/*.sql
-var fs embed.FS
 
 // psql is our SQL builder, customized to use postgres placeholders ($N).
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -37,54 +29,6 @@ type Getter interface {
 
 type StructScannable interface {
 	StructScan(dest interface{}) error
-}
-
-type Option func()
-
-type Logger struct {
-	logr.Logger
-}
-
-func WithZeroLogger(zlog *zerolog.Logger) Option {
-	return func() {
-		goose.SetLogger(NewGooseLogger(zlog))
-	}
-}
-
-func (l *Logger) Printf(format string, v ...interface{}) {
-	l.Info(fmt.Sprintf(format, v...))
-}
-
-func (l *Logger) Verbose() bool { return true }
-
-func New(logger logr.Logger, path string, opts ...Option) (*sqlx.DB, error) {
-	for _, o := range opts {
-		o()
-	}
-
-	db, err := sqlx.Open("postgres", path)
-	if err != nil {
-		return db, err
-	}
-
-	if err := db.Ping(); err != nil {
-		return db, err
-	}
-
-	// Map struct field names from CamelCase to snake_case.
-	db.MapperFunc(strcase.ToSnake)
-
-	goose.SetBaseFS(fs)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return db, fmt.Errorf("setting postgres dialect for migrations: %w", err)
-	}
-
-	if err := goose.Up(db.DB, "migrations"); err != nil {
-		return db, fmt.Errorf("unable to migrate database: %w", err)
-	}
-
-	return db, nil
 }
 
 // FindUpdates compares two structs of identical type for any differences in

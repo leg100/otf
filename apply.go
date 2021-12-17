@@ -27,6 +27,10 @@ type ApplyService interface {
 	JobService
 }
 
+type ApplyLogStore interface {
+	ChunkStore
+}
+
 // Apply represents a terraform apply
 type Apply struct {
 	ID string `db:"apply_id"`

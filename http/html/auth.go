@@ -41,7 +41,7 @@ type Session struct {
 }
 
 // issueSession issues a cookie session after successful Github login
-func (app *application) issueSession() http.Handler {
+func (app *Application) issueSession() http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		githubUser, err := github.UserFromContext(r.Context())
 		if err != nil {
@@ -57,11 +57,11 @@ func (app *application) issueSession() http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (app *application) isAuthenticated(r *http.Request) bool {
+func (app *Application) isAuthenticated(r *http.Request) bool {
 	return app.sessions.Exists(r.Context(), sessionUsername)
 }
 
-func (app *application) requireAuthentication(next http.Handler) http.Handler {
+func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if !app.isAuthenticated(r) {
 			http.Redirect(w, r, "/login", http.StatusFound)
@@ -73,13 +73,13 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.render(r, "login.tmpl", w, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.sessions.Destroy(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,7 +88,7 @@ func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
-func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := app.sessions.GetString(r.Context(), sessionUsername)
 	prof := Profile{Username: username}
 
@@ -97,7 +97,7 @@ func (app *application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	var sessions []Session
 
 	currentUser := app.sessions.GetString(r.Context(), sessionUsername)

@@ -9,20 +9,19 @@ import (
 )
 
 func TestOrganization_Create(t *testing.T) {
-	db := NewOrganizationDB(newTestDB(t))
+	db := newTestDB(t)
 
-	org, err := db.Create(newTestOrganization())
+	org, err := db.OrganizationStore().Create(newTestOrganization())
 	require.NoError(t, err)
 
-	db.Delete(org.Name)
+	db.OrganizationStore().Delete(org.Name)
 }
 
 func TestOrganization_Update(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	org := createTestOrganization(t, db)
 
-	org, err := odb.Update(org.Name, func(org *otf.Organization) error {
+	org, err := db.OrganizationStore().Update(org.Name, func(org *otf.Organization) error {
 		org.Email = "newguy@automatize.co.uk"
 		return nil
 	})
@@ -33,10 +32,9 @@ func TestOrganization_Update(t *testing.T) {
 
 func TestOrganization_Get(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	org := createTestOrganization(t, db)
 
-	got, err := odb.Get(org.Name)
+	got, err := db.OrganizationStore().Get(org.Name)
 	require.NoError(t, err)
 
 	assert.Equal(t, org.Name, got.Name)
@@ -44,10 +42,9 @@ func TestOrganization_Get(t *testing.T) {
 
 func TestOrganization_List(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	org := createTestOrganization(t, db)
 
-	ol, err := odb.List(otf.OrganizationListOptions{})
+	ol, err := db.OrganizationStore().List(otf.OrganizationListOptions{})
 	require.NoError(t, err)
 
 	assert.Contains(t, ol.Items, org)
@@ -55,21 +52,20 @@ func TestOrganization_List(t *testing.T) {
 
 func TestOrganization_ListWithPagination(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	_ = createTestOrganization(t, db)
 	_ = createTestOrganization(t, db)
 
-	orgs, err := odb.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+	orgs, err := db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(orgs.Items))
 
-	orgs, err = odb.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+	orgs, err = db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(orgs.Items))
 
-	orgs, err = odb.List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+	orgs, err = db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(orgs.Items))
@@ -77,21 +73,19 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 
 func TestOrganization_Delete(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	org := createTestOrganization(t, db)
 
-	require.NoError(t, odb.Delete(org.Name))
+	require.NoError(t, db.OrganizationStore().Delete(org.Name))
 
-	_, err := odb.Get(org.Name)
+	_, err := db.OrganizationStore().Get(org.Name)
 	assert.Equal(t, otf.ErrResourceNotFound, err)
 }
 
 func TestOrganization_DeleteError(t *testing.T) {
 	db := newTestDB(t)
-	odb := NewOrganizationDB(db)
 	_ = createTestOrganization(t, db)
 
-	err := odb.Delete("non-existent-org")
+	err := db.OrganizationStore().Delete("non-existent-org")
 
 	assert.Equal(t, otf.ErrResourceNotFound, err)
 }

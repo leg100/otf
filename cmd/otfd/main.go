@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
+	"github.com/fatih/color"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
@@ -14,10 +14,8 @@ import (
 	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
-	"github.com/leg100/zerologr"
-	"github.com/mattn/go-isatty"
-	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -28,8 +26,8 @@ const (
 )
 
 var (
-	// database is the postgres connection string
-	database string
+	// dbConnStr is the postgres connection string
+	dbConnStr string
 )
 
 func main() {
@@ -37,10 +35,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	server := http.NewServer()
+	if err := run(ctx, os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "%s %s\n", color.HiRedString("Error:"), err.Error())
+		os.Exit(1)
+	}
+}
 
-	cacheConfig := inmem.CacheConfig{}
-
+func run(ctx context.Context, args []string) error {
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -53,178 +54,108 @@ func main() {
 
 	var help bool
 
-	// Toggle log colors. Must be one of auto, true, or false.
-	var logColor string
-
-	cmd.Flags().StringVar(&server.Addr, "address", DefaultAddress, "Listening address")
-	cmd.Flags().BoolVar(&server.SSL, "ssl", false, "Toggle SSL")
-	cmd.Flags().StringVar(&server.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
-	cmd.Flags().StringVar(&server.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
-	cmd.Flags().StringVar(&database, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().BoolVar(&server.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-	cmd.Flags().StringVar(&logColor, "log-color", "auto", "Toggle log colors: auto, true or false. Auto enables colors if using a TTY.")
-	cmd.Flags().IntVar(&cacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
-	cmd.Flags().DurationVar(&cacheConfig.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
+	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
-	cmd.Flags().BoolVar(&server.ApplicationConfig.DevMode, "dev-mode", false, "Enable developer mode.")
-	logLevel := cmd.Flags().StringP("log-level", "l", DefaultLogLevel, "Logging level")
 
-	cmd.Flags().StringVar(&server.ApplicationConfig.GithubClientID, "github-client-id", "", "Github Client ID")
-	cmd.MarkFlagRequired("github-client-id")
-	cmd.Flags().StringVar(&server.ApplicationConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
-	cmd.MarkFlagRequired("github-client-secret")
-	cmd.Flags().StringVar(&server.ApplicationConfig.GithubRedirectURL, "github-redirect-url", html.DefaultGithubRedirectURL, "Github redirect URL")
-	cmd.MarkFlagRequired("github-redirect-url")
+	loggerCfg := newLoggerConfigFromFlags(cmd.Flags())
+	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
+	serverCfg := newServerConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
 	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	if help {
 		if err := cmd.Help(); err != nil {
-			panic(err.Error())
+			return err
 		}
-		os.Exit(0)
+		return nil
 	}
 
 	// Setup logger
-	zerologger, err := newLogger(*logLevel, logColor)
+	logger, err := newLogger(loggerCfg)
 	if err != nil {
-		panic(err.Error())
-	}
-	logger := zerologr.NewLogger(zerologger)
-	server.Logger = logger
-
-	// Validate SSL params
-	if server.SSL {
-		if server.CertFile == "" || server.KeyFile == "" {
-			fmt.Fprintf(os.Stderr, "must provide both --cert-file and --key-file")
-			os.Exit(1)
-		}
+		return err
 	}
 
 	// Setup cache
-	cache, err := inmem.NewCache(cacheConfig)
+	cache, err := inmem.NewCache(*cacheCfg)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
-	logger.Info("started cache", "max_size", cacheConfig.Size, "ttl", cacheConfig.TTL.String())
+	logger.Info("started cache", "max_size", cacheCfg.Size, "ttl", cacheCfg.TTL.String())
 
-	// Setup postgres connection
-	db, err := sql.New(logger, database, sql.WithZeroLogger(zerologger))
+	// Setup database(s)
+	db, err := sql.New(logger, dbConnStr, cache)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	defer db.Close()
 
-	organizationStore := sql.NewOrganizationDB(db)
-	workspaceStore := sql.NewWorkspaceDB(db)
-	stateVersionStore := sql.NewStateVersionDB(db)
-	runStore := sql.NewRunDB(db)
-	configurationVersionStore := sql.NewConfigurationVersionDB(db)
-	eventService := inmem.NewEventService(logger)
-
-	planLogStore, err := inmem.NewChunkProxy(cache, sql.NewPlanLogDB(db))
+	// Setup application services
+	app, err := app.NewApplication(logger, db, cache)
 	if err != nil {
-		panic(fmt.Sprintf("unable to instantiate plan log store: %s", err.Error()))
+		return err
 	}
 
-	applyLogStore, err := inmem.NewChunkProxy(cache, sql.NewApplyLogDB(db))
+	scheduler, err := inmem.NewScheduler(app.WorkspaceService(), app.RunService(), app.EventService(), logger)
 	if err != nil {
-		panic(fmt.Sprintf("unable to instantiate apply log store: %s", err.Error()))
+		return fmt.Errorf("unable to start scheduler: %w", err)
 	}
 
-	server.OrganizationService = app.NewOrganizationService(organizationStore, logger, eventService)
-	server.WorkspaceService = app.NewWorkspaceService(workspaceStore, logger, server.OrganizationService, eventService)
-	server.StateVersionService = app.NewStateVersionService(stateVersionStore, logger, server.WorkspaceService, cache)
-	server.ConfigurationVersionService = app.NewConfigurationVersionService(configurationVersionStore, logger, server.WorkspaceService, cache)
-	server.RunService = app.NewRunService(runStore, logger, server.WorkspaceService, server.ConfigurationVersionService, eventService, planLogStore, applyLogStore, cache)
-	server.PlanService = app.NewPlanService(runStore, planLogStore, logger, eventService, cache)
-	server.ApplyService = app.NewApplyService(runStore, applyLogStore, logger, eventService, cache)
-	server.EventService = eventService
-	server.CacheService = cache
-
-	if server.ApplicationConfig.DevMode {
-		logger.Info("enabled developer mode")
-	}
-
-	scheduler, err := inmem.NewScheduler(server.WorkspaceService, server.RunService, eventService, logger)
-	if err != nil {
-		panic(fmt.Sprintf("unable to start scheduler: %s", err.Error()))
-	}
-
-	// Run scheduler in background
+	// Run scheduler in background TODO: error not handled
 	go scheduler.Start(ctx)
 
-	// Run poller in background
-	agent, err := agent.NewAgent(
-		logger,
-		server.ConfigurationVersionService,
-		server.StateVersionService,
-		server.RunService,
-		server.PlanService,
-		server.ApplyService,
-		eventService,
-	)
+	// Run agent in background
+	agent, err := agent.NewAgent(logger, app, app.EventService())
 	if err != nil {
-		panic(fmt.Sprintf("unable to start agent: %s", err.Error()))
+		return fmt.Errorf("unable to start agent: %w", err)
 	}
+
 	go agent.Start(ctx)
 
-	// Setup HTTP routes
-	server.SetupRoutes()
-
-	if err := server.Open(); err != nil {
-		server.Close()
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
+	if err != nil {
+		return fmt.Errorf("setting up http server: %w", err)
 	}
-
-	logger.Info("started server", "address", server.Addr, "ssl", server.SSL)
 
 	// Block until Ctrl-C received.
-	if err := server.Wait(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if err := server.Open(ctx); err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func newLogger(lvl, color string) (*zerolog.Logger, error) {
-	zlvl, err := zerolog.ParseLevel(lvl)
-	if err != nil {
-		return nil, err
-	}
+// newLoggerConfigFromFlags adds flags to the given flagset, and, after the
+// flagset is parsed by the caller, the flags populate the returned logger
+// config.
+func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
+	cfg := inmem.CacheConfig{}
 
-	// Setup logger
-	consoleWriter := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
-	}
-	zerolog.DurationFieldInteger = true
+	flags.IntVar(&cfg.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
+	flags.DurationVar(&cfg.TTL, "cache-expiry", otf.DefaultCacheTTL, "Cache entry TTL.")
 
-	switch color {
-	case "auto":
-		// Disable color if stdout is not a tty
-		if !isatty.IsTerminal(os.Stdout.Fd()) {
-			consoleWriter.NoColor = true
-		}
-	case "true":
-		consoleWriter.NoColor = false
-	case "false":
-		consoleWriter.NoColor = true
-	default:
-		return nil, fmt.Errorf("invalid choice for log color: %s. Must be one of auto, true, or false", color)
-	}
+	return &cfg
+}
 
-	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
+// newLoggerConfigFromFlags adds flags to the given flagset, and, after the
+// flagset is parsed by the caller, the flags populate the returned logger
+// config.
+func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
+	cfg := http.ServerConfig{}
 
-	if logger.GetLevel() < zerolog.InfoLevel {
-		// Inform the user that logging lower than INFO threshold has been
-		// enabled
-		logger.WithLevel(logger.GetLevel()).Msg("custom log level enabled")
-	}
+	flags.StringVar(&cfg.Addr, "address", DefaultAddress, "Listening address")
+	flags.BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
+	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
+	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
+	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
+	flags.BoolVar(&cfg.ApplicationConfig.DevMode, "dev-mode", false, "Enable developer mode.")
+	flags.StringVar(&cfg.ApplicationConfig.GithubClientID, "github-client-id", "", "Github Client ID")
+	flags.StringVar(&cfg.ApplicationConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
+	flags.StringVar(&cfg.ApplicationConfig.GithubRedirectURL, "github-redirect-url", html.DefaultGithubRedirectURL, "Github redirect URL")
 
-	return &logger, nil
+	return &cfg
 }

@@ -12,9 +12,7 @@ func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 
-	wdb := NewWorkspaceDB(db)
-
-	_, err := wdb.Create(newTestWorkspace(org))
+	_, err := db.WorkspaceStore().Create(newTestWorkspace(org))
 	require.NoError(t, err)
 }
 
@@ -44,15 +42,13 @@ func TestWorkspace_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
 
-			wdb := NewWorkspaceDB(db)
-
-			_, err := wdb.Update(tt.spec(ws), func(ws *otf.Workspace) error {
+			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) error {
 				ws.Description = "updated description"
 				return nil
 			})
 			require.NoError(t, err)
 
-			got, err := wdb.Get(tt.spec(ws))
+			got, err := db.WorkspaceStore().Get(tt.spec(ws))
 			require.NoError(t, err)
 
 			assert.Equal(t, "updated description", got.Description)
@@ -64,8 +60,6 @@ func TestWorkspace_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-
-	wdb := NewWorkspaceDB(db)
 
 	tests := []struct {
 		name string
@@ -83,7 +77,7 @@ func TestWorkspace_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := wdb.Get(tt.spec)
+			got, err := db.WorkspaceStore().Get(tt.spec)
 			require.NoError(t, err)
 
 			assert.Equal(t, ws, got)
@@ -96,8 +90,6 @@ func TestWorkspace_List(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws1 := createTestWorkspace(t, db, org)
 	ws2 := createTestWorkspace(t, db, org)
-
-	wdb := NewWorkspaceDB(db)
 
 	tests := []struct {
 		name string
@@ -146,7 +138,7 @@ func TestWorkspace_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := wdb.List(tt.opts)
+			results, err := db.WorkspaceStore().List(tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results)
@@ -157,10 +149,6 @@ func TestWorkspace_List(t *testing.T) {
 func TestWorkspace_Delete(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-
-	wdb := NewWorkspaceDB(db)
-	rdb := NewRunDB(db)
-	cdb := NewConfigurationVersionDB(db)
 
 	tests := []struct {
 		name string
@@ -186,22 +174,22 @@ func TestWorkspace_Delete(t *testing.T) {
 			cv := createTestConfigurationVersion(t, db, ws)
 			_ = createTestRun(t, db, ws, cv)
 
-			err := wdb.Delete(tt.spec(ws))
+			err := db.WorkspaceStore().Delete(tt.spec(ws))
 			require.NoError(t, err)
 
-			results, err := wdb.List(otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)})
+			results, err := db.WorkspaceStore().List(otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(results.Items))
 
 			// Test ON CASCADE DELETE functionality for runs
-			rl, err := rdb.List(otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
+			rl, err := db.RunStore().List(otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(rl.Items))
 
 			// Test ON CASCADE DELETE functionality for config versions
-			cvl, err := cdb.List(ws.ID, otf.ConfigurationVersionListOptions{})
+			cvl, err := db.ConfigurationVersionStore().List(ws.ID, otf.ConfigurationVersionListOptions{})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(cvl.Items))
