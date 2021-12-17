@@ -13,12 +13,10 @@ func TestStateVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	sdb := NewStateVersionDB(db)
-
 	out1 := appendOutput("out1", "string", "val1", false)
 	out2 := appendOutput("out2", "string", "val2", false)
 
-	_, err := sdb.Create(newTestStateVersion(ws, out1, out2))
+	_, err := db.StateVersionStore().Create(newTestStateVersion(ws, out1, out2))
 	require.NoError(t, err)
 }
 
@@ -30,8 +28,6 @@ func TestStateVersion_Get(t *testing.T) {
 		appendOutput("out1", "string", "val1", false),
 		appendOutput("out2", "string", "val2", false),
 	)
-
-	sdb := NewStateVersionDB(db)
 
 	tests := []struct {
 		name string
@@ -49,7 +45,7 @@ func TestStateVersion_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sdb.Get(tt.opts)
+			got, err := db.StateVersionStore().Get(tt.opts)
 			require.NoError(t, err)
 
 			// Assertion won't succeed unless both have a workspace with a nil
@@ -67,8 +63,6 @@ func TestStateVersion_List(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	sv1 := createTestStateVersion(t, db, ws)
 	sv2 := createTestStateVersion(t, db, ws)
-
-	sdb := NewStateVersionDB(db)
 
 	tests := []struct {
 		name string
@@ -100,7 +94,7 @@ func TestStateVersion_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := sdb.List(tt.opts)
+			results, err := db.StateVersionStore().List(tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results, sv1, sv2)

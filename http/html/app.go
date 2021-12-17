@@ -13,13 +13,14 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/dghubble/gologin/v2"
 	"github.com/dghubble/gologin/v2/github"
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 )
 
 var githubScopes = []string{"user:email", "read:org"}
 
-// application is the oTF web app.
-type application struct {
+// Application is the oTF web app.
+type Application struct {
 	// Sessions manager
 	sessions *scs.SessionManager
 
@@ -34,9 +35,13 @@ type application struct {
 }
 
 // NewApplication constructs a new application with the given config
-func NewApplication(config *Config) (*application, error) {
+func NewApplication(logger logr.Logger, config Config) (*Application, error) {
 	if err := config.validate(); err != nil {
 		return nil, err
+	}
+
+	if config.DevMode {
+		logger.Info("enabled developer mode")
 	}
 
 	renderer, err := newRenderer(config.DevMode)
@@ -52,7 +57,7 @@ func NewApplication(config *Config) (*application, error) {
 		Scopes:       githubScopes,
 	}
 
-	app := &application{
+	app := &Application{
 		sessions:     scs.New(),
 		oauth2Config: oauth2Config,
 		renderer:     renderer,
@@ -63,7 +68,7 @@ func NewApplication(config *Config) (*application, error) {
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *application) AddRoutes(router *mux.Router) {
+func (app *Application) AddRoutes(router *mux.Router) {
 	router = router.NewRoute().Subrouter()
 
 	// Static assets (JS, CSS, etc). Ensure this is before enabling sessions
@@ -89,7 +94,7 @@ func (app *application) AddRoutes(router *mux.Router) {
 
 // render wraps calls to the template renderer, adding common data to the
 // template
-func (app *application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
+func (app *Application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
 	data := templateData{
 		Title:           strings.Title(filenameWithoutExtension(name)),
 		Content:         content,

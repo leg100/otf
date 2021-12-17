@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	// ShutdownTimeout is the time given for outstanding requests to finish
+	// shutdownTimeout is the time given for outstanding requests to finish
 	// before shutdown.
-	ShutdownTimeout = 1 * time.Second
+	shutdownTimeout = 1 * time.Second
 
 	jsonApplication = "application/json"
 
@@ -33,57 +33,78 @@ const (
 
 type WebRoute string
 
-// Server provides an HTTP/S server
-type Server struct {
-	server *http.Server
-	ln     net.Listener
-	err    chan error
-
-	logr.Logger
-
-	EnableRequestLogging bool
-
-	SSL               bool
-	CertFile, KeyFile string
+type ServerConfig struct {
+	ApplicationConfig html.Config
 
 	// Listening Address in the form <ip>:<port>
 	Addr string
 
-	OrganizationService         otf.OrganizationService
-	WorkspaceService            otf.WorkspaceService
-	StateVersionService         otf.StateVersionService
-	ConfigurationVersionService otf.ConfigurationVersionService
-	EventService                otf.EventService
-	RunService                  otf.RunService
-	PlanService                 otf.PlanService
-	ApplyService                otf.ApplyService
-	CacheService                *bigcache.BigCache
+	SSL               bool
+	CertFile, KeyFile string
 
-	ApplicationConfig *html.Config
+	EnableRequestLogging bool
+}
+
+// Server provides an HTTP/S server
+type Server struct {
+	ServerConfig
+
+	server *http.Server
+	ln     net.Listener
+
+	logr.Logger
+
+	// html web app
+	webApp *html.Application
+
+	// provides access to otf services
+	otf.Application
+
+	CacheService *bigcache.BigCache
 }
 
 // NewServer is the constructor for Server
-func NewServer() *Server {
+func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf.DB, cache *bigcache.BigCache) (*Server, error) {
 	s := &Server{
-		server:            &http.Server{},
-		err:               make(chan error),
-		ApplicationConfig: &html.Config{},
+		server:       &http.Server{},
+		Logger:       logger,
+		ServerConfig: cfg,
+		Application:  app,
 	}
 
-	return s
+	// Validate SSL params
+	if cfg.SSL {
+		if cfg.CertFile == "" || cfg.KeyFile == "" {
+			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
+		}
+	}
+
+	// Construct web app
+	webApp, err := html.NewApplication(logger, cfg.ApplicationConfig)
+	if err != nil {
+		return nil, err
+	}
+	s.webApp = webApp
+
+	http.Handle("/", s.routes(cfg))
+
+	return s, nil
 }
 
 // NewRouter constructs an HTTP router
-func NewRouter(server *Server) *mux.Router {
+func (server *Server) routes(cfg ServerConfig) http.Handler {
 	router := mux.NewRouter()
 
 	// Catch panics and return 500s
 	router.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
 	// Optionally enable HTTP request logging
-	if server.EnableRequestLogging {
+	if cfg.EnableRequestLogging {
 		router.Use(server.loggingMiddleware)
 	}
+
+	// Add web app routes.
+	server.webApp.AddRoutes(router)
 
 	router.HandleFunc("/.well-known/terraform.json", server.WellKnown)
 	router.HandleFunc("/metrics/cache.json", server.CacheStats)
@@ -162,65 +183,55 @@ func NewRouter(server *Server) *mux.Router {
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", server.GetApply).Methods("GET")
 
-	// Add web app routes.
-	app, err := html.NewApplication(server.ApplicationConfig)
-	if err != nil {
-		panic(err.Error())
-	}
-	app.AddRoutes(router)
-
 	return router
 }
 
-func (s *Server) SetupRoutes() {
-	http.Handle("/", NewRouter(s))
-}
-
-// Open validates the server options and begins listening on the bind address.
-func (s *Server) Open() (err error) {
-
+// Open begins listening on the bind address and waits until server exits due to
+// error or the context is cancelled.
+func (s *Server) Open(ctx context.Context) (err error) {
 	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
 		return err
 	}
+
+	errch := make(chan error)
 
 	// Begin serving requests on the listener. We use Serve() instead of
 	// ListenAndServe() because it allows us to check for listen errors (such as
 	// trying to use an already open port) synchronously.
 	go func() {
 		if s.SSL {
-			s.err <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
+			errch <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
 		} else {
-			s.err <- s.server.Serve(s.ln)
+			errch <- s.server.Serve(s.ln)
 		}
 	}()
 
-	return nil
-}
+	s.Logger.Info("started server", "address", s.Addr, "ssl", s.SSL)
 
-// Port returns the TCP port for the running server.  This is useful in tests
-// where we allocate a random port by using ":0".
-func (s *Server) Port() int {
-	if s.ln == nil {
-		return 0
-	}
-	return s.ln.Addr().(*net.TCPAddr).Port
-}
-
-// Wait blocks until server stops listening or context is cancelled.
-func (s *Server) Wait(ctx context.Context) error {
+	// Block until server stops listening or context is cancelled.
 	select {
-	case err := <-s.err:
+	case err := <-errch:
+		if err == http.ErrServerClosed {
+			return nil
+		}
 		return err
 	case <-ctx.Done():
-		return s.server.Close()
+		return s.shutdown()
 	}
 }
 
-// Close gracefully shuts down the server.
-func (s *Server) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+// shutdown attempts to gracefully shuts down the server before a timeout
+// expires at which point it forcefully closes the server.
+func (s *Server) shutdown() error {
+	s.Logger.Info("gracefully shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
-	return s.server.Shutdown(ctx)
+	if err := s.server.Shutdown(ctx); err != nil {
+		return s.server.Close()
+	}
+
+	return nil
 }
 
 // newLoggingMiddleware returns middleware that logs HTTP requests

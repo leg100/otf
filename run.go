@@ -206,6 +206,7 @@ type RunStore interface {
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
 	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	Delete(id string) error
 }
 
 // RunList represents a list of runs.

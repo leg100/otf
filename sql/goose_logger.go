@@ -14,7 +14,7 @@ type GooseLogger struct {
 	logr.Logger
 }
 
-func NewGooseLogger(logger logr.Logger) *GooseLogger {
+func newGooseLogger(logger logr.Logger) *GooseLogger {
 	return &GooseLogger{Logger: logger}
 }
 

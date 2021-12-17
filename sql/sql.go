@@ -5,7 +5,6 @@ package sql
 
 import (
 	"database/sql"
-	"embed"
 	"errors"
 	"fmt"
 	"reflect"
@@ -13,31 +12,15 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/go-logr/logr"
-	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/leg100/otf"
-	"github.com/pressly/goose/v3"
 
 	_ "github.com/lib/pq"
 )
 
-//go:embed migrations/*.sql
-var fs embed.FS
-
 // psql is our SQL builder, customized to use postgres placeholders ($N).
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-
-type db struct {
-	organizationStore         otf.OrganizationStore
-	workspaceStore            otf.WorkspaceStore
-	stateVersionStore         otf.StateVersionStore
-	configurationVersionStore otf.ConfigurationVersionStore
-	runStore                  otf.RunStore
-	planLogStore              otf.PlanLogStore
-	applyLogStore             otf.ApplyLogStore
-}
 
 type Getter interface {
 	Get(dest interface{}, query string, args ...interface{}) error
@@ -47,50 +30,6 @@ type Getter interface {
 type StructScannable interface {
 	StructScan(dest interface{}) error
 }
-
-func New(logger logr.Logger, path string) (otf.DB, error) {
-	goose.SetLogger(NewGooseLogger(logger))
-
-	sqlxdb, err := sqlx.Open("postgres", path)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := sqlxdb.Ping(); err != nil {
-		return nil, err
-	}
-
-	// Map struct field names from CamelCase to snake_case.
-	sqlxdb.MapperFunc(strcase.ToSnake)
-
-	goose.SetBaseFS(fs)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return nil, fmt.Errorf("setting postgres dialect for migrations: %w", err)
-	}
-
-	if err := goose.Up(sqlxdb.DB, "migrations"); err != nil {
-		return nil, fmt.Errorf("unable to migrate database: %w", err)
-	}
-
-	db := db{
-		organizationStore:         NewOrganizationDB(sqlxdb),
-		workspaceStore:            NewWorkspaceDB(sqlxdb),
-		configurationVersionStore: NewConfigurationVersionDB(sqlxdb),
-	}
-
-	return db, nil
-}
-
-func (db db) GetOrganizationStore() otf.OrganizationStore { return db.organizationStore }
-func (db db) GetWorkspaceStore() otf.WorkspaceStore       { return db.workspaceStore }
-func (db db) GetStateVersionStore() otf.StateVersionStore { return db.stateVersionStore }
-func (db db) GetConfigurationVersionStore() otf.ConfigurationVersionStore {
-	return db.configurationVersionStore
-}
-func (db db) GetRunStore() otf.RunStore           { return db.runStore }
-func (db db) GetPlanLogStore() otf.PlanLogStore   { return db.planLogStore }
-func (db db) GetApplyLogStore() otf.ApplyLogStore { return db.applyLogStore }
 
 // FindUpdates compares two structs of identical type for any differences in
 // their struct field values. A mapping is returned: the sqlx db path of the

@@ -35,6 +35,32 @@ var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 // A regular expression used to validate semantic versions (major.minor.patch).
 var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
+// Application provides access to the oTF application services
+type Application interface {
+	OrganizationService() OrganizationService
+	WorkspaceService() WorkspaceService
+	StateVersionService() StateVersionService
+	ConfigurationVersionService() ConfigurationVersionService
+	RunService() RunService
+	PlanService() PlanService
+	ApplyService() ApplyService
+	EventService() EventService
+	//GetCacheService() *CacheService
+}
+
+// DB provides access to oTF database
+type DB interface {
+	Close() error
+
+	OrganizationStore() OrganizationStore
+	WorkspaceStore() WorkspaceStore
+	StateVersionStore() StateVersionStore
+	ConfigurationVersionStore() ConfigurationVersionStore
+	RunStore() RunStore
+	PlanLogStore() PlanLogStore
+	ApplyLogStore() ApplyLogStore
+}
+
 // Updateable is an obj that records when it was updated.
 type Updateable interface {
 	GetID() string

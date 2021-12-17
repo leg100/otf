@@ -34,28 +34,22 @@ type Agent struct {
 }
 
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger,
-	cvs otf.ConfigurationVersionService,
-	svs otf.StateVersionService,
-	rs otf.RunService,
-	ps otf.PlanService,
-	as otf.ApplyService,
-	sub Subscriber) (*Agent, error) {
+func NewAgent(logger logr.Logger, app otf.Application, sub Subscriber) (*Agent, error) {
 
 	logger = logger.WithValues("component", "agent")
 
-	spooler, err := NewSpooler(rs, sub, logger)
+	spooler, err := NewSpooler(app.RunService(), sub, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	supervisor := NewSupervisor(
 		spooler,
-		cvs,
-		svs,
-		rs,
-		ps,
-		as,
+		app.ConfigurationVersionService(),
+		app.StateVersionService(),
+		app.RunService(),
+		app.PlanService(),
+		app.ApplyService(),
 		logger, DefaultConcurrency)
 
 	return &Agent{
