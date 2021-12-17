@@ -64,6 +64,10 @@ type PlanService interface {
 	JobService
 }
 
+type PlanLogStore interface {
+	ChunkStore
+}
+
 func newPlan(runID string) *Plan {
 	return &Plan{
 		ID:               NewID("plan"),

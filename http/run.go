@@ -113,7 +113,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.RunService.Create(r.Context(), opts)
+	obj, err := s.RunService().Create(r.Context(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -125,7 +125,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.RunService.Get(vars["id"])
+	obj, err := s.RunService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -146,7 +146,7 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	workspaceID := vars["workspace_id"]
 	opts.WorkspaceID = &workspaceID
 
-	obj, err := s.RunService.List(opts)
+	obj, err := s.RunService().List(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -171,7 +171,7 @@ func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+	if err := s.RunService().UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -186,7 +186,7 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService.Apply(vars["id"], opts); err != nil {
+	if err := s.RunService().Apply(vars["id"], opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -203,7 +203,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.Discard(vars["id"], opts)
+	err := s.RunService().Discard(vars["id"], opts)
 	if err == otf.ErrRunDiscardNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -224,7 +224,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.Cancel(vars["id"], opts)
+	err := s.RunService().Cancel(vars["id"], opts)
 	if err == otf.ErrRunCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -245,7 +245,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService.ForceCancel(vars["id"], opts)
+	err := s.RunService().ForceCancel(vars["id"], opts)
 	if err == otf.ErrRunForceCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -283,7 +283,7 @@ func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	logs, err := s.RunService.GetLogs(r.Context(), vars["id"])
+	logs, err := s.RunService().GetLogs(r.Context(), vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -300,7 +300,7 @@ func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts otf.PlanFileOptions) {
-	json, err := s.RunService.GetPlanFile(r.Context(), runID, opts)
+	json, err := s.RunService().GetPlanFile(r.Context(), runID, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

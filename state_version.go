@@ -55,6 +55,7 @@ type StateVersionStore interface {
 	Create(sv *StateVersion) (*StateVersion, error)
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
 	List(opts StateVersionListOptions) (*StateVersionList, error)
+	Delete(id string) error
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.

@@ -84,6 +84,7 @@ type ConfigurationVersionStore interface {
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 	Update(id string, fn func(*ConfigurationVersion) error) (*ConfigurationVersion, error)
+	Delete(id string) error
 }
 
 // ConfigurationVersionGetOptions are options for retrieving a single config

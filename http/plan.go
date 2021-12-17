@@ -49,7 +49,7 @@ func (p *Plan) ToDomain() *otf.Plan {
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.PlanService.Get(vars["id"])
+	obj, err := s.PlanService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -61,7 +61,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	json, err := s.PlanService.GetPlanJSON(vars["id"])
+	json, err := s.PlanService().GetPlanJSON(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -83,7 +83,7 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.PlanService.GetChunk(r.Context(), vars["id"], opts)
+	logs, err := s.PlanService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -111,7 +111,7 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.PlanService.PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+	if err := s.PlanService().PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

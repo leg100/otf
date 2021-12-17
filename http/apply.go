@@ -48,7 +48,7 @@ func (a *Apply) ToDomain() *otf.Apply {
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.ApplyService.Get(vars["id"])
+	obj, err := s.ApplyService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -67,7 +67,7 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.ApplyService.GetChunk(r.Context(), vars["id"], opts)
+	logs, err := s.ApplyService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -95,7 +95,7 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.ApplyService.PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+	if err := s.ApplyService().PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}

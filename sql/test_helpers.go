@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +16,7 @@ const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
 type newTestStateVersionOption func(*otf.StateVersion) error
 
-func newTestDB(t *testing.T) *sqlx.DB {
+func newTestDB(t *testing.T) otf.DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -36,7 +35,7 @@ func newTestDB(t *testing.T) *sqlx.DB {
 	q.Add("TimeZone", "UTC")
 	u.RawQuery = q.Encode()
 
-	db, err := New(logr.Discard(), u.String())
+	db, err := New(logr.Discard(), u.String(), nil)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -137,66 +136,56 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	}
 }
 
-func createTestOrganization(t *testing.T, db *sqlx.DB) *otf.Organization {
-	odb := NewOrganizationDB(db)
-
-	org, err := odb.Create(newTestOrganization())
+func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
+	org, err := db.OrganizationStore().Create(newTestOrganization())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		odb.Delete(org.Name)
+		db.OrganizationStore().Delete(org.Name)
 	})
 
 	return org
 }
 
-func createTestWorkspace(t *testing.T, db *sqlx.DB, org *otf.Organization) *otf.Workspace {
-	wdb := NewWorkspaceDB(db)
-
-	ws, err := wdb.Create(newTestWorkspace(org))
+func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
+	ws, err := db.WorkspaceStore().Create(newTestWorkspace(org))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		wdb.Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
+		db.WorkspaceStore().Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
 	})
 
 	return ws
 }
 
-func createTestConfigurationVersion(t *testing.T, db *sqlx.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cdb := NewConfigurationVersionDB(db)
-
-	cv, err := cdb.Create(newTestConfigurationVersion(ws))
+func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
+	cv, err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(ws))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		cdb.Delete(cv.ID)
+		db.ConfigurationVersionStore().Delete(cv.ID)
 	})
 
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db *sqlx.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sdb := NewStateVersionDB(db)
-
-	sv, err := sdb.Create(newTestStateVersion(ws, opts...))
+func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
+	sv, err := db.StateVersionStore().Create(newTestStateVersion(ws, opts...))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		sdb.Delete(sv.ID)
+		db.StateVersionStore().Delete(sv.ID)
 	})
 
 	return sv
 }
 
-func createTestRun(t *testing.T, db *sqlx.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	rdb := NewRunDB(db)
-
-	run, err := rdb.Create(newTestRun(ws, cv))
+func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	run, err := db.RunStore().Create(newTestRun(ws, cv))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		rdb.Delete(run.ID)
+		db.RunStore().Delete(run.ID)
 	})
 
 	return run

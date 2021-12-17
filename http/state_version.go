@@ -36,7 +36,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.StateVersionService.List(opts)
+	obj, err := s.StateVersionService().List(opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -48,7 +48,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.StateVersionService.Current(vars["workspace_id"])
+	obj, err := s.StateVersionService().Current(vars["workspace_id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -60,7 +60,7 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.StateVersionService.Get(vars["id"])
+	obj, err := s.StateVersionService().Get(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -78,7 +78,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.StateVersionService.Create(vars["workspace_id"], opts)
+	obj, err := s.StateVersionService().Create(vars["workspace_id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -90,7 +90,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	resp, err := s.StateVersionService.Download(vars["id"])
+	resp, err := s.StateVersionService().Download(vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
