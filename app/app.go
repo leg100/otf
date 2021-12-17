@@ -21,10 +21,6 @@ type Application struct {
 	eventService                otf.EventService
 }
 
-type Config struct {
-	inmem.CacheConfig
-}
-
 func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
 	// Setup event broker
 	eventService := inmem.NewEventService(logger)

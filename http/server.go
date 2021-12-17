@@ -33,6 +33,7 @@ const (
 
 type WebRoute string
 
+// ServerConfig is the http server config
 type ServerConfig struct {
 	ApplicationConfig html.Config
 
