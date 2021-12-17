@@ -10,11 +10,13 @@ import (
 	"golang.org/x/oauth2"
 	githubOAuth2 "golang.org/x/oauth2/github"
 
+	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/dghubble/gologin/v2"
 	"github.com/dghubble/gologin/v2/github"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 )
 
 var githubScopes = []string{"user:email", "read:org"}
@@ -35,7 +37,7 @@ type Application struct {
 }
 
 // NewApplication constructs a new application with the given config
-func NewApplication(logger logr.Logger, config Config) (*Application, error) {
+func NewApplication(logger logr.Logger, config Config, db otf.DB) (*Application, error) {
 	if err := config.validate(); err != nil {
 		return nil, err
 	}
@@ -57,8 +59,11 @@ func NewApplication(logger logr.Logger, config Config) (*Application, error) {
 		Scopes:       githubScopes,
 	}
 
+	sessions := scs.New()
+	sessions.Store = postgresstore.New(db.Handle())
+
 	app := &Application{
-		sessions:     scs.New(),
+		sessions:     sessions,
 		oauth2Config: oauth2Config,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),

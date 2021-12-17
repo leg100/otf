@@ -4,6 +4,7 @@ Package otf is responsible for domain logic.
 package otf
 
 import (
+	"database/sql"
 	"math/rand"
 	"regexp"
 	"time"
@@ -50,6 +51,7 @@ type Application interface {
 
 // DB provides access to oTF database
 type DB interface {
+	Handle() *sql.DB
 	Close() error
 
 	OrganizationStore() OrganizationStore
