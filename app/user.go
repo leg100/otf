@@ -10,18 +10,44 @@ import (
 var _ otf.UserService = (*UserService)(nil)
 
 type UserService struct {
-	db otf.SessionStore
+	db       otf.UserStore
+	sessions otf.SessionStore
 
 	logr.Logger
 }
 
-func NewUserService(db otf.UserStore, logger logr.Logger, os otf.OrganizationService, es otf.EventService) *UserService {
+func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 	return &UserService{
-		db:     db,
-		es:     es,
-		os:     os,
-		Logger: logger,
+		db:       db.UserStore(),
+		sessions: db.SessionStore(),
+		Logger:   logger,
 	}
+}
+
+// Login logs a user into the system. A user is created if they don't already
+// exist. Note: authentication is handled upstream in the http package.
+func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error {
+	user, err := s.get(ctx, opts.Username)
+	if err == otf.ErrResourceNotFound {
+		user, err = s.create(ctx, opts.Username)
+	} else if err != nil {
+		s.Error(err, "retrieving user", "username", opts.Username)
+		return err
+	}
+
+	// Associate user with session token
+	_, err = s.sessions.Update(ctx, opts.SessionToken, func(session *otf.Session) error {
+		session.User = user
+		return nil
+	})
+	if err != nil {
+		s.Error(err, "user login", "username", opts.Username)
+		return err
+	}
+
+	s.Info("user logged in", "username", opts.Username)
+
+	return nil
 }
 
 func (s UserService) Sessions(ctx context.Context) ([]*otf.Session, error) {
@@ -45,37 +71,17 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User
 	return ws, nil
 }
 
-func (s UserService) Delete(ctx context.Context, spec otf.UserSpecifier) error {
-	// Get workspace so we can publish it in an event after we delete it
-	ws, err := s.db.Get(spec)
+func (s UserService) create(ctx context.Context, username string) (*otf.User, error) {
+	user, err := s.db.Create(ctx, username)
 	if err != nil {
+		s.Error(err, "creating user", "username", username)
 		return err
 	}
+	s.Info(err, "created user", "username", username)
 
-	if err := s.db.Delete(spec); err != nil {
-		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name)
-		return err
-	}
-
-	s.es.Publish(otf.Event{Type: otf.EventUserDeleted, Payload: ws})
-
-	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name)
-
-	return nil
+	return user, err
 }
 
-func (s UserService) Lock(ctx context.Context, id string, _ otf.UserLockOptions) (*otf.User, error) {
-	spec := otf.UserSpecifier{ID: &id}
-
-	return s.db.Update(spec, func(ws *otf.User) (err error) {
-		return ws.ToggleLock(true)
-	})
-}
-
-func (s UserService) Unlock(ctx context.Context, id string) (*otf.User, error) {
-	spec := otf.UserSpecifier{ID: &id}
-
-	return s.db.Update(spec, func(ws *otf.User) (err error) {
-		return ws.ToggleLock(false)
-	})
+func (s UserService) get(ctx context.Context, username string) (*otf.User, error) {
+	return s.db.Get(ctx, username)
 }

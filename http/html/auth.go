@@ -40,21 +40,19 @@ type Session struct {
 	Expires time.Time
 }
 
-// issueSession issues a cookie session after successful Github login
-func (app *Application) issueSession() http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		githubUser, err := github.UserFromContext(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
-		app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
-
-		http.Redirect(w, r, "/profile", http.StatusFound)
+// githubLogin is called upon a successful Github login. A new user is created
+// if they don't already exist.
+func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
+	githubUser, err := github.UserFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return http.HandlerFunc(fn)
+
+	app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
+	app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
+
+	http.Redirect(w, r, "/profile", http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {

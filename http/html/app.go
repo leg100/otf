@@ -34,10 +34,13 @@ type Application struct {
 
 	// Static asset server
 	staticServer http.FileSystem
+
+	// oTF service accessors
+	services otf.Application
 }
 
 // NewApplication constructs a new application with the given config
-func NewApplication(logger logr.Logger, config Config, db otf.DB) (*Application, error) {
+func NewApplication(logger logr.Logger, config Config, services otf.Application, db otf.DB) (*Application, error) {
 	if err := config.validate(); err != nil {
 		return nil, err
 	}
@@ -63,6 +66,7 @@ func NewApplication(logger logr.Logger, config Config, db otf.DB) (*Application,
 	sessions.Store = postgresstore.New(db.Handle())
 
 	app := &Application{
+		services:     services,
 		sessions:     sessions,
 		oauth2Config: oauth2Config,
 		renderer:     renderer,
@@ -74,23 +78,34 @@ func NewApplication(logger logr.Logger, config Config, db otf.DB) (*Application,
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
 func (app *Application) AddRoutes(router *mux.Router) {
-	router = router.NewRoute().Subrouter()
-
-	// Static assets (JS, CSS, etc). Ensure this is before enabling sessions
-	// middleware to avoid setting cookies unnecessarily.
+	// Static assets (JS, CSS, etc).
 	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
+	app.sessionRoutes(router.NewRoute().Subrouter())
+}
+
+// sessionRoutes adds routes for which a session is maintained.
+func (app *Application) sessionRoutes(router *mux.Router) {
 	// Enable sessions middleware
 	router.Use(app.sessions.LoadAndSave)
 
+	app.nonAuthRoutes(router.NewRoute().Subrouter())
+	app.authRoutes(router.NewRoute().Subrouter())
+}
+
+// nonAuthRoutes adds routes that don't require authentication.
+func (app *Application) nonAuthRoutes(router *mux.Router) {
 	stateConfig := gologin.DebugOnlyCookieConfig
+
 	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
-	router.Handle(githubCallbackPath, github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, app.issueSession(), nil)))
+	router.Handle(githubCallbackPath, github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, http.HandlerFunc(app.githubLogin), nil)))
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+}
 
-	router = router.NewRoute().Subrouter()
+// authRoutes adds routes that require authentication.
+func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
 	router.HandleFunc("/profile", app.profileHandler).Methods("GET")

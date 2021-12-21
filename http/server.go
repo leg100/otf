@@ -81,7 +81,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	}
 
 	// Construct web app
-	webApp, err := html.NewApplication(logger, cfg.ApplicationConfig, db)
+	webApp, err := html.NewApplication(logger, cfg.ApplicationConfig, app, db)
 	if err != nil {
 		return nil, err
 	}

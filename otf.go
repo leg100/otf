@@ -61,6 +61,8 @@ type DB interface {
 	RunStore() RunStore
 	PlanLogStore() PlanLogStore
 	ApplyLogStore() ApplyLogStore
+	UserStore() UserStore
+	SessionStore() SessionStore
 }
 
 // Updateable is an obj that records when it was updated.

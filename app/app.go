@@ -19,6 +19,7 @@ type Application struct {
 	planService                 otf.PlanService
 	applyService                otf.ApplyService
 	eventService                otf.EventService
+	userService                 otf.UserService
 }
 
 func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
@@ -33,6 +34,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	runService := NewRunService(db.RunStore(), logger, workspaceService, configurationVersionService, eventService, db.PlanLogStore(), db.ApplyLogStore(), cache)
 	planService := NewPlanService(db.RunStore(), db.PlanLogStore(), logger, eventService, cache)
 	applyService := NewApplyService(db.RunStore(), db.ApplyLogStore(), logger, eventService, cache)
+	userService := NewUserService(logger, db.UserStore(), db.SessionStore())
 
 	return &Application{
 		organizationService:         orgService,
@@ -43,6 +45,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 		planService:                 planService,
 		applyService:                applyService,
 		eventService:                eventService,
+		userService:                 userService,
 	}, nil
 }
 
