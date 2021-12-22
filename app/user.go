@@ -10,37 +10,31 @@ import (
 var _ otf.UserService = (*UserService)(nil)
 
 type UserService struct {
-	db       otf.UserStore
-	sessions otf.SessionStore
+	db otf.UserStore
 
 	logr.Logger
 }
 
 func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 	return &UserService{
-		db:       db.UserStore(),
-		sessions: db.SessionStore(),
-		Logger:   logger,
+		db:     db.UserStore(),
+		Logger: logger,
 	}
 }
 
-// Login logs a user into the system. A user is created if they don't already
-// exist. Note: authentication is handled upstream in the http package.
+// Login logs a user into the system by linking their current session with their
+// user account. If the user account does not exist it is created. Note:
+// authentication should be handled by the caller.
 func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error {
-	user, err := s.get(ctx, opts.Username)
+	user, err := s.Get(ctx, opts.Username)
 	if err == otf.ErrResourceNotFound {
-		user, err = s.create(ctx, opts.Username)
+		user, err = s.create(ctx, opts)
 	} else if err != nil {
 		s.Error(err, "retrieving user", "username", opts.Username)
 		return err
 	}
 
-	// Associate user with session token
-	_, err = s.sessions.Update(ctx, opts.SessionToken, func(session *otf.Session) error {
-		session.User = user
-		return nil
-	})
-	if err != nil {
+	if err := s.db.LinkSession(ctx, opts.SessionToken, user.ID); err != nil {
 		s.Error(err, "user login", "username", opts.Username)
 		return err
 	}
@@ -50,38 +44,25 @@ func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error
 	return nil
 }
 
-func (s UserService) Sessions(ctx context.Context) ([]*otf.Session, error) {
-	return s.db.List(opts)
-}
-
-func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
-	if err := spec.Valid(); err != nil {
-		s.Error(err, "retrieving workspace: invalid specifier")
-		return nil, err
-	}
-
-	ws, err := s.db.Get(spec)
+func (s UserService) Get(ctx context.Context, username string) (*otf.User, error) {
+	ws, err := s.db.Get(ctx, username)
 	if err != nil {
-		s.Error(err, "retrieving workspace", "id", spec.String())
+		s.Error(err, "retrieving user", "username", username)
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", "id", spec.String())
+	s.V(2).Info("retrieved user", "username", username)
 
 	return ws, nil
 }
 
-func (s UserService) create(ctx context.Context, username string) (*otf.User, error) {
-	user, err := s.db.Create(ctx, username)
+func (s UserService) create(ctx context.Context, opts otf.UserLoginOptions) (*otf.User, error) {
+	user, err := s.db.Create(ctx, otf.NewUser(opts))
 	if err != nil {
-		s.Error(err, "creating user", "username", username)
-		return err
+		s.Error(err, "creating user", "username", opts.Username)
+		return nil, err
 	}
-	s.Info(err, "created user", "username", username)
+	s.Info("created user", "username", opts.Username)
 
 	return user, err
-}
-
-func (s UserService) get(ctx context.Context, username string) (*otf.User, error) {
-	return s.db.Get(ctx, username)
 }

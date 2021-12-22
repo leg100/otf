@@ -14,7 +14,7 @@
       <div class="container-fluid">
         <span class="navbar-brand h1">oTF</span>
         <ul class="navbar-nav">
-          {{ if .IsAuthenticated }}
+          {{ if .CurrentUser }}
           <li class="nav-item">
             <form action="/logout" method="POST">
               <button type="submit" class="btn btn-dark">Logout</button>

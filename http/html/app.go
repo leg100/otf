@@ -36,7 +36,7 @@ type Application struct {
 	staticServer http.FileSystem
 
 	// oTF service accessors
-	services otf.Application
+	otf.Application
 }
 
 // NewApplication constructs a new application with the given config
@@ -63,10 +63,10 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 	}
 
 	sessions := scs.New()
-	sessions.Store = postgresstore.New(db.Handle())
+	sessions.Store = postgresstore.New(db.Handle().DB)
 
 	app := &Application{
-		services:     services,
+		Application:  services,
 		sessions:     sessions,
 		oauth2Config: oauth2Config,
 		renderer:     renderer,
@@ -116,9 +116,9 @@ func (app *Application) authRoutes(router *mux.Router) {
 // template
 func (app *Application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
 	data := templateData{
-		Title:           strings.Title(filenameWithoutExtension(name)),
-		Content:         content,
-		IsAuthenticated: app.isAuthenticated(r),
+		Title:       strings.Title(filenameWithoutExtension(name)),
+		Content:     content,
+		CurrentUser: app.currentUser(r),
 	}
 
 	for _, o := range opts {

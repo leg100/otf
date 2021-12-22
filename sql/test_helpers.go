@@ -1,6 +1,10 @@
 package sql
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"net/url"
 	"os"
 	"testing"
@@ -97,6 +101,34 @@ func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *
 	return sv
 }
 
+func newTestUser() *otf.User {
+	return &otf.User{
+		ID:         otf.NewID("user"),
+		Timestamps: newTestTimestamps(),
+		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
+	}
+}
+
+func newTestSession() *otf.Session {
+	token, _ := generateToken()
+
+	return &otf.Session{
+		Token:  token,
+		Expiry: time.Now().Add(time.Second * 10),
+	}
+}
+
+// generateToken is taken from alexedwards/scs - here for generating a session
+// token for testing purposes.
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
 	return func(sv *otf.StateVersion) error {
 		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
@@ -189,4 +221,33 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	})
 
 	return run
+}
+
+func createTestUser(t *testing.T, db otf.DB) *otf.User {
+	user := newTestUser()
+
+	err := db.UserStore().Create(context.Background(), user)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.UserStore().Delete(context.Background(), user.ID)
+	})
+
+	return user
+}
+
+func createTestSession(t *testing.T, db otf.DB) *otf.Session {
+	session := newTestSession()
+
+	sql, args, err := db.Handle().BindNamed("INSERT INTO sessions (token, expiry) VALUES (:token, :expiry)", session)
+	require.NoError(t, err)
+
+	_, err = db.Handle().Exec(sql, args...)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.Handle().Exec("DELETE FROM sessions WHERE token = ?", session.Token)
+	})
+
+	return session
 }

@@ -68,10 +68,10 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	return ws, nil
 }
 
-// Update persists an updated Workspace to the DB. The existing run is fetched
-// from the DB, the supplied func is invoked on the run, and the updated run is
-// persisted back to the DB. The returned Workspace includes any changes,
-// including a new UpdatedAt value.
+// Update persists an updated Workspace to the DB. The existing workspace is
+// fetched from the DB, the supplied func is invoked on the workspace, and the
+// updated workspace is persisted back to the DB. The returned Workspace
+// includes any changes, including a new UpdatedAt value.
 func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	tx := db.MustBegin()
 	defer tx.Rollback()

@@ -1,16 +1,15 @@
 package html
 
 import (
-	"context"
 	"net/http"
 	"time"
 
 	"github.com/dghubble/gologin/v2/github"
+	"github.com/leg100/otf"
 )
 
 const (
-	sessionUserKey  = "githubID"
-	sessionUsername = "githubUsername"
+	sessionUsername = "username"
 	sessionFlashKey = "flash"
 )
 
@@ -43,14 +42,22 @@ type Session struct {
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
-	githubUser, err := github.UserFromContext(r.Context())
+	guser, err := github.UserFromContext(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
-	app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
+	opts := otf.UserLoginOptions{
+		Username:     *guser.Login,
+		SessionToken: app.sessions.Token(r.Context()),
+	}
+
+	if err := app.UserService().Login(r.Context(), opts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	app.sessions.Put(r.Context(), sessionUsername, *guser.Login)
 
 	http.Redirect(w, r, "/profile", http.StatusFound)
 }
@@ -96,26 +103,17 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	var sessions []Session
-
-	currentUser := app.sessions.GetString(r.Context(), sessionUsername)
-
-	err := app.sessions.Iterate(r.Context(), func(ctx context.Context) error {
-		user := app.sessions.GetString(ctx, sessionUsername)
-		if user == currentUser {
-			sessions = append(sessions, Session{
-				Token: app.sessions.Token(ctx),
-			})
-		}
-
-		return nil
-	})
+	user, err := app.UserService().Get(r.Context(), app.currentUser(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := app.render(r, "sessions.tmpl", w, &sessions, userSidebar); err != nil {
+	if err := app.render(r, "sessions.tmpl", w, &user.Sessions, userSidebar); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (app *Application) currentUser(r *http.Request) string {
+	return app.sessions.GetString(r.Context(), sessionUsername)
 }

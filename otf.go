@@ -4,10 +4,11 @@ Package otf is responsible for domain logic.
 package otf
 
 import (
-	"database/sql"
 	"math/rand"
 	"regexp"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -46,12 +47,13 @@ type Application interface {
 	PlanService() PlanService
 	ApplyService() ApplyService
 	EventService() EventService
+	UserService() UserService
 	//GetCacheService() *CacheService
 }
 
 // DB provides access to oTF database
 type DB interface {
-	Handle() *sql.DB
+	Handle() *sqlx.DB
 	Close() error
 
 	OrganizationStore() OrganizationStore
@@ -62,7 +64,6 @@ type DB interface {
 	PlanLogStore() PlanLogStore
 	ApplyLogStore() ApplyLogStore
 	UserStore() UserStore
-	SessionStore() SessionStore
 }
 
 // Updateable is an obj that records when it was updated.

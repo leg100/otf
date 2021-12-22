@@ -10,6 +10,10 @@ import (
 	"github.com/leg100/otf/inmem"
 )
 
+var (
+	_ otf.Application = (*Application)(nil)
+)
+
 type Application struct {
 	organizationService         otf.OrganizationService
 	workspaceService            otf.WorkspaceService
@@ -34,7 +38,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	runService := NewRunService(db.RunStore(), logger, workspaceService, configurationVersionService, eventService, db.PlanLogStore(), db.ApplyLogStore(), cache)
 	planService := NewPlanService(db.RunStore(), db.PlanLogStore(), logger, eventService, cache)
 	applyService := NewApplyService(db.RunStore(), db.ApplyLogStore(), logger, eventService, cache)
-	userService := NewUserService(logger, db.UserStore(), db.SessionStore())
+	userService := NewUserService(logger, db)
 
 	return &Application{
 		organizationService:         orgService,
@@ -79,4 +83,8 @@ func (app *Application) ApplyService() otf.ApplyService {
 
 func (app *Application) EventService() otf.EventService {
 	return app.eventService
+}
+
+func (app *Application) UserService() otf.UserService {
+	return app.userService
 }

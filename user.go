@@ -13,6 +13,9 @@ type User struct {
 	Timestamps
 
 	Username string
+
+	// A user has many sessions
+	Sessions []*Session
 }
 
 type UserService interface {
@@ -20,8 +23,8 @@ type UserService interface {
 	// exist. The user is associated with an active session.
 	Login(ctx context.Context, opts UserLoginOptions) error
 
-	// Sessions lists sessions belonging to the user.
-	Sessions(ctx context.Context, username string) ([]*Session, error)
+	// Get retrieves a user using their username
+	Get(ctx context.Context, username string) (*User, error)
 }
 
 // UserLoginOptions are the options for logging a user into the system.
@@ -34,8 +37,9 @@ type UserLoginOptions struct {
 }
 
 type UserStore interface {
-	Create(ctx context.Context, username string) (*User, error)
-	Update(ctx context.Context, token string, fn func(*Session) error) (*Session, error)
+	Create(ctx context.Context, user *User) error
+	List(ctx context.Context) ([]*User, error)
+	LinkSession(ctx context.Context, token, username string) error
 	Get(ctx context.Context, username string) (*User, error)
 	Delete(ctx context.Context, token string) error
 }
@@ -43,13 +47,15 @@ type UserStore interface {
 type Session struct {
 	Token  string
 	Expiry time.Time
+	Data   map[string]interface{}
 
 	// Session belongs to a user
-	User *User `db:"users"`
+	UserID string
 }
 
 type SessionStore interface {
-	Update(ctx context.Context, token string, fn func(*Session) error) (*Session, error)
+	// Link links the session with a user, using a session token and user_id.
+	Link(ctx context.Context, token, user_id string) error
 	Delete(ctx context.Context, token string) error
 }
 
