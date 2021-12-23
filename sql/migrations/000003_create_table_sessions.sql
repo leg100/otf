@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     username text,
     created_at timestamptz,
     updated_at timestamptz,
+    organization_id text REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (user_id)
 );
 

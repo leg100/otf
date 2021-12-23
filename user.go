@@ -16,6 +16,9 @@ type User struct {
 
 	// A user has many sessions
 	Sessions []*Session
+
+	// User belongs to an organization
+	Organization *Organization `db:"organizations"`
 }
 
 type UserService interface {
@@ -38,16 +41,16 @@ type UserLoginOptions struct {
 
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
-	List(ctx context.Context) ([]*User, error)
+	List(ctx context.Context, organizationID string) ([]*User, error)
 	LinkSession(ctx context.Context, token, username string) error
 	Get(ctx context.Context, username string) (*User, error)
-	Delete(ctx context.Context, token string) error
+	Delete(ctx context.Context, user_id string) error
 }
 
 type Session struct {
 	Token  string
 	Expiry time.Time
-	Data   map[string]interface{}
+	Data   []byte
 
 	// Session belongs to a user
 	UserID string

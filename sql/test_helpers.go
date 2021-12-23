@@ -101,20 +101,22 @@ func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *
 	return sv
 }
 
-func newTestUser() *otf.User {
+func newTestUser(org *otf.Organization) *otf.User {
 	return &otf.User{
-		ID:         otf.NewID("user"),
-		Timestamps: newTestTimestamps(),
-		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
+		ID:           otf.NewID("user"),
+		Timestamps:   newTestTimestamps(),
+		Username:     fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
+		Organization: org,
 	}
 }
 
-func newTestSession() *otf.Session {
+func newTestSession(user_id string) *otf.Session {
 	token, _ := generateToken()
 
 	return &otf.Session{
 		Token:  token,
 		Expiry: time.Now().Add(time.Second * 10),
+		UserID: user_id,
 	}
 }
 
@@ -223,8 +225,8 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	return run
 }
 
-func createTestUser(t *testing.T, db otf.DB) *otf.User {
-	user := newTestUser()
+func createTestUser(t *testing.T, db otf.DB, org *otf.Organization) *otf.User {
+	user := newTestUser(org)
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)
@@ -236,10 +238,11 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB) *otf.Session {
-	session := newTestSession()
+func createTestSession(t *testing.T, db otf.DB, user_id string) *otf.Session {
+	session := newTestSession(user_id)
 
-	sql, args, err := db.Handle().BindNamed("INSERT INTO sessions (token, expiry) VALUES (:token, :expiry)", session)
+	insertSql := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
+	sql, args, err := db.Handle().BindNamed(insertSql, session)
 	require.NoError(t, err)
 
 	_, err = db.Handle().Exec(sql, args...)

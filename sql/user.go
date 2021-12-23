@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
@@ -11,8 +12,16 @@ import (
 var (
 	_ otf.UserStore = (*UserDB)(nil)
 
-	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
-VALUES (:user_id, :created_at, :updated_at, :username)`
+	userColumns = []string{
+		"user_id",
+		"created_at",
+		"updated_at",
+		"username",
+	}
+
+	insertUserSQL = fmt.Sprintf(`INSERT INTO users (%s, organization_id) VALUES (%s, :organizations.organization_id)`,
+		strings.Join(userColumns, ", "),
+		strings.Join(otf.PrefixSlice(userColumns, ":"), ", "))
 )
 
 type UserDB struct {
@@ -39,8 +48,14 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return nil
 }
 
-func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
-	selectBuilder := psql.Select().From("users")
+func (db UserDB) List(ctx context.Context, organizationID string) ([]*otf.User, error) {
+	selectBuilder := psql.
+		Select().
+		Columns(asColumnList("users", false, userColumns...)).
+		Columns(asColumnList("organizations", true, organizationColumns...)).
+		From("users").
+		Join("organizations USING (organization_id)").
+		Where("organization_id = ?", organizationID)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -57,16 +72,22 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 
 // Get retrieves a user from the DB, along with its sessions.
 func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
-	selectBuilder := psql.Select("*").From("users").Where("username = ?", username)
+	selectBuilder := psql.
+		Select().
+		Columns(asColumnList("users", false, userColumns...)).
+		Columns(asColumnList("organizations", true, organizationColumns...)).
+		From("users").
+		Join("organizations USING (organization_id)").
+		Where("username = ?", username)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("building SQL query: %w", err)
 	}
 
 	var user otf.User
 	if err := db.DB.Get(&user, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	user.Sessions, err = listSessions(ctx, db.DB, user.ID)
@@ -90,7 +111,7 @@ func (db UserDB) LinkSession(ctx context.Context, token, user_id string) error {
 
 	_, err = db.Exec(sql, args...)
 	if err != nil {
-		return databaseError(err)
+		return databaseError(err, sql)
 	}
 
 	return nil

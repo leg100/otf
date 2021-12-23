@@ -193,7 +193,7 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error
 
 	var ws otf.Workspace
 	if err := db.Get(&ws, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	return &ws, nil

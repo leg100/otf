@@ -147,7 +147,7 @@ func getOrganization(getter Getter, name string) (*otf.Organization, error) {
 
 	var org otf.Organization
 	if err := getter.Get(&org, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	return &org, nil

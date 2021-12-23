@@ -45,7 +45,7 @@ func getChunk(ctx context.Context, db Getter, table, idCol, idVal string, opts o
 
 	var chunks []chunk
 	if err := db.Select(&chunks, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	// merge all chunks, prefixing or suffixing with start or end marker as

@@ -26,7 +26,7 @@ func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 // user account. If the user account does not exist it is created. Note:
 // authentication should be handled by the caller.
 func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error {
-	user, err := s.Get(ctx, opts.Username)
+	user, err := s.get(ctx, opts.Username)
 	if err == otf.ErrResourceNotFound {
 		user, err = s.create(ctx, opts)
 	} else if err != nil {
@@ -45,7 +45,7 @@ func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error
 }
 
 func (s UserService) Get(ctx context.Context, username string) (*otf.User, error) {
-	ws, err := s.db.Get(ctx, username)
+	user, err := s.get(ctx, username)
 	if err != nil {
 		s.Error(err, "retrieving user", "username", username)
 		return nil, err
@@ -53,16 +53,21 @@ func (s UserService) Get(ctx context.Context, username string) (*otf.User, error
 
 	s.V(2).Info("retrieved user", "username", username)
 
-	return ws, nil
+	return user, nil
 }
 
 func (s UserService) create(ctx context.Context, opts otf.UserLoginOptions) (*otf.User, error) {
-	user, err := s.db.Create(ctx, otf.NewUser(opts))
-	if err != nil {
+	user := otf.NewUser(opts)
+
+	if err := s.db.Create(ctx, user); err != nil {
 		s.Error(err, "creating user", "username", opts.Username)
 		return nil, err
 	}
 	s.Info("created user", "username", opts.Username)
 
-	return user, err
+	return user, nil
+}
+
+func (s UserService) get(ctx context.Context, username string) (*otf.User, error) {
+	return s.db.Get(ctx, username)
 }
