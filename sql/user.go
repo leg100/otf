@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
@@ -12,16 +11,8 @@ import (
 var (
 	_ otf.UserStore = (*UserDB)(nil)
 
-	userColumns = []string{
-		"user_id",
-		"created_at",
-		"updated_at",
-		"username",
-	}
-
-	insertUserSQL = fmt.Sprintf(`INSERT INTO users (%s, organization_id) VALUES (%s, :organizations.organization_id)`,
-		strings.Join(userColumns, ", "),
-		strings.Join(otf.PrefixSlice(userColumns, ":"), ", "))
+	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
+VALUES (:user_id, :created_at, :updated_at, :username)`
 )
 
 type UserDB struct {
@@ -48,14 +39,8 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return nil
 }
 
-func (db UserDB) List(ctx context.Context, organizationID string) ([]*otf.User, error) {
-	selectBuilder := psql.
-		Select().
-		Columns(asColumnList("users", false, userColumns...)).
-		Columns(asColumnList("organizations", true, organizationColumns...)).
-		From("users").
-		Join("organizations USING (organization_id)").
-		Where("organization_id = ?", organizationID)
+func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
+	selectBuilder := psql.Select("*").From("users")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -72,13 +57,7 @@ func (db UserDB) List(ctx context.Context, organizationID string) ([]*otf.User, 
 
 // Get retrieves a user from the DB, along with its sessions.
 func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
-	selectBuilder := psql.
-		Select().
-		Columns(asColumnList("users", false, userColumns...)).
-		Columns(asColumnList("organizations", true, organizationColumns...)).
-		From("users").
-		Join("organizations USING (organization_id)").
-		Where("username = ?", username)
+	selectBuilder := psql.Select("*").From("users").Where("username = ?", username)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {

@@ -101,12 +101,11 @@ func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *
 	return sv
 }
 
-func newTestUser(org *otf.Organization) *otf.User {
+func newTestUser() *otf.User {
 	return &otf.User{
-		ID:           otf.NewID("user"),
-		Timestamps:   newTestTimestamps(),
-		Username:     fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
-		Organization: org,
+		ID:         otf.NewID("user"),
+		Timestamps: newTestTimestamps(),
+		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
 	}
 }
 
@@ -225,8 +224,8 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	return run
 }
 
-func createTestUser(t *testing.T, db otf.DB, org *otf.Organization) *otf.User {
-	user := newTestUser(org)
+func createTestUser(t *testing.T, db otf.DB) *otf.User {
+	user := newTestUser()
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)
