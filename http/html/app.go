@@ -110,6 +110,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 
 	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
 	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
+	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST")
 }
 
 // render wraps calls to the template renderer, adding common data to the
@@ -126,7 +127,7 @@ func (app *Application) render(r *http.Request, name string, w io.Writer, conten
 	}
 
 	// Get flash msg
-	if msg := app.sessions.PopString(r.Context(), sessionFlashKey); msg != "" {
+	if msg := app.sessions.PopString(r.Context(), otf.FlashSessionKey); msg != "" {
 		data.Flash = template.HTML(msg)
 	}
 
