@@ -127,10 +127,10 @@ func asColumnList(table string, prefix bool, cols ...string) (sql string) {
 	return strings.Join(asLines, ",")
 }
 
-func databaseError(err error) error {
+func databaseError(err error, sqlstmt string) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		// Swap DB no rows found error for the canonical not found error
 		return otf.ErrResourceNotFound
 	}
-	return err
+	return fmt.Errorf("running SQL statement: %s resulted in an error: %w", sqlstmt, err)
 }

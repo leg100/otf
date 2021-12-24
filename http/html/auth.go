@@ -1,21 +1,19 @@
 package html
 
 import (
-	"context"
+	"net"
 	"net/http"
-	"time"
 
 	"github.com/dghubble/gologin/v2/github"
-)
-
-const (
-	sessionUserKey  = "githubID"
-	sessionUsername = "githubUsername"
-	sessionFlashKey = "flash"
+	"github.com/leg100/otf"
 )
 
 var (
 	userSidebar = withSidebar("User Settings",
+		sidebarItem{
+			Name: "Profile",
+			Link: "/profile",
+		},
 		sidebarItem{
 			Name: "Sessions",
 			Link: "/sessions",
@@ -31,30 +29,51 @@ type Profile struct {
 	Username string
 }
 
-type Session struct {
-	Token   string
-	Expires time.Time
+type Sessions struct {
+	ActiveToken string
+	Sessions    []*otf.Session
 }
 
-// issueSession issues a cookie session after successful Github login
-func (app *Application) issueSession() http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		githubUser, err := github.UserFromContext(r.Context())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		app.sessions.Put(r.Context(), sessionUserKey, *githubUser.ID)
-		app.sessions.Put(r.Context(), sessionUsername, *githubUser.Login)
-
-		http.Redirect(w, r, "/profile", http.StatusFound)
+// githubLogin is called upon a successful Github login. A new user is created
+// if they don't already exist.
+func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
+	guser, err := github.UserFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return http.HandlerFunc(fn)
+
+	// We cannot rely on the LoadAndSave() middleware to save session token to
+	// DB because it only does so after this handler has finished, but Login()
+	// below relies on it having already been saved so we do so now.
+	_, _, err = app.sessions.Commit(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	opts := otf.UserLoginOptions{
+		Username:     *guser.Login,
+		SessionToken: app.sessions.Token(r.Context()),
+	}
+
+	if err := app.UserService().Login(r.Context(), opts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// Populate session data
+	app.sessions.Put(r.Context(), otf.UsernameSessionKey, *guser.Login)
+
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
+
+	http.Redirect(w, r, "/profile", http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {
-	return app.sessions.Exists(r.Context(), sessionUsername)
+	return app.sessions.Exists(r.Context(), otf.UsernameSessionKey)
 }
 
 func (app *Application) requireAuthentication(next http.Handler) http.Handler {
@@ -85,7 +104,7 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	username := app.sessions.GetString(r.Context(), sessionUsername)
+	username := app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
 	prof := Profile{Username: username}
 
 	if err := app.render(r, "profile.tmpl", w, &prof, userSidebar); err != nil {
@@ -94,26 +113,39 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	var sessions []Session
-
-	currentUser := app.sessions.GetString(r.Context(), sessionUsername)
-
-	err := app.sessions.Iterate(r.Context(), func(ctx context.Context) error {
-		user := app.sessions.GetString(ctx, sessionUsername)
-		if user == currentUser {
-			sessions = append(sessions, Session{
-				Token: app.sessions.Token(ctx),
-			})
-		}
-
-		return nil
-	})
+	user, err := app.UserService().Get(r.Context(), app.currentUser(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := app.render(r, "sessions.tmpl", w, &sessions); err != nil {
+	sessions := Sessions{
+		ActiveToken: app.sessions.Token(r.Context()),
+		Sessions:    user.Sessions,
+	}
+
+	if err := app.render(r, "sessions.tmpl", w, &sessions, userSidebar); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("token")
+	if token == "" {
+		http.Error(w, "missing token", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if err := app.UserService().RevokeSession(r.Context(), token, app.currentUser(r)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.sessions.Put(r.Context(), otf.FlashSessionKey, "Revoked session")
+
+	http.Redirect(w, r, "/sessions", http.StatusFound)
+}
+
+func (app *Application) currentUser(r *http.Request) string {
+	return app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
 }

@@ -172,7 +172,7 @@ func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOpti
 
 	var cv otf.ConfigurationVersion
 	if err := getter.Get(&cv, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	return &cv, nil

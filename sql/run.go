@@ -271,7 +271,7 @@ func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 
 	var run otf.Run
 	if err := db.Get(&run, sql, args...); err != nil {
-		return nil, databaseError(err)
+		return nil, databaseError(err, sql)
 	}
 
 	return &run, nil
