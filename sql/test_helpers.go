@@ -109,13 +109,13 @@ func newTestUser() *otf.User {
 	}
 }
 
-func newTestSession(user_id string) *otf.Session {
+func newTestSession(userID string) *otf.Session {
 	token, _ := generateToken()
 
 	return &otf.Session{
 		Token:  token,
 		Expiry: time.Now().Add(time.Second * 10),
-		UserID: user_id,
+		UserID: userID,
 	}
 }
 
@@ -237,11 +237,11 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB, user_id string) *otf.Session {
-	session := newTestSession(user_id)
+func createTestSession(t *testing.T, db otf.DB, userID string) *otf.Session {
+	session := newTestSession(userID)
 
-	insertSql := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
-	sql, args, err := db.Handle().BindNamed(insertSql, session)
+	insertSQL := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
+	sql, args, err := db.Handle().BindNamed(insertSQL, session)
 	require.NoError(t, err)
 
 	_, err = db.Handle().Exec(sql, args...)

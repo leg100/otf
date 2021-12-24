@@ -29,6 +29,9 @@ func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error
 	user, err := s.db.Get(ctx, opts.Username)
 	if err == otf.ErrResourceNotFound {
 		user, err = s.create(ctx, opts)
+		if err != nil {
+			return err
+		}
 	} else if err != nil {
 		s.Error(err, "retrieving user", "username", opts.Username)
 		return err

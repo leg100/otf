@@ -78,9 +78,9 @@ func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
 }
 
 // LinkSession links a session record to a user.
-func (db UserDB) LinkSession(ctx context.Context, token, user_id string) error {
+func (db UserDB) LinkSession(ctx context.Context, token, userID string) error {
 	updateBuilder := psql.Update("sessions").
-		Set("user_id", user_id).
+		Set("user_id", userID).
 		Where("token = ?", token).
 		Suffix("RETURNING token")
 
@@ -113,8 +113,8 @@ func (db UserDB) RevokeSession(ctx context.Context, token, username string) erro
 }
 
 // Delete deletes a user from the DB.
-func (db UserDB) Delete(ctx context.Context, user_id string) error {
-	_, err := db.Exec("DELETE FROM users WHERE user_id = $1", user_id)
+func (db UserDB) Delete(ctx context.Context, userID string) error {
+	_, err := db.Exec("DELETE FROM users WHERE user_id = $1", userID)
 	if err != nil {
 		return fmt.Errorf("unable to delete user: %w", err)
 	}
@@ -122,9 +122,9 @@ func (db UserDB) Delete(ctx context.Context, user_id string) error {
 	return nil
 }
 
-// listSessions lists sessions belonging to the user with the given user_id.
-func listSessions(ctx context.Context, db Getter, user_id string) ([]*otf.Session, error) {
-	selectBuilder := psql.Select("token, data, expiry").From("sessions").Where("user_id = ?", user_id)
+// listSessions lists sessions belonging to the user with the given userID.
+func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session, error) {
+	selectBuilder := psql.Select("token, data, expiry").From("sessions").Where("user_id = ?", userID)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
