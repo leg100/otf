@@ -95,13 +95,18 @@ func (app *Application) sessionRoutes(router *mux.Router) {
 
 // nonAuthRoutes adds routes that don't require authentication.
 func (app *Application) nonAuthRoutes(router *mux.Router) {
-	stateConfig := gologin.DebugOnlyCookieConfig
-
-	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
-	router.Handle(githubCallbackPath, github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, http.HandlerFunc(app.githubLogin), nil)))
+	app.githubRoutes(router.NewRoute().Subrouter())
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+}
+
+func (app *Application) githubRoutes(router *mux.Router) {
+	router.Use(newStateHandler(gologin.DebugOnlyCookieConfig))
+
+	router.Handle("/github/login", LoginHandler(app.oauth2Config, nil))
+	router.Handle(githubCallbackPath, github.CallbackHandler(app.oauth2Config, http.HandlerFunc(app.githubLogin), nil))
+
 }
 
 // authRoutes adds routes that require authentication.
