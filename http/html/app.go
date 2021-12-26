@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/oauth2"
-
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-logr/logr"
@@ -21,9 +19,6 @@ type Application struct {
 	// Sessions manager
 	sessions *scs.SessionManager
 
-	// OAuth2 configuration for authorization
-	oauth2Config *oauth2.Config
-
 	// HTML template renderer
 	renderer
 
@@ -33,7 +28,7 @@ type Application struct {
 	// oTF service accessors
 	otf.Application
 
-	// github oauth app
+	// github oauth authorization
 	oauth *githubOAuthApp
 }
 

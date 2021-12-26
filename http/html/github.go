@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"net/url"
 	gourl "net/url"
 
 	gogithub "github.com/google/go-github/v41/github"
@@ -91,7 +90,7 @@ func oauthEndpoint(hostname string) (oauth2.Endpoint, error) {
 func enterpriseBaseURL(hostname string) string   { return enterpriseURL(hostname, "/api/v3") }
 func enterpriseUploadURL(hostname string) string { return enterpriseURL(hostname, "/api/uploads") }
 func enterpriseURL(hostname, path string) string {
-	return (&url.URL{Scheme: "https", Host: hostname, Path: path}).String()
+	return (&gourl.URL{Scheme: "https", Host: hostname, Path: path}).String()
 }
 
 func isGithubEnterprise(hostname string) bool {

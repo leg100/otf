@@ -13,11 +13,6 @@ const (
 	oauthCookieName = "oauth-state"
 )
 
-var tokenKey key
-
-// unexported key type prevents collisions
-type key int
-
 type oauth struct {
 	// OAuth2 configuration for authorization
 	*oauth2.Config
