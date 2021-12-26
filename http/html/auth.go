@@ -4,7 +4,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/dghubble/gologin/v2/github"
 	"github.com/leg100/otf"
 )
 
@@ -37,7 +36,19 @@ type Sessions struct {
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
-	guser, err := github.UserFromContext(r.Context())
+	token, err := app.oauth.responseHandler(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client, err := app.oauth.newClient(r.Context(), token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	user, _, err := client.Users.Get(r.Context(), "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,7 +63,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := otf.UserLoginOptions{
-		Username:     *guser.Login,
+		Username:     *user.Login,
 		SessionToken: app.sessions.Token(r.Context()),
 	}
 
@@ -61,7 +72,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Populate session data
-	app.sessions.Put(r.Context(), otf.UsernameSessionKey, *guser.Login)
+	app.sessions.Put(r.Context(), otf.UsernameSessionKey, *user.Login)
 
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

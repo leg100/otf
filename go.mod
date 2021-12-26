@@ -11,11 +11,10 @@ require (
 	github.com/alexedwards/scs/postgresstore v0.0.0-20211203064041-370cc303b69f
 	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/allegro/bigcache v1.2.1
-	github.com/dghubble/gologin/v2 v2.3.0
 	github.com/fatih/color v1.7.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.0.0
-	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/go-github/v41 v41.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0

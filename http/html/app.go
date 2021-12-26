@@ -7,27 +7,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/oauth2"
-	githubOAuth2 "golang.org/x/oauth2/github"
-
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/dghubble/gologin/v2"
-	"github.com/dghubble/gologin/v2/github"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
-var githubScopes = []string{"user:email", "read:org"}
-
 // Application is the oTF web app.
 type Application struct {
 	// Sessions manager
 	sessions *scs.SessionManager
-
-	// OAuth2 configuration for authorization
-	oauth2Config *oauth2.Config
 
 	// HTML template renderer
 	renderer
@@ -37,14 +27,13 @@ type Application struct {
 
 	// oTF service accessors
 	otf.Application
+
+	// github oauth authorization
+	oauth *githubOAuthApp
 }
 
 // NewApplication constructs a new application with the given config
 func NewApplication(logger logr.Logger, config Config, services otf.Application, db otf.DB) (*Application, error) {
-	if err := config.validate(); err != nil {
-		return nil, err
-	}
-
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -54,12 +43,9 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		return nil, err
 	}
 
-	oauth2Config := &oauth2.Config{
-		ClientID:     config.GithubClientID,
-		ClientSecret: config.GithubClientSecret,
-		RedirectURL:  config.GithubRedirectURL,
-		Endpoint:     githubOAuth2.Endpoint,
-		Scopes:       githubScopes,
+	oauthApp, err := newGithubOAuthApp(config.Github)
+	if err != nil {
+		return nil, err
 	}
 
 	sessions := scs.New()
@@ -68,7 +54,7 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 	app := &Application{
 		Application:  services,
 		sessions:     sessions,
-		oauth2Config: oauth2Config,
+		oauth:        oauthApp,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 	}
@@ -95,13 +81,15 @@ func (app *Application) sessionRoutes(router *mux.Router) {
 
 // nonAuthRoutes adds routes that don't require authentication.
 func (app *Application) nonAuthRoutes(router *mux.Router) {
-	stateConfig := gologin.DebugOnlyCookieConfig
-
-	router.Handle("/github/login", github.StateHandler(stateConfig, github.LoginHandler(app.oauth2Config, nil)))
-	router.Handle(githubCallbackPath, github.StateHandler(stateConfig, github.CallbackHandler(app.oauth2Config, http.HandlerFunc(app.githubLogin), nil)))
+	app.githubRoutes(router.NewRoute().Subrouter())
 
 	router.HandleFunc("/login", app.loginHandler).Methods("GET")
 	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+}
+
+func (app *Application) githubRoutes(router *mux.Router) {
+	router.HandleFunc("/github/login", app.oauth.requestHandler)
+	router.HandleFunc(githubCallbackPath, app.githubLogin)
 }
 
 // authRoutes adds routes that require authentication.
