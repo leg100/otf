@@ -8,18 +8,13 @@ import (
 	"strings"
 
 	"golang.org/x/oauth2"
-	githubOAuth2 "golang.org/x/oauth2/github"
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/dghubble/gologin/v2"
-	"github.com/dghubble/gologin/v2/github"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
-
-var githubScopes = []string{"user:email", "read:org"}
 
 // Application is the oTF web app.
 type Application struct {
@@ -37,6 +32,9 @@ type Application struct {
 
 	// oTF service accessors
 	otf.Application
+
+	// github oauth app
+	oauth *githubOAuthApp
 }
 
 // NewApplication constructs a new application with the given config
@@ -54,12 +52,9 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		return nil, err
 	}
 
-	oauth2Config := &oauth2.Config{
-		ClientID:     config.GithubClientID,
-		ClientSecret: config.GithubClientSecret,
-		RedirectURL:  config.GithubRedirectURL,
-		Endpoint:     githubOAuth2.Endpoint,
-		Scopes:       githubScopes,
+	oauthApp, err := newGithubOAuthApp(config.Github)
+	if err != nil {
+		return nil, err
 	}
 
 	sessions := scs.New()
@@ -68,7 +63,7 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 	app := &Application{
 		Application:  services,
 		sessions:     sessions,
-		oauth2Config: oauth2Config,
+		oauth:        oauthApp,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 	}
@@ -102,11 +97,8 @@ func (app *Application) nonAuthRoutes(router *mux.Router) {
 }
 
 func (app *Application) githubRoutes(router *mux.Router) {
-	router.Use(newStateHandler(gologin.DebugOnlyCookieConfig))
-
-	router.Handle("/github/login", LoginHandler(app.oauth2Config, nil))
-	router.Handle(githubCallbackPath, github.CallbackHandler(app.oauth2Config, http.HandlerFunc(app.githubLogin), nil))
-
+	router.HandleFunc("/github/login", app.oauth.requestHandler)
+	router.HandleFunc(githubCallbackPath, app.githubLogin)
 }
 
 // authRoutes adds routes that require authentication.

@@ -153,9 +153,10 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	flags.BoolVar(&cfg.ApplicationConfig.DevMode, "dev-mode", false, "Enable developer mode.")
-	flags.StringVar(&cfg.ApplicationConfig.GithubClientID, "github-client-id", "", "Github Client ID")
-	flags.StringVar(&cfg.ApplicationConfig.GithubClientSecret, "github-client-secret", "", "Github Client Secret")
-	flags.StringVar(&cfg.ApplicationConfig.GithubRedirectURL, "github-redirect-url", html.DefaultGithubRedirectURL, "Github redirect URL")
+	flags.StringVar(&cfg.ApplicationConfig.Github.ClientID, "github-client-id", "", "Github Client ID")
+	flags.StringVar(&cfg.ApplicationConfig.Github.ClientSecret, "github-client-secret", "", "Github Client Secret")
+	flags.StringVar(&cfg.ApplicationConfig.Github.RedirectURL, "github-redirect-url", html.DefaultGithubRedirectURL, "Github redirect URL")
+	flags.StringVar(&cfg.ApplicationConfig.Github.Hostname, "github-hostname", "github.com", "Github hostname")
 
 	return &cfg
 }

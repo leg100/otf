@@ -6,25 +6,19 @@ import (
 	"strings"
 )
 
-const (
-	githubCallbackPath       = "/github/callback"
-	DefaultGithubRedirectURL = "https://localhost" + githubCallbackPath
-)
-
 // Config is the web app configuration.
 type Config struct {
-	GithubClientID     string
-	GithubClientSecret string
-	GithubRedirectURL  string
-	DevMode            bool
+	Github GithubConfig
+
+	DevMode bool
 }
 
 func (cfg *Config) validate() error {
-	if !strings.HasPrefix(cfg.GithubRedirectURL, "https://") {
+	if !strings.HasPrefix(cfg.Github.RedirectURL, "https://") {
 		return fmt.Errorf("github redirect url must start with https://")
 	}
 
-	u, err := url.Parse(cfg.GithubRedirectURL)
+	u, err := url.Parse(cfg.Github.RedirectURL)
 	if err != nil {
 		return fmt.Errorf("invalid github redirect URL: %w", err)
 	}
