@@ -19,7 +19,6 @@ var githubScopes = []string{"user:email", "read:org"}
 type GithubConfig struct {
 	ClientID     string
 	ClientSecret string
-	RedirectURL  string
 	Hostname     string
 }
 
@@ -39,7 +38,6 @@ func newGithubOAuthApp(config GithubConfig) (*githubOAuthApp, error) {
 	oauthConfig := &oauth2.Config{
 		ClientID:     config.ClientID,
 		ClientSecret: config.ClientSecret,
-		RedirectURL:  config.RedirectURL,
 		Endpoint:     endpoint,
 		Scopes:       githubScopes,
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"net/url"
 
 	"golang.org/x/oauth2"
 )
@@ -31,7 +32,7 @@ func (o *oauth) requestHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true, // HTTPS only
 	})
 
-	authURL := o.Config.AuthCodeURL(state)
+	authURL := o.config(r).AuthCodeURL(state)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -56,12 +57,24 @@ func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
 	}
 
 	// Use the authorization code to get a Token
-	token, err := o.Config.Exchange(r.Context(), authCode)
+	token, err := o.config(r).Exchange(r.Context(), authCode)
 	if err != nil {
 		return nil, err
 	}
 
 	return token, nil
+}
+
+func (o *oauth) config(r *http.Request) *oauth2.Config {
+	redirectURL := url.URL{
+		Scheme: "https",
+		Host:   r.Host,
+		Path:   githubCallbackPath,
+	}
+
+	cfg := o.Config
+	cfg.RedirectURL = redirectURL.String()
+	return cfg
 }
 
 // parseCallback parses the "code" and "state" parameters from the http.Request

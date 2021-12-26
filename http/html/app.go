@@ -34,10 +34,6 @@ type Application struct {
 
 // NewApplication constructs a new application with the given config
 func NewApplication(logger logr.Logger, config Config, services otf.Application, db otf.DB) (*Application, error) {
-	if err := config.validate(); err != nil {
-		return nil, err
-	}
-
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
