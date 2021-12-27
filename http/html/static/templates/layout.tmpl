@@ -13,7 +13,10 @@
     <nav class="navbar navbar-dark navbar-bg-color">
       <div class="container-fluid">
         <span class="navbar-brand h1">oTF</span>
-        <ul class="navbar-nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/workspaces">workspaces</a>
+          </li>
           {{ if .CurrentUser }}
           <li class="nav-item">
             <form action="/logout" method="POST">
@@ -26,6 +29,16 @@
     </nav>
   </header>
   <div class="container">
+    <div class="row">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          {{ range .Breadcrumbs }}
+          <li class="breadcrumb-item"><a href="{{ .Link }}">{{ .Name }}</a></li>
+          {{ end }}
+          <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+        </ol>
+      </nav>
+    </div>
     <div class="row">
       {{ with .Sidebar }}
       <nav class="col-md-3 sidebar">
@@ -55,7 +68,7 @@
           </div>
           {{ end }}
 
-          {{ template "content" .Content }}
+          {{ block "content" .Content }}{{ end }}
         </div>
       </main>
     </div>

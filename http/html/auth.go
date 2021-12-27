@@ -9,15 +9,15 @@ import (
 
 var (
 	userSidebar = withSidebar("User Settings",
-		sidebarItem{
+		anchor{
 			Name: "Profile",
 			Link: "/profile",
 		},
-		sidebarItem{
+		anchor{
 			Name: "Sessions",
 			Link: "/sessions",
 		},
-		sidebarItem{
+		anchor{
 			Name: "Tokens",
 			Link: "/tokens",
 		},

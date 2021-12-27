@@ -1,0 +1,16 @@
+{{ template "layout" . }}
+
+{{ define "breadcrumbs" }}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/workspaces">Workspaces</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ .Name }}</li>
+  </ol>
+</nav>
+{{ end }}
+
+{{ define "content" }}
+  <p><strong>Terraform Version</strong></p>
+  <p>{{ .TerraformVersion }}</p>
+  <p><a href="/workspaces/{{ .ID }}/runs">runs</a></p>
+{{ end }}

@@ -29,6 +29,9 @@ type templateData struct {
 	// Username of currently logged in user. Empty if user is not logged in.
 	CurrentUser string
 
+	// Breadcrumbs to show current page w.r.t site hierarchy
+	Breadcrumbs []anchor
+
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
 }
@@ -37,10 +40,10 @@ type templateDataOption func(td *templateData)
 
 type sidebar struct {
 	Title string
-	Items []sidebarItem
+	Items []anchor
 }
 
-type sidebarItem struct {
+type anchor struct {
 	Name string
 	Link string
 }
@@ -75,8 +78,20 @@ func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*templat
 	return cache, nil
 }
 
-func withSidebar(title string, items ...sidebarItem) templateDataOption {
+func withBreadcrumbs(ancestors ...anchor) templateDataOption {
+	return func(td *templateData) {
+		td.Breadcrumbs = ancestors
+	}
+}
+
+func withSidebar(title string, items ...anchor) templateDataOption {
 	return func(td *templateData) {
 		td.Sidebar = &sidebar{Title: title, Items: items}
+	}
+}
+
+func withTitle(title string) templateDataOption {
+	return func(td *templateData) {
+		td.Title = title
 	}
 }

@@ -1,0 +1,18 @@
+{{ template "layout" . }}
+
+{{ define "content" }}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Items }}
+      <tr>
+        <td><a href="/workspaces/{{ .ID }}">{{ .Name }}</a></td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+{{ end }}
