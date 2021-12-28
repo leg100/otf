@@ -18,7 +18,6 @@ func (app *Application) runsListHandler(w http.ResponseWriter, r *http.Request) 
 
 	opts := []templateDataOption{
 		withBreadcrumbs(workspaceListAnchor, workspaceShowAnchor(workspaceID)),
-		withTitle("Runs"),
 	}
 
 	if err := app.render(r, "runs_list.tmpl", w, runs, opts...); err != nil {

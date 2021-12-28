@@ -109,7 +109,6 @@ func (app *Application) authRoutes(router *mux.Router) {
 // template
 func (app *Application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
 	data := templateData{
-		Title:       strings.Title(filenameWithoutExtension(name)),
 		Content:     content,
 		CurrentUser: app.currentUser(r),
 	}

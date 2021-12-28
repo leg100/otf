@@ -21,7 +21,6 @@ func (app *Application) workspacesListHandler(w http.ResponseWriter, r *http.Req
 
 	opts := []templateDataOption{
 		withBreadcrumbs(workspaceListAnchor),
-		withTitle("Workspaces"),
 	}
 
 	if err := app.render(r, "workspaces_list.tmpl", w, workspaces, opts...); err != nil {
@@ -40,7 +39,6 @@ func (app *Application) workspacesShowHandler(w http.ResponseWriter, r *http.Req
 
 	opts := []templateDataOption{
 		withBreadcrumbs(workspaceListAnchor, workspaceShowAnchor(id)),
-		withTitle(workspace.Name),
 	}
 
 	if err := app.render(r, "workspaces_show.tmpl", w, workspace, opts...); err != nil {

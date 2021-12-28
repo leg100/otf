@@ -17,9 +17,6 @@ const (
 )
 
 type templateData struct {
-	// Page title
-	Title string
-
 	// Sidebar menu
 	Sidebar *sidebar
 
@@ -87,11 +84,5 @@ func withBreadcrumbs(ancestors ...anchor) templateDataOption {
 func withSidebar(title string, items ...anchor) templateDataOption {
 	return func(td *templateData) {
 		td.Sidebar = &sidebar{Title: title, Items: items}
-	}
-}
-
-func withTitle(title string) templateDataOption {
-	return func(td *templateData) {
-		td.Title = title
 	}
 }
