@@ -103,6 +103,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 	router.HandleFunc("/workspaces", app.workspacesListHandler).Methods("GET")
 	router.HandleFunc("/workspaces/{id}", app.workspacesShowHandler).Methods("GET")
 	router.HandleFunc("/workspaces/{workspace_id}/runs", app.runsListHandler).Methods("GET")
+	router.HandleFunc("/workspaces/{workspace_id}/runs/{id}", app.runsShowHandler).Methods("GET")
 }
 
 // render wraps calls to the template renderer, adding common data to the

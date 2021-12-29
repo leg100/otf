@@ -8,17 +8,17 @@ import (
 )
 
 var (
-	userSidebar = withSidebar("User Settings",
+	userSidebar = withSidebar("user settings",
 		anchor{
-			Name: "Profile",
+			Name: "profile",
 			Link: "/profile",
 		},
 		anchor{
-			Name: "Sessions",
+			Name: "sessions",
 			Link: "/sessions",
 		},
 		anchor{
-			Name: "Tokens",
+			Name: "tokens",
 			Link: "/tokens",
 		},
 	)

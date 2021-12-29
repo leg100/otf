@@ -4,32 +4,79 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ addHash "/static/css/custom.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/normalize.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/bootstrap-icons.css" }}">
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
   <header>
-    <nav class="navbar navbar-dark navbar-bg-color">
-      <div class="container-fluid">
-        <span class="navbar-brand h1">oTF</span>
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            {{ .CurrentUser }}
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/workspaces">workspaces</a>
-          </li>
-          {{ if .CurrentUser }}
-          <li class="nav-item">
-            <form action="/logout" method="POST">
-              <button type="submit" class="btn btn-dark">Logout</button>
-            </form>
-          </li>
-          {{ end }}
-        </ul>
-      </div>
+    <nav class="navbar">
+      <ul>
+        <li class="nav-item">
+          <strong>oTF</strong>
+        </li>
+        <li class="nav-item">
+          site
+        </li>
+        >
+        <li class="nav-item">
+          <a href="/organizations">organizations</a>
+        </li>
+        >
+        <li class="nav-item">
+          <form action="/logout" method="POST">
+            <select name="organization">
+              <option value="default">default</option>[
+            </select>
+          </form>
+        </li>
+        >
+        <li class="nav-item">
+          <a href="/workspaces">workspaces</a>
+        </li>
+        >
+        <li class="nav-item">
+          dev
+        </li>
+        >
+        <li class="nav-item">
+          <a href="/runs">runs</a>
+        </li>
+        >
+        <li class="nav-item">
+          run-12345
+        </li>
+        <li class="nav-item">
+          {{ .CurrentUser }}
+        </li>
+        {{ if .CurrentUser }}
+        <li class="nav-item">
+          <form action="/logout" method="POST">
+            <button type="submit" class="btn btn-dark">Logout</button>
+          </form>
+        </li>
+        {{ end }}
+      </ul>
     </nav>
+    <nav>
+      <ul class="breadcrumb">
+      </ul>
+    </nav>
+    {{ with .Sidebar }}
+    <nav class="submenu">
+      <ul>
+        <li>
+          {{ .Title }}
+        </li>
+        {{ range .Items }}
+        <li>
+          <a href="{{ .Link }}">{{ .Name }}</a>
+        </li>
+        {{ end }}
+      </ul>
+    </nav>
+    {{ end }}
   </header>
   <div class="container">
     <div class="row">
@@ -43,21 +90,6 @@
       </nav>
     </div>
     <div class="row">
-      {{ with .Sidebar }}
-      <nav class="col-md-3 sidebar">
-        <h4 class="mt-5">{{ template "title" }}</h1>
-
-        <hr class="my-3">
-
-        <ul class="nav flex-column">
-        {{ range .Items }}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ .Link }}">{{ .Name }}</a>
-          </li>
-        {{ end }}
-        </ul>
-      </nav>
-      {{ end }}
       <main class="col">
         <div class="container">
           <h1 class="mt-5">{{ template "title" . }}</h1>

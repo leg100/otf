@@ -7,6 +7,12 @@ import (
 	"github.com/leg100/otf"
 )
 
+var (
+	siteAnchor          = anchor{Name: "site", Link: "/site"}
+	organizationsAnchor = anchor{Name: "organizations", Link: "/organizations"}
+	workspacesAnchor    = anchor{Name: "workspaces", Link: "/workspaces"}
+)
+
 func (app *Application) runsListHandler(w http.ResponseWriter, r *http.Request) {
 	workspaceID := mux.Vars(r)["workspace_id"]
 
@@ -23,4 +29,29 @@ func (app *Application) runsListHandler(w http.ResponseWriter, r *http.Request) 
 	if err := app.render(r, "runs_list.tmpl", w, runs, opts...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (app *Application) runsShowHandler(w http.ResponseWriter, r *http.Request) {
+	runID := mux.Vars(r)["id"]
+
+	runs, err := app.RunService().Get(runID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	opts := []templateDataOption{
+		withBreadcrumbs(workspaceListAnchor, workspaceShowAnchor(workspaceID)),
+	}
+
+	if err := app.render(r, "runs_list.tmpl", w, runs, opts...); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func runsShowBreadcrumbs(organization, workspace, runID string) []anchor {
+}
+
+func organizationsShowBreadcrumbs(organization string) []anchor {
+	return append([]anchor{siteAnchor}, organizationsAnchor, anchor{Name: 
 }
