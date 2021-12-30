@@ -17,37 +17,6 @@
           <strong>oTF</strong>
         </li>
         <li class="nav-item">
-          site
-        </li>
-        >
-        <li class="nav-item">
-          <a href="/organizations">organizations</a>
-        </li>
-        >
-        <li class="nav-item">
-          <form action="/logout" method="POST">
-            <select name="organization">
-              <option value="default">default</option>[
-            </select>
-          </form>
-        </li>
-        >
-        <li class="nav-item">
-          <a href="/workspaces">workspaces</a>
-        </li>
-        >
-        <li class="nav-item">
-          dev
-        </li>
-        >
-        <li class="nav-item">
-          <a href="/runs">runs</a>
-        </li>
-        >
-        <li class="nav-item">
-          run-12345
-        </li>
-        <li class="nav-item">
           {{ .CurrentUser }}
         </li>
         {{ if .CurrentUser }}
@@ -60,7 +29,11 @@
       </ul>
     </nav>
     <nav>
-      <ul class="breadcrumb">
+      <ul class="breadcrumbs">
+        {{ range .Breadcrumbs }}
+        <li class="breadcrumb"><a href="{{ .Link }}">{{ .Name }}</a></li>
+        {{ end }}
+        <li class="breadcrumb breadcrumb-active" aria-current="page">{{ template "title" }}</li>
       </ul>
     </nav>
     {{ with .Sidebar }}
@@ -79,16 +52,6 @@
     {{ end }}
   </header>
   <div class="container">
-    <div class="row">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-          {{ range .Breadcrumbs }}
-          <li class="breadcrumb-item"><a href="{{ .Link }}">{{ .Name }}</a></li>
-          {{ end }}
-          <li class="breadcrumb-item active" aria-current="page">{{ template "title" }}</li>
-        </ol>
-      </nav>
-    </div>
     <div class="row">
       <main class="col">
         <div class="container">

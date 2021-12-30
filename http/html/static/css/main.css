@@ -68,34 +68,34 @@ th, td {
   padding: 0.2em .5em;
 }
 
-.breadcrumb {
+.breadcrumbs {
   display: flex;
   list-style: none;
-  background-color: #2F445A;
+  background-color: #405D7D;
   color: #fff;
   padding: 0;
   margin: 0;
   align-items: baseline;
 }
 
-.breadcrumb li {
+.breadcrumbs li {
   padding: 0.5em;
 }
 
-.breadcrumb li form {
+.breadcrumbs li form {
   display: inline-block;
 }
 
-.breadcrumb li a {
+.breadcrumbs li a {
   color: #fff;
   text-decoration: none;
 }
 
-.breadcrumb li::before {
+.breadcrumbs li::before {
   content: ">";
 }
 
-.breadcrumb li:first-child::before {
+.breadcrumbs li:first-child::before {
   content: "";
 }
 
