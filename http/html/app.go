@@ -30,6 +30,9 @@ type Application struct {
 
 	// github oauth authorization
 	oauth *githubOAuthApp
+
+	// path prefix for all URLs
+	pathPrefix string
 }
 
 // NewApplication constructs a new application with the given config
@@ -124,6 +127,11 @@ func (app *Application) render(r *http.Request, name string, w io.Writer, conten
 	}
 
 	return app.renderTemplate(name, w, data)
+}
+
+// link produces a relative link for the site
+func (app *Application) link(path ...string) string {
+	return filepath.Join(append([]string{app.pathPrefix}, path...)...)
 }
 
 func filenameWithoutExtension(fname string) string {
