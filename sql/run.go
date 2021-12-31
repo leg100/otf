@@ -168,9 +168,16 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		Join("configuration_versions USING (configuration_version_id)").
 		Join("workspaces ON workspaces.workspace_id = runs.workspace_id")
 
-	// Optionally filter by workspace
+	// Optionally filter by workspace ID
 	if opts.WorkspaceID != nil {
 		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
+	}
+
+	// Optionally filter by organization and workspace name
+	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+		selectBuilder = selectBuilder.
+			Where("workspaces.name = ?", *opts.WorkspaceName).
+			Join("organizations USING (organization_id)")
 	}
 
 	// Optionally filter by statuses

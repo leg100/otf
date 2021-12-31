@@ -248,6 +248,10 @@ type RunListOptions struct {
 
 	// Filter by workspace ID
 	WorkspaceID *string
+
+	// Filter by organization and workspace name. Mutually exclusive with
+	// WorkspaceID.
+	OrganizationName, WorkspaceName *string
 }
 
 func (r *Run) GetID() string  { return r.ID }
