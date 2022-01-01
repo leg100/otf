@@ -14,7 +14,7 @@ func (app *Application) workspaceListAnchor(organization string) anchor {
 	return anchor{Name: "workspaces", Link: app.workspaceListRoute(organization)}
 }
 func (app *Application) workspaceListBreadcrumbs(organization string) []anchor {
-	return append(app.siteBreadcrumbs(), app.workspaceListAnchor(organization))
+	return append(app.organizationShowBreadcrumbs(organization), app.workspaceListAnchor(organization))
 }
 
 func (app *Application) workspaceShowRoute(organization, workspace string) string {
@@ -49,9 +49,9 @@ func (app *Application) workspacesListHandler(w http.ResponseWriter, r *http.Req
 func (app *Application) workspacesShowHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	organization := vars["organization"]
-	name := vars["workspace"]
+	name := vars["name"]
 
-	workspace, err := app.WorkspaceService().Get(r.Context(), otf.WorkspaceSpecifier{Name: &name})
+	workspace, err := app.WorkspaceService().Get(r.Context(), otf.WorkspaceSpecifier{OrganizationName: &organization, Name: &name})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

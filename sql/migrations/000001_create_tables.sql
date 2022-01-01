@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     email text,
     session_remember integer,
     session_timeout integer,
+    UNIQUE (name),
     PRIMARY KEY (organization_id)
 );
 

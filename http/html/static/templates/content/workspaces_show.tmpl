@@ -5,5 +5,5 @@
 {{ define "content" }}
   <p><strong>Terraform Version</strong></p>
   <p>{{ .TerraformVersion }}</p>
-  <p><a href="/workspaces/{{ .ID }}/runs">runs</a></p>
+  <p><a href="/organizations/{{ .Organization.Name }}/workspaces/{{ .Name }}/runs">runs</a></p>
 {{ end }}

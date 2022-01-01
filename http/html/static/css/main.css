@@ -68,7 +68,7 @@ th, td {
   padding: 0.2em .5em;
 }
 
-.breadcrumbs {
+.breadcrumbs ul {
   display: flex;
   list-style: none;
   background-color: #405D7D;
@@ -76,14 +76,11 @@ th, td {
   padding: 0;
   margin: 0;
   align-items: baseline;
+  font-size: 0.8em;
 }
 
 .breadcrumbs li {
-  padding: 0.5em;
-}
-
-.breadcrumbs li form {
-  display: inline-block;
+  padding: 0.3em;
 }
 
 .breadcrumbs li a {
@@ -92,7 +89,7 @@ th, td {
 }
 
 .breadcrumbs li::before {
-  content: ">";
+  content: "> ";
 }
 
 .breadcrumbs li:first-child::before {

@@ -14,6 +14,8 @@ import (
 	"github.com/leg100/otf"
 )
 
+const DefaultPathPrefix = "/"
+
 // Application is the oTF web app.
 type Application struct {
 	// Sessions manager
@@ -60,6 +62,7 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		oauth:        oauthApp,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
+		pathPrefix:   DefaultPathPrefix,
 	}
 
 	return app, nil
@@ -103,6 +106,12 @@ func (app *Application) authRoutes(router *mux.Router) {
 	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
 	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST")
 
+	router.HandleFunc("/organizations", app.organizationListHandler).Methods("GET")
+	router.HandleFunc("/organizations/new", app.organizationsNewHandler).Methods("GET")
+	router.HandleFunc("/organizations/create", app.organizationsCreateHandler).Methods("POST")
+	router.HandleFunc("/organizations/{name}", app.organizationsShowHandler).Methods("GET")
+	router.HandleFunc("/organizations/{name}/delete", app.organizationsDeleteHandler).Methods("GET")
+	router.HandleFunc("/organizations/{name}/delete", app.organizationsDestroyHandler).Methods("POST")
 	router.HandleFunc("/organizations/{organization}/workspaces", app.workspacesListHandler).Methods("GET")
 	router.HandleFunc("/organizations/{organization}/workspaces/{name}", app.workspacesShowHandler).Methods("GET")
 	router.HandleFunc("/organizations/{organization}/workspaces/{workspace}/runs", app.runsListHandler).Methods("GET")

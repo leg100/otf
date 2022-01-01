@@ -1,0 +1,9 @@
+{{ template "layout" . }}
+
+{{ define "title" }}{{ .Content.Name }}{{ end }}
+
+{{ define "content" }}
+  <p><strong>Email</strong></p>
+  <p>{{ .Email }}</p>
+  <p><a href="/organizations/{{ .Name }}/workspaces">workspaces</a></p>
+{{ end }}

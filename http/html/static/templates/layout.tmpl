@@ -28,12 +28,11 @@
         {{ end }}
       </ul>
     </nav>
-    <nav>
-      <ul class="breadcrumbs">
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
+      <ul>
         {{ range .Breadcrumbs }}
-        <li class="breadcrumb"><a href="{{ .Link }}">{{ .Name }}</a></li>
+        <li><a href="{{ .Link }}">{{ .Name }}</a></li>
         {{ end }}
-        <li class="breadcrumb breadcrumb-active" aria-current="page">{{ template "title" }}</li>
       </ul>
     </nav>
     {{ with .Sidebar }}
