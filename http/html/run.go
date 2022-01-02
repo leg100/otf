@@ -7,6 +7,31 @@ import (
 	"github.com/leg100/otf"
 )
 
+type RunController struct {
+	otf.RunService
+}
+
+func (rc *RunController) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	organization := vars["organization"]
+	workspace := vars["workspace"]
+	runID := vars["id"]
+
+	run, err := rc.RunService.Get(runID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	opts := []templateDataOption{
+		withBreadcrumbs(app.runShowBreadcrumbs(organization, workspace, runID)...),
+	}
+
+	if err := app.render(r, "runs_show.tmpl", w, run, opts...); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func (app *Application) runListRoute(organization, workspace string) string {
 	return app.link("organizations", organization, "workspaces", workspace, "runs")
 }
