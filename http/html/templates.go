@@ -3,6 +3,7 @@ package html
 import (
 	"html/template"
 	"io/fs"
+	"net/http"
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
@@ -43,6 +44,14 @@ type sidebar struct {
 type anchor struct {
 	Name string
 	Link string
+}
+
+func newTemplateData(r *http.Request, sess *sessions, content interface{}) templateData {
+	return templateData{
+		Content:     content,
+		CurrentUser: sess.currentUser(r),
+		Flash:       sess.popFlashMessage(r),
+	}
 }
 
 // newTemplateCache populates a cache of templates.
