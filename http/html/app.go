@@ -11,10 +11,19 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/leg100/otf"
 )
 
 const DefaultPathPrefix = "/"
+
+var (
+	// Query schema encoder, caches structs, and safe for sharing
+	encoder = schema.NewEncoder()
+
+	// Query schema decoder: caches structs, and safe for sharing.
+	decoder = schema.NewDecoder()
+)
 
 // Application is the oTF web app.
 type Application struct {

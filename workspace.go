@@ -21,7 +21,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"workspace_id" jsonapi:"primary,workspaces"`
+	ID string `db:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -36,7 +36,7 @@ type Workspace struct {
 	GlobalRemoteState          bool
 	Locked                     bool
 	MigrationEnvironment       string
-	Name                       string
+	Name                       string `schema:"workspace_name"`
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	StructuredRunOutputEnabled bool
@@ -289,7 +289,7 @@ type WorkspaceListOptions struct {
 	Prefix *string `schema:"search[name],omitempty"`
 
 	// OrganizationName filters workspaces by organization name
-	OrganizationName *string
+	OrganizationName *string `schema:"organizationName,omitempty"`
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`

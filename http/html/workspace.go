@@ -7,6 +7,14 @@ import (
 	"github.com/leg100/otf"
 )
 
+type WorkspaceController struct {
+	otf.WorkspaceService
+}
+
+func setupWorkspaceController(router *mux.Router) {
+	router = router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter()
+}
+
 func (app *Application) workspaceListRoute(organization string) string {
 	return app.link("organizations", organization, "workspaces")
 }
@@ -30,6 +38,18 @@ func (app *Application) workspaceShowBreadcrumbs(organization, workspace string)
 func (app *Application) workspacesListHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	organization := vars["organization"]
+
+	var opts otf.WorkspaceListOptions
+
+	// decode query key values
+	if err := decoder.Decode(opts, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
+
+	// decode route variables
+	if err := decoder.Decode(opts, mux.Vars(r)); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
 
 	workspaces, err := app.WorkspaceService().List(r.Context(), otf.WorkspaceListOptions{OrganizationName: &organization})
 	if err != nil {
