@@ -12,7 +12,7 @@
     <tbody>
       {{ range .Items }}
       <tr>
-        <td><a href="/organizations/{{ .Organization.Name }}/workspaces/{{ .Name }}">{{ .Name }}</a></td>
+        <td><a href="{{ $.path "showWorkspace" "organization_name" .Organization.Name "workspace_name" .Name }}">{{ .Name }}</a></td>
       </tr>
       {{ end }}
     </tbody>

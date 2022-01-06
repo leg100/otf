@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -16,6 +17,26 @@ const (
 	contentTemplatesGlob = "static/templates/content/*.tmpl"
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
+
+// templateDataFactory produces templateData structs
+type templateDataFactory struct {
+	// for extracting info from current session
+	sessions *sessions
+
+	// provide access to routes
+	router *mux.Router
+}
+
+func (f *templateDataFactory) newTemplateData(r *http.Request, content interface{}) templateData {
+	return templateData{
+		Content: content,
+		// TODO: make these methods instead, and make sessions a field of
+		// templateData
+		CurrentUser: f.sessions.currentUser(r),
+		Flash:       f.sessions.popFlashMessage(r),
+		router:      f.router,
+	}
+}
 
 type templateData struct {
 	// Sidebar menu
@@ -32,6 +53,8 @@ type templateData struct {
 
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
+
+	router *mux.Router
 }
 
 type templateDataOption func(td *templateData)
@@ -46,12 +69,15 @@ type anchor struct {
 	Link string
 }
 
-func newTemplateData(r *http.Request, sess *sessions, content interface{}) templateData {
-	return templateData{
-		Content:     content,
-		CurrentUser: sess.currentUser(r),
-		Flash:       sess.popFlashMessage(r),
+// path constructs a URL path from the named route and pairs of key values for
+// the route variables
+func (td *templateData) path(name string, pairs ...string) (string, error) {
+	u, err := td.router.Get(name).URLPath(pairs...)
+	if err != nil {
+		return "", err
 	}
+
+	return u.Path, nil
 }
 
 // newTemplateCache populates a cache of templates.

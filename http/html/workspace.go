@@ -13,19 +13,19 @@ type WorkspaceController struct {
 	// HTML template renderer
 	renderer
 
-	*sessions
+	*templateDataFactory
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
 	router = router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter()
 
-	router.Handle("/", c.List).Methods("GET")
-	router.Handle("/new", c.New).Methods("GET")
-	router.Handle("/create", c.Create).Methods("POST")
-	router.Handle("/{workspace_name}", c.Get).Methods("GET")
-	router.Handle("/{workspace_name}/edit", c.Edit).Methods("GET")
-	router.Handle("/{workspace_name}/update", c.Update).Methods("POST")
-	router.Handle("/{workspace_name}/delete", c.Edit).Methods("GET")
+	router.Handle("/", c.List).Methods("GET").Name("listWorkspace")
+	router.Handle("/new", c.New).Methods("GET").Name("newWorkspace")
+	router.Handle("/create", c.Create).Methods("POST").Name("createWorkspace")
+	router.Handle("/{workspace_name}", c.Get).Methods("GET").Name("showWorkspace")
+	router.Handle("/{workspace_name}/edit", c.Edit).Methods("GET").Name("editWorkspace")
+	router.Handle("/{workspace_name}/update", c.Update).Methods("POST").Name("updateWorkspace")
+	router.Handle("/{workspace_name}/delete", c.Delete).Methods("POST").Name("deleteWorkspace")
 }
 
 func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := newTemplateData(r, c.sessions, struct {
+	tdata := c.newTemplateData(r, struct {
 		List    *otf.WorkspaceList
 		Options otf.WorkspaceListOptions
 	}{
