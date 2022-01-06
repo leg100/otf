@@ -101,6 +101,9 @@ type WorkspaceCreateOptions struct {
 	// Use ExecutionMode instead.
 	Operations *bool `jsonapi:"attr,operations,omitempty"`
 
+	// Organization the workspace belongs to. Required.
+	Organization string `schema:"organization_name"`
+
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.
 	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
@@ -192,6 +195,9 @@ type WorkspaceUpdateOptions struct {
 	// Use ExecutionMode instead.
 	Operations *bool `jsonapi:"attr,operations,omitempty"`
 
+	// Organization the workspace belongs to. Required.
+	Organization string `schema:"organization_name"`
+
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.
 	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
@@ -275,8 +281,8 @@ type WorkspaceSpecifier struct {
 	ID *string `db:"workspace_id"`
 
 	// Specify workspace using its name and organization
-	Name             *string
-	OrganizationName *string
+	Name             *string `schema:"workspace_name"`
+	OrganizationName *string `schema:"organization_name"`
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of
