@@ -2,6 +2,7 @@ package html
 
 import (
 	"net/http"
+	"path"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -9,88 +10,96 @@ import (
 
 type RunController struct {
 	otf.RunService
+
+	// HTML template renderer
+	renderer
+
+	*templateDataFactory
 }
 
-func (rc *RunController) Get(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	organization := vars["organization"]
-	workspace := vars["workspace"]
-	runID := vars["id"]
+func (c *RunController) addRoutes(router *mux.Router) {
+	router = router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter()
 
-	run, err := rc.RunService.Get(runID)
+	router.HandleFunc("/", c.List).Methods("GET").Name("listRun")
+	router.HandleFunc("/new", c.New).Methods("GET").Name("newRun")
+	router.HandleFunc("/create", c.Create).Methods("POST").Name("createRun")
+	router.HandleFunc("/{run_id}", c.Get).Methods("GET").Name("getRun")
+	router.HandleFunc("/{run_id}/delete", c.Delete).Methods("POST").Name("deleteRun")
+}
+
+func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
+	var opts otf.RunListOptions
+	if err := decode(r, &opts); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
+
+	runs, err := c.RunService.List(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	opts := []templateDataOption{
-		withBreadcrumbs(app.runShowBreadcrumbs(organization, workspace, runID)...),
-	}
+	tdata := c.newTemplateData(r, struct {
+		List    *otf.RunList
+		Options otf.RunListOptions
+	}{
+		List:    runs,
+		Options: opts,
+	})
 
-	if err := app.render(r, "runs_show.tmpl", w, run, opts...); err != nil {
+	if err := c.renderTemplate("runs_list.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (app *Application) runListRoute(organization, workspace string) string {
-	return app.link("organizations", organization, "workspaces", workspace, "runs")
-}
-func (app *Application) runListAnchor(organization, workspace string) anchor {
-	return anchor{Name: "runs", Link: app.runListRoute(organization, workspace)}
-}
-func (app *Application) runListBreadcrumbs(organization, workspace string) []anchor {
-	return append(app.workspaceShowBreadcrumbs(organization, workspace), app.runListAnchor(organization, workspace))
+func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
+	var opts otf.RunNewOptions
+	if err := decode(r, &opts); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
+
+	tdata := c.newTemplateData(r, opts)
+
+	if err := c.renderTemplate("runs_new.tmpl", w, tdata); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func (app *Application) runShowRoute(organization, workspace, runID string) string {
-	return app.link("organizations", organization, "workspaces", workspace, "runs", runID)
-}
-func (app *Application) runShowAnchor(organization, workspace, runID string) anchor {
-	return anchor{Name: "runs", Link: app.runShowRoute(organization, workspace, runID)}
-}
-func (app *Application) runShowBreadcrumbs(organization, workspace, runID string) []anchor {
-	return append(app.runListBreadcrumbs(organization, workspace), app.runShowAnchor(organization, workspace, runID))
-}
+func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
+	var opts otf.RunCreateOptions
+	if err := decode(r, &opts); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
 
-//func organizationsShowBreadcrumbs(organization string) []anchor { return
-//append([]anchor{siteAnchor}, organizationsAnchor, anchor{Name: }
-func (app *Application) runsListHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	organization := vars["organization"]
-	workspace := vars["workspace"]
-
-	runs, err := app.RunService().List(otf.RunListOptions{OrganizationName: &organization, WorkspaceName: &workspace})
+	created, err := c.RunService.Create(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	opts := []templateDataOption{
-		withBreadcrumbs(app.runListBreadcrumbs(organization, workspace)...),
-	}
-
-	if err := app.render(r, "runs_list.tmpl", w, runs, opts...); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.Redirect(w, r, path.Join("..", created.ID), http.StatusFound)
 }
 
-func (app *Application) runsShowHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	organization := vars["organization"]
-	workspace := vars["workspace"]
-	runID := vars["id"]
-
-	run, err := app.RunService().Get(runID)
+func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
+	run, err := c.RunService.Get(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	opts := []templateDataOption{
-		withBreadcrumbs(app.runShowBreadcrumbs(organization, workspace, runID)...),
-	}
+	tdata := c.newTemplateData(r, run)
 
-	if err := app.render(r, "runs_show.tmpl", w, run, opts...); err != nil {
+	if err := c.renderTemplate("runs_show.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (c *RunController) Delete(w http.ResponseWriter, r *http.Request) {
+	err := c.RunService.Delete(r.Context(), mux.Vars(r)["run_id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "../../", http.StatusFound)
 }

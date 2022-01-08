@@ -2,6 +2,14 @@
 
 {{ define "title" }}Workspaces{{ end }}
 
+{{ define "breadcrumbs" }}
+  <ul>
+    <li><a href="{{ .path "listOrganization" }}">Organizations</a></li>
+    <li><a href="{{ .path "showOrganization" (.routeVars "organization_name") }}">{{ .Content.Options.OrganizationName }}</a></li>
+    <li><a href="{{ .CurrentPath }}">Workspaces</a></li>
+  </ul>
+{{ end }}
+
 {{ define "content" }}
   <table class="table">
     <thead>
@@ -11,9 +19,9 @@
     </thead>
     <tbody>
       {{ range .Items }}
-      <tr>
-        <td><a href="{{ $.path "showWorkspace" "organization_name" .Organization.Name "workspace_name" .Name }}">{{ .Name }}</a></td>
-      </tr>
+        <tr>
+          <td><a href="{{ $.path "showWorkspace" "organization_name" .Organization.Name "workspace_name" .Name }}">{{ .Name }}</a></td>
+        </tr>
       {{ end }}
     </tbody>
   </table>

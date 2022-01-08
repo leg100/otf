@@ -244,6 +244,10 @@ type VCSRepoOptions struct {
 	OAuthTokenID      *string `json:"oauth-token-id,omitempty"`
 }
 
+type WorkspaceNewOptions struct {
+	Organization string `schema:"organization_name"`
+}
+
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
@@ -257,13 +261,13 @@ type WorkspaceList struct {
 }
 
 type WorkspaceService interface {
-	Create(ctx context.Context, org string, opts WorkspaceCreateOptions) (*Workspace, error)
-	Get(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
+	Create(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
+	Get(ctx context.Context, opts WorkspaceGetOptions) (*Workspace, error)
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, id string, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, id string) (*Workspace, error)
-	Delete(ctx context.Context, spec WorkspaceSpecifier) error
+	Lock(ctx context.Context, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(ctx context.Context, opts WorkspaceLockOptions) (*Workspace, error)
+	Delete(ctx context.Context, opts WorkspaceDeleteOptions) error
 }
 
 type WorkspaceStore interface {

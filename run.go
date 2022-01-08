@@ -97,16 +97,16 @@ type RunService interface {
 	// Create a new run with the given options.
 	Create(ctx context.Context, opts RunCreateOptions) (*Run, error)
 
-	Get(id string) (*Run, error)
-	List(opts RunListOptions) (*RunList, error)
+	Get(ctx context.Context, id string) (*Run, error)
+	List(ctx context.Context, opts RunListOptions) (*RunList, error)
 
 	// Apply a run by its ID.
-	Apply(id string, opts RunApplyOptions) error
+	Apply(ctx context.Context, id string, opts RunApplyOptions) error
 
-	Discard(id string, opts RunDiscardOptions) error
-	Cancel(id string, opts RunCancelOptions) error
-	ForceCancel(id string, opts RunForceCancelOptions) error
-	EnqueuePlan(id string) error
+	Discard(ctx context.Context, id string, opts RunDiscardOptions) error
+	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
+	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
+	EnqueuePlan(ctx context.Context, id string) error
 
 	// GetLogs gets the logs for a run, combining the logs of both its plan and
 	// apply.
@@ -247,11 +247,12 @@ type RunListOptions struct {
 	Statuses []RunStatus
 
 	// Filter by workspace ID
-	WorkspaceID *string
+	WorkspaceID *string `schema:"workspace_id"`
 
 	// Filter by organization and workspace name. Mutually exclusive with
 	// WorkspaceID.
-	OrganizationName, WorkspaceName *string
+	OrganizationName *string `schema:"organization_name"`
+	WorkspaceName    *string `schema:"workspace_name"`
 }
 
 func (r *Run) GetID() string  { return r.ID }

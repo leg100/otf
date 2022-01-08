@@ -35,6 +35,8 @@ func (f *templateDataFactory) newTemplateData(r *http.Request, content interface
 		CurrentUser: f.sessions.currentUser(r),
 		Flash:       f.sessions.popFlashMessage(r),
 		router:      f.router,
+		CurrentPath: r.URL.Path,
+		request:     r,
 	}
 }
 
@@ -48,6 +50,8 @@ type templateData struct {
 	// Username of currently logged in user. Empty if user is not logged in.
 	CurrentUser string
 
+	CurrentPath string
+
 	// Breadcrumbs to show current page w.r.t site hierarchy
 	Breadcrumbs []anchor
 
@@ -55,6 +59,8 @@ type templateData struct {
 	Content interface{}
 
 	router *mux.Router
+
+	request *http.Request
 }
 
 type templateDataOption func(td *templateData)
@@ -78,6 +84,11 @@ func (td *templateData) path(name string, pairs ...string) (string, error) {
 	}
 
 	return u.Path, nil
+}
+
+// routeVars provides access to the requests's route variables
+func (td *templateData) routeVars() map[string]string {
+	return mux.Vars(td.request)
 }
 
 // newTemplateCache populates a cache of templates.

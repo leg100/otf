@@ -15,8 +15,6 @@ type WorkspaceController struct {
 	renderer
 
 	*templateDataFactory
-
-	router *mux.Router
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
@@ -29,8 +27,8 @@ func (c *WorkspaceController) addRoutes(router *mux.Router) {
 	router.HandleFunc("/{workspace_name}/edit", c.Edit).Methods("GET").Name("editWorkspace")
 	router.HandleFunc("/{workspace_name}/update", c.Update).Methods("POST").Name("updateWorkspace")
 	router.HandleFunc("/{workspace_name}/delete", c.Delete).Methods("POST").Name("deleteWorkspace")
-	router.HandleFunc("/{workspace_name}/editLock", c.EditLock).Methods("GET").Name("editWorkspace")
-	router.HandleFunc("/{workspace_name}/updateLock", c.UpdateLock).Methods("POST").Name("lockWorkspace")
+	router.HandleFunc("/{workspace_name}/editLock", c.EditLock).Methods("GET").Name("editLockWorkspace")
+	router.HandleFunc("/{workspace_name}/updateLock", c.UpdateLock).Methods("POST").Name("updateLockWorkspace")
 }
 
 func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +144,7 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
-	workspace, err := c.WorkspaceService.Update(r.Context(), opts)
+	_, err := c.WorkspaceService.Update(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -168,4 +166,44 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "../../", http.StatusFound)
+}
+func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
+	var opts otf.WorkspaceSpecifier
+
+	if err := decode(r, &opts); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
+
+	workspace, err := c.WorkspaceService.Get(r.Context(), opts)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tdata := c.newTemplateData(r, struct {
+		Workspace *otf.Workspace
+		Options   otf.WorkspaceSpecifier
+	}{
+		Workspace: workspace,
+		Options:   opts,
+	})
+
+	if err := c.renderTemplate("workspaces_lock_edit.tmpl", w, tdata); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (c *WorkspaceController) UpdateLock(w http.ResponseWriter, r *http.Request) {
+	var opts otf.WorkspaceLockOptions
+	if err := decode(r, &opts); err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+	}
+
+	_, err := c.WorkspaceService.Lock(r.Context(), opts)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "../editLock", http.StatusFound)
 }

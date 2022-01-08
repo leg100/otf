@@ -35,6 +35,9 @@ type Application struct {
 
 	// path prefix for all URLs
 	pathPrefix string
+
+	// factory for making templateData structs
+	*templateDataFactory
 }
 
 // NewApplication constructs a new application with the given config
@@ -63,6 +66,10 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
+		templateDataFactory: &templateDataFactory{
+			sessions: &sessions{*sessions},
+			router:   router,
+		},
 	}
 
 	return app, nil
@@ -106,16 +113,14 @@ func (app *Application) authRoutes(router *mux.Router) {
 	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
 	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST")
 
-	router.HandleFunc("/organizations", app.organizationListHandler).Methods("GET")
-	router.HandleFunc("/organizations/new", app.organizationsNewHandler).Methods("GET")
-	router.HandleFunc("/organizations/create", app.organizationsCreateHandler).Methods("POST")
-	router.HandleFunc("/organizations/{name}", app.organizationsShowHandler).Methods("GET")
-	router.HandleFunc("/organizations/{name}/delete", app.organizationsDeleteHandler).Methods("GET")
-	router.HandleFunc("/organizations/{name}/delete", app.organizationsDestroyHandler).Methods("POST")
-	router.HandleFunc("/organizations/{organization}/workspaces", app.workspacesListHandler).Methods("GET")
-	router.HandleFunc("/organizations/{organization}/workspaces/{name}", app.workspacesShowHandler).Methods("GET")
-	router.HandleFunc("/organizations/{organization}/workspaces/{workspace}/runs", app.runsListHandler).Methods("GET")
-	router.HandleFunc("/organizations/{organization}/workspaces/{workspace}/runs/{id}", app.runsShowHandler).Methods("GET")
+	(&OrganizationController{
+		OrganizationService: app.OrganizationService(),
+		templateDataFactory: &templateDataFactory{
+			sessions: &sessions{*app.sessions},
+			router:   router,
+		},
+		renderer: app.renderer,
+	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 }
 
 // render wraps calls to the template renderer, adding common data to the
