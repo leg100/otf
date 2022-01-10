@@ -35,20 +35,7 @@
         {{ end }}
       </ul>
     </nav>
-    {{ with .Sidebar }}
-    <nav class="submenu">
-      <ul>
-        <li>
-          {{ .Title }}
-        </li>
-        {{ range .Items }}
-        <li>
-          <a href="{{ .Link }}">{{ .Name }}</a>
-        </li>
-        {{ end }}
-      </ul>
-    </nav>
-    {{ end }}
+    {{ block "sidebar" }}{{ end }}
   </header>
   <div class="container">
     <div class="row">
@@ -58,9 +45,9 @@
 
           <hr class="my-3">
 
-          {{ if .Flash }}
+          {{ range .popFlashMessages }}
           <div class="alert alert-primary alert-dismissible" role="alert">
-            {{ .Flash }}
+            {{ . }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
           {{ end }}

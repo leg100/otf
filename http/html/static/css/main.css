@@ -25,7 +25,7 @@ body {
   text-decoration: none;
 }
 
-.submenu ul {
+.sidebar ul {
   display: flex;
   list-style: none;
   background-color: #405D7D;
@@ -35,15 +35,15 @@ body {
   align-items: baseline;
 }
 
-.submenu li {
+.sidebar li {
   padding: 0.5em;
 }
 
-.submenu li:first-child {
+.sidebar li:first-child {
   margin-right: auto;
 }
 
-.submenu li a {
+.sidebar li a {
   color: #fff;
   text-decoration: none;
 }

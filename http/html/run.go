@@ -29,7 +29,7 @@ func (c *RunController) addRoutes(router *mux.Router) {
 
 func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunListOptions
-	if err := decode(r, &opts); err != nil {
+	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
@@ -53,12 +53,13 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
-	var opts otf.RunNewOptions
-	if err := decode(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-	}
-
-	tdata := c.newTemplateData(r, opts)
+	tdata := c.newTemplateData(r, struct {
+		Organization string
+		Workspace    string
+	}{
+		Organization: mux.Vars(r)["organization_name"],
+		Workspace:    mux.Vars(r)["workspace_name"],
+	})
 
 	if err := c.renderTemplate("runs_new.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -67,7 +68,7 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 
 func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunCreateOptions
-	if err := decode(r, &opts); err != nil {
+	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 

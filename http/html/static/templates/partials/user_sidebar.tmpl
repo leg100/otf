@@ -1,0 +1,10 @@
+{{ define "user_sidebar" }}
+<nav class="sidebar">
+  <ul>
+    <li>user settings</li>
+    <li><a href="{{ .path "getProfile" }}">profile</a></li>
+    <li><a href="{{ .path "listSession" }}">sessions</a></li>
+    <li><a href="{{ .path "listToken" }}">tokens</a></li>
+  </ul>
+</nav>
+{{ end }}

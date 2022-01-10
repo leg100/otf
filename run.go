@@ -99,6 +99,7 @@ type RunService interface {
 
 	Get(ctx context.Context, id string) (*Run, error)
 	List(ctx context.Context, opts RunListOptions) (*RunList, error)
+	Delete(ctx context.Context, id string) error
 
 	// Apply a run by its ID.
 	Apply(ctx context.Context, id string, opts RunApplyOptions) error

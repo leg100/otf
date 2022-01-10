@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
+	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -21,7 +23,7 @@ const (
 // templateDataFactory produces templateData structs
 type templateDataFactory struct {
 	// for extracting info from current session
-	sessions *sessions
+	sessions *scs.SessionManager
 
 	// provide access to routes
 	router *mux.Router
@@ -29,14 +31,10 @@ type templateDataFactory struct {
 
 func (f *templateDataFactory) newTemplateData(r *http.Request, content interface{}) templateData {
 	return templateData{
-		Content: content,
-		// TODO: make these methods instead, and make sessions a field of
-		// templateData
-		CurrentUser: f.sessions.currentUser(r),
-		Flash:       f.sessions.popFlashMessage(r),
-		router:      f.router,
-		CurrentPath: r.URL.Path,
-		request:     r,
+		Content:  content,
+		router:   f.router,
+		sessions: f.sessions,
+		request:  r,
 	}
 }
 
@@ -44,35 +42,14 @@ type templateData struct {
 	// Sidebar menu
 	Sidebar *sidebar
 
-	// Flash message to render. Optional.
-	Flash template.HTML
-
-	// Username of currently logged in user. Empty if user is not logged in.
-	CurrentUser string
-
-	CurrentPath string
-
-	// Breadcrumbs to show current page w.r.t site hierarchy
-	Breadcrumbs []anchor
-
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
 
 	router *mux.Router
 
 	request *http.Request
-}
 
-type templateDataOption func(td *templateData)
-
-type sidebar struct {
-	Title string
-	Items []anchor
-}
-
-type anchor struct {
-	Name string
-	Link string
+	sessions *scs.SessionManager
 }
 
 // path constructs a URL path from the named route and pairs of key values for
@@ -86,9 +63,27 @@ func (td *templateData) path(name string, pairs ...string) (string, error) {
 	return u.Path, nil
 }
 
-// routeVars provides access to the requests's route variables
 func (td *templateData) routeVars() map[string]string {
 	return mux.Vars(td.request)
+}
+
+// popFlashMessages retrieves all flash messages from the current session. The
+// messages are thereafter discarded from the session.
+func (td *templateData) popFlashMessages() (msgs []template.HTML) {
+	ctx := td.request.Context()
+	if msg := td.sessions.PopString(ctx, otf.FlashSessionKey); msg != "" {
+		msgs = append(msgs, template.HTML(msg))
+	}
+	return
+}
+
+func (td *templateData) currentUser() string {
+	ctx := td.request.Context()
+	return td.sessions.GetString(ctx, otf.UsernameSessionKey)
+}
+
+func (td *templateData) currentPath() string {
+	return td.request.URL.Path
 }
 
 // newTemplateCache populates a cache of templates.
@@ -119,16 +114,4 @@ func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*templat
 	}
 
 	return cache, nil
-}
-
-func withBreadcrumbs(ancestors ...anchor) templateDataOption {
-	return func(td *templateData) {
-		td.Breadcrumbs = ancestors
-	}
-}
-
-func withSidebar(title string, items ...anchor) templateDataOption {
-	return func(td *templateData) {
-		td.Sidebar = &sidebar{Title: title, Items: items}
-	}
 }

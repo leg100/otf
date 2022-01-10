@@ -28,11 +28,6 @@ type Profile struct {
 	Username string
 }
 
-type Sessions struct {
-	ActiveToken string
-	Sessions    []*otf.Session
-}
-
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +95,9 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.render(r, "login.tmpl", w, nil); err != nil {
+	tdata := app.newTemplateData(r, nil)
+
+	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -116,9 +113,10 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
-	prof := Profile{Username: username}
 
-	if err := app.render(r, "profile.tmpl", w, &prof, userSidebar); err != nil {
+	tdata := app.newTemplateData(r, Profile{Username: username})
+
+	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -130,12 +128,15 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sessions := Sessions{
+	tdata := app.newTemplateData(r, struct {
+		ActiveToken string
+		Sessions    []*otf.Session
+	}{
 		ActiveToken: app.sessions.Token(r.Context()),
 		Sessions:    user.Sessions,
-	}
+	})
 
-	if err := app.render(r, "sessions.tmpl", w, &sessions, userSidebar); err != nil {
+	if err := app.renderTemplate("sessions.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

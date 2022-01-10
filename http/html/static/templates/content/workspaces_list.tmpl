@@ -2,6 +2,8 @@
 
 {{ define "title" }}Workspaces{{ end }}
 
+{{ define "sidebar" }}{{ template "user_sidebar" . }}{{ end }}
+
 {{ define "breadcrumbs" }}
   <ul>
     <li><a href="{{ .path "listOrganization" }}">Organizations</a></li>

@@ -35,7 +35,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
 
 	// populate options struct from query and route paramters
-	if err := decode(r, &opts); err != nil {
+	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
@@ -68,7 +68,7 @@ func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
 
 func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationCreateOptions
-	if err := decode(r, &opts); err != nil {
+	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
@@ -82,25 +82,13 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {
-	var opts otf.OrganizationSpecifier
-
-	if err := decode(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-	}
-
-	workspace, err := c.OrganizationService.Get(r.Context(), opts)
+	org, err := c.OrganizationService.Get(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	tdata := c.newTemplateData(r, struct {
-		Organization *otf.Organization
-		Options      otf.OrganizationSpecifier
-	}{
-		Organization: workspace,
-		Options:      opts,
-	})
+	tdata := c.newTemplateData(r, org)
 
 	if err := c.renderTemplate("organizations_show.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -123,7 +111,7 @@ func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {
 
 func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationUpdateOptions
-	if err := decode(r, &opts); err != nil {
+	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 

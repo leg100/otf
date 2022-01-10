@@ -1,8 +1,6 @@
 package html
 
 import (
-	"html/template"
-	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -41,19 +39,19 @@ type Application struct {
 }
 
 // NewApplication constructs a new application with the given config
-func NewApplication(logger logr.Logger, config Config, services otf.Application, db otf.DB) (*Application, error) {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, router *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
 
 	renderer, err := newRenderer(config.DevMode)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	oauthApp, err := newGithubOAuthApp(config.Github)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	sessions := scs.New()
@@ -67,16 +65,18 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		templateDataFactory: &templateDataFactory{
-			sessions: &sessions{*sessions},
+			sessions: sessions,
 			router:   router,
 		},
 	}
 
-	return app, nil
+	app.addRoutes(router)
+
+	return nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) AddRoutes(router *mux.Router) {
+func (app *Application) addRoutes(router *mux.Router) {
 	// Static assets (JS, CSS, etc).
 	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
@@ -115,32 +115,9 @@ func (app *Application) authRoutes(router *mux.Router) {
 
 	(&OrganizationController{
 		OrganizationService: app.OrganizationService(),
-		templateDataFactory: &templateDataFactory{
-			sessions: &sessions{*app.sessions},
-			router:   router,
-		},
-		renderer: app.renderer,
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
-}
-
-// render wraps calls to the template renderer, adding common data to the
-// template
-func (app *Application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
-	data := templateData{
-		Content:     content,
-		CurrentUser: app.currentUser(r),
-	}
-
-	for _, o := range opts {
-		o(&data)
-	}
-
-	// Get flash msg
-	if msg := app.sessions.PopString(r.Context(), otf.FlashSessionKey); msg != "" {
-		data.Flash = template.HTML(msg)
-	}
-
-	return app.renderTemplate(name, w, data)
 }
 
 // link produces a relative link for the site

@@ -12,9 +12,9 @@ var (
 	decoder = schema.NewDecoder()
 )
 
-// decode collectively decodes route params, query params and form params into
+// decodeAll collectively decodes route params, query params and form params into
 // the obj struct
-func decode(r *http.Request, obj interface{}) error {
+func decodeAll(r *http.Request, obj interface{}) error {
 	if err := decodeForm(r, obj); err != nil {
 		return err
 	}
