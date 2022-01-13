@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -52,7 +53,13 @@ type templateData struct {
 // path constructs a URL path from the named route and pairs of key values for
 // the route variables
 func (td *templateData) Path(name string, pairs ...string) (string, error) {
-	u, err := td.router.Get(name).URLPath(pairs...)
+	route := td.router.Get(name)
+
+	if route == nil {
+		return "", fmt.Errorf("no such web route exists: %s", name)
+	}
+
+	u, err := route.URLPath(pairs...)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +67,7 @@ func (td *templateData) Path(name string, pairs ...string) (string, error) {
 	return u.Path, nil
 }
 
-func (td *templateData) routeVars() map[string]string {
+func (td *templateData) RouteVars() map[string]string {
 	return mux.Vars(td.request)
 }
 
@@ -79,7 +86,7 @@ func (td *templateData) CurrentUser() string {
 	return td.sessions.GetString(ctx, otf.UsernameSessionKey)
 }
 
-func (td *templateData) currentPath() string {
+func (td *templateData) CurrentPath() string {
 	return td.request.URL.Path
 }
 

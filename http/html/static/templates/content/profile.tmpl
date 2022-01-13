@@ -2,6 +2,8 @@
 
 {{ define "title" }}Profile{{ end }}
 
+{{ define "sidebar" }}{{ template "user_sidebar" . }}{{ end }}
+
 {{ define "content" }}
-  <p>You are logged in as {{ .Username }}</p>
+  <p>You are logged in as {{ .Content.Username }}</p>
 {{ end }}

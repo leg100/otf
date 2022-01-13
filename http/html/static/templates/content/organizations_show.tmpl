@@ -2,8 +2,17 @@
 
 {{ define "title" }}{{ .Content.Name }}{{ end }}
 
+{{ define "breadcrumbs" }}
+<nav aria-label="Breadcrumb" class="breadcrumbs">
+  <ul>
+    <li><a href="{{ .Path "listOrganization" }}">organizations</a></li>
+    <li><a href="{{ .CurrentPath }}">{{ .Content.Name }}</a></li>
+  </ul>
+</nav>
+{{ end }}
+
 {{ define "content" }}
   <p><strong>Email</strong></p>
-  <p>{{ .Email }}</p>
-  <p><a href="/organizations/{{ .Name }}/workspaces">workspaces</a></p>
+  <p>{{ .Content.Email }}</p>
+  <p><a href="/organizations/{{ .Content.Name }}/workspaces">workspaces</a></p>
 {{ end }}

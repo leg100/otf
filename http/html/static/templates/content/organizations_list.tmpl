@@ -2,6 +2,14 @@
 
 {{ define "title" }}Organizations{{ end }}
 
+{{ define "breadcrumbs" }}
+<nav aria-label="Breadcrumb" class="breadcrumbs">
+  <ul>
+    <li><a href="{{ .Path "listOrganization" }}">organizations</a></li>
+  </ul>
+</nav>
+{{ end }}
+
 {{ define "content" }}
   <table class="table">
     <thead>
@@ -10,7 +18,7 @@
       </tr>
     </thead>
     <tbody>
-      {{ range .Items }}
+      {{ range .Content.List.Items }}
       <tr>
         <td><a href="/organizations/{{ .Name }}">{{ .Name }}</a></td>
       </tr>

@@ -80,6 +80,10 @@ func (app *Application) addRoutes(router *mux.Router) {
 	// Static assets (JS, CSS, etc).
 	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
+	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
+	// /runs. Uses an HTTP301.
+	router.StrictSlash(true)
+
 	app.sessionRoutes(router.NewRoute().Subrouter())
 }
 
@@ -109,15 +113,24 @@ func (app *Application) githubRoutes(router *mux.Router) {
 func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
-	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
-	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST")
+	router.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
+	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
+	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
+
+	// TODO: replace sessions handler with token handler when one exists
+	router.HandleFunc("/tokens", app.sessionsHandler).Methods("GET").Name("listToken")
 
 	(&OrganizationController{
 		OrganizationService: app.OrganizationService(),
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
+
+	(&WorkspaceController{
+		WorkspaceService:    app.WorkspaceService(),
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
+	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 }
 
 // link produces a relative link for the site

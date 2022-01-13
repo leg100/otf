@@ -18,8 +18,6 @@ type WorkspaceController struct {
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
-	router = router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter()
-
 	router.HandleFunc("/", c.List).Methods("GET").Name("listWorkspace")
 	router.HandleFunc("/new", c.New).Methods("GET").Name("newWorkspace")
 	router.HandleFunc("/create", c.Create).Methods("POST").Name("createWorkspace")
@@ -93,13 +91,7 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, struct {
-		Workspace *otf.Workspace
-		Options   otf.WorkspaceSpecifier
-	}{
-		Workspace: workspace,
-		Options:   opts,
-	})
+	tdata := c.newTemplateData(r, workspace)
 
 	if err := c.renderTemplate("workspaces_show.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

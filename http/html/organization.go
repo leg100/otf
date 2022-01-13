@@ -20,8 +20,6 @@ type OrganizationController struct {
 }
 
 func (c *OrganizationController) addRoutes(router *mux.Router) {
-	router = router.PathPrefix("/organizations").Subrouter()
-
 	router.HandleFunc("/", c.List).Methods("GET").Name("listOrganization")
 	router.HandleFunc("/new", c.New).Methods("GET").Name("newOrganization")
 	router.HandleFunc("/create", c.Create).Methods("POST").Name("createOrganization")

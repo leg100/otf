@@ -2,6 +2,8 @@
 
 {{ define "title" }}Sessions{{ end }}
 
+{{ define "sidebar" }}{{ template "user_sidebar" . }}{{ end }}
+
 {{ define "content" }}
   <table>
     <thead>
@@ -12,13 +14,13 @@
       </tr>
     </thead>
     <tbody>
-      {{ range .Sessions }}
+      {{ range .Content.Sessions }}
       <tr>
         <td>{{ .Address }}</td>
-        <td>{{ if .IsActive $.ActiveToken }}&#10004;{{ end}}</td>
+        <td>{{ if .IsActive $.Content.ActiveToken }}&#10004;{{ end}}</td>
         <td>
-          {{ if not (.IsActive $.ActiveToken) }}
-          <form action="/sessions/revoke" method="POST">
+          {{ if not (.IsActive $.Content.ActiveToken) }}
+            <form action="{{ .Path "revokeSession" }}" method="POST">
             <button>Revoke</button>
             <input type="hidden" name="token" value="{{ .Token }}">
           </form>
