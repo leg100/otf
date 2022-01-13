@@ -5,11 +5,13 @@
 {{ define "sidebar" }}{{ template "user_sidebar" . }}{{ end }}
 
 {{ define "breadcrumbs" }}
+<nav aria-label="Breadcrumb" class="breadcrumbs">
   <ul>
     <li><a href="{{ .path "listOrganization" }}">Organizations</a></li>
     <li><a href="{{ .path "showOrganization" (.routeVars "organization_name") }}">{{ .Content.Options.OrganizationName }}</a></li>
     <li><a href="{{ .CurrentPath }}">Workspaces</a></li>
   </ul>
+</nav>
 {{ end }}
 
 {{ define "content" }}

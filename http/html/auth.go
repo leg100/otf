@@ -7,23 +7,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-var (
-	userSidebar = withSidebar("user settings",
-		anchor{
-			Name: "profile",
-			Link: "/profile",
-		},
-		anchor{
-			Name: "sessions",
-			Link: "/sessions",
-		},
-		anchor{
-			Name: "tokens",
-			Link: "/tokens",
-		},
-	)
-)
-
 type Profile struct {
 	Username string
 }

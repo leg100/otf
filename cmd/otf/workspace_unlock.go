@@ -9,26 +9,26 @@ import (
 )
 
 func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
-	var specifier otf.WorkspaceSpecifier
+	var spec otf.WorkspaceSpecifier
 
 	cmd := &cobra.Command{
 		Use:   "unlock [name]",
 		Short: "Unlock a workspace",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			specifier.Name = otf.String(args[0])
+			spec.Name = otf.String(args[0])
 
 			client, err := factory.NewClient()
 			if err != nil {
 				return err
 			}
 
-			ws, err := client.Workspaces().Get(cmd.Context(), specifier)
+			ws, err := client.Workspaces().Get(cmd.Context(), spec)
 			if err != nil {
 				return err
 			}
 
-			ws, err = client.Workspaces().Unlock(cmd.Context(), ws.ID)
+			ws, err = client.Workspaces().Unlock(cmd.Context(), spec)
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	specifier.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	spec.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

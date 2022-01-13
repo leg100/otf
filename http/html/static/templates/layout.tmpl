@@ -28,14 +28,8 @@
         {{ end }}
       </ul>
     </nav>
-    <nav aria-label="Breadcrumb" class="breadcrumbs">
-      <ul>
-        {{ range .Breadcrumbs }}
-        <li><a href="{{ .Link }}">{{ .Name }}</a></li>
-        {{ end }}
-      </ul>
-    </nav>
-    {{ block "sidebar" }}{{ end }}
+    {{ block "breadcrumbs" . }}{{ end }}
+    {{ block "sidebar" . }}{{ end }}
   </header>
   <div class="container">
     <div class="row">
@@ -45,7 +39,7 @@
 
           <hr class="my-3">
 
-          {{ range .popFlashMessages }}
+          {{ range .PopFlashMessages }}
           <div class="alert alert-primary alert-dismissible" role="alert">
             {{ . }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

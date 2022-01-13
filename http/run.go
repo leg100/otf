@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -125,7 +126,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.RunService().Get(vars["id"])
+	obj, err := s.RunService().Get(context.Background(), vars["id"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -146,7 +147,7 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 	workspaceID := vars["workspace_id"]
 	opts.WorkspaceID = &workspaceID
 
-	obj, err := s.RunService().List(opts)
+	obj, err := s.RunService().List(context.Background(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -186,7 +187,7 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.RunService().Apply(vars["id"], opts); err != nil {
+	if err := s.RunService().Apply(context.Background(), vars["id"], opts); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -203,7 +204,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService().Discard(vars["id"], opts)
+	err := s.RunService().Discard(context.Background(), vars["id"], opts)
 	if err == otf.ErrRunDiscardNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -224,7 +225,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService().Cancel(vars["id"], opts)
+	err := s.RunService().Cancel(context.Background(), vars["id"], opts)
 	if err == otf.ErrRunCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -245,7 +246,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.RunService().ForceCancel(vars["id"], opts)
+	err := s.RunService().ForceCancel(context.Background(), vars["id"], opts)
 	if err == otf.ErrRunForceCancelNotAllowed {
 		WriteError(w, http.StatusConflict, err)
 		return

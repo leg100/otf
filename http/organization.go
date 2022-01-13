@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -67,7 +68,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.OrganizationService().Get(vars["name"])
+	obj, err := s.OrganizationService().Get(context.Background(), vars["name"])
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -84,7 +85,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.OrganizationService().List(opts)
+	obj, err := s.OrganizationService().List(context.Background(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -102,7 +103,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.OrganizationService().Update(name, &opts)
+	obj, err := s.OrganizationService().Update(context.Background(), name, &opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -114,7 +115,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	if err := s.OrganizationService().Delete(name); err != nil {
+	if err := s.OrganizationService().Delete(context.Background(), name); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -125,7 +126,7 @@ func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
-	obj, err := s.OrganizationService().GetEntitlements(name)
+	obj, err := s.OrganizationService().GetEntitlements(context.Background(), name)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

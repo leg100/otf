@@ -43,7 +43,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 	return org, nil
 }
 
-func (s OrganizationService) Get(name string) (*otf.Organization, error) {
+func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
 	org, err := s.db.Get(name)
 	if err != nil {
 		s.Error(err, "retrieving organization", "name", name)
@@ -55,21 +55,21 @@ func (s OrganizationService) Get(name string) (*otf.Organization, error) {
 	return org, nil
 }
 
-func (s OrganizationService) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return s.db.List(opts)
 }
 
-func (s OrganizationService) Update(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	return s.db.Update(name, func(org *otf.Organization) error {
 		return otf.UpdateOrganization(org, opts)
 	})
 }
 
-func (s OrganizationService) Delete(name string) error {
+func (s OrganizationService) Delete(ctx context.Context, name string) error {
 	return s.db.Delete(name)
 }
 
-func (s OrganizationService) GetEntitlements(name string) (*otf.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
 	org, err := s.db.Get(name)
 	if err != nil {
 		return nil, err

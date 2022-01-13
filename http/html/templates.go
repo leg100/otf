@@ -39,9 +39,6 @@ func (f *templateDataFactory) newTemplateData(r *http.Request, content interface
 }
 
 type templateData struct {
-	// Sidebar menu
-	Sidebar *sidebar
-
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
 
@@ -54,7 +51,7 @@ type templateData struct {
 
 // path constructs a URL path from the named route and pairs of key values for
 // the route variables
-func (td *templateData) path(name string, pairs ...string) (string, error) {
+func (td *templateData) Path(name string, pairs ...string) (string, error) {
 	u, err := td.router.Get(name).URLPath(pairs...)
 	if err != nil {
 		return "", err
@@ -67,9 +64,9 @@ func (td *templateData) routeVars() map[string]string {
 	return mux.Vars(td.request)
 }
 
-// popFlashMessages retrieves all flash messages from the current session. The
+// PopFlashMessages retrieves all flash messages from the current session. The
 // messages are thereafter discarded from the session.
-func (td *templateData) popFlashMessages() (msgs []template.HTML) {
+func (td *templateData) PopFlashMessages() (msgs []template.HTML) {
 	ctx := td.request.Context()
 	if msg := td.sessions.PopString(ctx, otf.FlashSessionKey); msg != "" {
 		msgs = append(msgs, template.HTML(msg))
@@ -77,7 +74,7 @@ func (td *templateData) popFlashMessages() (msgs []template.HTML) {
 	return
 }
 
-func (td *templateData) currentUser() string {
+func (td *templateData) CurrentUser() string {
 	ctx := td.request.Context()
 	return td.sessions.GetString(ctx, otf.UsernameSessionKey)
 }

@@ -26,12 +26,12 @@ func NewWorkspaceService(db otf.WorkspaceStore, logger logr.Logger, os otf.Organ
 	}
 }
 
-func (s WorkspaceService) Create(ctx context.Context, orgName string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
 
-	org, err := s.os.Get(orgName)
+	org, err := s.os.Get(ctx, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -106,17 +106,13 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifie
 	return nil
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, id string, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	spec := otf.WorkspaceSpecifier{ID: &id}
-
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
 		return ws.ToggleLock(true)
 	})
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
-	spec := otf.WorkspaceSpecifier{ID: &id}
-
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
 		return ws.ToggleLock(false)
 	})
