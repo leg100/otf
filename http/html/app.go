@@ -131,6 +131,12 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
+
+	(&RunController{
+		RunService:          app.RunService(),
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
+	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
 }
 
 // link produces a relative link for the site

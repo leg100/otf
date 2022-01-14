@@ -2,6 +2,18 @@
 
 {{ define "title" }}Runs{{ end }}
 
+{{ define "breadcrumbs" }}
+<nav aria-label="Breadcrumb" class="breadcrumbs">
+  <ul>
+    <li><a href="{{ .Path "listOrganization" }}">organizations</a></li>
+    {{ template "get_organization_breadcrumb" .Content.Options }}
+    <li><a href="{{ .Path "listWorkspace" "organization_name" .Content.Options.OrganizationName }}">workspaces</a></li>
+    <li><a href="{{ .Path "getWorkspace" "organization_name" .Content.Options.OrganizationName "workspace_name" .Content.Options.WorkspaceName }}">workspaces</a></li>
+    <li><a href="{{ .CurrentPath }}">runs</a></li>
+  </ul>
+</nav>
+{{ end }}
+
 {{ define "content" }}
   <table class="table">
     <thead>
@@ -10,7 +22,7 @@
       </tr>
     </thead>
     <tbody>
-      {{ range .Content.Items }}
+      {{ range .Content.List.Items }}
       <tr>
         <td><a href="/workspaces/{{ .ID }}/runs/{{ .ID }}">{{ .ID }}</a></td>
       </tr>

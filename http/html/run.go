@@ -18,8 +18,6 @@ type RunController struct {
 }
 
 func (c *RunController) addRoutes(router *mux.Router) {
-	router = router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter()
-
 	router.HandleFunc("/", c.List).Methods("GET").Name("listRun")
 	router.HandleFunc("/new", c.New).Methods("GET").Name("newRun")
 	router.HandleFunc("/create", c.Create).Methods("POST").Name("createRun")
