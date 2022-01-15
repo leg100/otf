@@ -35,29 +35,27 @@
         {{ end }}
       </ul>
     </nav>
-    {{ block "sidebar" . }}{{ end }}
     </header>
     <div class="container">
-      <div class="row">
-        <main class="col">
-          <div class="container">
-            <h1 class="mt-5">{{ template "title" . }}</h1>
+      {{ block "sidebar" . }}{{ end }}
 
-            <hr class="my-3">
+      <div>
+        <h1>{{ template "title" . }}</h1>
 
-            {{ range .PopFlashMessages }}
-              <div class="alert alert-primary alert-dismissible" role="alert">
-                {{ . }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {{ end }}
+        <hr>
 
-            {{ block "content" . }}{{ end }}
-            </div>
+        {{ range .PopFlashMessages }}
+          <div class="alert alert-primary alert-dismissible" role="alert">
+            {{ . }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {{ end }}
+
+        <main>
+          {{ block "content" . }}{{ end }}
         </main>
       </div>
     </div>
-    <script src="{{ addHash "/static/js/bootstrap.bundle.min.js" }}"></script>
 </body>
 </html>
 {{ end }}

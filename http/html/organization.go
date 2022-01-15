@@ -24,7 +24,7 @@ func (c *OrganizationController) addRoutes(router *mux.Router) {
 	router.HandleFunc("/new", c.New).Methods("GET").Name("newOrganization")
 	router.HandleFunc("/create", c.Create).Methods("POST").Name("createOrganization")
 	router.HandleFunc("/{organization_name}", c.Get).Methods("GET").Name("getOrganization")
-	router.HandleFunc("/{organization_name}/overview", c.Get).Methods("GET").Name("getOrganizationOverview")
+	router.HandleFunc("/{organization_name}/overview", c.Overview).Methods("GET").Name("getOrganizationOverview")
 	router.HandleFunc("/{organization_name}/edit", c.Edit).Methods("GET").Name("editOrganization")
 	router.HandleFunc("/{organization_name}/update", c.Update).Methods("POST").Name("updateOrganization")
 	router.HandleFunc("/{organization_name}/delete", c.Delete).Methods("POST").Name("deleteOrganization")
@@ -81,7 +81,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "./overview", http.StatusFound)
+	http.Redirect(w, r, path.Join(r.URL.Path, "overview"), http.StatusFound)
 }
 
 func (c *OrganizationController) Overview(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +96,6 @@ func (c *OrganizationController) Overview(w http.ResponseWriter, r *http.Request
 	if err := c.renderTemplate("organization_get.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	http.Redirect(w, r, "./overview", http.StatusFound)
 }
 
 func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {

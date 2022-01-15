@@ -2,8 +2,10 @@
 
 {{ define "title" }}{{ .Content.Name }}{{ end }}
 
+{{ define "sidebar" }}{{ template "organization_sidebar" . }}{{ end }}
+
 {{ define "content" }}
   <p><strong>Email</strong></p>
   <p>{{ .Content.Email }}</p>
-  <p><a href="/organizations/{{ .Content.Name }}/workspaces">workspaces</a></p>
+  <p><a href="{{ .Path "listWorkspace" "organization_name" .Content.Name }}">workspaces</a></p>
 {{ end }}
