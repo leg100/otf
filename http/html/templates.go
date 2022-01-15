@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"path"
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
@@ -88,21 +89,38 @@ func (td *templateData) Ancestor(name string) (string, error) {
 	return u.Path, nil
 }
 
-// Ancestor constructs a URL path for the named route, populating its route
-// variables using the current route variables. Therefore the named route must
-// be an ancestor of the current route, i.e. the named route's variables must be
-// a subset of the current route.
-func (td *templateData) Breadcrumbs() ([]Anchor, error) {
+func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
 	route := mux.CurrentRoute(td.request)
 
-	pairs := flattenMap(mux.Vars(td.request))
-
-	u, err := route.URLPath(pairs...)
+	crumbs, err = td.makeBreadcrumbs(route, crumbs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return u.Path, nil
+	return crumbs, nil
+}
+
+func (td *templateData) makeBreadcrumbs(route *mux.Route, crumbs []Anchor) ([]Anchor, error) {
+	link, err := route.URLPath(flattenMap(mux.Vars(td.request))...)
+	if err != nil {
+		return nil, err
+	}
+	name := path.Base(link.Path)
+
+	// place parent crumb in front
+	crumbs = append([]Anchor{{Name: name, Link: link.Path}}, crumbs...)
+
+	parent, ok := parentLookupTable[route.GetName()]
+	if !ok {
+		return crumbs, nil
+	}
+
+	parentRoute := td.router.Get(parent)
+	if parentRoute == nil {
+		return nil, fmt.Errorf("no such web route exists: %s", name)
+	}
+
+	return td.makeBreadcrumbs(parentRoute, crumbs)
 }
 
 func flattenMap(m map[string]string) (s []string) {

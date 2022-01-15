@@ -28,30 +28,36 @@
         {{ end }}
       </ul>
     </nav>
-    {{ block "breadcrumbs" . }}{{ end }}
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
+      <ul>
+        {{ range .Breadcrumbs }}
+          <li><a href="{{ .Link }}">{{ .Name }}</a></li>
+        {{ end }}
+      </ul>
+    </nav>
     {{ block "sidebar" . }}{{ end }}
-  </header>
-  <div class="container">
-    <div class="row">
-      <main class="col">
-        <div class="container">
-          <h1 class="mt-5">{{ template "title" . }}</h1>
+    </header>
+    <div class="container">
+      <div class="row">
+        <main class="col">
+          <div class="container">
+            <h1 class="mt-5">{{ template "title" . }}</h1>
 
-          <hr class="my-3">
+            <hr class="my-3">
 
-          {{ range .PopFlashMessages }}
-          <div class="alert alert-primary alert-dismissible" role="alert">
-            {{ . }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-          {{ end }}
+            {{ range .PopFlashMessages }}
+              <div class="alert alert-primary alert-dismissible" role="alert">
+                {{ . }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {{ end }}
 
-          {{ block "content" . }}{{ end }}
-        </div>
-      </main>
+            {{ block "content" . }}{{ end }}
+            </div>
+        </main>
+      </div>
     </div>
-  </div>
-  <script src="{{ addHash "/static/js/bootstrap.bundle.min.js" }}"></script>
+    <script src="{{ addHash "/static/js/bootstrap.bundle.min.js" }}"></script>
 </body>
 </html>
 {{ end }}

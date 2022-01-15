@@ -2,18 +2,6 @@
 
 {{ define "title" }}Runs{{ end }}
 
-{{ define "breadcrumbs" }}
-<nav aria-label="Breadcrumb" class="breadcrumbs">
-  <ul>
-    <li><a href="{{ .Ancestor "listOrganization" }}">organizations</a></li>
-    <li><a href="{{ .Ancestor "getOrganization" }}">{{ .Content.Options.OrganizationName }}</a></li>
-    <li><a href="{{ .Ancestor "listWorkspace" }}">workspaces</a></li>
-    <li><a href="{{ .Ancestor "getWorkspace" }}">{{ .Content.Options.WorkspaceName }}</a></li>
-    <li><a href="{{ .CurrentPath }}">runs</a></li>
-  </ul>
-</nav>
-{{ end }}
-
 {{ define "content" }}
   <table class="table">
     <thead>
