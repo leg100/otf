@@ -67,6 +67,51 @@ func (td *templateData) Path(name string, pairs ...string) (string, error) {
 	return u.Path, nil
 }
 
+// Ancestor constructs a URL path for the named route, populating its route
+// variables using the current route variables. Therefore the named route must
+// be an ancestor of the current route, i.e. the named route's variables must be
+// a subset of the current route.
+func (td *templateData) Ancestor(name string) (string, error) {
+	route := td.router.Get(name)
+
+	if route == nil {
+		return "", fmt.Errorf("no such web route exists: %s", name)
+	}
+
+	pairs := flattenMap(mux.Vars(td.request))
+
+	u, err := route.URLPath(pairs...)
+	if err != nil {
+		return "", err
+	}
+
+	return u.Path, nil
+}
+
+// Ancestor constructs a URL path for the named route, populating its route
+// variables using the current route variables. Therefore the named route must
+// be an ancestor of the current route, i.e. the named route's variables must be
+// a subset of the current route.
+func (td *templateData) Breadcrumbs() ([]Anchor, error) {
+	route := mux.CurrentRoute(td.request)
+
+	pairs := flattenMap(mux.Vars(td.request))
+
+	u, err := route.URLPath(pairs...)
+	if err != nil {
+		return "", err
+	}
+
+	return u.Path, nil
+}
+
+func flattenMap(m map[string]string) (s []string) {
+	for k, v := range m {
+		s = append(s, k, v)
+	}
+	return
+}
+
 func (td *templateData) RouteVars() map[string]string {
 	return mux.Vars(td.request)
 }

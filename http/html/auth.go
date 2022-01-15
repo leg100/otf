@@ -119,7 +119,7 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		Sessions:    user.Sessions,
 	})
 
-	if err := app.renderTemplate("sessions.tmpl", w, tdata); err != nil {
+	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -138,7 +138,7 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 
 	app.sessions.Put(r.Context(), otf.FlashSessionKey, "Revoked session")
 
-	http.Redirect(w, r, "/sessions", http.StatusFound)
+	http.Redirect(w, r, "../", http.StatusFound)
 }
 
 func (app *Application) currentUser(r *http.Request) string {

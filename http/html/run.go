@@ -45,7 +45,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 		Options: opts,
 	})
 
-	if err := c.renderTemplate("runs_list.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -59,7 +59,7 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 		Workspace:    mux.Vars(r)["workspace_name"],
 	})
 
-	if err := c.renderTemplate("runs_new.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("run_new.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -88,7 +88,7 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 
 	tdata := c.newTemplateData(r, run)
 
-	if err := c.renderTemplate("runs_show.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("run_get.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

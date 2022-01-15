@@ -25,8 +25,8 @@ func (c *WorkspaceController) addRoutes(router *mux.Router) {
 	router.HandleFunc("/{workspace_name}/edit", c.Edit).Methods("GET").Name("editWorkspace")
 	router.HandleFunc("/{workspace_name}/update", c.Update).Methods("POST").Name("updateWorkspace")
 	router.HandleFunc("/{workspace_name}/delete", c.Delete).Methods("POST").Name("deleteWorkspace")
-	router.HandleFunc("/{workspace_name}/editLock", c.EditLock).Methods("GET").Name("editLockWorkspace")
-	router.HandleFunc("/{workspace_name}/updateLock", c.UpdateLock).Methods("POST").Name("updateLockWorkspace")
+	router.HandleFunc("/{workspace_name}/editLock", c.EditLock).Methods("GET").Name("editWorkspaceLock")
+	router.HandleFunc("/{workspace_name}/updateLock", c.UpdateLock).Methods("POST").Name("updateWorkspaceLock")
 }
 
 func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 		Options: opts,
 	})
 
-	if err := c.renderTemplate("workspaces_list.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("workspace_list.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -58,7 +58,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 func (c *WorkspaceController) New(w http.ResponseWriter, r *http.Request) {
 	tdata := c.newTemplateData(r, mux.Vars(r)["organization_name"])
 
-	if err := c.renderTemplate("workspaces_new.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("workspace_new.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -93,7 +93,7 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 
 	tdata := c.newTemplateData(r, workspace)
 
-	if err := c.renderTemplate("workspaces_show.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("workspace_get.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -118,7 +118,7 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 		Options:   opts,
 	})
 
-	if err := c.renderTemplate("workspaces_edit.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("workspace_edit.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -177,7 +177,7 @@ func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
 		Options:   opts,
 	})
 
-	if err := c.renderTemplate("workspaces_lock_edit.tmpl", w, tdata); err != nil {
+	if err := c.renderTemplate("workspace_lock_edit.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

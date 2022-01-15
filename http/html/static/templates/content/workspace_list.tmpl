@@ -7,8 +7,8 @@
 {{ define "breadcrumbs" }}
 <nav aria-label="Breadcrumb" class="breadcrumbs">
   <ul>
-    <li><a href="{{ .Path "listOrganization" }}">organizations</a></li>
-    <li><a href="{{ .Path "getOrganization" "organization_name" .Content.Options.OrganizationName }}">{{ .Content.Options.OrganizationName }}</a></li>
+    <li><a href="{{ .Ancestor "listOrganization" }}">organizations</a></li>
+    <li><a href="{{ .Ancestor "getOrganization" }}">{{ .Content.Options.OrganizationName }}</a></li>
     <li><a href="{{ .CurrentPath }}">workspaces</a></li>
   </ul>
 </nav>
