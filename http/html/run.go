@@ -1,15 +1,20 @@
 package html
 
 import (
+	"html/template"
 	"net/http"
 	"path"
+	"strings"
 
+	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
 type RunController struct {
 	otf.RunService
+
+	otf.PlanService
 
 	// HTML template renderer
 	renderer
@@ -86,7 +91,34 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, run)
+	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// strip STX and ETX
+	logs = logs[1 : len(logs)-1]
+
+	// convert to string
+	logStr := string(logs)
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	// convert ANSI escape sequences to HTML
+	logStr = string(term2html.Render([]byte(logStr)))
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	tdata := c.newTemplateData(r, struct {
+		Run      *otf.Run
+		PlanLogs template.HTML
+	}{
+		Run:      run,
+		PlanLogs: template.HTML(logStr),
+	})
 
 	if err := c.renderTemplate("run_get.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

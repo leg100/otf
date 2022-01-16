@@ -117,7 +117,7 @@ func (td *templateData) makeBreadcrumbs(route *mux.Route, crumbs []Anchor) ([]An
 
 	parentRoute := td.router.Get(parent)
 	if parentRoute == nil {
-		return nil, fmt.Errorf("no such web route exists: %s", name)
+		return nil, fmt.Errorf("no such web route exists: %s", parent)
 	}
 
 	return td.makeBreadcrumbs(parentRoute, crumbs)

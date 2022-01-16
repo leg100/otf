@@ -1,16 +1,50 @@
 body {
-  font-family: 'Courier New', Courier, monospace
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
 }
 
 h1 {
   font-size: 1.6em;
 }
 
-.navbar ul {
+header nav {
+  padding-left: 0.5em;
+}
+
+a, a:visited, a:active, a:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  border-bottom: 2px solid;
+  background-color: lightgrey;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.2em .5em;
+}
+
+.navbar {
   display: flex;
-  list-style: none;
   background-color: #2F445A;
   color: #fff;
+  margin: 0;
+  align-items: baseline;
+}
+
+.navbar .nav-links {
+  margin-right: auto;
+}
+
+.navbar ul {
+  display: flex;
   padding: 0;
   margin: 0;
   align-items: baseline;
@@ -52,51 +86,42 @@ h1 {
   margin-right: auto;
 }
 
-a, a:visited {
-  text-decoration: none;
-  color: black;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-thead {
-  border-bottom: 2px solid;
-  background-color: lightgrey;
-}
-
-th, td {
-  text-align: left;
-  padding: 0.2em .5em;
-}
-
-.breadcrumbs ul {
-  display: flex;
-  list-style: none;
+.breadcrumbs {
   background-color: #405D7D;
   color: #fff;
-  padding: 0;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
   margin: 0;
+  padding: 0.3em 0;
   align-items: baseline;
   font-size: 0.8em;
 }
 
-.breadcrumbs li {
-  padding: 0.3em;
-}
-
-.breadcrumbs li a {
-  color: #fff;
-  text-decoration: none;
-}
-
+/*
+ * Separate breadcrumbs with a ">" symbol and pad both sides
+ */
 .breadcrumbs li::before {
-  content: "> ";
+  content: ">";
 }
 
 .breadcrumbs li:first-child::before {
   content: "";
 }
 
+.breadcrumbs li:first-child a {
+  padding-left: 0em;
+  padding-right: 0.5em;
+}
+
+.breadcrumbs li a {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+.term-container {
+  padding: 1em;
+  white-space: pre-wrap;
+}

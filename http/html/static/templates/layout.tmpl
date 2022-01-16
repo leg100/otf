@@ -4,7 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{ addHash "/static/css/normalize.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
+  <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/bootstrap-icons.css" }}">
   <title>{{ template "title" }} | oTF</title>
@@ -12,50 +13,62 @@
 <body>
   <header>
     <nav class="navbar">
-      <ul>
-        <li class="nav-item">
-          <strong>oTF</strong>
-        </li>
-        <li class="nav-item">
-          {{ .CurrentUser }}
-        </li>
-        {{ if .CurrentUser }}
-        <li class="nav-item">
-          <form action="/logout" method="POST">
-            <button type="submit" class="btn btn-dark">Logout</button>
-          </form>
-        </li>
-        {{ end }}
-      </ul>
+      <div class="logo">
+        <strong><a href="/">oTF</a></strong>
+      </div>
+      <div class="nav-links">
+        <ul>
+          <li>
+          </li>
+          <li>
+            <a href="{{ .Path "listOrganization" }}">organizations</a>
+          </li>
+        </ul>
+      </div>
+      <div class="nav-links-me">
+        <ul>
+          {{ if .CurrentUser }}
+          <li>
+            <a href="{{ .Path "getMe" }}">{{ .CurrentUser }}</a>
+          </li>
+          <li>
+            <form action="{{ .Path "login" }}" method="POST">
+              <button type="submit" class="btn btn-dark">Logout</button>
+            </form>
+          </li>
+          {{ end }}
+        </ul>
+      </div>
     </nav>
     <nav aria-label="Breadcrumb" class="breadcrumbs">
-      <ul>
+      <ol>
         {{ range .Breadcrumbs }}
           <li><a href="{{ .Link }}">{{ .Name }}</a></li>
         {{ end }}
-      </ul>
+      </ol>
     </nav>
-    </header>
-    <div class="container">
-      {{ block "sidebar" . }}{{ end }}
+  </header>
 
-      <div>
-        <h1>{{ template "title" . }}</h1>
+  <div class="container">
+    {{ block "sidebar" . }}{{ end }}
 
-        <hr>
+    <div>
+      <h1>{{ template "title" . }}</h1>
 
-        {{ range .PopFlashMessages }}
-          <div class="alert alert-primary alert-dismissible" role="alert">
-            {{ . }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {{ end }}
+      <hr>
 
-        <main>
-          {{ block "content" . }}{{ end }}
-        </main>
-      </div>
+      {{ range .PopFlashMessages }}
+        <div class="alert alert-primary alert-dismissible" role="alert">
+          {{ . }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {{ end }}
+
+      <main>
+        {{ block "content" . }}{{ end }}
+      </main>
     </div>
+  </div>
 </body>
 </html>
 {{ end }}

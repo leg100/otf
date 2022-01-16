@@ -2,8 +2,6 @@ package html
 
 import (
 	"net/http"
-	"path/filepath"
-	"strings"
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
@@ -13,6 +11,10 @@ import (
 )
 
 const DefaultPathPrefix = "/"
+
+var (
+	getProfileRoute *mux.Route
+)
 
 // Application is the oTF web app.
 type Application struct {
@@ -100,8 +102,8 @@ func (app *Application) sessionRoutes(router *mux.Router) {
 func (app *Application) nonAuthRoutes(router *mux.Router) {
 	app.githubRoutes(router.NewRoute().Subrouter())
 
-	router.HandleFunc("/login", app.loginHandler).Methods("GET")
-	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+	router.HandleFunc("/login", app.loginHandler).Methods("GET").Name("login")
+	router.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
 }
 
 func (app *Application) githubRoutes(router *mux.Router) {
@@ -113,9 +115,10 @@ func (app *Application) githubRoutes(router *mux.Router) {
 func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
-	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
-	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
+	router.HandleFunc("/me", app.meHandler).Methods("GET").Name("getMe")
+	getProfileRoute = router.HandleFunc("/me/profile", app.profileHandler).Methods("GET").Name("getProfile")
+	router.HandleFunc("/me/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
+	router.HandleFunc("/me/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
 
 	// TODO: replace sessions handler with token handler when one exists
 	router.HandleFunc("/tokens", app.sessionsHandler).Methods("GET").Name("listToken")
@@ -134,16 +137,8 @@ func (app *Application) authRoutes(router *mux.Router) {
 
 	(&RunController{
 		RunService:          app.RunService(),
+		PlanService:         app.PlanService(),
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
-}
-
-// link produces a relative link for the site
-func (app *Application) link(path ...string) string {
-	return filepath.Join(append([]string{app.pathPrefix}, path...)...)
-}
-
-func filenameWithoutExtension(fname string) string {
-	return strings.TrimSuffix(fname, filepath.Ext(fname))
 }

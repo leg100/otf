@@ -3,6 +3,7 @@ package html
 import (
 	"net"
 	"net/http"
+	"path"
 
 	"github.com/leg100/otf"
 )
@@ -58,7 +59,12 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
 
-	http.Redirect(w, r, "/profile", http.StatusFound)
+	getProfileUrl, err := app.router.Get("getProfile").URLPath()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	http.Redirect(w, r, getProfileUrl.Path, http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {
@@ -92,6 +98,10 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, path.Join(r.URL.Path, "profile"), http.StatusFound)
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {

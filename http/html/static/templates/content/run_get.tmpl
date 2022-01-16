@@ -1,0 +1,7 @@
+{{ template "layout" . }}
+
+{{ define "title" }}{{ .Content.Run.ID }}{{ end }}
+
+{{ define "content" }}
+  <div class="term-container">{{- .Content.PlanLogs -}}</div>
+{{ end }}
