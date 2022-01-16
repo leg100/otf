@@ -35,6 +35,10 @@ h1 {
   max-width: 76em;
 }
 
+.sidebar {
+  margin-right: 1em;
+}
+
 .sidebar ul {
   padding: 0;
   margin-top: 0;

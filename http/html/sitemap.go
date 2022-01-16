@@ -22,6 +22,15 @@ var (
 				},
 			},
 		},
+		// /me
+		"getMe": map[string]interface{}{
+			// /me/profile
+			"getProfile": nil,
+			// /me/sessions
+			"listSession": nil,
+			// /me/tokens
+			"listToken": nil,
+		},
 	}
 
 	parentLookupTable map[string]string

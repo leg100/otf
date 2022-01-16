@@ -2,7 +2,7 @@
 
 {{ define "title" }}Profile{{ end }}
 
-{{ define "sidebar" }}{{ template "user_sidebar" . }}{{ end }}
+{{ define "sidebar" }}{{ template "me_sidebar" . }}{{ end }}
 
 {{ define "content" }}
   <p>You are logged in as {{ .Content.Username }}</p>
