@@ -41,19 +41,18 @@ func (s OrganizationService) GetEntitlements(name string) (*otf.Entitlements, er
 	return s.GetEntitlementsFn(name)
 }
 
-func NewOrganization(name, email string) *otf.Organization {
+func NewOrganization(name string) *otf.Organization {
 	return &otf.Organization{
 		Name:            name,
-		Email:           email,
 		SessionTimeout:  otf.DefaultSessionTimeout,
 		SessionRemember: otf.DefaultSessionExpiration,
 	}
 }
 
-func NewOrganizationList(name, email string, opts otf.OrganizationListOptions) *otf.OrganizationList {
+func NewOrganizationList(name string, opts otf.OrganizationListOptions) *otf.OrganizationList {
 	return &otf.OrganizationList{
 		Items: []*otf.Organization{
-			NewOrganization(name, email),
+			NewOrganization(name),
 		},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}

@@ -41,7 +41,7 @@ func TestOTF(t *testing.T) {
 	})
 
 	t.Run("create organization", func(t *testing.T) {
-		cmd := exec.Command(client, "organizations", "new", "automatize", "--email", "e2e@automatize.co")
+		cmd := exec.Command(client, "organizations", "new", "automatize")
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)

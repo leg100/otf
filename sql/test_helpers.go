@@ -66,7 +66,6 @@ func newTestOrganization() *otf.Organization {
 		ID:         otf.NewID("org"),
 		Timestamps: newTestTimestamps(),
 		Name:       uuid.NewString(),
-		Email:      "sysadmin@automatize.co.uk",
 	}
 }
 

@@ -14,7 +14,6 @@ type Organization struct {
 	Name                  string                       `jsonapi:"primary,organizations"`
 	CostEstimationEnabled bool                         `jsonapi:"attr,cost-estimation-enabled"`
 	CreatedAt             time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	Email                 string                       `jsonapi:"attr,email"`
 	ExternalID            string                       `jsonapi:"attr,external-id"`
 	OwnersTeamSAMLRoleID  string                       `jsonapi:"attr,owners-team-saml-role-id"`
 	Permissions           *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
@@ -36,7 +35,6 @@ func (o *Organization) ToDomain() *otf.Organization {
 	return &otf.Organization{
 		ID:              o.ExternalID,
 		Name:            o.Name,
-		Email:           o.Email,
 		SessionRemember: o.SessionRemember,
 		SessionTimeout:  o.SessionTimeout,
 	}
@@ -140,7 +138,6 @@ func OrganizationJSONAPIObject(org *otf.Organization) *Organization {
 	obj := &Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
-		Email:           org.Email,
 		ExternalID:      org.ID,
 		Permissions:     &otf.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember,

@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"errors"
 )
 
 var (
@@ -22,7 +21,6 @@ type Organization struct {
 	Timestamps
 
 	Name            string
-	Email           string
 	SessionRemember int
 	SessionTimeout  int
 }
@@ -52,9 +50,6 @@ type OrganizationCreateOptions struct {
 	// Name of the organization.
 	Name *string `jsonapi:"attr,name"`
 
-	// Admin email address.
-	Email *string `jsonapi:"attr,email"`
-
 	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
 
 	// Session timeout after inactivity (minutes).
@@ -72,9 +67,6 @@ type OrganizationUpdateOptions struct {
 
 	// New name for the organization.
 	Name *string `jsonapi:"attr,name,omitempty"`
-
-	// New admin email address.
-	Email *string `jsonapi:"attr,email,omitempty"`
 
 	// Session expiration (minutes).
 	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
@@ -121,16 +113,12 @@ func (o OrganizationCreateOptions) Valid() error {
 	if !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
-	if !validString(o.Email) {
-		return errors.New("email is required")
-	}
 	return nil
 }
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		Name:            *opts.Name,
-		Email:           *opts.Email,
 		ID:              NewID("org"),
 		Timestamps:      NewTimestamps(),
 		SessionTimeout:  DefaultSessionTimeout,
@@ -151,10 +139,6 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 func UpdateOrganization(org *Organization, opts *OrganizationUpdateOptions) error {
 	if opts.Name != nil {
 		org.Name = *opts.Name
-	}
-
-	if opts.Email != nil {
-		org.Email = *opts.Email
 	}
 
 	if opts.SessionTimeout != nil {
