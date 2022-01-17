@@ -11,9 +11,14 @@ header nav {
   padding-left: 0.5em;
 }
 
-a, a:visited, a:active, a:hover {
+a, a:visited, a:active {
   text-decoration: none;
   color: inherit;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: blue;
 }
 
 table {
@@ -39,6 +44,11 @@ th, td {
   align-items: baseline;
 }
 
+.navbar a:hover {
+  color: lightgrey;
+  text-decoration: none;
+}
+
 .navbar .nav-links {
   margin-right: auto;
 }
@@ -56,11 +66,6 @@ th, td {
 
 .navbar li:first-child {
   margin-right: auto;
-}
-
-.navbar li a {
-  color: #fff;
-  text-decoration: none;
 }
 
 .container {
@@ -89,6 +94,11 @@ th, td {
 .breadcrumbs {
   background-color: #405D7D;
   color: #fff;
+}
+
+.breadcrumbs a:hover {
+  color: lightgrey;
+  text-decoration: none;
 }
 
 .breadcrumbs ol {
@@ -121,7 +131,27 @@ th, td {
   padding-right: 0.5em;
 }
 
+/*
+ * Override terminal-to-html's css
+ */
 .term-container {
   padding: 1em;
-  white-space: pre-wrap;
+  border-radius: 0px;
+  font-family: ui-monospace,
+             Menlo, Monaco,
+             "Cascadia Mono", "Segoe UI Mono",
+             "Roboto Mono",
+             "Oxygen Mono",
+             "Ubuntu Monospace",
+             "Source Code Pro",
+             "Fira Mono",
+             "Droid Sans Mono",
+             "Courier New", monospace;
+}
+
+ /*
+  * Upstream strangely disables bold because it looks "wierd"
+  */
+.term-fg1 {
+  font-weight: bold;
 }

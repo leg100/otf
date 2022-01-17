@@ -17,15 +17,19 @@
       {{ range .Content.Sessions }}
       <tr>
         <td>{{ .Address }}</td>
-        <td>{{ if .IsActive $.Content.ActiveToken }}&#10004;{{ end}}</td>
+
+        {{ if .IsActive $.Content.ActiveToken }}
+        <td>&#10004;</td>
+        <td></td>
+        {{ else }}
+        <td></td>
         <td>
-          {{ if not (.IsActive $.Content.ActiveToken) }}
-            <form action="{{ .Path "revokeSession" }}" method="POST">
+          <form action="{{ $.Path "revokeSession" }}" method="POST">
             <button>Revoke</button>
             <input type="hidden" name="token" value="{{ .Token }}">
           </form>
-          {{ end }}
         </td>
+        {{ end }}
       </tr>
       {{ end }}
     </tbody>
