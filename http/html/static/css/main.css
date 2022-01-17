@@ -11,6 +11,7 @@ header nav {
   padding-left: 0.5em;
 }
 
+/* Unset browser style-sheet */
 ul, ol {
   list-style: none;
   margin: 0;
@@ -168,6 +169,14 @@ th, td {
 .breadcrumbs li a {
   padding-left: 0.5em;
   padding-right: 0.5em;
+}
+
+.flash {
+  background-image: linear-gradient(#ddf4ff, #ddf4ff);
+  border-color: rgba(84, 174, 255, 0.4);
+  padding: 10px 16px;
+  border-style: solid;
+  border-width: 1px;
 }
 
 /*

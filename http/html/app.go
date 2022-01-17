@@ -38,10 +38,13 @@ type Application struct {
 
 	// factory for making templateData structs
 	*templateDataFactory
+
+	// wrapper around mux router
+	*router
 }
 
 // NewApplication constructs a new application with the given config
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, router *mux.Router) error {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, muxrouter *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -68,11 +71,12 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		pathPrefix:   DefaultPathPrefix,
 		templateDataFactory: &templateDataFactory{
 			sessions: sessions,
-			router:   router,
+			router:   muxrouter,
 		},
+		router: &router{Router: muxrouter},
 	}
 
-	app.addRoutes(router)
+	app.addRoutes(muxrouter)
 
 	return nil
 }
@@ -127,6 +131,8 @@ func (app *Application) authRoutes(router *mux.Router) {
 		OrganizationService: app.OrganizationService(),
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
+		router:              app.router,
+		sessions:            app.sessions,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
 	(&WorkspaceController{

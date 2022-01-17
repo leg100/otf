@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
@@ -15,6 +16,11 @@ type OrganizationController struct {
 	otf.UserService
 
 	renderer
+
+	*router
+
+	// for setting flash messages
+	sessions *scs.SessionManager
 
 	*templateDataFactory
 }
@@ -77,7 +83,9 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, organization.Name, http.StatusFound)
+	c.sessions.Put(r.Context(), otf.FlashSessionKey, "created organization")
+
+	http.Redirect(w, r, c.getRoute("getOrganization", "organization_name", organization.Name), http.StatusFound)
 }
 
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {

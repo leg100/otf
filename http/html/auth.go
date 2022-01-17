@@ -59,12 +59,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
 
-	getProfileUrl, err := app.router.Get("getProfile").URLPath()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	http.Redirect(w, r, getProfileUrl.Path, http.StatusFound)
+	http.Redirect(w, r, app.getRoute("getProfile"), http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {
