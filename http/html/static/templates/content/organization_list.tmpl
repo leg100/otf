@@ -2,6 +2,12 @@
 
 {{ define "title" }}Organizations{{ end }}
 
+{{ define "container-button" }}
+  <form action="{{ .Path "newOrganization" }}" method="GET">
+    <button type="submit" class="btn btn-dark">New Organization</button>
+  </form>
+{{ end }}
+
 {{ define "content" }}
   <table class="table">
     <thead>

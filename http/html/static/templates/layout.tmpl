@@ -32,7 +32,7 @@
             <a href="{{ .Path "getMe" }}">{{ .CurrentUser }}</a>
           </li>
           <li>
-            <form action="{{ .Path "login" }}" method="POST">
+            <form action="{{ .Path "logout" }}" method="POST">
               <button type="submit" class="btn btn-dark">Logout</button>
             </form>
           </li>
@@ -53,7 +53,12 @@
     {{ block "sidebar" . }}{{ end }}
 
     <div>
-      <h1>{{ template "title" . }}</h1>
+      <div class="container-header">
+        <h2 class="container-title">{{ template "title" . }}</h2>
+        <div class="container-button">
+          {{ block "container-button" . }}{{ end }}
+        </div>
+      </div>
 
       <hr>
 

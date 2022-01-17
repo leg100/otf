@@ -71,13 +71,13 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
-	workspace, err := c.OrganizationService.Create(r.Context(), opts)
+	organization, err := c.OrganizationService.Create(r.Context(), opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, path.Join("..", workspace.Name), http.StatusFound)
+	http.Redirect(w, r, organization.Name, http.StatusFound)
 }
 
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {

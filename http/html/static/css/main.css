@@ -3,12 +3,42 @@ body {
   margin: 0;
 }
 
-h1 {
-  font-size: 1.6em;
+h2 {
+  margin: 0em;
 }
 
 header nav {
   padding-left: 0.5em;
+}
+
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Center main forms on the page */
+.main-form {
+  margin: 0 auto;
+  width: 500px;
+  /* Form outline */
+  padding: 1em;
+  border: 1px solid #CCC;
+}
+
+/* Space out form fields */
+form li + li {
+  margin-top: 1em;
+}
+
+label {
+  /* Place labels above their inputs */
+  display: block;
+}
+
+.field * {
+  max-width: 25em;
+  width: 100%;
 }
 
 a, a:visited, a:active {
@@ -72,6 +102,15 @@ th, td {
   display: flex;
   margin: 0.5em;
   max-width: 76em;
+}
+
+.container-header {
+  display: flex;
+  align-items: baseline;
+}
+
+.container-title {
+  margin-right: auto;
 }
 
 .sidebar {
