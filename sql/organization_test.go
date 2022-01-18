@@ -3,6 +3,7 @@ package sql
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,13 +22,14 @@ func TestOrganization_Update(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 
+	newName := uuid.NewString()
 	org, err := db.OrganizationStore().Update(org.Name, func(org *otf.Organization) error {
-		org.Email = "newguy@automatize.co.uk"
+		org.Name = newName
 		return nil
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, "newguy@automatize.co.uk", org.Email)
+	assert.Equal(t, newName, org.Name)
 }
 
 func TestOrganization_Get(t *testing.T) {

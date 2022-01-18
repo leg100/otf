@@ -10,20 +10,13 @@ import (
 
 func TestOrganizationCommand(t *testing.T) {
 	cmd := OrganizationNewCommand(&http.FakeClientFactory{})
-	cmd.SetArgs([]string{"automatize", "--email", "sysadmin@automatize.co"})
+	cmd.SetArgs([]string{"automatize"})
 	require.NoError(t, cmd.Execute())
 }
 
 func TestOrganizationCommandMissingName(t *testing.T) {
 	cmd := OrganizationNewCommand(&http.FakeClientFactory{})
-	cmd.SetArgs([]string{"--email", "sysadmin@automatize.co"})
+	cmd.SetArgs([]string{})
 	err := cmd.Execute()
 	assert.EqualError(t, err, "accepts 1 arg(s), received 0")
-}
-
-func TestOrganizationCommandMissingEmail(t *testing.T) {
-	cmd := OrganizationNewCommand(&http.FakeClientFactory{})
-	cmd.SetArgs([]string{"automatize"})
-	err := cmd.Execute()
-	assert.EqualError(t, err, "required flag(s) \"email\" not set")
 }

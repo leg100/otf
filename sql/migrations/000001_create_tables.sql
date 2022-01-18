@@ -1,30 +1,9 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id text,
-    chunk_id serial,
-    chunk bytea,
-    size integer,
-    start boolean,
-    _end boolean,
-    PRIMARY KEY (plan_id, chunk_id)
-);
-
-CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id text,
-    chunk_id serial,
-    chunk bytea,
-    size integer,
-    start boolean,
-    _end boolean,
-    PRIMARY KEY (apply_id, chunk_id)
-);
-
 CREATE TABLE IF NOT EXISTS organizations (
     organization_id text,
     created_at timestamptz,
     updated_at timestamptz,
     name text,
-    email text,
     session_remember integer,
     session_timeout integer,
     UNIQUE (name),
@@ -141,14 +120,34 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
     PRIMARY KEY (state_version_output_id)
 );
 
+CREATE TABLE IF NOT EXISTS plan_logs (
+    plan_id text REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE,
+    chunk_id serial,
+    chunk bytea,
+    size integer,
+    start boolean,
+    _end boolean,
+    PRIMARY KEY (plan_id, chunk_id)
+);
+
+CREATE TABLE IF NOT EXISTS apply_logs (
+    apply_id text REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE,
+    chunk_id serial,
+    chunk bytea,
+    size integer,
+    start boolean,
+    _end boolean,
+    PRIMARY KEY (apply_id, chunk_id)
+);
+
 -- +goose Down
-DROP TABLE IF EXISTS applies;
-DROP TABLE IF EXISTS plans;
-DROP TABLE IF EXISTS runs;
-DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS apply_logs;
+DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
+DROP TABLE IF EXISTS plans;
+DROP TABLE IF EXISTS applies;
+DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS configuration_versions;
-DROP TABLE IF EXISTS blobs;
 DROP TABLE IF EXISTS workspaces;
 DROP TABLE IF EXISTS organizations;

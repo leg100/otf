@@ -34,8 +34,5 @@ func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	opts.Email = cmd.Flags().String("email", "", "Email of the owner of the organization")
-	cmd.MarkFlagRequired("email")
-
 	return cmd
 }

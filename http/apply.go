@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 // Apply represents a Terraform Enterprise apply.
@@ -106,7 +107,7 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
 		ID:                   a.ID,
-		LogReadURL:           buildAbsoluteURI(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
+		LogReadURL:           httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
 		ResourceAdditions:    a.ResourceAdditions,
 		ResourceChanges:      a.ResourceChanges,
 		ResourceDestructions: a.ResourceDestructions,

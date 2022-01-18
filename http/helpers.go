@@ -158,16 +158,3 @@ func parsePagination(body io.Reader) (*otf.Pagination, error) {
 
 	return &raw.Meta.Pagination, nil
 }
-
-// buildAbsoluteURI builds an absolute URL from a relative path. Requires an
-// http request from which it determines the host (using the Host header).
-func buildAbsoluteURI(r *http.Request, path string) string {
-	u := url.URL{
-		// Always use https
-		Scheme: "https",
-		Host:   r.Host,
-		Path:   path,
-	}
-
-	return u.String()
-}
