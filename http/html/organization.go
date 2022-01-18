@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 
@@ -78,6 +79,11 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 	}
 
 	organization, err := c.OrganizationService.Create(r.Context(), opts)
+	if err == otf.ErrResourcesAlreadyExists {
+		c.sessions.Put(r.Context(), otf.FlashSessionKey, fmt.Sprintf("organization %s already exists", organization.Name))
+		http.Redirect(w, r, c.getRoute("newOrganization"), http.StatusFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
