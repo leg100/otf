@@ -17,6 +17,7 @@ import (
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 const (
@@ -78,6 +79,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		if cfg.CertFile == "" || cfg.KeyFile == "" {
 			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
 		}
+
+		// Tell http utilities that we're using SSL.
+		httputil.SSL = true
 	}
 
 	// Construct web app

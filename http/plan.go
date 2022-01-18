@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 // Plan represents a Terraform Enterprise plan.
@@ -123,7 +124,7 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 	result := &Plan{
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
-		LogReadURL:           buildAbsoluteURI(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
+		LogReadURL:           httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
 		ResourceAdditions:    p.ResourceAdditions,
 		ResourceChanges:      p.ResourceChanges,
 		ResourceDestructions: p.ResourceDestructions,

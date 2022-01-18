@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
-	"net/url"
 
+	httputil "github.com/leg100/otf/http/util"
 	"golang.org/x/oauth2"
 )
 
@@ -66,14 +66,8 @@ func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
 }
 
 func (o *oauth) config(r *http.Request) *oauth2.Config {
-	redirectURL := url.URL{
-		Scheme: "https",
-		Host:   r.Host,
-		Path:   githubCallbackPath,
-	}
-
 	cfg := o.Config
-	cfg.RedirectURL = redirectURL.String()
+	cfg.RedirectURL = httputil.Absolute(r, githubCallbackPath)
 	return cfg
 }
 
