@@ -38,7 +38,10 @@ func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	// Insert
+	if _, err := getOrganization(db.DB, org.Name); err == nil {
+		return nil, otf.ErrResourcesAlreadyExists
+	}
+
 	sql, args, err := db.BindNamed(insertOrganizationSQL, org)
 	if err != nil {
 		return nil, err

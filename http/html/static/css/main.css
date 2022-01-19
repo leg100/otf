@@ -114,6 +114,10 @@ th, td {
   margin-right: auto;
 }
 
+.container-button {
+  margin: 1em;
+}
+
 .sidebar {
   margin-right: 1em;
 }
