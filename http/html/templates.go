@@ -1,6 +1,7 @@
 package html
 
 import (
+	"encoding/gob"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -11,7 +12,6 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 )
 
 const (
@@ -21,6 +21,10 @@ const (
 	contentTemplatesGlob = "static/templates/content/*.tmpl"
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
+
+func init() {
+	gob.Register(Flash{})
+}
 
 // templateDataFactory produces templateData structs
 type templateDataFactory struct {
@@ -34,8 +38,8 @@ type templateDataFactory struct {
 func (f *templateDataFactory) newTemplateData(r *http.Request, content interface{}) templateData {
 	return templateData{
 		Content:  content,
-		router:   f.router,
-		sessions: f.sessions,
+		router:   &router{f.router},
+		sessions: &sessions{f.sessions},
 		request:  r,
 	}
 }
@@ -44,28 +48,21 @@ type templateData struct {
 	// Content is specific to the content being embedded within the layout.
 	Content interface{}
 
-	router *mux.Router
+	router *router
 
 	request *http.Request
 
-	sessions *scs.SessionManager
+	sessions *sessions
 }
 
-// path constructs a URL path from the named route and pairs of key values for
-// the route variables
-func (td *templateData) Path(name string, pairs ...string) (string, error) {
-	route := td.router.Get(name)
+// Path proxies access to the router's route method
+func (td *templateData) Path(name string, pairs ...string) string {
+	return td.router.route(name, pairs...)
+}
 
-	if route == nil {
-		return "", fmt.Errorf("no such web route exists: %s", name)
-	}
-
-	u, err := route.URLPath(pairs...)
-	if err != nil {
-		return "", err
-	}
-
-	return u.Path, nil
+// Relative proxies access to the router's relative method
+func (td *templateData) Relative(name string, pairs ...string) string {
+	return td.router.relative(td.request, name, pairs...)
 }
 
 // Ancestor constructs a URL path for the named route, populating its route
@@ -136,17 +133,12 @@ func (td *templateData) RouteVars() map[string]string {
 
 // PopFlashMessages retrieves all flash messages from the current session. The
 // messages are thereafter discarded from the session.
-func (td *templateData) PopFlashMessages() (msgs []template.HTML) {
-	ctx := td.request.Context()
-	if msg := td.sessions.PopString(ctx, otf.FlashSessionKey); msg != "" {
-		msgs = append(msgs, template.HTML(msg))
-	}
-	return
+func (td *templateData) PopFlashMessages() []Flash {
+	return td.sessions.PopAllFlash(td.request)
 }
 
 func (td *templateData) CurrentUser() string {
-	ctx := td.request.Context()
-	return td.sessions.GetString(ctx, otf.UsernameSessionKey)
+	return td.sessions.CurrentUser(td.request)
 }
 
 func (td *templateData) CurrentPath() string {

@@ -1,9 +1,9 @@
 {{ define "organization_sidebar" }}
 <nav class="sidebar">
   <ul>
-    <li><a href="{{ .Path "getOrganizationOverview" "organization_name" .Content.Name }}">overview</a></li>
-    <li><a href="{{ .Path "listWorkspace" "organization_name" .Content.Name }}">workspaces</a></li>
-    <li><a href="{{ .Path "editOrganization" "organization_name" .Content.Name }}">settings</a></li>
+    <li><a href="{{ .Relative "getOrganizationOverview" }}">overview</a></li>
+    <li><a href="{{ .Relative "listWorkspace" }}">workspaces</a></li>
+    <li><a href="{{ .Relative "editOrganization" }}">settings</a></li>
   </ul>
 </nav>
 {{ end }}

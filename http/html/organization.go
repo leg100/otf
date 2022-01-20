@@ -1,11 +1,9 @@
 package html
 
 import (
-	"fmt"
 	"net/http"
 	"path"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
@@ -21,7 +19,7 @@ type OrganizationController struct {
 	*router
 
 	// for setting flash messages
-	sessions *scs.SessionManager
+	sessions *sessions
 
 	*templateDataFactory
 }
@@ -80,8 +78,8 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 
 	organization, err := c.OrganizationService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.sessions.Put(r.Context(), otf.FlashSessionKey, fmt.Sprintf("organization %s already exists", *opts.Name))
-		http.Redirect(w, r, c.getRoute("newOrganization"), http.StatusFound)
+		c.sessions.FlashError(r, "organization already exists: ", *opts.Name)
+		http.Redirect(w, r, c.route("newOrganization"), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -89,9 +87,9 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.Put(r.Context(), otf.FlashSessionKey, "created organization")
+	c.sessions.FlashSuccess(r, "created organization: ", organization.Name)
 
-	http.Redirect(w, r, c.getRoute("getOrganization", "organization_name", organization.Name), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
 }
 
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {
@@ -128,25 +126,32 @@ func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {
 
 func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationUpdateOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decodeForm(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
-	_, err := c.OrganizationService.Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
+	organization, err := c.OrganizationService.Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "../edit", http.StatusFound)
+	c.sessions.FlashSuccess(r, "updated organization")
+
+	// Explicitly specify route variable for organization name because the user
+	// might have updated it.
+	http.Redirect(w, r, c.route("editOrganization", "organization_name", organization.Name), http.StatusFound)
 }
 
 func (c *OrganizationController) Delete(w http.ResponseWriter, r *http.Request) {
-	err := c.OrganizationService.Delete(r.Context(), mux.Vars(r)["organization_name"])
+	organizationName := mux.Vars(r)["organization_name"]
+
+	err := c.OrganizationService.Delete(r.Context(), organizationName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "../../", http.StatusFound)
+	c.sessions.FlashSuccess(r, "deleted organization: ", organizationName)
+	http.Redirect(w, r, c.route("listOrganization"), http.StatusFound)
 }

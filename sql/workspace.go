@@ -55,7 +55,11 @@ func NewWorkspaceDB(db *sqlx.DB) *WorkspaceDB {
 // Create persists a Workspace to the DB. The returned Workspace is adorned with
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
-	// Insert workspace
+	spec := otf.WorkspaceSpecifier{OrganizationName: &ws.Organization.Name, Name: &ws.Name}
+	if _, err := getWorkspace(db.DB, spec); err == nil {
+		return nil, otf.ErrResourcesAlreadyExists
+	}
+
 	sql, args, err := db.BindNamed(insertWorkspaceSQL, ws)
 	if err != nil {
 		return nil, err

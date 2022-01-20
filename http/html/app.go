@@ -132,13 +132,15 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            app.sessions,
+		sessions:            &sessions{app.sessions},
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
 	(&WorkspaceController{
 		WorkspaceService:    app.WorkspaceService(),
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
+		router:              app.router,
+		sessions:            &sessions{app.sessions},
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 
 	(&RunController{

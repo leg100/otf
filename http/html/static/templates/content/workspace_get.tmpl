@@ -2,8 +2,11 @@
 
 {{ define "title" }}{{ .Content.Name }}{{ end }}
 
+{{ define "sidebar" }}{{ template "workspace_sidebar" . }}{{ end }}
+
 {{ define "content" }}
-  <p><strong>Terraform Version</strong></p>
-  <p>{{ .Content.TerraformVersion }}</p>
-  <p><a href="/organizations/{{ .Content.Organization.Name }}/workspaces/{{ .Content.Name }}/runs">runs</a></p>
+  <p><strong>Terraform Version:</strong> {{ .Content.TerraformVersion }}</p>
+  <form class="main-form" action="{{ .Relative "deleteWorkspace" }}" method="POST">
+      <button>Delete workspace</button>
+  </form>
 {{ end }}

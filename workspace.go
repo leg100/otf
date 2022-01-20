@@ -132,7 +132,7 @@ type WorkspaceCreateOptions struct {
 
 	// The version of Terraform to use for this workspace. Upon creating a
 	// workspace, the latest version is selected unless otherwise specified.
-	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.
@@ -212,7 +212,7 @@ type WorkspaceUpdateOptions struct {
 	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
 
 	// The version of Terraform to use for this workspace.
-	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.

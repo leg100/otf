@@ -2,7 +2,12 @@
 
 {{ define "title" }}Workspaces{{ end }}
 
-{{ define "sidebar" }}{{ template "me_sidebar" . }}{{ end }}
+
+{{ define "container-button" }}
+  <form action="{{ .Relative "newWorkspace" }}" method="GET">
+    <button type="submit">New Workspace</button>
+  </form>
+{{ end }}
 
 {{ define "content" }}
   <table class="table">
@@ -14,7 +19,7 @@
   <tbody>
     {{ range .Content.List.Items }}
       <tr>
-          <td><a href="{{ $.Path "getWorkspace" "organization_name" .Organization.Name "workspace_name" .Name }}">{{ .Name }}</a></td>
+          <td><a href="{{ $.Relative "getWorkspace" "workspace_name" .Name }}">{{ .Name }}</a></td>
         </tr>
       {{ end }}
     </tbody>

@@ -59,7 +59,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
 
-	http.Redirect(w, r, app.getRoute("getProfile"), http.StatusFound)
+	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {

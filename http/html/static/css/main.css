@@ -176,11 +176,22 @@ th, td {
 }
 
 .flash {
-  background-image: linear-gradient(#ddf4ff, #ddf4ff);
+  background: #ddf4ff;
   border-color: rgba(84, 174, 255, 0.4);
   padding: 10px 16px;
   border-style: solid;
   border-width: 1px;
+  margin: 10px;
+}
+
+.flash-error {
+  background: #ffebe9;
+  border-color: rgba(255, 129, 130, 0.4);
+}
+
+.flash-success {
+  background: #dafbe1;
+  border-color: rgba(74, 194, 107, 0.4);
 }
 
 /*

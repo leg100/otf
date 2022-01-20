@@ -11,11 +11,19 @@ import (
 
 func TestOrganization_Create(t *testing.T) {
 	db := newTestDB(t)
+	org := newTestOrganization()
 
-	org, err := db.OrganizationStore().Create(newTestOrganization())
+	t.Cleanup(func() {
+		db.OrganizationStore().Delete(org.Name)
+	})
+
+	_, err := db.OrganizationStore().Create(org)
 	require.NoError(t, err)
 
-	db.OrganizationStore().Delete(org.Name)
+	t.Run("Duplicate", func(t *testing.T) {
+		_, err := db.OrganizationStore().Create(org)
+		require.Equal(t, otf.ErrResourcesAlreadyExists, err)
+	})
 }
 
 func TestOrganization_Update(t *testing.T) {

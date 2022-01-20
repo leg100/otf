@@ -1,0 +1,17 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Edit Organization{{ end }}
+
+{{ define "content" }}
+  <form class="main-form" action="{{ .Relative "updateOrganization" }}" method="POST">
+    <ul>
+      <li class="field">
+        <label for="name">Name</label>
+        <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
+      </li>
+      <li>
+        <button>Edit organization</button>
+      </li>
+    </ul>
+  </form>
+{{ end }}
