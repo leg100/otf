@@ -3,7 +3,6 @@ package html
 import (
 	"html/template"
 	"net/http"
-	"path"
 	"strings"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -18,6 +17,11 @@ type RunController struct {
 
 	// HTML template renderer
 	renderer
+
+	*router
+
+	// for setting flash messages
+	sessions *sessions
 
 	*templateDataFactory
 }
@@ -34,6 +38,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunListOptions
 	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
 
 	runs, err := c.RunService.List(r.Context(), opts)
@@ -51,7 +56,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
@@ -65,7 +70,7 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_new.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
@@ -73,6 +78,7 @@ func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
 
 	created, err := c.RunService.Create(r.Context(), opts)
@@ -81,7 +87,7 @@ func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, path.Join("..", created.ID), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID), http.StatusFound)
 }
 
 func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {

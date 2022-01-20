@@ -41,6 +41,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 	// populate options struct from query and route paramters
 	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
 
 	workspaces, err := c.OrganizationService.List(r.Context(), opts)
@@ -67,6 +68,7 @@ func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.renderTemplate("organization_new.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -74,6 +76,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 	var opts otf.OrganizationCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
 
 	organization, err := c.OrganizationService.Create(r.Context(), opts)
@@ -128,6 +131,7 @@ func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) 
 	var opts otf.OrganizationUpdateOptions
 	if err := decodeForm(r, &opts); err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
 
 	organization, err := c.OrganizationService.Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
