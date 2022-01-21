@@ -181,7 +181,7 @@ type WorkspaceUpdateOptions struct {
 	// When set to local, the workspace will be used for state storage only.
 	// This value must not be specified if operations is specified.
 	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty"`
+	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty" schema:"execution_mode"`
 
 	// Whether to filter runs based on the changed files in a VCS push. If
 	// enabled, the working directory and trigger prefixes describe a set of

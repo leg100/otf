@@ -28,18 +28,39 @@ ul, ol {
 }
 
 /* Space out form fields */
-form li + li {
+li.field + li.field {
   margin-top: 1em;
 }
 
+/* Place labels above their inputs */
 label {
-  /* Place labels above their inputs */
   display: block;
 }
 
-.field * {
-  max-width: 25em;
+/* Unless they're labels for radio inputs */
+input[type="radio"] + label {
+  display: inline;
+}
+
+input[type="radio"] {
+  margin-right: .75em;
+}
+
+.radio {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.radio li {
+  margin-right: 2em;
+}
+
+.field {
   width: 100%;
+}
+
+.field input {
+  max-width: 30em;
 }
 
 a, a:visited, a:active {

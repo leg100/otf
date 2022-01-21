@@ -83,6 +83,8 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
 func (app *Application) addRoutes(router *mux.Router) {
+	router.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+
 	// Static assets (JS, CSS, etc).
 	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 

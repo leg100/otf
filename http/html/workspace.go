@@ -107,7 +107,7 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 	tdata := c.newTemplateData(r, workspace)
 
 	if err := c.renderTemplate("workspace_get.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
@@ -133,7 +133,7 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("workspace_edit.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err, http.StatusInternalServerError)
 	}
 }
 
