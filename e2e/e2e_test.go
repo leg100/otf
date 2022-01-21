@@ -1,11 +1,13 @@
 package e2e
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,25 +15,33 @@ const (
 	daemon = "../_build/otfd"
 	client = "../_build/otf"
 	config = `
-terraform {
-  backend "remote" {
-    hostname = "localhost:8080"
-    organization = "automatize"
-
-    workspaces {
-      name = "dev"
-    }
-  }
 }
 
 resource "null_resource" "e2e" {}
 `
 )
 
+func newConfig(organization string) []byte {
+	config := `
+terraform {
+  backend "remote" {
+	hostname = "localhost:8080"
+	organization = "%s"
+
+	workspaces {
+	  name = "dev"
+	}
+  }
+}`
+	return []byte(fmt.Sprintf(config, organization))
+}
+
 func TestOTF(t *testing.T) {
 	// Create TF config
 	root := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(root, "main.tf"), []byte(config), 0600))
+	organization := uuid.NewString()
+	err := os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0600)
+	require.NoError(t, err)
 
 	t.Run("login", func(t *testing.T) {
 		cmd := exec.Command(client, "login")
@@ -41,7 +51,7 @@ func TestOTF(t *testing.T) {
 	})
 
 	t.Run("create organization", func(t *testing.T) {
-		cmd := exec.Command(client, "organizations", "new", "automatize")
+		cmd := exec.Command(client, "organizations", "new", organization)
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
@@ -72,14 +82,14 @@ func TestOTF(t *testing.T) {
 	})
 
 	t.Run("lock workspace", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "lock", "dev", "--organization", "automatize")
+		cmd := exec.Command(client, "workspaces", "lock", "dev", "--organization", organization)
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
 	})
 
 	t.Run("unlock workspace", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "unlock", "dev", "--organization", "automatize")
+		cmd := exec.Command(client, "workspaces", "unlock", "dev", "--organization", organization)
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
