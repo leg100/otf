@@ -12,10 +12,6 @@ import (
 
 const DefaultPathPrefix = "/"
 
-var (
-	getProfileRoute *mux.Route
-)
-
 // Application is the oTF web app.
 type Application struct {
 	// Sessions manager
@@ -43,7 +39,7 @@ type Application struct {
 	*router
 }
 
-// NewApplication constructs a new application with the given config
+// AddRoutes adds routes for the html web app.
 func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, muxrouter *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
@@ -122,7 +118,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
 	router.HandleFunc("/me", app.meHandler).Methods("GET").Name("getMe")
-	getProfileRoute = router.HandleFunc("/me/profile", app.profileHandler).Methods("GET").Name("getProfile")
+	router.HandleFunc("/me/profile", app.profileHandler).Methods("GET").Name("getProfile")
 	router.HandleFunc("/me/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
 	router.HandleFunc("/me/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
 

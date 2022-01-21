@@ -1,8 +1,7 @@
 /*
 Package util shouldn't exist, but allows us to escape an import cycle for
-* routines shared by both http and http/html packages.
+routines shared by both http and http/html packages.
 */
-
 package util
 
 import (

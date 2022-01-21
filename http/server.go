@@ -56,9 +56,6 @@ type Server struct {
 
 	logr.Logger
 
-	// html web app
-	webApp *html.Application
-
 	// provides access to otf services
 	otf.Application
 
