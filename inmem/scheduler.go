@@ -15,7 +15,7 @@ const (
 )
 
 type RunLister interface {
-	List(otf.RunListOptions) (*otf.RunList, error)
+	List(context.Context, otf.RunListOptions) (*otf.RunList, error)
 }
 
 // Scheduler manages workspaces' run queues in memory. It subscribes to events
@@ -121,7 +121,7 @@ func getActiveRun(workspaceID string, rl RunLister) (*otf.Run, error) {
 		WorkspaceID: &workspaceID,
 		Statuses:    otf.ActiveRunStatuses,
 	}
-	active, err := rl.List(opts)
+	active, err := rl.List(context.Background(), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func getPendingRuns(workspaceID string, rl RunLister) ([]*otf.Run, error) {
 		WorkspaceID: &workspaceID,
 		Statuses:    []otf.RunStatus{otf.RunPending},
 	}
-	pending, err := rl.List(opts)
+	pending, err := rl.List(context.Background(), opts)
 	if err != nil {
 		return nil, err
 	}

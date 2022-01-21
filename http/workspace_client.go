@@ -21,15 +21,15 @@ type workspaces struct {
 }
 
 // Create is used to create a new workspace.
-func (s *workspaces) Create(ctx context.Context, organization string, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&organization) {
+func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+	if !otf.ValidStringID(&options.Organization) {
 		return nil, otf.ErrInvalidOrg
 	}
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(organization))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.Organization))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err
@@ -127,12 +127,12 @@ func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) er
 }
 
 // Lock a workspace by its ID.
-func (s *workspaces) Lock(ctx context.Context, workspaceID string, options otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&workspaceID) {
+func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, options otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	if !otf.ValidStringID(spec.ID) {
 		return nil, otf.ErrInvalidWorkspaceID
 	}
 
-	u := fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(workspaceID))
+	u := fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err
@@ -148,12 +148,12 @@ func (s *workspaces) Lock(ctx context.Context, workspaceID string, options otf.W
 }
 
 // Unlock a workspace by its ID.
-func (s *workspaces) Unlock(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&workspaceID) {
+func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+	if !otf.ValidStringID(spec.ID) {
 		return nil, otf.ErrInvalidWorkspaceID
 	}
 
-	u := fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(workspaceID))
+	u := fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
 	req, err := s.client.newRequest("POST", u, nil)
 	if err != nil {
 		return nil, err

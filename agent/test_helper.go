@@ -1,12 +1,16 @@
 package agent
 
-import "github.com/leg100/otf"
+import (
+	"context"
+
+	"github.com/leg100/otf"
+)
 
 type testRunLister struct {
 	runs []*otf.Run
 }
 
-func (l *testRunLister) List(opts otf.RunListOptions) (*otf.RunList, error) {
+func (l *testRunLister) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{Items: l.runs}, nil
 }
 

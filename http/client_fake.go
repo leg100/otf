@@ -56,13 +56,13 @@ func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpe
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Lock(ctx context.Context, id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
 	return &otf.Workspace{
 		ID: "ws-123",
 	}, nil

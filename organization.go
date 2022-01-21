@@ -88,11 +88,11 @@ type OrganizationListOptions struct {
 
 type OrganizationService interface {
 	Create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
-	Get(name string) (*Organization, error)
-	List(opts OrganizationListOptions) (*OrganizationList, error)
-	Update(name string, opts *OrganizationUpdateOptions) (*Organization, error)
-	Delete(name string) error
-	GetEntitlements(name string) (*Entitlements, error)
+	Get(ctx context.Context, name string) (*Organization, error)
+	List(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+	Update(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)
+	Delete(ctx context.Context, name string) error
+	GetEntitlements(ctx context.Context, name string) (*Entitlements, error)
 }
 
 type OrganizationStore interface {

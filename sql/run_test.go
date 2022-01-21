@@ -100,8 +100,15 @@ func TestRun_List(t *testing.T) {
 			},
 		},
 		{
-			name: "filter by workspace",
+			name: "filter by workspace ID",
 			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
+			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+				assert.Equal(t, 1, len(l.Items))
+			},
+		},
+		{
+			name: "filter by organization and workspace name",
+			opts: otf.RunListOptions{OrganizationName: &org.Name, WorkspaceName: &ws1.Name},
 			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
 				assert.Equal(t, 1, len(l.Items))
 			},

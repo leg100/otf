@@ -1,0 +1,20 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Runs{{ end }}
+
+{{ define "content" }}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Content.List.Items }}
+      <tr>
+        <td><a href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+{{ end }}

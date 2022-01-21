@@ -56,9 +56,6 @@ type Server struct {
 
 	logr.Logger
 
-	// html web app
-	webApp *html.Application
-
 	// provides access to otf services
 	otf.Application
 
@@ -84,20 +81,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		httputil.SSL = true
 	}
 
-	// Construct web app
-	webApp, err := html.NewApplication(logger, cfg.ApplicationConfig, app, db)
-	if err != nil {
-		return nil, err
-	}
-	s.webApp = webApp
-
-	http.Handle("/", s.routes(cfg))
-
-	return s, nil
-}
-
-// NewRouter constructs an HTTP router
-func (s *Server) routes(cfg ServerConfig) http.Handler {
 	router := mux.NewRouter()
 
 	// Catch panics and return 500s
@@ -109,7 +92,9 @@ func (s *Server) routes(cfg ServerConfig) http.Handler {
 	}
 
 	// Add web app routes.
-	s.webApp.AddRoutes(router)
+	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, db, router); err != nil {
+		return nil, err
+	}
 
 	router.HandleFunc("/.well-known/terraform.json", s.WellKnown)
 	router.HandleFunc("/metrics/cache.json", s.CacheStats)
@@ -188,7 +173,9 @@ func (s *Server) routes(cfg ServerConfig) http.Handler {
 	// Apply routes
 	sub.HandleFunc("/applies/{id}", s.GetApply).Methods("GET")
 
-	return router
+	http.Handle("/", router)
+
+	return s, nil
 }
 
 // Open begins listening on the bind address and waits until server exits due to

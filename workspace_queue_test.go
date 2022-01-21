@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 
 type mockPlanEnqueuer struct{}
 
-func (u *mockPlanEnqueuer) EnqueuePlan(string) error { return nil }
+func (u *mockPlanEnqueuer) EnqueuePlan(ctx context.Context, id string) error { return nil }
 
 func TestWorkspaceQueue_AddRun(t *testing.T) {
 	tests := []struct {

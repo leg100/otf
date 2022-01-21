@@ -1,0 +1,26 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Organizations{{ end }}
+
+{{ define "container-button" }}
+  <form action="{{ .Path "newOrganization" }}" method="GET">
+    <button type="submit">New Organization</button>
+  </form>
+{{ end }}
+
+{{ define "content" }}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Content.List.Items }}
+      <tr>
+        <td><a href="{{ $.Path "getOrganization" "organization_name" .Name }}">{{ .Name }}</a></td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+{{ end }}

@@ -1,0 +1,241 @@
+body {
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
+}
+
+h2 {
+  margin: 0em;
+}
+
+header nav {
+  padding-left: 0.5em;
+}
+
+/* Unset browser style-sheet */
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Center main forms on the page */
+.main-form {
+  margin: 0 auto;
+  width: 500px;
+  /* Form outline */
+  padding: 1em;
+  border: 1px solid #CCC;
+}
+
+/* Space out form fields */
+li.field + li.field {
+  margin-top: 1em;
+}
+
+/* Place labels above their inputs */
+label {
+  display: block;
+}
+
+/* Unless they're labels for radio inputs */
+input[type="radio"] + label {
+  display: inline;
+}
+
+input[type="radio"] {
+  margin-right: .75em;
+}
+
+.radio {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.radio li {
+  margin-right: 2em;
+}
+
+.field {
+  width: 100%;
+}
+
+.field input {
+  max-width: 30em;
+}
+
+a, a:visited, a:active {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: blue;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  border-bottom: 2px solid;
+  background-color: lightgrey;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.2em .5em;
+}
+
+.navbar {
+  display: flex;
+  background-color: #2F445A;
+  color: #fff;
+  margin: 0;
+  align-items: baseline;
+}
+
+.navbar a:hover {
+  color: lightgrey;
+  text-decoration: none;
+}
+
+.navbar .nav-links {
+  margin-right: auto;
+}
+
+.navbar ul {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  align-items: baseline;
+}
+
+.navbar li {
+  padding: 0.5em;
+}
+
+.navbar li:first-child {
+  margin-right: auto;
+}
+
+.container {
+  display: flex;
+  margin: 0.5em;
+  max-width: 76em;
+}
+
+.container-header {
+  display: flex;
+  align-items: baseline;
+}
+
+.container-title {
+  margin-right: auto;
+}
+
+.container-button {
+  margin: 1em;
+}
+
+.sidebar {
+  margin-right: 1em;
+}
+
+.sidebar ul {
+  padding: 0;
+  margin-top: 0;
+}
+
+.sidebar li {
+  padding: 0.5em;
+}
+
+.sidebar li:first-child {
+  margin-right: auto;
+}
+
+.breadcrumbs {
+  background-color: #405D7D;
+  color: #fff;
+}
+
+.breadcrumbs a:hover {
+  color: lightgrey;
+  text-decoration: none;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0.3em 0;
+  align-items: baseline;
+  font-size: 0.8em;
+}
+
+/*
+ * Separate breadcrumbs with a ">" symbol and pad both sides
+ */
+.breadcrumbs li::before {
+  content: ">";
+}
+
+.breadcrumbs li:first-child::before {
+  content: "";
+}
+
+.breadcrumbs li:first-child a {
+  padding-left: 0em;
+  padding-right: 0.5em;
+}
+
+.breadcrumbs li a {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+.flash {
+  background: #ddf4ff;
+  border-color: rgba(84, 174, 255, 0.4);
+  padding: 10px 16px;
+  border-style: solid;
+  border-width: 1px;
+  margin: 10px;
+}
+
+.flash-error {
+  background: #ffebe9;
+  border-color: rgba(255, 129, 130, 0.4);
+}
+
+.flash-success {
+  background: #dafbe1;
+  border-color: rgba(74, 194, 107, 0.4);
+}
+
+/*
+ * Override terminal-to-html's css
+ */
+.term-container {
+  padding: 1em;
+  border-radius: 0px;
+  font-family: ui-monospace,
+             Menlo, Monaco,
+             "Cascadia Mono", "Segoe UI Mono",
+             "Roboto Mono",
+             "Oxygen Mono",
+             "Ubuntu Monospace",
+             "Source Code Pro",
+             "Fira Mono",
+             "Droid Sans Mono",
+             "Courier New", monospace;
+}
+
+ /*
+  * Upstream strangely disables bold because it looks "wierd"
+  */
+.term-fg1 {
+  font-weight: bold;
+}

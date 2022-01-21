@@ -1,0 +1,13 @@
+{{ template "layout" . }}
+
+{{ define "title" }}{{ .Content.Name }}{{ end }}
+
+{{ define "sidebar" }}{{ template "organization_sidebar" . }}{{ end }}
+
+{{ define "content" }}
+  <p><strong>Name</strong></p>
+  <p>{{ .Content.Name }}</p>
+  <form class="main-form" action="{{ .Relative "deleteOrganization" }}" method="POST">
+      <button>Delete organization</button>
+  </form>
+{{ end }}

@@ -1,11 +1,7 @@
 package html
 
 import (
-	"html/template"
-	"io"
 	"net/http"
-	"path/filepath"
-	"strings"
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
@@ -13,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
+
+const DefaultPathPrefix = "/"
 
 // Application is the oTF web app.
 type Application struct {
@@ -30,22 +28,31 @@ type Application struct {
 
 	// github oauth authorization
 	oauth *githubOAuthApp
+
+	// path prefix for all URLs
+	pathPrefix string
+
+	// factory for making templateData structs
+	*templateDataFactory
+
+	// wrapper around mux router
+	*router
 }
 
-// NewApplication constructs a new application with the given config
-func NewApplication(logger logr.Logger, config Config, services otf.Application, db otf.DB) (*Application, error) {
+// AddRoutes adds routes for the html web app.
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, muxrouter *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
 
 	renderer, err := newRenderer(config.DevMode)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	oauthApp, err := newGithubOAuthApp(config.Github)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	sessions := scs.New()
@@ -57,15 +64,29 @@ func NewApplication(logger logr.Logger, config Config, services otf.Application,
 		oauth:        oauthApp,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
+		pathPrefix:   DefaultPathPrefix,
+		templateDataFactory: &templateDataFactory{
+			sessions: sessions,
+			router:   muxrouter,
+		},
+		router: &router{Router: muxrouter},
 	}
 
-	return app, nil
+	app.addRoutes(muxrouter)
+
+	return nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) AddRoutes(router *mux.Router) {
+func (app *Application) addRoutes(router *mux.Router) {
+	router.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+
 	// Static assets (JS, CSS, etc).
 	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
+
+	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
+	// /runs. Uses an HTTP301.
+	router.StrictSlash(true)
 
 	app.sessionRoutes(router.NewRoute().Subrouter())
 }
@@ -83,8 +104,8 @@ func (app *Application) sessionRoutes(router *mux.Router) {
 func (app *Application) nonAuthRoutes(router *mux.Router) {
 	app.githubRoutes(router.NewRoute().Subrouter())
 
-	router.HandleFunc("/login", app.loginHandler).Methods("GET")
-	router.HandleFunc("/logout", app.logoutHandler).Methods("POST")
+	router.HandleFunc("/login", app.loginHandler).Methods("GET").Name("login")
+	router.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
 }
 
 func (app *Application) githubRoutes(router *mux.Router) {
@@ -96,32 +117,36 @@ func (app *Application) githubRoutes(router *mux.Router) {
 func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
 
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET")
-	router.HandleFunc("/sessions", app.sessionsHandler).Methods("GET")
-	router.HandleFunc("/sessions/revoke", app.revokeSessionHandler).Methods("POST")
-}
+	router.HandleFunc("/me", app.meHandler).Methods("GET").Name("getMe")
+	router.HandleFunc("/me/profile", app.profileHandler).Methods("GET").Name("getProfile")
+	router.HandleFunc("/me/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
+	router.HandleFunc("/me/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
 
-// render wraps calls to the template renderer, adding common data to the
-// template
-func (app *Application) render(r *http.Request, name string, w io.Writer, content interface{}, opts ...templateDataOption) error {
-	data := templateData{
-		Title:       strings.Title(filenameWithoutExtension(name)),
-		Content:     content,
-		CurrentUser: app.currentUser(r),
-	}
+	// TODO: replace sessions handler with token handler when one exists
+	router.HandleFunc("/tokens", app.sessionsHandler).Methods("GET").Name("listToken")
 
-	for _, o := range opts {
-		o(&data)
-	}
+	(&OrganizationController{
+		OrganizationService: app.OrganizationService(),
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
+		router:              app.router,
+		sessions:            &sessions{app.sessions},
+	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
-	// Get flash msg
-	if msg := app.sessions.PopString(r.Context(), otf.FlashSessionKey); msg != "" {
-		data.Flash = template.HTML(msg)
-	}
+	(&WorkspaceController{
+		WorkspaceService:    app.WorkspaceService(),
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
+		router:              app.router,
+		sessions:            &sessions{app.sessions},
+	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 
-	return app.renderTemplate(name, w, data)
-}
-
-func filenameWithoutExtension(fname string) string {
-	return strings.TrimSuffix(fname, filepath.Ext(fname))
+	(&RunController{
+		RunService:          app.RunService(),
+		PlanService:         app.PlanService(),
+		templateDataFactory: app.templateDataFactory,
+		renderer:            app.renderer,
+		router:              app.router,
+		sessions:            &sessions{app.sessions},
+	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
 }

@@ -69,7 +69,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 }
 
 // Get retrieves a run obj with the given ID from the db.
-func (s RunService) Get(id string) (*otf.Run, error) {
+func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
 	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
 	if err != nil {
 		s.Error(err, "retrieving run", "id", id)
@@ -82,7 +82,7 @@ func (s RunService) Get(id string) (*otf.Run, error) {
 }
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
-func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
+func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	rl, err := s.db.List(opts)
 	if err != nil {
 		s.Error(err, "listing runs")
@@ -94,7 +94,7 @@ func (s RunService) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	return rl, nil
 }
 
-func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
+func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
 	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunApplyQueued)
 
@@ -112,7 +112,7 @@ func (s RunService) Apply(id string, opts otf.RunApplyOptions) error {
 	return err
 }
 
-func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
+func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
 	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Discard()
 	})
@@ -130,14 +130,14 @@ func (s RunService) Discard(id string, opts otf.RunDiscardOptions) error {
 
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
-func (s RunService) Cancel(id string, opts otf.RunCancelOptions) error {
+func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
 	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
-func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error {
+func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
 	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		if err := run.ForceCancel(); err != nil {
 			return err
@@ -153,7 +153,7 @@ func (s RunService) ForceCancel(id string, opts otf.RunForceCancelOptions) error
 	return err
 }
 
-func (s RunService) EnqueuePlan(id string) error {
+func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
 	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
 		run.UpdateStatus(otf.RunPlanQueued)
 		return nil
@@ -200,7 +200,7 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 // GetLogs gets the logs for a run, combining the logs of both its plan and
 // apply.
 func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
-	run, err := s.Get(id)
+	run, err := s.Get(ctx, id)
 	if err != nil {
 		s.Error(err, "getting run for reading logs", "id", id)
 		return nil, err
@@ -210,6 +210,18 @@ func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
 	go streamer.Stream(ctx)
 
 	return streamer, nil
+}
+
+// Delete deletes a terraform run.
+func (s RunService) Delete(ctx context.Context, id string) error {
+	if err := s.db.Delete(id); err != nil {
+		s.Error(err, "deleting run", "id", id)
+		return err
+	}
+
+	s.V(0).Info("deleted run", "id", id)
+
+	return nil
 }
 
 // GetPlanFile returns the plan file in json format for the run.

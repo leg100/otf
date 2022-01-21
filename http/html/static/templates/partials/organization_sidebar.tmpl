@@ -1,0 +1,9 @@
+{{ define "organization_sidebar" }}
+<nav class="sidebar">
+  <ul>
+    <li><a href="{{ .Relative "getOrganizationOverview" }}">overview</a></li>
+    <li><a href="{{ .Relative "listWorkspace" }}">workspaces</a></li>
+    <li><a href="{{ .Relative "editOrganization" }}">settings</a></li>
+  </ul>
+</nav>
+{{ end }}

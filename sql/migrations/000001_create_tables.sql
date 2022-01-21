@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     name text,
     session_remember integer,
     session_timeout integer,
+    UNIQUE (name),
     PRIMARY KEY (organization_id)
 );
 
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     trigger_prefixes text,
     working_directory text,
     organization_id text REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE,
+    UNIQUE (organization_id, name),
     PRIMARY KEY (workspace_id)
 );
 

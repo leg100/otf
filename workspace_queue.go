@@ -1,7 +1,9 @@
 package otf
 
+import "context"
+
 type PlanEnqueuer interface {
-	EnqueuePlan(id string) error
+	EnqueuePlan(ctx context.Context, id string) error
 }
 
 // Queue implementations are able to add and remove runs from a queue-like
@@ -29,12 +31,12 @@ func (q *WorkspaceQueue) Add(run *Run) error {
 	// Enqueue speculative runs onto (global) queue but don't make them active
 	// because they do not block pending runs
 	if run.IsSpeculative() {
-		return q.EnqueuePlan(run.ID)
+		return q.EnqueuePlan(context.Background(), run.ID)
 	}
 
 	// No run is current active, so make this run active
 	if q.Active == nil {
-		if err := q.EnqueuePlan(run.ID); err != nil {
+		if err := q.EnqueuePlan(context.Background(), run.ID); err != nil {
 			return err
 		}
 
@@ -60,7 +62,7 @@ func (q *WorkspaceQueue) Remove(run *Run) error {
 	if q.Active.ID == run.ID {
 		q.Active = nil
 		if len(q.Pending) > 0 {
-			if err := q.EnqueuePlan(q.Pending[0].ID); err != nil {
+			if err := q.EnqueuePlan(context.Background(), q.Pending[0].ID); err != nil {
 				return err
 			}
 

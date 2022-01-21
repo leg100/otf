@@ -21,7 +21,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"workspace_id" jsonapi:"primary,workspaces"`
+	ID string `db:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -36,7 +36,7 @@ type Workspace struct {
 	GlobalRemoteState          bool
 	Locked                     bool
 	MigrationEnvironment       string
-	Name                       string
+	Name                       string `schema:"workspace_name"`
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	StructuredRunOutputEnabled bool
@@ -101,6 +101,9 @@ type WorkspaceCreateOptions struct {
 	// Use ExecutionMode instead.
 	Operations *bool `jsonapi:"attr,operations,omitempty"`
 
+	// Organization the workspace belongs to. Required.
+	Organization string `schema:"organization_name"`
+
 	// Whether to queue all runs. Unless this is set to true, runs triggered by
 	// a webhook will not be queued until at least one run is manually queued.
 	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
@@ -129,7 +132,7 @@ type WorkspaceCreateOptions struct {
 
 	// The version of Terraform to use for this workspace. Upon creating a
 	// workspace, the latest version is selected unless otherwise specified.
-	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.
@@ -178,7 +181,7 @@ type WorkspaceUpdateOptions struct {
 	// When set to local, the workspace will be used for state storage only.
 	// This value must not be specified if operations is specified.
 	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty"`
+	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty" schema:"execution_mode"`
 
 	// Whether to filter runs based on the changed files in a VCS push. If
 	// enabled, the working directory and trigger prefixes describe a set of
@@ -209,7 +212,7 @@ type WorkspaceUpdateOptions struct {
 	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
 
 	// The version of Terraform to use for this workspace.
-	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty" schema:"terraform_version"`
 
 	// List of repository-root-relative paths which list all locations to be
 	// tracked for changes. See FileTriggersEnabled above for more details.
@@ -251,12 +254,12 @@ type WorkspaceList struct {
 }
 
 type WorkspaceService interface {
-	Create(ctx context.Context, org string, opts WorkspaceCreateOptions) (*Workspace, error)
+	Create(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	Get(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, id string, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, id string) (*Workspace, error)
+	Lock(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
 	Delete(ctx context.Context, spec WorkspaceSpecifier) error
 }
 
@@ -275,8 +278,8 @@ type WorkspaceSpecifier struct {
 	ID *string `db:"workspace_id"`
 
 	// Specify workspace using its name and organization
-	Name             *string
-	OrganizationName *string
+	Name             *string `schema:"workspace_name"`
+	OrganizationName *string `schema:"organization_name"`
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of
@@ -289,7 +292,7 @@ type WorkspaceListOptions struct {
 	Prefix *string `schema:"search[name],omitempty"`
 
 	// OrganizationName filters workspaces by organization name
-	OrganizationName *string
+	OrganizationName *string `schema:"organization_name,omitempty"`
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`

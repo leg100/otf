@@ -1,0 +1,27 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Workspaces{{ end }}
+
+
+{{ define "container-button" }}
+  <form action="{{ .Relative "newWorkspace" }}" method="GET">
+    <button type="submit">New Workspace</button>
+  </form>
+{{ end }}
+
+{{ define "content" }}
+  <table class="table">
+    <thead>
+    <tr>
+      <th scope="col">Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Content.List.Items }}
+      <tr>
+          <td><a href="{{ $.Relative "getWorkspace" "workspace_name" .Name }}">{{ .Name }}</a></td>
+        </tr>
+      {{ end }}
+    </tbody>
+  </table>
+{{ end }}

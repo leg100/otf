@@ -38,7 +38,7 @@ type SpoolerDaemon struct {
 }
 
 type RunLister interface {
-	List(otf.RunListOptions) (*otf.RunList, error)
+	List(context.Context, otf.RunListOptions) (*otf.RunList, error)
 }
 
 type Subscriber interface {
@@ -59,7 +59,7 @@ var (
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
 func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
-	runs, err := rl.List(otf.RunListOptions{Statuses: QueuedStatuses})
+	runs, err := rl.List(context.Background(), otf.RunListOptions{Statuses: QueuedStatuses})
 	if err != nil {
 		return nil, err
 	}

@@ -69,7 +69,7 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 	// being written to browser
 	buf := new(bytes.Buffer)
 
-	if err := tmpl.Execute(buf, data); err != nil {
+	if err := tmpl.Execute(buf, &data); err != nil {
 		return err
 	}
 

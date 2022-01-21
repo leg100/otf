@@ -3,34 +3,13 @@ package html
 import (
 	"net"
 	"net/http"
+	"path"
 
 	"github.com/leg100/otf"
 )
 
-var (
-	userSidebar = withSidebar("User Settings",
-		sidebarItem{
-			Name: "Profile",
-			Link: "/profile",
-		},
-		sidebarItem{
-			Name: "Sessions",
-			Link: "/sessions",
-		},
-		sidebarItem{
-			Name: "Tokens",
-			Link: "/tokens",
-		},
-	)
-)
-
 type Profile struct {
 	Username string
-}
-
-type Sessions struct {
-	ActiveToken string
-	Sessions    []*otf.Session
 }
 
 // githubLogin is called upon a successful Github login. A new user is created
@@ -80,7 +59,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
 
-	http.Redirect(w, r, "/profile", http.StatusFound)
+	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {
@@ -100,7 +79,9 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.render(r, "login.tmpl", w, nil); err != nil {
+	tdata := app.newTemplateData(r, nil)
+
+	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -114,11 +95,16 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
+func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, path.Join(r.URL.Path, "profile"), http.StatusFound)
+}
+
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
-	prof := Profile{Username: username}
 
-	if err := app.render(r, "profile.tmpl", w, &prof, userSidebar); err != nil {
+	tdata := app.newTemplateData(r, Profile{Username: username})
+
+	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -130,12 +116,15 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sessions := Sessions{
+	tdata := app.newTemplateData(r, struct {
+		ActiveToken string
+		Sessions    []*otf.Session
+	}{
 		ActiveToken: app.sessions.Token(r.Context()),
 		Sessions:    user.Sessions,
-	}
+	})
 
-	if err := app.render(r, "sessions.tmpl", w, &sessions, userSidebar); err != nil {
+	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -154,7 +143,7 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 
 	app.sessions.Put(r.Context(), otf.FlashSessionKey, "Revoked session")
 
-	http.Redirect(w, r, "/sessions", http.StatusFound)
+	http.Redirect(w, r, "../", http.StatusFound)
 }
 
 func (app *Application) currentUser(r *http.Request) string {

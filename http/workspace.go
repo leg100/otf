@@ -104,13 +104,15 @@ func (wl *WorkspaceList) ToDomain() *otf.WorkspaceList {
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.WorkspaceCreateOptions{}
+	opts := otf.WorkspaceCreateOptions{
+		Organization: vars["org"],
+	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	obj, err := s.WorkspaceService().Create(r.Context(), vars["org"], opts)
+	obj, err := s.WorkspaceService().Create(r.Context(), opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -227,7 +229,12 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := s.WorkspaceService().Lock(r.Context(), vars["id"], opts)
+	id := vars["id"]
+	spec := otf.WorkspaceSpecifier{
+		ID: &id,
+	}
+
+	obj, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		WriteError(w, http.StatusConflict, err)
 		return
@@ -242,7 +249,12 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	obj, err := s.WorkspaceService().Unlock(r.Context(), vars["id"])
+	id := vars["id"]
+	spec := otf.WorkspaceSpecifier{
+		ID: &id,
+	}
+
+	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		WriteError(w, http.StatusConflict, err)
 		return

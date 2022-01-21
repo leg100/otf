@@ -1,0 +1,12 @@
+{{ template "layout" . }}
+
+{{ define "title" }}{{ .Content.Name }}{{ end }}
+
+{{ define "sidebar" }}{{ template "workspace_sidebar" . }}{{ end }}
+
+{{ define "content" }}
+  <p><strong>Terraform Version:</strong> {{ .Content.TerraformVersion }}</p>
+  <form class="main-form" action="{{ .Relative "deleteWorkspace" }}" method="POST">
+      <button>Delete workspace</button>
+  </form>
+{{ end }}

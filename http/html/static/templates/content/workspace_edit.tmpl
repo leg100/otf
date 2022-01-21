@@ -1,0 +1,38 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Edit Workspace{{ end }}
+
+{{ define "content" }}
+  <form class="main-form" action="{{ .Relative "updateWorkspace" }}" method="POST">
+    <ul>
+      <li class="field">
+        <label for="name">Name</label>
+        <input type="text" name="name" id="name" value="{{ .Content.Workspace.Name }}" required>
+      </li>
+      <li class="field">
+        <label for="description">Description</label>
+        <input type="text" name="description" id="description" value="{{ .Content.Workspace.Description }}">
+      </li>
+      <li class="field">
+        <fieldset>
+          <legend>Execution mode</legend>
+          <ul class="radio">
+            <li>
+              <input type="radio" name="execution_mode" id="remote" value="remote" {{ if eq .Content.Workspace.ExecutionMode "remote" }}checked{{ end }}/><label for="remote">Remote</label>
+            </li>
+            <li>
+              <input type="radio" name="execution_mode" id="local" value="local" {{ if eq .Content.Workspace.ExecutionMode "local" }}checked{{ end }}/><label for="local">Local</label>
+            </li>
+          </ul>
+        </fieldset>
+      </li>
+      <li class="field">
+        <label for="terraform_version">Terraform Version</label>
+        <input type="text" name="terraform_version" id="terraform_version" value="{{ .Content.Workspace.TerraformVersion }}" required>
+      </li>
+      <li class="field">
+        <button>Edit workspace</button>
+      </li>
+    </ul>
+  </form>
+{{ end }}
