@@ -21,23 +21,23 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 	return s.CreateOrganizationFn(opts)
 }
 
-func (s OrganizationService) Get(name string) (*otf.Organization, error) {
+func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
 	return s.GetOrganizationFn(name)
 }
 
-func (s OrganizationService) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return s.ListOrganizationFn(opts)
 }
 
-func (s OrganizationService) Update(name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	return s.UpdateOrganizationFn(name, opts)
 }
 
-func (s OrganizationService) Delete(name string) error {
+func (s OrganizationService) Delete(ctx context.Context, name string) error {
 	return s.DeleteOrganizationFn(name)
 }
 
-func (s OrganizationService) GetEntitlements(name string) (*otf.Entitlements, error) {
+func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
 	return s.GetEntitlementsFn(name)
 }
 

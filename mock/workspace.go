@@ -9,17 +9,17 @@ import (
 var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	CreateWorkspaceFn func(org string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error)
+	CreateWorkspaceFn func(opts otf.WorkspaceCreateOptions) (*otf.Workspace, error)
 	UpdateWorkspaceFn func(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error)
 	GetWorkspaceFn    func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error)
 	ListWorkspaceFn   func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
 	DeleteWorkspaceFn func(spec otf.WorkspaceSpecifier) error
-	LockWorkspaceFn   func(id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error)
-	UnlockWorkspaceFn func(id string) (*otf.Workspace, error)
+	LockWorkspaceFn   func(spec otf.WorkspaceSpecifier, opts otf.WorkspaceLockOptions) (*otf.Workspace, error)
+	UnlockWorkspaceFn func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error)
 }
 
-func (s WorkspaceService) Create(ctx context.Context, org string, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	return s.CreateWorkspaceFn(org, opts)
+func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+	return s.CreateWorkspaceFn(opts)
 }
 
 func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
@@ -38,12 +38,12 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifie
 	return s.DeleteWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, id string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return s.LockWorkspaceFn(id, opts)
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	return s.LockWorkspaceFn(spec, opts)
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, id string) (*otf.Workspace, error) {
-	return s.UnlockWorkspaceFn(id)
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+	return s.UnlockWorkspaceFn(spec)
 }
 
 func NewWorkspace(name, id, org string) *otf.Workspace {
