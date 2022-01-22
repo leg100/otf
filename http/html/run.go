@@ -37,13 +37,13 @@ func (c *RunController) addRoutes(router *mux.Router) {
 func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunListOptions
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	runs, err := c.RunService.List(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {
-		writeError(w, err, http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -70,20 +70,20 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_new.tmpl", w, tdata); err != nil {
-		writeError(w, err, http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	created, err := c.RunService.Create(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -93,13 +93,13 @@ func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 	run, err := c.RunService.Get(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -127,14 +127,14 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_get.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *RunController) Delete(w http.ResponseWriter, r *http.Request) {
 	err := c.RunService.Delete(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

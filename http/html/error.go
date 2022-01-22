@@ -34,7 +34,7 @@ var (
 	errorTemplate = template.Must(template.New("error").Parse(errorTemplateContent))
 )
 
-func writeError(w http.ResponseWriter, err error, code int) {
+func writeError(w http.ResponseWriter, err string, code int) {
 	w.WriteHeader(code)
 
 	errorTemplate.Execute(w, err)

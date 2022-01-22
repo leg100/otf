@@ -37,13 +37,13 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspaces, err := c.WorkspaceService.List(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("workspace_list.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -64,14 +64,14 @@ func (c *WorkspaceController) New(w http.ResponseWriter, r *http.Request) {
 	tdata := c.newTemplateData(r, mux.Vars(r)["organization_name"])
 
 	if err := c.renderTemplate("workspace_new.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -94,33 +94,33 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceSpecifier
 
 	if err := decodeRouteVars(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspace, err := c.WorkspaceService.Get(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	tdata := c.newTemplateData(r, workspace)
 
 	if err := c.renderTemplate("workspace_get.tmpl", w, tdata); err != nil {
-		writeError(w, err, http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceSpecifier
 	if err := decodeRouteVars(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspace, err := c.WorkspaceService.Get(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -133,25 +133,25 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("workspace_edit.tmpl", w, tdata); err != nil {
-		writeError(w, err, http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpecifier
 	if err := decodeRouteVars(r, &spec); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	var opts otf.WorkspaceUpdateOptions
 	if err := decodeForm(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
 	workspace, err := c.WorkspaceService.Update(r.Context(), spec, opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -164,13 +164,13 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceSpecifier
 	if err := decodeRouteVars(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err := c.WorkspaceService.Delete(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -182,13 +182,13 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceSpecifier
 	if err := decodeRouteVars(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspace, err := c.WorkspaceService.Get(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -201,25 +201,25 @@ func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("workspace_lock_edit.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *WorkspaceController) UpdateLock(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpecifier
 	if err := decodeRouteVars(r, &spec); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	var opts otf.WorkspaceLockOptions
 	if err := decodeForm(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 	}
 
 	_, err := c.WorkspaceService.Lock(r.Context(), spec, opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -17,19 +17,19 @@ type Profile struct {
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := app.oauth.responseHandler(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	client, err := app.oauth.newClient(r.Context(), token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	user, _, err := client.Users.Get(r.Context(), "")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	// below relies on it having already been saved so we do so now.
 	_, _, err = app.sessions.Commit(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	opts := otf.UserLoginOptions{
@@ -47,7 +47,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := app.UserService().Login(r.Context(), opts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	// Populate session data
@@ -55,7 +55,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
 
@@ -82,13 +82,13 @@ func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	tdata := app.newTemplateData(r, nil)
 
 	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err := app.sessions.Destroy(r.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -105,14 +105,14 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	tdata := app.newTemplateData(r, Profile{Username: username})
 
 	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := app.UserService().Get(r.Context(), app.currentUser(r))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -125,19 +125,19 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 	})
 
 	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {
-		http.Error(w, "missing token", http.StatusUnprocessableEntity)
+		writeError(w, "missing token", http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := app.UserService().RevokeSession(r.Context(), token, app.currentUser(r)); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

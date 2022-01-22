@@ -40,13 +40,13 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 
 	// populate options struct from query and route paramters
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	workspaces, err := c.OrganizationService.List(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("organization_list.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -67,7 +67,7 @@ func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
 	tdata := c.newTemplateData(r, nil)
 
 	if err := c.renderTemplate("organization_new.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -75,7 +75,7 @@ func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
 func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -102,41 +102,41 @@ func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {
 func (c *OrganizationController) Overview(w http.ResponseWriter, r *http.Request) {
 	org, err := c.OrganizationService.Get(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	tdata := c.newTemplateData(r, org)
 
 	if err := c.renderTemplate("organization_get.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {
 	organization, err := c.OrganizationService.Get(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	tdata := c.newTemplateData(r, organization)
 
 	if err := c.renderTemplate("organization_edit.tmpl", w, tdata); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationUpdateOptions
 	if err := decodeForm(r, &opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	organization, err := c.OrganizationService.Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (c *OrganizationController) Delete(w http.ResponseWriter, r *http.Request) 
 
 	err := c.OrganizationService.Delete(r.Context(), organizationName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
