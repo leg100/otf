@@ -91,6 +91,22 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User
 	return user, nil
 }
 
+func (s UserService) UpdateActiveSession(ctx context.Context, user *otf.User) error {
+	session := user.ActiveSession
+	if session != nil {
+		return fmt.Errorf("user %s has no active session", user.ID)
+	}
+
+	if err := s.db.UpdateSession(ctx, session); err != nil {
+		s.Error(err, "updating active session", "username", user.Username)
+		return err
+	}
+
+	s.V(1).Info("updated active session", "username", user.Username)
+
+	return nil
+}
+
 func (s UserService) RevokeSession(ctx context.Context, token, username string) error {
 	if err := s.db.RevokeSession(ctx, token, username); err != nil {
 		s.Error(err, "revoking session", "username", username)

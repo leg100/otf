@@ -59,6 +59,10 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 	})
 }
 
+func (s *sessions) Put(ctx context.Context) {
+	user := s.getUserFromContext(ctx)
+}
+
 func (s *sessions) getUserFromContext(ctx context.Context) *otf.User {
 	c, ok := ctx.Value(userCtxKey).(*otf.User)
 	if !ok {
@@ -76,6 +80,32 @@ func (s *sessions) PopAllFlash(r *http.Request) (msgs []Flash) {
 	return
 }
 
+func (s *sessions) FlashSuccess(r *http.Request, msg ...string) error {
+	return s.flash(r, FlashSuccessType, msg...)
+}
+
+func (s *sessions) FlashError(r *http.Request, msg ...string) error {
+	return s.flash(r, FlashErrorType, msg...)
+}
+
+func (s *sessions) flash(r *http.Request, t FlashType, msg ...string) error {
+	user := s.getUserFromContext(r.Context())
+	if user.ActiveSession == nil {
+		return fmt.Errorf("user %s has no active session", user.ID)
+	}
+
+	user.ActiveSession.Data[otf.FlashSessionKey] = Flash{
+		Type:    t,
+		Message: fmt.Sprint(convertStringSliceToInterfaceSlice(msg)...),
+	}
+
+	if err := s.UserService.UpdateSession(r.Context(), user.ActiveSession); err != nil {
+		return fmt.Errorf("saving flash message in session backend: %w", err)
+	}
+
+	return nil
+}
+
 func (s *sessions) CurrentUser(r *http.Request) string {
 	return s.GetString(r.Context(), otf.UsernameSessionKey)
 }
@@ -91,21 +121,6 @@ const (
 	FlashSuccessType = "success"
 	FlashErrorType   = "error"
 )
-
-func (s *sessions) FlashSuccess(r *http.Request, msg ...string) {
-	s.flash(r, FlashSuccessType, msg...)
-}
-
-func (s *sessions) FlashError(r *http.Request, msg ...string) {
-	s.flash(r, FlashErrorType, msg...)
-}
-
-func (s *sessions) flash(r *http.Request, t FlashType, msg ...string) {
-	s.Put(r.Context(), otf.FlashSessionKey, Flash{
-		Type:    t,
-		Message: fmt.Sprint(convertStringSliceToInterfaceSlice(msg)...),
-	})
-}
 
 func convertStringSliceToInterfaceSlice(ss []string) (is []interface{}) {
 	for _, s := range ss {

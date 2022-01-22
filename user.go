@@ -2,12 +2,12 @@ package otf
 
 import (
 	"context"
+	"database/sql/driver"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
-
-	"github.com/alexedwards/scs/v2"
 )
 
 const (
@@ -52,6 +52,9 @@ type UserService interface {
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
+	// UpdateActiveSession persists any updates to the user's active session
+	UpdateActiveSession(ctx context.Context, user *User) error
+
 	// Revoke a session belong to user
 	RevokeSession(ctx context.Context, token, username string) error
 }
@@ -67,6 +70,9 @@ type UserStore interface {
 
 	// LinkSession associates the session with the user.
 	LinkSession(ctx context.Context, session *Session, user *User) error
+
+	// UpdateSession persists any updates to a user's session
+	UpdateSession(ctx context.Context, session *Session) error
 
 	RevokeSession(ctx context.Context, token, username string) error
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
@@ -95,10 +101,27 @@ func (spec *UserSpecifier) KeyValue() []interface{} {
 type Session struct {
 	Token  string
 	Expiry time.Time
-	Data   []byte
+	Data   SessionData
 
 	// Session belongs to a user
 	UserID string
+}
+
+// SessionData is arbitrary session data
+type SessionData map[string]interface{}
+
+// Value: struct -> db
+func (sd SessionData) Value() (driver.Value, error) {
+	return json.Marshal(sd)
+}
+
+// Scan: db -> struct
+func (sd SessionData) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, &sd)
 }
 
 func NewUser(username string) *User {
@@ -121,7 +144,7 @@ func (u *User) AttachNewSession() (*Session, error) {
 
 	session := Session{
 		Token:  token,
-		Data:   make([]byte, 0),
+		Data:   SessionData{},
 		Expiry: time.Now().Add(DefaultSessionExpiry),
 		UserID: u.ID,
 	}
@@ -137,25 +160,6 @@ func (u *User) AttachNewSession() (*Session, error) {
 // activeToken being the token for the active session.
 func (s *Session) IsActive(activeToken string) bool {
 	return s.Token == activeToken
-}
-
-// Address gets the source IP address for the user session.
-func (s *Session) Address() (string, error) {
-	data, err := s.decode()
-	if err != nil {
-		return "", err
-	}
-
-	addr, ok := data[AddressSessionKey]
-	if !ok {
-		return "", nil
-	}
-	return addr.(string), nil
-}
-
-func (s *Session) decode() (map[string]interface{}, error) {
-	_, data, err := (scs.GobCodec{}).Decode(s.Data)
-	return data, err
 }
 
 func generateSessionToken() (string, error) {

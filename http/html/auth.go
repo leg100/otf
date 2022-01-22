@@ -35,28 +35,14 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := app.sessions.getUserFromContext(ctx)
+	anon := app.sessions.getUserFromContext(ctx)
 
-	if err := user.Promote(*guser.Login); err != nil {
+	// promote anon user to auth user
+	user, err := app.UserService().Promote(ctx, anon, *guser.Login)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	app.UserService().Promote(ctx, user)
-
-	opts := otf.UserLoginOptions{
-		Username:     *guser.Login,
-		SessionToken: app.sessions.Token(ctx),
-	}
-
-	// promote anon user to auth user
-
-	if err := app.UserService().Login(ctx, opts); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	// Populate session data
-	app.sessions.Put(ctx, otf.UsernameSessionKey, *guser.Login)
 
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
-	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
 )
 
@@ -29,7 +28,7 @@ func init() {
 // templateDataFactory produces templateData structs
 type templateDataFactory struct {
 	// for extracting info from current session
-	sessions *scs.SessionManager
+	sessions *sessions
 
 	// provide access to routes
 	router *mux.Router
@@ -39,7 +38,7 @@ func (f *templateDataFactory) newTemplateData(r *http.Request, content interface
 	return templateData{
 		Content:  content,
 		router:   &router{f.router},
-		sessions: &sessions{f.sessions},
+		sessions: f.sessions,
 		request:  r,
 	}
 }

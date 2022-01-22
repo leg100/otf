@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
@@ -67,11 +68,13 @@ func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
 		return nil, fmt.Errorf("building SQL query: %w", err)
 	}
 
+	// get user
 	var user otf.User
 	if err := db.DB.Get(&user, sql, args...); err != nil {
 		return nil, databaseError(err, sql)
 	}
 
+	// ...and their sessions
 	user.Sessions, err = listSessions(ctx, db.DB, user.ID)
 	if err != nil {
 		return nil, err
@@ -99,20 +102,51 @@ func (db UserDB) CreateSession(ctx context.Context, session *otf.Session, user *
 	return nil
 }
 
-// LinkSession (re-)associates a session with a user.
-func (db UserDB) LinkSession(ctx context.Context, session *otf.Session, user *otf.User) error {
-	updateBuilder := psql.Update("sessions").
-		Set("user_id", user.ID).
-		Where("token = ?", session.Token).
-		Suffix("RETURNING token")
+// UpdateSession updates a session row in the sessions table.
+func (db UserDB) UpdateSession(ctx context.Context, session *otf.Session) error {
+	// get session
+	existing, err := getSession(ctx, db.DB, session.Token)
+	if err != nil {
+		return err
+	}
+
+	updateBuilder := psql.Update("sessions").Where("token = ?", session.Token)
+
+	if !reflect.DeepEqual(existing.Data, session.Data) {
+		updateBuilder = updateBuilder.Set("data", session.Data)
+	}
+
+	if !reflect.DeepEqual(existing.Expiry, session.Expiry) {
+		updateBuilder = updateBuilder.Set("expiry", session.Expiry)
+	}
 
 	sql, args, err := updateBuilder.ToSql()
 	if err != nil {
 		return err
 	}
 
-	var result string
-	if err := db.DB.Get(&result, sql, args...); err != nil {
+	_, err = db.DB.Exec(sql, args...)
+	if err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+// LinkSession (re-)associates a session with a user.
+func (db UserDB) LinkSession(ctx context.Context, session *otf.Session, user *otf.User) error {
+	updateBuilder := psql.
+		Update("sessions").
+		Set("user_id", user.ID).
+		Where("token = ?", session.Token)
+
+	sql, args, err := updateBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.DB.Exec(sql, args...)
+	if err != nil {
 		return databaseError(err, sql)
 	}
 
@@ -159,4 +193,23 @@ func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session
 	}
 
 	return sessions, nil
+}
+
+func getSession(ctx context.Context, db Getter, token string) (*otf.Session, error) {
+	selectBuilder := psql.
+		Select("*").
+		From("sessions").
+		Where("token = ?", token)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("building SQL query: %w", err)
+	}
+
+	var session otf.Session
+	if err := db.Get(&session, sql, args...); err != nil {
+		return nil, databaseError(err, sql)
+	}
+
+	return &session, nil
 }
