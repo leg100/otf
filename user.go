@@ -2,6 +2,9 @@ package otf
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
@@ -12,6 +15,10 @@ const (
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
 	FlashSessionKey    = "flash"
+
+	DefaultSessionExpiry = 24 * time.Hour
+
+	AnonymousUsername string = "anonymous"
 )
 
 // User represents an oTF user account.
@@ -27,29 +34,26 @@ type User struct {
 
 	// A user has many sessions
 	Sessions []*Session
+
+	// The currently active session. The value is nil if there is no active
+	// session.
+	ActiveSession *Session
 }
 
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
-	// Login logs a user into oTF. A user is created if they don't already
-	// exist. The user is associated with an active session.
-	Login(ctx context.Context, opts UserLoginOptions) error
+	// NewAnonymousSession creates a new session for the anonymous user.
+	NewAnonymousSession(ctx context.Context) (*User, error)
 
-	// Get retrieves a user using their username
-	Get(ctx context.Context, username string) (*User, error)
+	// Promote promotes an anonymous user to the named user.
+	Promote(ctx context.Context, anon *User, username string) (*User, error)
+
+	// Get retrieves a user according to the spec.
+	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
 	// Revoke a session belong to user
 	RevokeSession(ctx context.Context, token, username string) error
-}
-
-// UserLoginOptions are the options for logging a user into the system.
-type UserLoginOptions struct {
-	// Username of the user.
-	Username string
-
-	// SessionToken is the token for the active session of the user.
-	SessionToken string
 }
 
 // UserStore is a persistence store for user accounts and their associated
@@ -57,10 +61,34 @@ type UserLoginOptions struct {
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
 	List(ctx context.Context) ([]*User, error)
-	LinkSession(ctx context.Context, token, username string) error
+
+	// CreateSession persists session to the store.
+	CreateSession(ctx context.Context, session *Session) error
+
+	// LinkSession associates the session with the user.
+	LinkSession(ctx context.Context, session *Session, user *User) error
+
 	RevokeSession(ctx context.Context, token, username string) error
-	Get(ctx context.Context, username string) (*User, error)
+	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 	Delete(ctx context.Context, userID string) error
+}
+
+type UserSpecifier struct {
+	Username *string
+	Token    *string
+}
+
+// KeyValue returns the user specifier in key-value form. Useful for logging
+// purposes.
+func (spec *UserSpecifier) KeyValue() []interface{} {
+	if spec.Username != nil {
+		return []interface{}{"username", *spec.Username}
+	}
+	if spec.Token != nil {
+		return []interface{}{"token", *spec.Token}
+	}
+
+	return []interface{}{"invalid user spec", ""}
 }
 
 // Session is a user session
@@ -73,14 +101,36 @@ type Session struct {
 	UserID string
 }
 
-func NewUser(opts UserLoginOptions) *User {
+func NewUser(username string) *User {
 	user := User{
 		ID:         NewID("user"),
 		Timestamps: NewTimestamps(),
-		Username:   opts.Username,
+		Username:   username,
 	}
 
 	return &user
+}
+
+// AttachNewSession creates and attaches a new session to the user. The new
+// session is made the active session for the user.
+func (u *User) AttachNewSession() (*Session, error) {
+	token, err := generateSessionToken()
+	if err != nil {
+		return nil, fmt.Errorf("generating session token: %w", err)
+	}
+
+	session := Session{
+		Token:  token,
+		Data:   make([]byte, 0),
+		Expiry: time.Now().Add(DefaultSessionExpiry),
+		UserID: u.ID,
+	}
+
+	u.Sessions = append(u.Sessions, &session)
+
+	u.ActiveSession = &session
+
+	return &session, nil
 }
 
 // IsActive queries whether session is the active session. Relies on the
@@ -106,4 +156,13 @@ func (s *Session) Address() (string, error) {
 func (s *Session) decode() (map[string]interface{}, error) {
 	_, data, err := (scs.GobCodec{}).Decode(s.Data)
 	return data, err
+}
+
+func generateSessionToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }

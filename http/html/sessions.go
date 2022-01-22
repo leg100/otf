@@ -1,28 +1,96 @@
 package html
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/leg100/otf"
 )
 
+// unexported key type prevents collisions
+type ctxKey int
+
 const (
-	FlashSuccessType = "success"
-	FlashErrorType   = "error"
+	userCtxKey = iota
 )
 
+// sessions is a user session manager.
 type sessions struct {
-	*scs.SessionManager
+	// perform actions against system users and sessions
+	otf.UserService
+
+	// session cookie config
+	cookie *http.Cookie
 }
 
-type FlashType string
+// Load provides middleware that loads and attaches the User to the current
+// request's context. It looks for a cookie containing a token on the request
+// and if found uses it retrieve and attach the User. Otherwise a new session is
+// created for the anonymous user.
+func (s *sessions) Load(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// the user to attach to the request ctx
+		var user *otf.User
+
+		cookie, err := r.Cookie(s.cookie.Name)
+		if err == nil {
+			user, err = s.UserService.Get(r.Context(), otf.UserSpecifier{Token: &cookie.Value})
+			if err != otf.ErrResourceNotFound && err != nil {
+				// encountered error other than not found error
+				writeError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// cookie nor user found
+		if err != nil {
+			user, err = s.UserService.NewAnonymousSession(r.Context())
+			if err != nil {
+				writeError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *sessions) getUserFromContext(ctx context.Context) *otf.User {
+	c, ok := ctx.Value(userCtxKey).(*otf.User)
+	if !ok {
+		panic("no user in context")
+	}
+	return c
+}
+
+// PopFlashMessages retrieves all flash messages from the current session. The
+// messages are thereafter discarded.
+func (s *sessions) PopAllFlash(r *http.Request) (msgs []Flash) {
+	if msg := s.Pop(r.Context(), otf.FlashSessionKey); msg != nil {
+		msgs = append(msgs, msg.(Flash))
+	}
+	return
+}
+
+func (s *sessions) CurrentUser(r *http.Request) string {
+	return s.GetString(r.Context(), otf.UsernameSessionKey)
+}
 
 type Flash struct {
 	Type    FlashType
 	Message string
 }
+
+type FlashType string
+
+const (
+	FlashSuccessType = "success"
+	FlashErrorType   = "error"
+)
 
 func (s *sessions) FlashSuccess(r *http.Request, msg ...string) {
 	s.flash(r, FlashSuccessType, msg...)
@@ -44,17 +112,4 @@ func convertStringSliceToInterfaceSlice(ss []string) (is []interface{}) {
 		is = append(is, interface{}(s))
 	}
 	return
-}
-
-// PopFlashMessages retrieves all flash messages from the current session. The
-// messages are thereafter discarded.
-func (s *sessions) PopAllFlash(r *http.Request) (msgs []Flash) {
-	if msg := s.Pop(r.Context(), otf.FlashSessionKey); msg != nil {
-		msgs = append(msgs, msg.(Flash))
-	}
-	return
-}
-
-func (s *sessions) CurrentUser(r *http.Request) string {
-	return s.GetString(r.Context(), otf.UsernameSessionKey)
 }

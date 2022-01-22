@@ -15,6 +15,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     PRIMARY KEY (token)
 );
 
+INSERT INTO users (
+    user_id,
+    username,
+    created_at,
+    updated_at,
+    anonymous
+) VALUES (
+    'user-anonymous',
+    'anonymous',
+    now(),
+    now(),
+)
+
 -- +goose Down
+DELETE FROM users WHERE user_id = 'user-anonymous';
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;

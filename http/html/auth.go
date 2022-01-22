@@ -15,49 +15,54 @@ type Profile struct {
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	token, err := app.oauth.responseHandler(r)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	client, err := app.oauth.newClient(r.Context(), token)
+	client, err := app.oauth.newClient(ctx, token)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	user, _, err := client.Users.Get(r.Context(), "")
+	guser, _, err := client.Users.Get(ctx, "")
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// We cannot rely on the LoadAndSave() middleware to save session token to
-	// DB because it only does so after this handler has finished, but Login()
-	// below relies on it having already been saved so we do so now.
-	_, _, err = app.sessions.Commit(r.Context())
-	if err != nil {
+	user := app.sessions.getUserFromContext(ctx)
+
+	if err := user.Promote(*guser.Login); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	app.UserService().Promote(ctx, user)
 
 	opts := otf.UserLoginOptions{
-		Username:     *user.Login,
-		SessionToken: app.sessions.Token(r.Context()),
+		Username:     *guser.Login,
+		SessionToken: app.sessions.Token(ctx),
 	}
 
-	if err := app.UserService().Login(r.Context(), opts); err != nil {
+	// promote anon user to auth user
+
+	if err := app.UserService().Login(ctx, opts); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	// Populate session data
-	app.sessions.Put(r.Context(), otf.UsernameSessionKey, *user.Login)
+	app.sessions.Put(ctx, otf.UsernameSessionKey, *guser.Login)
 
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
-	app.sessions.Put(r.Context(), otf.AddressSessionKey, addr)
+	app.sessions.Put(ctx, otf.AddressSessionKey, addr)
 
 	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }

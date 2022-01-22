@@ -13,6 +13,9 @@ var (
 
 	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
 VALUES (:user_id, :created_at, :updated_at, :username)`
+
+	insertSessionSQL = `INSERT INTO sessions (token, data, created_at, updated_at, user_id)
+VALUES (:token, :data, :created_at, :updated_at, :user_id)`
 )
 
 type UserDB struct {
@@ -77,11 +80,30 @@ func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
 	return &user, nil
 }
 
-// LinkSession links a session record to a user.
-func (db UserDB) LinkSession(ctx context.Context, token, userID string) error {
+// CreateSession inserts the session, associating it with the user.
+func (db UserDB) CreateSession(ctx context.Context, session *otf.Session, user *otf.User) error {
+	sql, args, err := db.BindNamed(insertSessionSQL, session)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	var result string
+	if err := db.DB.Get(&result, sql, args...); err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+// LinkSession (re-)associates a session with a user.
+func (db UserDB) LinkSession(ctx context.Context, session *otf.Session, user *otf.User) error {
 	updateBuilder := psql.Update("sessions").
-		Set("user_id", userID).
-		Where("token = ?", token).
+		Set("user_id", user.ID).
+		Where("token = ?", session.Token).
 		Suffix("RETURNING token")
 
 	sql, args, err := updateBuilder.ToSql()

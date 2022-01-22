@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -22,39 +23,70 @@ func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 	}
 }
 
-// Login logs a user into the system by linking their current session with their
-// user account. If the user account does not exist it is created. Note:
-// authentication should be handled by the caller.
-func (s UserService) Login(ctx context.Context, opts otf.UserLoginOptions) error {
-	user, err := s.db.Get(ctx, opts.Username)
-	if err == otf.ErrResourceNotFound {
-		user, err = s.create(ctx, opts)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		s.Error(err, "retrieving user", "username", opts.Username)
-		return err
+// NewAnonymousSession creates a new session for the anonymous user (all
+// sessions start their life as anonymous sessions) and returns the anonymous
+// user.
+func (s UserService) NewAnonymousSession(ctx context.Context) (*otf.User, error) {
+	anon, err := s.db.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
+	if err != nil {
+		s.Error(err, "retrieving user", "username", anon.Username)
+		return nil, err
 	}
 
-	if err := s.db.LinkSession(ctx, opts.SessionToken, user.ID); err != nil {
-		s.Error(err, "user login", "username", opts.Username)
-		return err
+	session, err := anon.AttachNewSession()
+	if err != nil {
+		s.Error(err, "attaching session", "username", anon.Username)
+		return nil, err
 	}
 
-	s.Info("user logged in", "username", opts.Username)
+	if err := s.db.CreateSession(ctx, session); err != nil {
+		s.Error(err, "creating session", "username", anon.Username)
+		return nil, err
+	}
 
-	return nil
+	return anon, nil
 }
 
-func (s UserService) Get(ctx context.Context, username string) (*otf.User, error) {
-	user, err := s.db.Get(ctx, username)
-	if err != nil {
+// Promote transfers the anonymous user's session to a named user with the given
+// username. If no such user exists, a new user is created.
+func (s UserService) Promote(ctx context.Context, anon *otf.User, username string) (*otf.User, error) {
+	if total := len(anon.Sessions); total != 0 {
+		return nil, fmt.Errorf("an anonymous user must always have one session but %d were found", total)
+	}
+
+	session := anon.Sessions[0]
+
+	// Get named user; if not exist create one
+	named, err := s.db.Get(ctx, otf.UserSpecifier{Username: &username})
+	if err == otf.ErrResourceNotFound {
+		named, err = s.create(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
 		s.Error(err, "retrieving user", "username", username)
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved user", "username", username)
+	// Transfer session from anon to named user
+	if err := s.db.LinkSession(ctx, session, named); err != nil {
+		s.Error(err, "linking session", "username", username)
+		return nil, err
+	}
+
+	s.Info("promoted user", "username", username)
+
+	return named, nil
+}
+
+func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
+	user, err := s.db.Get(ctx, spec)
+	if err != nil {
+		s.Error(err, "retrieving user", spec.KeyValue()...)
+		return nil, err
+	}
+
+	s.V(2).Info("retrieved user", "username", user.Username)
 
 	return user, nil
 }
@@ -70,14 +102,14 @@ func (s UserService) RevokeSession(ctx context.Context, token, username string) 
 	return nil
 }
 
-func (s UserService) create(ctx context.Context, opts otf.UserLoginOptions) (*otf.User, error) {
-	user := otf.NewUser(opts)
+func (s UserService) create(ctx context.Context, username string) (*otf.User, error) {
+	user := otf.NewUser(username)
 
 	if err := s.db.Create(ctx, user); err != nil {
-		s.Error(err, "creating user", "username", opts.Username)
+		s.Error(err, "creating user", "username", username)
 		return nil, err
 	}
-	s.Info("created user", "username", opts.Username)
+	s.Info("created user", "username", user.Username)
 
 	return user, nil
 }
