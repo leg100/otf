@@ -54,7 +54,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 	}
 
 	sessions := sessions{
-		UserService: services.UserService(),
+		ActiveUserService: &ActiveUserService{services.UserService()},
 	}
 
 	app := &Application{

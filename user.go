@@ -34,17 +34,43 @@ type User struct {
 
 	// A user has many sessions
 	Sessions []*Session
+}
 
-	// The currently active session. The value is nil if there is no active
-	// session.
-	ActiveSession *Session
+// AttachNewSession creates and attaches a new session to the user. The new
+// session is made the active session for the user.
+func (u *User) AttachNewSession() (*Session, error) {
+	token, err := generateSessionToken()
+	if err != nil {
+		return nil, fmt.Errorf("generating session token: %w", err)
+	}
+
+	session := Session{
+		Token:  token,
+		Data:   SessionData{},
+		Expiry: time.Now().Add(DefaultSessionExpiry),
+		UserID: u.ID,
+	}
+
+	u.Sessions = append(u.Sessions, &session)
+
+	return &session, nil
+}
+
+// IsAuthenticated determines if the user is authenticated, i.e. not an
+// anonymous user.
+func (u *User) IsAuthenticated() bool {
+	return u.Username != AnonymousUsername
+}
+
+func (u *User) String() string {
+	return u.Username
 }
 
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
 	// NewAnonymousSession creates a new session for the anonymous user.
-	NewAnonymousSession(ctx context.Context) (*User, error)
+	NewAnonymousSession(ctx context.Context) (*User, *Session, error)
 
 	// Promote promotes an anonymous user to the named user.
 	Promote(ctx context.Context, anon *User, username string) (*User, error)
@@ -52,8 +78,8 @@ type UserService interface {
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
-	// UpdateActiveSession persists any updates to the user's active session
-	UpdateActiveSession(ctx context.Context, user *User) error
+	// UpdateSession persists any updates to the user's active session
+	UpdateSession(ctx context.Context, user *User) error
 
 	// Revoke a session belong to user
 	RevokeSession(ctx context.Context, token, username string) error
@@ -132,34 +158,6 @@ func NewUser(username string) *User {
 	}
 
 	return &user
-}
-
-// AttachNewSession creates and attaches a new session to the user. The new
-// session is made the active session for the user.
-func (u *User) AttachNewSession() (*Session, error) {
-	token, err := generateSessionToken()
-	if err != nil {
-		return nil, fmt.Errorf("generating session token: %w", err)
-	}
-
-	session := Session{
-		Token:  token,
-		Data:   SessionData{},
-		Expiry: time.Now().Add(DefaultSessionExpiry),
-		UserID: u.ID,
-	}
-
-	u.Sessions = append(u.Sessions, &session)
-
-	u.ActiveSession = &session
-
-	return &session, nil
-}
-
-// IsActive queries whether session is the active session. Relies on the
-// activeToken being the token for the active session.
-func (s *Session) IsActive(activeToken string) bool {
-	return s.Token == activeToken
 }
 
 func generateSessionToken() (string, error) {

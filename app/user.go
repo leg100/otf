@@ -25,26 +25,26 @@ func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 
 // NewAnonymousSession creates a new session for the anonymous user (all
 // sessions start their life as anonymous sessions) and returns the anonymous
-// user.
-func (s UserService) NewAnonymousSession(ctx context.Context) (*otf.User, error) {
+// user and the new session.
+func (s UserService) NewAnonymousSession(ctx context.Context) (*otf.User, *otf.Session, error) {
 	anon, err := s.db.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
 	if err != nil {
 		s.Error(err, "retrieving user", "username", anon.Username)
-		return nil, err
+		return nil, nil, err
 	}
 
 	session, err := anon.AttachNewSession()
 	if err != nil {
 		s.Error(err, "attaching session", "username", anon.Username)
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := s.db.CreateSession(ctx, session); err != nil {
 		s.Error(err, "creating session", "username", anon.Username)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return anon, nil
+	return anon, session, nil
 }
 
 // Promote transfers the anonymous user's session to a named user with the given
@@ -91,18 +91,27 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User
 	return user, nil
 }
 
-func (s UserService) UpdateActiveSession(ctx context.Context, user *otf.User) error {
-	session := user.ActiveSession
-	if session != nil {
-		return fmt.Errorf("user %s has no active session", user.ID)
-	}
+// TransferSession transfers a session from one user to another.
+func (s UserService) TransferSession(ctx context.Context, session *otf.Session, from, to *otf.User) error {
+	session.UserID = to.ID
 
 	if err := s.db.UpdateSession(ctx, session); err != nil {
-		s.Error(err, "updating active session", "username", user.Username)
+		s.Error(err, "transferring session", "from", from, "to", to)
 		return err
 	}
 
-	s.V(1).Info("updated active session", "username", user.Username)
+	s.V(1).Info("transferred session", "from", from, "to", to)
+
+	return nil
+}
+
+func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
+	if err := s.db.UpdateSession(ctx, session); err != nil {
+		s.Error(err, "updating session", "username", user.Username)
+		return err
+	}
+
+	s.V(1).Info("updated session", "username", user.Username)
 
 	return nil
 }

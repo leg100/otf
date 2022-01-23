@@ -8,10 +8,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-type Profile struct {
-	Username string
-}
-
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
@@ -37,13 +33,6 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 
 	anon := app.sessions.getUserFromContext(ctx)
 
-	// promote anon user to auth user
-	user, err := app.UserService().Promote(ctx, anon, *guser.Login)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -53,14 +42,12 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }
 
-func (app *Application) isAuthenticated(r *http.Request) bool {
-	return app.sessions.Exists(r.Context(), otf.UsernameSessionKey)
-}
-
+// requireAuthentication is middleware that insists on the user being
+// authenticated before passing on the request.
 func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		if !app.isAuthenticated(r) {
-			http.Redirect(w, r, "/login", http.StatusFound)
+		if !app.sessions.IsAuthenticated(r.Context()) {
+			http.Redirect(w, r, app.route("login"), http.StatusFound)
 			return
 		}
 
@@ -91,9 +78,9 @@ func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	username := app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
+	user := app.sessions.getUserFromContext(r.Context())
 
-	tdata := app.newTemplateData(r, Profile{Username: username})
+	tdata := app.newTemplateData(r, user)
 
 	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -101,19 +88,9 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := app.UserService().Get(r.Context(), app.currentUser(r))
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	user := app.sessions.getUserFromContext(r.Context())
 
-	tdata := app.newTemplateData(r, struct {
-		ActiveToken string
-		Sessions    []*otf.Session
-	}{
-		ActiveToken: app.sessions.Token(r.Context()),
-		Sessions:    user.Sessions,
-	})
+	tdata := app.newTemplateData(r, user)
 
 	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
