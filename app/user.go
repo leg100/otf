@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -23,60 +22,35 @@ func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 	}
 }
 
-// NewAnonymousSession creates a new session for the anonymous user (all
-// sessions start their life as anonymous sessions) and returns the anonymous
-// user and the new session.
-func (s UserService) NewAnonymousSession(ctx context.Context) (*otf.User, *otf.Session, error) {
-	anon, err := s.db.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
-	if err != nil {
-		s.Error(err, "retrieving user", "username", anon.Username)
-		return nil, nil, err
+func (s UserService) Create(ctx context.Context, username string) (*otf.User, error) {
+	user := otf.NewUser(username)
+
+	if err := s.db.Create(ctx, user); err != nil {
+		s.Error(err, "creating user", "user", user)
+		return nil, err
 	}
 
-	session, err := anon.AttachNewSession()
+	s.V(1).Info("created user", "user", user)
+
+	return user, nil
+}
+
+// CreateSession creates a session and adds it to the user.
+func (s UserService) CreateSession(ctx context.Context, user *otf.User, data otf.SessionData) (*otf.Session, error) {
+	session, err := user.AttachNewSession(data)
 	if err != nil {
-		s.Error(err, "attaching session", "username", anon.Username)
-		return nil, nil, err
+		s.Error(err, "attaching session", "user", user)
+		return nil, err
 	}
 
 	if err := s.db.CreateSession(ctx, session); err != nil {
-		s.Error(err, "creating session", "username", anon.Username)
-		return nil, nil, err
-	}
-
-	return anon, session, nil
-}
-
-// Promote transfers the anonymous user's session to a named user with the given
-// username. If no such user exists, a new user is created.
-func (s UserService) Promote(ctx context.Context, anon *otf.User, username string) (*otf.User, error) {
-	if total := len(anon.Sessions); total != 0 {
-		return nil, fmt.Errorf("an anonymous user must always have one session but %d were found", total)
-	}
-
-	session := anon.Sessions[0]
-
-	// Get named user; if not exist create one
-	named, err := s.db.Get(ctx, otf.UserSpecifier{Username: &username})
-	if err == otf.ErrResourceNotFound {
-		named, err = s.create(ctx, username)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		s.Error(err, "retrieving user", "username", username)
+		s.Error(err, "creating session", "user", user)
 		return nil, err
 	}
 
-	// Transfer session from anon to named user
-	if err := s.db.LinkSession(ctx, session, named); err != nil {
-		s.Error(err, "linking session", "username", username)
-		return nil, err
-	}
+	s.V(1).Info("created session", "user", user)
 
-	s.Info("promoted user", "username", username)
-
-	return named, nil
+	return session, nil
 }
 
 func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
@@ -91,38 +65,55 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User
 	return user, nil
 }
 
-// TransferSession transfers a session from one user to another.
-func (s UserService) TransferSession(ctx context.Context, session *otf.Session, from, to *otf.User) error {
-	session.UserID = to.ID
+func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
+	return s.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
+}
 
-	if err := s.db.UpdateSession(ctx, session); err != nil {
+// TransferSession transfers a session from one user to another.
+func (s UserService) TransferSession(ctx context.Context, token string, from, to *otf.User) (*otf.Session, error) {
+	updated, err := s.db.UpdateSession(ctx, token, func(session *otf.Session) error {
+		from.TransferSession(session, to)
+		return nil
+	})
+	if err != nil {
 		s.Error(err, "transferring session", "from", from, "to", to)
-		return err
+		return nil, err
 	}
 
 	s.V(1).Info("transferred session", "from", from, "to", to)
 
-	return nil
+	return updated, nil
 }
 
-func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
-	if err := s.db.UpdateSession(ctx, session); err != nil {
-		s.Error(err, "updating session", "username", user.Username)
+// UpdateSessionData updates a key value in a user's session
+func (s UserService) UpdateSessionData(ctx context.Context, token, key string, val interface{}) error {
+	_, err := s.db.UpdateSession(ctx, token, func(session *otf.Session) error {
+		session.Data[key] = val
+		return nil
+	})
+	if err != nil {
+		s.Error(err, "updating session data", "key", key, "value", val)
 		return err
 	}
 
-	s.V(1).Info("updated session", "username", user.Username)
+	s.V(1).Info("updated session data", "key", key, "value", val)
 
 	return nil
 }
 
-func (s UserService) RevokeSession(ctx context.Context, token, username string) error {
-	if err := s.db.RevokeSession(ctx, token, username); err != nil {
-		s.Error(err, "revoking session", "username", username)
+func (s UserService) DeleteSession(ctx context.Context, token string) error {
+	// Retrieve user purely for logging purposes
+	user, err := s.Get(ctx, otf.UserSpecifier{Token: &token})
+	if err != nil {
 		return err
 	}
 
-	s.V(1).Info("revoked session", "username", username)
+	if err := s.db.DeleteSession(ctx, token); err != nil {
+		s.Error(err, "revoking session", "username", user)
+		return err
+	}
+
+	s.V(1).Info("revoked session", "username", user)
 
 	return nil
 }

@@ -1,7 +1,6 @@
 package html
 
 import (
-	"net"
 	"net/http"
 	"path"
 
@@ -31,13 +30,24 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	anon := app.sessions.getUserFromContext(ctx)
+	// Get named user; if not exist create user
+	user, err := app.UserService().Get(ctx, otf.UserSpecifier{Username: guser.Login})
+	if err == otf.ErrResourceNotFound {
+		user, err = app.UserService().Create(ctx, *guser.Login)
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	ctx, err = app.sessions.SwapUser(ctx, user)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	app.sessions.Put(ctx, otf.AddressSessionKey, addr)
 
 	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }
@@ -104,16 +114,15 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := app.UserService().RevokeSession(r.Context(), token, app.currentUser(r)); err != nil {
+	if err := app.UserService().DeleteSession(r.Context(), token); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.sessions.Put(r.Context(), otf.FlashSessionKey, "Revoked session")
+	if err := app.sessions.FlashSuccess(r, "Revoked session"); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	http.Redirect(w, r, "../", http.StatusFound)
-}
-
-func (app *Application) currentUser(r *http.Request) string {
-	return app.sessions.GetString(r.Context(), otf.UsernameSessionKey)
+	http.Redirect(w, r, app.route("listSession"), http.StatusFound)
 }

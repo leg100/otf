@@ -3,10 +3,10 @@ package sql
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -60,8 +60,19 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 }
 
 // Get retrieves a user from the DB, along with its sessions.
-func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
-	selectBuilder := psql.Select("*").From("users").Where("username = ?", username)
+func (db UserDB) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
+	selectBuilder := psql.
+		Select("*").
+		From("users")
+
+	switch {
+	case spec.Username != nil:
+		selectBuilder = selectBuilder.Where("username = ?", *spec.Username)
+	case spec.Token != nil:
+		selectBuilder = selectBuilder.Where("token = ?", *spec.Token)
+	default:
+		return nil, fmt.Errorf("empty user spec provided")
+	}
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -84,7 +95,7 @@ func (db UserDB) Get(ctx context.Context, username string) (*otf.User, error) {
 }
 
 // CreateSession inserts the session, associating it with the user.
-func (db UserDB) CreateSession(ctx context.Context, session *otf.Session, user *otf.User) error {
+func (db UserDB) CreateSession(ctx context.Context, session *otf.Session) error {
 	sql, args, err := db.BindNamed(insertSessionSQL, session)
 	if err != nil {
 		return err
@@ -103,34 +114,29 @@ func (db UserDB) CreateSession(ctx context.Context, session *otf.Session, user *
 }
 
 // UpdateSession updates a session row in the sessions table.
-func (db UserDB) UpdateSession(ctx context.Context, session *otf.Session) error {
-	// get session
-	existing, err := getSession(ctx, db.DB, session.Token)
+func (db UserDB) UpdateSession(ctx context.Context, token string, fn func(*otf.Session) error) (*otf.Session, error) {
+	session, err := getSession(ctx, db.DB, token)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	updateBuilder := psql.Update("sessions").Where("token = ?", session.Token)
-
-	if !reflect.DeepEqual(existing.Data, session.Data) {
-		updateBuilder = updateBuilder.Set("data", session.Data)
-	}
-
-	if !reflect.DeepEqual(existing.Expiry, session.Expiry) {
-		updateBuilder = updateBuilder.Set("expiry", session.Expiry)
-	}
-
-	sql, args, err := updateBuilder.ToSql()
+	// Make a copy for comparison with the updated obj
+	before, err := copystructure.Copy(session)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = db.DB.Exec(sql, args...)
+	// Update obj using client-supplied fn
+	if err := fn(session); err != nil {
+		return nil, err
+	}
+
+	_, err = update(db.Mapper, db.DB, "sessions", "token", before.(*otf.Session), session)
 	if err != nil {
-		return databaseError(err, sql)
+		return nil, err
 	}
 
-	return nil
+	return session, nil
 }
 
 // LinkSession (re-)associates a session with a user.
@@ -153,26 +159,37 @@ func (db UserDB) LinkSession(ctx context.Context, session *otf.Session, user *ot
 	return nil
 }
 
-// RevokeSession deletes a user's session from the DB.
-func (db UserDB) RevokeSession(ctx context.Context, token, username string) error {
-	user, err := db.Get(ctx, username)
+// Delete deletes a user from the DB.
+func (db UserDB) Delete(ctx context.Context, spec otf.UserSpecifier) error {
+	deleteBuilder := psql.Delete("users")
+
+	switch {
+	case spec.Username != nil:
+		deleteBuilder = deleteBuilder.Where("username = ?", *spec.Username)
+	case spec.Token != nil:
+		deleteBuilder = deleteBuilder.Where("token = ?", *spec.Token)
+	default:
+		return fmt.Errorf("empty user spec provided")
+	}
+
+	sql, args, err := deleteBuilder.ToSql()
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("DELETE FROM sessions WHERE user_id = $1 AND token = $2", user.ID, token)
+	_, err = db.DB.Exec(sql, args...)
 	if err != nil {
-		return fmt.Errorf("unable to delete session: %w", err)
+		return databaseError(err, sql)
 	}
 
 	return nil
 }
 
-// Delete deletes a user from the DB.
-func (db UserDB) Delete(ctx context.Context, userID string) error {
-	_, err := db.Exec("DELETE FROM users WHERE user_id = $1", userID)
+// DeleteSession deletes a user's session from the DB.
+func (db UserDB) DeleteSession(ctx context.Context, token string) error {
+	_, err := db.Exec("DELETE FROM sessions WHERE token = $1", token)
 	if err != nil {
-		return fmt.Errorf("unable to delete user: %w", err)
+		return fmt.Errorf("unable to delete session: %w", err)
 	}
 
 	return nil

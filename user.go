@@ -36,9 +36,8 @@ type User struct {
 	Sessions []*Session
 }
 
-// AttachNewSession creates and attaches a new session to the user. The new
-// session is made the active session for the user.
-func (u *User) AttachNewSession() (*Session, error) {
+// AttachNewSession creates and attaches a new session to the user.
+func (u *User) AttachNewSession(data SessionData) (*Session, error) {
 	token, err := generateSessionToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
@@ -46,7 +45,7 @@ func (u *User) AttachNewSession() (*Session, error) {
 
 	session := Session{
 		Token:  token,
-		Data:   SessionData{},
+		Data:   data,
 		Expiry: time.Now().Add(DefaultSessionExpiry),
 		UserID: u.ID,
 	}
@@ -66,43 +65,68 @@ func (u *User) String() string {
 	return u.Username
 }
 
+// TransferSession transfers a session from the receiver to another user.
+func (u *User) TransferSession(session *Session, to *User) {
+	// Remove session from receiver
+	var receiverSessions []*Session
+	for _, s := range u.Sessions {
+		if s.Token != session.Token {
+			receiverSessions = append(receiverSessions, s)
+		}
+	}
+	u.Sessions = receiverSessions
+
+	// Add session to destination user
+	to.Sessions = append(to.Sessions, session)
+
+	// Update session's user reference
+	session.UserID = to.ID
+}
+
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
-	// NewAnonymousSession creates a new session for the anonymous user.
-	NewAnonymousSession(ctx context.Context) (*User, *Session, error)
+	// Create creates a user with the given username.
+	Create(ctx context.Context, username string) (*User, error)
 
-	// Promote promotes an anonymous user to the named user.
-	Promote(ctx context.Context, anon *User, username string) (*User, error)
+	// CreateSession creates a user session.
+	CreateSession(ctx context.Context, user *User, data SessionData) (*Session, error)
+
+	// TransferSession transfers a session from one user to another.
+	TransferSession(ctx context.Context, token string, from, to *User) (*Session, error)
 
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
-	// UpdateSession persists any updates to the user's active session
-	UpdateSession(ctx context.Context, user *User) error
+	// Get retrieves the anonymous user.
+	GetAnonymous(ctx context.Context) (*User, error)
 
-	// Revoke a session belong to user
-	RevokeSession(ctx context.Context, token, username string) error
+	// UpdateSession persists any updates to the user's session data
+	UpdateSessionData(ctx context.Context, token, key string, val interface{}) error
+
+	// DeleteSession deletes the session with the given token
+	DeleteSession(ctx context.Context, token string) error
 }
 
 // UserStore is a persistence store for user accounts and their associated
 // sessions.
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
+
+	Get(ctx context.Context, spec UserSpecifier) (*User, error)
+
 	List(ctx context.Context) ([]*User, error)
 
-	// CreateSession persists session to the store.
+	Delete(ctx context.Context, spec UserSpecifier) error
+
+	// CreateSession persists a new session to the store.
 	CreateSession(ctx context.Context, session *Session) error
 
-	// LinkSession associates the session with the user.
-	LinkSession(ctx context.Context, session *Session, user *User) error
-
 	// UpdateSession persists any updates to a user's session
-	UpdateSession(ctx context.Context, session *Session) error
+	UpdateSession(ctx context.Context, token string, fn func(*Session) error) (*Session, error)
 
-	RevokeSession(ctx context.Context, token, username string) error
-	Get(ctx context.Context, spec UserSpecifier) (*User, error)
-	Delete(ctx context.Context, userID string) error
+	// DeleteSession deletes a session
+	DeleteSession(ctx context.Context, token string) error
 }
 
 type UserSpecifier struct {
@@ -129,9 +153,15 @@ type Session struct {
 	Expiry time.Time
 	Data   SessionData
 
+	// Timestamps records timestamps of lifecycle transitions
+	Timestamps
+
 	// Session belongs to a user
 	UserID string
 }
+
+func (s *Session) GetID() string  { return s.Token }
+func (s *Session) String() string { return s.Token }
 
 // SessionData is arbitrary session data
 type SessionData map[string]interface{}

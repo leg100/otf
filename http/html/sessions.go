@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/leg100/otf"
@@ -45,7 +46,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 
 		// cookie nor user found
 		if err != nil {
-			user, err = s.ActiveUserService.NewAnonymousSession(r.Context())
+			user, err = s.ActiveUserService.NewAnonymousSession(r)
 			if err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -59,15 +60,25 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 	})
 }
 
-// Promotion: transfer active session from anon to named user, and make named
-// user the active user.
-func (s *sessions) Promote(ctx context.Context, username string) bool {
-	// promote anon user to auth user
-	user, err := s.ActiveUserService().Promote(ctx, anon, *guser.Login)
+// SwapUser transfers the active session to a user with the given username and
+// attaches that user on the context, replacing the existing user. Returns the
+// new context with the new user attached.
+func (s *sessions) SwapUser(ctx context.Context, user *otf.User) (context.Context, error) {
+	existing := s.getUserFromContext(ctx)
+
+	_, err := s.ActiveUserService.TransferSession(ctx, existing.ActiveSession.Token, existing.User, user)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
+
+	return context.WithValue(ctx, userCtxKey, user), nil
+}
+
+// Destroy deletes the current session, removing the current user.
+func (s *sessions) Destroy(ctx context.Context) error {
+	user := s.getUserFromContext(ctx)
+	return s.ActiveUserService.DeleteSession(ctx, user.ActiveSession.Token)
+}
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
 	return s.getUserFromContext(ctx).IsAuthenticated()
@@ -81,9 +92,10 @@ func (s *sessions) getUserFromContext(ctx context.Context) *ActiveUser {
 	return c
 }
 
-// PopFlashMessages retrieves all flash messages from the current session. The
-// messages are thereafter discarded.
-func (s *sessions) PopAllFlash(r *http.Request) (msgs []Flash) {
+// PopFlash retrieves a flash message from the current session. The message is
+// thereafter discarded. Nil is returned if there is no flash message.
+func (s *sessions) PopFlash(r *http.Request) *Flash {
+	// TODO: need to *remove* session data entry.
 	if msg := s.Pop(r.Context(), otf.FlashSessionKey); msg != nil {
 		msgs = append(msgs, msg.(Flash))
 	}
@@ -101,12 +113,12 @@ func (s *sessions) FlashError(r *http.Request, msg ...string) error {
 func (s *sessions) flash(r *http.Request, t FlashType, msg ...string) error {
 	user := s.getUserFromContext(r.Context())
 
-	user.ActiveSession.Data[otf.FlashSessionKey] = Flash{
+	flash = Flash{
 		Type:    t,
 		Message: fmt.Sprint(convertStringSliceToInterfaceSlice(msg)...),
 	}
 
-	if err := s.ActiveUserService.UpdateSession(r.Context(), user.ActiveSession); err != nil {
+	if err := s.UserService.UpdateSessionData(r.Context(), user.ActiveSession.Token, otf.FlashSessionKey, flash); err != nil {
 		return fmt.Errorf("saving flash message in session backend: %w", err)
 	}
 
@@ -126,12 +138,19 @@ type ActiveUserService struct {
 	otf.UserService
 }
 
-func (s *ActiveUserService) NewAnonymousSession(ctx context.Context) (*ActiveUser, error) {
-	user, session, err := s.UserService.NewAnonymousSession(ctx)
+// NewAnonymousSession returns the anonymous user with a new session.
+func (s *ActiveUserService) NewAnonymousSession(r *http.Request) (*ActiveUser, error) {
+	anon, err := s.UserService.GetAnonymous(r.Context())
 	if err != nil {
 		return nil, err
 	}
-	return &ActiveUser{User: user, ActiveSession: session}, nil
+
+	session, err := s.UserService.CreateSession(r.Context(), anon, newSessionData(r))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ActiveUser{User: anon, ActiveSession: session}, nil
 }
 
 func (s *ActiveUserService) Get(ctx context.Context, token string) (*ActiveUser, error) {
@@ -140,6 +159,19 @@ func (s *ActiveUserService) Get(ctx context.Context, token string) (*ActiveUser,
 		return nil, err
 	}
 	return &ActiveUser{User: user, ActiveSession: getActiveSession(user, token)}, nil
+}
+
+func newSessionData(r *http.Request) (otf.SessionData, error) {
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	data := otf.SessionData{
+		otf.AddressSessionKey: addr,
+	}
+
+	return data, nil
 }
 
 func getActiveSession(user *otf.User, token string) *otf.Session {
