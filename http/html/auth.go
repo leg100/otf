@@ -43,8 +43,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, err = app.sessions.SwapUser(ctx, user)
-	if err != nil {
+	if err = app.sessions.TransferSession(ctx, user); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -62,7 +62,7 @@
 
       <hr>
 
-      {{ range .PopFlashMessages }}
+      {{ with .PopFlash }}
         <div class="flash flash-{{ .Type }}" role="alert">
           {{ .Message }}
         </div>

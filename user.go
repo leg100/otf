@@ -2,11 +2,6 @@ package otf
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"math/rand"
 	"time"
 )
 
@@ -37,22 +32,15 @@ type User struct {
 }
 
 // AttachNewSession creates and attaches a new session to the user.
-func (u *User) AttachNewSession(data SessionData) (*Session, error) {
-	token, err := generateSessionToken()
+func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
+	session, err := newSession(u, data)
 	if err != nil {
-		return nil, fmt.Errorf("generating session token: %w", err)
+		return nil, err
 	}
 
-	session := Session{
-		Token:  token,
-		Data:   data,
-		Expiry: time.Now().Add(DefaultSessionExpiry),
-		UserID: u.ID,
-	}
+	u.Sessions = append(u.Sessions, session)
 
-	u.Sessions = append(u.Sessions, &session)
-
-	return &session, nil
+	return session, nil
 }
 
 // IsAuthenticated determines if the user is authenticated, i.e. not an
@@ -67,20 +55,19 @@ func (u *User) String() string {
 
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(session *Session, to *User) {
+	// Update session's user reference
+	session.UserID = to.ID
+
 	// Remove session from receiver
-	var receiverSessions []*Session
-	for _, s := range u.Sessions {
+	for i, s := range u.Sessions {
 		if s.Token != session.Token {
-			receiverSessions = append(receiverSessions, s)
+			u.Sessions = append(u.Sessions[0:i], u.Sessions[i+1:len(u.Sessions)]...)
+			break
 		}
 	}
-	u.Sessions = receiverSessions
 
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
-
-	// Update session's user reference
-	session.UserID = to.ID
 }
 
 // UserService provides methods to interact with user accounts and their
@@ -89,20 +76,23 @@ type UserService interface {
 	// Create creates a user with the given username.
 	Create(ctx context.Context, username string) (*User, error)
 
-	// CreateSession creates a user session.
-	CreateSession(ctx context.Context, user *User, data SessionData) (*Session, error)
-
-	// TransferSession transfers a session from one user to another.
-	TransferSession(ctx context.Context, token string, from, to *User) (*Session, error)
-
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
+
+	// GetActive
+	GetActive(ctx context.Context, token string) (*User, error)
 
 	// Get retrieves the anonymous user.
 	GetAnonymous(ctx context.Context) (*User, error)
 
+	// CreateSession creates a user session.
+	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
+
+	// TransferSession transfers a session from one user to another.
+	TransferSession(ctx context.Context, session *Session, from, to *User) error
+
 	// UpdateSession persists any updates to the user's session data
-	UpdateSessionData(ctx context.Context, token, key string, val interface{}) error
+	UpdateSession(ctx context.Context, user *User, session *Session) error
 
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
@@ -123,7 +113,7 @@ type UserStore interface {
 	CreateSession(ctx context.Context, session *Session) error
 
 	// UpdateSession persists any updates to a user's session
-	UpdateSession(ctx context.Context, token string, fn func(*Session) error) (*Session, error)
+	UpdateSession(ctx context.Context, token string, updated *Session) error
 
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
@@ -147,39 +137,6 @@ func (spec *UserSpecifier) KeyValue() []interface{} {
 	return []interface{}{"invalid user spec", ""}
 }
 
-// Session is a user session
-type Session struct {
-	Token  string
-	Expiry time.Time
-	Data   SessionData
-
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
-	// Session belongs to a user
-	UserID string
-}
-
-func (s *Session) GetID() string  { return s.Token }
-func (s *Session) String() string { return s.Token }
-
-// SessionData is arbitrary session data
-type SessionData map[string]interface{}
-
-// Value: struct -> db
-func (sd SessionData) Value() (driver.Value, error) {
-	return json.Marshal(sd)
-}
-
-// Scan: db -> struct
-func (sd SessionData) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("type assertion to []byte failed")
-	}
-	return json.Unmarshal(b, &sd)
-}
-
 func NewUser(username string) *User {
 	user := User{
 		ID:         NewID("user"),
@@ -188,13 +145,4 @@ func NewUser(username string) *User {
 	}
 
 	return &user
-}
-
-func generateSessionToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }

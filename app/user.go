@@ -36,7 +36,7 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 }
 
 // CreateSession creates a session and adds it to the user.
-func (s UserService) CreateSession(ctx context.Context, user *otf.User, data otf.SessionData) (*otf.Session, error) {
+func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *otf.SessionData) (*otf.Session, error) {
 	session, err := user.AttachNewSession(data)
 	if err != nil {
 		s.Error(err, "attaching session", "user", user)
@@ -70,24 +70,26 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 }
 
 // TransferSession transfers a session from one user to another.
-func (s UserService) TransferSession(ctx context.Context, token string, from, to *otf.User) (*otf.Session, error) {
-	updated, err := s.db.UpdateSession(ctx, token, func(session *otf.Session) error {
+//
+// TODO: this doesn't update the session argument!
+func (s UserService) TransferSession(ctx context.Context, session *otf.Session, from, to *otf.User) error {
+	_, err := s.db.UpdateSession(ctx, session.Token, func(session *otf.Session) error {
 		from.TransferSession(session, to)
 		return nil
 	})
 	if err != nil {
 		s.Error(err, "transferring session", "from", from, "to", to)
-		return nil, err
+		return err
 	}
 
 	s.V(1).Info("transferred session", "from", from, "to", to)
 
-	return updated, nil
+	return nil
 }
 
-// UpdateSessionData updates a key value in a user's session
-func (s UserService) UpdateSessionData(ctx context.Context, token, key string, val interface{}) error {
-	_, err := s.db.UpdateSession(ctx, token, func(session *otf.Session) error {
+// UpdateSession updates a user session.
+func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
+	_, err := s.db.UpdateSession(ctx, session.Token, func(session *otf.Session) error {
 		session.Data[key] = val
 		return nil
 	})
@@ -122,10 +124,10 @@ func (s UserService) create(ctx context.Context, username string) (*otf.User, er
 	user := otf.NewUser(username)
 
 	if err := s.db.Create(ctx, user); err != nil {
-		s.Error(err, "creating user", "username", username)
+		s.Error(err, "creating user", "user", user)
 		return nil, err
 	}
-	s.Info("created user", "username", user.Username)
+	s.Info("created user", "user", user)
 
 	return user, nil
 }

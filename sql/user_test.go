@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,7 @@ func TestUser_Create(t *testing.T) {
 	db := newTestDB(t)
 	user := newTestUser()
 
-	defer db.UserStore().Delete(context.Background(), user.ID)
+	defer db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)
@@ -23,7 +24,7 @@ func TestUser_Get(t *testing.T) {
 	user := createTestUser(t, db)
 	//_ = createTestSession(t, db)
 
-	got, err := db.UserStore().Get(context.Background(), user.Username)
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	require.NoError(t, err)
 
 	assert.Equal(t, got, user)
@@ -35,7 +36,7 @@ func TestUser_Get_WithSessions(t *testing.T) {
 	_ = createTestSession(t, db, user.ID)
 	_ = createTestSession(t, db, user.ID)
 
-	got, err := db.UserStore().Get(context.Background(), user.Username)
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(got.Sessions))
@@ -59,7 +60,7 @@ func TestUser_Delete(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 
-	err := db.UserStore().Delete(context.Background(), user.ID)
+	err := db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	require.NoError(t, err)
 
 	// Verify zero users after deletion
@@ -68,16 +69,20 @@ func TestUser_Delete(t *testing.T) {
 	assert.NotContains(t, users, user)
 }
 
-func TestUser_LinkSession(t *testing.T) {
+func TestUser_UpdateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 	session := createTestSession(t, db, user.ID)
 
-	err := db.UserStore().LinkSession(context.Background(), session.Token, user.ID)
+	require.NotNil(t, session.Flash)
+
+	session.PopFlash()
+
+	err := db.UserStore().UpdateSession(context.Background(), session.Token, session)
 	require.NoError(t, err)
 
-	// Verify user has a session after linking
-	user, err = db.UserStore().Get(context.Background(), user.Username)
+	// Verify session's flash has popped
+	user, err = db.UserStore().Get(context.Background(), otf.UserSpecifier{Token: &session.Token})
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(user.Sessions))
+	assert.Nil(t, user.Sessions[0].Flash)
 }

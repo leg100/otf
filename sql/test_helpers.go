@@ -115,6 +115,13 @@ func newTestSession(userID string) *otf.Session {
 		Token:  token,
 		Expiry: time.Now().Add(time.Second * 10),
 		UserID: userID,
+		SessionData: otf.SessionData{
+			Address: "127.0.0.1",
+			Flash: &otf.Flash{
+				Type:    otf.FlashSessionKey,
+				Message: "test succeeded",
+			},
+		},
 	}
 }
 
@@ -230,7 +237,7 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), user.ID)
+		db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	})
 
 	return user
@@ -240,7 +247,7 @@ func createTestSession(t *testing.T, db otf.DB, userID string) *otf.Session {
 	session := newTestSession(userID)
 
 	insertSQL := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
-	sql, args, err := db.Handle().BindNamed(insertSQL, session)
+	sql, args, err := psql.Insert("sessions").PrefixExprsqlx.Named(insertSQL, session)
 	require.NoError(t, err)
 
 	_, err = db.Handle().Exec(sql, args...)

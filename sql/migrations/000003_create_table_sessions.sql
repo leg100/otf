@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS sessions (
     token text,
-    data bytea not null,
+    data jsonb not null,
     expiry timestamptz not null,
     user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
     PRIMARY KEY (token)

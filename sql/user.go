@@ -6,7 +6,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -113,30 +112,50 @@ func (db UserDB) CreateSession(ctx context.Context, session *otf.Session) error 
 	return nil
 }
 
-// UpdateSession updates a session row in the sessions table.
-func (db UserDB) UpdateSession(ctx context.Context, token string, fn func(*otf.Session) error) (*otf.Session, error) {
-	session, err := getSession(ctx, db.DB, token)
+// UpdateSession updates a session row in the sessions table with the given
+// session. The token identifies the session row to update.
+func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.Session) error {
+	existing, err := getSession(ctx, db.DB, token)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Make a copy for comparison with the updated obj
-	before, err := copystructure.Copy(session)
+	updateBuilder := psql.
+		Update("sessions").
+		Where("token = ?", updated.Token)
+
+	var modified bool
+
+	if existing.SessionData != updated.SessionData {
+		modified = true
+		updateBuilder = updateBuilder.Set("data", updated.SessionData)
+	}
+
+	if existing.Expiry != updated.Expiry {
+		modified = true
+		updateBuilder = updateBuilder.Set("expiry", updated.Expiry)
+	}
+
+	if existing.UserID != updated.UserID {
+		modified = true
+		updateBuilder = updateBuilder.Set("user_id", updated.Expiry)
+	}
+
+	if !modified {
+		return fmt.Errorf("update was requested but no changes were found")
+	}
+
+	sql, args, err := updateBuilder.ToSql()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Update obj using client-supplied fn
-	if err := fn(session); err != nil {
-		return nil, err
-	}
-
-	_, err = update(db.Mapper, db.DB, "sessions", "token", before.(*otf.Session), session)
+	_, err = db.DB.Exec(sql, args...)
 	if err != nil {
-		return nil, err
+		return databaseError(err, sql)
 	}
 
-	return session, nil
+	return nil
 }
 
 // LinkSession (re-)associates a session with a user.

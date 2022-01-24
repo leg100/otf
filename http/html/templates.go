@@ -1,7 +1,6 @@
 package html
 
 import (
-	"encoding/gob"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -20,10 +20,6 @@ const (
 	contentTemplatesGlob = "static/templates/content/*.tmpl"
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
-
-func init() {
-	gob.Register(Flash{})
-}
 
 // templateDataFactory produces templateData structs
 type templateDataFactory struct {
@@ -62,27 +58,6 @@ func (td *templateData) Path(name string, pairs ...string) string {
 // Relative proxies access to the router's relative method
 func (td *templateData) Relative(name string, pairs ...string) string {
 	return td.router.relative(td.request, name, pairs...)
-}
-
-// Ancestor constructs a URL path for the named route, populating its route
-// variables using the current route variables. Therefore the named route must
-// be an ancestor of the current route, i.e. the named route's variables must be
-// a subset of the current route.
-func (td *templateData) Ancestor(name string) (string, error) {
-	route := td.router.Get(name)
-
-	if route == nil {
-		return "", fmt.Errorf("no such web route exists: %s", name)
-	}
-
-	pairs := flattenMap(mux.Vars(td.request))
-
-	u, err := route.URLPath(pairs...)
-	if err != nil {
-		return "", err
-	}
-
-	return u.Path, nil
 }
 
 func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
@@ -130,14 +105,12 @@ func (td *templateData) RouteVars() map[string]string {
 	return mux.Vars(td.request)
 }
 
-// PopFlashMessages retrieves all flash messages from the current session. The
-// messages are thereafter discarded from the session.
-func (td *templateData) PopFlashMessages() []Flash {
-	return td.sessions.PopAllFlash(td.request)
+func (td *templateData) PopFlash() (*otf.Flash, error) {
+	return td.sessions.PopFlash(td.request)
 }
 
-func (td *templateData) CurrentUser() string {
-	return td.sessions.CurrentUser(td.request)
+func (td *templateData) CurrentUser() *ActiveUser {
+	return td.sessions.getUserFromContext(td.request.Context())
 }
 
 func (td *templateData) CurrentPath() string {
