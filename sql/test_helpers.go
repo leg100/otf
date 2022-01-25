@@ -108,19 +108,18 @@ func newTestUser() *otf.User {
 	}
 }
 
-func newTestSession(userID string) *otf.Session {
-	token, _ := generateToken()
+func newTestSession(t *testing.T, userID string, flash *otf.Flash) *otf.Session {
+	token, err := generateToken()
+	require.NoError(t, err)
 
 	return &otf.Session{
-		Token:  token,
-		Expiry: time.Now().Add(time.Second * 10),
-		UserID: userID,
+		Token:      token,
+		Timestamps: newTestTimestamps(),
+		Expiry:     time.Now().Add(time.Second * 10),
+		UserID:     userID,
 		SessionData: otf.SessionData{
 			Address: "127.0.0.1",
-			Flash: &otf.Flash{
-				Type:    otf.FlashSessionKey,
-				Message: "test succeeded",
-			},
+			Flash:   flash,
 		},
 	}
 }
@@ -237,24 +236,32 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		err := db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		require.NoError(t, err)
 	})
 
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB, userID string) *otf.Session {
-	session := newTestSession(userID)
+func createTestSession(t *testing.T, db otf.DB, userID string, flash *otf.Flash) *otf.Session {
+	session := newTestSession(t, userID, flash)
 
-	insertSQL := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
-	sql, args, err := psql.Insert("sessions").PrefixExprsqlx.Named(insertSQL, session)
-	require.NoError(t, err)
-
-	_, err = db.Handle().Exec(sql, args...)
+	_, err := psql.
+		Insert("sessions").
+		SetMap(map[string]interface{}{
+			"created_at": session.CreatedAt,
+			"updated_at": session.UpdatedAt,
+			"flash":      session.Flash,
+			"address":    session.Address,
+			"token":      session.Token,
+			"expiry":     session.Expiry,
+			"user_id":    session.UserID,
+		}).RunWith(db.Handle()).Exec()
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.Handle().Exec("DELETE FROM sessions WHERE token = ?", session.Token)
+		_, err := db.Handle().Exec("DELETE FROM sessions WHERE token = $1", session.Token)
+		require.NoError(t, err)
 	})
 
 	return session

@@ -11,9 +11,9 @@ import (
 
 // Session is a user session
 type Session struct {
-	Token       string
-	Expiry      time.Time
-	SessionData `db:"data"`
+	Token  string
+	Expiry time.Time
+	SessionData
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -56,20 +56,6 @@ type SessionData struct {
 	Flash   *Flash
 }
 
-// Value: struct -> db
-func (sd SessionData) Value() (driver.Value, error) {
-	return json.Marshal(sd)
-}
-
-// Scan: db -> struct
-func (sd SessionData) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("type assertion to []byte failed")
-	}
-	return json.Unmarshal(b, &sd)
-}
-
 func (sd *SessionData) SetFlash(t FlashType, msg ...interface{}) {
 	sd.Flash = &Flash{
 		Type:    t,
@@ -88,9 +74,27 @@ type Flash struct {
 	Message string
 }
 
+// Value: struct -> db
+func (f *Flash) Value() (driver.Value, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return json.Marshal(f)
+}
+
+// Scan: db -> struct
+func (f *Flash) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(b, &f)
+}
+
 type FlashType string
 
 const (
-	FlashSuccessType = "success"
-	FlashErrorType   = "error"
+	FlashSuccessType FlashType = "success"
+	FlashErrorType   FlashType = "error"
 )

@@ -11,11 +11,28 @@ import (
 var (
 	_ otf.UserStore = (*UserDB)(nil)
 
+	userColumns = []string{
+		"user_id",
+		"created_at",
+		"updated_at",
+		"username",
+	}
+
+	sessionColumns = []string{
+		"token",
+		"created_at",
+		"updated_at",
+		"flash",
+		"address",
+		"expiry",
+		"user_id",
+	}
+
 	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
 VALUES (:user_id, :created_at, :updated_at, :username)`
 
-	insertSessionSQL = `INSERT INTO sessions (token, data, created_at, updated_at, user_id)
-VALUES (:token, :data, :created_at, :updated_at, :user_id)`
+	insertSessionSQL = `INSERT INTO sessions (token, flash, address, created_at, updated_at, expiry, user_id)
+VALUES (:token, :flash, :address, :created_at, :updated_at, :expiry, :user_id)`
 )
 
 type UserDB struct {
@@ -61,14 +78,16 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 // Get retrieves a user from the DB, along with its sessions.
 func (db UserDB) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
 	selectBuilder := psql.
-		Select("*").
+		Select(asColumnList("users", false, userColumns...)).
 		From("users")
 
 	switch {
 	case spec.Username != nil:
 		selectBuilder = selectBuilder.Where("username = ?", *spec.Username)
 	case spec.Token != nil:
-		selectBuilder = selectBuilder.Where("token = ?", *spec.Token)
+		selectBuilder = selectBuilder.
+			Join("sessions USING (user_id)").
+			Where("sessions.token = ?", *spec.Token)
 	default:
 		return nil, fmt.Errorf("empty user spec provided")
 	}
@@ -99,13 +118,9 @@ func (db UserDB) CreateSession(ctx context.Context, session *otf.Session) error 
 	if err != nil {
 		return err
 	}
+
 	_, err = db.Exec(sql, args...)
 	if err != nil {
-		return err
-	}
-
-	var result string
-	if err := db.DB.Get(&result, sql, args...); err != nil {
 		return databaseError(err, sql)
 	}
 
@@ -126,9 +141,13 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 
 	var modified bool
 
-	if existing.SessionData != updated.SessionData {
+	if existing.Address != updated.Address {
+		return fmt.Errorf("address cannot be updated on a session")
+	}
+
+	if existing.Flash != updated.Flash {
 		modified = true
-		updateBuilder = updateBuilder.Set("data", updated.SessionData)
+		updateBuilder = updateBuilder.Set("flash", updated.Flash)
 	}
 
 	if existing.Expiry != updated.Expiry {
@@ -216,7 +235,7 @@ func (db UserDB) DeleteSession(ctx context.Context, token string) error {
 
 // listSessions lists sessions belonging to the user with the given userID.
 func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session, error) {
-	selectBuilder := psql.Select("token, data, expiry").From("sessions").Where("user_id = ?", userID)
+	selectBuilder := psql.Select("*").From("sessions").Where("user_id = ?", userID)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
