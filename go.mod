@@ -8,10 +8,8 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/alexedwards/scs/postgresstore v0.0.0-20211203064041-370cc303b69f
-	github.com/alexedwards/scs/v2 v2.5.0
 	github.com/allegro/bigcache v1.2.1
-	github.com/buildkite/terminal-to-html v3.2.0+incompatible // indirect
+	github.com/buildkite/terminal-to-html v3.2.0+incompatible
 	github.com/fatih/color v1.7.0
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.0.0

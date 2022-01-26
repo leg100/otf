@@ -2,8 +2,6 @@ package sql
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -109,30 +107,15 @@ func newTestUser() *otf.User {
 }
 
 func newTestSession(t *testing.T, userID string, flash *otf.Flash) *otf.Session {
-	token, err := generateToken()
+	session, err := otf.NewSession(userID, &otf.SessionData{
+		Address: "127.0.0.1",
+		Flash:   flash,
+	})
 	require.NoError(t, err)
 
-	return &otf.Session{
-		Token:      token,
-		Timestamps: newTestTimestamps(),
-		Expiry:     time.Now().Add(time.Second * 10),
-		UserID:     userID,
-		SessionData: otf.SessionData{
-			Address: "127.0.0.1",
-			Flash:   flash,
-		},
-	}
-}
+	session.Timestamps = newTestTimestamps()
 
-// generateToken is taken from alexedwards/scs - here for generating a session
-// token for testing purposes.
-func generateToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	return session
 }
 
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {

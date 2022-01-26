@@ -69,36 +69,15 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 	return s.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
 }
 
-// TransferSession transfers a session from one user to another.
-//
-// TODO: this doesn't update the session argument!
-func (s UserService) TransferSession(ctx context.Context, session *otf.Session, from, to *otf.User) error {
-	_, err := s.db.UpdateSession(ctx, session.Token, func(session *otf.Session) error {
-		from.TransferSession(session, to)
-		return nil
-	})
-	if err != nil {
-		s.Error(err, "transferring session", "from", from, "to", to)
-		return err
-	}
-
-	s.V(1).Info("transferred session", "from", from, "to", to)
-
-	return nil
-}
-
 // UpdateSession updates a user session.
 func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
-	_, err := s.db.UpdateSession(ctx, session.Token, func(session *otf.Session) error {
-		session.Data[key] = val
-		return nil
-	})
+	err := s.db.UpdateSession(ctx, session.Token, session)
 	if err != nil {
-		s.Error(err, "updating session data", "key", key, "value", val)
+		s.Error(err, "updating session", "user", user)
 		return err
 	}
 
-	s.V(1).Info("updated session data", "key", key, "value", val)
+	s.V(1).Info("updated session", "user", user)
 
 	return nil
 }
@@ -118,16 +97,4 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	s.V(1).Info("revoked session", "username", user)
 
 	return nil
-}
-
-func (s UserService) create(ctx context.Context, username string) (*otf.User, error) {
-	user := otf.NewUser(username)
-
-	if err := s.db.Create(ctx, user); err != nil {
-		s.Error(err, "creating user", "user", user)
-		return nil, err
-	}
-	s.Info("created user", "user", user)
-
-	return user, nil
 }

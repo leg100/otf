@@ -25,7 +25,7 @@ type Session struct {
 func (s *Session) GetID() string  { return s.Token }
 func (s *Session) String() string { return s.Token }
 
-func newSession(u *User, data *SessionData) (*Session, error) {
+func NewSession(uid string, data *SessionData) (*Session, error) {
 	token, err := generateSessionToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
@@ -33,9 +33,10 @@ func newSession(u *User, data *SessionData) (*Session, error) {
 
 	session := Session{
 		Token:       token,
+		Timestamps:  NewTimestamps(),
 		SessionData: *data,
 		Expiry:      time.Now().Add(DefaultSessionExpiry),
-		UserID:      u.ID,
+		UserID:      uid,
 	}
 
 	return &session, nil

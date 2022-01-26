@@ -33,7 +33,7 @@ type User struct {
 
 // AttachNewSession creates and attaches a new session to the user.
 func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
-	session, err := newSession(u, data)
+	session, err := NewSession(u.ID, data)
 	if err != nil {
 		return nil, err
 	}
@@ -79,17 +79,11 @@ type UserService interface {
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
-	// GetActive
-	GetActive(ctx context.Context, token string) (*User, error)
-
 	// Get retrieves the anonymous user.
 	GetAnonymous(ctx context.Context) (*User, error)
 
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-
-	// TransferSession transfers a session from one user to another.
-	TransferSession(ctx context.Context, session *Session, from, to *User) error
 
 	// UpdateSession persists any updates to the user's session data
 	UpdateSession(ctx context.Context, user *User, session *Session) error
