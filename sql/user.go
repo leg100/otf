@@ -24,6 +24,7 @@ var (
 		"updated_at",
 		"flash",
 		"address",
+		"organization",
 		"expiry",
 		"user_id",
 	}
@@ -31,8 +32,8 @@ var (
 	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
 VALUES (:user_id, :created_at, :updated_at, :username)`
 
-	insertSessionSQL = `INSERT INTO sessions (token, flash, address, created_at, updated_at, expiry, user_id)
-VALUES (:token, :flash, :address, :created_at, :updated_at, :expiry, :user_id)`
+	insertSessionSQL = `INSERT INTO sessions (token, flash, address, organization, created_at, updated_at, expiry, user_id)
+VALUES (:token, :flash, :address, :organization, :created_at, :updated_at, :expiry, :user_id)`
 )
 
 type UserDB struct {
@@ -148,6 +149,11 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 	if existing.Flash != updated.Flash {
 		modified = true
 		updateBuilder = updateBuilder.Set("flash", updated.Flash)
+	}
+
+	if existing.Organization != updated.Organization {
+		modified = true
+		updateBuilder = updateBuilder.Set("organization", updated.Organization)
 	}
 
 	if existing.Expiry != updated.Expiry {

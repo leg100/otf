@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     updated_at timestamptz not null,
     address text not null,
     flash jsonb,
+    organization text,
     expiry timestamptz not null,
     user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE not null,
     PRIMARY KEY (token)

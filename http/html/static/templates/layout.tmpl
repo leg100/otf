@@ -20,9 +20,11 @@
         <ul>
           <li>
           </li>
+          {{ with .CurrentUser.Organization }}
           <li>
-            <a href="{{ .Path "listOrganization" }}">organizations</a>
+            <a href="{{ .Path "getOrganization" "organization_name" . }}">{{ . }}</a>
           </li>
+          {{ end }}
         </ul>
       </div>
       <div class="nav-links-me">

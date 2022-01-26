@@ -53,8 +53,14 @@ func generateSessionToken() (string, error) {
 
 // SessionData is various session data serialised to the session store as JSON.
 type SessionData struct {
+	// Client IP address
 	Address string
-	Flash   *Flash
+
+	// Web app flash message
+	Flash *Flash
+
+	// Current organization
+	Organization *string
 }
 
 func (sd *SessionData) SetFlash(t FlashType, msg ...interface{}) {
