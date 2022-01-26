@@ -106,7 +106,7 @@ func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
-	setCookie(w, user.Session.Token, user.Session.Expiry)
+	setCookie(w, user.Session.Token, time.Time{})
 
 	return nil
 }
