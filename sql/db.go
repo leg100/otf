@@ -2,6 +2,7 @@ package sql
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
@@ -46,7 +47,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache) (otf.DB, err
 		runStore:                  NewRunDB(sqlxdb),
 		planLogStore:              NewPlanLogDB(sqlxdb),
 		applyLogStore:             NewApplyLogDB(sqlxdb),
-		userStore:                 NewUserDB(sqlxdb),
+		userStore:                 NewUserDB(sqlxdb, 5*time.Minute),
 	}
 
 	if cache != nil {

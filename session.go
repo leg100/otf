@@ -81,7 +81,7 @@ type Flash struct {
 	Message string
 }
 
-// Value: struct -> db
+// Value : struct -> db
 func (f *Flash) Value() (driver.Value, error) {
 	if f == nil {
 		return nil, nil
@@ -89,7 +89,7 @@ func (f *Flash) Value() (driver.Value, error) {
 	return json.Marshal(f)
 }
 
-// Scan: db -> struct
+// Scan : db -> struct
 func (f *Flash) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {

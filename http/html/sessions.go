@@ -16,21 +16,13 @@ type ctxKey int
 const (
 	sessionCookieName = "session"
 
-	userCtxKey = iota
+	userCtxKey ctxKey = iota
 )
 
 // sessions is a user session manager.
 type sessions struct {
 	// perform actions against system users and sessions
 	*ActiveUserService
-}
-
-func newSessions(s otf.UserService) *sessions {
-	return &sessions{
-		ActiveUserService: &ActiveUserService{
-			UserService: s,
-		},
-	}
 }
 
 // Load provides middleware that loads and attaches the User to the current

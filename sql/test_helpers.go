@@ -106,12 +106,29 @@ func newTestUser() *otf.User {
 	}
 }
 
-func newTestSession(t *testing.T, userID string, flash *otf.Flash) *otf.Session {
+type newTestSessionOption func(*otf.Session)
+
+func withFlash(flash *otf.Flash) newTestSessionOption {
+	return func(session *otf.Session) {
+		session.SessionData.Flash = flash
+	}
+}
+
+func overrideExpiry(expiry time.Time) newTestSessionOption {
+	return func(session *otf.Session) {
+		session.Expiry = expiry
+	}
+}
+
+func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *otf.Session {
 	session, err := otf.NewSession(userID, &otf.SessionData{
 		Address: "127.0.0.1",
-		Flash:   flash,
 	})
 	require.NoError(t, err)
+
+	for _, o := range opts {
+		o(session)
+	}
 
 	session.Timestamps = newTestTimestamps()
 
@@ -226,24 +243,14 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB, userID string, flash *otf.Flash) *otf.Session {
-	session := newTestSession(t, userID, flash)
+func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
+	session := newTestSession(t, userID, opts...)
 
-	_, err := psql.
-		Insert("sessions").
-		SetMap(map[string]interface{}{
-			"created_at": session.CreatedAt,
-			"updated_at": session.UpdatedAt,
-			"flash":      session.Flash,
-			"address":    session.Address,
-			"token":      session.Token,
-			"expiry":     session.Expiry,
-			"user_id":    session.UserID,
-		}).RunWith(db.Handle()).Exec()
+	err := db.UserStore().CreateSession(context.Background(), session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := db.Handle().Exec("DELETE FROM sessions WHERE token = $1", session.Token)
+		err := db.UserStore().DeleteSession(context.Background(), session.Token)
 		require.NoError(t, err)
 	})
 

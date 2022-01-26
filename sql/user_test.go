@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
@@ -33,8 +34,8 @@ func TestUser_Get(t *testing.T) {
 func TestUser_Get_WithSessions(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	_ = createTestSession(t, db, user.ID, nil)
-	_ = createTestSession(t, db, user.ID, nil)
+	_ = createTestSession(t, db, user.ID)
+	_ = createTestSession(t, db, user.ID)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	require.NoError(t, err)
@@ -55,7 +56,7 @@ func TestUser_SessionFlash(t *testing.T) {
 			Message: "test succeeded",
 		}
 
-		_ = createTestSession(t, db, user.ID, flash)
+		_ = createTestSession(t, db, user.ID, withFlash(flash))
 
 		got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 		require.NoError(t, err)
@@ -64,7 +65,7 @@ func TestUser_SessionFlash(t *testing.T) {
 	})
 
 	t.Run("WithNoFlash", func(t *testing.T) {
-		_ = createTestSession(t, db, user.ID, nil)
+		_ = createTestSession(t, db, user.ID)
 
 		got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 		require.NoError(t, err)
@@ -103,7 +104,7 @@ func TestUser_Delete(t *testing.T) {
 func TestUser_CreateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := newTestSession(t, user.ID, nil)
+	session := newTestSession(t, user.ID)
 
 	defer db.UserStore().DeleteSession(context.Background(), session.Token)
 
@@ -114,10 +115,10 @@ func TestUser_CreateSession(t *testing.T) {
 func TestUser_UpdateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := createTestSession(t, db, user.ID, &otf.Flash{
+	session := createTestSession(t, db, user.ID, withFlash(&otf.Flash{
 		Type:    otf.FlashSuccessType,
 		Message: "test succeeded",
-	})
+	}))
 
 	session.PopFlash()
 
@@ -128,4 +129,20 @@ func TestUser_UpdateSession(t *testing.T) {
 	user, err = db.UserStore().Get(context.Background(), otf.UserSpecifier{Token: &session.Token})
 	require.NoError(t, err)
 	assert.Nil(t, user.Sessions[0].Flash)
+}
+
+func TestUser_SessionExpiry(t *testing.T) {
+	db := newTestDB(t)
+	user := createTestUser(t, db)
+	_ = createTestSession(t, db, user.ID)
+	_ = createTestSession(t, db, user.ID)
+	_ = createTestSession(t, db, user.ID)
+
+	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now().Add(-time.Hour)))
+	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now().Add(-time.Hour)))
+
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	require.NoError(t, err)
+
+	assert.Equal(t, 3, len(got.Sessions))
 }

@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
@@ -40,10 +41,14 @@ type UserDB struct {
 	*sqlx.DB
 }
 
-func NewUserDB(db *sqlx.DB) *UserDB {
-	return &UserDB{
+func NewUserDB(db *sqlx.DB, cleanupInterval time.Duration) *UserDB {
+	udb := &UserDB{
 		DB: db,
 	}
+	if cleanupInterval > 0 {
+		go udb.startCleanup(cleanupInterval)
+	}
+	return udb
 }
 
 // Create persists a User to the DB.
@@ -183,26 +188,6 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 	return nil
 }
 
-// LinkSession (re-)associates a session with a user.
-func (db UserDB) LinkSession(ctx context.Context, session *otf.Session, user *otf.User) error {
-	updateBuilder := psql.
-		Update("sessions").
-		Set("user_id", user.ID).
-		Where("token = ?", session.Token)
-
-	sql, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
-}
-
 // Delete deletes a user from the DB.
 func (db UserDB) Delete(ctx context.Context, spec otf.UserSpecifier) error {
 	deleteBuilder := psql.Delete("users")
@@ -239,9 +224,30 @@ func (db UserDB) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
+func (db UserDB) deleteExpired() error {
+	_, err := db.Exec("DELETE FROM sessions WHERE expiry < current_timestamp")
+	if err != nil {
+		return fmt.Errorf("unable to delete expired sessions: %w", err)
+	}
+
+	return nil
+}
+
+func (db UserDB) startCleanup(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	for {
+		<-ticker.C
+		db.deleteExpired()
+	}
+}
+
 // listSessions lists sessions belonging to the user with the given userID.
 func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session, error) {
-	selectBuilder := psql.Select("*").From("sessions").Where("user_id = ?", userID)
+	selectBuilder := psql.
+		Select(sessionColumns...).
+		From("sessions").
+		Where("user_id = ?", userID).
+		Where("expiry > current_timestamp")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -258,9 +264,10 @@ func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session
 
 func getSession(ctx context.Context, db Getter, token string) (*otf.Session, error) {
 	selectBuilder := psql.
-		Select("*").
+		Select(sessionColumns...).
 		From("sessions").
-		Where("token = ?", token)
+		Where("token = ?", token).
+		Where("expiry > current_timestamp")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
