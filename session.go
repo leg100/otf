@@ -22,9 +22,6 @@ type Session struct {
 	UserID string
 }
 
-func (s *Session) GetID() string  { return s.Token }
-func (s *Session) String() string { return s.Token }
-
 func NewSession(uid string, data *SessionData) (*Session, error) {
 	token, err := generateSessionToken()
 	if err != nil {

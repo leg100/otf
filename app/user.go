@@ -26,11 +26,11 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 	user := otf.NewUser(username)
 
 	if err := s.db.Create(ctx, user); err != nil {
-		s.Error(err, "creating user", "user", user)
+		s.Error(err, "creating user", "username", user.Username)
 		return nil, err
 	}
 
-	s.V(1).Info("created user", "user", user)
+	s.V(1).Info("created user", "username", user.Username)
 
 	return user, nil
 }
@@ -39,16 +39,16 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *otf.SessionData) (*otf.Session, error) {
 	session, err := user.AttachNewSession(data)
 	if err != nil {
-		s.Error(err, "attaching session", "user", user)
+		s.Error(err, "attaching session", "username", user.Username)
 		return nil, err
 	}
 
 	if err := s.db.CreateSession(ctx, session); err != nil {
-		s.Error(err, "creating session", "user", user)
+		s.Error(err, "creating session", "username", user.Username)
 		return nil, err
 	}
 
-	s.V(1).Info("created session", "user", user)
+	s.V(1).Info("created session", "username", user.Username)
 
 	return session, nil
 }
@@ -73,11 +73,11 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
 	err := s.db.UpdateSession(ctx, session.Token, session)
 	if err != nil {
-		s.Error(err, "updating session", "user", user)
+		s.Error(err, "updating session", "username", user.Username)
 		return err
 	}
 
-	s.V(1).Info("updated session", "user", user)
+	s.V(1).Info("updated session", "username", user.Username)
 
 	return nil
 }
@@ -90,11 +90,11 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	}
 
 	if err := s.db.DeleteSession(ctx, token); err != nil {
-		s.Error(err, "revoking session", "username", user)
+		s.Error(err, "deleting session", "username", user.Username)
 		return err
 	}
 
-	s.V(1).Info("revoked session", "username", user)
+	s.V(1).Info("deleted session", "username", user.Username)
 
 	return nil
 }
