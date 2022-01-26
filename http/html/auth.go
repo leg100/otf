@@ -75,7 +75,7 @@ func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.sessions.Destroy(r.Context()); err != nil {
+	if err := app.sessions.Destroy(r.Context(), w); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

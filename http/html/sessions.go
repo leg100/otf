@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/leg100/otf"
 )
@@ -13,6 +14,8 @@ import (
 type ctxKey int
 
 const (
+	sessionCookieName = "session"
+
 	userCtxKey = iota
 )
 
@@ -20,9 +23,14 @@ const (
 type sessions struct {
 	// perform actions against system users and sessions
 	*ActiveUserService
+}
 
-	// session cookie config
-	cookie *http.Cookie
+func newSessions(s otf.UserService) *sessions {
+	return &sessions{
+		ActiveUserService: &ActiveUserService{
+			UserService: s,
+		},
+	}
 }
 
 // Load provides middleware that loads and attaches the User to the current
@@ -34,7 +42,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 		// the user to attach to the request ctx
 		var user *ActiveUser
 
-		cookie, err := r.Cookie(s.cookie.Name)
+		cookie, err := r.Cookie(sessionCookieName)
 		if err == nil {
 			user, err = s.ActiveUserService.Get(r.Context(), cookie.Value)
 			if err != otf.ErrResourceNotFound && err != nil {
@@ -44,13 +52,15 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 			}
 		}
 
-		// cookie nor user found
+		// cookie or user not found
 		if err != nil {
 			user, err = s.ActiveUserService.NewAnonymousSession(r)
 			if err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// set cookie on response
+			setCookie(w, user.Session.Token, user.Session.Expiry)
 		}
 
 		ctx := context.WithValue(r.Context(), userCtxKey, user)
@@ -58,6 +68,30 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
+	cookie := &http.Cookie{
+		Name:     "session",
+		Value:    token,
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	if expiry.IsZero() {
+		// Purge cookie from browser.
+		cookie.Expires = time.Unix(1, 0)
+		cookie.MaxAge = -1
+	} else {
+		// Round up to the nearest second.
+		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
+		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1)
+	}
+
+	w.Header().Add("Set-Cookie", cookie.String())
+	w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
 }
 
 // TransferSession transfers the active session to the given user. Note: after
@@ -75,9 +109,14 @@ func (s *sessions) TransferSession(ctx context.Context, to *otf.User) error {
 }
 
 // Destroy deletes the current session.
-func (s *sessions) Destroy(ctx context.Context) error {
+func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 	user := s.getUserFromContext(ctx)
-	return s.ActiveUserService.DeleteSession(ctx, user.Session.Token)
+	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
+		return err
+	}
+	setCookie(w, user.Session.Token, user.Session.Expiry)
+
+	return nil
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
@@ -111,18 +150,18 @@ func (s *sessions) PopFlash(r *http.Request) (*otf.Flash, error) {
 	return flash, nil
 }
 
-func (s *sessions) FlashSuccess(r *http.Request, msg ...string) error {
+func (s *sessions) FlashSuccess(r *http.Request, msg ...interface{}) error {
 	return s.flash(r, otf.FlashSuccessType, msg...)
 }
 
-func (s *sessions) FlashError(r *http.Request, msg ...string) error {
+func (s *sessions) FlashError(r *http.Request, msg ...interface{}) error {
 	return s.flash(r, otf.FlashErrorType, msg...)
 }
 
-func (s *sessions) flash(r *http.Request, t otf.FlashType, msg ...string) error {
+func (s *sessions) flash(r *http.Request, t otf.FlashType, msg ...interface{}) error {
 	user := s.getUserFromContext(r.Context())
 
-	user.SetFlash(t, msg)
+	user.SetFlash(t, msg...)
 
 	if err := s.UserService.UpdateSession(r.Context(), user.User, user.Session); err != nil {
 		return fmt.Errorf("saving flash message in session backend: %w", err)

@@ -157,7 +157,7 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 
 	if existing.UserID != updated.UserID {
 		modified = true
-		updateBuilder = updateBuilder.Set("user_id", updated.Expiry)
+		updateBuilder = updateBuilder.Set("user_id", updated.UserID)
 	}
 
 	if !modified {

@@ -27,13 +27,13 @@
       </div>
       <div class="nav-links-me">
         <ul>
-          {{ if .CurrentUser }}
+          {{ if .CurrentUser.IsAuthenticated }}
           <li>
-            <a href="{{ .Path "getMe" }}">{{ .CurrentUser }}</a>
+            <a href="{{ .Path "getMe" }}">{{ .CurrentUser.Username }}</a>
           </li>
           <li>
             <form action="{{ .Path "logout" }}" method="POST">
-              <button type="submit" class="btn btn-dark">Logout</button>
+              <button type="submit">Logout</button>
             </form>
           </li>
           {{ end }}
