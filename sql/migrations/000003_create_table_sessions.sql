@@ -9,12 +9,12 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS sessions (
     token text,
-    created_at timestamptz,
-    updated_at timestamptz,
+    created_at timestamptz not null,
+    updated_at timestamptz not null,
     address text not null,
     flash jsonb,
     expiry timestamptz not null,
-    user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
+    user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE not null,
     PRIMARY KEY (token)
 );
 
