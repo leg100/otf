@@ -29,6 +29,9 @@ type User struct {
 
 	// A user has many sessions
 	Sessions []*Session
+
+	// A user belongs to many organizations
+	Organizations []*Organization
 }
 
 // AttachNewSession creates and attaches a new session to the user.
@@ -51,6 +54,11 @@ func (u *User) IsAuthenticated() bool {
 
 func (u *User) String() string {
 	return u.Username
+}
+
+// UpdateOrganizationMembership updates the user's organization memberships to
+// those specified; any existing memberships that are unspecified are removed.
+func (u *User) UpdateOrganizationMemberships(organizationName ...string) {
 }
 
 // TransferSession transfers a session from the receiver to another user.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 )
@@ -67,6 +68,21 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return nil
 }
 
+// Update persists changes to the provided user object to the backend. The spec
+// identifies the user to update.
+func (db UserDB) Update(ctx context.Context, spec otf.UserSpec, updated *otf.User) error {
+	existing, err := getUser(ctx, db.DB, spec)
+	if err != nil {
+		return err
+	}
+
+	if err := updateOrganizationMemberships(ctx, db.DB, existing, updated); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 	selectBuilder := psql.Select("*").From("users")
 
@@ -85,39 +101,7 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 
 // Get retrieves a user from the DB, along with its sessions.
 func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
-	selectBuilder := psql.
-		Select(asColumnList("users", false, userColumns...)).
-		From("users")
-
-	switch {
-	case spec.Username != nil:
-		selectBuilder = selectBuilder.Where("username = ?", *spec.Username)
-	case spec.Token != nil:
-		selectBuilder = selectBuilder.
-			Join("sessions USING (user_id)").
-			Where("sessions.token = ?", *spec.Token)
-	default:
-		return nil, fmt.Errorf("empty user spec provided")
-	}
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, fmt.Errorf("building SQL query: %w", err)
-	}
-
-	// get user
-	var user otf.User
-	if err := db.DB.Get(&user, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
-	}
-
-	// ...and their sessions
-	user.Sessions, err = listSessions(ctx, db.DB, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &user, nil
+	return getUser(ctx, db.DB, spec)
 }
 
 // CreateSession inserts the session, associating it with the user.
@@ -192,18 +176,12 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 
 // Delete deletes a user from the DB.
 func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
-	deleteBuilder := psql.Delete("users")
-
-	switch {
-	case spec.Username != nil:
-		deleteBuilder = deleteBuilder.Where("username = ?", *spec.Username)
-	case spec.Token != nil:
-		deleteBuilder = deleteBuilder.Where("token = ?", *spec.Token)
-	default:
-		return fmt.Errorf("empty user spec provided")
+	user, err := getUser(ctx, db.DB, spec)
+	if err != nil {
+		return err
 	}
 
-	sql, args, err := deleteBuilder.ToSql()
+	sql, args, err := psql.Delete("users").Where("user_id = ?", user.ID).ToSql()
 	if err != nil {
 		return err
 	}
@@ -241,6 +219,48 @@ func (db UserDB) startCleanup(interval time.Duration) {
 		<-ticker.C
 		db.deleteExpired()
 	}
+}
+
+func getUser(ctx context.Context, db Getter, spec otf.UserSpec) (*otf.User, error) {
+	selectBuilder := psql.
+		Select(asColumnList("users", false, userColumns...)).
+		From("users")
+
+	switch {
+	case spec.Username != nil:
+		selectBuilder = selectBuilder.Where("username = ?", *spec.Username)
+	case spec.Token != nil:
+		selectBuilder = selectBuilder.
+			Join("sessions USING (user_id)").
+			Where("sessions.token = ?", *spec.Token)
+	default:
+		return nil, fmt.Errorf("empty user spec provided")
+	}
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("building SQL query: %w", err)
+	}
+
+	// get user
+	var user otf.User
+	if err := db.Get(&user, sql, args...); err != nil {
+		return nil, databaseError(err, sql)
+	}
+
+	// ...and their sessions
+	user.Sessions, err = listSessions(ctx, db, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// ...and their organizations
+	user.Organizations, err = listOrganizationMemberships(ctx, db, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 // listSessions lists sessions belonging to the user with the given userID.
@@ -282,4 +302,110 @@ func getSession(ctx context.Context, db Getter, token string) (*otf.Session, err
 	}
 
 	return &session, nil
+}
+
+// listOrganizationMemberships lists organizations belonging to the user with
+// the given userID.
+func listOrganizationMemberships(ctx context.Context, db Getter, userID string) ([]*otf.Organization, error) {
+	selectBuilder := psql.
+		Select(asColumnList("organizations", false, organizationColumns...)).
+		From("organization_memberships").
+		Where("user_id = ?", userID).
+		Join("organizations USING (organization_id)")
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var organizations []*otf.Organization
+	if err := db.Select(&organizations, sql, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan organizations from db: %w", err)
+	}
+
+	return organizations, nil
+}
+
+func updateOrganizationMemberships(ctx context.Context, db *sqlx.DB, existing, updated *otf.User) error {
+	added, removed := diffOrganizationLists(existing.Organizations, updated.Organizations)
+
+	if err := addOrganizationMemberships(ctx, db, existing, added); err != nil {
+		return err
+	}
+
+	if err := deleteOrganizationMemberships(ctx, db, existing, removed); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func addOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
+	insertBuilder := psql.Insert("organization_memberships").Columns("user_id", "organization_id")
+
+	for _, org := range organizations {
+		insertBuilder = insertBuilder.Values(user.ID, org.ID)
+	}
+
+	sql, args, err := insertBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.DB.Exec(sql, args...)
+	if err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+func deleteOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
+	var deleteWhereExpr squirrel.Or
+	for _, org := range organizations {
+		deleteWhereExpr = append(deleteWhereExpr, squirrel.Eq{"user_id": user.ID, "organization_id": org.ID})
+	}
+
+	sql, args, err := psql.Delete("organization_memberships").SuffixExpr(deleteWhereExpr).ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.DB.Exec(sql, args...)
+	if err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+// diffOrganizationLists compares two lists of organizations, al and bl, and
+// returns organizations present in b but absent in a, and organizations absent
+// in b but present in a. Uses the organization ID for comparison.
+func diffOrganizationLists(al, bl []*otf.Organization) (added, removed []*otf.Organization) {
+	am := make(map[string]bool)
+	for _, ax := range al {
+		am[ax.ID] = true
+	}
+
+	bm := make(map[string]bool)
+	for _, bx := range bl {
+		bm[bx.ID] = true
+	}
+
+	// find those in a but not in b
+	for _, ax := range al {
+		if _, ok := bm[ax.ID]; !ok {
+			removed = append(removed, ax)
+		}
+	}
+
+	// find those in b but in in a
+	for _, bx := range bl {
+		if _, ok := am[bx.ID]; !ok {
+			added = append(added, bx)
+		}
+	}
+
+	return
 }

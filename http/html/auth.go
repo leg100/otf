@@ -43,6 +43,12 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// Transfer session from anonymous to named user.
 	if err = app.sessions.TransferSession(ctx, user); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

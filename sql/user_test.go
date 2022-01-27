@@ -20,6 +20,18 @@ func TestUser_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUser_Update(t *testing.T) {
+	db := newTestDB(t)
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+	user := createTestUser(t, db)
+
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
+	require.NoError(t, err)
+
+	assert.Equal(t, got, user)
+}
+
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
@@ -147,4 +159,42 @@ func TestUser_SessionCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))
+}
+
+func TestDiffOrganizationLists(t *testing.T) {
+	a := []*otf.Organization{
+		{
+			ID: "adidas",
+		},
+		{
+			ID: "nike",
+		},
+	}
+	b := []*otf.Organization{
+		{
+			ID: "adidas",
+		},
+		{
+			ID: "puma",
+		},
+		{
+			ID: "umbro",
+		},
+	}
+
+	added, removed := diffOrganizationLists(a, b)
+
+	assert.Equal(t, added, []*otf.Organization{
+		{
+			ID: "puma",
+		},
+		{
+			ID: "umbro",
+		},
+	})
+	assert.Equal(t, removed, []*otf.Organization{
+		{
+			ID: "nike",
+		},
+	})
 }
