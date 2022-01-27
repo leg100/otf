@@ -77,7 +77,7 @@ type UserService interface {
 	Create(ctx context.Context, username string) (*User, error)
 
 	// Get retrieves a user according to the spec.
-	Get(ctx context.Context, spec UserSpecifier) (*User, error)
+	Get(ctx context.Context, spec UserSpec) (*User, error)
 
 	// Get retrieves the anonymous user.
 	GetAnonymous(ctx context.Context) (*User, error)
@@ -97,11 +97,11 @@ type UserService interface {
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
 
-	Get(ctx context.Context, spec UserSpecifier) (*User, error)
+	Get(ctx context.Context, spec UserSpec) (*User, error)
 
 	List(ctx context.Context) ([]*User, error)
 
-	Delete(ctx context.Context, spec UserSpecifier) error
+	Delete(ctx context.Context, spec UserSpec) error
 
 	// CreateSession persists a new session to the store.
 	CreateSession(ctx context.Context, session *Session) error
@@ -113,14 +113,14 @@ type UserStore interface {
 	DeleteSession(ctx context.Context, token string) error
 }
 
-type UserSpecifier struct {
+type UserSpec struct {
 	Username *string
 	Token    *string
 }
 
-// KeyValue returns the user specifier in key-value form. Useful for logging
+// KeyValue returns the user spec in key-value form. Useful for logging
 // purposes.
-func (spec *UserSpecifier) KeyValue() []interface{} {
+func (spec *UserSpec) KeyValue() []interface{} {
 	if spec.Username != nil {
 		return []interface{}{"username", *spec.Username}
 	}

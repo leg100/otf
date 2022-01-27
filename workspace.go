@@ -14,9 +14,9 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked    = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked  = errors.New("workspace already unlocked")
-	ErrInvalidWorkspaceSpecifier = errors.New("invalid workspace specifier options")
+	ErrWorkspaceAlreadyLocked   = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyUnlocked = errors.New("workspace already unlocked")
+	ErrInvalidWorkspaceSpec     = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -255,25 +255,25 @@ type WorkspaceList struct {
 
 type WorkspaceService interface {
 	Create(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
-	Get(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
+	Get(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, spec WorkspaceSpecifier, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpecifier) (*Workspace, error)
-	Delete(ctx context.Context, spec WorkspaceSpecifier) error
+	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
+	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 
 type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
-	Get(spec WorkspaceSpecifier) (*Workspace, error)
+	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpecifier, fn func(*Workspace) error) (*Workspace, error)
-	Delete(spec WorkspaceSpecifier) error
+	Update(spec WorkspaceSpec, fn func(*Workspace) error) (*Workspace, error)
+	Delete(spec WorkspaceSpec) error
 }
 
-// WorkspaceSpecifier is used for identifying an individual workspace. Either ID
+// WorkspaceSpec is used for identifying an individual workspace. Either ID
 // *or* both Name and OrganizationName must be specfiied.
-type WorkspaceSpecifier struct {
+type WorkspaceSpec struct {
 	// Specify workspace using its ID
 	ID *string `db:"workspace_id"`
 
@@ -502,18 +502,18 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	return nil
 }
 
-func (spec *WorkspaceSpecifier) String() string {
+func (spec *WorkspaceSpec) String() string {
 	switch {
 	case spec.ID != nil:
 		return *spec.ID
 	case spec.Name != nil && spec.OrganizationName != nil:
 		return *spec.OrganizationName + "/" + *spec.Name
 	default:
-		panic("invalid workspace specifier")
+		panic("invalid workspace spec")
 	}
 }
 
-func (spec *WorkspaceSpecifier) Valid() error {
+func (spec *WorkspaceSpec) Valid() error {
 	if spec.ID != nil {
 		if *spec.ID == "" {
 			return fmt.Errorf("id is an empty string")

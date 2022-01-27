@@ -123,7 +123,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		Name:             otf.String(vars["name"]),
 		OrganizationName: otf.String(vars["org"]),
 	}
@@ -139,7 +139,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		ID: otf.String(vars["id"]),
 	}
 
@@ -184,7 +184,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		Name:             otf.String(vars["name"]),
 		OrganizationName: otf.String(vars["org"]),
 	}
@@ -207,7 +207,7 @@ func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		ID: otf.String(vars["id"]),
 	}
 
@@ -230,7 +230,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := vars["id"]
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		ID: &id,
 	}
 
@@ -250,7 +250,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	id := vars["id"]
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		ID: &id,
 	}
 
@@ -268,7 +268,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpecifier{
+	spec := otf.WorkspaceSpec{
 		Name:             otf.String(vars["name"]),
 		OrganizationName: otf.String(vars["org"]),
 	}
@@ -283,7 +283,7 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpecifier{ID: otf.String(vars["id"])}
+	spec := otf.WorkspaceSpec{ID: otf.String(vars["id"])}
 
 	if err := s.WorkspaceService().Delete(r.Context(), spec); err != nil {
 		WriteError(w, http.StatusNotFound, err)

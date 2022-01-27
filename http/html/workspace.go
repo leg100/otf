@@ -91,7 +91,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
-	var opts otf.WorkspaceSpecifier
+	var opts otf.WorkspaceSpec
 
 	if err := decodeRouteVars(r, &opts); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
@@ -112,7 +112,7 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
-	var opts otf.WorkspaceSpecifier
+	var opts otf.WorkspaceSpec
 	if err := decodeRouteVars(r, &opts); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -126,7 +126,7 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 
 	tdata := c.newTemplateData(r, struct {
 		Workspace *otf.Workspace
-		Options   otf.WorkspaceSpecifier
+		Options   otf.WorkspaceSpec
 	}{
 		Workspace: workspace,
 		Options:   opts,
@@ -138,7 +138,7 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpecifier
+	var spec otf.WorkspaceSpec
 	if err := decodeRouteVars(r, &spec); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -162,7 +162,7 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
-	var opts otf.WorkspaceSpecifier
+	var opts otf.WorkspaceSpec
 	if err := decodeRouteVars(r, &opts); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -180,7 +180,7 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
-	var opts otf.WorkspaceSpecifier
+	var opts otf.WorkspaceSpec
 	if err := decodeRouteVars(r, &opts); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -194,7 +194,7 @@ func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
 
 	tdata := c.newTemplateData(r, struct {
 		Workspace *otf.Workspace
-		Options   otf.WorkspaceSpecifier
+		Options   otf.WorkspaceSpec
 	}{
 		Workspace: workspace,
 		Options:   opts,
@@ -206,7 +206,7 @@ func (c *WorkspaceController) EditLock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) UpdateLock(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpecifier
+	var spec otf.WorkspaceSpec
 	if err := decodeRouteVars(r, &spec); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return

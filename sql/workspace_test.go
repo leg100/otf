@@ -28,18 +28,18 @@ func TestWorkspace_Update(t *testing.T) {
 
 	tests := []struct {
 		name string
-		spec func(ws *otf.Workspace) otf.WorkspaceSpecifier
+		spec func(ws *otf.Workspace) otf.WorkspaceSpec
 	}{
 		{
 			name: "by id",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
-				return otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
+				return otf.WorkspaceSpec{ID: otf.String(ws.ID)}
 			},
 		},
 		{
 			name: "by name",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
-				return otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)}
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)}
 			},
 		},
 	}
@@ -69,15 +69,15 @@ func TestWorkspace_Get(t *testing.T) {
 
 	tests := []struct {
 		name string
-		spec otf.WorkspaceSpecifier
+		spec otf.WorkspaceSpec
 	}{
 		{
 			name: "by id",
-			spec: otf.WorkspaceSpecifier{ID: otf.String(ws.ID)},
+			spec: otf.WorkspaceSpec{ID: otf.String(ws.ID)},
 		},
 		{
 			name: "by name",
-			spec: otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)},
+			spec: otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)},
 		},
 	}
 
@@ -158,18 +158,18 @@ func TestWorkspace_Delete(t *testing.T) {
 
 	tests := []struct {
 		name string
-		spec func(ws *otf.Workspace) otf.WorkspaceSpecifier
+		spec func(ws *otf.Workspace) otf.WorkspaceSpec
 	}{
 		{
 			name: "by id",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
-				return otf.WorkspaceSpecifier{ID: otf.String(ws.ID)}
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
+				return otf.WorkspaceSpec{ID: otf.String(ws.ID)}
 			},
 		},
 		{
 			name: "by name",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpecifier {
-				return otf.WorkspaceSpecifier{Name: otf.String(ws.Name), OrganizationName: otf.String(ws.Organization.Name)}
+			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(ws.Organization.Name)}
 			},
 		},
 	}

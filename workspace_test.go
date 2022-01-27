@@ -9,38 +9,38 @@ import (
 // TestRun_UpdateStatus tests that UpdateStatus correctly updates the status of
 // the run's plan and apply (there is little point to testing the status of the
 // run itself because there is no conditional logic to this assignment).
-func TestWorkspaceSpecifier_Valid(t *testing.T) {
+func TestWorkspaceSpec_Valid(t *testing.T) {
 	tests := []struct {
 		name    string
-		spec    WorkspaceSpecifier
+		spec    WorkspaceSpec
 		invalid bool
 	}{
 		{
 			name: "valid id",
-			spec: WorkspaceSpecifier{ID: String("ws-123")},
+			spec: WorkspaceSpec{ID: String("ws-123")},
 		},
 		{
 			name: "valid organization and workspace name",
-			spec: WorkspaceSpecifier{OrganizationName: String("org-123"), Name: String("default")},
+			spec: WorkspaceSpec{OrganizationName: String("org-123"), Name: String("default")},
 		},
 		{
 			name:    "nothing specified",
-			spec:    WorkspaceSpecifier{},
+			spec:    WorkspaceSpec{},
 			invalid: true,
 		},
 		{
 			name:    "empty id",
-			spec:    WorkspaceSpecifier{ID: String("")},
+			spec:    WorkspaceSpec{ID: String("")},
 			invalid: true,
 		},
 		{
 			name:    "organization name but no workspace name",
-			spec:    WorkspaceSpecifier{OrganizationName: String("org-123")},
+			spec:    WorkspaceSpec{OrganizationName: String("org-123")},
 			invalid: true,
 		},
 		{
 			name:    "workspace name but no organization name",
-			spec:    WorkspaceSpecifier{Name: String("default")},
+			spec:    WorkspaceSpec{Name: String("default")},
 			invalid: true,
 		},
 	}

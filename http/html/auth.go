@@ -31,7 +31,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get named user; if not exist create user
-	user, err := app.UserService().Get(ctx, otf.UserSpecifier{Username: guser.Login})
+	user, err := app.UserService().Get(ctx, otf.UserSpec{Username: guser.Login})
 	if err == otf.ErrResourceNotFound {
 		user, err = app.UserService().Create(ctx, *guser.Login)
 		if err != nil {

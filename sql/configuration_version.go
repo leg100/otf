@@ -162,7 +162,7 @@ func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOpti
 		// Get latest config version for given workspace
 		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
 	default:
-		return nil, otf.ErrInvalidWorkspaceSpecifier
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
 
 	sql, args, err := selectBuilder.ToSql()

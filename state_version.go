@@ -118,7 +118,7 @@ func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVers
 		Serial:     *opts.Serial,
 	}
 
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpecifier{ID: &workspaceID})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
 	if err != nil {
 		return nil, err
 	}

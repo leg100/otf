@@ -10,23 +10,23 @@ var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
 	CreateWorkspaceFn func(opts otf.WorkspaceCreateOptions) (*otf.Workspace, error)
-	UpdateWorkspaceFn func(spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error)
-	GetWorkspaceFn    func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error)
+	UpdateWorkspaceFn func(spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error)
+	GetWorkspaceFn    func(spec otf.WorkspaceSpec) (*otf.Workspace, error)
 	ListWorkspaceFn   func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error)
-	DeleteWorkspaceFn func(spec otf.WorkspaceSpecifier) error
-	LockWorkspaceFn   func(spec otf.WorkspaceSpecifier, opts otf.WorkspaceLockOptions) (*otf.Workspace, error)
-	UnlockWorkspaceFn func(spec otf.WorkspaceSpecifier) (*otf.Workspace, error)
+	DeleteWorkspaceFn func(spec otf.WorkspaceSpec) error
+	LockWorkspaceFn   func(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error)
+	UnlockWorkspaceFn func(spec otf.WorkspaceSpec) (*otf.Workspace, error)
 }
 
 func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return s.CreateWorkspaceFn(opts)
 }
 
-func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return s.UpdateWorkspaceFn(spec, opts)
 }
 
-func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return s.GetWorkspaceFn(spec)
 }
 
@@ -34,15 +34,15 @@ func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOption
 	return s.ListWorkspaceFn(opts)
 }
 
-func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) error {
+func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
 	return s.DeleteWorkspaceFn(spec)
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return s.LockWorkspaceFn(spec, opts)
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return s.UnlockWorkspaceFn(spec)
 }
 

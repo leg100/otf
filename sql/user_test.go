@@ -14,7 +14,7 @@ func TestUser_Create(t *testing.T) {
 	db := newTestDB(t)
 	user := newTestUser()
 
-	defer db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	defer db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)
@@ -25,7 +25,7 @@ func TestUser_Get(t *testing.T) {
 	user := createTestUser(t, db)
 	//_ = createTestSession(t, db)
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
 	assert.Equal(t, got, user)
@@ -37,7 +37,7 @@ func TestUser_Get_WithSessions(t *testing.T) {
 	_ = createTestSession(t, db, user.ID)
 	_ = createTestSession(t, db, user.ID)
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(got.Sessions))
@@ -58,7 +58,7 @@ func TestUser_SessionFlash(t *testing.T) {
 
 		_ = createTestSession(t, db, user.ID, withFlash(flash))
 
-		got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.Equal(t, flash, got.Sessions[0].Flash)
@@ -67,7 +67,7 @@ func TestUser_SessionFlash(t *testing.T) {
 	t.Run("WithNoFlash", func(t *testing.T) {
 		_ = createTestSession(t, db, user.ID)
 
-		got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 
 		assert.Nil(t, got.Sessions[0].Flash)
@@ -92,7 +92,7 @@ func TestUser_Delete(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 
-	err := db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	err := db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
 	// Verify zero users after deletion
@@ -126,7 +126,7 @@ func TestUser_UpdateSession(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify session's flash has popped
-	user, err = db.UserStore().Get(context.Background(), otf.UserSpecifier{Token: &session.Token})
+	user, err = db.UserStore().Get(context.Background(), otf.UserSpec{Token: &session.Token})
 	require.NoError(t, err)
 	assert.Nil(t, user.Sessions[0].Flash)
 }
@@ -143,7 +143,7 @@ func TestUser_SessionCleanup(t *testing.T) {
 
 	time.Sleep(300 * time.Millisecond)
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))

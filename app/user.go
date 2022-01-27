@@ -53,7 +53,7 @@ func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *ot
 	return session, nil
 }
 
-func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
+func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	user, err := s.db.Get(ctx, spec)
 	if err != nil {
 		s.Error(err, "retrieving user", spec.KeyValue()...)
@@ -66,7 +66,7 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User
 }
 
 func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
-	return s.Get(ctx, otf.UserSpecifier{Username: otf.String(otf.AnonymousUsername)})
+	return s.Get(ctx, otf.UserSpec{Username: otf.String(otf.AnonymousUsername)})
 }
 
 // UpdateSession updates a user session.
@@ -84,7 +84,7 @@ func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session 
 
 func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	// Retrieve user purely for logging purposes
-	user, err := s.Get(ctx, otf.UserSpecifier{Token: &token})
+	user, err := s.Get(ctx, otf.UserSpec{Token: &token})
 	if err != nil {
 		return err
 	}

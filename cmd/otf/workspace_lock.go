@@ -9,7 +9,7 @@ import (
 )
 
 func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
-	var spec otf.WorkspaceSpecifier
+	var spec otf.WorkspaceSpec
 
 	cmd := &cobra.Command{
 		Use:   "lock [name]",
@@ -30,7 +30,7 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			_, err = client.Workspaces().Lock(cmd.Context(), otf.WorkspaceSpecifier{ID: &ws.ID}, otf.WorkspaceLockOptions{})
+			_, err = client.Workspaces().Lock(cmd.Context(), otf.WorkspaceSpec{ID: &ws.ID}, otf.WorkspaceLockOptions{})
 			if err != nil {
 				return err
 			}

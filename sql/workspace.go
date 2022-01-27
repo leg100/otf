@@ -55,7 +55,7 @@ func NewWorkspaceDB(db *sqlx.DB) *WorkspaceDB {
 // Create persists a Workspace to the DB. The returned Workspace is adorned with
 // additional metadata, i.e. CreatedAt, UpdatedAt, etc.
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
-	spec := otf.WorkspaceSpecifier{OrganizationName: &ws.Organization.Name, Name: &ws.Name}
+	spec := otf.WorkspaceSpec{OrganizationName: &ws.Organization.Name, Name: &ws.Name}
 	if _, err := getWorkspace(db.DB, spec); err == nil {
 		return nil, otf.ErrResourcesAlreadyExists
 	}
@@ -76,7 +76,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 // fetched from the DB, the supplied func is invoked on the workspace, and the
 // updated workspace is persisted back to the DB. The returned Workspace
 // includes any changes, including a new UpdatedAt value.
-func (db WorkspaceDB) Update(spec otf.WorkspaceSpecifier, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
+func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
@@ -150,12 +150,12 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	}, nil
 }
 
-func (db WorkspaceDB) Get(spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return getWorkspace(db.DB, spec)
 }
 
 // Delete deletes a specific workspace, along with its child records (runs etc).
-func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
+func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 
@@ -172,7 +172,7 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpecifier) error {
 	return tx.Commit()
 }
 
-func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func getWorkspace(db Getter, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	selectBuilder := psql.Select(asColumnList("workspaces", false, workspaceColumns...)).
 		Columns(asColumnList("organizations", true, organizationColumns...)).
 		From("workspaces").
@@ -187,7 +187,7 @@ func getWorkspace(db Getter, spec otf.WorkspaceSpecifier) (*otf.Workspace, error
 		selectBuilder = selectBuilder.Where("workspaces.name = ?", *spec.Name)
 		selectBuilder = selectBuilder.Where("organizations.name = ?", *spec.OrganizationName)
 	default:
-		return nil, otf.ErrInvalidWorkspaceSpecifier
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
 
 	sql, args, err := selectBuilder.ToSql()

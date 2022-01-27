@@ -195,7 +195,7 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(otf.WorkspaceSpecifier{ID: otf.String(ws.ID)})
+		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID)})
 	})
 
 	return ws
@@ -241,7 +241,7 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		err := db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
 		require.NoError(t, err)
 	})
 

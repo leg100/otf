@@ -163,7 +163,7 @@ func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.State
 		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
 		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
 	default:
-		return nil, otf.ErrInvalidWorkspaceSpecifier
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
 
 	sql, args, err := selectBuilder.ToSql()

@@ -45,7 +45,7 @@ func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOpti
 }
 
 // Retrieve a workspace either by its ID, or by organization and workspace name.
-func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (s *workspaces) List(ctx context.Context, options otf.WorkspaceListOptions)
 }
 
 // Update settings of an existing workspace.
-func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpecifier, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpecifier, op
 }
 
 // Delete a workspace by its name.
-func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) error {
+func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return err
@@ -127,7 +127,7 @@ func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpecifier) er
 }
 
 // Lock a workspace by its ID.
-func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, options otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	if !otf.ValidStringID(spec.ID) {
 		return nil, otf.ErrInvalidWorkspaceID
 	}
@@ -148,7 +148,7 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpecifier, opti
 }
 
 // Unlock a workspace by its ID.
-func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*otf.Workspace, error) {
+func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if !otf.ValidStringID(spec.ID) {
 		return nil, otf.ErrInvalidWorkspaceID
 	}
@@ -169,8 +169,8 @@ func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpecifier) (*
 }
 
 // getWorkspacePath generates a URL path for a workspace according to whether
-// the specifier specifies an ID, or an organization and workspace name.
-func getWorkspacePath(spec otf.WorkspaceSpecifier) (string, error) {
+// the spec specifies an ID, or an organization and workspace name.
+func getWorkspacePath(spec otf.WorkspaceSpec) (string, error) {
 	if spec.ID != nil {
 		return fmt.Sprintf("workspaces/%s", url.QueryEscape(*spec.ID)), nil
 	}
@@ -183,5 +183,5 @@ func getWorkspacePath(spec otf.WorkspaceSpecifier) (string, error) {
 		), nil
 	}
 
-	return "", fmt.Errorf("invalid workspace specifier")
+	return "", fmt.Errorf("invalid workspace spec")
 }

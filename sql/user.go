@@ -84,7 +84,7 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 }
 
 // Get retrieves a user from the DB, along with its sessions.
-func (db UserDB) Get(ctx context.Context, spec otf.UserSpecifier) (*otf.User, error) {
+func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	selectBuilder := psql.
 		Select(asColumnList("users", false, userColumns...)).
 		From("users")
@@ -191,7 +191,7 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 }
 
 // Delete deletes a user from the DB.
-func (db UserDB) Delete(ctx context.Context, spec otf.UserSpecifier) error {
+func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
 	deleteBuilder := psql.Delete("users")
 
 	switch {
