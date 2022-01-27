@@ -131,18 +131,20 @@ func TestUser_UpdateSession(t *testing.T) {
 	assert.Nil(t, user.Sessions[0].Flash)
 }
 
-func TestUser_SessionExpiry(t *testing.T) {
-	db := newTestDB(t)
+// TestUser_SessionCleanup tests the session cleanup background routine. We
+// override the cleanup interval to just every 100ms, so after waiting for 300ms
+// the sessions should be cleaned up.
+func TestUser_SessionCleanup(t *testing.T) {
+	db := newTestDB(t, 100*time.Millisecond)
 	user := createTestUser(t, db)
-	_ = createTestSession(t, db, user.ID)
-	_ = createTestSession(t, db, user.ID)
-	_ = createTestSession(t, db, user.ID)
 
-	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now().Add(-time.Hour)))
-	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now().Add(-time.Hour)))
+	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now()))
+
+	time.Sleep(300 * time.Millisecond)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpecifier{Username: &user.Username})
 	require.NoError(t, err)
 
-	assert.Equal(t, 3, len(got.Sessions))
+	assert.Equal(t, 0, len(got.Sessions))
 }

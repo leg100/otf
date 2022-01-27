@@ -18,7 +18,7 @@ const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
 type newTestStateVersionOption func(*otf.StateVersion) error
 
-func newTestDB(t *testing.T) otf.DB {
+func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) otf.DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -37,7 +37,12 @@ func newTestDB(t *testing.T) otf.DB {
 	q.Add("TimeZone", "UTC")
 	u.RawQuery = q.Encode()
 
-	db, err := New(logr.Discard(), u.String(), nil)
+	interval := DefaultSessionCleanupInterval
+	if len(sessionCleanupIntervalOverride) > 0 {
+		interval = sessionCleanupIntervalOverride[0]
+	}
+
+	db, err := New(logr.Discard(), u.String(), nil, interval)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

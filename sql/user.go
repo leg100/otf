@@ -12,6 +12,8 @@ import (
 var (
 	_ otf.UserStore = (*UserDB)(nil)
 
+	DefaultSessionCleanupInterval = 5 * time.Minute
+
 	userColumns = []string{
 		"user_id",
 		"created_at",

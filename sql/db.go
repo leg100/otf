@@ -25,7 +25,7 @@ type db struct {
 	userStore                 otf.UserStore
 }
 
-func New(logger logr.Logger, path string, cache *bigcache.BigCache) (otf.DB, error) {
+func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpiry time.Duration) (otf.DB, error) {
 	sqlxdb, err := sqlx.Connect("postgres", path)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache) (otf.DB, err
 		runStore:                  NewRunDB(sqlxdb),
 		planLogStore:              NewPlanLogDB(sqlxdb),
 		applyLogStore:             NewApplyLogDB(sqlxdb),
-		userStore:                 NewUserDB(sqlxdb, 5*time.Minute),
+		userStore:                 NewUserDB(sqlxdb, sessionExpiry),
 	}
 
 	if cache != nil {

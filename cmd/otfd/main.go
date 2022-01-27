@@ -87,7 +87,7 @@ func run(ctx context.Context, args []string) error {
 	logger.Info("started cache", "max_size", cacheCfg.Size, "ttl", cacheCfg.TTL.String())
 
 	// Setup database(s)
-	db, err := sql.New(logger, dbConnStr, cache)
+	db, err := sql.New(logger, dbConnStr, cache, sql.DefaultSessionCleanupInterval)
 	if err != nil {
 		return err
 	}
