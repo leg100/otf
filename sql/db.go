@@ -2,6 +2,7 @@ package sql
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
@@ -24,7 +25,7 @@ type db struct {
 	userStore                 otf.UserStore
 }
 
-func New(logger logr.Logger, path string, cache *bigcache.BigCache) (otf.DB, error) {
+func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpiry time.Duration) (otf.DB, error) {
 	sqlxdb, err := sqlx.Connect("postgres", path)
 	if err != nil {
 		return nil, err
@@ -46,7 +47,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache) (otf.DB, err
 		runStore:                  NewRunDB(sqlxdb),
 		planLogStore:              NewPlanLogDB(sqlxdb),
 		applyLogStore:             NewApplyLogDB(sqlxdb),
-		userStore:                 NewUserDB(sqlxdb),
+		userStore:                 NewUserDB(sqlxdb, sessionExpiry),
 	}
 
 	if cache != nil {

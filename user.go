@@ -3,8 +3,6 @@ package otf
 import (
 	"context"
 	"time"
-
-	"github.com/alexedwards/scs/v2"
 )
 
 const (
@@ -12,6 +10,10 @@ const (
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
 	FlashSessionKey    = "flash"
+
+	DefaultSessionExpiry = 24 * time.Hour
+
+	AnonymousUsername string = "anonymous"
 )
 
 // User represents an oTF user account.
@@ -29,81 +31,112 @@ type User struct {
 	Sessions []*Session
 }
 
+// AttachNewSession creates and attaches a new session to the user.
+func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
+	session, err := NewSession(u.ID, data)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Sessions = append(u.Sessions, session)
+
+	return session, nil
+}
+
+// IsAuthenticated determines if the user is authenticated, i.e. not an
+// anonymous user.
+func (u *User) IsAuthenticated() bool {
+	return u.Username != AnonymousUsername
+}
+
+func (u *User) String() string {
+	return u.Username
+}
+
+// TransferSession transfers a session from the receiver to another user.
+func (u *User) TransferSession(session *Session, to *User) {
+	// Update session's user reference
+	session.UserID = to.ID
+
+	// Remove session from receiver
+	for i, s := range u.Sessions {
+		if s.Token != session.Token {
+			u.Sessions = append(u.Sessions[0:i], u.Sessions[i+1:len(u.Sessions)]...)
+			break
+		}
+	}
+
+	// Add session to destination user
+	to.Sessions = append(to.Sessions, session)
+}
+
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
-	// Login logs a user into oTF. A user is created if they don't already
-	// exist. The user is associated with an active session.
-	Login(ctx context.Context, opts UserLoginOptions) error
+	// Create creates a user with the given username.
+	Create(ctx context.Context, username string) (*User, error)
 
-	// Get retrieves a user using their username
-	Get(ctx context.Context, username string) (*User, error)
+	// Get retrieves a user according to the spec.
+	Get(ctx context.Context, spec UserSpecifier) (*User, error)
 
-	// Revoke a session belong to user
-	RevokeSession(ctx context.Context, token, username string) error
-}
+	// Get retrieves the anonymous user.
+	GetAnonymous(ctx context.Context) (*User, error)
 
-// UserLoginOptions are the options for logging a user into the system.
-type UserLoginOptions struct {
-	// Username of the user.
-	Username string
+	// CreateSession creates a user session.
+	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 
-	// SessionToken is the token for the active session of the user.
-	SessionToken string
+	// UpdateSession persists any updates to the user's session data
+	UpdateSession(ctx context.Context, user *User, session *Session) error
+
+	// DeleteSession deletes the session with the given token
+	DeleteSession(ctx context.Context, token string) error
 }
 
 // UserStore is a persistence store for user accounts and their associated
 // sessions.
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
+
+	Get(ctx context.Context, spec UserSpecifier) (*User, error)
+
 	List(ctx context.Context) ([]*User, error)
-	LinkSession(ctx context.Context, token, username string) error
-	RevokeSession(ctx context.Context, token, username string) error
-	Get(ctx context.Context, username string) (*User, error)
-	Delete(ctx context.Context, userID string) error
+
+	Delete(ctx context.Context, spec UserSpecifier) error
+
+	// CreateSession persists a new session to the store.
+	CreateSession(ctx context.Context, session *Session) error
+
+	// UpdateSession persists any updates to a user's session
+	UpdateSession(ctx context.Context, token string, updated *Session) error
+
+	// DeleteSession deletes a session
+	DeleteSession(ctx context.Context, token string) error
 }
 
-// Session is a user session
-type Session struct {
-	Token  string
-	Expiry time.Time
-	Data   []byte
-
-	// Session belongs to a user
-	UserID string
+type UserSpecifier struct {
+	Username *string
+	Token    *string
 }
 
-func NewUser(opts UserLoginOptions) *User {
+// KeyValue returns the user specifier in key-value form. Useful for logging
+// purposes.
+func (spec *UserSpecifier) KeyValue() []interface{} {
+	if spec.Username != nil {
+		return []interface{}{"username", *spec.Username}
+	}
+	if spec.Token != nil {
+		return []interface{}{"token", *spec.Token}
+	}
+
+	return []interface{}{"invalid user spec", ""}
+}
+
+func NewUser(username string) *User {
 	user := User{
 		ID:         NewID("user"),
 		Timestamps: NewTimestamps(),
-		Username:   opts.Username,
+		Username:   username,
 	}
 
 	return &user
-}
-
-// IsActive queries whether session is the active session. Relies on the
-// activeToken being the token for the active session.
-func (s *Session) IsActive(activeToken string) bool {
-	return s.Token == activeToken
-}
-
-// Address gets the source IP address for the user session.
-func (s *Session) Address() (string, error) {
-	data, err := s.decode()
-	if err != nil {
-		return "", err
-	}
-
-	addr, ok := data[AddressSessionKey]
-	if !ok {
-		return "", nil
-	}
-	return addr.(string), nil
-}
-
-func (s *Session) decode() (map[string]interface{}, error) {
-	_, data, err := (scs.GobCodec{}).Decode(s.Data)
-	return data, err
 }

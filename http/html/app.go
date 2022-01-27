@@ -3,8 +3,6 @@ package html
 import (
 	"net/http"
 
-	"github.com/alexedwards/scs/postgresstore"
-	"github.com/alexedwards/scs/v2"
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -15,7 +13,7 @@ const DefaultPathPrefix = "/"
 // Application is the oTF web app.
 type Application struct {
 	// Sessions manager
-	sessions *scs.SessionManager
+	sessions *sessions
 
 	// HTML template renderer
 	renderer
@@ -55,18 +53,19 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		return err
 	}
 
-	sessions := scs.New()
-	sessions.Store = postgresstore.New(db.Handle().DB)
+	sessions := sessions{
+		ActiveUserService: &ActiveUserService{services.UserService()},
+	}
 
 	app := &Application{
 		Application:  services,
-		sessions:     sessions,
+		sessions:     &sessions,
 		oauth:        oauthApp,
 		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		templateDataFactory: &templateDataFactory{
-			sessions: sessions,
+			sessions: &sessions,
 			router:   muxrouter,
 		},
 		router: &router{Router: muxrouter},
@@ -94,7 +93,7 @@ func (app *Application) addRoutes(router *mux.Router) {
 // sessionRoutes adds routes for which a session is maintained.
 func (app *Application) sessionRoutes(router *mux.Router) {
 	// Enable sessions middleware
-	router.Use(app.sessions.LoadAndSave)
+	router.Use(app.sessions.Load)
 
 	app.nonAuthRoutes(router.NewRoute().Subrouter())
 	app.authRoutes(router.NewRoute().Subrouter())
@@ -130,7 +129,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            &sessions{app.sessions},
+		sessions:            app.sessions,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
 	(&WorkspaceController{
@@ -138,7 +137,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            &sessions{app.sessions},
+		sessions:            app.sessions,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 
 	(&RunController{
@@ -147,6 +146,6 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            &sessions{app.sessions},
+		sessions:            app.sessions,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
 }

@@ -2,8 +2,6 @@ package sql
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -20,7 +18,7 @@ const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
 type newTestStateVersionOption func(*otf.StateVersion) error
 
-func newTestDB(t *testing.T) otf.DB {
+func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) otf.DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -39,7 +37,12 @@ func newTestDB(t *testing.T) otf.DB {
 	q.Add("TimeZone", "UTC")
 	u.RawQuery = q.Encode()
 
-	db, err := New(logr.Discard(), u.String(), nil)
+	interval := DefaultSessionCleanupInterval
+	if len(sessionCleanupIntervalOverride) > 0 {
+		interval = sessionCleanupIntervalOverride[0]
+	}
+
+	db, err := New(logr.Discard(), u.String(), nil, interval)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -108,25 +111,33 @@ func newTestUser() *otf.User {
 	}
 }
 
-func newTestSession(userID string) *otf.Session {
-	token, _ := generateToken()
+type newTestSessionOption func(*otf.Session)
 
-	return &otf.Session{
-		Token:  token,
-		Expiry: time.Now().Add(time.Second * 10),
-		UserID: userID,
+func withFlash(flash *otf.Flash) newTestSessionOption {
+	return func(session *otf.Session) {
+		session.SessionData.Flash = flash
 	}
 }
 
-// generateToken is taken from alexedwards/scs - here for generating a session
-// token for testing purposes.
-func generateToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
+func overrideExpiry(expiry time.Time) newTestSessionOption {
+	return func(session *otf.Session) {
+		session.Expiry = expiry
 	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *otf.Session {
+	session, err := otf.NewSession(userID, &otf.SessionData{
+		Address: "127.0.0.1",
+	})
+	require.NoError(t, err)
+
+	for _, o := range opts {
+		o(session)
+	}
+
+	session.Timestamps = newTestTimestamps()
+
+	return session
 }
 
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
@@ -230,24 +241,22 @@ func createTestUser(t *testing.T, db otf.DB) *otf.User {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), user.ID)
+		err := db.UserStore().Delete(context.Background(), otf.UserSpecifier{Username: &user.Username})
+		require.NoError(t, err)
 	})
 
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB, userID string) *otf.Session {
-	session := newTestSession(userID)
+func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
+	session := newTestSession(t, userID, opts...)
 
-	insertSQL := `INSERT INTO sessions (data, token, expiry, user_id) VALUES (:data, :token, :expiry, :user_id)`
-	sql, args, err := db.Handle().BindNamed(insertSQL, session)
-	require.NoError(t, err)
-
-	_, err = db.Handle().Exec(sql, args...)
+	err := db.UserStore().CreateSession(context.Background(), session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.Handle().Exec("DELETE FROM sessions WHERE token = ?", session.Token)
+		err := db.UserStore().DeleteSession(context.Background(), session.Token)
+		require.NoError(t, err)
 	})
 
 	return session
