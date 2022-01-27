@@ -22,14 +22,21 @@ func TestUser_Create(t *testing.T) {
 
 func TestUser_Update(t *testing.T) {
 	db := newTestDB(t)
+	user := createTestUser(t, db)
+
 	org1 := createTestOrganization(t, db)
 	org2 := createTestOrganization(t, db)
-	user := createTestUser(t, db)
+
+	user.Organizations = []*otf.Organization{org1, org2}
+
+	err := db.UserStore().Update(context.Background(), otf.UserSpec{Username: &user.Username}, user)
+	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
-	assert.Equal(t, got, user)
+	assert.Contains(t, got.Organizations, org1)
+	assert.Contains(t, got.Organizations, org2)
 }
 
 func TestUser_Get(t *testing.T) {

@@ -105,6 +105,9 @@ type UserService interface {
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
 
+	// Update updates the user account in the persistence store.
+	Update(ctx context.Context, spec UserSpec, updated *User) error
+
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 
 	List(ctx context.Context) ([]*User, error)
