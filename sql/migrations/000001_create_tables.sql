@@ -38,6 +38,31 @@ CREATE TABLE IF NOT EXISTS workspaces (
     PRIMARY KEY (workspace_id)
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT,
+    username TEXT NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS organization_memberships (
+    user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    organization_id text REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    address TEXT NOT NULL,
+    flash JSONB,
+    organization TEXT,
+    expiry TIMESTAMPTZ NOT NULL,
+    user_id TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    PRIMARY KEY (token)
+);
+
 CREATE TABLE IF NOT EXISTS configuration_versions (
     configuration_version_id TEXT,
     created_at TIMESTAMPTZ,
@@ -150,5 +175,8 @@ DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS configuration_versions;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS organization_memberships;
+DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS workspaces;
 DROP TABLE IF EXISTS organizations;
