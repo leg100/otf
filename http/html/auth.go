@@ -54,11 +54,17 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(githubOrganizations) == 0 {
+		app.sessions.FlashError(r, "no github organizations found")
+		http.Redirect(w, r, app.route("login"), http.StatusFound)
+		return
+	}
+
 	for _, githubOrganization := range githubOrganizations {
-		org, err := app.OrganizationService().Get(ctx, *githubOrganization.Name)
+		org, err := app.OrganizationService().Get(ctx, *githubOrganization.Login)
 		if err == otf.ErrResourceNotFound {
 			org, err = app.OrganizationService().Create(ctx, otf.OrganizationCreateOptions{
-				Name: githubOrganization.Name,
+				Name: githubOrganization.Login,
 			})
 			if err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
