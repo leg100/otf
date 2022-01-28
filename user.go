@@ -56,11 +56,6 @@ func (u *User) String() string {
 	return u.Username
 }
 
-// UpdateOrganizationMembership updates the user's organization memberships to
-// those specified; any existing memberships that are unspecified are removed.
-func (u *User) UpdateOrganizationMemberships(organizationName ...string) {
-}
-
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(session *Session, to *User) {
 	// Update session's user reference
