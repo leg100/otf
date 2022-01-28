@@ -43,6 +43,45 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch their github organization memberships and ensure that each github
+	// organization has a corresponding oTF organization (if not, create it) and
+	// then update the user with their corresponding oTF organization
+	// memberships.
+
+	githubOrganizations, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(githubOrganizations) == 0 {
+		app.sessions.FlashError(r, "no github organizations found")
+		http.Redirect(w, r, app.route("login"), http.StatusFound)
+		return
+	}
+
+	for _, githubOrganization := range githubOrganizations {
+		org, err := app.OrganizationService().Get(ctx, *githubOrganization.Login)
+		if err == otf.ErrResourceNotFound {
+			org, err = app.OrganizationService().Create(ctx, otf.OrganizationCreateOptions{
+				Name: githubOrganization.Login,
+			})
+			if err != nil {
+				writeError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		user.Organizations = append(user.Organizations, org)
+	}
+
+	if err = app.UserService().Update(ctx, user.Username, user); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// Transfer session from anonymous to named user.
 	if err = app.sessions.TransferSession(ctx, user); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

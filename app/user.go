@@ -35,6 +35,17 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 	return user, nil
 }
 
+func (s UserService) Update(ctx context.Context, username string, updated *otf.User) error {
+	if err := s.db.Update(ctx, otf.UserSpec{Username: &username}, updated); err != nil {
+		s.Error(err, "updating user", "username", username)
+		return err
+	}
+
+	s.V(1).Info("updated user", "username", username)
+
+	return nil
+}
+
 // CreateSession creates a session and adds it to the user.
 func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *otf.SessionData) (*otf.Session, error) {
 	session, err := user.AttachNewSession(data)

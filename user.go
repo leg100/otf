@@ -29,6 +29,9 @@ type User struct {
 
 	// A user has many sessions
 	Sessions []*Session
+
+	// A user belongs to many organizations
+	Organizations []*Organization
 }
 
 // AttachNewSession creates and attaches a new session to the user.
@@ -76,6 +79,9 @@ type UserService interface {
 	// Create creates a user with the given username.
 	Create(ctx context.Context, username string) (*User, error)
 
+	// Update updates the user. The username identifies the user to update.
+	Update(ctx context.Context, username string, updated *User) error
+
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 
@@ -96,6 +102,9 @@ type UserService interface {
 // sessions.
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
+
+	// Update updates the user account in the persistence store.
+	Update(ctx context.Context, spec UserSpec, updated *User) error
 
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 

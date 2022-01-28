@@ -20,6 +20,58 @@ func TestUser_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUser_Update_OrganizationMemberships(t *testing.T) {
+	db := newTestDB(t)
+
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+	org3 := createTestOrganization(t, db)
+
+	tests := []struct {
+		name string
+		// existing set of organization memberships
+		existing []*otf.Organization
+		// new set of organization memberships
+		updated []*otf.Organization
+	}{
+		{
+			name:     "from 0 to 3",
+			existing: []*otf.Organization{},
+			updated:  []*otf.Organization{org1, org2, org3},
+		},
+		{
+			name:     "from 3 to 0",
+			existing: []*otf.Organization{org1, org2, org3},
+			updated:  nil,
+		},
+		{
+			name:     "from 1 to 2",
+			existing: []*otf.Organization{org1},
+			updated:  []*otf.Organization{org2, org3},
+		},
+		{
+			name:     "from 2 to 1",
+			existing: []*otf.Organization{org1, org2},
+			updated:  []*otf.Organization{org3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user := createTestUser(t, db, withOrganizationMemberships(tt.existing...))
+
+			user.Organizations = tt.updated
+
+			err := db.UserStore().Update(context.Background(), otf.UserSpec{Username: &user.Username}, user)
+			require.NoError(t, err)
+
+			got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.updated, got.Organizations)
+		})
+	}
+}
+
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
@@ -147,4 +199,42 @@ func TestUser_SessionCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))
+}
+
+func TestDiffOrganizationLists(t *testing.T) {
+	a := []*otf.Organization{
+		{
+			ID: "adidas",
+		},
+		{
+			ID: "nike",
+		},
+	}
+	b := []*otf.Organization{
+		{
+			ID: "adidas",
+		},
+		{
+			ID: "puma",
+		},
+		{
+			ID: "umbro",
+		},
+	}
+
+	added, removed := diffOrganizationLists(a, b)
+
+	assert.Equal(t, added, []*otf.Organization{
+		{
+			ID: "puma",
+		},
+		{
+			ID: "umbro",
+		},
+	})
+	assert.Equal(t, removed, []*otf.Organization{
+		{
+			ID: "nike",
+		},
+	})
 }
