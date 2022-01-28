@@ -50,7 +50,7 @@ func TestUser_Update_OrganizationMemberships(t *testing.T) {
 			updated:  []*otf.Organization{org2, org3},
 		},
 		{
-			name:     "from 2 to ",
+			name:     "from 2 to 1",
 			existing: []*otf.Organization{org1, org2},
 			updated:  []*otf.Organization{org3},
 		},
