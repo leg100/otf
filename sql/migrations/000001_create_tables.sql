@@ -1,39 +1,39 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS organizations (
-    organization_id TEXT,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    name TEXT NOT NULL,
-    session_remember INTEGER,
-    session_timeout INTEGER,
-    UNIQUE (name),
-    PRIMARY KEY (organization_id)
+    organization_id         TEXT,
+    created_at              TIMESTAMPTZ  NOT NULL,
+    updated_at              TIMESTAMPTZ  NOT NULL,
+    name TEXT               NOT NULL,
+    session_remember        INTEGER,
+    session_timeout         INTEGER,
+                            UNIQUE (name),
+                            PRIMARY KEY (organization_id)
 );
 
 CREATE TABLE IF NOT EXISTS workspaces (
-    workspace_id TEXT,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    allow_destroy_plan BOOLEAN NOT NULL,
-    auto_apply BOOLEAN NOT NULL,
-    can_queue_destroy_plan BOOLEAN NOT NULL,
-    description TEXT NOT NULL,
-    environment TEXT NOT NULL,
-    execution_mode TEXT NOT NULL,
-    file_triggers_enabled BOOLEAN NOT NULL,
-    global_remote_state BOOLEAN NOT NULL,
-    locked BOOLEAN NOT NULL,
-    migration_environment TEXT NOT NULL,
-    name TEXT NOT NULL,
-    queue_all_runs BOOLEAN NOT NULL,
-    speculative_enabled BOOLEAN NOT NULL,
-    source_name TEXT NOT NULL,
-    source_url TEXT NOT NULL,
-    structured_run_output_enabled BOOLEAN NOT NULL,
-    terraform_version TEXT NOT NULL,
-    trigger_prefixes TEXT NOT NULL,
-    working_directory TEXT NOT NULL,
-    organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE,
+    workspace_id                    TEXT,
+    created_at                      TIMESTAMPTZ NOT NULL,
+    updated_at                      TIMESTAMPTZ NOT NULL,
+    allow_destroy_plan          	BOOLEAN NOT NULL,
+    auto_apply                      BOOLEAN NOT NULL,
+    can_queue_destroy_plan          BOOLEAN NOT NULL,
+    description                     TEXT NOT NULL,
+    environment                     TEXT NOT NULL,
+    execution_mode                  TEXT NOT NULL,
+    file_triggers_enabled           BOOLEAN NOT NULL,
+    global_remote_state             BOOLEAN NOT NULL,
+    locked                          BOOLEAN NOT NULL,
+    migration_environment           TEXT NOT NULL,
+    name                            TEXT NOT NULL,
+    queue_all_runs                  BOOLEAN NOT NULL,
+    speculative_enabled             BOOLEAN NOT NULL,
+    source_name                     TEXT NOT NULL,
+    source_url                      TEXT NOT NULL,
+    structured_run_output_enabled   BOOLEAN NOT NULL,
+    terraform_version               TEXT NOT NULL,
+    trigger_prefixes                TEXT NOT NULL,
+    working_directory               TEXT NOT NULL,
+    organization_id                 TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE,
     UNIQUE (name),
     PRIMARY KEY (workspace_id)
 );
@@ -42,52 +42,52 @@ CREATE TABLE IF NOT EXISTS workspaces (
 CREATE INDEX ON workspaces (name);
 
 CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT,
-    username TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (user_id)
+    user_id     TEXT,
+    username    TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL,
+    updated_at  TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS organization_memberships (
-    user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    organization_id text REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
+    user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    address TEXT NOT NULL,
-    flash JSONB,
-    organization TEXT,
-    expiry TIMESTAMPTZ NOT NULL,
-    user_id TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    PRIMARY KEY (token)
+    token           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    address         TEXT NOT NULL,
+    flash           JSONB,
+    organization    TEXT,
+    expiry          TIMESTAMPTZ NOT NULL,
+    user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                    PRIMARY KEY (token)
 );
 
 CREATE TABLE IF NOT EXISTS configuration_versions (
-    configuration_version_id TEXT,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    auto_queue_runs BOOLEAN NOT NULL,
-    source TEXT NOT NULL,
-    speculative BOOLEAN NOT NULL,
-    status TEXT NOT NULL,
-    status_timestamps TEXT NOT NULL,
-    config BYTEA NOT NULL,
-    workspace_id TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
-    PRIMARY KEY (configuration_version_id)
+    configuration_version_id     TEXT,
+    created_at                   TIMESTAMPTZ NOT NULL,
+    updated_at                   TIMESTAMPTZ NOT NULL,
+    auto_queue_runs              BOOLEAN NOT NULL,
+    source                       TEXT NOT NULL,
+    speculative                  BOOLEAN NOT NULL,
+    status                       TEXTNOT NULL,
+    status_timestamps            TEXT NOT NULL,
+    config                       BYTEA NOT NULL,
+    workspace_id                 TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
+                                 PRIMARY KEY (configuration_version_id)
 );
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id TEXT,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    is_destroy BOOLEAN NOT NULL,
+    is_destroy 			BOOLEAN NOT NULL,
     position_in_queue INTEGER NOT NULL,
-    refresh BOOLEAN NOT NULL,
-    refresh_only BOOLEAN NOT NULL,
+    refresh 			BOOLEAN NOT NULL,
+    refresh_only 			BOOLEAN NOT NULL,
     status TEXT NOT NULL,
     status_timestamps TEXT NOT NULL,
     replace_addrs TEXT NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     name TEXT NOT NULL,
-    sensitive BOOLEAN NOT NULL,
+    sensitive 			BOOLEAN NOT NULL,
     type TEXT NOT NULL,
     value TEXT NOT NULL,
     state_version_id TEXT REFERENCES state_versions ON UPDATE CASCADE ON DELETE CASCADE,
@@ -154,8 +154,8 @@ CREATE TABLE IF NOT EXISTS plan_logs (
     chunk_id SERIAL NOT NULL,
     chunk BYTEA NOT NULL,
     size INTEGER NOT NULL,
-    start BOOLEAN NOT NULL,
-    _end BOOLEAN NOT NULL,
+    start 			BOOLEAN NOT NULL,
+    _end 			BOOLEAN NOT NULL,
     PRIMARY KEY (plan_id, chunk_id)
 );
 
@@ -164,8 +164,8 @@ CREATE TABLE IF NOT EXISTS apply_logs (
     chunk_id SERIAL NOT NULL,
     chunk BYTEA NOT NULL,
     size INTEGER NOT NULL,
-    start BOOLEAN NOT NULL,
-    _end BOOLEAN NOT NULL,
+    start 			BOOLEAN NOT NULL,
+    _end 			BOOLEAN NOT NULL,
     PRIMARY KEY (apply_id, chunk_id)
 );
 
