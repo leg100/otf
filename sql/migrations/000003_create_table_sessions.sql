@@ -1,21 +1,21 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS users (
-    user_id text,
-    username text not null,
-    created_at timestamptz,
-    updated_at timestamptz,
+    user_id TEXT,
+    username TEXT NOT NULL,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    token text,
-    created_at timestamptz not null,
-    updated_at timestamptz not null,
-    address text not null,
-    flash jsonb,
-    organization text,
-    expiry timestamptz not null,
-    user_id text REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE not null,
+    token TEXT,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    address TEXT NOT NULL,
+    flash JSONB,
+    organization TEXT,
+    expiry TIMESTAMPTZ NOT NULL,
+    user_id TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     PRIMARY KEY (token)
 );
 
