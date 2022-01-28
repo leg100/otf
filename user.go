@@ -84,6 +84,9 @@ type UserService interface {
 	// Create creates a user with the given username.
 	Create(ctx context.Context, username string) (*User, error)
 
+	// Update updates the user. The username identifies the user to update.
+	Update(ctx context.Context, username string, updated *User) error
+
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 
