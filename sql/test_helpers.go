@@ -234,8 +234,20 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	return run
 }
 
-func createTestUser(t *testing.T, db otf.DB) *otf.User {
+type createTestUserOpt func(*otf.User)
+
+func withOrganizationMemberships(memberships ...*otf.Organization) createTestUserOpt {
+	return func(user *otf.User) {
+		user.Organizations = memberships
+	}
+}
+
+func createTestUser(t *testing.T, db otf.DB, opts ...createTestUserOpt) *otf.User {
 	user := newTestUser()
+
+	for _, o := range opts {
+		o(user)
+	}
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)

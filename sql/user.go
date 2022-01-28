@@ -65,6 +65,10 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 		return err
 	}
 
+	if err := addOrganizationMemberships(ctx, db.DB, user, user.Organizations); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -310,8 +314,8 @@ func listOrganizationMemberships(ctx context.Context, db Getter, userID string) 
 	selectBuilder := psql.
 		Select(asColumnList("organizations", false, organizationColumns...)).
 		From("organization_memberships").
-		Where("user_id = ?", userID).
-		Join("organizations USING (organization_id)")
+		Join("organizations USING (organization_id)").
+		Where("user_id = ?", userID)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
@@ -341,6 +345,10 @@ func updateOrganizationMemberships(ctx context.Context, db *sqlx.DB, existing, u
 }
 
 func addOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
+	if len(organizations) == 0 {
+		return nil
+	}
+
 	insertBuilder := psql.Insert("organization_memberships").Columns("user_id", "organization_id")
 
 	for _, org := range organizations {
@@ -361,12 +369,16 @@ func addOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User
 }
 
 func deleteOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
-	var deleteWhereExpr squirrel.Or
-	for _, org := range organizations {
-		deleteWhereExpr = append(deleteWhereExpr, squirrel.Eq{"user_id": user.ID, "organization_id": org.ID})
+	if len(organizations) == 0 {
+		return nil
 	}
 
-	sql, args, err := psql.Delete("organization_memberships").SuffixExpr(deleteWhereExpr).ToSql()
+	var where squirrel.Or
+	for _, org := range organizations {
+		where = append(where, squirrel.Eq{"user_id": user.ID, "organization_id": org.ID})
+	}
+
+	sql, args, err := psql.Delete("organization_memberships").Where(where).ToSql()
 	if err != nil {
 		return err
 	}

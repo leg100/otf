@@ -20,23 +20,56 @@ func TestUser_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUser_Update(t *testing.T) {
+func TestUser_Update_OrganizationMemberships(t *testing.T) {
 	db := newTestDB(t)
-	user := createTestUser(t, db)
 
 	org1 := createTestOrganization(t, db)
 	org2 := createTestOrganization(t, db)
+	org3 := createTestOrganization(t, db)
 
-	user.Organizations = []*otf.Organization{org1, org2}
+	tests := []struct {
+		name string
+		// existing set of organization memberships
+		existing []*otf.Organization
+		// new set of organization memberships
+		updated []*otf.Organization
+	}{
+		{
+			name:     "from 0 to 3",
+			existing: []*otf.Organization{},
+			updated:  []*otf.Organization{org1, org2, org3},
+		},
+		{
+			name:     "from 3 to 0",
+			existing: []*otf.Organization{org1, org2, org3},
+			updated:  nil,
+		},
+		{
+			name:     "from 1 to 2",
+			existing: []*otf.Organization{org1},
+			updated:  []*otf.Organization{org2, org3},
+		},
+		{
+			name:     "from 2 to ",
+			existing: []*otf.Organization{org1, org2},
+			updated:  []*otf.Organization{org3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user := createTestUser(t, db, withOrganizationMemberships(tt.existing...))
 
-	err := db.UserStore().Update(context.Background(), otf.UserSpec{Username: &user.Username}, user)
-	require.NoError(t, err)
+			user.Organizations = tt.updated
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
-	require.NoError(t, err)
+			err := db.UserStore().Update(context.Background(), otf.UserSpec{Username: &user.Username}, user)
+			require.NoError(t, err)
 
-	assert.Contains(t, got.Organizations, org1)
-	assert.Contains(t, got.Organizations, org2)
+			got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.updated, got.Organizations)
+		})
+	}
 }
 
 func TestUser_Get(t *testing.T) {
