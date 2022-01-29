@@ -51,6 +51,13 @@ func TestSynchronise(t *testing.T) {
 			otfUsers:            []string{"leg100"},
 		},
 		{
+			name:                "existing user, existing non-matching org, two new orgs",
+			githubUser:          otf.String("leg100"),
+			githubOrganizations: []string{"automatize", "garman"},
+			otfUsers:            []string{"leg100"},
+			otfOrganizations:    []string{"oldcorp"},
+		},
+		{
 			name:       "no github organizations",
 			githubUser: otf.String("leg100"),
 			err:        ErrNoGithubOrganizationsFound,
