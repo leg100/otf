@@ -1,10 +1,17 @@
 package html
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"path"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
+)
+
+var (
+	ErrNoGithubOrganizationsFound = errors.New("no github organizations found")
 )
 
 // githubLogin is called upon a successful Github login. A new user is created
@@ -24,60 +31,12 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guser, _, err := client.Users.Get(ctx, "")
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Get named user; if not exist create user
-	user, err := app.UserService().Get(ctx, otf.UserSpec{Username: guser.Login})
-	if err == otf.ErrResourceNotFound {
-		user, err = app.UserService().Create(ctx, *guser.Login)
-		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch their github organization memberships and ensure that each github
-	// organization has a corresponding oTF organization (if not, create it) and
-	// then update the user with their corresponding oTF organization
-	// memberships.
-
-	githubOrganizations, _, err := client.Organizations.List(ctx, "", nil)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if len(githubOrganizations) == 0 {
+	user, err := synchronise(ctx, client, app.UserService(), app.OrganizationService())
+	if err == ErrNoGithubOrganizationsFound {
 		app.sessions.FlashError(r, "no github organizations found")
 		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
-	}
-
-	for _, githubOrganization := range githubOrganizations {
-		org, err := app.OrganizationService().Get(ctx, *githubOrganization.Login)
-		if err == otf.ErrResourceNotFound {
-			org, err = app.OrganizationService().Create(ctx, otf.OrganizationCreateOptions{
-				Name: githubOrganization.Login,
-			})
-			if err != nil {
-				writeError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		user.Organizations = append(user.Organizations, org)
-	}
-
-	if err = app.UserService().Update(ctx, user.Username, user); err != nil {
+	} else if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -89,6 +48,59 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
+}
+
+func synchronise(ctx context.Context, client *github.Client, userService otf.UserService, organizationService otf.OrganizationService) (*otf.User, error) {
+	guser, err := client.GetUser(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Get named user; if not exist create user
+	user, err := userService.Get(ctx, otf.UserSpec{Username: guser.Login})
+	if err == otf.ErrResourceNotFound {
+		user, err = userService.Create(ctx, *guser.Login)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Fetch their github organization memberships and ensure that each github
+	// organization has a corresponding oTF organization (if not, create it) and
+	// then update the user with their corresponding oTF organization
+	// memberships.
+
+	githubOrganizations, err := client.ListOrganizations(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(githubOrganizations) == 0 {
+		return nil, ErrNoGithubOrganizationsFound
+	}
+
+	for _, githubOrganization := range githubOrganizations {
+		org, err := organizationService.Get(ctx, *githubOrganization.Login)
+		if err == otf.ErrResourceNotFound {
+			org, err = organizationService.Create(ctx, otf.OrganizationCreateOptions{
+				Name: githubOrganization.Login,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else if err != nil {
+			return nil, err
+		}
+		user.Organizations = append(user.Organizations, org)
+	}
+
+	if err = userService.Update(ctx, user.Username, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 // requireAuthentication is middleware that insists on the user being
