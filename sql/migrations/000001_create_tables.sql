@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS workspaces (
     trigger_prefixes                TEXT        NOT NULL,
     working_directory               TEXT        NOT NULL,
     organization_id                 TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                                    UNIQUE (name),
                                     PRIMARY KEY (workspace_id)
 );
 
@@ -76,7 +75,7 @@ CREATE TABLE IF NOT EXISTS configuration_versions (
     speculative                  BOOLEAN     NOT NULL,
     status                       TEXT        NOT NULL,
     status_timestamps            TEXT        NOT NULL,
-    config                       BYTEA       NOT NULL,
+    config                       BYTEA,
     workspace_id                 TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                  PRIMARY KEY (configuration_version_id)
 );
@@ -131,8 +130,8 @@ CREATE TABLE IF NOT EXISTS state_versions (
     created_at       TIMESTAMPTZ NOT NULL,
     updated_at       TIMESTAMPTZ NOT NULL,
     serial           INTEGER     NOT NULL,
-    vcs_commit_sha   TEXT        NOT NULL,
-    vcs_commit_url   TEXT        NOT NULL,
+    vcs_commit_sha   TEXT,
+    vcs_commit_url   TEXT,
     state            BYTEA       NOT NULL,
     workspace_id     TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                      PRIMARY KEY (state_version_id)

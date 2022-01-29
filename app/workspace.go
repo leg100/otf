@@ -40,7 +40,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 	_, err = s.db.Create(ws)
 	if err != nil {
-		s.Error(err, "creating workspace", "id", ws.ID)
+		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name)
 		return nil, err
 	}
 
