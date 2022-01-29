@@ -1,3 +1,6 @@
+/*
+Package github interfaces with external github systems.
+*/
 package github
 
 import (
