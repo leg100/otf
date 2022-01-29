@@ -4,7 +4,7 @@ import (
 	"context"
 	gourl "net/url"
 
-	gogithub "github.com/google/go-github/v41/github"
+	"github.com/leg100/otf/github"
 	"golang.org/x/oauth2"
 	githubOAuth2 "golang.org/x/oauth2/github"
 )
@@ -53,14 +53,14 @@ func newGithubOAuthApp(config GithubConfig) (*githubOAuthApp, error) {
 }
 
 // Build a new client: using hostname, oauth config, and token.
-func (a *githubOAuthApp) newClient(ctx context.Context, token *oauth2.Token) (*gogithub.Client, error) {
+func (a *githubOAuthApp) newClient(ctx context.Context, token *oauth2.Token) (*github.Client, error) {
 	httpClient := a.Config.Client(ctx, token)
 
 	if isGithubEnterprise(a.hostname) {
-		return gogithub.NewEnterpriseClient(enterpriseBaseURL(a.hostname), enterpriseUploadURL(a.hostname), httpClient)
+		return github.NewEnterpriseClient(a.hostname, httpClient)
 	}
 
-	return gogithub.NewClient(httpClient), nil
+	return github.NewClient(httpClient), nil
 }
 
 func oauthEndpoint(hostname string) (oauth2.Endpoint, error) {
@@ -82,13 +82,6 @@ func oauthEndpoint(hostname string) (oauth2.Endpoint, error) {
 		TokenURL: tokenEndpoint,
 		AuthURL:  authEndpoint,
 	}, nil
-}
-
-// Return a github enterprise URL from a hostname
-func enterpriseBaseURL(hostname string) string   { return enterpriseURL(hostname, "/api/v3") }
-func enterpriseUploadURL(hostname string) string { return enterpriseURL(hostname, "/api/uploads") }
-func enterpriseURL(hostname, path string) string {
-	return (&gourl.URL{Scheme: "https", Host: hostname, Path: path}).String()
 }
 
 func isGithubEnterprise(hostname string) bool {
