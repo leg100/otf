@@ -121,8 +121,10 @@ func (app *Application) authRoutes(router *mux.Router) {
 	router.HandleFunc("/me/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
 	router.HandleFunc("/me/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
 
-	// TODO: replace sessions handler with token handler when one exists
-	router.HandleFunc("/tokens", app.sessionsHandler).Methods("GET").Name("listToken")
+	router.HandleFunc("/me/tokens", app.tokensHandler).Methods("GET").Name("listToken")
+	router.HandleFunc("/me/tokens", app.deleteTokenHandler).Methods("POST").Name("deleteToken")
+	router.HandleFunc("/me/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
+	router.HandleFunc("/me/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
 
 	(&OrganizationController{
 		OrganizationService: app.OrganizationService(),

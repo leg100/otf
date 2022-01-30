@@ -110,6 +110,64 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
+	tdata := app.newTemplateData(r, nil)
+
+	if err := app.renderTemplate("token_new.tmpl", w, tdata); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.sessions.getUserFromContext(r.Context())
+
+	var opts otf.TokenCreateOptions
+	if err := decodeAll(r, &opts); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	token, err := app.UserService().CreateToken(r.Context(), user.User, &opts)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		app.sessions.FlashSuccess(r, "created token: ", token.Token)
+	}
+
+	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
+}
+
+func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.sessions.getUserFromContext(r.Context())
+
+	tdata := app.newTemplateData(r, user)
+
+	if err := app.renderTemplate("token_list.tmpl", w, tdata); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+	if id == "" {
+		writeError(w, "missing id", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if err := app.UserService().DeleteToken(r.Context(), id); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := app.sessions.FlashSuccess(r, "Deleted token"); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
+}
+
 func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {

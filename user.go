@@ -101,7 +101,7 @@ type UserService interface {
 	DeleteSession(ctx context.Context, token string) error
 
 	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, user *User, description string) (*Token, error)
+	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
 
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, id string) error
@@ -142,6 +142,11 @@ type UserSpec struct {
 	SessionToken          *string
 	AuthenticationTokenID *string
 	AuthenticationToken   *string
+}
+
+type TokenCreateOptions struct {
+	UserID      string
+	Description string
 }
 
 // KeyValue returns the user spec in key-value form. Useful for logging

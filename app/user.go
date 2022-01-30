@@ -111,8 +111,8 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 }
 
 // CreateToken creates a user token.
-func (s UserService) CreateToken(ctx context.Context, user *otf.User, description string) (*otf.Token, error) {
-	token, err := otf.NewToken(user.ID, description)
+func (s UserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+	token, err := otf.NewToken(user.ID, opts.Description)
 	if err != nil {
 		s.Error(err, "constructing token", "username", user.Username)
 		return nil, err

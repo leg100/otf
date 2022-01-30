@@ -275,11 +275,11 @@ func getUser(ctx context.Context, db Getter, spec otf.UserSpec) (*otf.User, erro
 			Where("sessions.token = ?", *spec.SessionToken)
 	case spec.AuthenticationTokenID != nil:
 		selectBuilder = selectBuilder.
-			Join("tokens USING (token_id)").
+			Join("tokens USING (user_id)").
 			Where("tokens.token_id = ?", *spec.AuthenticationTokenID)
 	case spec.AuthenticationToken != nil:
 		selectBuilder = selectBuilder.
-			Join("tokens USING (token)").
+			Join("tokens USING (user_id)").
 			Where("tokens.token = ?", *spec.AuthenticationToken)
 	default:
 		return nil, fmt.Errorf("empty user spec provided")
