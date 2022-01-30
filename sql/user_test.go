@@ -178,7 +178,7 @@ func TestUser_UpdateSession(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify session's flash has popped
-	user, err = db.UserStore().Get(context.Background(), otf.UserSpec{Token: &session.Token})
+	user, err = db.UserStore().Get(context.Background(), otf.UserSpec{SessionToken: &session.Token})
 	require.NoError(t, err)
 	assert.Nil(t, user.Sessions[0].Flash)
 }
@@ -199,6 +199,27 @@ func TestUser_SessionCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))
+}
+
+func TestUser_CreateToken(t *testing.T) {
+	db := newTestDB(t)
+	user := createTestUser(t, db)
+	token, err := otf.NewToken(user.ID, "testing")
+	require.NoError(t, err)
+
+	defer db.UserStore().DeleteToken(context.Background(), token.ID)
+
+	err = db.UserStore().CreateToken(context.Background(), token)
+	require.NoError(t, err)
+}
+
+func TestUser_DeleteToken(t *testing.T) {
+	db := newTestDB(t)
+	user := createTestUser(t, db)
+	token := createTestToken(t, db, user.ID, "testing")
+
+	err := db.UserStore().DeleteToken(context.Background(), token.ID)
+	require.NoError(t, err)
 }
 
 func TestDiffOrganizationLists(t *testing.T) {

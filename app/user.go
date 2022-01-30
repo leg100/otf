@@ -95,7 +95,7 @@ func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session 
 
 func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	// Retrieve user purely for logging purposes
-	user, err := s.Get(ctx, otf.UserSpec{Token: &token})
+	user, err := s.Get(ctx, otf.UserSpec{SessionToken: &token})
 	if err != nil {
 		return err
 	}
@@ -106,6 +106,41 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	}
 
 	s.V(1).Info("deleted session", "username", user.Username)
+
+	return nil
+}
+
+// CreateToken creates a user token.
+func (s UserService) CreateToken(ctx context.Context, user *otf.User, description string) (*otf.Token, error) {
+	token, err := otf.NewToken(user.ID, description)
+	if err != nil {
+		s.Error(err, "constructing token", "username", user.Username)
+		return nil, err
+	}
+
+	if err := s.db.CreateToken(ctx, token); err != nil {
+		s.Error(err, "creating token", "username", user.Username)
+		return nil, err
+	}
+
+	s.V(1).Info("created token", "username", user.Username)
+
+	return token, nil
+}
+
+func (s UserService) DeleteToken(ctx context.Context, id string) error {
+	// Retrieve user purely for logging purposes
+	user, err := s.Get(ctx, otf.UserSpec{AuthenticationTokenID: &id})
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.DeleteToken(ctx, id); err != nil {
+		s.Error(err, "deleting token", "username", user.Username)
+		return err
+	}
+
+	s.V(1).Info("deleted token", "username", user.Username)
 
 	return nil
 }

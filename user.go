@@ -30,6 +30,9 @@ type User struct {
 	// A user has many sessions
 	Sessions []*Session
 
+	// A user has many tokens
+	Tokens []*Token
+
 	// A user belongs to many organizations
 	Organizations []*Organization
 }
@@ -96,6 +99,12 @@ type UserService interface {
 
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
+
+	// CreateToken creates a user token.
+	CreateToken(ctx context.Context, user *User, description string) (*Token, error)
+
+	// DeleteToken deletes a user token.
+	DeleteToken(ctx context.Context, id string) error
 }
 
 // UserStore is a persistence store for user accounts and their associated
@@ -120,11 +129,19 @@ type UserStore interface {
 
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
+
+	// CreateToken creates a user token.
+	CreateToken(ctx context.Context, token *Token) error
+
+	// DeleteToken deletes a user token.
+	DeleteToken(ctx context.Context, id string) error
 }
 
 type UserSpec struct {
-	Username *string
-	Token    *string
+	Username              *string
+	SessionToken          *string
+	AuthenticationTokenID *string
+	AuthenticationToken   *string
 }
 
 // KeyValue returns the user spec in key-value form. Useful for logging
@@ -133,8 +150,14 @@ func (spec *UserSpec) KeyValue() []interface{} {
 	if spec.Username != nil {
 		return []interface{}{"username", *spec.Username}
 	}
-	if spec.Token != nil {
-		return []interface{}{"token", *spec.Token}
+	if spec.SessionToken != nil {
+		return []interface{}{"token", *spec.SessionToken}
+	}
+	if spec.AuthenticationTokenID != nil {
+		return []interface{}{"authentication_token_id", *spec.AuthenticationTokenID}
+	}
+	if spec.AuthenticationToken != nil {
+		return []interface{}{"authentication_token", *spec.AuthenticationToken}
 	}
 
 	return []interface{}{"invalid user spec", ""}
