@@ -19,12 +19,18 @@
       <div class="nav-links">
         <ul>
           <li>
+            <div class="dropdown">
+              <ul id="my-dropdown2">
+                {{ range .CurrentUser.Organizations }}
+                <li>
+                  <a href="{{ $.Path "getOrganization" "organization_name" .Name }}">{{ .Name }}</a>
+                </li>
+                {{ end }}
+              </ul>
+              <a href="#my-dropdown2" aria-controls="my-dropdown2" role="button" data-toggle="dropdown" id="my-dropdown2-btn">Select an organization</a>
+              <a href="#my-dropdown2-btn" aria-controls="my-dropdown2" role="button" data-toggle="dropdown" class="close"> Close dropdown </a>
+            </div>
           </li>
-          {{ with .CurrentUser.Organization }}
-          <li>
-            <a href="{{ .Path "getOrganization" "organization_name" . }}">{{ . }}</a>
-          </li>
-          {{ end }}
         </ul>
       </div>
       <div class="nav-links-me">
