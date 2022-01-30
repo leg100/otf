@@ -33,11 +33,22 @@ var (
 		"user_id",
 	}
 
+	tokenColumns = []string{
+		"token_id",
+		"created_at",
+		"updated_at",
+		"description",
+		"user_id",
+	}
+
 	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
 VALUES (:user_id, :created_at, :updated_at, :username)`
 
 	insertSessionSQL = `INSERT INTO sessions (token, flash, address, organization, created_at, updated_at, expiry, user_id)
 VALUES (:token, :flash, :address, :organization, :created_at, :updated_at, :expiry, :user_id)`
+
+	insertTokenSQL = `INSERT INTO tokens (token_id, token, created_at, updated_at, description, user_id)
+VALUES (:token_id, :token, :created_at, :updated_at, :description, :user_id)`
 )
 
 type UserDB struct {
@@ -208,6 +219,31 @@ func (db UserDB) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
+// CreateToken inserts the token, associating it with the user.
+func (db UserDB) CreateToken(ctx context.Context, token *otf.Token) error {
+	sql, args, err := db.BindNamed(insertTokenSQL, token)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(sql, args...)
+	if err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+// DeleteToken deletes a user's token from the DB.
+func (db UserDB) DeleteToken(ctx context.Context, id string) error {
+	_, err := db.Exec("DELETE FROM tokens WHERE token_id = $1", id)
+	if err != nil {
+		return fmt.Errorf("unable to delete token: %w", err)
+	}
+
+	return nil
+}
+
 func (db UserDB) deleteExpired() error {
 	_, err := db.Exec("DELETE FROM sessions WHERE expiry < current_timestamp")
 	if err != nil {
@@ -233,10 +269,18 @@ func getUser(ctx context.Context, db Getter, spec otf.UserSpec) (*otf.User, erro
 	switch {
 	case spec.Username != nil:
 		selectBuilder = selectBuilder.Where("username = ?", *spec.Username)
-	case spec.Token != nil:
+	case spec.SessionToken != nil:
 		selectBuilder = selectBuilder.
 			Join("sessions USING (user_id)").
-			Where("sessions.token = ?", *spec.Token)
+			Where("sessions.token = ?", *spec.SessionToken)
+	case spec.AuthenticationTokenID != nil:
+		selectBuilder = selectBuilder.
+			Join("tokens USING (user_id)").
+			Where("tokens.token_id = ?", *spec.AuthenticationTokenID)
+	case spec.AuthenticationToken != nil:
+		selectBuilder = selectBuilder.
+			Join("tokens USING (user_id)").
+			Where("tokens.token = ?", *spec.AuthenticationToken)
 	default:
 		return nil, fmt.Errorf("empty user spec provided")
 	}
@@ -254,6 +298,12 @@ func getUser(ctx context.Context, db Getter, spec otf.UserSpec) (*otf.User, erro
 
 	// ...and their sessions
 	user.Sessions, err = listSessions(ctx, db, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// ...and their auth tokens
+	user.Tokens, err = listTokens(ctx, db, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -286,6 +336,26 @@ func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session
 	}
 
 	return sessions, nil
+}
+
+// listTokens lists tokens belonging to the user with the given userID.
+func listTokens(ctx context.Context, db Getter, userID string) ([]*otf.Token, error) {
+	selectBuilder := psql.
+		Select(tokenColumns...).
+		From("tokens").
+		Where("user_id = ?", userID)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var tokens []*otf.Token
+	if err := db.Select(&tokens, sql, args...); err != nil {
+		return nil, fmt.Errorf("unable to scan tokens from db: %w", err)
+	}
+
+	return tokens, nil
 }
 
 func getSession(ctx context.Context, db Getter, token string) (*otf.Session, error) {

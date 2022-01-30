@@ -41,7 +41,7 @@ func (s *ActiveUserService) NewAnonymousSession(r *http.Request) (*ActiveUser, e
 }
 
 func (s *ActiveUserService) Get(ctx context.Context, token string) (*ActiveUser, error) {
-	user, err := s.UserService.Get(ctx, otf.UserSpec{Token: &token})
+	user, err := s.UserService.Get(ctx, otf.UserSpec{SessionToken: &token})
 	if err != nil {
 		return nil, err
 	}

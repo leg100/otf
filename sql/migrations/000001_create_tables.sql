@@ -66,6 +66,17 @@ CREATE TABLE IF NOT EXISTS sessions (
                     PRIMARY KEY (token)
 );
 
+CREATE TABLE IF NOT EXISTS tokens (
+    token_id        TEXT,
+    token           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    description     TEXT        NOT NULL,
+    user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                    UNIQUE (token),
+                    PRIMARY KEY (token_id)
+);
+
 CREATE TABLE IF NOT EXISTS configuration_versions (
     configuration_version_id     TEXT,
     created_at                   TIMESTAMPTZ NOT NULL,
@@ -178,6 +189,7 @@ DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS configuration_versions;
+DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS organization_memberships;
 DROP TABLE IF EXISTS users;

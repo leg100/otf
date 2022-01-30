@@ -98,7 +98,7 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	}
 
 	selectBuilder = selectBuilder.
-		Columns(strings.Join(organizationColumns, ",")).
+		Columns(organizationColumns...).
 		Limit(opts.GetLimit()).
 		Offset(opts.GetOffset())
 
@@ -138,7 +138,7 @@ func (db OrganizationDB) Delete(name string) error {
 }
 
 func getOrganization(getter Getter, name string) (*otf.Organization, error) {
-	selectBuilder := psql.Select(strings.Join(organizationColumns, ",")).
+	selectBuilder := psql.Select(organizationColumns...).
 		From("organizations").
 		Where("name = ?", name)
 

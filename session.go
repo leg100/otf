@@ -2,10 +2,8 @@ package otf
 
 import (
 	"database/sql/driver"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"time"
 )
 
@@ -23,7 +21,7 @@ type Session struct {
 }
 
 func NewSession(uid string, data *SessionData) (*Session, error) {
-	token, err := generateSessionToken()
+	token, err := generateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
@@ -37,15 +35,6 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 	}
 
 	return &session, nil
-}
-
-func generateSessionToken() (string, error) {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 // SessionData is various session data serialised to the session store as JSON.

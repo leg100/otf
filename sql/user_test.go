@@ -75,12 +75,39 @@ func TestUser_Update_OrganizationMemberships(t *testing.T) {
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	//_ = createTestSession(t, db)
+	session := createTestSession(t, db, user.ID)
+	token := createTestToken(t, db, user.ID, "testing")
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
-	require.NoError(t, err)
+	tests := []struct {
+		name string
+		spec otf.UserSpec
+	}{
+		{
+			name: "username",
+			spec: otf.UserSpec{Username: &user.Username},
+		},
+		{
+			name: "session token",
+			spec: otf.UserSpec{SessionToken: &session.Token},
+		},
+		{
+			name: "auth token ID",
+			spec: otf.UserSpec{AuthenticationTokenID: &token.ID},
+		},
+		{
+			name: "auth token",
+			spec: otf.UserSpec{AuthenticationToken: &token.Token},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.UserStore().Get(context.Background(), tt.spec)
+			require.NoError(t, err)
 
-	assert.Equal(t, got, user)
+			assert.Equal(t, got.ID, user.ID)
+		})
+	}
+
 }
 
 func TestUser_Get_WithSessions(t *testing.T) {
@@ -178,7 +205,7 @@ func TestUser_UpdateSession(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify session's flash has popped
-	user, err = db.UserStore().Get(context.Background(), otf.UserSpec{Token: &session.Token})
+	user, err = db.UserStore().Get(context.Background(), otf.UserSpec{SessionToken: &session.Token})
 	require.NoError(t, err)
 	assert.Nil(t, user.Sessions[0].Flash)
 }
@@ -199,6 +226,27 @@ func TestUser_SessionCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))
+}
+
+func TestUser_CreateToken(t *testing.T) {
+	db := newTestDB(t)
+	user := createTestUser(t, db)
+	token, err := otf.NewToken(user.ID, "testing")
+	require.NoError(t, err)
+
+	defer db.UserStore().DeleteToken(context.Background(), token.ID)
+
+	err = db.UserStore().CreateToken(context.Background(), token)
+	require.NoError(t, err)
+}
+
+func TestUser_DeleteToken(t *testing.T) {
+	db := newTestDB(t)
+	user := createTestUser(t, db)
+	token := createTestToken(t, db, user.ID, "testing")
+
+	err := db.UserStore().DeleteToken(context.Background(), token.ID)
+	require.NoError(t, err)
 }
 
 func TestDiffOrganizationLists(t *testing.T) {

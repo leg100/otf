@@ -1,6 +1,17 @@
+{{ template "layout" . }}
+
+{{ define "title" }}New Token{{ end }}
+
 {{ define "content" }}
-  <form action="/app/settings/tokens" method="POST">
-    <button>Create token</button>
-    <input type="text" name="description" required>
+  <form class="main-form" action="{{ .Path "createToken" }}" method="POST">
+    <ul>
+      <li class="field">
+        <label for="description">Description</label>
+        <input type="text" name="description" id="description" required>
+      </li>
+      <li>
+        <button>Create token</button>
+      </li>
+    </ul>
   </form>
 {{ end }}

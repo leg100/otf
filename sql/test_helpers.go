@@ -272,3 +272,17 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSe
 
 	return session
 }
+
+func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
+	token, err := otf.NewToken(userID, description)
+	require.NoError(t, err)
+
+	err = db.UserStore().CreateToken(context.Background(), token)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.UserStore().DeleteToken(context.Background(), token.Token)
+	})
+
+	return token
+}
