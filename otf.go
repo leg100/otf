@@ -4,6 +4,7 @@ Package otf is responsible for domain logic.
 package otf
 
 import (
+	"encoding/base64"
 	"math/rand"
 	"regexp"
 	"time"
@@ -197,4 +198,13 @@ func PrefixSlice(slice []string, prefix string) (ret []string) {
 		ret = append(ret, prefix+s)
 	}
 	return
+}
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
