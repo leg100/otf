@@ -60,6 +60,16 @@ func (td *templateData) Relative(name string, pairs ...string) string {
 	return td.router.relative(td.request, name, pairs...)
 }
 
+// Relative proxies access to the router's relative method
+func (td *templateData) CurrentOrganization() (string, error) {
+	org, ok := mux.Vars(td.request)["organization_name"]
+	if !ok {
+		return "", fmt.Errorf("no organization name found in current route")
+	}
+
+	return org, nil
+}
+
 func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
 	route := mux.CurrentRoute(td.request)
 

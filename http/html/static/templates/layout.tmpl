@@ -18,6 +18,7 @@
       </div>
       <div class="nav-links">
         <ul>
+          {{ if .CurrentUser.IsAuthenticated }}
           <li>
             <div class="dropdown">
               <ul id="my-dropdown2">
@@ -31,6 +32,7 @@
               <a href="#my-dropdown2-btn" aria-controls="my-dropdown2" role="button" data-toggle="dropdown" class="close"> Close dropdown </a>
             </div>
           </li>
+          {{ end }}
         </ul>
       </div>
       <div class="nav-links-me">
