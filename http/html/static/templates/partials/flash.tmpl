@@ -1,0 +1,7 @@
+{{ define "flash" }}
+{{ with .PopFlash }}
+  <div class="flash flash-{{ .Type }}" role="alert">
+    {{ .Message }}
+  </div>
+{{ end }}
+{{ end }}
