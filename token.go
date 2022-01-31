@@ -19,7 +19,7 @@ type Token struct {
 }
 
 func NewToken(uid, description string) (*Token, error) {
-	token, err := generateToken()
+	token, err := GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
