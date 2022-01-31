@@ -139,6 +139,19 @@ th, td {
   margin: 1em;
 }
 
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.center > a {
+  margin-top: 10em;
+  padding: 1em;
+	border-style: solid;
+	border-width: 1px;
+}
+
 .sidebar {
   margin-right: 1em;
 }

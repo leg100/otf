@@ -51,6 +51,7 @@
     </nav>
   </header>
 
+  {{ block "container" . }}
   <div class="container">
     {{ block "sidebar" . }}{{ end }}
 
@@ -75,6 +76,7 @@
       </main>
     </div>
   </div>
+  {{ end }}
 </body>
 </html>
 {{ end }}
