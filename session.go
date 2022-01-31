@@ -21,7 +21,7 @@ type Session struct {
 }
 
 func NewSession(uid string, data *SessionData) (*Session, error) {
-	token, err := generateToken()
+	token, err := GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
