@@ -82,6 +82,9 @@ type UserService interface {
 	// Create creates a user with the given username.
 	Create(ctx context.Context, username string) (*User, error)
 
+	// EnsureCreated retrieves a user; if they don't exist they'll be created.
+	EnsureCreated(ctx context.Context, username string) (*User, error)
+
 	// Update updates the user. The username identifies the user to update.
 	Update(ctx context.Context, username string, updated *User) error
 

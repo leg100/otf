@@ -35,6 +35,20 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 	return user, nil
 }
 
+func (s UserService) EnsureCreated(ctx context.Context, username string) (*otf.User, error) {
+	user, err := s.db.Get(ctx, otf.UserSpec{Username: &username})
+	if err == nil {
+		return user, nil
+	}
+
+	if err != otf.ErrResourceNotFound {
+		s.Error(err, "retrieving user", "username", username)
+		return nil, err
+	}
+
+	return s.Create(ctx, username)
+}
+
 func (s UserService) Update(ctx context.Context, username string, updated *otf.User) error {
 	if err := s.db.Update(ctx, otf.UserSpec{Username: &username}, updated); err != nil {
 		s.Error(err, "updating user", "username", username)
