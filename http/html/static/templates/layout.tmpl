@@ -51,6 +51,7 @@
     </nav>
   </header>
 
+  {{ block "container" . }}
   <div class="container">
     {{ block "sidebar" . }}{{ end }}
 
@@ -64,17 +65,14 @@
 
       <hr>
 
-      {{ with .PopFlash }}
-        <div class="flash flash-{{ .Type }}" role="alert">
-          {{ .Message }}
-        </div>
-      {{ end }}
+      {{ template "flash" . }}
 
       <main>
         {{ block "content" . }}{{ end }}
       </main>
     </div>
   </div>
+  {{ end }}
 </body>
 </html>
 {{ end }}
