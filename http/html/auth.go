@@ -24,9 +24,12 @@ var (
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// If the OAuth handshake returns an error, return the user to the login
+	// page along with a flash alert.
 	token, err := app.oauth.responseHandler(r)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		app.sessions.FlashError(r, err.Error())
+		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
 	}
 
