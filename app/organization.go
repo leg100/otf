@@ -43,6 +43,20 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 	return org, nil
 }
 
+func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	org, err := s.db.Get(*opts.Name)
+	if err == nil {
+		return org, nil
+	}
+
+	if err != otf.ErrResourceNotFound {
+		s.Error(err, "retrieving organization", "name", *opts.Name)
+		return nil, err
+	}
+
+	return s.Create(ctx, opts)
+}
+
 func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
 	org, err := s.db.Get(name)
 	if err != nil {

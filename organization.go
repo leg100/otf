@@ -88,6 +88,7 @@ type OrganizationListOptions struct {
 
 type OrganizationService interface {
 	Create(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
+	EnsureCreated(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 	Get(ctx context.Context, name string) (*Organization, error)
 	List(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 	Update(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)

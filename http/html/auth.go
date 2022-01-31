@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"path"
 
-	gogithub "github.com/google/go-github/v41/github"
+	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
 )
 
 type GithubClient interface {
-	GetUser(ctx context.Context, name string) (*gogithub.User, error)
-	ListOrganizations(ctx context.Context, name string) ([]*gogithub.Organization, error)
+	GetUser(ctx context.Context, name string) (*github.User, error)
+	ListOrganizations(ctx context.Context, name string) ([]*github.Organization, error)
 }
 
 var (
@@ -39,12 +39,38 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := synchronise(ctx, client, app.UserService(), app.OrganizationService())
-	if err == ErrNoGithubOrganizationsFound {
+	guser, err := client.GetUser(ctx, "")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get named user; if not exist create user
+	user, err := app.UserService().EnsureCreated(ctx, *guser.Login)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch their github organization memberships and ensure that each github
+	// organization has a corresponding oTF organization (if not, create it) and
+	// then update the user with their corresponding oTF organization
+	// memberships.
+
+	githubOrganizations, err := client.ListOrganizations(ctx, "")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(githubOrganizations) == 0 {
 		app.sessions.FlashError(r, "no github organizations found")
 		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
-	} else if err != nil {
+	}
+
+	err = synchroniseOrganizations(ctx, app.UserService(), app.OrganizationService(), user, githubOrganizations...)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -191,55 +217,30 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, app.route("listSession"), http.StatusFound)
 }
 
-func synchronise(ctx context.Context, client GithubClient, userService otf.UserService, organizationService otf.OrganizationService) (*otf.User, error) {
-	guser, err := client.GetUser(ctx, "")
-	if err != nil {
-		return nil, err
-	}
+// synchroniseOrganizations ensures an otf user's organization memberships match
+// their github user's organization memberships
+func synchroniseOrganizations(
+	ctx context.Context,
+	userService otf.UserService,
+	organizationService otf.OrganizationService,
+	user *otf.User,
+	githubOrganization ...*github.Organization) error {
 
-	// Get named user; if not exist create user
-	user, err := userService.Get(ctx, otf.UserSpec{Username: guser.Login})
-	if err == otf.ErrResourceNotFound {
-		user, err = userService.Create(ctx, *guser.Login)
+	user.Organizations = []*otf.Organization{}
+
+	for _, githubOrganization := range githubOrganization {
+		org, err := organizationService.EnsureCreated(ctx, otf.OrganizationCreateOptions{
+			Name: githubOrganization.Login,
+		})
 		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
-	}
-
-	// Fetch their github organization memberships and ensure that each github
-	// organization has a corresponding oTF organization (if not, create it) and
-	// then update the user with their corresponding oTF organization
-	// memberships.
-
-	githubOrganizations, err := client.ListOrganizations(ctx, "")
-	if err != nil {
-		return nil, err
-	}
-
-	if len(githubOrganizations) == 0 {
-		return nil, ErrNoGithubOrganizationsFound
-	}
-
-	for _, githubOrganization := range githubOrganizations {
-		org, err := organizationService.Get(ctx, *githubOrganization.Login)
-		if err == otf.ErrResourceNotFound {
-			org, err = organizationService.Create(ctx, otf.OrganizationCreateOptions{
-				Name: githubOrganization.Login,
-			})
-			if err != nil {
-				return nil, err
-			}
-		} else if err != nil {
-			return nil, err
+			return err
 		}
 		user.Organizations = append(user.Organizations, org)
 	}
 
-	if err = userService.Update(ctx, user.Username, user); err != nil {
-		return nil, err
+	if err := userService.Update(ctx, user.Username, user); err != nil {
+		return err
 	}
 
-	return user, nil
+	return nil
 }
