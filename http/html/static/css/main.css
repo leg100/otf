@@ -88,6 +88,10 @@ th, td {
   padding: 0.2em .5em;
 }
 
+.logo {
+  margin-right: 2em;
+}
+
 .navbar {
   display: flex;
   background-color: #2F445A;
@@ -116,8 +120,16 @@ th, td {
   padding: 0.5em;
 }
 
-.navbar li:first-child {
+.navbar > li:first-child {
   margin-right: auto;
+}
+
+.navbar .current-organization {
+  font-size: 0.85em;
+}
+
+.navbar .current-user {
+  font-size: 0.85em;
 }
 
 .container {

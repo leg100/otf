@@ -72,6 +72,23 @@ func TestUser_Update_OrganizationMemberships(t *testing.T) {
 	}
 }
 
+func TestUser_Update_CurrentOrganization(t *testing.T) {
+	db := newTestDB(t)
+
+	user := createTestUser(t, db)
+
+	// set current org
+	user.CurrentOrganization = otf.String("enron")
+
+	err := db.UserStore().Update(context.Background(), otf.UserSpec{Username: &user.Username}, user)
+	require.NoError(t, err)
+
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
+	require.NoError(t, err)
+
+	assert.Equal(t, "enron", *got.CurrentOrganization)
+}
+
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)

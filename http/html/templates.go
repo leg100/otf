@@ -60,6 +60,17 @@ func (td *templateData) Relative(name string, pairs ...string) string {
 	return td.router.relative(td.request, name, pairs...)
 }
 
+// IsOrganizationRoute determines if the current request is for a route that
+// contains the current organization name, or the list of organizations.
+func (td *templateData) IsOrganizationRoute() bool {
+	if mux.CurrentRoute(td.request).GetName() == "listOrganization" {
+		return true
+	}
+
+	_, ok := mux.Vars(td.request)["organization_name"]
+	return ok
+}
+
 func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
 	route := mux.CurrentRoute(td.request)
 

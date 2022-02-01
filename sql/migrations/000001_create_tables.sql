@@ -41,12 +41,13 @@ CREATE TABLE IF NOT EXISTS workspaces (
 CREATE INDEX ON workspaces (name);
 
 CREATE TABLE IF NOT EXISTS users (
-    user_id     TEXT,
-    username    TEXT        NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL,
-    updated_at  TIMESTAMPTZ NOT NULL,
-                UNIQUE (username),
-                PRIMARY KEY (user_id)
+    user_id                 TEXT,
+    username                TEXT        NOT NULL,
+    created_at              TIMESTAMPTZ NOT NULL,
+    updated_at              TIMESTAMPTZ NOT NULL,
+    current_organization    TEXT,
+                            UNIQUE (username),
+                            PRIMARY KEY (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS organization_memberships (
@@ -60,7 +61,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     updated_at      TIMESTAMPTZ NOT NULL,
     address         TEXT        NOT NULL,
     flash           JSONB,
-    organization    TEXT,
     expiry          TIMESTAMPTZ NOT NULL,
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (token)

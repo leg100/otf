@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/bootstrap-icons.css" }}">
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
@@ -18,12 +17,21 @@
       </div>
       <div class="nav-links">
         <ul>
-          <li>
-          </li>
-          {{ with .CurrentUser.Organization }}
-          <li>
-            <a href="{{ .Path "getOrganization" "organization_name" . }}">{{ . }}</a>
-          </li>
+          {{ if .CurrentUser.IsAuthenticated }}
+            {{ if not .IsOrganizationRoute }}
+              {{ if .CurrentUser.CurrentOrganization }}
+              <li>
+                <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+                  {{ template "building_icon" }}
+                  <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+                </a>
+              </li>
+              {{ else }}
+              <li>
+                <a href="{{ $.Path "listOrganization" }}">organizations</a>
+              </li>
+              {{ end }}
+            {{ end }}
           {{ end }}
         </ul>
       </div>
@@ -31,7 +39,7 @@
         <ul>
           {{ if .CurrentUser.IsAuthenticated }}
           <li>
-            <a href="{{ .Path "getMe" }}">{{ .CurrentUser.Username }}</a>
+            <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
           </li>
           <li>
             <form action="{{ .Path "logout" }}" method="POST">
