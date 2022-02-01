@@ -20,6 +20,7 @@ var (
 		"created_at",
 		"updated_at",
 		"username",
+		"current_organization",
 	}
 
 	sessionColumns = []string{
@@ -28,7 +29,6 @@ var (
 		"updated_at",
 		"flash",
 		"address",
-		"organization",
 		"expiry",
 		"user_id",
 	}
@@ -44,8 +44,8 @@ var (
 	insertUserSQL = `INSERT INTO users (user_id, created_at, updated_at, username)
 VALUES (:user_id, :created_at, :updated_at, :username)`
 
-	insertSessionSQL = `INSERT INTO sessions (token, flash, address, organization, created_at, updated_at, expiry, user_id)
-VALUES (:token, :flash, :address, :organization, :created_at, :updated_at, :expiry, :user_id)`
+	insertSessionSQL = `INSERT INTO sessions (token, flash, address, created_at, updated_at, expiry, user_id)
+VALUES (:token, :flash, :address, :created_at, :updated_at, :expiry, :user_id)`
 
 	insertTokenSQL = `INSERT INTO tokens (token_id, token, created_at, updated_at, description, user_id)
 VALUES (:token_id, :token, :created_at, :updated_at, :description, :user_id)`
@@ -91,8 +91,35 @@ func (db UserDB) Update(ctx context.Context, spec otf.UserSpec, updated *otf.Use
 		return err
 	}
 
+	// User's organization_memberships are updated separately in a many-to-many
+	// table.
 	if err := updateOrganizationMemberships(ctx, db.DB, existing, updated); err != nil {
 		return err
+	}
+
+	updateBuilder := psql.
+		Update("users").
+		Where("user_id = ?", existing.ID)
+
+	var modified bool
+
+	if existing.CurrentOrganization != updated.CurrentOrganization {
+		updateBuilder = updateBuilder.Set("current_organization", updated.CurrentOrganization)
+		modified = true
+	}
+
+	if !modified {
+		return nil
+	}
+
+	sql, args, err := updateBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.DB.Exec(sql, args...)
+	if err != nil {
+		return databaseError(err, sql)
 	}
 
 	return nil
@@ -155,11 +182,6 @@ func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.S
 	if existing.Flash != updated.Flash {
 		modified = true
 		updateBuilder = updateBuilder.Set("flash", updated.Flash)
-	}
-
-	if existing.Organization != updated.Organization {
-		modified = true
-		updateBuilder = updateBuilder.Set("organization", updated.Organization)
 	}
 
 	if existing.Expiry != updated.Expiry {

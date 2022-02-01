@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
@@ -39,6 +40,18 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	githubOrganizations, err := client.ListOrganizations(ctx, "")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(githubOrganizations) == 0 {
+		app.sessions.FlashError(r, "no github organizations found")
+		http.Redirect(w, r, app.route("login"), http.StatusFound)
+		return
+	}
+
 	guser, err := client.GetUser(ctx, "")
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -49,23 +62,6 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := app.UserService().EnsureCreated(ctx, *guser.Login)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch their github organization memberships and ensure that each github
-	// organization has a corresponding oTF organization (if not, create it) and
-	// then update the user with their corresponding oTF organization
-	// memberships.
-
-	githubOrganizations, err := client.ListOrganizations(ctx, "")
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if len(githubOrganizations) == 0 {
-		app.sessions.FlashError(r, "no github organizations found")
-		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
 	}
 
@@ -96,6 +92,33 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
+}
+
+// setCurrentOrganization ensures a user's current organization matches the
+// organization in the request. If there is no organization in the current
+// request then no action is taken.
+func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.sessions.getUserFromContext(r.Context())
+
+		current, ok := mux.Vars(r)["organization_name"]
+		if !ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
+			user.CurrentOrganization = &current
+			if err := app.UserService().Update(r.Context(), user.Username, user.User); err != nil {
+				writeError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), userCtxKey, user)
+			r = r.WithContext(ctx)
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {

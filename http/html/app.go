@@ -115,6 +115,7 @@ func (app *Application) githubRoutes(router *mux.Router) {
 // authRoutes adds routes that require authentication.
 func (app *Application) authRoutes(router *mux.Router) {
 	router.Use(app.requireAuthentication)
+	router.Use(app.setCurrentOrganization)
 
 	router.HandleFunc("/me", app.meHandler).Methods("GET").Name("getMe")
 	router.HandleFunc("/me/profile", app.profileHandler).Methods("GET").Name("getProfile")

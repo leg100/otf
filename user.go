@@ -27,6 +27,9 @@ type User struct {
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
 
+	// Name of the current Organization the user is using on the web app.
+	CurrentOrganization *string
+
 	// A user has many sessions
 	Sessions []*Session
 
