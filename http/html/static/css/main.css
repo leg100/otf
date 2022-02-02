@@ -265,3 +265,19 @@ th, td {
 .term-fg1 {
   font-weight: bold;
 }
+
+.workspace-lock {
+  display: flex;
+  align-items: baseline;
+  margin: 0.5em;
+}
+
+.workspace-lock .workspace-lock-status {
+  margin-right: 0.5em;
+}
+
+.workspace-lock .workspace-lock-status-locked {
+  background: #ff7070;
+  color: white;
+  font-weight: 700;
+}
