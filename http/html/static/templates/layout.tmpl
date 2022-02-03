@@ -13,7 +13,16 @@
   <header>
     <nav class="navbar">
       <div class="logo">
-        <strong><a href="/">oTF</a></strong>
+        <a href="/">oTF</a></strong>
+      </div>
+      <div class="organizations">
+        <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+          {{ template "building_icon" }}
+          <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+        </a>
+      </div>
+      <div class="organizations">
+        <a href="{{ $.Path "listOrganization" }}">organizations</a>
       </div>
       <div class="nav-links">
         <ul>
@@ -43,19 +52,12 @@
           </li>
           <li>
             <form action="{{ .Path "logout" }}" method="POST">
-              <button type="submit">Logout</button>
+              <button type="submit">logout</button>
             </form>
           </li>
           {{ end }}
         </ul>
       </div>
-    </nav>
-    <nav aria-label="Breadcrumb" class="breadcrumbs">
-      <ol>
-        {{ range .Breadcrumbs }}
-          <li><a href="{{ .Link }}">{{ .Name }}</a></li>
-        {{ end }}
-      </ol>
     </nav>
   </header>
 
@@ -65,7 +67,7 @@
 
     <div>
       <div class="container-header">
-        <h2 class="container-title">{{ template "title" . }}</h2>
+        <span class="container-title">{{ template "title" . }}</span>
         <div class="container-button">
           {{ block "container-button" . }}{{ end }}
         </div>

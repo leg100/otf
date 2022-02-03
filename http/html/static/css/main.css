@@ -1,6 +1,6 @@
 body {
-  font-family: 'Courier New', Courier, monospace;
-  margin: 0;
+  font-family: Roboto,Helvetica Neue,sans-serif;
+  margin: 0.4em;
 }
 
 h2 {
@@ -8,6 +8,7 @@ h2 {
 }
 
 header nav {
+  font-family: 'Courier New', Courier, monospace;
   padding-left: 0.5em;
 }
 
@@ -90,19 +91,25 @@ th, td {
 
 .logo {
   margin-right: 2em;
+  padding: 0.4em;
+  line-height: 1em;
+  background-color: black;
+  color: white;
+  font-weight: 900;
+}
+
+.logo a:hover {
+  color: white;
 }
 
 .navbar {
   display: flex;
-  background-color: #2F445A;
-  color: #fff;
-  margin: 0;
   align-items: baseline;
+  gap: 2em;
 }
 
-.navbar a:hover {
-  color: lightgrey;
-  text-decoration: none;
+.navbar .organizations {
+  font-size: 0.85em;
 }
 
 .navbar .nav-links {
@@ -122,10 +129,6 @@ th, td {
 
 .navbar > li:first-child {
   margin-right: auto;
-}
-
-.navbar .current-organization {
-  font-size: 0.85em;
 }
 
 .navbar .current-user {
