@@ -6,4 +6,7 @@
 
 {{ define "content" }}
   <p>You are logged in as {{ .Content.Username }}</p>
+  <form action="{{ .Path "logout" }}" method="POST">
+    <button type="submit">logout</button>
+  </form>
 {{ end }}
