@@ -36,6 +36,7 @@ func (f *templateDataFactory) newTemplateData(r *http.Request, content interface
 		router:   &router{f.router},
 		sessions: f.sessions,
 		request:  r,
+		Version:  otf.Version,
 	}
 }
 
@@ -48,6 +49,9 @@ type templateData struct {
 	request *http.Request
 
 	sessions *sessions
+
+	// oTF version string for showing in footer
+	Version string
 }
 
 // Path proxies access to the router's route method

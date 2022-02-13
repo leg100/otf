@@ -10,54 +10,55 @@
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
-  <header>
-    <nav class="navbar">
-      <div class="logo">
-        <a href="/">oTF</a></strong>
-      </div>
-      <div class="nav-links">
-        <ul>
-          {{ if .CurrentUser.IsAuthenticated }}
-            <li>
-              <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
-                {{ template "building_icon" }}
-                <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
-              </a>
-            </li>
-            <li>
-              <a href="{{ $.Path "listOrganization" }}">organizations</a>
-            </li>
-            <li>
-              <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
-            </li>
-          {{ end }}
-        </ul>
-      </div>
-    </nav>
-  </header>
+  <div class="body-container">
+    <header>
+      <nav class="navbar">
+        <div class="logo">
+          <a href="/">oTF</a></strong>
+        </div>
+        <div class="nav-links">
+          <ul>
+            {{ if .CurrentUser.IsAuthenticated }}
+              <li>
+                <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+                  {{ template "building_icon" }}
+                  <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+                </a>
+              </li>
+              <li>
+                <a href="{{ $.Path "listOrganization" }}">organizations</a>
+              </li>
+              <li>
+                <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
+              </li>
+            {{ end }}
+          </ul>
+        </div>
+      </nav>
+    </header>
 
-  {{ block "container" . }}
-  <div class="container">
-    {{ block "sidebar" . }}{{ end }}
+    <main>
+    {{ block "container" . }}
+      {{ block "sidebar" . }}{{ end }}
 
-    <div>
-      <div class="container-header">
-        <span class="container-title">{{ template "title" . }}</span>
-        <div class="container-button">
-          {{ block "container-button" . }}{{ end }}
+      <div>
+        <div class="container-header">
+          <span class="container-title"><strong>{{ template "title" . }}</strong></span>
+          <div class="container-button">
+            {{ block "container-button" . }}{{ end }}
+          </div>
+        </div>
+
+        {{ template "flash" . }}
+
+        <div>
+          {{ block "content" . }}{{ end }}
         </div>
       </div>
-
-      <hr>
-
-      {{ template "flash" . }}
-
-      <main>
-        {{ block "content" . }}{{ end }}
-      </main>
-    </div>
+    {{ end }}
+    </main>
   </div>
-  {{ end }}
+  <footer><a href="https://github.com/leg100/otf">{{ .Version }}</a></footer>
 </body>
 </html>
 {{ end }}

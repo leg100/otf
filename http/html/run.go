@@ -41,6 +41,8 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get workspace
+
 	runs, err := c.RunService.List(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

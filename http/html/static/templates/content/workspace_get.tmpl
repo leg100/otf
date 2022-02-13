@@ -1,8 +1,6 @@
 {{ template "layout" . }}
 
-{{ define "title" }}{{ .Content.Name }}{{ end }}
-
-{{ define "sidebar" }}{{ template "workspace_sidebar" . }}{{ end }}
+{{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "content" }}
   <p><strong>Terraform Version:</strong> {{ .Content.TerraformVersion }}</p>
