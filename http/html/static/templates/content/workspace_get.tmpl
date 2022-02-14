@@ -2,11 +2,24 @@
 
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
-{{ define "content" }}
-  <p><strong>Terraform Version:</strong> {{ .Content.TerraformVersion }}</p>
-  <form class="main-form" action="{{ .Relative "deleteWorkspace" }}" method="POST">
-      <button>Delete workspace</button>
+{{ define "container-header" }}
+  <a href="{{ .Relative "listWorkspace" }}">workspaces</a> / {{ .Content.Name }}
+{{ end }}
+
+{{ define "container-header-actions" }}
+  <form action="{{ .Relative "newRun" }}" method="GET">
+    <button type="submit">New Run</button>
   </form>
+{{ end }}
+
+{{ define "container-header-links" }}
+  <div class="smallcaps">
+    <a href="{{ .Relative "listRun" }}">runs</a>
+  </div>
+  <div>
+    <a href="{{ .Relative "editWorkspace" }}">{{ template "cog_icon" }}</a>
+  </div>
+  <div>v{{ .Content.TerraformVersion }}</div>
   <div class="workspace-lock">
     {{ if .Content.Locked }}
       <span class="workspace-lock-status workspace-lock-status-locked">Locked</span>
@@ -16,4 +29,10 @@
       <form action="{{ .Relative "lockWorkspace" }}" method="POST"><button>Lock</button></form>
     {{ end }}
   </div>
+{{ end }}
+
+{{ define "content" }}
+  <form action="{{ .Relative "deleteWorkspace" }}" method="POST">
+    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+  </form>
 {{ end }}

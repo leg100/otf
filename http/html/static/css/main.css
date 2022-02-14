@@ -1,5 +1,5 @@
 * {
-  outline: solid #000 1px;
+  /* outline: 1px solid #000; */
 }
 
 body {
@@ -13,18 +13,20 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-
 }
 
 /*
  * Container for both header and main elements.
  */
 .body-container {
-  min-width: 55em;
-  max-width: 65em;
+  width: 100%;
+  max-width: 76em;
 
   /* Center horizontally with a small gap at top and bottom */
-  margin: 0.4em auto;
+  margin: 0 auto;
+
+  /* Small gutter around edge */
+  padding: 0.5em;
 
   /* Force footer down to bottom of viewport */
   flex-grow: 1;
@@ -36,18 +38,24 @@ body {
    */
   display: flex;
   flex-direction: column;
+  gap: 0.6em;
 }
 
 header nav {
   font-family: 'Courier New', Courier, monospace;
-  padding-left: 0.5em;
 }
 
 main {
   /* Consume all remaining space below the header */
   flex-grow: 1;
 
+  /* vertical stack of:
+   * - h2
+   * - div.content
+   */
   display: flex;
+  flex-direction: column;
+  gap: 1em;
 }
 
 footer {
@@ -64,18 +72,21 @@ ul, ol {
   padding: 0;
 }
 
-/* Center main forms on the page */
+/* main-form is a form that is the main content of a page */
 .main-form {
-  margin: 0 auto;
   width: 500px;
   /* Form outline */
   padding: 1em;
   border: 1px solid #CCC;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
 }
 
-/* Space out form fields */
-li.field + li.field {
-  margin-top: 1em;
+/* Free-form inputs need to accommodate more text */
+input.freeform {
+  width: 30em;
 }
 
 /* Place labels above their inputs */
@@ -83,30 +94,21 @@ label {
   display: block;
 }
 
-/* Unless they're labels for radio inputs */
-input[type="radio"] + label {
-  display: inline;
-}
-
-input[type="radio"] {
-  margin-right: .75em;
-}
-
+/* Radio options are placed horizontally */
 .radio {
   display: flex;
   flex-wrap: wrap;
+  gap: 2em;
 }
 
-.radio li {
-  margin-right: 2em;
+/* Radio labels are placed alongside the option */
+.radio label {
+  display: inline;
 }
 
-.field {
-  width: 100%;
-}
-
-.field input {
-  max-width: 30em;
+/* Add some space between radio input and label */
+.radio input {
+  margin-right: .75em;
 }
 
 a, a:visited, a:active {
@@ -120,6 +122,7 @@ a:hover {
 }
 
 table {
+  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
@@ -157,33 +160,49 @@ th, td {
 }
 
 .navbar .nav-links {
-  flex: auto;
+  /* nav-links consume remainder of navbar */
+  flex-grow: 1;
 }
 
 .navbar .nav-links ul {
   display: flex;
+  gap: 1em;
 }
 
-.navbar .nav-links li {
-  padding: 0.5em;
-  flex: initial;
-}
-
-.navbar .nav-links li:first-child {
-  flex: auto;
-}
-
-.container-header {
-  display: flex;
-  align-items: baseline;
-}
-
-.container-title {
+/*
+ * current organization link is left-aligned, next to logo, whereas
+ * remainder of links are right-aligned
+ */
+.navbar .nav-links li.current-organization {
   margin-right: auto;
 }
 
-.container-button {
-  margin: 1em;
+/* content-header: title + links */
+.content-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.container-header-title {
+  font-size: 1.5em;
+
+  display: flex;
+}
+
+.container-header-links {
+  /* Links take up remainder of header after title */
+  flex-grow: 1;
+
+  display: flex;
+  font-size: 1em;
+  align-items: center;
+
+  /* Put gaps in between links */
+  gap: 1em;
+
+  /* Links are right-aligned */
+  justify-content: flex-end;
 }
 
 .center {
@@ -294,16 +313,15 @@ th, td {
              "Courier New", monospace;
 }
 
- /*
-  * Upstream strangely disables bold because it looks "wierd"
-  */
+/*
+ * Upstream strangely disables bold because it looks "wierd"
+ */
 .term-fg1 {
   font-weight: bold;
 }
 
 .workspace-lock {
   display: flex;
-  align-items: baseline;
   margin: 0.5em;
 }
 
@@ -315,4 +333,24 @@ th, td {
   background: #ff7070;
   color: white;
   font-weight: 700;
+}
+
+/*
+ * Delete buttons
+ */
+button.delete {
+  border: solid 1px #9f2937;
+  background: #c73445;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+button.delete:hover {
+  color: #f9ecee;
+}
+
+.smallcaps {
+  font-variant: small-caps;
+  font-size: 1.5rem;
 }

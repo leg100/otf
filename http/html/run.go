@@ -12,8 +12,8 @@ import (
 
 type RunController struct {
 	otf.RunService
-
 	otf.PlanService
+	otf.WorkspaceService
 
 	// HTML template renderer
 	renderer
@@ -35,26 +35,34 @@ func (c *RunController) addRoutes(router *mux.Router) {
 }
 
 func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
+	// get runs
 	var opts otf.RunListOptions
 	if err := decodeAll(r, &opts); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	// get workspace
-
 	runs, err := c.RunService.List(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// get workspace
+	spec := otf.WorkspaceSpec{OrganizationName: opts.OrganizationName, Name: opts.WorkspaceName}
+	workspace, err := c.WorkspaceService.Get(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	tdata := c.newTemplateData(r, struct {
-		List    *otf.RunList
-		Options otf.RunListOptions
+		List      *otf.RunList
+		Options   otf.RunListOptions
+		Workspace *otf.Workspace
 	}{
-		List:    runs,
-		Options: opts,
+		List:      runs,
+		Options:   opts,
+		Workspace: workspace,
 	})
 
 	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {

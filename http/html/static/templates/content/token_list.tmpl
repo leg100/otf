@@ -2,13 +2,17 @@
 
 {{ define "title" }}Tokens{{ end }}
 
-{{ define "sidebar" }}{{ template "me_sidebar" . }}{{ end }}
+{{ define "container-header" }}
+  <div>profile / tokens</div>
+{{ end }}
 
-{{ define "container-button" }}
+{{ define "container-header-actions" }}
   <form action="{{ .Path "newToken" }}" method="GET">
     <button type="submit">New Token</button>
   </form>
 {{ end }}
+
+{{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
   <table>

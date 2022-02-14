@@ -2,6 +2,14 @@
 
 {{ define "title" }}Runs{{ end }}
 
+{{ define "container-header" }}
+  <a href="{{ .Relative "listWorkspace" }}">workspaces</a>
+  /
+  <a href="{{ .Relative "getWorkspace" }}">{{ .Content.Workspace.Name }}</a>
+  /
+  runs
+{{ end }}
+
 {{ define "content" }}
   <table class="table">
     <thead>
@@ -11,9 +19,9 @@
     </thead>
     <tbody>
       {{ range .Content.List.Items }}
-      <tr>
-        <td><a href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
-      </tr>
+        <tr>
+          <td><a href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
+        </tr>
       {{ end }}
     </tbody>
   </table>
