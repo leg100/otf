@@ -15,12 +15,20 @@
     <thead>
       <tr>
         <th scope="col">ID</th>
+        <th scope="col">Status</th>
+        <th scope="col">Plan</th>
+        <th scope="col">Apply</th>
+        <th scope="col">Updated</th>
       </tr>
     </thead>
     <tbody>
       {{ range .Content.List.Items }}
         <tr>
-          <td><a href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
+          <td><a class="identifier" href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
+          <td><span class="status-{{ .Status }}">{{ .Status }}</span></td>
+          <td><a href="{{ $.Relative "getPlan" "run_id" .ID }}">logs</a></td>
+          <td><a href="{{ $.Relative "getApply" "run_id" .ID }}">logs</a></td>
+          <td>{{ ago .UpdatedAt }} ago</td>
         </tr>
       {{ end }}
     </tbody>

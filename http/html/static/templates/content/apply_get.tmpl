@@ -10,8 +10,10 @@
   <a href="{{ .Relative "listRun" }}">runs</a>
   /
   {{ .Content.Run.ID }}
+  /
+  apply
 {{ end }}
 
 {{ define "content" }}
-  <div class="term-container">{{- .Content.PlanLogs -}}</div>
+  <div class="term-container">{{- .Content.Logs -}}</div>
 {{ end }}

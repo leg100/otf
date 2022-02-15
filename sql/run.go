@@ -197,7 +197,8 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
 		Columns(asColumnList("workspaces", true, workspaceColumns...)).
 		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
+		Offset(opts.GetOffset()).
+		OrderBy("runs.updated_at DESC")
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {

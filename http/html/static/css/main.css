@@ -1,5 +1,5 @@
 * {
-  /* outline: 1px solid #000; */
+  outline: 0px solid #000;
 }
 
 body {
@@ -39,6 +39,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.6em;
+
+  /* Absolute positioned items are positioned relative to this container */
+  position: relative;
 }
 
 header nav {
@@ -135,6 +138,26 @@ thead {
 th, td {
   text-align: left;
   padding: 0.2em .5em;
+}
+
+thead th:nth-child(1) {
+  width: 25%;
+}
+
+thead th:nth-child(2) {
+  width: 20%;
+}
+
+thead th:nth-child(3) {
+  width: 10%;
+}
+
+thead th:nth-child(4) {
+  width: 10%;
+}
+
+.identifier {
+  font-family: 'Courier New', Courier, monospace;
 }
 
 /*
@@ -276,7 +299,13 @@ th, td {
   padding-right: 0.5em;
 }
 
+/* Flash alert message in bottom left corner on top of any other content */
 .flash {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 999;
+
   background: #ddf4ff;
   border-color: rgba(84, 174, 255, 0.4);
   padding: 10px 16px;
@@ -322,11 +351,7 @@ th, td {
 
 .workspace-lock {
   display: flex;
-  margin: 0.5em;
-}
-
-.workspace-lock .workspace-lock-status {
-  margin-right: 0.5em;
+  gap: 0.5em;
 }
 
 .workspace-lock .workspace-lock-status-locked {
@@ -354,3 +379,14 @@ button.delete:hover {
   font-variant: small-caps;
   font-size: 1.5rem;
 }
+
+.status-planned_and_finished {
+  background: #ff933f;
+  color: white;
+}
+
+.status-applied {
+  background: lightgreen;
+  color: black;
+}
+

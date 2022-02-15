@@ -13,6 +13,7 @@ import (
 type RunController struct {
 	otf.RunService
 	otf.PlanService
+	otf.ApplyService
 	otf.WorkspaceService
 
 	// HTML template renderer
@@ -31,6 +32,8 @@ func (c *RunController) addRoutes(router *mux.Router) {
 	router.HandleFunc("/new", c.New).Methods("GET").Name("newRun")
 	router.HandleFunc("/create", c.Create).Methods("POST").Name("createRun")
 	router.HandleFunc("/{run_id}", c.Get).Methods("GET").Name("getRun")
+	router.HandleFunc("/{run_id}/plan", c.GetPlan).Methods("GET").Name("getPlan")
+	router.HandleFunc("/{run_id}/apply", c.GetApply).Methods("GET").Name("getApply")
 	router.HandleFunc("/{run_id}/delete", c.Delete).Methods("POST").Name("deleteRun")
 }
 
@@ -137,6 +140,88 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := c.renderTemplate("run_get.tmpl", w, tdata); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (c *RunController) GetPlan(w http.ResponseWriter, r *http.Request) {
+	run, err := c.RunService.Get(r.Context(), mux.Vars(r)["run_id"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// strip STX and ETX
+	logs = logs[1 : len(logs)-1]
+
+	// convert to string
+	logStr := string(logs)
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	// convert ANSI escape sequences to HTML
+	logStr = string(term2html.Render([]byte(logStr)))
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	tdata := c.newTemplateData(r, struct {
+		Run  *otf.Run
+		Logs template.HTML
+	}{
+		Run:  run,
+		Logs: template.HTML(logStr),
+	})
+
+	if err := c.renderTemplate("plan_get.tmpl", w, tdata); err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (c *RunController) GetApply(w http.ResponseWriter, r *http.Request) {
+	run, err := c.RunService.Get(r.Context(), mux.Vars(r)["run_id"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logs, err := c.ApplyService.GetChunk(r.Context(), run.Apply.ID, otf.GetChunkOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// strip STX and ETX
+	logs = logs[1 : len(logs)-1]
+
+	// convert to string
+	logStr := string(logs)
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	// convert ANSI escape sequences to HTML
+	logStr = string(term2html.Render([]byte(logStr)))
+
+	// trim leading and trailing white space
+	logStr = strings.TrimSpace(logStr)
+
+	tdata := c.newTemplateData(r, struct {
+		Run  *otf.Run
+		Logs template.HTML
+	}{
+		Run:  run,
+		Logs: template.HTML(logStr),
+	})
+
+	if err := c.renderTemplate("apply_get.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
