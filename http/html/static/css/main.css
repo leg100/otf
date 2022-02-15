@@ -340,6 +340,7 @@ thead th:nth-child(4) {
              "Fira Mono",
              "Droid Sans Mono",
              "Courier New", monospace;
+  font-size: 1rem;
 }
 
 /*
