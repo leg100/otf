@@ -51,8 +51,7 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 	}
 
 	if run != nil {
-		_, err = s.createRun(context.Background(), run)
-		if err != nil {
+		if _, err = s.createRun(context.Background(), run); err != nil {
 			return nil, err
 		}
 	}
