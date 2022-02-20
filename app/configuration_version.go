@@ -19,10 +19,10 @@ type ConfigurationVersionService struct {
 
 	*otf.ConfigurationVersionFactory
 
-	otf.RunCreator
+	runCreator
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, rc otf.RunCreator, wss otf.WorkspaceService, cache otf.Cache) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, runStore otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, es otf.EventService, cache otf.Cache) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		db:     db,
 		cache:  cache,
@@ -30,7 +30,11 @@ func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger log
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
-		RunCreator: rc,
+		runCreator: runCreator{
+			db:     runStore,
+			es:     es,
+			Logger: logger,
+		},
 	}
 }
 
@@ -47,7 +51,7 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 	}
 
 	if run != nil {
-		_, err = s.CreateRun(context.Background(), run)
+		_, err = s.createRun(context.Background(), run)
 		if err != nil {
 			return nil, err
 		}
