@@ -7,6 +7,13 @@ import (
 	"github.com/leg100/otf"
 )
 
+// runCreator persists the Run object to the db and emits an EventRunCreated
+// event.
+//
+// Note: This is separate from the RunService because both it and the
+// ConfigurationVersionService need to create runs, and keeping it separate
+// avoids a mutual interdependence (otherwise the ConfigurationVersionService
+// would depend on the RunService, as well as vice versa).
 type runCreator struct {
 	db otf.RunStore
 	es otf.EventService
