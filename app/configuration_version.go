@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -17,9 +18,11 @@ type ConfigurationVersionService struct {
 	logr.Logger
 
 	*otf.ConfigurationVersionFactory
+
+	runCreator
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, cache otf.Cache) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, runStore otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, es otf.EventService, cache otf.Cache) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		db:     db,
 		cache:  cache,
@@ -27,11 +30,16 @@ func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger log
 		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
 			WorkspaceService: wss,
 		},
+		runCreator: runCreator{
+			db:     runStore,
+			es:     es,
+			Logger: logger,
+		},
 	}
 }
 
 func (s ConfigurationVersionService) Create(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	cv, err := s.NewConfigurationVersion(workspaceID, opts)
+	cv, run, err := s.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +48,13 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 	if err != nil {
 		s.Error(err, "creating configuration version", "id", cv.ID)
 		return nil, err
+	}
+
+	if run != nil {
+		_, err = s.createRun(context.Background(), run)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	s.V(2).Info("created configuration version", "id", cv.ID)
