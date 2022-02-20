@@ -116,15 +116,17 @@ type ConfigurationVersionListOptions struct {
 }
 
 // ConfigurationVersionFactory creates ConfigurationVersion objects
+func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
+func (cv *ConfigurationVersion) String() string { return cv.ID }
+
 type ConfigurationVersionFactory struct {
 	WorkspaceService WorkspaceService
 }
 
-func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
-func (cv *ConfigurationVersion) String() string { return cv.ID }
-
-// NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+// NewConfigurationVersion creates a ConfigurationVersion object from scratch.
+// Optionally creates and returns a new Run object if opts.AutoQueueRuns is set
+// to true, or is omitted.
+func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, *Run, error) {
 	cv := ConfigurationVersion{
 		ID:            NewID("cv"),
 		Timestamps:    NewTimestamps(),
@@ -143,9 +145,13 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	cv.Workspace = ws
 
-	return &cv, nil
+	if cv.AutoQueueRuns {
+		return &cv, newRun(RunCreateOptions{}, ws, &cv), nil
+	}
+
+	return &cv, nil, nil
 }

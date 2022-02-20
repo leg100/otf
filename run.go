@@ -86,12 +86,6 @@ type RunStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-// RunFactory is a factory for constructing Run objects.
-type RunFactory struct {
-	ConfigurationVersionService ConfigurationVersionService
-	WorkspaceService            WorkspaceService
-}
-
 // RunService implementations allow interactions with runs
 type RunService interface {
 	// Create a new run with the given options.
@@ -550,37 +544,55 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
+// RunFactory is a factory for constructing Run objects.
+type RunFactory struct {
+	ConfigurationVersionService ConfigurationVersionService
+	WorkspaceService            WorkspaceService
+}
+
 // NewRun constructs a run object.
 func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 	if opts.Workspace == nil {
 		return nil, errors.New("workspace is required")
 	}
 
-	id := NewID("run")
-	run := Run{
-		ID:               id,
-		Timestamps:       NewTimestamps(),
-		Refresh:          DefaultRefresh,
-		ReplaceAddrs:     opts.ReplaceAddrs,
-		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: make(TimestampMap),
-		Plan:             newPlan(id),
-		Apply:            newApply(id),
-	}
-
-	run.UpdateStatus(RunPending)
-
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &opts.Workspace.ID})
 	if err != nil {
 		return nil, err
 	}
-	run.Workspace = ws
 
 	cv, err := f.getConfigurationVersion(opts)
 	if err != nil {
 		return nil, err
 	}
-	run.ConfigurationVersion = cv
+
+	return newRun(opts, ws, cv), nil
+}
+
+func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
+	// Unless CV ID provided, get workspace's latest CV
+	if opts.ConfigurationVersion != nil {
+		return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID)
+	}
+	return f.ConfigurationVersionService.GetLatest(opts.Workspace.ID)
+}
+
+func newRun(opts RunCreateOptions, ws *Workspace, cv *ConfigurationVersion) *Run {
+	id := NewID("run")
+	run := Run{
+		ID:                   id,
+		Timestamps:           NewTimestamps(),
+		Refresh:              DefaultRefresh,
+		ReplaceAddrs:         opts.ReplaceAddrs,
+		TargetAddrs:          opts.TargetAddrs,
+		StatusTimestamps:     make(TimestampMap),
+		Plan:                 newPlan(id),
+		Apply:                newApply(id),
+		Workspace:            ws,
+		ConfigurationVersion: cv,
+	}
+
+	run.UpdateStatus(RunPending)
 
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
@@ -594,13 +606,5 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 		run.Refresh = *opts.Refresh
 	}
 
-	return &run, nil
-}
-
-func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
-	// Unless CV ID provided, get workspace's latest CV
-	if opts.ConfigurationVersion != nil {
-		return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID)
-	}
-	return f.ConfigurationVersionService.GetLatest(opts.Workspace.ID)
+	return &run
 }

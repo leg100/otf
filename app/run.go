@@ -24,9 +24,11 @@ type RunService struct {
 	logr.Logger
 
 	*otf.RunFactory
+
+	otf.RunCreator
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore, cache otf.Cache) *RunService {
+func NewRunService(db otf.RunStore, logger logr.Logger, runCreator otf.RunCreator, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore, cache otf.Cache) *RunService {
 	return &RunService{
 		db:        db,
 		es:        es,
@@ -38,6 +40,7 @@ func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
 		},
+		RunCreator: runCreator,
 	}
 }
 
@@ -55,17 +58,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	_, err = s.db.Create(run)
-	if err != nil {
-		s.Error(err, "creating run", "id", run.ID)
-		return nil, err
-	}
-
-	s.V(1).Info("created run", "id", run.ID)
-
-	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
-
-	return run, nil
+	return s.CreateRun(ctx, run)
 }
 
 // Get retrieves a run obj with the given ID from the db.
