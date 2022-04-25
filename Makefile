@@ -74,3 +74,12 @@ image: build
 push: image
 	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
 	docker push $(IMAGE_TARGET)
+
+# Generate sql code
+.PHONY: sql
+sql:
+	pggen gen go \
+		--postgres-connection "dbname=otf" \
+		--query-glob 'db/queries/*.sql' \
+		--output-dir db \
+		--log info
