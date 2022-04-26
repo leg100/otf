@@ -18,11 +18,11 @@ RETURNING *;
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 GROUP BY users.user_id
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -31,11 +31,11 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.user_id = pggen.arg('user_id')
 GROUP BY users.user_id
 ;
@@ -44,11 +44,11 @@ GROUP BY users.user_id
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = pggen.arg('username')
 GROUP BY users.user_id
 ;
@@ -57,11 +57,11 @@ GROUP BY users.user_id
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = pggen.arg('token')
 GROUP BY users.user_id
 ;
@@ -70,11 +70,11 @@ GROUP BY users.user_id
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token = pggen.arg('token')
 GROUP BY users.user_id
 ;
@@ -83,11 +83,11 @@ GROUP BY users.user_id
 SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organizations(JOIN organization_memberships USING(user_id)) USING 
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token_id = pggen.arg('token_id')
 GROUP BY users.user_id
 ;

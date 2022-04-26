@@ -68,24 +68,24 @@ func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (InsertUserRow, err
 const findUsersSQL = `SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 GROUP BY users.user_id
 LIMIT $1 OFFSET $2
 ;`
 
 type FindUsersRow struct {
-	UserID                  *string                   `json:"user_id"`
-	Username                *string                   `json:"username"`
-	CreatedAt               pgtype.Timestamptz        `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz        `json:"updated_at"`
-	CurrentOrganization     *string                   `json:"current_organization"`
-	Sessions                []Sessions                `json:"sessions"`
-	Tokens                  []Tokens                  `json:"tokens"`
-	OrganizationMemberships []OrganizationMemberships `json:"organization_memberships"`
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
 }
 
 // FindUsers implements Querier.FindUsers.
@@ -99,10 +99,10 @@ func (q *DBQuerier) FindUsers(ctx context.Context, limit int, offset int) ([]Fin
 	items := []FindUsersRow{}
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
+	organizationsArray := q.types.newOrganizationsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsers row: %w", err)
 		}
 		if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -111,7 +111,7 @@ func (q *DBQuerier) FindUsers(ctx context.Context, limit int, offset int) ([]Fin
 		if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
-		if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
 		items = append(items, item)
@@ -137,10 +137,10 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 	items := []FindUsersRow{}
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
+	organizationsArray := q.types.newOrganizationsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersBatch row: %w", err)
 		}
 		if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -149,7 +149,7 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 		if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
-		if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
 		items = append(items, item)
@@ -163,24 +163,24 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 const findUserByIDSQL = `SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.user_id = $1
 GROUP BY users.user_id
 ;`
 
 type FindUserByIDRow struct {
-	UserID                  *string                   `json:"user_id"`
-	Username                *string                   `json:"username"`
-	CreatedAt               pgtype.Timestamptz        `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz        `json:"updated_at"`
-	CurrentOrganization     *string                   `json:"current_organization"`
-	Sessions                []Sessions                `json:"sessions"`
-	Tokens                  []Tokens                  `json:"tokens"`
-	OrganizationMemberships []OrganizationMemberships `json:"organization_memberships"`
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
 }
 
 // FindUserByID implements Querier.FindUserByID.
@@ -190,8 +190,8 @@ func (q *DBQuerier) FindUserByID(ctx context.Context, userID string) (FindUserBy
 	var item FindUserByIDRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByID: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -200,7 +200,7 @@ func (q *DBQuerier) FindUserByID(ctx context.Context, userID string) (FindUserBy
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
 	return item, nil
@@ -217,8 +217,8 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 	var item FindUserByIDRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByIDBatch row: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -227,7 +227,7 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
 	return item, nil
@@ -236,24 +236,24 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 const findUserByUsernameSQL = `SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = $1
 GROUP BY users.user_id
 ;`
 
 type FindUserByUsernameRow struct {
-	UserID                  *string                   `json:"user_id"`
-	Username                *string                   `json:"username"`
-	CreatedAt               pgtype.Timestamptz        `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz        `json:"updated_at"`
-	CurrentOrganization     *string                   `json:"current_organization"`
-	Sessions                []Sessions                `json:"sessions"`
-	Tokens                  []Tokens                  `json:"tokens"`
-	OrganizationMemberships []OrganizationMemberships `json:"organization_memberships"`
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
 }
 
 // FindUserByUsername implements Querier.FindUserByUsername.
@@ -263,8 +263,8 @@ func (q *DBQuerier) FindUserByUsername(ctx context.Context, username string) (Fi
 	var item FindUserByUsernameRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByUsername: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -273,7 +273,7 @@ func (q *DBQuerier) FindUserByUsername(ctx context.Context, username string) (Fi
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
 	return item, nil
@@ -290,8 +290,8 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 	var item FindUserByUsernameRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByUsernameBatch row: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -300,7 +300,7 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
 	return item, nil
@@ -309,24 +309,24 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 const findUserBySessionTokenSQL = `SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = $1
 GROUP BY users.user_id
 ;`
 
 type FindUserBySessionTokenRow struct {
-	UserID                  *string                   `json:"user_id"`
-	Username                *string                   `json:"username"`
-	CreatedAt               pgtype.Timestamptz        `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz        `json:"updated_at"`
-	CurrentOrganization     *string                   `json:"current_organization"`
-	Sessions                []Sessions                `json:"sessions"`
-	Tokens                  []Tokens                  `json:"tokens"`
-	OrganizationMemberships []OrganizationMemberships `json:"organization_memberships"`
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
 }
 
 // FindUserBySessionToken implements Querier.FindUserBySessionToken.
@@ -336,8 +336,8 @@ func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token string) (F
 	var item FindUserBySessionTokenRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("query FindUserBySessionToken: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -346,7 +346,7 @@ func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token string) (F
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
 	return item, nil
@@ -363,8 +363,8 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 	var item FindUserBySessionTokenRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserBySessionTokenBatch row: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -373,7 +373,7 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
 	return item, nil
@@ -382,35 +382,35 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 const findUserByAuthenticationTokenSQL = `SELECT users.*,
     array_agg(sessions) AS sessions,
     array_agg(tokens) AS tokens,
-    array_agg(organization_memberships) AS organization_memberships
+    array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN organization_memberships USING(user_id)
-WHERE tokens.token_id = $1
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+WHERE tokens.token = $1
 GROUP BY users.user_id
 ;`
 
 type FindUserByAuthenticationTokenRow struct {
-	UserID                  *string                   `json:"user_id"`
-	Username                *string                   `json:"username"`
-	CreatedAt               pgtype.Timestamptz        `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz        `json:"updated_at"`
-	CurrentOrganization     *string                   `json:"current_organization"`
-	Sessions                []Sessions                `json:"sessions"`
-	Tokens                  []Tokens                  `json:"tokens"`
-	OrganizationMemberships []OrganizationMemberships `json:"organization_memberships"`
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
 }
 
 // FindUserByAuthenticationToken implements Querier.FindUserByAuthenticationToken.
-func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenRow, error) {
+func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token string) (FindUserByAuthenticationTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationToken")
-	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenSQL, tokenID)
+	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenSQL, token)
 	var item FindUserByAuthenticationTokenRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByAuthenticationToken: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -419,15 +419,15 @@ func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, tokenID s
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
 	}
 	return item, nil
 }
 
 // FindUserByAuthenticationTokenBatch implements Querier.FindUserByAuthenticationTokenBatch.
-func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, tokenID string) {
-	batch.Queue(findUserByAuthenticationTokenSQL, tokenID)
+func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, token string) {
+	batch.Queue(findUserByAuthenticationTokenSQL, token)
 }
 
 // FindUserByAuthenticationTokenScan implements Querier.FindUserByAuthenticationTokenScan.
@@ -436,8 +436,8 @@ func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) 
 	var item FindUserByAuthenticationTokenRow
 	sessionsArray := q.types.newSessionsArray()
 	tokensArray := q.types.newTokensArray()
-	organizationMembershipsArray := q.types.newOrganizationMembershipsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationMembershipsArray); err != nil {
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByAuthenticationTokenBatch row: %w", err)
 	}
 	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
@@ -446,8 +446,81 @@ func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) 
 	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
 	}
-	if err := organizationMembershipsArray.AssignTo(&item.OrganizationMemberships); err != nil {
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
+	}
+	return item, nil
+}
+
+const findUserByAuthenticationTokenIDSQL = `SELECT users.*,
+    array_agg(sessions) AS sessions,
+    array_agg(tokens) AS tokens,
+    array_agg(organizations) AS organizations
+FROM users
+JOIN sessions USING(user_id)
+JOIN tokens USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+WHERE tokens.token_id = $1
+GROUP BY users.user_id
+;`
+
+type FindUserByAuthenticationTokenIDRow struct {
+	UserID              *string            `json:"user_id"`
+	Username            *string            `json:"username"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	CurrentOrganization *string            `json:"current_organization"`
+	Sessions            []Sessions         `json:"sessions"`
+	Tokens              []Tokens           `json:"tokens"`
+	Organizations       []Organizations    `json:"organizations"`
+}
+
+// FindUserByAuthenticationTokenID implements Querier.FindUserByAuthenticationTokenID.
+func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationTokenID")
+	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenIDSQL, tokenID)
+	var item FindUserByAuthenticationTokenIDRow
+	sessionsArray := q.types.newSessionsArray()
+	tokensArray := q.types.newTokensArray()
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
+		return item, fmt.Errorf("query FindUserByAuthenticationTokenID: %w", err)
+	}
+	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
+	}
+	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
+	}
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
+	}
+	return item, nil
+}
+
+// FindUserByAuthenticationTokenIDBatch implements Querier.FindUserByAuthenticationTokenIDBatch.
+func (q *DBQuerier) FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID string) {
+	batch.Queue(findUserByAuthenticationTokenIDSQL, tokenID)
+}
+
+// FindUserByAuthenticationTokenIDScan implements Querier.FindUserByAuthenticationTokenIDScan.
+func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error) {
+	row := results.QueryRow()
+	var item FindUserByAuthenticationTokenIDRow
+	sessionsArray := q.types.newSessionsArray()
+	tokensArray := q.types.newTokensArray()
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization, sessionsArray, tokensArray, organizationsArray); err != nil {
+		return item, fmt.Errorf("scan FindUserByAuthenticationTokenIDBatch row: %w", err)
+	}
+	if err := sessionsArray.AssignTo(&item.Sessions); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
+	}
+	if err := tokensArray.AssignTo(&item.Tokens); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
+	}
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+		return item, fmt.Errorf("assign FindUserByAuthenticationTokenID row: %w", err)
 	}
 	return item, nil
 }

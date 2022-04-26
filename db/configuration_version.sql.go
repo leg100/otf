@@ -201,12 +201,19 @@ type Querier interface {
 	// FindUserBySessionTokenScan scans the result of an executed FindUserBySessionTokenBatch query.
 	FindUserBySessionTokenScan(results pgx.BatchResults) (FindUserBySessionTokenRow, error)
 
-	FindUserByAuthenticationToken(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenRow, error)
+	FindUserByAuthenticationToken(ctx context.Context, token string) (FindUserByAuthenticationTokenRow, error)
 	// FindUserByAuthenticationTokenBatch enqueues a FindUserByAuthenticationToken query into batch to be executed
 	// later by the batch.
-	FindUserByAuthenticationTokenBatch(batch genericBatch, tokenID string)
+	FindUserByAuthenticationTokenBatch(batch genericBatch, token string)
 	// FindUserByAuthenticationTokenScan scans the result of an executed FindUserByAuthenticationTokenBatch query.
 	FindUserByAuthenticationTokenScan(results pgx.BatchResults) (FindUserByAuthenticationTokenRow, error)
+
+	FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error)
+	// FindUserByAuthenticationTokenIDBatch enqueues a FindUserByAuthenticationTokenID query into batch to be executed
+	// later by the batch.
+	FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID string)
+	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
+	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
 	UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error)
 	// UpdateUserCurrentOrganizationBatch enqueues a UpdateUserCurrentOrganization query into batch to be executed
@@ -455,6 +462,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenSQL, findUserByAuthenticationTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByAuthenticationToken': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenIDSQL, findUserByAuthenticationTokenIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindUserByAuthenticationTokenID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateUserCurrentOrganizationSQL, updateUserCurrentOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateUserCurrentOrganization': %w", err)
 	}
@@ -489,12 +499,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByName': %w", err)
 	}
 	return nil
-}
-
-// OrganizationMemberships represents the Postgres composite type "organization_memberships".
-type OrganizationMemberships struct {
-	UserID         *string `json:"user_id"`
-	OrganizationID *string `json:"organization_id"`
 }
 
 // Organizations represents the Postgres composite type "organizations".
@@ -641,16 +645,6 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
-// newOrganizationMemberships creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'organization_memberships'.
-func (tr *typeResolver) newOrganizationMemberships() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"organization_memberships",
-		compositeField{"user_id", "text", &pgtype.Text{}},
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-	)
-}
-
 // newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'organizations'.
 func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
@@ -725,10 +719,10 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 	)
 }
 
-// newOrganizationMembershipsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_organization_memberships' array type.
-func (tr *typeResolver) newOrganizationMembershipsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_organization_memberships", "organization_memberships", tr.newOrganizationMemberships)
+// newOrganizationsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_organizations' array type.
+func (tr *typeResolver) newOrganizationsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_organizations", "organizations", tr.newOrganizations)
 }
 
 // newSessionsArray creates a new pgtype.ValueTranscoder for the Postgres
