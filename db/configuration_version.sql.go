@@ -117,6 +117,90 @@ type Querier interface {
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertRun(ctx context.Context, params InsertRunParams) (InsertRunRow, error)
+	// InsertRunBatch enqueues a InsertRun query into batch to be executed
+	// later by the batch.
+	InsertRunBatch(batch genericBatch, params InsertRunParams)
+	// InsertRunScan scans the result of an executed InsertRunBatch query.
+	InsertRunScan(results pgx.BatchResults) (InsertRunRow, error)
+
+	FindRunsByWorkspaceID(ctx context.Context, params FindRunsByWorkspaceIDParams) ([]FindRunsByWorkspaceIDRow, error)
+	// FindRunsByWorkspaceIDBatch enqueues a FindRunsByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindRunsByWorkspaceIDBatch(batch genericBatch, params FindRunsByWorkspaceIDParams)
+	// FindRunsByWorkspaceIDScan scans the result of an executed FindRunsByWorkspaceIDBatch query.
+	FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindRunsByWorkspaceIDRow, error)
+
+	FindRunsByWorkspaceName(ctx context.Context, params FindRunsByWorkspaceNameParams) ([]FindRunsByWorkspaceNameRow, error)
+	// FindRunsByWorkspaceNameBatch enqueues a FindRunsByWorkspaceName query into batch to be executed
+	// later by the batch.
+	FindRunsByWorkspaceNameBatch(batch genericBatch, params FindRunsByWorkspaceNameParams)
+	// FindRunsByWorkspaceNameScan scans the result of an executed FindRunsByWorkspaceNameBatch query.
+	FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]FindRunsByWorkspaceNameRow, error)
+
+	FindRunByID(ctx context.Context, params FindRunByIDParams) (FindRunByIDRow, error)
+	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
+	// later by the batch.
+	FindRunByIDBatch(batch genericBatch, params FindRunByIDParams)
+	// FindRunByIDScan scans the result of an executed FindRunByIDBatch query.
+	FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error)
+
+	FindRunByPlanID(ctx context.Context, params FindRunByPlanIDParams) (FindRunByPlanIDRow, error)
+	// FindRunByPlanIDBatch enqueues a FindRunByPlanID query into batch to be executed
+	// later by the batch.
+	FindRunByPlanIDBatch(batch genericBatch, params FindRunByPlanIDParams)
+	// FindRunByPlanIDScan scans the result of an executed FindRunByPlanIDBatch query.
+	FindRunByPlanIDScan(results pgx.BatchResults) (FindRunByPlanIDRow, error)
+
+	FindRunByApplyID(ctx context.Context, params FindRunByApplyIDParams) (FindRunByApplyIDRow, error)
+	// FindRunByApplyIDBatch enqueues a FindRunByApplyID query into batch to be executed
+	// later by the batch.
+	FindRunByApplyIDBatch(batch genericBatch, params FindRunByApplyIDParams)
+	// FindRunByApplyIDScan scans the result of an executed FindRunByApplyIDBatch query.
+	FindRunByApplyIDScan(results pgx.BatchResults) (FindRunByApplyIDRow, error)
+
+	GetPlanFileByRunID(ctx context.Context, runID string) (pgtype.Bytea, error)
+	// GetPlanFileByRunIDBatch enqueues a GetPlanFileByRunID query into batch to be executed
+	// later by the batch.
+	GetPlanFileByRunIDBatch(batch genericBatch, runID string)
+	// GetPlanFileByRunIDScan scans the result of an executed GetPlanFileByRunIDBatch query.
+	GetPlanFileByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
+
+	GetPlanJSONByRunID(ctx context.Context, runID string) (pgtype.Bytea, error)
+	// GetPlanJSONByRunIDBatch enqueues a GetPlanJSONByRunID query into batch to be executed
+	// later by the batch.
+	GetPlanJSONByRunIDBatch(batch genericBatch, runID string)
+	// GetPlanJSONByRunIDScan scans the result of an executed GetPlanJSONByRunIDBatch query.
+	GetPlanJSONByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
+
+	PutPlanFileByRunID(ctx context.Context, planFile []byte, runID string) (pgconn.CommandTag, error)
+	// PutPlanFileByRunIDBatch enqueues a PutPlanFileByRunID query into batch to be executed
+	// later by the batch.
+	PutPlanFileByRunIDBatch(batch genericBatch, planFile []byte, runID string)
+	// PutPlanFileByRunIDScan scans the result of an executed PutPlanFileByRunIDBatch query.
+	PutPlanFileByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	PutPlanJSONByRunID(ctx context.Context, planJson []byte, runID string) (pgconn.CommandTag, error)
+	// PutPlanJSONByRunIDBatch enqueues a PutPlanJSONByRunID query into batch to be executed
+	// later by the batch.
+	PutPlanJSONByRunIDBatch(batch genericBatch, planJson []byte, runID string)
+	// PutPlanJSONByRunIDScan scans the result of an executed PutPlanJSONByRunIDBatch query.
+	PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateRunStatus(ctx context.Context, params UpdateRunStatusParams) (UpdateRunStatusRow, error)
+	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
+	// later by the batch.
+	UpdateRunStatusBatch(batch genericBatch, params UpdateRunStatusParams)
+	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
+	UpdateRunStatusScan(results pgx.BatchResults) (UpdateRunStatusRow, error)
+
+	DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error)
+	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
+	// later by the batch.
+	DeleteRunByIDBatch(batch genericBatch, runID string)
+	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
+	DeleteRunByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	InsertSession(ctx context.Context, params InsertSessionParams) (InsertSessionRow, error)
 	// InsertSessionBatch enqueues a InsertSession query into batch to be executed
 	// later by the batch.
@@ -423,6 +507,42 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRun': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunsByWorkspaceIDSQL, findRunsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunsByWorkspaceID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunsByWorkspaceNameSQL, findRunsByWorkspaceNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunsByWorkspaceName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunByIDSQL, findRunByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunByPlanIDSQL, findRunByPlanIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunByPlanID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunByApplyIDSQL, findRunByApplyIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunByApplyID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, getPlanFileByRunIDSQL, getPlanFileByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'GetPlanFileByRunID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, getPlanJSONByRunIDSQL, getPlanJSONByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'GetPlanJSONByRunID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, putPlanFileByRunIDSQL, putPlanFileByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'PutPlanFileByRunID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, putPlanJSONByRunIDSQL, putPlanJSONByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'PutPlanJSONByRunID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
@@ -501,6 +621,33 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	return nil
 }
 
+// Applies represents the Postgres composite type "applies".
+type Applies struct {
+	ApplyID              *string            `json:"apply_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ResourceAdditions    *int32             `json:"resource_additions"`
+	ResourceChanges      *int32             `json:"resource_changes"`
+	ResourceDestructions *int32             `json:"resource_destructions"`
+	Status               *string            `json:"status"`
+	StatusTimestamps     *string            `json:"status_timestamps"`
+	RunID                *string            `json:"run_id"`
+}
+
+// ConfigurationVersions represents the Postgres composite type "configuration_versions".
+type ConfigurationVersions struct {
+	ConfigurationVersionID *string            `json:"configuration_version_id"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	AutoQueueRuns          *bool              `json:"auto_queue_runs"`
+	Source                 *string            `json:"source"`
+	Speculative            *bool              `json:"speculative"`
+	Status                 *string            `json:"status"`
+	StatusTimestamps       *string            `json:"status_timestamps"`
+	Config                 pgtype.Bytea       `json:"config"`
+	WorkspaceID            *string            `json:"workspace_id"`
+}
+
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
 	OrganizationID  *string            `json:"organization_id"`
@@ -509,6 +656,21 @@ type Organizations struct {
 	Name            *string            `json:"name"`
 	SessionRemember *int32             `json:"session_remember"`
 	SessionTimeout  *int32             `json:"session_timeout"`
+}
+
+// Plans represents the Postgres composite type "plans".
+type Plans struct {
+	PlanID               *string            `json:"plan_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ResourceAdditions    *int32             `json:"resource_additions"`
+	ResourceChanges      *int32             `json:"resource_changes"`
+	ResourceDestructions *int32             `json:"resource_destructions"`
+	Status               *string            `json:"status"`
+	StatusTimestamps     *string            `json:"status_timestamps"`
+	PlanFile             pgtype.Bytea       `json:"plan_file"`
+	PlanJson             pgtype.Bytea       `json:"plan_json"`
+	RunID                *string            `json:"run_id"`
 }
 
 // Sessions represents the Postgres composite type "sessions".
@@ -645,6 +807,41 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
+// newApplies creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'applies'.
+func (tr *typeResolver) newApplies() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"applies",
+		compositeField{"apply_id", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
+		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
+		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"status_timestamps", "text", &pgtype.Text{}},
+		compositeField{"run_id", "text", &pgtype.Text{}},
+	)
+}
+
+// newConfigurationVersions creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'configuration_versions'.
+func (tr *typeResolver) newConfigurationVersions() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"configuration_versions",
+		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"auto_queue_runs", "bool", &pgtype.Bool{}},
+		compositeField{"source", "text", &pgtype.Text{}},
+		compositeField{"speculative", "bool", &pgtype.Bool{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"status_timestamps", "text", &pgtype.Text{}},
+		compositeField{"config", "bytea", &pgtype.Bytea{}},
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'organizations'.
 func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
@@ -656,6 +853,25 @@ func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"session_remember", "int4", &pgtype.Int4{}},
 		compositeField{"session_timeout", "int4", &pgtype.Int4{}},
+	)
+}
+
+// newPlans creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'plans'.
+func (tr *typeResolver) newPlans() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"plans",
+		compositeField{"plan_id", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
+		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
+		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"status_timestamps", "text", &pgtype.Text{}},
+		compositeField{"plan_file", "bytea", &pgtype.Bytea{}},
+		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
+		compositeField{"run_id", "text", &pgtype.Text{}},
 	)
 }
 

@@ -23,7 +23,8 @@ INSERT INTO workspaces (
     structured_run_output_enabled,
     terraform_version,
     trigger_prefixes,
-    working_directory
+    working_directory,
+    organization_id
 ) VALUES (
     pggen.arg('ID'),
     NOW(),
@@ -46,7 +47,8 @@ INSERT INTO workspaces (
     pggen.arg('StructuredRunOutputEnabled'),
     pggen.arg('TerraformVersion'),
     pggen.arg('TriggerPrefixes'),
-    pggen.arg('WorkingDirectory')
+    pggen.arg('WorkingDirectory'),
+    pggen.arg('OrganizationID')
 )
 RETURNING *;
 

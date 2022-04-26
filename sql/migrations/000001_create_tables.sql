@@ -108,6 +108,13 @@ CREATE TABLE IF NOT EXISTS runs (
                              PRIMARY KEY (run_id)
 );
 
+-- CREATE TABLE IF NOT EXISTS run_status_timestamps (
+    -- run_id                   TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    -- status                   TEXT        NOT NULL,
+    -- timestamp                TIMESTAMPTZ NOT NULL,
+                             -- PRIMARY KEY (run_id, status)
+-- );
+
 CREATE TABLE IF NOT EXISTS applies (
     apply_id              TEXT,
     created_at            TIMESTAMPTZ NOT NULL,

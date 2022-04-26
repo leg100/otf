@@ -32,7 +32,8 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
     structured_run_output_enabled,
     terraform_version,
     trigger_prefixes,
-    working_directory
+    working_directory,
+    organization_id
 ) VALUES (
     $1,
     NOW(),
@@ -55,7 +56,8 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
     $17,
     $18,
     $19,
-    $20
+    $20,
+    $21
 )
 RETURNING *;`
 
@@ -80,6 +82,7 @@ type InsertWorkspaceParams struct {
 	TerraformVersion           string
 	TriggerPrefixes            string
 	WorkingDirectory           string
+	OrganizationID             string
 }
 
 type InsertWorkspaceRow struct {
@@ -111,7 +114,7 @@ type InsertWorkspaceRow struct {
 // InsertWorkspace implements Querier.InsertWorkspace.
 func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWorkspace")
-	row := q.conn.QueryRow(ctx, insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory)
+	row := q.conn.QueryRow(ctx, insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
 	var item InsertWorkspaceRow
 	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("query InsertWorkspace: %w", err)
@@ -121,7 +124,7 @@ func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceP
 
 // InsertWorkspaceBatch implements Querier.InsertWorkspaceBatch.
 func (q *DBQuerier) InsertWorkspaceBatch(batch genericBatch, params InsertWorkspaceParams) {
-	batch.Queue(insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory)
+	batch.Queue(insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
 }
 
 // InsertWorkspaceScan implements Querier.InsertWorkspaceScan.
