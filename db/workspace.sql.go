@@ -10,6 +10,230 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+const insertWorkspaceSQL = `INSERT INTO workspaces (
+    workspace_id,
+    created_at,
+    updated_at,
+    allow_destroy_plan,
+    auto_apply,
+    can_queue_destroy_plan,
+    description,
+    environment,
+    execution_mode,
+    file_triggers_enabled,
+    global_remote_state,
+    locked,
+    migration_environment,
+    name,
+    queue_all_runs,
+    speculative_enabled,
+    source_name,
+    source_url,
+    structured_run_output_enabled,
+    terraform_version,
+    trigger_prefixes,
+    working_directory
+) VALUES (
+    $1,
+    NOW(),
+    NOW(),
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17,
+    $18,
+    $19,
+    $20
+)
+RETURNING *;`
+
+type InsertWorkspaceParams struct {
+	ID                         string
+	AllowDestroyPlan           bool
+	AutoApply                  bool
+	CanQueueDestroyPlan        bool
+	Description                string
+	Environment                string
+	ExecutionMode              string
+	FileTriggersEnabled        bool
+	GlobalRemoteState          bool
+	Locked                     bool
+	MigrationEnvironment       string
+	Name                       string
+	QueueAllRuns               bool
+	SpeculativeEnabled         bool
+	SourceName                 string
+	SourceUrl                  string
+	StructuredRunOutputEnabled bool
+	TerraformVersion           string
+	TriggerPrefixes            string
+	WorkingDirectory           string
+}
+
+type InsertWorkspaceRow struct {
+	WorkspaceID                string             `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                string             `json:"description"`
+	Environment                string             `json:"environment"`
+	ExecutionMode              string             `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	Locked                     bool               `json:"locked"`
+	MigrationEnvironment       string             `json:"migration_environment"`
+	Name                       string             `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 string             `json:"source_name"`
+	SourceUrl                  string             `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           string             `json:"terraform_version"`
+	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	WorkingDirectory           string             `json:"working_directory"`
+	OrganizationID             string             `json:"organization_id"`
+}
+
+// InsertWorkspace implements Querier.InsertWorkspace.
+func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWorkspace")
+	row := q.conn.QueryRow(ctx, insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory)
+	var item InsertWorkspaceRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("query InsertWorkspace: %w", err)
+	}
+	return item, nil
+}
+
+// InsertWorkspaceBatch implements Querier.InsertWorkspaceBatch.
+func (q *DBQuerier) InsertWorkspaceBatch(batch genericBatch, params InsertWorkspaceParams) {
+	batch.Queue(insertWorkspaceSQL, params.ID, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceUrl, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory)
+}
+
+// InsertWorkspaceScan implements Querier.InsertWorkspaceScan.
+func (q *DBQuerier) InsertWorkspaceScan(results pgx.BatchResults) (InsertWorkspaceRow, error) {
+	row := results.QueryRow()
+	var item InsertWorkspaceRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("scan InsertWorkspaceBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findWorkspacesSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization, count(*) OVER() AS full_count
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.name LIKE $1 || '%'
+AND organizations.name = $2
+LIMIT $3
+OFFSET $4
+;`
+
+type FindWorkspacesParams struct {
+	Prefix           string
+	OrganizationName string
+	Limit            int
+	Offset           int
+}
+
+type FindWorkspacesRow struct {
+	WorkspaceID                *string            `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           *bool              `json:"allow_destroy_plan"`
+	AutoApply                  *bool              `json:"auto_apply"`
+	CanQueueDestroyPlan        *bool              `json:"can_queue_destroy_plan"`
+	Description                *string            `json:"description"`
+	Environment                *string            `json:"environment"`
+	ExecutionMode              *string            `json:"execution_mode"`
+	FileTriggersEnabled        *bool              `json:"file_triggers_enabled"`
+	GlobalRemoteState          *bool              `json:"global_remote_state"`
+	Locked                     *bool              `json:"locked"`
+	MigrationEnvironment       *string            `json:"migration_environment"`
+	Name                       *string            `json:"name"`
+	QueueAllRuns               *bool              `json:"queue_all_runs"`
+	SpeculativeEnabled         *bool              `json:"speculative_enabled"`
+	SourceName                 *string            `json:"source_name"`
+	SourceUrl                  *string            `json:"source_url"`
+	StructuredRunOutputEnabled *bool              `json:"structured_run_output_enabled"`
+	TerraformVersion           *string            `json:"terraform_version"`
+	TriggerPrefixes            *string            `json:"trigger_prefixes"`
+	WorkingDirectory           *string            `json:"working_directory"`
+	OrganizationID             *string            `json:"organization_id"`
+	Organization               Organizations      `json:"organization"`
+	FullCount                  *int               `json:"full_count"`
+}
+
+// FindWorkspaces implements Querier.FindWorkspaces.
+func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaces")
+	rows, err := q.conn.Query(ctx, findWorkspacesSQL, params.Prefix, params.OrganizationName, params.Limit, params.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("query FindWorkspaces: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWorkspacesRow{}
+	organizationRow := q.types.newOrganizations()
+	for rows.Next() {
+		var item FindWorkspacesRow
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow, &item.FullCount); err != nil {
+			return nil, fmt.Errorf("scan FindWorkspaces row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWorkspaces rows: %w", err)
+	}
+	return items, err
+}
+
+// FindWorkspacesBatch implements Querier.FindWorkspacesBatch.
+func (q *DBQuerier) FindWorkspacesBatch(batch genericBatch, params FindWorkspacesParams) {
+	batch.Queue(findWorkspacesSQL, params.Prefix, params.OrganizationName, params.Limit, params.Offset)
+}
+
+// FindWorkspacesScan implements Querier.FindWorkspacesScan.
+func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindWorkspacesBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindWorkspacesRow{}
+	organizationRow := q.types.newOrganizations()
+	for rows.Next() {
+		var item FindWorkspacesRow
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow, &item.FullCount); err != nil {
+			return nil, fmt.Errorf("scan FindWorkspacesBatch row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindWorkspacesBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findWorkspaceByNameSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization
 FROM workspaces
 JOIN organizations USING (organization_id)
@@ -139,6 +363,124 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
+	}
+	return item, nil
+}
+
+const updateWorkspaceNameByIDSQL = `UPDATE workspaces
+SET
+    name = $1,
+    updated_at = NOW()
+WHERE workspace_id = $2
+RETURNING *;`
+
+type UpdateWorkspaceNameByIDRow struct {
+	WorkspaceID                string             `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                string             `json:"description"`
+	Environment                string             `json:"environment"`
+	ExecutionMode              string             `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	Locked                     bool               `json:"locked"`
+	MigrationEnvironment       string             `json:"migration_environment"`
+	Name                       string             `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 string             `json:"source_name"`
+	SourceUrl                  string             `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           string             `json:"terraform_version"`
+	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	WorkingDirectory           string             `json:"working_directory"`
+	OrganizationID             string             `json:"organization_id"`
+}
+
+// UpdateWorkspaceNameByID implements Querier.UpdateWorkspaceNameByID.
+func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (UpdateWorkspaceNameByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceNameByID")
+	row := q.conn.QueryRow(ctx, updateWorkspaceNameByIDSQL, name, id)
+	var item UpdateWorkspaceNameByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("query UpdateWorkspaceNameByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateWorkspaceNameByIDBatch implements Querier.UpdateWorkspaceNameByIDBatch.
+func (q *DBQuerier) UpdateWorkspaceNameByIDBatch(batch genericBatch, name string, id string) {
+	batch.Queue(updateWorkspaceNameByIDSQL, name, id)
+}
+
+// UpdateWorkspaceNameByIDScan implements Querier.UpdateWorkspaceNameByIDScan.
+func (q *DBQuerier) UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (UpdateWorkspaceNameByIDRow, error) {
+	row := results.QueryRow()
+	var item UpdateWorkspaceNameByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("scan UpdateWorkspaceNameByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateWorkspaceAllowDestroyPlanByIDSQL = `UPDATE workspaces
+SET
+    name = $1,
+    updated_at = NOW()
+WHERE workspace_id = $2
+RETURNING *;`
+
+type UpdateWorkspaceAllowDestroyPlanByIDRow struct {
+	WorkspaceID                string             `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                string             `json:"description"`
+	Environment                string             `json:"environment"`
+	ExecutionMode              string             `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	Locked                     bool               `json:"locked"`
+	MigrationEnvironment       string             `json:"migration_environment"`
+	Name                       string             `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 string             `json:"source_name"`
+	SourceUrl                  string             `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           string             `json:"terraform_version"`
+	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	WorkingDirectory           string             `json:"working_directory"`
+	OrganizationID             string             `json:"organization_id"`
+}
+
+// UpdateWorkspaceAllowDestroyPlanByID implements Querier.UpdateWorkspaceAllowDestroyPlanByID.
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan string, id string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceAllowDestroyPlanByID")
+	row := q.conn.QueryRow(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
+	var item UpdateWorkspaceAllowDestroyPlanByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("query UpdateWorkspaceAllowDestroyPlanByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateWorkspaceAllowDestroyPlanByIDBatch implements Querier.UpdateWorkspaceAllowDestroyPlanByIDBatch.
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan string, id string) {
+	batch.Queue(updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
+}
+
+// UpdateWorkspaceAllowDestroyPlanByIDScan implements Querier.UpdateWorkspaceAllowDestroyPlanByIDScan.
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchResults) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
+	row := results.QueryRow()
+	var item UpdateWorkspaceAllowDestroyPlanByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("scan UpdateWorkspaceAllowDestroyPlanByIDBatch row: %w", err)
 	}
 	return item, nil
 }
