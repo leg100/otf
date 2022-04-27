@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     source_url                      TEXT        NOT NULL,
     structured_run_output_enabled   BOOLEAN     NOT NULL,
     terraform_version               TEXT        NOT NULL,
-    trigger_prefixes                TEXT        NOT NULL,
+    trigger_prefixes                TEXT[]      NOT NULL,
     working_directory               TEXT        NOT NULL,
     organization_id                 TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                     PRIMARY KEY (workspace_id)
@@ -85,10 +85,16 @@ CREATE TABLE IF NOT EXISTS configuration_versions (
     source                       TEXT        NOT NULL,
     speculative                  BOOLEAN     NOT NULL,
     status                       TEXT        NOT NULL,
-    status_timestamps            TEXT        NOT NULL,
     config                       BYTEA,
     workspace_id                 TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                  PRIMARY KEY (configuration_version_id)
+);
+
+CREATE TABLE IF NOT EXISTS configuration_version_status_timestamps (
+    configuration_version_id TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status                   TEXT        NOT NULL,
+    timestamp                TIMESTAMPTZ NOT NULL,
+                             PRIMARY KEY (configuration_version_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS runs (
@@ -100,20 +106,19 @@ CREATE TABLE IF NOT EXISTS runs (
     refresh                  BOOLEAN     NOT NULL,
     refresh_only             BOOLEAN     NOT NULL,
     status                   TEXT        NOT NULL,
-    status_timestamps        TEXT        NOT NULL,
-    replace_addrs            TEXT        NOT NULL,
-    target_addrs             TEXT        NOT NULL,
+    replace_addrs            TEXT[]      NOT NULL,
+    target_addrs             TEXT[]      NOT NULL,
     workspace_id             TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                              PRIMARY KEY (run_id)
 );
 
--- CREATE TABLE IF NOT EXISTS run_status_timestamps (
-    -- run_id                   TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    -- status                   TEXT        NOT NULL,
-    -- timestamp                TIMESTAMPTZ NOT NULL,
-                             -- PRIMARY KEY (run_id, status)
--- );
+CREATE TABLE IF NOT EXISTS run_status_timestamps (
+    run_id                   TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status                   TEXT        NOT NULL,
+    timestamp                TIMESTAMPTZ NOT NULL,
+                             PRIMARY KEY (run_id, status)
+);
 
 CREATE TABLE IF NOT EXISTS applies (
     apply_id              TEXT,
@@ -123,9 +128,15 @@ CREATE TABLE IF NOT EXISTS applies (
     resource_changes      INTEGER     NOT NULL,
     resource_destructions INTEGER     NOT NULL,
     status                TEXT        NOT NULL,
-    status_timestamps     TEXT        NOT NULL,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                           PRIMARY KEY (apply_id)
+);
+
+CREATE TABLE IF NOT EXISTS apply_status_timestamps (
+    apply_id        TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status          TEXT        NOT NULL,
+    timestamp       TIMESTAMPTZ NOT NULL,
+                    PRIMARY KEY (apply_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS plans (
@@ -136,11 +147,17 @@ CREATE TABLE IF NOT EXISTS plans (
     resource_changes      INTEGER     NOT NULL,
     resource_destructions INTEGER     NOT NULL,
     status                TEXT        NOT NULL,
-    status_timestamps     TEXT        NOT NULL,
     plan_file             BYTEA       NOT NULL,
     plan_json             BYTEA       NOT NULL,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                           PRIMARY KEY (plan_id)
+);
+
+CREATE TABLE IF NOT EXISTS plan_status_timestamps (
+    plan_id         TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status          TEXT        NOT NULL,
+    timestamp       TIMESTAMPTZ NOT NULL,
+                    PRIMARY KEY (plan_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS state_versions (
@@ -192,9 +209,13 @@ DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
+DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS plans;
+DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS applies;
+DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
+DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS sessions;

@@ -5,953 +5,9 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
-
-// Querier is a typesafe Go interface backed by SQL queries.
-//
-// Methods ending with Batch enqueue a query to run later in a pgx.Batch. After
-// calling SendBatch on pgx.Conn, pgxpool.Pool, or pgx.Tx, use the Scan methods
-// to parse the results.
-type Querier interface {
-	// InsertConfigurationVersion inserts a configuration version and
-	// returns the entire row.
-	// 
-	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error)
-	// InsertConfigurationVersionBatch enqueues a InsertConfigurationVersion query into batch to be executed
-	// later by the batch.
-	InsertConfigurationVersionBatch(batch genericBatch, params InsertConfigurationVersionParams)
-	// InsertConfigurationVersionScan scans the result of an executed InsertConfigurationVersionBatch query.
-	InsertConfigurationVersionScan(results pgx.BatchResults) (InsertConfigurationVersionRow, error)
-
-	// FindConfigurationVersions finds configuration_versions for a given workspace.
-	// Results are paginated with limit and offset, and total count is returned.
-	// 
-	FindConfigurationVersions(ctx context.Context, params FindConfigurationVersionsParams) ([]FindConfigurationVersionsRow, error)
-	// FindConfigurationVersionsBatch enqueues a FindConfigurationVersions query into batch to be executed
-	// later by the batch.
-	FindConfigurationVersionsBatch(batch genericBatch, params FindConfigurationVersionsParams)
-	// FindConfigurationVersionsScan scans the result of an executed FindConfigurationVersionsBatch query.
-	FindConfigurationVersionsScan(results pgx.BatchResults) ([]FindConfigurationVersionsRow, error)
-
-	// FindConfigurationVersionByID finds a configuration_version by its id.
-	// 
-	FindConfigurationVersionByID(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDRow, error)
-	// FindConfigurationVersionByIDBatch enqueues a FindConfigurationVersionByID query into batch to be executed
-	// later by the batch.
-	FindConfigurationVersionByIDBatch(batch genericBatch, configurationVersionID string)
-	// FindConfigurationVersionByIDScan scans the result of an executed FindConfigurationVersionByIDBatch query.
-	FindConfigurationVersionByIDScan(results pgx.BatchResults) (FindConfigurationVersionByIDRow, error)
-
-	// DownloadConfigurationVersion gets a configuration_version config
-	// tarball.
-	// 
-	DownloadConfigurationVersion(ctx context.Context, configurationVersionID string) (pgtype.Bytea, error)
-	// DownloadConfigurationVersionBatch enqueues a DownloadConfigurationVersion query into batch to be executed
-	// later by the batch.
-	DownloadConfigurationVersionBatch(batch genericBatch, configurationVersionID string)
-	// DownloadConfigurationVersionScan scans the result of an executed DownloadConfigurationVersionBatch query.
-	DownloadConfigurationVersionScan(results pgx.BatchResults) (pgtype.Bytea, error)
-
-	// UploadConfigurationVersion sets a config tarball on a configuration version,
-	// and sets the status to uploaded.
-	// 
-	UploadConfigurationVersion(ctx context.Context, config []byte, id string) (UploadConfigurationVersionRow, error)
-	// UploadConfigurationVersionBatch enqueues a UploadConfigurationVersion query into batch to be executed
-	// later by the batch.
-	UploadConfigurationVersionBatch(batch genericBatch, config []byte, id string)
-	// UploadConfigurationVersionScan scans the result of an executed UploadConfigurationVersionBatch query.
-	UploadConfigurationVersionScan(results pgx.BatchResults) (UploadConfigurationVersionRow, error)
-
-	// FindOrganizationByName finds an organization by name.
-	// 
-	FindOrganizationByName(ctx context.Context, name string) (FindOrganizationByNameRow, error)
-	// FindOrganizationByNameBatch enqueues a FindOrganizationByName query into batch to be executed
-	// later by the batch.
-	FindOrganizationByNameBatch(batch genericBatch, name string)
-	// FindOrganizationByNameScan scans the result of an executed FindOrganizationByNameBatch query.
-	FindOrganizationByNameScan(results pgx.BatchResults) (FindOrganizationByNameRow, error)
-
-	// InsertOrganization inserts an organization and returns the entire row.
-	// 
-	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (InsertOrganizationRow, error)
-	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
-	// later by the batch.
-	InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams)
-	// InsertOrganizationScan scans the result of an executed InsertOrganizationBatch query.
-	InsertOrganizationScan(results pgx.BatchResults) (InsertOrganizationRow, error)
-
-	// UpdateOrganizationNameByName updates an organization with a new name,
-	// identifying the organization with its existing name, and returns the
-	// updated row.
-	// 
-	UpdateOrganizationNameByName(ctx context.Context, newName string, name string) (UpdateOrganizationNameByNameRow, error)
-	// UpdateOrganizationNameByNameBatch enqueues a UpdateOrganizationNameByName query into batch to be executed
-	// later by the batch.
-	UpdateOrganizationNameByNameBatch(batch genericBatch, newName string, name string)
-	// UpdateOrganizationNameByNameScan scans the result of an executed UpdateOrganizationNameByNameBatch query.
-	UpdateOrganizationNameByNameScan(results pgx.BatchResults) (UpdateOrganizationNameByNameRow, error)
-
-	// DeleteOrganization deletes an organization by id.
-	// 
-	DeleteOrganization(ctx context.Context, name string) (pgconn.CommandTag, error)
-	// DeleteOrganizationBatch enqueues a DeleteOrganization query into batch to be executed
-	// later by the batch.
-	DeleteOrganizationBatch(batch genericBatch, name string)
-	// DeleteOrganizationScan scans the result of an executed DeleteOrganizationBatch query.
-	DeleteOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertOrganizationMembership(ctx context.Context, userID string, organizationID string) (InsertOrganizationMembershipRow, error)
-	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
-	// later by the batch.
-	InsertOrganizationMembershipBatch(batch genericBatch, userID string, organizationID string)
-	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
-	InsertOrganizationMembershipScan(results pgx.BatchResults) (InsertOrganizationMembershipRow, error)
-
-	DeleteOrganizationMembership(ctx context.Context, userID string, organizationID string) (pgconn.CommandTag, error)
-	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
-	// later by the batch.
-	DeleteOrganizationMembershipBatch(batch genericBatch, userID string, organizationID string)
-	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
-	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertRun(ctx context.Context, params InsertRunParams) (InsertRunRow, error)
-	// InsertRunBatch enqueues a InsertRun query into batch to be executed
-	// later by the batch.
-	InsertRunBatch(batch genericBatch, params InsertRunParams)
-	// InsertRunScan scans the result of an executed InsertRunBatch query.
-	InsertRunScan(results pgx.BatchResults) (InsertRunRow, error)
-
-	FindRunsByWorkspaceID(ctx context.Context, params FindRunsByWorkspaceIDParams) ([]FindRunsByWorkspaceIDRow, error)
-	// FindRunsByWorkspaceIDBatch enqueues a FindRunsByWorkspaceID query into batch to be executed
-	// later by the batch.
-	FindRunsByWorkspaceIDBatch(batch genericBatch, params FindRunsByWorkspaceIDParams)
-	// FindRunsByWorkspaceIDScan scans the result of an executed FindRunsByWorkspaceIDBatch query.
-	FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindRunsByWorkspaceIDRow, error)
-
-	FindRunsByWorkspaceName(ctx context.Context, params FindRunsByWorkspaceNameParams) ([]FindRunsByWorkspaceNameRow, error)
-	// FindRunsByWorkspaceNameBatch enqueues a FindRunsByWorkspaceName query into batch to be executed
-	// later by the batch.
-	FindRunsByWorkspaceNameBatch(batch genericBatch, params FindRunsByWorkspaceNameParams)
-	// FindRunsByWorkspaceNameScan scans the result of an executed FindRunsByWorkspaceNameBatch query.
-	FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]FindRunsByWorkspaceNameRow, error)
-
-	FindRunByID(ctx context.Context, params FindRunByIDParams) (FindRunByIDRow, error)
-	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
-	// later by the batch.
-	FindRunByIDBatch(batch genericBatch, params FindRunByIDParams)
-	// FindRunByIDScan scans the result of an executed FindRunByIDBatch query.
-	FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error)
-
-	FindRunByPlanID(ctx context.Context, params FindRunByPlanIDParams) (FindRunByPlanIDRow, error)
-	// FindRunByPlanIDBatch enqueues a FindRunByPlanID query into batch to be executed
-	// later by the batch.
-	FindRunByPlanIDBatch(batch genericBatch, params FindRunByPlanIDParams)
-	// FindRunByPlanIDScan scans the result of an executed FindRunByPlanIDBatch query.
-	FindRunByPlanIDScan(results pgx.BatchResults) (FindRunByPlanIDRow, error)
-
-	FindRunByApplyID(ctx context.Context, params FindRunByApplyIDParams) (FindRunByApplyIDRow, error)
-	// FindRunByApplyIDBatch enqueues a FindRunByApplyID query into batch to be executed
-	// later by the batch.
-	FindRunByApplyIDBatch(batch genericBatch, params FindRunByApplyIDParams)
-	// FindRunByApplyIDScan scans the result of an executed FindRunByApplyIDBatch query.
-	FindRunByApplyIDScan(results pgx.BatchResults) (FindRunByApplyIDRow, error)
-
-	GetPlanFileByRunID(ctx context.Context, runID string) (pgtype.Bytea, error)
-	// GetPlanFileByRunIDBatch enqueues a GetPlanFileByRunID query into batch to be executed
-	// later by the batch.
-	GetPlanFileByRunIDBatch(batch genericBatch, runID string)
-	// GetPlanFileByRunIDScan scans the result of an executed GetPlanFileByRunIDBatch query.
-	GetPlanFileByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
-
-	GetPlanJSONByRunID(ctx context.Context, runID string) (pgtype.Bytea, error)
-	// GetPlanJSONByRunIDBatch enqueues a GetPlanJSONByRunID query into batch to be executed
-	// later by the batch.
-	GetPlanJSONByRunIDBatch(batch genericBatch, runID string)
-	// GetPlanJSONByRunIDScan scans the result of an executed GetPlanJSONByRunIDBatch query.
-	GetPlanJSONByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
-
-	PutPlanFileByRunID(ctx context.Context, planFile []byte, runID string) (pgconn.CommandTag, error)
-	// PutPlanFileByRunIDBatch enqueues a PutPlanFileByRunID query into batch to be executed
-	// later by the batch.
-	PutPlanFileByRunIDBatch(batch genericBatch, planFile []byte, runID string)
-	// PutPlanFileByRunIDScan scans the result of an executed PutPlanFileByRunIDBatch query.
-	PutPlanFileByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	PutPlanJSONByRunID(ctx context.Context, planJson []byte, runID string) (pgconn.CommandTag, error)
-	// PutPlanJSONByRunIDBatch enqueues a PutPlanJSONByRunID query into batch to be executed
-	// later by the batch.
-	PutPlanJSONByRunIDBatch(batch genericBatch, planJson []byte, runID string)
-	// PutPlanJSONByRunIDScan scans the result of an executed PutPlanJSONByRunIDBatch query.
-	PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	UpdateRunStatus(ctx context.Context, params UpdateRunStatusParams) (UpdateRunStatusRow, error)
-	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
-	// later by the batch.
-	UpdateRunStatusBatch(batch genericBatch, params UpdateRunStatusParams)
-	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
-	UpdateRunStatusScan(results pgx.BatchResults) (UpdateRunStatusRow, error)
-
-	DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error)
-	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
-	// later by the batch.
-	DeleteRunByIDBatch(batch genericBatch, runID string)
-	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
-	DeleteRunByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertSession(ctx context.Context, params InsertSessionParams) (InsertSessionRow, error)
-	// InsertSessionBatch enqueues a InsertSession query into batch to be executed
-	// later by the batch.
-	InsertSessionBatch(batch genericBatch, params InsertSessionParams)
-	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
-	InsertSessionScan(results pgx.BatchResults) (InsertSessionRow, error)
-
-	UpdateSessionUserID(ctx context.Context, userID string, token string) (UpdateSessionUserIDRow, error)
-	// UpdateSessionUserIDBatch enqueues a UpdateSessionUserID query into batch to be executed
-	// later by the batch.
-	UpdateSessionUserIDBatch(batch genericBatch, userID string, token string)
-	// UpdateSessionUserIDScan scans the result of an executed UpdateSessionUserIDBatch query.
-	UpdateSessionUserIDScan(results pgx.BatchResults) (UpdateSessionUserIDRow, error)
-
-	UpdateSessionExpiry(ctx context.Context, expiry pgtype.Timestamptz, token string) (UpdateSessionExpiryRow, error)
-	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
-	// later by the batch.
-	UpdateSessionExpiryBatch(batch genericBatch, expiry pgtype.Timestamptz, token string)
-	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
-	UpdateSessionExpiryScan(results pgx.BatchResults) (UpdateSessionExpiryRow, error)
-
-	UpdateSessionFlash(ctx context.Context, flash pgtype.JSONB, token string) (UpdateSessionFlashRow, error)
-	// UpdateSessionFlashBatch enqueues a UpdateSessionFlash query into batch to be executed
-	// later by the batch.
-	UpdateSessionFlashBatch(batch genericBatch, flash pgtype.JSONB, token string)
-	// UpdateSessionFlashScan scans the result of an executed UpdateSessionFlashBatch query.
-	UpdateSessionFlashScan(results pgx.BatchResults) (UpdateSessionFlashRow, error)
-
-	DeleteSessionByToken(ctx context.Context, token string) (pgconn.CommandTag, error)
-	// DeleteSessionByTokenBatch enqueues a DeleteSessionByToken query into batch to be executed
-	// later by the batch.
-	DeleteSessionByTokenBatch(batch genericBatch, token string)
-	// DeleteSessionByTokenScan scans the result of an executed DeleteSessionByTokenBatch query.
-	DeleteSessionByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertToken(ctx context.Context, params InsertTokenParams) (InsertTokenRow, error)
-	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
-	// later by the batch.
-	InsertTokenBatch(batch genericBatch, params InsertTokenParams)
-	// InsertTokenScan scans the result of an executed InsertTokenBatch query.
-	InsertTokenScan(results pgx.BatchResults) (InsertTokenRow, error)
-
-	DeleteTokenByID(ctx context.Context, tokenID string) (pgconn.CommandTag, error)
-	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
-	// later by the batch.
-	DeleteTokenByIDBatch(batch genericBatch, tokenID string)
-	// DeleteTokenByIDScan scans the result of an executed DeleteTokenByIDBatch query.
-	DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertUser(ctx context.Context, params InsertUserParams) (InsertUserRow, error)
-	// InsertUserBatch enqueues a InsertUser query into batch to be executed
-	// later by the batch.
-	InsertUserBatch(batch genericBatch, params InsertUserParams)
-	// InsertUserScan scans the result of an executed InsertUserBatch query.
-	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
-
-	FindUsers(ctx context.Context, limit int, offset int) ([]FindUsersRow, error)
-	// FindUsersBatch enqueues a FindUsers query into batch to be executed
-	// later by the batch.
-	FindUsersBatch(batch genericBatch, limit int, offset int)
-	// FindUsersScan scans the result of an executed FindUsersBatch query.
-	FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, error)
-
-	FindUserByID(ctx context.Context, userID string) (FindUserByIDRow, error)
-	// FindUserByIDBatch enqueues a FindUserByID query into batch to be executed
-	// later by the batch.
-	FindUserByIDBatch(batch genericBatch, userID string)
-	// FindUserByIDScan scans the result of an executed FindUserByIDBatch query.
-	FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow, error)
-
-	FindUserByUsername(ctx context.Context, username string) (FindUserByUsernameRow, error)
-	// FindUserByUsernameBatch enqueues a FindUserByUsername query into batch to be executed
-	// later by the batch.
-	FindUserByUsernameBatch(batch genericBatch, username string)
-	// FindUserByUsernameScan scans the result of an executed FindUserByUsernameBatch query.
-	FindUserByUsernameScan(results pgx.BatchResults) (FindUserByUsernameRow, error)
-
-	FindUserBySessionToken(ctx context.Context, token string) (FindUserBySessionTokenRow, error)
-	// FindUserBySessionTokenBatch enqueues a FindUserBySessionToken query into batch to be executed
-	// later by the batch.
-	FindUserBySessionTokenBatch(batch genericBatch, token string)
-	// FindUserBySessionTokenScan scans the result of an executed FindUserBySessionTokenBatch query.
-	FindUserBySessionTokenScan(results pgx.BatchResults) (FindUserBySessionTokenRow, error)
-
-	FindUserByAuthenticationToken(ctx context.Context, token string) (FindUserByAuthenticationTokenRow, error)
-	// FindUserByAuthenticationTokenBatch enqueues a FindUserByAuthenticationToken query into batch to be executed
-	// later by the batch.
-	FindUserByAuthenticationTokenBatch(batch genericBatch, token string)
-	// FindUserByAuthenticationTokenScan scans the result of an executed FindUserByAuthenticationTokenBatch query.
-	FindUserByAuthenticationTokenScan(results pgx.BatchResults) (FindUserByAuthenticationTokenRow, error)
-
-	FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error)
-	// FindUserByAuthenticationTokenIDBatch enqueues a FindUserByAuthenticationTokenID query into batch to be executed
-	// later by the batch.
-	FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID string)
-	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
-	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
-
-	UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error)
-	// UpdateUserCurrentOrganizationBatch enqueues a UpdateUserCurrentOrganization query into batch to be executed
-	// later by the batch.
-	UpdateUserCurrentOrganizationBatch(batch genericBatch, currentOrganization string, id string)
-	// UpdateUserCurrentOrganizationScan scans the result of an executed UpdateUserCurrentOrganizationBatch query.
-	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (UpdateUserCurrentOrganizationRow, error)
-
-	DeleteUserByID(ctx context.Context, userID string) (pgconn.CommandTag, error)
-	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
-	// later by the batch.
-	DeleteUserByIDBatch(batch genericBatch, userID string)
-	// DeleteUserByIDScan scans the result of an executed DeleteUserByIDBatch query.
-	DeleteUserByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	DeleteUserByUsername(ctx context.Context, username string) (pgconn.CommandTag, error)
-	// DeleteUserByUsernameBatch enqueues a DeleteUserByUsername query into batch to be executed
-	// later by the batch.
-	DeleteUserByUsernameBatch(batch genericBatch, username string)
-	// DeleteUserByUsernameScan scans the result of an executed DeleteUserByUsernameBatch query.
-	DeleteUserByUsernameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	// InsertWorkspace inserts a workspace and returns the entire row.
-	// 
-	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error)
-	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
-	// later by the batch.
-	InsertWorkspaceBatch(batch genericBatch, params InsertWorkspaceParams)
-	// InsertWorkspaceScan scans the result of an executed InsertWorkspaceBatch query.
-	InsertWorkspaceScan(results pgx.BatchResults) (InsertWorkspaceRow, error)
-
-	// FindWorkspaces finds workspaces for a given organization.
-	// Workspace name can be filtered with a prefix.
-	// Results are paginated with limit and offset, and total count is returned.
-	// 
-	FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error)
-	// FindWorkspacesBatch enqueues a FindWorkspaces query into batch to be executed
-	// later by the batch.
-	FindWorkspacesBatch(batch genericBatch, params FindWorkspacesParams)
-	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
-	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
-
-	// FindWorkspaceByName finds a workspace by name and organization name.
-	// 
-	FindWorkspaceByName(ctx context.Context, name string, organizationName string) (FindWorkspaceByNameRow, error)
-	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
-	// later by the batch.
-	FindWorkspaceByNameBatch(batch genericBatch, name string, organizationName string)
-	// FindWorkspaceByNameScan scans the result of an executed FindWorkspaceByNameBatch query.
-	FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorkspaceByNameRow, error)
-
-	// FindWorkspaceByID finds a workspace by id.
-	// 
-	FindWorkspaceByID(ctx context.Context, id string) (FindWorkspaceByIDRow, error)
-	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
-	// later by the batch.
-	FindWorkspaceByIDBatch(batch genericBatch, id string)
-	// FindWorkspaceByIDScan scans the result of an executed FindWorkspaceByIDBatch query.
-	FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspaceByIDRow, error)
-
-	// UpdateWorkspaceNameByID updates an workspace with a new name,
-	// identifying the workspace with its id, and returns the
-	// updated row.
-	// 
-	UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (UpdateWorkspaceNameByIDRow, error)
-	// UpdateWorkspaceNameByIDBatch enqueues a UpdateWorkspaceNameByID query into batch to be executed
-	// later by the batch.
-	UpdateWorkspaceNameByIDBatch(batch genericBatch, name string, id string)
-	// UpdateWorkspaceNameByIDScan scans the result of an executed UpdateWorkspaceNameByIDBatch query.
-	UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (UpdateWorkspaceNameByIDRow, error)
-
-	// UpdateWorkspaceAllowDestroyPlanByID updates the AllowDestroyPlan
-	// attribute on a workspace identified by id, and returns the updated row.
-	// 
-	UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan string, id string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error)
-	// UpdateWorkspaceAllowDestroyPlanByIDBatch enqueues a UpdateWorkspaceAllowDestroyPlanByID query into batch to be executed
-	// later by the batch.
-	UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan string, id string)
-	// UpdateWorkspaceAllowDestroyPlanByIDScan scans the result of an executed UpdateWorkspaceAllowDestroyPlanByIDBatch query.
-	UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchResults) (UpdateWorkspaceAllowDestroyPlanByIDRow, error)
-
-	// DeleteOrganization deletes an organization by id.
-	// DeleteWorkspaceByID deletes a workspace by id.
-	// 
-	DeleteWorkspaceByID(ctx context.Context, workspaceID string) (pgconn.CommandTag, error)
-	// DeleteWorkspaceByIDBatch enqueues a DeleteWorkspaceByID query into batch to be executed
-	// later by the batch.
-	DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID string)
-	// DeleteWorkspaceByIDScan scans the result of an executed DeleteWorkspaceByIDBatch query.
-	DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	// DeleteWorkspaceByName deletes a workspace by name and organization name.
-	// 
-	DeleteWorkspaceByName(ctx context.Context, name string, organizationName string) (pgconn.CommandTag, error)
-	// DeleteWorkspaceByNameBatch enqueues a DeleteWorkspaceByName query into batch to be executed
-	// later by the batch.
-	DeleteWorkspaceByNameBatch(batch genericBatch, name string, organizationName string)
-	// DeleteWorkspaceByNameScan scans the result of an executed DeleteWorkspaceByNameBatch query.
-	DeleteWorkspaceByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-}
-
-type DBQuerier struct {
-	conn  genericConn   // underlying Postgres transport to use
-	types *typeResolver // resolve types by name
-}
-
-var _ Querier = &DBQuerier{}
-
-// genericConn is a connection to a Postgres database. This is usually backed by
-// *pgx.Conn, pgx.Tx, or *pgxpool.Pool.
-type genericConn interface {
-	// Query executes sql with args. If there is an error the returned Rows will
-	// be returned in an error state. So it is allowed to ignore the error
-	// returned from Query and handle it in Rows.
-	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
-
-	// QueryRow is a convenience wrapper over Query. Any error that occurs while
-	// querying is deferred until calling Scan on the returned Row. That Row will
-	// error with pgx.ErrNoRows if no rows are returned.
-	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-
-	// Exec executes sql. sql can be either a prepared statement name or an SQL
-	// string. arguments should be referenced positionally from the sql string
-	// as $1, $2, etc.
-	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-}
-
-// genericBatch batches queries to send in a single network request to a
-// Postgres server. This is usually backed by *pgx.Batch.
-type genericBatch interface {
-	// Queue queues a query to batch b. query can be an SQL query or the name of a
-	// prepared statement. See Queue on *pgx.Batch.
-	Queue(query string, arguments ...interface{})
-}
-
-// NewQuerier creates a DBQuerier that implements Querier. conn is typically
-// *pgx.Conn, pgx.Tx, or *pgxpool.Pool.
-func NewQuerier(conn genericConn) *DBQuerier {
-	return NewQuerierConfig(conn, QuerierConfig{})
-}
-
-type QuerierConfig struct {
-	// DataTypes contains pgtype.Value to use for encoding and decoding instead
-	// of pggen-generated pgtype.ValueTranscoder.
-	//
-	// If OIDs are available for an input parameter type and all of its
-	// transitive dependencies, pggen will use the binary encoding format for
-	// the input parameter.
-	DataTypes []pgtype.DataType
-}
-
-// NewQuerierConfig creates a DBQuerier that implements Querier with the given
-// config. conn is typically *pgx.Conn, pgx.Tx, or *pgxpool.Pool.
-func NewQuerierConfig(conn genericConn, cfg QuerierConfig) *DBQuerier {
-	return &DBQuerier{conn: conn, types: newTypeResolver(cfg.DataTypes)}
-}
-
-// WithTx creates a new DBQuerier that uses the transaction to run all queries.
-func (q *DBQuerier) WithTx(tx pgx.Tx) (*DBQuerier, error) {
-	return &DBQuerier{conn: tx}, nil
-}
-
-// preparer is any Postgres connection transport that provides a way to prepare
-// a statement, most commonly *pgx.Conn.
-type preparer interface {
-	Prepare(ctx context.Context, name, sql string) (sd *pgconn.StatementDescription, err error)
-}
-
-// PrepareAllQueries executes a PREPARE statement for all pggen generated SQL
-// queries in querier files. Typical usage is as the AfterConnect callback
-// for pgxpool.Config
-//
-// pgx will use the prepared statement if available. Calling PrepareAllQueries
-// is an optional optimization to avoid a network round-trip the first time pgx
-// runs a query if pgx statement caching is enabled.
-func PrepareAllQueries(ctx context.Context, p preparer) error {
-	if _, err := p.Prepare(ctx, insertConfigurationVersionSQL, insertConfigurationVersionSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertConfigurationVersion': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findConfigurationVersionsSQL, findConfigurationVersionsSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindConfigurationVersions': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findConfigurationVersionByIDSQL, findConfigurationVersionByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindConfigurationVersionByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, downloadConfigurationVersionSQL, downloadConfigurationVersionSQL); err != nil {
-		return fmt.Errorf("prepare query 'DownloadConfigurationVersion': %w", err)
-	}
-	if _, err := p.Prepare(ctx, uploadConfigurationVersionSQL, uploadConfigurationVersionSQL); err != nil {
-		return fmt.Errorf("prepare query 'UploadConfigurationVersion': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateOrganizationNameByNameSQL, updateOrganizationNameByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateOrganizationNameByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteOrganizationSQL, deleteOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteOrganization': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertOrganizationMembershipSQL, insertOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertOrganizationMembership': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertRun': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunsByWorkspaceIDSQL, findRunsByWorkspaceIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunsByWorkspaceID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunsByWorkspaceNameSQL, findRunsByWorkspaceNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunsByWorkspaceName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunByIDSQL, findRunByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunByPlanIDSQL, findRunByPlanIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByPlanID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunByApplyIDSQL, findRunByApplyIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByApplyID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, getPlanFileByRunIDSQL, getPlanFileByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'GetPlanFileByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, getPlanJSONByRunIDSQL, getPlanJSONByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'GetPlanJSONByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, putPlanFileByRunIDSQL, putPlanFileByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'PutPlanFileByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, putPlanJSONByRunIDSQL, putPlanJSONByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'PutPlanJSONByRunID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertSession': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionUserIDSQL, updateSessionUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionUserID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionExpirySQL, updateSessionExpirySQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionExpiry': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionFlashSQL, updateSessionFlashSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionFlash': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteSessionByTokenSQL, deleteSessionByTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteSessionByToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteTokenByIDSQL, deleteTokenByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteTokenByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertUserSQL, insertUserSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertUser': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUsersSQL, findUsersSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUsers': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserByIDSQL, findUserByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserByUsernameSQL, findUserByUsernameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserByUsername': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserBySessionTokenSQL, findUserBySessionTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserBySessionToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenSQL, findUserByAuthenticationTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserByAuthenticationToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenIDSQL, findUserByAuthenticationTokenIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserByAuthenticationTokenID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateUserCurrentOrganizationSQL, updateUserCurrentOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateUserCurrentOrganization': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteUserByIDSQL, deleteUserByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteUserByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteUserByUsernameSQL, deleteUserByUsernameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteUserByUsername': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertWorkspaceSQL, insertWorkspaceSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertWorkspace': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspacesSQL, findWorkspacesSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaces': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceByIDSQL, findWorkspaceByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateWorkspaceNameByIDSQL, updateWorkspaceNameByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateWorkspaceNameByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, updateWorkspaceAllowDestroyPlanByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateWorkspaceAllowDestroyPlanByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceByNameSQL, deleteWorkspaceByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceByName': %w", err)
-	}
-	return nil
-}
-
-// Applies represents the Postgres composite type "applies".
-type Applies struct {
-	ApplyID              *string            `json:"apply_id"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-	ResourceAdditions    *int32             `json:"resource_additions"`
-	ResourceChanges      *int32             `json:"resource_changes"`
-	ResourceDestructions *int32             `json:"resource_destructions"`
-	Status               *string            `json:"status"`
-	StatusTimestamps     *string            `json:"status_timestamps"`
-	RunID                *string            `json:"run_id"`
-}
-
-// ConfigurationVersions represents the Postgres composite type "configuration_versions".
-type ConfigurationVersions struct {
-	ConfigurationVersionID *string            `json:"configuration_version_id"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	AutoQueueRuns          *bool              `json:"auto_queue_runs"`
-	Source                 *string            `json:"source"`
-	Speculative            *bool              `json:"speculative"`
-	Status                 *string            `json:"status"`
-	StatusTimestamps       *string            `json:"status_timestamps"`
-	Config                 pgtype.Bytea       `json:"config"`
-	WorkspaceID            *string            `json:"workspace_id"`
-}
-
-// Organizations represents the Postgres composite type "organizations".
-type Organizations struct {
-	OrganizationID  *string            `json:"organization_id"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	Name            *string            `json:"name"`
-	SessionRemember *int32             `json:"session_remember"`
-	SessionTimeout  *int32             `json:"session_timeout"`
-}
-
-// Plans represents the Postgres composite type "plans".
-type Plans struct {
-	PlanID               *string            `json:"plan_id"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-	ResourceAdditions    *int32             `json:"resource_additions"`
-	ResourceChanges      *int32             `json:"resource_changes"`
-	ResourceDestructions *int32             `json:"resource_destructions"`
-	Status               *string            `json:"status"`
-	StatusTimestamps     *string            `json:"status_timestamps"`
-	PlanFile             pgtype.Bytea       `json:"plan_file"`
-	PlanJson             pgtype.Bytea       `json:"plan_json"`
-	RunID                *string            `json:"run_id"`
-}
-
-// Sessions represents the Postgres composite type "sessions".
-type Sessions struct {
-	Token     *string            `json:"token"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Address   *string            `json:"address"`
-	Flash     pgtype.JSONB       `json:"flash"`
-	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    *string            `json:"user_id"`
-}
-
-// Tokens represents the Postgres composite type "tokens".
-type Tokens struct {
-	TokenID     *string            `json:"token_id"`
-	Token       *string            `json:"token"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	Description *string            `json:"description"`
-	UserID      *string            `json:"user_id"`
-}
-
-// Workspaces represents the Postgres composite type "workspaces".
-type Workspaces struct {
-	WorkspaceID                *string            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
-	AllowDestroyPlan           *bool              `json:"allow_destroy_plan"`
-	AutoApply                  *bool              `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool              `json:"can_queue_destroy_plan"`
-	Description                *string            `json:"description"`
-	Environment                *string            `json:"environment"`
-	ExecutionMode              *string            `json:"execution_mode"`
-	FileTriggersEnabled        *bool              `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool              `json:"global_remote_state"`
-	Locked                     *bool              `json:"locked"`
-	MigrationEnvironment       *string            `json:"migration_environment"`
-	Name                       *string            `json:"name"`
-	QueueAllRuns               *bool              `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool              `json:"speculative_enabled"`
-	SourceName                 *string            `json:"source_name"`
-	SourceUrl                  *string            `json:"source_url"`
-	StructuredRunOutputEnabled *bool              `json:"structured_run_output_enabled"`
-	TerraformVersion           *string            `json:"terraform_version"`
-	TriggerPrefixes            *string            `json:"trigger_prefixes"`
-	WorkingDirectory           *string            `json:"working_directory"`
-	OrganizationID             *string            `json:"organization_id"`
-}
-
-// typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
-type typeResolver struct {
-	connInfo *pgtype.ConnInfo // types by Postgres type name
-}
-
-func newTypeResolver(types []pgtype.DataType) *typeResolver {
-	ci := pgtype.NewConnInfo()
-	for _, typ := range types {
-		if txt, ok := typ.Value.(textPreferrer); ok && typ.OID != unknownOID {
-			typ.Value = txt.ValueTranscoder
-		}
-		ci.RegisterDataType(typ)
-	}
-	return &typeResolver{connInfo: ci}
-}
-
-// findValue find the OID, and pgtype.ValueTranscoder for a Postgres type name.
-func (tr *typeResolver) findValue(name string) (uint32, pgtype.ValueTranscoder, bool) {
-	typ, ok := tr.connInfo.DataTypeForName(name)
-	if !ok {
-		return 0, nil, false
-	}
-	v := pgtype.NewValue(typ.Value)
-	return typ.OID, v.(pgtype.ValueTranscoder), true
-}
-
-// setValue sets the value of a ValueTranscoder to a value that should always
-// work and panics if it fails.
-func (tr *typeResolver) setValue(vt pgtype.ValueTranscoder, val interface{}) pgtype.ValueTranscoder {
-	if err := vt.Set(val); err != nil {
-		panic(fmt.Sprintf("set ValueTranscoder %T to %+v: %s", vt, val, err))
-	}
-	return vt
-}
-
-type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultVal pgtype.ValueTranscoder // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.ValueTranscoder {
-	if _, val, ok := tr.findValue(name); ok {
-		return val
-	}
-	fs := make([]pgtype.CompositeTypeField, len(fields))
-	vals := make([]pgtype.ValueTranscoder, len(fields))
-	isBinaryOk := true
-	for i, field := range fields {
-		oid, val, ok := tr.findValue(field.typeName)
-		if !ok {
-			oid = unknownOID
-			val = field.defaultVal
-		}
-		isBinaryOk = isBinaryOk && oid != unknownOID
-		fs[i] = pgtype.CompositeTypeField{Name: field.name, OID: oid}
-		vals[i] = val
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	typ, _ := pgtype.NewCompositeTypeValues(name, fs, vals)
-	if !isBinaryOk {
-		return textPreferrer{typ, name}
-	}
-	return typ
-}
-
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.ValueTranscoder {
-	if _, val, ok := tr.findValue(name); ok {
-		return val
-	}
-	elemOID, elemVal, ok := tr.findValue(elemName)
-	elemValFunc := func() pgtype.ValueTranscoder {
-		return pgtype.NewValue(elemVal).(pgtype.ValueTranscoder)
-	}
-	if !ok {
-		elemOID = unknownOID
-		elemValFunc = defaultVal
-	}
-	typ := pgtype.NewArrayType(name, elemOID, elemValFunc)
-	if elemOID == unknownOID {
-		return textPreferrer{typ, name}
-	}
-	return typ
-}
-
-// newApplies creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'applies'.
-func (tr *typeResolver) newApplies() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"applies",
-		compositeField{"apply_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
-		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
-		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"status_timestamps", "text", &pgtype.Text{}},
-		compositeField{"run_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newConfigurationVersions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'configuration_versions'.
-func (tr *typeResolver) newConfigurationVersions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"configuration_versions",
-		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"auto_queue_runs", "bool", &pgtype.Bool{}},
-		compositeField{"source", "text", &pgtype.Text{}},
-		compositeField{"speculative", "bool", &pgtype.Bool{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"status_timestamps", "text", &pgtype.Text{}},
-		compositeField{"config", "bytea", &pgtype.Bytea{}},
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'organizations'.
-func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"organizations",
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"session_remember", "int4", &pgtype.Int4{}},
-		compositeField{"session_timeout", "int4", &pgtype.Int4{}},
-	)
-}
-
-// newPlans creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'plans'.
-func (tr *typeResolver) newPlans() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"plans",
-		compositeField{"plan_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
-		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
-		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"status_timestamps", "text", &pgtype.Text{}},
-		compositeField{"plan_file", "bytea", &pgtype.Bytea{}},
-		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
-		compositeField{"run_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newSessions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'sessions'.
-func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"sessions",
-		compositeField{"token", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"address", "text", &pgtype.Text{}},
-		compositeField{"flash", "jsonb", &pgtype.JSONB{}},
-		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"user_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newTokens creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'tokens'.
-func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"tokens",
-		compositeField{"token_id", "text", &pgtype.Text{}},
-		compositeField{"token", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"description", "text", &pgtype.Text{}},
-		compositeField{"user_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newWorkspaces creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspaces'.
-func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspaces",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"allow_destroy_plan", "bool", &pgtype.Bool{}},
-		compositeField{"auto_apply", "bool", &pgtype.Bool{}},
-		compositeField{"can_queue_destroy_plan", "bool", &pgtype.Bool{}},
-		compositeField{"description", "text", &pgtype.Text{}},
-		compositeField{"environment", "text", &pgtype.Text{}},
-		compositeField{"execution_mode", "text", &pgtype.Text{}},
-		compositeField{"file_triggers_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"global_remote_state", "bool", &pgtype.Bool{}},
-		compositeField{"locked", "bool", &pgtype.Bool{}},
-		compositeField{"migration_environment", "text", &pgtype.Text{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"queue_all_runs", "bool", &pgtype.Bool{}},
-		compositeField{"speculative_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"source_name", "text", &pgtype.Text{}},
-		compositeField{"source_url", "text", &pgtype.Text{}},
-		compositeField{"structured_run_output_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"terraform_version", "text", &pgtype.Text{}},
-		compositeField{"trigger_prefixes", "text", &pgtype.Text{}},
-		compositeField{"working_directory", "text", &pgtype.Text{}},
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-	)
-}
-
-// newOrganizationsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_organizations' array type.
-func (tr *typeResolver) newOrganizationsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_organizations", "organizations", tr.newOrganizations)
-}
-
-// newSessionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_sessions' array type.
-func (tr *typeResolver) newSessionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_sessions", "sessions", tr.newSessions)
-}
-
-// newTokensArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_tokens' array type.
-func (tr *typeResolver) newTokensArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_tokens", "tokens", tr.newTokens)
-}
 
 const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     configuration_version_id,
@@ -960,8 +16,7 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     auto_queue_runs,
     source,
     speculative,
-    status,
-    status_timestamps
+    status
 ) VALUES (
     $1,
     NOW(),
@@ -969,18 +24,16 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     $2,
     $3,
     $4,
-    $5,
-    $6
+    $5
 )
 RETURNING *;`
 
 type InsertConfigurationVersionParams struct {
-	ID               string
-	AutoQueueRuns    bool
-	Source           string
-	Speculative      bool
-	Status           string
-	StatusTimestamps string
+	ID            string
+	AutoQueueRuns bool
+	Source        string
+	Speculative   bool
+	Status        string
 }
 
 type InsertConfigurationVersionRow struct {
@@ -991,7 +44,6 @@ type InsertConfigurationVersionRow struct {
 	Source                 string             `json:"source"`
 	Speculative            bool               `json:"speculative"`
 	Status                 string             `json:"status"`
-	StatusTimestamps       string             `json:"status_timestamps"`
 	Config                 pgtype.Bytea       `json:"config"`
 	WorkspaceID            string             `json:"workspace_id"`
 }
@@ -999,9 +51,9 @@ type InsertConfigurationVersionRow struct {
 // InsertConfigurationVersion implements Querier.InsertConfigurationVersion.
 func (q *DBQuerier) InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersion")
-	row := q.conn.QueryRow(ctx, insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.StatusTimestamps)
+	row := q.conn.QueryRow(ctx, insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status)
 	var item InsertConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
 		return item, fmt.Errorf("query InsertConfigurationVersion: %w", err)
 	}
 	return item, nil
@@ -1009,15 +61,58 @@ func (q *DBQuerier) InsertConfigurationVersion(ctx context.Context, params Inser
 
 // InsertConfigurationVersionBatch implements Querier.InsertConfigurationVersionBatch.
 func (q *DBQuerier) InsertConfigurationVersionBatch(batch genericBatch, params InsertConfigurationVersionParams) {
-	batch.Queue(insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.StatusTimestamps)
+	batch.Queue(insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status)
 }
 
 // InsertConfigurationVersionScan implements Querier.InsertConfigurationVersionScan.
 func (q *DBQuerier) InsertConfigurationVersionScan(results pgx.BatchResults) (InsertConfigurationVersionRow, error) {
 	row := results.QueryRow()
 	var item InsertConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
 		return item, fmt.Errorf("scan InsertConfigurationVersionBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_version_status_timestamps (
+    configuration_version_id,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    NOW()
+)
+RETURNING *;`
+
+type InsertConfigurationVersionStatusTimestampRow struct {
+	ConfigurationVersionID string             `json:"configuration_version_id"`
+	Status                 string             `json:"status"`
+	Timestamp              pgtype.Timestamptz `json:"timestamp"`
+}
+
+// InsertConfigurationVersionStatusTimestamp implements Querier.InsertConfigurationVersionStatusTimestamp.
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, id string, status string) (InsertConfigurationVersionStatusTimestampRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersionStatusTimestamp")
+	row := q.conn.QueryRow(ctx, insertConfigurationVersionStatusTimestampSQL, id, status)
+	var item InsertConfigurationVersionStatusTimestampRow
+	if err := row.Scan(&item.ConfigurationVersionID, &item.Status, &item.Timestamp); err != nil {
+		return item, fmt.Errorf("query InsertConfigurationVersionStatusTimestamp: %w", err)
+	}
+	return item, nil
+}
+
+// InsertConfigurationVersionStatusTimestampBatch implements Querier.InsertConfigurationVersionStatusTimestampBatch.
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, id string, status string) {
+	batch.Queue(insertConfigurationVersionStatusTimestampSQL, id, status)
+}
+
+// InsertConfigurationVersionStatusTimestampScan implements Querier.InsertConfigurationVersionStatusTimestampScan.
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestampScan(results pgx.BatchResults) (InsertConfigurationVersionStatusTimestampRow, error) {
+	row := results.QueryRow()
+	var item InsertConfigurationVersionStatusTimestampRow
+	if err := row.Scan(&item.ConfigurationVersionID, &item.Status, &item.Timestamp); err != nil {
+		return item, fmt.Errorf("scan InsertConfigurationVersionStatusTimestampBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -1043,7 +138,6 @@ type FindConfigurationVersionsRow struct {
 	Source                 *string            `json:"source"`
 	Speculative            *bool              `json:"speculative"`
 	Status                 *string            `json:"status"`
-	StatusTimestamps       *string            `json:"status_timestamps"`
 	Config                 pgtype.Bytea       `json:"config"`
 	WorkspaceID            *string            `json:"workspace_id"`
 	Workspace              Workspaces         `json:"workspace"`
@@ -1062,7 +156,7 @@ func (q *DBQuerier) FindConfigurationVersions(ctx context.Context, params FindCo
 	workspaceRow := q.types.newWorkspaces()
 	for rows.Next() {
 		var item FindConfigurationVersionsRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID, workspaceRow, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID, workspaceRow, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersions row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -1092,7 +186,7 @@ func (q *DBQuerier) FindConfigurationVersionsScan(results pgx.BatchResults) ([]F
 	workspaceRow := q.types.newWorkspaces()
 	for rows.Next() {
 		var item FindConfigurationVersionsRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID, workspaceRow, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID, workspaceRow, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsBatch row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -1114,7 +208,6 @@ const findConfigurationVersionByIDSQL = `SELECT
     configuration_versions.source,
     configuration_versions.speculative,
     configuration_versions.status,
-    configuration_versions.status_timestamps,
     (workspaces.*)::"workspaces" AS workspace
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
@@ -1128,7 +221,6 @@ type FindConfigurationVersionByIDRow struct {
 	Source                 *string            `json:"source"`
 	Speculative            *bool              `json:"speculative"`
 	Status                 *string            `json:"status"`
-	StatusTimestamps       *string            `json:"status_timestamps"`
 	Workspace              Workspaces         `json:"workspace"`
 }
 
@@ -1138,7 +230,7 @@ func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, configurat
 	row := q.conn.QueryRow(ctx, findConfigurationVersionByIDSQL, configurationVersionID)
 	var item FindConfigurationVersionByIDRow
 	workspaceRow := q.types.newWorkspaces()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, workspaceRow); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionByID: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -1157,7 +249,7 @@ func (q *DBQuerier) FindConfigurationVersionByIDScan(results pgx.BatchResults) (
 	row := results.QueryRow()
 	var item FindConfigurationVersionByIDRow
 	workspaceRow := q.types.newWorkspaces()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, workspaceRow); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionByIDBatch row: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -1212,7 +304,6 @@ type UploadConfigurationVersionRow struct {
 	Source                 string             `json:"source"`
 	Speculative            bool               `json:"speculative"`
 	Status                 string             `json:"status"`
-	StatusTimestamps       string             `json:"status_timestamps"`
 	Config                 pgtype.Bytea       `json:"config"`
 	WorkspaceID            string             `json:"workspace_id"`
 }
@@ -1222,7 +313,7 @@ func (q *DBQuerier) UploadConfigurationVersion(ctx context.Context, config []byt
 	ctx = context.WithValue(ctx, "pggen_query_name", "UploadConfigurationVersion")
 	row := q.conn.QueryRow(ctx, uploadConfigurationVersionSQL, config, id)
 	var item UploadConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
 		return item, fmt.Errorf("query UploadConfigurationVersion: %w", err)
 	}
 	return item, nil
@@ -1237,34 +328,8 @@ func (q *DBQuerier) UploadConfigurationVersionBatch(batch genericBatch, config [
 func (q *DBQuerier) UploadConfigurationVersionScan(results pgx.BatchResults) (UploadConfigurationVersionRow, error) {
 	row := results.QueryRow()
 	var item UploadConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.StatusTimestamps, &item.Config, &item.WorkspaceID); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
 		return item, fmt.Errorf("scan UploadConfigurationVersionBatch row: %w", err)
 	}
 	return item, nil
 }
-
-// textPreferrer wraps a pgtype.ValueTranscoder and sets the preferred encoding
-// format to text instead binary (the default). pggen uses the text format
-// when the OID is unknownOID because the binary format requires the OID.
-// Typically occurs if the results from QueryAllDataTypes aren't passed to
-// NewQuerierConfig.
-type textPreferrer struct {
-	pgtype.ValueTranscoder
-	typeName string
-}
-
-// PreferredParamFormat implements pgtype.ParamFormatPreferrer.
-func (t textPreferrer) PreferredParamFormat() int16 { return pgtype.TextFormatCode }
-
-func (t textPreferrer) NewTypeValue() pgtype.Value {
-	return textPreferrer{pgtype.NewValue(t.ValueTranscoder).(pgtype.ValueTranscoder), t.typeName}
-}
-
-func (t textPreferrer) TypeName() string {
-	return t.typeName
-}
-
-// unknownOID means we don't know the OID for a type. This is okay for decoding
-// because pgx call DecodeText or DecodeBinary without requiring the OID. For
-// encoding parameters, pggen uses textPreferrer if the OID is unknown.
-const unknownOID = 0

@@ -80,7 +80,7 @@ type InsertWorkspaceParams struct {
 	SourceUrl                  string
 	StructuredRunOutputEnabled bool
 	TerraformVersion           string
-	TriggerPrefixes            string
+	TriggerPrefixes            []string
 	WorkingDirectory           string
 	OrganizationID             string
 }
@@ -106,7 +106,7 @@ type InsertWorkspaceRow struct {
 	SourceUrl                  string             `json:"source_url"`
 	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
 	TerraformVersion           string             `json:"terraform_version"`
-	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           string             `json:"working_directory"`
 	OrganizationID             string             `json:"organization_id"`
 }
@@ -174,7 +174,7 @@ type FindWorkspacesRow struct {
 	SourceUrl                  *string            `json:"source_url"`
 	StructuredRunOutputEnabled *bool              `json:"structured_run_output_enabled"`
 	TerraformVersion           *string            `json:"terraform_version"`
-	TriggerPrefixes            *string            `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           *string            `json:"working_directory"`
 	OrganizationID             *string            `json:"organization_id"`
 	Organization               Organizations      `json:"organization"`
@@ -264,7 +264,7 @@ type FindWorkspaceByNameRow struct {
 	SourceUrl                  *string            `json:"source_url"`
 	StructuredRunOutputEnabled *bool              `json:"structured_run_output_enabled"`
 	TerraformVersion           *string            `json:"terraform_version"`
-	TriggerPrefixes            *string            `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           *string            `json:"working_directory"`
 	OrganizationID             *string            `json:"organization_id"`
 	Organization               Organizations      `json:"organization"`
@@ -330,7 +330,7 @@ type FindWorkspaceByIDRow struct {
 	SourceUrl                  *string            `json:"source_url"`
 	StructuredRunOutputEnabled *bool              `json:"structured_run_output_enabled"`
 	TerraformVersion           *string            `json:"terraform_version"`
-	TriggerPrefixes            *string            `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           *string            `json:"working_directory"`
 	OrganizationID             *string            `json:"organization_id"`
 	Organization               Organizations      `json:"organization"`
@@ -398,7 +398,7 @@ type UpdateWorkspaceNameByIDRow struct {
 	SourceUrl                  string             `json:"source_url"`
 	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
 	TerraformVersion           string             `json:"terraform_version"`
-	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           string             `json:"working_directory"`
 	OrganizationID             string             `json:"organization_id"`
 }
@@ -457,7 +457,7 @@ type UpdateWorkspaceAllowDestroyPlanByIDRow struct {
 	SourceUrl                  string             `json:"source_url"`
 	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
 	TerraformVersion           string             `json:"terraform_version"`
-	TriggerPrefixes            string             `json:"trigger_prefixes"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
 	WorkingDirectory           string             `json:"working_directory"`
 	OrganizationID             string             `json:"organization_id"`
 }

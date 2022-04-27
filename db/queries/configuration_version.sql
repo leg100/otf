@@ -9,8 +9,7 @@ INSERT INTO configuration_versions (
     auto_queue_runs,
     source,
     speculative,
-    status,
-    status_timestamps
+    status
 ) VALUES (
     pggen.arg('ID'),
     NOW(),
@@ -18,8 +17,19 @@ INSERT INTO configuration_versions (
     pggen.arg('AutoQueueRuns'),
     pggen.arg('Source'),
     pggen.arg('Speculative'),
+    pggen.arg('Status')
+)
+RETURNING *;
+
+-- name: InsertConfigurationVersionStatusTimestamp :one
+INSERT INTO configuration_version_status_timestamps (
+    configuration_version_id,
+    status,
+    timestamp
+) VALUES (
+    pggen.arg('ID'),
     pggen.arg('Status'),
-    pggen.arg('StatusTimestamps')
+    NOW()
 )
 RETURNING *;
 
@@ -45,7 +55,6 @@ SELECT
     configuration_versions.source,
     configuration_versions.speculative,
     configuration_versions.status,
-    configuration_versions.status_timestamps,
     (workspaces.*)::"workspaces" AS workspace
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)

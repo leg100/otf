@@ -8,7 +8,6 @@ INSERT INTO runs (
     refresh,
     refresh_only,
     status,
-    status_timestamps,
     replace_addrs,
     target_addrs,
     workspace_id
@@ -21,19 +20,30 @@ INSERT INTO runs (
     pggen.arg('Refresh'),
     pggen.arg('RefreshOnly'),
     pggen.arg('Status'),
-    pggen.arg('StatusTimestamps'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
     pggen.arg('WorkspaceID')
 )
 RETURNING *;
 
+-- name: InsertRunStatusTimestamp :one
+INSERT INTO run_status_timestamps (
+    run_id,
+    status,
+    timestamp
+) VALUES (
+    pggen.arg('ID'),
+    pggen.arg('Status'),
+    NOW()
+)
+RETURNING *;
+
 -- name: FindRunsByWorkspaceID :many
 SELECT runs.*,
-    (plans.*)::"plans" AS plans,
-    (applies.*)::"applies" AS applies,
-    (configuration_versions.*)::"configuration_versions" AS configuration_versions,
-    (workspaces.*)::"workspaces" AS workspaces,
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace,
     count(*) OVER() AS full_count
 FROM runs
 JOIN plans USING(run_id)
@@ -46,10 +56,10 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 
 -- name: FindRunsByWorkspaceName :many
 SELECT runs.*,
-    (plans.*)::"plans" AS plans,
-    (applies.*)::"applies" AS applies,
-    (configuration_versions.*)::"configuration_versions" AS configuration_versions,
-    (workspaces.*)::"workspaces" AS workspaces,
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace,
     count(*) OVER() AS full_count
 FROM runs
 JOIN plans USING(run_id)
@@ -64,10 +74,10 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 
 -- name: FindRunByID :one
 SELECT runs.*,
-    (plans.*)::"plans" AS plans,
-    (applies.*)::"applies" AS applies,
-    (configuration_versions.*)::"configuration_versions" AS configuration_versions,
-    (workspaces.*)::"workspaces" AS workspaces
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -79,10 +89,10 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 
 -- name: FindRunByPlanID :one
 SELECT runs.*,
-    (plans.*)::"plans" AS plans,
-    (applies.*)::"applies" AS applies,
-    (configuration_versions.*)::"configuration_versions" AS configuration_versions,
-    (workspaces.*)::"workspaces" AS workspaces
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -94,10 +104,10 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 
 -- name: FindRunByApplyID :one
 SELECT runs.*,
-    (plans.*)::"plans" AS plans,
-    (applies.*)::"applies" AS applies,
-    (configuration_versions.*)::"configuration_versions" AS configuration_versions,
-    (workspaces.*)::"workspaces" AS workspaces
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -107,37 +117,10 @@ WHERE applies.apply_id = pggen.arg('apply_id')
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
--- name: GetPlanFileByRunID :one
-SELECT plans.plan_file
-FROM runs
-JOIN plans USING(run_id)
-WHERE runs.run_id = pggen.arg('run_id')
-;
-
--- name: GetPlanJSONByRunID :one
-SELECT plans.plan_json
-FROM runs
-JOIN plans USING(run_id)
-WHERE runs.run_id = pggen.arg('run_id')
-;
-
--- name: PutPlanFileByRunID :exec
-UPDATE plans
-SET plan_file = pggen.arg('plan_file')
-WHERE run_id = pggen.arg('run_id')
-;
-
--- name: PutPlanJSONByRunID :exec
-UPDATE plans
-SET plan_json = pggen.arg('plan_json')
-WHERE run_id = pggen.arg('run_id')
-;
-
 -- name: UpdateRunStatus :one
 UPDATE runs
 SET
     status = pggen.arg('status'),
-    status_timestamps = pggen.arg('status_timestamps'),
     updated_at = NOW()
 WHERE run_id = pggen.arg('id')
 RETURNING *;
