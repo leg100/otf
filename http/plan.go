@@ -34,6 +34,13 @@ type PlanStatusTimestamps struct {
 	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
 
+// PlanFileOptions represents the options for retrieving the plan file for a
+// run.
+type PlanFileOptions struct {
+	// Format of plan file. Valid values are json and binary.
+	Format otf.PlanFormat `schema:"format"`
+}
+
 // ToDomain converts http organization obj to a domain organization obj.
 func (p *Plan) ToDomain() *otf.Plan {
 	return &otf.Plan{
@@ -63,8 +70,7 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	opts := otf.PlanFileOptions{Format: otf.PlanJSONFormat}
-	json, err := s.RunService().GetPlanFile(r.Context(), otf.RunGetOptions{PlanID: &id}, opts)
+	json, err := s.RunService().GetPlanFile(r.Context(), otf.RunGetOptions{PlanID: &id}, otf.PlanFormatJSON)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
