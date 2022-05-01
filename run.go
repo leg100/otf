@@ -113,7 +113,7 @@ type RunService interface {
 	// apply.
 	GetLogs(ctx context.Context, runID string) (io.Reader, error)
 
-	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
+	GetPlanFile(ctx context.Context, spec RunGetOptions, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
 }
 
@@ -203,6 +203,8 @@ type RunPermissions struct {
 type RunStore interface {
 	Create(run *Run) (*Run, error)
 	Get(opts RunGetOptions) (*Run, error)
+	SetPlanFile(id string, file []byte, opts PlanFileOptions) error
+	GetPlanFile(id string, opts PlanFileOptions) ([]byte, error)
 	List(opts RunListOptions) (*RunList, error)
 	// TODO: add support for a special error type that tells update to skip
 	// updates - useful when fn checks current fields and decides not to update
@@ -227,13 +229,18 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+}
 
-	// IncludePlanFile toggles including the plan file in the retrieved run.
-	IncludePlanFile bool
-
-	// IncludePlanFile toggles including the plan file, in JSON format, in the
-	// retrieved run.
-	IncludePlanJSON bool
+func (o *RunGetOptions) String() string {
+	if o.ID != nil {
+		return *o.ID
+	} else if o.PlanID != nil {
+		return *o.PlanID
+	} else if o.ApplyID != nil {
+		return *o.ApplyID
+	} else {
+		panic("no ID specified")
+	}
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -517,7 +524,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 	opts := PlanFileOptions{Format: PlanBinaryFormat}
 
-	plan, err := env.GetRunService().GetPlanFile(ctx, r.ID, opts)
+	plan, err := env.GetRunService().GetPlanFile(ctx, RunGetOptions{ID: &r.ID}, opts)
 	if err != nil {
 		return err
 	}

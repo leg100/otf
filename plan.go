@@ -43,12 +43,6 @@ type Plan struct {
 	// StatusTimestamps records timestamps of status transitions
 	StatusTimestamps TimestampMap
 
-	// PlanFile is the blob ID of the execution plan file in binary format
-	PlanFile []byte
-
-	// PlanJSON is the blob ID of the execution plan file in json format
-	PlanJSON []byte
-
 	// RunID is the ID of the Run the Plan belongs to.
 	RunID string
 }
@@ -59,7 +53,6 @@ func (p *Plan) String() string    { return p.ID }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
-	GetPlanJSON(id string) ([]byte, error)
 
 	JobService
 }
@@ -110,15 +103,11 @@ func (p *Plan) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// CalculateTotals produces a summary of planned changes and updates the object
-// with the summary.
-func (p *Plan) CalculateTotals() error {
-	if p.PlanJSON == nil {
-		return fmt.Errorf("plan obj is missing the json formatted plan file")
-	}
-
+// CalculateTotals produces a summary of planned changes using the provided plan
+// file (in json format) and updates the object with the summary.
+func (p *Plan) CalculateTotals(planJSON []byte) error {
 	planFile := PlanFile{}
-	if err := json.Unmarshal(p.PlanJSON, &planFile); err != nil {
+	if err := json.Unmarshal(planJSON, &planFile); err != nil {
 		return err
 	}
 

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -38,24 +37,6 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 		return nil, err
 	}
 	return run.Plan, nil
-}
-
-// GetPlanJSON returns the JSON formatted plan file for the plan.
-func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
-	if plan, err := s.cache.Get(otf.JSONPlanCacheKey(id)); err == nil {
-		return plan, nil
-	}
-
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.cache.Set(otf.JSONPlanCacheKey(id), run.Plan.PlanJSON); err != nil {
-		return nil, fmt.Errorf("caching plan: %w", err)
-	}
-
-	return run.Plan.PlanJSON, nil
 }
 
 // GetChunk reads a chunk of logs for a terraform plan.
