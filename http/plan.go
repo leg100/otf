@@ -61,8 +61,10 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	id := vars["id"]
 
-	json, err := s.PlanService().GetPlanJSON(vars["id"])
+	opts := otf.PlanFileOptions{Format: otf.PlanJSONFormat}
+	json, err := s.RunService().GetPlanFile(r.Context(), otf.RunGetOptions{PlanID: &id}, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

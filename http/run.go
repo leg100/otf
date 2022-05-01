@@ -260,6 +260,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	id := vars["id"]
 
 	var opts otf.PlanFileOptions
 
@@ -268,15 +269,16 @@ func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.getPlanFile(w, r, vars["id"], opts)
+	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
 }
 
 func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	id := vars["id"]
 
 	opts := otf.PlanFileOptions{Format: otf.PlanJSONFormat}
 
-	s.getPlanFile(w, r, vars["id"], opts)
+	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
 }
 
 // GetRunLogs gets the logs for a run, combining the logs of both its plan and
@@ -300,8 +302,8 @@ func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, runID string, opts otf.PlanFileOptions) {
-	json, err := s.RunService().GetPlanFile(r.Context(), runID, opts)
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.RunGetOptions, opts otf.PlanFileOptions) {
+	json, err := s.RunService().GetPlanFile(r.Context(), spec, opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

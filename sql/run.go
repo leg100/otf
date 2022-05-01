@@ -36,8 +36,6 @@ var (
 		"resource_destructions",
 		"status",
 		"status_timestamps",
-		"plan_file",
-		"plan_json",
 		"run_id",
 	}
 
@@ -220,6 +218,59 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	return getRun(db.DB, opts)
 }
 
+// SetPlanFile writes a plan file to the db
+func (db RunDB) SetPlanFile(id string, file []byte, opts otf.PlanFileOptions) error {
+	updateBuilder := psql.Update("plans").Where("run_id = ?", id)
+
+	switch opts.Format {
+	case otf.PlanBinaryFormat:
+		updateBuilder = updateBuilder.Set("plan_file", file)
+	case otf.PlanJSONFormat:
+		updateBuilder = updateBuilder.Set("plan_json", file)
+	default:
+		return fmt.Errorf("no plan format specified")
+	}
+
+	sql, args, err := updateBuilder.ToSql()
+	if err != nil {
+		return fmt.Errorf("generating sql: %w", err)
+	}
+
+	if _, err := db.DB.Exec(sql, args...); err != nil {
+		return databaseError(err, sql)
+	}
+
+	return nil
+}
+
+// GetPlanFile retrieves a plan file for the run
+func (db RunDB) GetPlanFile(id string, opts otf.PlanFileOptions) ([]byte, error) {
+	var selectBuilder sq.SelectBuilder
+
+	switch opts.Format {
+	case otf.PlanBinaryFormat:
+		selectBuilder = selectBuilder.Columns("plan_file")
+	case otf.PlanJSONFormat:
+		selectBuilder = selectBuilder.Columns("plan_json")
+	default:
+		return nil, fmt.Errorf("no plan format specified")
+	}
+
+	selectBuilder = selectBuilder.From("plans").Where("run_id = ?", id)
+
+	sql, args, err := selectBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("generating sql: %w", err)
+	}
+
+	var file []byte
+	if err := db.DB.Get(&file, sql, args...); err != nil {
+		return nil, databaseError(err, sql)
+	}
+
+	return file, nil
+}
+
 // Delete deletes a run from the DB
 func (db RunDB) Delete(id string) error {
 	tx := db.MustBegin()
@@ -240,14 +291,6 @@ func (db RunDB) Delete(id string) error {
 
 func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
 	planColumns := planColumns
-
-	if opts.IncludePlanFile {
-		planColumns = append(planColumns, "plan_file")
-	}
-
-	if opts.IncludePlanJSON {
-		planColumns = append(planColumns, "plan_json")
-	}
 
 	selectBuilder := psql.Select(asColumnList("runs", false, runColumns...)).
 		Columns(asColumnList("plans", true, planColumns...)).
