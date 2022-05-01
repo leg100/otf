@@ -21,12 +21,12 @@ type PlanFile struct {
 // PlanFormat is the format of the plan file
 type PlanFormat string
 
-func (f *PlanFormat) CacheKey(id string) string {
-	return fmt.Sprintf("%s.%v", id, f)
+func (f PlanFormat) CacheKey(id string) string {
+	return fmt.Sprintf("%s.%s", id, f)
 }
 
-func (f *PlanFormat) SQLColumn() string {
-	return fmt.Sprintf("plan_%v", f)
+func (f PlanFormat) SQLColumn() string {
+	return fmt.Sprintf("plan_%s", f)
 }
 
 // ResourceChange represents a proposed change to a resource in a plan file
