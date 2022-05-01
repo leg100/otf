@@ -1,19 +1,19 @@
 package sql
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
-	"github.com/iancoleman/strcase"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 )
 
 type db struct {
-	*sqlx.DB
+	*pgx.Conn
 
 	organizationStore         otf.OrganizationStore
 	workspaceStore            otf.WorkspaceStore
@@ -26,28 +26,25 @@ type db struct {
 }
 
 func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpiry time.Duration) (otf.DB, error) {
-	sqlxdb, err := sqlx.Connect("postgres", path)
+	conn, err := pgx.Connect(context.Background(), path)
 	if err != nil {
 		return nil, err
 	}
 
-	// Map struct field names from CamelCase to snake_case.
-	sqlxdb.MapperFunc(strcase.ToSnake)
-
-	if err := migrate(logger, sqlxdb.DB); err != nil {
+	if err := migrate(logger, conn); err != nil {
 		return nil, err
 	}
 
 	db := db{
-		DB:                        sqlxdb,
-		organizationStore:         NewOrganizationDB(sqlxdb),
-		workspaceStore:            NewWorkspaceDB(sqlxdb),
-		stateVersionStore:         NewStateVersionDB(sqlxdb),
-		configurationVersionStore: NewConfigurationVersionDB(sqlxdb),
-		runStore:                  NewRunDB(sqlxdb),
-		planLogStore:              NewPlanLogDB(sqlxdb),
-		applyLogStore:             NewApplyLogDB(sqlxdb),
-		userStore:                 NewUserDB(sqlxdb, sessionExpiry),
+		Conn:                      conn,
+		organizationStore:         NewOrganizationDB(conn),
+		workspaceStore:            NewWorkspaceDB(conn),
+		stateVersionStore:         NewStateVersionDB(conn),
+		configurationVersionStore: NewConfigurationVersionDB(conn),
+		runStore:                  NewRunDB(conn),
+		planLogStore:              NewPlanLogDB(conn),
+		applyLogStore:             NewApplyLogDB(conn),
+		userStore:                 NewUserDB(conn, sessionExpiry),
 	}
 
 	if cache != nil {
@@ -65,8 +62,8 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 	return db, nil
 }
 
-func (db db) Handle() *sqlx.DB                         { return db.DB }
-func (db db) Close() error                             { return db.DB.Close() }
+func (db db) Handle() *pgx.Handle                      { return db.Handle }
+func (db db) Close() error                             { return db.Conn.Close(context.Background()) }
 func (db db) OrganizationStore() otf.OrganizationStore { return db.organizationStore }
 func (db db) WorkspaceStore() otf.WorkspaceStore       { return db.workspaceStore }
 func (db db) StateVersionStore() otf.StateVersionStore { return db.stateVersionStore }

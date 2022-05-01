@@ -45,10 +45,15 @@ type Apply struct {
 	Status ApplyStatus
 
 	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps TimestampMap
+	StatusTimestamps []ApplyStatusTimestamp
 
 	// RunID is the ID of the Run the Apply belongs to.
 	RunID string
+}
+
+type ApplyStatusTimestamp struct {
+	Status    ApplyStatus
+	Timestamp time.Time
 }
 
 func (a *Apply) GetID() string     { return a.ID }
@@ -57,10 +62,9 @@ func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
-		ID:               NewID("apply"),
-		Timestamps:       NewTimestamps(),
-		StatusTimestamps: make(TimestampMap),
-		RunID:            runID,
+		ID:         NewID("apply"),
+		Timestamps: NewTimestamps(),
+		RunID:      runID,
 	}
 }
 
@@ -106,9 +110,4 @@ func (a *Apply) Finish(run *Run) (*Event, error) {
 
 func (a *Apply) UpdateStatus(status ApplyStatus) {
 	a.Status = status
-	a.setTimestamp(status)
-}
-
-func (a *Apply) setTimestamp(status ApplyStatus) {
-	a.StatusTimestamps[string(status)] = time.Now()
 }

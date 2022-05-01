@@ -10,6 +10,7 @@ INSERT INTO runs (
     status,
     replace_addrs,
     target_addrs,
+    configuration_version_id,
     workspace_id
 ) VALUES (
     pggen.arg('ID'),
@@ -22,6 +23,7 @@ INSERT INTO runs (
     pggen.arg('Status'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
+    pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 )
 RETURNING *;
@@ -44,7 +46,13 @@ SELECT runs.*,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
-    count(*) OVER() AS full_count
+    count(*) OVER() AS full_count,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -60,7 +68,13 @@ SELECT runs.*,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
-    count(*) OVER() AS full_count
+    count(*) OVER() AS full_count,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -72,19 +86,46 @@ AND organizations.name = pggen.arg('organization_name')
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
+-- name: FindRunsByStatuses :many
+SELECT runs.*,
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace,
+    count(*) OVER() AS full_count,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
+FROM runs
+JOIN plans USING(run_id)
+JOIN applies USING(run_id)
+JOIN configuration_versions USING(workspace_id)
+JOIN workspaces USING(workspace_id)
+WHERE runs.status = ANY(pggen.arg('statuses'))
+LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+;
+
 -- name: FindRunByID :one
 SELECT runs.*,
     (plans.*)::"plans" AS plan,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.run_id = pggen.arg('run_id')
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
 -- name: FindRunByPlanID :one
@@ -92,14 +133,19 @@ SELECT runs.*,
     (plans.*)::"plans" AS plan,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE plans.plan_id = pggen.arg('plan_id')
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
 -- name: FindRunByApplyID :one
@@ -107,14 +153,19 @@ SELECT runs.*,
     (plans.*)::"plans" AS plan,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE applies.apply_id = pggen.arg('apply_id')
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
 -- name: UpdateRunStatus :one

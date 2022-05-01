@@ -81,5 +81,5 @@ sql:
 	pggen gen go \
 		--postgres-connection "dbname=otf" \
 		--query-glob 'db/queries/*.sql' \
-		--output-dir db \
+		--output-dir sql \
 		--log info

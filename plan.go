@@ -41,16 +41,15 @@ type Plan struct {
 	Status PlanStatus
 
 	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps TimestampMap
-
-	// PlanFile is the blob ID of the execution plan file in binary format
-	PlanFile []byte
-
-	// PlanJSON is the blob ID of the execution plan file in json format
-	PlanJSON []byte
+	StatusTimestamps []PlanStatusTimestamp
 
 	// RunID is the ID of the Run the Plan belongs to.
 	RunID string
+}
+
+type PlanStatusTimestamp struct {
+	Status    PlanStatus
+	Timestamp time.Time
 }
 
 func (p *Plan) GetID() string     { return p.ID }
@@ -70,10 +69,9 @@ type PlanLogStore interface {
 
 func newPlan(runID string) *Plan {
 	return &Plan{
-		ID:               NewID("plan"),
-		Timestamps:       NewTimestamps(),
-		StatusTimestamps: make(TimestampMap),
-		RunID:            runID,
+		ID:         NewID("plan"),
+		Timestamps: NewTimestamps(),
+		RunID:      runID,
 	}
 }
 
@@ -110,15 +108,11 @@ func (p *Plan) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// CalculateTotals produces a summary of planned changes and updates the object
-// with the summary.
-func (p *Plan) CalculateTotals() error {
-	if p.PlanJSON == nil {
-		return fmt.Errorf("plan obj is missing the json formatted plan file")
-	}
-
+// CalculateTotals produces a summary of planned changes from the JSON plan file
+// and updates the object with the summary.
+func (p *Plan) CalculateTotals(jsonFile []byte) error {
 	planFile := PlanFile{}
-	if err := json.Unmarshal(p.PlanJSON, &planFile); err != nil {
+	if err := json.Unmarshal(jsonFile, &planFile); err != nil {
 		return err
 	}
 
@@ -159,9 +153,4 @@ func (p *Plan) Finish(run *Run) (*Event, error) {
 
 func (p *Plan) UpdateStatus(status PlanStatus) {
 	p.Status = status
-	p.setTimestamp(status)
-}
-
-func (p *Plan) setTimestamp(status PlanStatus) {
-	p.StatusTimestamps[string(status)] = time.Now()
 }

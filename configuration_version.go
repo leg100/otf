@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 const (
@@ -43,7 +44,7 @@ type ConfigurationVersion struct {
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps TimestampMap
+	StatusTimestamps []ConfigurationVersionStatusTimestamp
 
 	// Config is a tarball of the uploaded configuration. Note: this is not
 	// necessarily populated.
@@ -51,6 +52,11 @@ type ConfigurationVersion struct {
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
+}
+
+type ConfigurationVersionStatusTimestamp struct {
+	Status    ConfigurationStatus
+	Timestamp time.Time
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a

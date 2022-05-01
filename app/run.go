@@ -55,9 +55,9 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	_, err = s.db.Create(run)
+	run, err = s.db.Create(run)
 	if err != nil {
-		s.Error(err, "creating run", "id", run.ID)
+		s.Error(err, "persisting run to DB", "id", run.ID)
 		return nil, err
 	}
 
@@ -171,12 +171,12 @@ func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s RunService) GetPlanFile(ctx context.Context, runID string, opts otf.PlanFileOptions) ([]byte, error) {
+func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, opts otf.PlanFileOptions) ([]byte, error) {
 	switch opts.Format {
 	case otf.PlanJSONFormat:
-		return s.getJSONPlanFile(ctx, runID)
+		return s.getJSONPlanFile(ctx, spec)
 	case otf.PlanBinaryFormat:
-		return s.getBinaryPlanFile(ctx, runID)
+		return s.getBinaryPlanFile(ctx, spec)
 	default:
 		return nil, fmt.Errorf("unknown plan file format specified: %s", opts.Format)
 	}
@@ -225,25 +225,25 @@ func (s RunService) Delete(ctx context.Context, id string) error {
 }
 
 // GetPlanFile returns the plan file in json format for the run.
-func (s RunService) getJSONPlanFile(ctx context.Context, runID string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanJSON: true})
+func (s RunService) getJSONPlanFile(ctx context.Context, spec otf.RunGetOptions) ([]byte, error) {
+	file, err := s.db.GetPlanJSON(runID)
 	if err != nil {
 		s.Error(err, "retrieving json plan file", "id", runID)
 		return nil, err
 	}
 
-	return run.Plan.PlanJSON, nil
+	return file, nil
 }
 
 // GetPlanFile returns the plan file in json format for the run.
 func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: otf.String(runID), IncludePlanFile: true})
+	file, err := s.db.GetPlanFile(runID)
 	if err != nil {
 		s.Error(err, "retrieving binary plan file", "id", runID)
 		return nil, err
 	}
 
-	return run.Plan.PlanFile, nil
+	return file, nil
 }
 
 func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
@@ -268,9 +268,7 @@ func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byt
 
 func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte) error {
 	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.Plan.PlanJSON = plan
-
-		return run.Plan.CalculateTotals()
+		return run.Plan.CalculateTotals(plan)
 	})
 	if err != nil {
 		s.Error(err, "uploading json plan file", "id", id)

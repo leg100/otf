@@ -70,9 +70,9 @@ type Run struct {
 	Refresh          bool
 	RefreshOnly      bool
 	Status           RunStatus
-	StatusTimestamps TimestampMap
-	ReplaceAddrs     CSV
-	TargetAddrs      CSV
+	StatusTimestamps []RunStatusTimestamp
+	ReplaceAddrs     []string
+	TargetAddrs      []string
 
 	// Relations
 	Plan                 *Plan                 `db:"plans"`
@@ -113,7 +113,7 @@ type RunService interface {
 	// apply.
 	GetLogs(ctx context.Context, runID string) (io.Reader, error)
 
-	GetPlanFile(ctx context.Context, runID string, opts PlanFileOptions) ([]byte, error)
+	GetPlanFile(ctx context.Context, spec RunGetOptions, opts PlanFileOptions) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
 }
 
@@ -203,10 +203,10 @@ type RunPermissions struct {
 type RunStore interface {
 	Create(run *Run) (*Run, error)
 	Get(opts RunGetOptions) (*Run, error)
+	GetPlan(spec RunGetOptions, opts PlanFileOptions) ([]byte, error)
 	List(opts RunListOptions) (*RunList, error)
-	// TODO: add support for a special error type that tells update to skip
-	// updates - useful when fn checks current fields and decides not to update
 	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	UpdateStatus(id string, status RunStatus) (time.Time, error)
 	Delete(id string) error
 }
 
@@ -227,13 +227,6 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
-
-	// IncludePlanFile toggles including the plan file in the retrieved run.
-	IncludePlanFile bool
-
-	// IncludePlanFile toggles including the plan file, in JSON format, in the
-	// retrieved run.
-	IncludePlanJSON bool
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -293,13 +286,26 @@ func (r *Run) Cancel() error {
 }
 
 func (r *Run) ForceCancelAvailableAt() time.Time {
-	canceledAt, ok := r.StatusTimestamps[string(RunCanceled)]
-	if !ok {
+	if r.Status != RunCanceled {
 		return time.Time{}
+	}
+
+	canceledAt, found := r.findRunStatusTimestamp(r.Status)
+	if !found {
+		panic("no corresponding timestamp found for canceled status")
 	}
 
 	// Run can be forcefully cancelled after a cool-off period of ten seconds
 	return canceledAt.Add(10 * time.Second)
+}
+
+func (r *Run) findRunStatusTimestamp(status RunStatus) (time.Time, bool) {
+	for _, rst := range r.StatusTimestamps {
+		if rst.Status == status {
+			return rst.Timestamp, true
+		}
+	}
+	return time.Time{}, false
 }
 
 // ForceCancel updates the state of a run to reflect it having been forcefully
@@ -309,7 +315,9 @@ func (r *Run) ForceCancel() error {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	r.setTimestamp(RunForceCanceled)
+	// TODO: ensure db sets the following timestamp
+
+	// r.setTimestamp(RunForceCanceled)
 
 	return nil
 }
@@ -379,6 +387,9 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
+type StatusUpdater struct {
+}
+
 // UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status RunStatus) {
 	switch status {
@@ -413,16 +424,15 @@ func (r *Run) UpdateStatus(status RunStatus) {
 	}
 
 	r.Status = status
-	r.setTimestamp(status)
+
+	// NOTE: DB takes care of setting corresponding status timestamp
 
 	// TODO: determine when ApplyUnreachable is applicable and set
 	// accordingly
 }
 
-func (r *Run) setTimestamp(status RunStatus) {
-	r.StatusTimestamps[string(status)] = time.Now()
-}
-
+// TODO: rename this to something like 'setup' or 'beforeSteps' (unexported).
+//
 // Do invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) Do(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
@@ -558,14 +568,12 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 
 	id := NewID("run")
 	run := Run{
-		ID:               id,
-		Timestamps:       NewTimestamps(),
-		Refresh:          DefaultRefresh,
-		ReplaceAddrs:     opts.ReplaceAddrs,
-		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: make(TimestampMap),
-		Plan:             newPlan(id),
-		Apply:            newApply(id),
+		ID:           id,
+		Refresh:      DefaultRefresh,
+		ReplaceAddrs: opts.ReplaceAddrs,
+		TargetAddrs:  opts.TargetAddrs,
+		Plan:         newPlan(id),
+		Apply:        newApply(id),
 	}
 
 	run.UpdateStatus(RunPending)

@@ -132,23 +132,23 @@ type ListOptions struct {
 }
 
 // GetOffset calculates the offset for use in SQL queries.
-func (o *ListOptions) GetOffset() uint64 {
+func (o *ListOptions) GetOffset() int {
 	if o.PageNumber == 0 {
 		return 0
 	}
 
-	return uint64((o.PageNumber - 1) * o.PageSize)
+	return (o.PageNumber - 1) * o.PageSize
 }
 
 // GetLimit calculates the limit for use in SQL queries.
-func (o *ListOptions) GetLimit() uint64 {
+func (o *ListOptions) GetLimit() int {
 	if o.PageSize == 0 {
 		return DefaultPageSize
 	} else if o.PageSize > MaxPageSize {
 		return MaxPageSize
 	}
 
-	return uint64(o.PageSize)
+	return o.PageSize
 }
 
 // validString checks if the given input is present and non-empty.

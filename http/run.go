@@ -357,35 +357,35 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 		},
 	}
 
-	for k, v := range r.StatusTimestamps {
+	for _, rst := range r.StatusTimestamps {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &RunStatusTimestamps{}
 		}
-		switch otf.RunStatus(k) {
+		switch rst.Status {
 		case otf.RunPending:
-			result.StatusTimestamps.PlanQueueableAt = &v
+			result.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
 		case otf.RunPlanQueued:
-			result.StatusTimestamps.PlanQueuedAt = &v
+			result.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
 		case otf.RunPlanning:
-			result.StatusTimestamps.PlanningAt = &v
+			result.StatusTimestamps.PlanningAt = &rst.Timestamp
 		case otf.RunPlanned:
-			result.StatusTimestamps.PlannedAt = &v
+			result.StatusTimestamps.PlannedAt = &rst.Timestamp
 		case otf.RunPlannedAndFinished:
-			result.StatusTimestamps.PlannedAndFinishedAt = &v
+			result.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
 		case otf.RunApplyQueued:
-			result.StatusTimestamps.ApplyQueuedAt = &v
+			result.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
 		case otf.RunApplying:
-			result.StatusTimestamps.ApplyingAt = &v
+			result.StatusTimestamps.ApplyingAt = &rst.Timestamp
 		case otf.RunApplied:
-			result.StatusTimestamps.AppliedAt = &v
+			result.StatusTimestamps.AppliedAt = &rst.Timestamp
 		case otf.RunErrored:
-			result.StatusTimestamps.ErroredAt = &v
+			result.StatusTimestamps.ErroredAt = &rst.Timestamp
 		case otf.RunCanceled:
-			result.StatusTimestamps.CanceledAt = &v
+			result.StatusTimestamps.CanceledAt = &rst.Timestamp
 		case otf.RunForceCanceled:
-			result.StatusTimestamps.ForceCanceledAt = &v
+			result.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
 		case otf.RunDiscarded:
-			result.StatusTimestamps.DiscardedAt = &v
+			result.StatusTimestamps.DiscardedAt = &rst.Timestamp
 		}
 	}
 

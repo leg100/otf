@@ -45,14 +45,9 @@ func TestRun_UpdateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Run{
-				Status:           tt.fromStatus,
-				StatusTimestamps: TimestampMap{},
-				Plan: &Plan{
-					StatusTimestamps: TimestampMap{},
-				},
-				Apply: &Apply{
-					StatusTimestamps: TimestampMap{},
-				},
+				Status: tt.fromStatus,
+				Plan:   &Plan{},
+				Apply:  &Apply{},
 			}
 
 			r.UpdateStatus(tt.toStatus)
@@ -65,13 +60,8 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 func TestRun_ForceCancelAvailableAt(t *testing.T) {
 	run := &Run{
-		StatusTimestamps: TimestampMap{},
-		Plan: &Plan{
-			StatusTimestamps: TimestampMap{},
-		},
-		Apply: &Apply{
-			StatusTimestamps: TimestampMap{},
-		},
+		Plan:  &Plan{},
+		Apply: &Apply{},
 	}
 
 	run.UpdateStatus(RunCanceled)
@@ -81,13 +71,8 @@ func TestRun_ForceCancelAvailableAt(t *testing.T) {
 
 func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
 	run := &Run{
-		StatusTimestamps: TimestampMap{},
-		Plan: &Plan{
-			StatusTimestamps: TimestampMap{},
-		},
-		Apply: &Apply{
-			StatusTimestamps: TimestampMap{},
-		},
+		Plan:  &Plan{},
+		Apply: &Apply{},
 	}
 
 	run.UpdateStatus(RunPending)
