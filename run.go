@@ -32,9 +32,6 @@ const (
 	RunPlanned            RunStatus = "planned"
 	RunPlannedAndFinished RunStatus = "planned_and_finished"
 	RunPlanning           RunStatus = "planning"
-
-	PlanBinaryFormat = "binary"
-	PlanJSONFormat   = "json"
 )
 
 var (
@@ -113,8 +110,8 @@ type RunService interface {
 	// apply.
 	GetLogs(ctx context.Context, runID string) (io.Reader, error)
 
-	GetPlanFile(ctx context.Context, spec RunGetOptions, opts PlanFileOptions) ([]byte, error)
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, opts PlanFileOptions) error
+	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
+	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 }
 
 // RunCreateOptions represents the options for creating a new run.
@@ -203,7 +200,8 @@ type RunPermissions struct {
 type RunStore interface {
 	Create(run *Run) (*Run, error)
 	Get(opts RunGetOptions) (*Run, error)
-	GetPlan(spec RunGetOptions, opts PlanFileOptions) ([]byte, error)
+	SetPlanFile(id string, file []byte, format PlanFormat) error
+	GetPlanFile(id string, format PlanFormat) ([]byte, error)
 	List(opts RunListOptions) (*RunList, error)
 	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
 	UpdateStatus(id string, status RunStatus) (time.Time, error)
@@ -227,6 +225,18 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+}
+
+func (o *RunGetOptions) String() string {
+	if o.ID != nil {
+		return *o.ID
+	} else if o.PlanID != nil {
+		return *o.PlanID
+	} else if o.ApplyID != nil {
+		return *o.ApplyID
+	} else {
+		panic("no ID specified")
+	}
 }
 
 // RunListOptions are options for paginating and filtering a list of runs
@@ -500,9 +510,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	opts := PlanFileOptions{Format: PlanBinaryFormat}
-
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, file, opts); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -515,9 +523,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	opts := PlanFileOptions{Format: PlanJSONFormat}
-
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, jsonFile, opts); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
@@ -525,9 +531,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	opts := PlanFileOptions{Format: PlanBinaryFormat}
-
-	plan, err := env.GetRunService().GetPlanFile(ctx, r.ID, opts)
+	plan, err := env.GetRunService().GetPlanFile(ctx, RunGetOptions{ID: &r.ID}, PlanFormatBinary)
 	if err != nil {
 		return err
 	}

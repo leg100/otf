@@ -171,30 +171,68 @@ func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
 }
 
 // GetPlanFile returns the plan file for the run.
-func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, opts otf.PlanFileOptions) ([]byte, error) {
-	switch opts.Format {
-	case otf.PlanJSONFormat:
-		return s.getJSONPlanFile(ctx, spec)
-	case otf.PlanBinaryFormat:
-		return s.getBinaryPlanFile(ctx, spec)
-	default:
-		return nil, fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error) {
+	var id string
+
+	// We need the run ID so if caller has specified plan or apply ID instead
+	// then we need to get run ID first
+	if spec.PlanID != nil || spec.ApplyID != nil {
+		run, err := s.db.Get(spec)
+		if err != nil {
+			s.Error(err, "retrieving run for plan file", "id", spec.String())
+			return nil, err
+		}
+		id = run.ID
+	} else {
+		id = *spec.ID
 	}
+
+	// Now use run ID to look up cache
+	if plan, err := s.cache.Get(format.CacheKey(id)); err == nil {
+		return plan, nil
+	}
+
+	file, err := s.db.GetPlanFile(id, format)
+	if err != nil {
+		s.Error(err, "retrieving plan file", "id", id, "format", format)
+		return nil, err
+	}
+
+	// Cache plan before returning
+	if err := s.cache.Set(format.CacheKey(id), file); err != nil {
+		return nil, fmt.Errorf("caching plan: %w", err)
+	}
+
+	return file, nil
 }
 
 // UploadPlanFile persists a run's plan file. The plan file is expected to have
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then its parsed for a summary of planned changes and the Plan object is
 // updated accordingly.
-func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error {
-	switch opts.Format {
-	case otf.PlanJSONFormat:
-		return s.putJSONPlanFile(ctx, id, plan)
-	case otf.PlanBinaryFormat:
-		return s.putBinaryPlanFile(ctx, id, plan)
-	default:
-		return fmt.Errorf("unknown plan file format specified: %s", opts.Format)
+func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error {
+	if err := s.db.SetPlanFile(id, plan, format); err != nil {
+		s.Error(err, "uploading plan file", "id", id, "format", format)
+		return err
 	}
+
+	if format == otf.PlanFormatJSON {
+		_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+			return run.Plan.CalculateTotals(plan)
+		})
+		if err != nil {
+			s.Error(err, "calculating summary of planned changes", "id", id)
+			return err
+		}
+	}
+
+	if err := s.cache.Set(format.CacheKey(id), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
+	}
+
+	s.V(0).Info("uploaded plan file", "id", id, "format", format)
+
+	return nil
 }
 
 // GetLogs gets the logs for a run, combining the logs of both its plan and
@@ -220,66 +258,6 @@ func (s RunService) Delete(ctx context.Context, id string) error {
 	}
 
 	s.V(0).Info("deleted run", "id", id)
-
-	return nil
-}
-
-// GetPlanFile returns the plan file in json format for the run.
-func (s RunService) getJSONPlanFile(ctx context.Context, spec otf.RunGetOptions) ([]byte, error) {
-	file, err := s.db.GetPlanJSON(runID)
-	if err != nil {
-		s.Error(err, "retrieving json plan file", "id", runID)
-		return nil, err
-	}
-
-	return file, nil
-}
-
-// GetPlanFile returns the plan file in json format for the run.
-func (s RunService) getBinaryPlanFile(ctx context.Context, runID string) ([]byte, error) {
-	file, err := s.db.GetPlanFile(runID)
-	if err != nil {
-		s.Error(err, "retrieving binary plan file", "id", runID)
-		return nil, err
-	}
-
-	return file, nil
-}
-
-func (s RunService) putBinaryPlanFile(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.Plan.PlanFile = plan
-
-		return nil
-	})
-	if err != nil {
-		s.Error(err, "uploading binary plan file", "id", id)
-		return err
-	}
-
-	if err := s.cache.Set(otf.BinaryPlanCacheKey(id), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
-	}
-
-	s.V(0).Info("uploaded binary plan file", "id", id)
-
-	return nil
-}
-
-func (s RunService) putJSONPlanFile(ctx context.Context, id string, plan []byte) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		return run.Plan.CalculateTotals(plan)
-	})
-	if err != nil {
-		s.Error(err, "uploading json plan file", "id", id)
-		return err
-	}
-
-	if err := s.cache.Set(otf.JSONPlanCacheKey(id), plan); err != nil {
-		return fmt.Errorf("caching plan: %w", err)
-	}
-
-	s.V(0).Info("uploaded json plan file", "id", id)
 
 	return nil
 }

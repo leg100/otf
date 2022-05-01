@@ -147,8 +147,9 @@ CREATE TABLE IF NOT EXISTS plans (
     resource_changes      INTEGER     NOT NULL,
     resource_destructions INTEGER     NOT NULL,
     status                TEXT        NOT NULL,
-    plan_file             BYTEA       NOT NULL,
-    plan_json             BYTEA       NOT NULL,
+    status_timestamps     TEXT        NOT NULL,
+    plan_bin              BYTEA,
+    plan_json             BYTEA,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                           PRIMARY KEY (plan_id)
 );

@@ -244,25 +244,36 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	return getRun(db.Conn, opts)
 }
 
-func (db RunDB) GetPlanFile(id string) ([]byte, error) {
+// SetPlanFile writes a plan file to the db
+func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	return q.GetPlanFileByRunID(ctx, &id)
+	switch format {
+	case otf.PlanFormatBinary:
+		_, err := q.PutPlanBinByRunID(ctx, file, &id)
+		return err
+	case otf.PlanFormatJSON:
+		_, err := q.PutPlanJSONByRunID(ctx, file, &id)
+		return err
+	default:
+		return fmt.Errorf("unknown plan format: %s", string(format))
+	}
 }
 
-func (db RunDB) GetPlanFile(id string) ([]byte, error) {
+// GetPlanFile retrieves a plan file for the run
+func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	return q.GetPlanFileByRunID(ctx, &id)
-}
-
-func (db RunDB) GetPlanJSON(id string) ([]byte, error) {
-	q := NewQuerier(db.Conn)
-	ctx := context.Background()
-
-	return q.GetPlanJSONByRunID(ctx, &id)
+	switch format {
+	case otf.PlanFormatBinary:
+		return q.GetPlanBinByRunID(ctx, &id)
+	case otf.PlanFormatJSON:
+		return q.GetPlanJSONByRunID(ctx, &id)
+	default:
+		return nil, fmt.Errorf("unknown plan format: %s", string(format))
+	}
 }
 
 // Delete deletes a run from the DB

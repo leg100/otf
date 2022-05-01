@@ -34,8 +34,8 @@ SET
 WHERE plan_id = pggen.arg('id')
 RETURNING *;
 
--- name: GetPlanFileByRunID :one
-SELECT plan_file
+-- name: GetPlanBinByRunID :one
+SELECT plan_bin
 FROM plans
 WHERE run_id = pggen.arg('run_id')
 ;
@@ -46,9 +46,9 @@ FROM plans
 WHERE run_id = pggen.arg('run_id')
 ;
 
--- name: PutPlanFileByRunID :exec
+-- name: PutPlanBinByRunID :exec
 UPDATE plans
-SET plan_file = pggen.arg('plan_file')
+SET plan_bin = pggen.arg('plan_bin')
 WHERE run_id = pggen.arg('run_id')
 ;
 

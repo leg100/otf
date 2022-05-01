@@ -181,26 +181,26 @@ type Querier interface {
 	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
 	UpdatePlanStatusScan(results pgx.BatchResults) (UpdatePlanStatusRow, error)
 
-	GetPlanFileByRunID(ctx context.Context, runID *string) ([]byte, error)
-	// GetPlanFileByRunIDBatch enqueues a GetPlanFileByRunID query into batch to be executed
+	GetPlanBinByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error)
+	// GetPlanBinByRunIDBatch enqueues a GetPlanBinByRunID query into batch to be executed
 	// later by the batch.
-	GetPlanFileByRunIDBatch(batch genericBatch, runID *string)
-	// GetPlanFileByRunIDScan scans the result of an executed GetPlanFileByRunIDBatch query.
-	GetPlanFileByRunIDScan(results pgx.BatchResults) ([]byte, error)
+	GetPlanBinByRunIDBatch(batch genericBatch, runID *string)
+	// GetPlanBinByRunIDScan scans the result of an executed GetPlanBinByRunIDBatch query.
+	GetPlanBinByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
 
-	GetPlanJSONByRunID(ctx context.Context, runID *string) ([]byte, error)
+	GetPlanJSONByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error)
 	// GetPlanJSONByRunIDBatch enqueues a GetPlanJSONByRunID query into batch to be executed
 	// later by the batch.
 	GetPlanJSONByRunIDBatch(batch genericBatch, runID *string)
 	// GetPlanJSONByRunIDScan scans the result of an executed GetPlanJSONByRunIDBatch query.
-	GetPlanJSONByRunIDScan(results pgx.BatchResults) ([]byte, error)
+	GetPlanJSONByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error)
 
-	PutPlanFileByRunID(ctx context.Context, planFile []byte, runID *string) (pgconn.CommandTag, error)
-	// PutPlanFileByRunIDBatch enqueues a PutPlanFileByRunID query into batch to be executed
+	PutPlanBinByRunID(ctx context.Context, planBin []byte, runID *string) (pgconn.CommandTag, error)
+	// PutPlanBinByRunIDBatch enqueues a PutPlanBinByRunID query into batch to be executed
 	// later by the batch.
-	PutPlanFileByRunIDBatch(batch genericBatch, planFile []byte, runID *string)
-	// PutPlanFileByRunIDScan scans the result of an executed PutPlanFileByRunIDBatch query.
-	PutPlanFileByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	PutPlanBinByRunIDBatch(batch genericBatch, planBin []byte, runID *string)
+	// PutPlanBinByRunIDScan scans the result of an executed PutPlanBinByRunIDBatch query.
+	PutPlanBinByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	PutPlanJSONByRunID(ctx context.Context, planJson []byte, runID *string) (pgconn.CommandTag, error)
 	// PutPlanJSONByRunIDBatch enqueues a PutPlanJSONByRunID query into batch to be executed
@@ -677,14 +677,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updatePlanStatusSQL, updatePlanStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, getPlanFileByRunIDSQL, getPlanFileByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'GetPlanFileByRunID': %w", err)
+	if _, err := p.Prepare(ctx, getPlanBinByRunIDSQL, getPlanBinByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'GetPlanBinByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, getPlanJSONByRunIDSQL, getPlanJSONByRunIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'GetPlanJSONByRunID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, putPlanFileByRunIDSQL, putPlanFileByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'PutPlanFileByRunID': %w", err)
+	if _, err := p.Prepare(ctx, putPlanBinByRunIDSQL, putPlanBinByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'PutPlanBinByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, putPlanJSONByRunIDSQL, putPlanJSONByRunIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'PutPlanJSONByRunID': %w", err)
@@ -897,7 +897,8 @@ type Plans struct {
 	ResourceChanges      *int32       `json:"resource_changes"`
 	ResourceDestructions *int32       `json:"resource_destructions"`
 	Status               *string      `json:"status"`
-	PlanFile             pgtype.Bytea `json:"plan_file"`
+	StatusTimestamps     *string      `json:"status_timestamps"`
+	PlanBin              pgtype.Bytea `json:"plan_bin"`
 	PlanJson             pgtype.Bytea `json:"plan_json"`
 	RunID                *string      `json:"run_id"`
 }
@@ -909,7 +910,8 @@ func (s Plans) GetResourceAdditions() *int32 { return s.ResourceAdditions }
 func (s Plans) GetResourceChanges() *int32 { return s.ResourceChanges }
 func (s Plans) GetResourceDestructions() *int32 { return s.ResourceDestructions }
 func (s Plans) GetStatus() *string { return s.Status }
-func (s Plans) GetPlanFile() pgtype.Bytea { return s.PlanFile }
+func (s Plans) GetStatusTimestamps() *string { return s.StatusTimestamps }
+func (s Plans) GetPlanBin() pgtype.Bytea { return s.PlanBin }
 func (s Plans) GetPlanJson() pgtype.Bytea { return s.PlanJson }
 func (s Plans) GetRunID() *string { return s.RunID }
 
@@ -1183,7 +1185,8 @@ func (tr *typeResolver) newPlans() pgtype.ValueTranscoder {
 		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
 		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
 		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"plan_file", "bytea", &pgtype.Bytea{}},
+		compositeField{"status_timestamps", "text", &pgtype.Text{}},
+		compositeField{"plan_bin", "bytea", &pgtype.Bytea{}},
 		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
 		compositeField{"run_id", "text", &pgtype.Text{}},
 	)

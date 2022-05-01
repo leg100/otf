@@ -58,7 +58,6 @@ func (p *Plan) String() string    { return p.ID }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
-	GetPlanJSON(id string) ([]byte, error)
 
 	JobService
 }
@@ -110,9 +109,9 @@ func (p *Plan) Do(run *Run, env Environment) error {
 
 // CalculateTotals produces a summary of planned changes from the JSON plan file
 // and updates the object with the summary.
-func (p *Plan) CalculateTotals(jsonFile []byte) error {
+func (p *Plan) CalculateTotals(planJSON []byte) error {
 	planFile := PlanFile{}
-	if err := json.Unmarshal(jsonFile, &planFile); err != nil {
+	if err := json.Unmarshal(planJSON, &planFile); err != nil {
 		return err
 	}
 

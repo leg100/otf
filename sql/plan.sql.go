@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"time"
 )
@@ -32,16 +33,17 @@ type InsertPlanParams struct {
 }
 
 type InsertPlanRow struct {
-	PlanID               *string   `json:"plan_id"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
-	ResourceAdditions    int32     `json:"resource_additions"`
-	ResourceChanges      int32     `json:"resource_changes"`
-	ResourceDestructions int32     `json:"resource_destructions"`
-	Status               *string   `json:"status"`
-	PlanFile             []byte    `json:"plan_file"`
-	PlanJson             []byte    `json:"plan_json"`
-	RunID                *string   `json:"run_id"`
+	PlanID               *string      `json:"plan_id"`
+	CreatedAt            time.Time    `json:"created_at"`
+	UpdatedAt            time.Time    `json:"updated_at"`
+	ResourceAdditions    int32        `json:"resource_additions"`
+	ResourceChanges      int32        `json:"resource_changes"`
+	ResourceDestructions int32        `json:"resource_destructions"`
+	Status               *string      `json:"status"`
+	StatusTimestamps     *string      `json:"status_timestamps"`
+	PlanBin              pgtype.Bytea `json:"plan_bin"`
+	PlanJson             pgtype.Bytea `json:"plan_json"`
+	RunID                *string      `json:"run_id"`
 }
 
 func (s InsertPlanRow) GetPlanID() *string { return s.PlanID }
@@ -51,8 +53,9 @@ func (s InsertPlanRow) GetResourceAdditions() int32 { return s.ResourceAdditions
 func (s InsertPlanRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s InsertPlanRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s InsertPlanRow) GetStatus() *string { return s.Status }
-func (s InsertPlanRow) GetPlanFile() []byte { return s.PlanFile }
-func (s InsertPlanRow) GetPlanJson() []byte { return s.PlanJson }
+func (s InsertPlanRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
+func (s InsertPlanRow) GetPlanBin() pgtype.Bytea { return s.PlanBin }
+func (s InsertPlanRow) GetPlanJson() pgtype.Bytea { return s.PlanJson }
 func (s InsertPlanRow) GetRunID() *string { return s.RunID }
 
 
@@ -61,7 +64,7 @@ func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (In
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlan")
 	row := q.conn.QueryRow(ctx, insertPlanSQL, params.ID, params.Status, params.RunID)
 	var item InsertPlanRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanFile, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("query InsertPlan: %w", err)
 	}
 	return item, nil
@@ -76,7 +79,7 @@ func (q *DBQuerier) InsertPlanBatch(batch genericBatch, params InsertPlanParams)
 func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (InsertPlanRow, error) {
 	row := results.QueryRow()
 	var item InsertPlanRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanFile, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("scan InsertPlanBatch row: %w", err)
 	}
 	return item, nil
@@ -138,16 +141,17 @@ WHERE plan_id = $2
 RETURNING *;`
 
 type UpdatePlanStatusRow struct {
-	PlanID               *string   `json:"plan_id"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
-	ResourceAdditions    int32     `json:"resource_additions"`
-	ResourceChanges      int32     `json:"resource_changes"`
-	ResourceDestructions int32     `json:"resource_destructions"`
-	Status               *string   `json:"status"`
-	PlanFile             []byte    `json:"plan_file"`
-	PlanJson             []byte    `json:"plan_json"`
-	RunID                *string   `json:"run_id"`
+	PlanID               *string      `json:"plan_id"`
+	CreatedAt            time.Time    `json:"created_at"`
+	UpdatedAt            time.Time    `json:"updated_at"`
+	ResourceAdditions    int32        `json:"resource_additions"`
+	ResourceChanges      int32        `json:"resource_changes"`
+	ResourceDestructions int32        `json:"resource_destructions"`
+	Status               *string      `json:"status"`
+	StatusTimestamps     *string      `json:"status_timestamps"`
+	PlanBin              pgtype.Bytea `json:"plan_bin"`
+	PlanJson             pgtype.Bytea `json:"plan_json"`
+	RunID                *string      `json:"run_id"`
 }
 
 func (s UpdatePlanStatusRow) GetPlanID() *string { return s.PlanID }
@@ -157,8 +161,9 @@ func (s UpdatePlanStatusRow) GetResourceAdditions() int32 { return s.ResourceAdd
 func (s UpdatePlanStatusRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s UpdatePlanStatusRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s UpdatePlanStatusRow) GetStatus() *string { return s.Status }
-func (s UpdatePlanStatusRow) GetPlanFile() []byte { return s.PlanFile }
-func (s UpdatePlanStatusRow) GetPlanJson() []byte { return s.PlanJson }
+func (s UpdatePlanStatusRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
+func (s UpdatePlanStatusRow) GetPlanBin() pgtype.Bytea { return s.PlanBin }
+func (s UpdatePlanStatusRow) GetPlanJson() pgtype.Bytea { return s.PlanJson }
 func (s UpdatePlanStatusRow) GetRunID() *string { return s.RunID }
 
 
@@ -167,7 +172,7 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status *string, id *st
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
 	var item UpdatePlanStatusRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanFile, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("query UpdatePlanStatus: %w", err)
 	}
 	return item, nil
@@ -182,39 +187,39 @@ func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status *string, id
 func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (UpdatePlanStatusRow, error) {
 	row := results.QueryRow()
 	var item UpdatePlanStatusRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanFile, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("scan UpdatePlanStatusBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const getPlanFileByRunIDSQL = `SELECT plan_file
+const getPlanBinByRunIDSQL = `SELECT plan_bin
 FROM plans
 WHERE run_id = $1
 ;`
 
-// GetPlanFileByRunID implements Querier.GetPlanFileByRunID.
-func (q *DBQuerier) GetPlanFileByRunID(ctx context.Context, runID *string) ([]byte, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanFileByRunID")
-	row := q.conn.QueryRow(ctx, getPlanFileByRunIDSQL, runID)
-	item := []byte{}
+// GetPlanBinByRunID implements Querier.GetPlanBinByRunID.
+func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanBinByRunID")
+	row := q.conn.QueryRow(ctx, getPlanBinByRunIDSQL, runID)
+	var item pgtype.Bytea
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query GetPlanFileByRunID: %w", err)
+		return item, fmt.Errorf("query GetPlanBinByRunID: %w", err)
 	}
 	return item, nil
 }
 
-// GetPlanFileByRunIDBatch implements Querier.GetPlanFileByRunIDBatch.
-func (q *DBQuerier) GetPlanFileByRunIDBatch(batch genericBatch, runID *string) {
-	batch.Queue(getPlanFileByRunIDSQL, runID)
+// GetPlanBinByRunIDBatch implements Querier.GetPlanBinByRunIDBatch.
+func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID *string) {
+	batch.Queue(getPlanBinByRunIDSQL, runID)
 }
 
-// GetPlanFileByRunIDScan implements Querier.GetPlanFileByRunIDScan.
-func (q *DBQuerier) GetPlanFileByRunIDScan(results pgx.BatchResults) ([]byte, error) {
+// GetPlanBinByRunIDScan implements Querier.GetPlanBinByRunIDScan.
+func (q *DBQuerier) GetPlanBinByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error) {
 	row := results.QueryRow()
-	item := []byte{}
+	var item pgtype.Bytea
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan GetPlanFileByRunIDBatch row: %w", err)
+		return item, fmt.Errorf("scan GetPlanBinByRunIDBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -225,10 +230,10 @@ WHERE run_id = $1
 ;`
 
 // GetPlanJSONByRunID implements Querier.GetPlanJSONByRunID.
-func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) ([]byte, error) {
+func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanJSONByRunID")
 	row := q.conn.QueryRow(ctx, getPlanJSONByRunIDSQL, runID)
-	item := []byte{}
+	var item pgtype.Bytea
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query GetPlanJSONByRunID: %w", err)
 	}
@@ -241,40 +246,40 @@ func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID *string) {
 }
 
 // GetPlanJSONByRunIDScan implements Querier.GetPlanJSONByRunIDScan.
-func (q *DBQuerier) GetPlanJSONByRunIDScan(results pgx.BatchResults) ([]byte, error) {
+func (q *DBQuerier) GetPlanJSONByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error) {
 	row := results.QueryRow()
-	item := []byte{}
+	var item pgtype.Bytea
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan GetPlanJSONByRunIDBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const putPlanFileByRunIDSQL = `UPDATE plans
-SET plan_file = $1
+const putPlanBinByRunIDSQL = `UPDATE plans
+SET plan_bin = $1
 WHERE run_id = $2
 ;`
 
-// PutPlanFileByRunID implements Querier.PutPlanFileByRunID.
-func (q *DBQuerier) PutPlanFileByRunID(ctx context.Context, planFile []byte, runID *string) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "PutPlanFileByRunID")
-	cmdTag, err := q.conn.Exec(ctx, putPlanFileByRunIDSQL, planFile, runID)
+// PutPlanBinByRunID implements Querier.PutPlanBinByRunID.
+func (q *DBQuerier) PutPlanBinByRunID(ctx context.Context, planBin []byte, runID *string) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "PutPlanBinByRunID")
+	cmdTag, err := q.conn.Exec(ctx, putPlanBinByRunIDSQL, planBin, runID)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query PutPlanFileByRunID: %w", err)
+		return cmdTag, fmt.Errorf("exec query PutPlanBinByRunID: %w", err)
 	}
 	return cmdTag, err
 }
 
-// PutPlanFileByRunIDBatch implements Querier.PutPlanFileByRunIDBatch.
-func (q *DBQuerier) PutPlanFileByRunIDBatch(batch genericBatch, planFile []byte, runID *string) {
-	batch.Queue(putPlanFileByRunIDSQL, planFile, runID)
+// PutPlanBinByRunIDBatch implements Querier.PutPlanBinByRunIDBatch.
+func (q *DBQuerier) PutPlanBinByRunIDBatch(batch genericBatch, planBin []byte, runID *string) {
+	batch.Queue(putPlanBinByRunIDSQL, planBin, runID)
 }
 
-// PutPlanFileByRunIDScan implements Querier.PutPlanFileByRunIDScan.
-func (q *DBQuerier) PutPlanFileByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// PutPlanBinByRunIDScan implements Querier.PutPlanBinByRunIDScan.
+func (q *DBQuerier) PutPlanBinByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec PutPlanFileByRunIDBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec PutPlanBinByRunIDBatch: %w", err)
 	}
 	return cmdTag, err
 }
