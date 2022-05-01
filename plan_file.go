@@ -1,21 +1,32 @@
 package otf
 
+import "fmt"
+
 const (
 	CreateAction ChangeAction = "create"
 	UpdateAction ChangeAction = "update"
 	DeleteAction ChangeAction = "delete"
-)
 
-// PlanFileOptions represents the options for retrieving the plan file for a
-// run.
-type PlanFileOptions struct {
-	// Format of plan file. Valid values are json and binary.
-	Format string `schema:"format"`
-}
+	// PlanFormatBinary is the binary representation of the plan file
+	PlanFormatBinary = "bin"
+	// PlanFormatJSON is the JSON representation of the plan file
+	PlanFormatJSON = "json"
+)
 
 // PlanFile represents the schema of a plan file
 type PlanFile struct {
 	ResourcesChanges []ResourceChange `json:"resource_changes"`
+}
+
+// PlanFormat is the format of the plan file
+type PlanFormat string
+
+func (f PlanFormat) CacheKey(id string) string {
+	return fmt.Sprintf("%s.%s", id, f)
+}
+
+func (f PlanFormat) SQLColumn() string {
+	return fmt.Sprintf("plan_%s", f)
 }
 
 // ResourceChange represents a proposed change to a resource in a plan file

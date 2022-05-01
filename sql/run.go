@@ -219,17 +219,10 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db RunDB) SetPlanFile(id string, file []byte, opts otf.PlanFileOptions) error {
-	updateBuilder := psql.Update("plans").Where("run_id = ?", id)
-
-	switch opts.Format {
-	case otf.PlanBinaryFormat:
-		updateBuilder = updateBuilder.Set("plan_file", file)
-	case otf.PlanJSONFormat:
-		updateBuilder = updateBuilder.Set("plan_json", file)
-	default:
-		return fmt.Errorf("no plan format specified")
-	}
+func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error {
+	updateBuilder := psql.Update("plans").
+		Where("run_id = ?", id).
+		Set(format.SQLColumn(), file)
 
 	sql, args, err := updateBuilder.ToSql()
 	if err != nil {
@@ -244,19 +237,9 @@ func (db RunDB) SetPlanFile(id string, file []byte, opts otf.PlanFileOptions) er
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db RunDB) GetPlanFile(id string, opts otf.PlanFileOptions) ([]byte, error) {
-	var selectBuilder sq.SelectBuilder
-
-	switch opts.Format {
-	case otf.PlanBinaryFormat:
-		selectBuilder = selectBuilder.Columns("plan_file")
-	case otf.PlanJSONFormat:
-		selectBuilder = selectBuilder.Columns("plan_json")
-	default:
-		return nil, fmt.Errorf("no plan format specified")
-	}
-
-	selectBuilder = selectBuilder.From("plans").Where("run_id = ?", id)
+func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
+	selectBuilder := psql.Select(format.SQLColumn()).
+		From("plans").Where("run_id = ?", id)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {

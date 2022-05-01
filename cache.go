@@ -16,19 +16,6 @@ type Cache interface {
 
 // Funcs for generating unique keys for cache entries.
 
-func JSONPlanCacheKey(id string) string      { return fmt.Sprintf("%s.json", id) }
-func BinaryPlanCacheKey(id string) string    { return fmt.Sprintf("%s.bin", id) }
 func ConfigVersionCacheKey(id string) string { return fmt.Sprintf("%s.tar.gz", id) }
 func StateVersionCacheKey(id string) string  { return fmt.Sprintf("%s.json", id) }
 func LogCacheKey(id string) string           { return fmt.Sprintf("%s.log", id) }
-
-func PlanCacheKey(id string, opts PlanFileOptions) string {
-	switch opts.Format {
-	case PlanBinaryFormat:
-		return fmt.Sprintf("%s.bin", id)
-	case PlanJSONFormat:
-		return fmt.Sprintf("%s.json", id)
-	default:
-		panic("invalid plan format specified: " + opts.Format)
-	}
-}

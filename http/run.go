@@ -165,14 +165,14 @@ func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts otf.PlanFileOptions
+	var opts PlanFileOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if err := s.RunService().UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+	if err := s.RunService().UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts.Format); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
@@ -262,7 +262,7 @@ func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	var opts otf.PlanFileOptions
+	var opts PlanFileOptions
 
 	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
@@ -276,7 +276,7 @@ func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	opts := otf.PlanFileOptions{Format: otf.PlanJSONFormat}
+	opts := PlanFileOptions{Format: otf.PlanFormatJSON}
 
 	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
 }
@@ -302,8 +302,8 @@ func (s *Server) GetRunLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.RunGetOptions, opts otf.PlanFileOptions) {
-	json, err := s.RunService().GetPlanFile(r.Context(), spec, opts)
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.RunGetOptions, opts PlanFileOptions) {
+	json, err := s.RunService().GetPlanFile(r.Context(), spec, opts.Format)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return

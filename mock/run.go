@@ -20,8 +20,8 @@ type RunService struct {
 	ForceCancelFn    func(id string, opts otf.RunForceCancelOptions) error
 	EnqueuePlanFn    func(id string) error
 	GetLogsFn        func(ctx context.Context, runID string) (io.Reader, error)
-	GetPlanFileFn    func(ctx context.Context, spec otf.RunGetOptions, opts otf.PlanFileOptions) ([]byte, error)
-	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error
+	GetPlanFileFn    func(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error)
+	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error
 }
 
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
@@ -64,10 +64,10 @@ func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
 	return s.EnqueuePlanFn(id)
 }
 
-func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, opts otf.PlanFileOptions) ([]byte, error) {
-	return s.GetPlanFileFn(ctx, spec, opts)
+func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error) {
+	return s.GetPlanFileFn(ctx, spec, format)
 }
 
-func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, opts otf.PlanFileOptions) error {
-	return s.UploadPlanFileFn(ctx, id, plan, opts)
+func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error {
+	return s.UploadPlanFileFn(ctx, id, plan, format)
 }
