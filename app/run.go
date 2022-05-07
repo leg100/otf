@@ -95,10 +95,8 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.UpdateStatus(otf.RunApplyQueued)
-
-		return nil
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
+		return run.ApplyRun(updater)
 	})
 	if err != nil {
 		s.Error(err, "applying run", "id", id)
@@ -113,8 +111,8 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 }
 
 func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		return run.Discard()
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
+		return run.Discard(updater)
 	})
 	if err != nil {
 		s.Error(err, "discarding run", "id", id)
@@ -131,32 +129,28 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		return run.Cancel()
+	_, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
+		return run.Cancel(updater)
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		if err := run.ForceCancel(); err != nil {
-			return err
-		}
+	_, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
+		return run.ForceCancel(updater)
 
 		// TODO: send KILL signal to running terraform process
 
-		// TODO: unlock workspace
-
-		return nil
+		// TODO: unlock workspace - could do this by publishing event and having
+		// workspace scheduler subscribe to event
 	})
 
 	return err
 }
 
 func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.UpdateStatus(otf.RunPlanQueued)
-		return nil
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
+		return run.EnqueuePlan(updater)
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", id)
@@ -217,11 +211,13 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 	}
 
 	if format == otf.PlanFormatJSON {
-		_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-			return run.Plan.CalculateTotals(plan)
-		})
+		summary, err := otf.CalculatePlanSummary(plan)
 		if err != nil {
 			s.Error(err, "calculating summary of planned changes", "id", id)
+			return err
+		}
+		if err := s.db.UpdatePlanResources(id, summary); err != nil {
+			s.Error(err, "persisting summary of planned changes", "id", id)
 			return err
 		}
 	}

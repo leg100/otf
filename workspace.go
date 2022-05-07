@@ -267,8 +267,14 @@ type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, fn func(*Workspace) error) (*Workspace, error)
+	Update(spec WorkspaceSpec, fn func(ws *Workspace, updater WorkspaceUpdater) error) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
+}
+
+type WorkspaceUpdater interface {
+	ToggleLock(ctx context.Context, lock bool) error
+	UpdateName(ctx context.Context, name string) error
+	UpdateAllowDestroyPlan(ctx context.Context, allow bool) error
 }
 
 // WorkspaceSpec is used for identifying an individual workspace. Either ID
@@ -439,14 +445,32 @@ func (o WorkspaceUpdateOptions) Valid() error {
 	return nil
 }
 
-func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, error) {
-	if opts.Name != nil {
-		ws.Name = *opts.Name
+// ToggleLock toggles the workspace lock.
+func (ws *Workspace) ToggleLock(lock bool, updater WorkspaceUpdater) error {
+	if lock && ws.Locked {
+		return ErrWorkspaceAlreadyLocked
+	}
+	if !lock && !ws.Locked {
+		return ErrWorkspaceAlreadyUnlocked
 	}
 
-	if opts.AllowDestroyPlan != nil {
-		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+	ws.Locked = lock
+
+	return updater.ToggleLock(context.Background(), lock)
+}
+
+func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions, updater WorkspaceUpdater) error {
+	if opts.Name != nil {
+		if err := updater.UpdateName(ctx, *opts.Name); err != nil {
+			return err
+		}
 	}
+	if opts.AllowDestroyPlan != nil {
+		if err := updater.UpdateAllowDestroyPlan(ctx, *opts.AllowDestroyPlan); err != nil {
+			return err
+		}
+	}
+
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
 	}
@@ -484,20 +508,6 @@ func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, er
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
 	}
-
-	return ws, nil
-}
-
-// ToggleLock toggles the workspace lock.
-func (ws *Workspace) ToggleLock(lock bool) error {
-	if lock && ws.Locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !ws.Locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-
-	ws.Locked = lock
 
 	return nil
 }

@@ -33,7 +33,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	// Setup services
 	orgService := NewOrganizationService(db.OrganizationStore(), logger, eventService)
 	workspaceService := NewWorkspaceService(db.WorkspaceStore(), logger, orgService, eventService)
-	stateVersionService := NewStateVersionService(db.StateVersionStore(), logger, workspaceService, cache)
+	stateVersionService := NewStateVersionService(db.StateVersionStore(), logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db.ConfigurationVersionStore(), logger, workspaceService, cache)
 	runService := NewRunService(db.RunStore(), logger, workspaceService, configurationVersionService, eventService, db.PlanLogStore(), db.ApplyLogStore(), cache)
 	planService := NewPlanService(db.RunStore(), db.PlanLogStore(), logger, eventService, cache)

@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"time"
 )
@@ -33,17 +32,17 @@ type InsertPlanParams struct {
 }
 
 type InsertPlanRow struct {
-	PlanID               *string      `json:"plan_id"`
-	CreatedAt            time.Time    `json:"created_at"`
-	UpdatedAt            time.Time    `json:"updated_at"`
-	ResourceAdditions    int32        `json:"resource_additions"`
-	ResourceChanges      int32        `json:"resource_changes"`
-	ResourceDestructions int32        `json:"resource_destructions"`
-	Status               *string      `json:"status"`
-	StatusTimestamps     *string      `json:"status_timestamps"`
-	PlanBin              pgtype.Bytea `json:"plan_bin"`
-	PlanJson             pgtype.Bytea `json:"plan_json"`
-	RunID                *string      `json:"run_id"`
+	PlanID               *string   `json:"plan_id"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	ResourceAdditions    int32     `json:"resource_additions"`
+	ResourceChanges      int32     `json:"resource_changes"`
+	ResourceDestructions int32     `json:"resource_destructions"`
+	Status               *string   `json:"status"`
+	StatusTimestamps     *string   `json:"status_timestamps"`
+	PlanBin              []byte    `json:"plan_bin"`
+	PlanJson             []byte    `json:"plan_json"`
+	RunID                *string   `json:"run_id"`
 }
 
 func (s InsertPlanRow) GetPlanID() *string { return s.PlanID }
@@ -54,8 +53,8 @@ func (s InsertPlanRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s InsertPlanRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s InsertPlanRow) GetStatus() *string { return s.Status }
 func (s InsertPlanRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
-func (s InsertPlanRow) GetPlanBin() pgtype.Bytea { return s.PlanBin }
-func (s InsertPlanRow) GetPlanJson() pgtype.Bytea { return s.PlanJson }
+func (s InsertPlanRow) GetPlanBin() []byte { return s.PlanBin }
+func (s InsertPlanRow) GetPlanJson() []byte { return s.PlanJson }
 func (s InsertPlanRow) GetRunID() *string { return s.RunID }
 
 
@@ -141,17 +140,17 @@ WHERE plan_id = $2
 RETURNING *;`
 
 type UpdatePlanStatusRow struct {
-	PlanID               *string      `json:"plan_id"`
-	CreatedAt            time.Time    `json:"created_at"`
-	UpdatedAt            time.Time    `json:"updated_at"`
-	ResourceAdditions    int32        `json:"resource_additions"`
-	ResourceChanges      int32        `json:"resource_changes"`
-	ResourceDestructions int32        `json:"resource_destructions"`
-	Status               *string      `json:"status"`
-	StatusTimestamps     *string      `json:"status_timestamps"`
-	PlanBin              pgtype.Bytea `json:"plan_bin"`
-	PlanJson             pgtype.Bytea `json:"plan_json"`
-	RunID                *string      `json:"run_id"`
+	PlanID               *string   `json:"plan_id"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	ResourceAdditions    int32     `json:"resource_additions"`
+	ResourceChanges      int32     `json:"resource_changes"`
+	ResourceDestructions int32     `json:"resource_destructions"`
+	Status               *string   `json:"status"`
+	StatusTimestamps     *string   `json:"status_timestamps"`
+	PlanBin              []byte    `json:"plan_bin"`
+	PlanJson             []byte    `json:"plan_json"`
+	RunID                *string   `json:"run_id"`
 }
 
 func (s UpdatePlanStatusRow) GetPlanID() *string { return s.PlanID }
@@ -162,8 +161,8 @@ func (s UpdatePlanStatusRow) GetResourceChanges() int32 { return s.ResourceChang
 func (s UpdatePlanStatusRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s UpdatePlanStatusRow) GetStatus() *string { return s.Status }
 func (s UpdatePlanStatusRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
-func (s UpdatePlanStatusRow) GetPlanBin() pgtype.Bytea { return s.PlanBin }
-func (s UpdatePlanStatusRow) GetPlanJson() pgtype.Bytea { return s.PlanJson }
+func (s UpdatePlanStatusRow) GetPlanBin() []byte { return s.PlanBin }
+func (s UpdatePlanStatusRow) GetPlanJson() []byte { return s.PlanJson }
 func (s UpdatePlanStatusRow) GetRunID() *string { return s.RunID }
 
 
@@ -199,10 +198,10 @@ WHERE run_id = $1
 ;`
 
 // GetPlanBinByRunID implements Querier.GetPlanBinByRunID.
-func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error) {
+func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID *string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanBinByRunID")
 	row := q.conn.QueryRow(ctx, getPlanBinByRunIDSQL, runID)
-	var item pgtype.Bytea
+	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query GetPlanBinByRunID: %w", err)
 	}
@@ -215,9 +214,9 @@ func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID *string) {
 }
 
 // GetPlanBinByRunIDScan implements Querier.GetPlanBinByRunIDScan.
-func (q *DBQuerier) GetPlanBinByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error) {
+func (q *DBQuerier) GetPlanBinByRunIDScan(results pgx.BatchResults) ([]byte, error) {
 	row := results.QueryRow()
-	var item pgtype.Bytea
+	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan GetPlanBinByRunIDBatch row: %w", err)
 	}
@@ -230,10 +229,10 @@ WHERE run_id = $1
 ;`
 
 // GetPlanJSONByRunID implements Querier.GetPlanJSONByRunID.
-func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) (pgtype.Bytea, error) {
+func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanJSONByRunID")
 	row := q.conn.QueryRow(ctx, getPlanJSONByRunIDSQL, runID)
-	var item pgtype.Bytea
+	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query GetPlanJSONByRunID: %w", err)
 	}
@@ -246,9 +245,9 @@ func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID *string) {
 }
 
 // GetPlanJSONByRunIDScan implements Querier.GetPlanJSONByRunIDScan.
-func (q *DBQuerier) GetPlanJSONByRunIDScan(results pgx.BatchResults) (pgtype.Bytea, error) {
+func (q *DBQuerier) GetPlanJSONByRunIDScan(results pgx.BatchResults) ([]byte, error) {
 	row := results.QueryRow()
-	var item pgtype.Bytea
+	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan GetPlanJSONByRunIDBatch row: %w", err)
 	}

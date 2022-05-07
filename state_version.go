@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -21,14 +20,11 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	// State is state file itself. Note: not always populated.
+	// State is the state file itself.
 	State []byte
 
-	// State version belongs to a workspace
-	Workspace *Workspace `db:"workspaces"`
-
-	// Run that created this state version. Optional.
-	// Run     *Run
+	// Run that created this state version.
+	Run *Run
 
 	// State version has many outputs
 	Outputs []*StateVersionOutput `db:"state_version_outputs"`
@@ -107,23 +103,17 @@ type StateVersionCreateOptions struct {
 	Run *Run `jsonapi:"relation,run,omitempty"`
 }
 
-type StateVersionFactory struct {
-	WorkspaceService WorkspaceService
-}
+type StateVersionFactory struct{}
 
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
 	sv := StateVersion{
 		ID:         NewID("sv"),
 		Timestamps: NewTimestamps(),
 		Serial:     *opts.Serial,
+		Run:        opts.Run,
 	}
 
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
-	if err != nil {
-		return nil, err
-	}
-	sv.Workspace = ws
-
+	var err error
 	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err

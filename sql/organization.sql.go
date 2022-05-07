@@ -55,6 +55,55 @@ func (q *DBQuerier) FindOrganizationByNameScan(results pgx.BatchResults) (FindOr
 	return item, nil
 }
 
+const findOrganizationsSQL = `SELECT
+    array_agg(organizations) AS organizations,
+    count(*) OVER()          AS full_count
+FROM organizations
+LIMIT $1 OFFSET $2;`
+
+type FindOrganizationsRow struct {
+	Organizations []Organizations `json:"organizations"`
+	FullCount     *int            `json:"full_count"`
+}
+
+func (s FindOrganizationsRow) GetOrganizations() []Organizations { return s.Organizations }
+func (s FindOrganizationsRow) GetFullCount() *int { return s.FullCount }
+
+
+// FindOrganizations implements Querier.FindOrganizations.
+func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) (FindOrganizationsRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizations")
+	row := q.conn.QueryRow(ctx, findOrganizationsSQL, limit, offset)
+	var item FindOrganizationsRow
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(organizationsArray, &item.FullCount); err != nil {
+		return item, fmt.Errorf("query FindOrganizations: %w", err)
+	}
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+		return item, fmt.Errorf("assign FindOrganizations row: %w", err)
+	}
+	return item, nil
+}
+
+// FindOrganizationsBatch implements Querier.FindOrganizationsBatch.
+func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, limit int, offset int) {
+	batch.Queue(findOrganizationsSQL, limit, offset)
+}
+
+// FindOrganizationsScan implements Querier.FindOrganizationsScan.
+func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) (FindOrganizationsRow, error) {
+	row := results.QueryRow()
+	var item FindOrganizationsRow
+	organizationsArray := q.types.newOrganizationsArray()
+	if err := row.Scan(organizationsArray, &item.FullCount); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationsBatch row: %w", err)
+	}
+	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+		return item, fmt.Errorf("assign FindOrganizations row: %w", err)
+	}
+	return item, nil
+}
+
 const insertOrganizationSQL = `INSERT INTO organizations (
     organization_id,
     created_at,
@@ -168,6 +217,106 @@ func (q *DBQuerier) UpdateOrganizationNameByNameScan(results pgx.BatchResults) (
 	var item UpdateOrganizationNameByNameRow
 	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
 		return item, fmt.Errorf("scan UpdateOrganizationNameByNameBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateOrganizationSessionRememberByNameSQL = `UPDATE organizations
+SET
+    session_remember = $1,
+    updated_at = NOW()
+WHERE name = $2
+RETURNING *;`
+
+type UpdateOrganizationSessionRememberByNameRow struct {
+	OrganizationID  *string   `json:"organization_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	Name            *string   `json:"name"`
+	SessionRemember *int32    `json:"session_remember"`
+	SessionTimeout  *int32    `json:"session_timeout"`
+}
+
+func (s UpdateOrganizationSessionRememberByNameRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateOrganizationSessionRememberByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s UpdateOrganizationSessionRememberByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s UpdateOrganizationSessionRememberByNameRow) GetName() *string { return s.Name }
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+
+
+// UpdateOrganizationSessionRememberByName implements Querier.UpdateOrganizationSessionRememberByName.
+func (q *DBQuerier) UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int32, name *string) (UpdateOrganizationSessionRememberByNameRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateOrganizationSessionRememberByName")
+	row := q.conn.QueryRow(ctx, updateOrganizationSessionRememberByNameSQL, sessionRemember, name)
+	var item UpdateOrganizationSessionRememberByNameRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("query UpdateOrganizationSessionRememberByName: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateOrganizationSessionRememberByNameBatch implements Querier.UpdateOrganizationSessionRememberByNameBatch.
+func (q *DBQuerier) UpdateOrganizationSessionRememberByNameBatch(batch genericBatch, sessionRemember int32, name *string) {
+	batch.Queue(updateOrganizationSessionRememberByNameSQL, sessionRemember, name)
+}
+
+// UpdateOrganizationSessionRememberByNameScan implements Querier.UpdateOrganizationSessionRememberByNameScan.
+func (q *DBQuerier) UpdateOrganizationSessionRememberByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionRememberByNameRow, error) {
+	row := results.QueryRow()
+	var item UpdateOrganizationSessionRememberByNameRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("scan UpdateOrganizationSessionRememberByNameBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateOrganizationSessionTimeoutByNameSQL = `UPDATE organizations
+SET
+    session_timeout = $1,
+    updated_at = NOW()
+WHERE name = $2
+RETURNING *;`
+
+type UpdateOrganizationSessionTimeoutByNameRow struct {
+	OrganizationID  *string   `json:"organization_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	Name            *string   `json:"name"`
+	SessionRemember *int32    `json:"session_remember"`
+	SessionTimeout  *int32    `json:"session_timeout"`
+}
+
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetName() *string { return s.Name }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+
+
+// UpdateOrganizationSessionTimeoutByName implements Querier.UpdateOrganizationSessionTimeoutByName.
+func (q *DBQuerier) UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int32, name *string) (UpdateOrganizationSessionTimeoutByNameRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateOrganizationSessionTimeoutByName")
+	row := q.conn.QueryRow(ctx, updateOrganizationSessionTimeoutByNameSQL, sessionTimeout, name)
+	var item UpdateOrganizationSessionTimeoutByNameRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("query UpdateOrganizationSessionTimeoutByName: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateOrganizationSessionTimeoutByNameBatch implements Querier.UpdateOrganizationSessionTimeoutByNameBatch.
+func (q *DBQuerier) UpdateOrganizationSessionTimeoutByNameBatch(batch genericBatch, sessionTimeout int32, name *string) {
+	batch.Queue(updateOrganizationSessionTimeoutByNameSQL, sessionTimeout, name)
+}
+
+// UpdateOrganizationSessionTimeoutByNameScan implements Querier.UpdateOrganizationSessionTimeoutByNameScan.
+func (q *DBQuerier) UpdateOrganizationSessionTimeoutByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionTimeoutByNameRow, error) {
+	row := results.QueryRow()
+	var item UpdateOrganizationSessionTimeoutByNameRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("scan UpdateOrganizationSessionTimeoutByNameBatch row: %w", err)
 	}
 	return item, nil
 }

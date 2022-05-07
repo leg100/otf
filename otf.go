@@ -107,9 +107,9 @@ func GenerateRandomString(size int) string {
 // Resources summaries updates to a workspace's resources, either proposed as
 // part of a plan, or made as a result of an apply.
 type Resources struct {
-	ResourceAdditions    int `db:"resource_additions"`
-	ResourceChanges      int `db:"resource_changes"`
-	ResourceDestructions int `db:"resource_destructions"`
+	ResourceAdditions    int
+	ResourceChanges      int
+	ResourceDestructions int
 }
 
 // Pagination is used to return the pagination details of an API request.

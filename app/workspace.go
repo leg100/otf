@@ -53,16 +53,12 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	if err := opts.Valid(); err != nil {
+		s.Error(err, "updating workspace: invalid spec")
 		return nil, err
 	}
 
-	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		_, err = otf.UpdateWorkspace(ws, opts)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	return s.db.Update(spec, func(ws *otf.Workspace, updater otf.WorkspaceUpdater) error {
+		return ws.UpdateWithOptions(ctx, opts, updater)
 	})
 }
 
@@ -76,15 +72,7 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 		return nil, err
 	}
 
-	ws, err := s.db.Get(spec)
-	if err != nil {
-		s.Error(err, "retrieving workspace", "id", spec.String())
-		return nil, err
-	}
-
-	s.V(2).Info("retrieved workspace", "id", spec.String())
-
-	return ws, nil
+	return s.get(ctx, spec)
 }
 
 func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
@@ -107,13 +95,25 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 }
 
 func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(true)
+	return s.db.Update(spec, func(ws *otf.Workspace, updater otf.WorkspaceUpdater) (err error) {
+		return ws.ToggleLock(true, updater)
 	})
 }
 
 func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(false)
+	return s.db.Update(spec, func(ws *otf.Workspace, updater otf.WorkspaceUpdater) (err error) {
+		return ws.ToggleLock(false, updater)
 	})
+}
+
+func (s WorkspaceService) get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	ws, err := s.db.Get(spec)
+	if err != nil {
+		s.Error(err, "retrieving workspace", "id", spec.String())
+		return nil, err
+	}
+
+	s.V(2).Info("retrieved workspace", "id", spec.String())
+
+	return ws, nil
 }

@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"time"
 )
@@ -156,18 +155,19 @@ func (q *DBQuerier) InsertRunStatusTimestampScan(results pgx.BatchResults) (Inse
 	return item, nil
 }
 
-const findRunsByWorkspaceIDSQL = `SELECT runs.*,
+const findRunsByWorkspaceIDSQL = `SELECT
+    runs.*,
     (plans.*)::"plans" AS plan,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
-    count(*) OVER() AS full_count,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
         WHERE rst.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_status_timestamps
+    ) AS run_status_timestamps,
+    count(*) OVER() AS full_count
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -200,8 +200,8 @@ type FindRunsByWorkspaceIDRow struct {
 	Apply                  Applies               `json:"apply"`
 	ConfigurationVersion   ConfigurationVersions `json:"configuration_version"`
 	Workspace              Workspaces            `json:"workspace"`
-	FullCount              *int                  `json:"full_count"`
 	RunStatusTimestamps    []RunStatusTimestamps `json:"run_status_timestamps"`
+	FullCount              *int                  `json:"full_count"`
 }
 
 func (s FindRunsByWorkspaceIDRow) GetRunID() *string { return s.RunID }
@@ -220,8 +220,8 @@ func (s FindRunsByWorkspaceIDRow) GetPlan() Plans { return s.Plan }
 func (s FindRunsByWorkspaceIDRow) GetApply() Applies { return s.Apply }
 func (s FindRunsByWorkspaceIDRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
 func (s FindRunsByWorkspaceIDRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByWorkspaceIDRow) GetFullCount() *int { return s.FullCount }
 func (s FindRunsByWorkspaceIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
+func (s FindRunsByWorkspaceIDRow) GetFullCount() *int { return s.FullCount }
 
 
 // FindRunsByWorkspaceID implements Querier.FindRunsByWorkspaceID.
@@ -240,7 +240,7 @@ func (q *DBQuerier) FindRunsByWorkspaceID(ctx context.Context, params FindRunsBy
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceIDRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceID row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -286,7 +286,7 @@ func (q *DBQuerier) FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindR
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceIDRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceIDBatch row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -312,18 +312,19 @@ func (q *DBQuerier) FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindR
 	return items, err
 }
 
-const findRunsByWorkspaceNameSQL = `SELECT runs.*,
+const findRunsByWorkspaceNameSQL = `SELECT
+    runs.*,
     (plans.*)::"plans" AS plan,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
-    count(*) OVER() AS full_count,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
         WHERE rst.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_status_timestamps
+    ) AS run_status_timestamps,
+    count(*) OVER() AS full_count
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -359,8 +360,8 @@ type FindRunsByWorkspaceNameRow struct {
 	Apply                  Applies               `json:"apply"`
 	ConfigurationVersion   ConfigurationVersions `json:"configuration_version"`
 	Workspace              Workspaces            `json:"workspace"`
-	FullCount              *int                  `json:"full_count"`
 	RunStatusTimestamps    []RunStatusTimestamps `json:"run_status_timestamps"`
+	FullCount              *int                  `json:"full_count"`
 }
 
 func (s FindRunsByWorkspaceNameRow) GetRunID() *string { return s.RunID }
@@ -379,8 +380,8 @@ func (s FindRunsByWorkspaceNameRow) GetPlan() Plans { return s.Plan }
 func (s FindRunsByWorkspaceNameRow) GetApply() Applies { return s.Apply }
 func (s FindRunsByWorkspaceNameRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
 func (s FindRunsByWorkspaceNameRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByWorkspaceNameRow) GetFullCount() *int { return s.FullCount }
 func (s FindRunsByWorkspaceNameRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
+func (s FindRunsByWorkspaceNameRow) GetFullCount() *int { return s.FullCount }
 
 
 // FindRunsByWorkspaceName implements Querier.FindRunsByWorkspaceName.
@@ -399,7 +400,7 @@ func (q *DBQuerier) FindRunsByWorkspaceName(ctx context.Context, params FindRuns
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceNameRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceName row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -445,7 +446,7 @@ func (q *DBQuerier) FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]Fin
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceNameRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceNameBatch row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -476,13 +477,13 @@ const findRunsByStatusesSQL = `SELECT runs.*,
     (applies.*)::"applies" AS apply,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
-    count(*) OVER() AS full_count,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
         WHERE rst.run_id = runs.run_id
         GROUP BY run_id
-    ) AS run_status_timestamps
+    ) AS run_status_timestamps,
+    count(*) OVER() AS full_count
 FROM runs
 JOIN plans USING(run_id)
 JOIN applies USING(run_id)
@@ -515,8 +516,8 @@ type FindRunsByStatusesRow struct {
 	Apply                  Applies               `json:"apply"`
 	ConfigurationVersion   ConfigurationVersions `json:"configuration_version"`
 	Workspace              Workspaces            `json:"workspace"`
-	FullCount              *int                  `json:"full_count"`
 	RunStatusTimestamps    []RunStatusTimestamps `json:"run_status_timestamps"`
+	FullCount              *int                  `json:"full_count"`
 }
 
 func (s FindRunsByStatusesRow) GetRunID() *string { return s.RunID }
@@ -535,8 +536,8 @@ func (s FindRunsByStatusesRow) GetPlan() Plans { return s.Plan }
 func (s FindRunsByStatusesRow) GetApply() Applies { return s.Apply }
 func (s FindRunsByStatusesRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
 func (s FindRunsByStatusesRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByStatusesRow) GetFullCount() *int { return s.FullCount }
 func (s FindRunsByStatusesRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
+func (s FindRunsByStatusesRow) GetFullCount() *int { return s.FullCount }
 
 
 // FindRunsByStatuses implements Querier.FindRunsByStatuses.
@@ -555,7 +556,7 @@ func (q *DBQuerier) FindRunsByStatuses(ctx context.Context, params FindRunsBySta
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByStatusesRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByStatuses row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -601,7 +602,7 @@ func (q *DBQuerier) FindRunsByStatusesScan(results pgx.BatchResults) ([]FindRuns
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByStatusesRow
-		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, &item.FullCount, runStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByStatusesBatch row: %w", err)
 		}
 		if err := planRow.AssignTo(&item.Plan); err != nil {
@@ -995,6 +996,131 @@ func (q *DBQuerier) FindRunByApplyIDScan(results pgx.BatchResults) (FindRunByApp
 	}
 	if err := runStatusTimestampsArray.AssignTo(&item.RunStatusTimestamps); err != nil {
 		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
+	}
+	return item, nil
+}
+
+const findRunByIDForUpdateSQL = `SELECT runs.*,
+    (plans.*)::"plans" AS plan,
+    (applies.*)::"applies" AS apply,
+    (configuration_versions.*)::"configuration_versions" AS configuration_version,
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(rst.*) AS run_status_timestamps
+        FROM run_status_timestamps rst
+        WHERE rst.run_id = runs.run_id
+        GROUP BY run_id
+    ) AS run_status_timestamps
+FROM runs
+JOIN plans USING(run_id)
+JOIN applies USING(run_id)
+JOIN configuration_versions USING(workspace_id)
+JOIN workspaces USING(workspace_id)
+WHERE runs.run_id = $1
+FOR UPDATE
+;`
+
+type FindRunByIDForUpdateRow struct {
+	RunID                  *string               `json:"run_id"`
+	CreatedAt              time.Time             `json:"created_at"`
+	UpdatedAt              time.Time             `json:"updated_at"`
+	IsDestroy              *bool                 `json:"is_destroy"`
+	PositionInQueue        *int32                `json:"position_in_queue"`
+	Refresh                *bool                 `json:"refresh"`
+	RefreshOnly            *bool                 `json:"refresh_only"`
+	Status                 *string               `json:"status"`
+	ReplaceAddrs           []string              `json:"replace_addrs"`
+	TargetAddrs            []string              `json:"target_addrs"`
+	WorkspaceID            *string               `json:"workspace_id"`
+	ConfigurationVersionID *string               `json:"configuration_version_id"`
+	Plan                   Plans                 `json:"plan"`
+	Apply                  Applies               `json:"apply"`
+	ConfigurationVersion   ConfigurationVersions `json:"configuration_version"`
+	Workspace              Workspaces            `json:"workspace"`
+	RunStatusTimestamps    []RunStatusTimestamps `json:"run_status_timestamps"`
+}
+
+func (s FindRunByIDForUpdateRow) GetRunID() *string { return s.RunID }
+func (s FindRunByIDForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindRunByIDForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindRunByIDForUpdateRow) GetIsDestroy() *bool { return s.IsDestroy }
+func (s FindRunByIDForUpdateRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
+func (s FindRunByIDForUpdateRow) GetRefresh() *bool { return s.Refresh }
+func (s FindRunByIDForUpdateRow) GetRefreshOnly() *bool { return s.RefreshOnly }
+func (s FindRunByIDForUpdateRow) GetStatus() *string { return s.Status }
+func (s FindRunByIDForUpdateRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
+func (s FindRunByIDForUpdateRow) GetTargetAddrs() []string { return s.TargetAddrs }
+func (s FindRunByIDForUpdateRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s FindRunByIDForUpdateRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s FindRunByIDForUpdateRow) GetPlan() Plans { return s.Plan }
+func (s FindRunByIDForUpdateRow) GetApply() Applies { return s.Apply }
+func (s FindRunByIDForUpdateRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
+func (s FindRunByIDForUpdateRow) GetWorkspace() Workspaces { return s.Workspace }
+func (s FindRunByIDForUpdateRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
+
+
+// FindRunByIDForUpdate implements Querier.FindRunByIDForUpdate.
+func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID *string) (FindRunByIDForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByIDForUpdate")
+	row := q.conn.QueryRow(ctx, findRunByIDForUpdateSQL, runID)
+	var item FindRunByIDForUpdateRow
+	planRow := q.types.newPlans()
+	applyRow := q.types.newApplies()
+	configurationVersionRow := q.types.newConfigurationVersions()
+	workspaceRow := q.types.newWorkspaces()
+	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray); err != nil {
+		return item, fmt.Errorf("query FindRunByIDForUpdate: %w", err)
+	}
+	if err := planRow.AssignTo(&item.Plan); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := applyRow.AssignTo(&item.Apply); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := runStatusTimestampsArray.AssignTo(&item.RunStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	return item, nil
+}
+
+// FindRunByIDForUpdateBatch implements Querier.FindRunByIDForUpdateBatch.
+func (q *DBQuerier) FindRunByIDForUpdateBatch(batch genericBatch, runID *string) {
+	batch.Queue(findRunByIDForUpdateSQL, runID)
+}
+
+// FindRunByIDForUpdateScan implements Querier.FindRunByIDForUpdateScan.
+func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindRunByIDForUpdateRow
+	planRow := q.types.newPlans()
+	applyRow := q.types.newApplies()
+	configurationVersionRow := q.types.newConfigurationVersions()
+	workspaceRow := q.types.newWorkspaces()
+	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
+	if err := row.Scan(&item.RunID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.WorkspaceID, &item.ConfigurationVersionID, planRow, applyRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray); err != nil {
+		return item, fmt.Errorf("scan FindRunByIDForUpdateBatch row: %w", err)
+	}
+	if err := planRow.AssignTo(&item.Plan); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := applyRow.AssignTo(&item.Apply); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
+	}
+	if err := runStatusTimestampsArray.AssignTo(&item.RunStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindRunByIDForUpdate row: %w", err)
 	}
 	return item, nil
 }

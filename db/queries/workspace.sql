@@ -75,6 +75,14 @@ JOIN organizations USING (organization_id)
 WHERE workspaces.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name');
 
+-- name: FindWorkspaceByNameForUpdate :one
+SELECT workspaces.*, (organizations.*)::"organizations" AS organization
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.name = pggen.arg('name')
+AND organizations.name = pggen.arg('organization_name')
+FOR UPDATE;
+
 -- FindWorkspaceByID finds a workspace by id.
 --
 -- name: FindWorkspaceByID :one
@@ -82,6 +90,13 @@ SELECT workspaces.*, (organizations.*)::"organizations" AS organization
 FROM workspaces
 JOIN organizations USING (organization_id)
 WHERE workspaces.workspace_id = pggen.arg('id');
+
+-- name: FindWorkspaceByIDForUpdate :one
+SELECT workspaces.*, (organizations.*)::"organizations" AS organization
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.workspace_id = pggen.arg('id')
+FOR UPDATE;
 
 -- UpdateWorkspaceNameByID updates an workspace with a new name,
 -- identifying the workspace with its id, and returns the
@@ -101,7 +116,15 @@ RETURNING *;
 -- name: UpdateWorkspaceAllowDestroyPlanByID :one
 UPDATE workspaces
 SET
-    name = pggen.arg('allow_destroy_plan'),
+    allow_destroy_plan = pggen.arg('allow_destroy_plan'),
+    updated_at = NOW()
+WHERE workspace_id = pggen.arg('id')
+RETURNING *;
+
+-- name: UpdateWorkspaceLockByID :one
+UPDATE workspaces
+SET
+    locked = pggen.arg('lock'),
     updated_at = NOW()
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;

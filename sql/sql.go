@@ -134,3 +134,44 @@ func databaseError(err error, sqlstmt string) error {
 	}
 	return fmt.Errorf("running SQL statement: %s resulted in an error: %w", sqlstmt, err)
 }
+
+// getCount takes an interface{} holding a slice type and attempts to call
+// GetFullCount() on the first element. If the interface{} is not a slice type,
+// or the first element does not implement GetFullCount(), or there are zero
+// elements, then zero is returned. Intended for use with results from SQL
+// queries that return multiple rows and a count of the total rows matching the
+// query.
+func getCount(i interface{}) int {
+	v := reflect.ValueOf(i)
+
+	if v.Kind() != reflect.Slice {
+		return 0
+	}
+
+	if v.Len() == 0 {
+		return 0
+	}
+
+	counter, ok := v.Index(0).Interface().(interface{ GetFullCount() *int })
+	if !ok {
+		return 0
+	}
+
+	return *counter.GetFullCount()
+}
+
+func convertToInterfaceSlice(i interface{}) []interface{} {
+	v := reflect.ValueOf(i)
+
+	if v.Kind() != reflect.Slice {
+		panic("not an interface slice")
+	}
+
+	is := make([]interface{}, v.Len())
+
+	for i := 0; i < v.Len(); i++ {
+		is = append(is, v.Index(i).Interface())
+	}
+
+	return is
+}

@@ -33,3 +33,12 @@ SET
     updated_at = NOW()
 WHERE apply_id = pggen.arg('id')
 RETURNING *;
+
+-- name: UpdateApplyResources :exec
+UPDATE applies
+SET
+    resource_additions = pggen.arg('resource_additions'),
+    resource_changes = pggen.arg('resource_changes'),
+    resource_destructions = pggen.arg('resource_destructions')
+WHERE run_id = pggen.arg('run_id')
+;

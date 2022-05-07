@@ -3,6 +3,13 @@
 -- name: FindOrganizationByName :one
 SELECT * FROM organizations WHERE name = pggen.arg('name');
 
+-- name: FindOrganizations :one
+SELECT
+    array_agg(organizations) AS organizations,
+    count(*) OVER()          AS full_count
+FROM organizations
+LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');
+
 -- InsertOrganization inserts an organization and returns the entire row.
 --
 -- name: InsertOrganization :one
@@ -31,6 +38,22 @@ RETURNING *;
 UPDATE organizations
 SET
     name = pggen.arg('new_name'),
+    updated_at = NOW()
+WHERE name = pggen.arg('name')
+RETURNING *;
+
+-- name: UpdateOrganizationSessionRememberByName :one
+UPDATE organizations
+SET
+    session_remember = pggen.arg('session_remember'),
+    updated_at = NOW()
+WHERE name = pggen.arg('name')
+RETURNING *;
+
+-- name: UpdateOrganizationSessionTimeoutByName :one
+UPDATE organizations
+SET
+    session_timeout = pggen.arg('session_timeout'),
     updated_at = NOW()
 WHERE name = pggen.arg('name')
 RETURNING *;

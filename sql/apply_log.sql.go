@@ -5,7 +5,6 @@ package sql
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -82,12 +81,12 @@ ORDER BY chunk_id ASC
 ;`
 
 type FindApplyLogChunksRow struct {
-	Chunk pgtype.Bytea `json:"chunk"`
-	Start *bool        `json:"start"`
-	End   *bool        `json:"_end"`
+	Chunk []byte `json:"chunk"`
+	Start *bool  `json:"start"`
+	End   *bool  `json:"_end"`
 }
 
-func (s FindApplyLogChunksRow) GetChunk() pgtype.Bytea { return s.Chunk }
+func (s FindApplyLogChunksRow) GetChunk() []byte { return s.Chunk }
 func (s FindApplyLogChunksRow) GetStart() *bool { return s.Start }
 func (s FindApplyLogChunksRow) GetEnd() *bool { return s.End }
 

@@ -1,7 +1,7 @@
 package otf
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"time"
 )
@@ -71,6 +71,8 @@ func newPlan(runID string) *Plan {
 		ID:         NewID("plan"),
 		Timestamps: NewTimestamps(),
 		RunID:      runID,
+		// new plans always start off in pending state
+		Status: PlanPending,
 	}
 }
 
@@ -107,49 +109,49 @@ func (p *Plan) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// CalculateTotals produces a summary of planned changes from the JSON plan file
-// and updates the object with the summary.
-func (p *Plan) CalculateTotals(planJSON []byte) error {
-	planFile := PlanFile{}
-	if err := json.Unmarshal(planJSON, &planFile); err != nil {
-		return err
-	}
-
-	// Parse plan output
-	p.Resources = planFile.Changes()
-
-	return nil
-}
-
 // Start updates the plan to reflect its plan having started
-func (p *Plan) Start(run *Run) error {
+func (p *Plan) Start(run *Run, updater RunStatusUpdater) error {
 	if run.Status != RunPlanQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
 
-	run.UpdateStatus(RunPlanning)
+	run.UpdateStatus(RunPlanning, updater)
 
 	return nil
 }
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish(run *Run) (*Event, error) {
+func (p *Plan) Finish(run *Run, updater RunStatusUpdater) (*Event, error) {
 	if !p.HasChanges() || run.IsSpeculative() {
-		run.UpdateStatus(RunPlannedAndFinished)
+		if err := run.UpdateStatus(RunPlannedAndFinished, updater); err != nil {
+			return nil, err
+		}
 		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
 	}
 
-	run.UpdateStatus(RunPlanned)
-
-	if run.Workspace.AutoApply {
-		run.UpdateStatus(RunApplyQueued)
-		return &Event{Type: EventApplyQueued, Payload: run}, nil
+	if !run.Workspace.AutoApply {
+		if err := run.UpdateStatus(RunPlanned, updater); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: run, Type: EventRunPlanned}, nil
 	}
 
-	return &Event{Payload: run, Type: EventRunPlanned}, nil
+	if err := run.UpdateStatus(RunApplyQueued, updater); err != nil {
+		return nil, err
+	}
+	return &Event{Type: EventApplyQueued, Payload: run}, nil
 }
 
-func (p *Plan) UpdateStatus(status PlanStatus) {
+func (p *Plan) updateStatus(status PlanStatus, updater RunStatusUpdater) error {
 	p.Status = status
+
+	pst, err := updater.UpdatePlanStatus(context.Background(), status)
+	if err != nil {
+		return err
+	}
+
+	p.StatusTimestamps = append(p.StatusTimestamps, pst)
+
+	return nil
 }

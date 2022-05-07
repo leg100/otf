@@ -1,6 +1,9 @@
 package otf
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	CreateAction ChangeAction = "create"
@@ -13,11 +16,6 @@ const (
 	PlanFormatJSON = "json"
 )
 
-// PlanFile represents the schema of a plan file
-type PlanFile struct {
-	ResourcesChanges []ResourceChange `json:"resource_changes"`
-}
-
 // PlanFormat is the format of the plan file
 type PlanFormat string
 
@@ -27,6 +25,11 @@ func (f PlanFormat) CacheKey(id string) string {
 
 func (f PlanFormat) SQLColumn() string {
 	return fmt.Sprintf("plan_%s", f)
+}
+
+// PlanFile represents the schema of a plan file
+type PlanFile struct {
+	ResourcesChanges []ResourceChange `json:"resource_changes"`
 }
 
 // ResourceChange represents a proposed change to a resource in a plan file
@@ -57,4 +60,16 @@ func (pf *PlanFile) Changes() (tally Resources) {
 	}
 
 	return
+}
+
+// CalculatePlanSummary calculates a summary of planned changes from a JSON
+// representation of a plan file.
+func CalculatePlanSummary(planJSON []byte) (Resources, error) {
+	planFile := PlanFile{}
+	if err := json.Unmarshal(planJSON, &planFile); err != nil {
+		return Resources{}, err
+	}
+
+	// Parse plan output
+	return planFile.Changes(), nil
 }

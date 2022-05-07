@@ -31,7 +31,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 		return nil, err
 	}
 
-	if err := migrate(logger, conn); err != nil {
+	if err := migrate(logger, path); err != nil {
 		return nil, err
 	}
 

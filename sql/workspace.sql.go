@@ -382,6 +382,100 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	return item, nil
 }
 
+const findWorkspaceByNameForUpdateSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.name = $1
+AND organizations.name = $2
+FOR UPDATE;`
+
+type FindWorkspaceByNameForUpdateRow struct {
+	WorkspaceID                *string       `json:"workspace_id"`
+	CreatedAt                  time.Time     `json:"created_at"`
+	UpdatedAt                  time.Time     `json:"updated_at"`
+	AllowDestroyPlan           *bool         `json:"allow_destroy_plan"`
+	AutoApply                  *bool         `json:"auto_apply"`
+	CanQueueDestroyPlan        *bool         `json:"can_queue_destroy_plan"`
+	Description                *string       `json:"description"`
+	Environment                *string       `json:"environment"`
+	ExecutionMode              *string       `json:"execution_mode"`
+	FileTriggersEnabled        *bool         `json:"file_triggers_enabled"`
+	GlobalRemoteState          *bool         `json:"global_remote_state"`
+	Locked                     *bool         `json:"locked"`
+	MigrationEnvironment       *string       `json:"migration_environment"`
+	Name                       *string       `json:"name"`
+	QueueAllRuns               *bool         `json:"queue_all_runs"`
+	SpeculativeEnabled         *bool         `json:"speculative_enabled"`
+	SourceName                 *string       `json:"source_name"`
+	SourceUrl                  *string       `json:"source_url"`
+	StructuredRunOutputEnabled *bool         `json:"structured_run_output_enabled"`
+	TerraformVersion           *string       `json:"terraform_version"`
+	TriggerPrefixes            []string      `json:"trigger_prefixes"`
+	WorkingDirectory           *string       `json:"working_directory"`
+	OrganizationID             *string       `json:"organization_id"`
+	Organization               Organizations `json:"organization"`
+}
+
+func (s FindWorkspaceByNameForUpdateRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s FindWorkspaceByNameForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindWorkspaceByNameForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindWorkspaceByNameForUpdateRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
+func (s FindWorkspaceByNameForUpdateRow) GetAutoApply() *bool { return s.AutoApply }
+func (s FindWorkspaceByNameForUpdateRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
+func (s FindWorkspaceByNameForUpdateRow) GetDescription() *string { return s.Description }
+func (s FindWorkspaceByNameForUpdateRow) GetEnvironment() *string { return s.Environment }
+func (s FindWorkspaceByNameForUpdateRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s FindWorkspaceByNameForUpdateRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
+func (s FindWorkspaceByNameForUpdateRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
+func (s FindWorkspaceByNameForUpdateRow) GetLocked() *bool { return s.Locked }
+func (s FindWorkspaceByNameForUpdateRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
+func (s FindWorkspaceByNameForUpdateRow) GetName() *string { return s.Name }
+func (s FindWorkspaceByNameForUpdateRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
+func (s FindWorkspaceByNameForUpdateRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
+func (s FindWorkspaceByNameForUpdateRow) GetSourceName() *string { return s.SourceName }
+func (s FindWorkspaceByNameForUpdateRow) GetSourceUrl() *string { return s.SourceUrl }
+func (s FindWorkspaceByNameForUpdateRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s FindWorkspaceByNameForUpdateRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s FindWorkspaceByNameForUpdateRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
+func (s FindWorkspaceByNameForUpdateRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
+func (s FindWorkspaceByNameForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByNameForUpdateRow) GetOrganization() Organizations { return s.Organization }
+
+
+// FindWorkspaceByNameForUpdate implements Querier.FindWorkspaceByNameForUpdate.
+func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name *string, organizationName *string) (FindWorkspaceByNameForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByNameForUpdate")
+	row := q.conn.QueryRow(ctx, findWorkspaceByNameForUpdateSQL, name, organizationName)
+	var item FindWorkspaceByNameForUpdateRow
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		return item, fmt.Errorf("query FindWorkspaceByNameForUpdate: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	return item, nil
+}
+
+// FindWorkspaceByNameForUpdateBatch implements Querier.FindWorkspaceByNameForUpdateBatch.
+func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name *string, organizationName *string) {
+	batch.Queue(findWorkspaceByNameForUpdateSQL, name, organizationName)
+}
+
+// FindWorkspaceByNameForUpdateScan implements Querier.FindWorkspaceByNameForUpdateScan.
+func (q *DBQuerier) FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindWorkspaceByNameForUpdateRow
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		return item, fmt.Errorf("scan FindWorkspaceByNameForUpdateBatch row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	return item, nil
+}
+
 const findWorkspaceByIDSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization
 FROM workspaces
 JOIN organizations USING (organization_id)
@@ -474,6 +568,99 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	return item, nil
 }
 
+const findWorkspaceByIDForUpdateSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.workspace_id = $1
+FOR UPDATE;`
+
+type FindWorkspaceByIDForUpdateRow struct {
+	WorkspaceID                *string       `json:"workspace_id"`
+	CreatedAt                  time.Time     `json:"created_at"`
+	UpdatedAt                  time.Time     `json:"updated_at"`
+	AllowDestroyPlan           *bool         `json:"allow_destroy_plan"`
+	AutoApply                  *bool         `json:"auto_apply"`
+	CanQueueDestroyPlan        *bool         `json:"can_queue_destroy_plan"`
+	Description                *string       `json:"description"`
+	Environment                *string       `json:"environment"`
+	ExecutionMode              *string       `json:"execution_mode"`
+	FileTriggersEnabled        *bool         `json:"file_triggers_enabled"`
+	GlobalRemoteState          *bool         `json:"global_remote_state"`
+	Locked                     *bool         `json:"locked"`
+	MigrationEnvironment       *string       `json:"migration_environment"`
+	Name                       *string       `json:"name"`
+	QueueAllRuns               *bool         `json:"queue_all_runs"`
+	SpeculativeEnabled         *bool         `json:"speculative_enabled"`
+	SourceName                 *string       `json:"source_name"`
+	SourceUrl                  *string       `json:"source_url"`
+	StructuredRunOutputEnabled *bool         `json:"structured_run_output_enabled"`
+	TerraformVersion           *string       `json:"terraform_version"`
+	TriggerPrefixes            []string      `json:"trigger_prefixes"`
+	WorkingDirectory           *string       `json:"working_directory"`
+	OrganizationID             *string       `json:"organization_id"`
+	Organization               Organizations `json:"organization"`
+}
+
+func (s FindWorkspaceByIDForUpdateRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s FindWorkspaceByIDForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindWorkspaceByIDForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindWorkspaceByIDForUpdateRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
+func (s FindWorkspaceByIDForUpdateRow) GetAutoApply() *bool { return s.AutoApply }
+func (s FindWorkspaceByIDForUpdateRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
+func (s FindWorkspaceByIDForUpdateRow) GetDescription() *string { return s.Description }
+func (s FindWorkspaceByIDForUpdateRow) GetEnvironment() *string { return s.Environment }
+func (s FindWorkspaceByIDForUpdateRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s FindWorkspaceByIDForUpdateRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
+func (s FindWorkspaceByIDForUpdateRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
+func (s FindWorkspaceByIDForUpdateRow) GetLocked() *bool { return s.Locked }
+func (s FindWorkspaceByIDForUpdateRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
+func (s FindWorkspaceByIDForUpdateRow) GetName() *string { return s.Name }
+func (s FindWorkspaceByIDForUpdateRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
+func (s FindWorkspaceByIDForUpdateRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
+func (s FindWorkspaceByIDForUpdateRow) GetSourceName() *string { return s.SourceName }
+func (s FindWorkspaceByIDForUpdateRow) GetSourceUrl() *string { return s.SourceUrl }
+func (s FindWorkspaceByIDForUpdateRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s FindWorkspaceByIDForUpdateRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s FindWorkspaceByIDForUpdateRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
+func (s FindWorkspaceByIDForUpdateRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
+func (s FindWorkspaceByIDForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByIDForUpdateRow) GetOrganization() Organizations { return s.Organization }
+
+
+// FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
+func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id *string) (FindWorkspaceByIDForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByIDForUpdate")
+	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
+	var item FindWorkspaceByIDForUpdateRow
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	return item, nil
+}
+
+// FindWorkspaceByIDForUpdateBatch implements Querier.FindWorkspaceByIDForUpdateBatch.
+func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id *string) {
+	batch.Queue(findWorkspaceByIDForUpdateSQL, id)
+}
+
+// FindWorkspaceByIDForUpdateScan implements Querier.FindWorkspaceByIDForUpdateScan.
+func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (FindWorkspaceByIDForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindWorkspaceByIDForUpdateRow
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	return item, nil
+}
+
 const updateWorkspaceNameByIDSQL = `UPDATE workspaces
 SET
     name = $1,
@@ -560,7 +747,7 @@ func (q *DBQuerier) UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (Updat
 
 const updateWorkspaceAllowDestroyPlanByIDSQL = `UPDATE workspaces
 SET
-    name = $1,
+    allow_destroy_plan = $1,
     updated_at = NOW()
 WHERE workspace_id = $2
 RETURNING *;`
@@ -617,7 +804,7 @@ func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetOrganizationID() *string { re
 
 
 // UpdateWorkspaceAllowDestroyPlanByID implements Querier.UpdateWorkspaceAllowDestroyPlanByID.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan *string, id *string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan *bool, id *string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceAllowDestroyPlanByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
 	var item UpdateWorkspaceAllowDestroyPlanByIDRow
@@ -628,7 +815,7 @@ func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, all
 }
 
 // UpdateWorkspaceAllowDestroyPlanByIDBatch implements Querier.UpdateWorkspaceAllowDestroyPlanByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan *string, id *string) {
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan *bool, id *string) {
 	batch.Queue(updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
 }
 
@@ -638,6 +825,90 @@ func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchRes
 	var item UpdateWorkspaceAllowDestroyPlanByIDRow
 	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("scan UpdateWorkspaceAllowDestroyPlanByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateWorkspaceLockByIDSQL = `UPDATE workspaces
+SET
+    locked = $1,
+    updated_at = NOW()
+WHERE workspace_id = $2
+RETURNING *;`
+
+type UpdateWorkspaceLockByIDRow struct {
+	WorkspaceID                *string   `json:"workspace_id"`
+	CreatedAt                  time.Time `json:"created_at"`
+	UpdatedAt                  time.Time `json:"updated_at"`
+	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
+	AutoApply                  *bool     `json:"auto_apply"`
+	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
+	Description                *string   `json:"description"`
+	Environment                *string   `json:"environment"`
+	ExecutionMode              *string   `json:"execution_mode"`
+	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
+	GlobalRemoteState          *bool     `json:"global_remote_state"`
+	Locked                     *bool     `json:"locked"`
+	MigrationEnvironment       *string   `json:"migration_environment"`
+	Name                       *string   `json:"name"`
+	QueueAllRuns               *bool     `json:"queue_all_runs"`
+	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
+	SourceName                 *string   `json:"source_name"`
+	SourceUrl                  *string   `json:"source_url"`
+	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
+	TerraformVersion           *string   `json:"terraform_version"`
+	TriggerPrefixes            []string  `json:"trigger_prefixes"`
+	WorkingDirectory           *string   `json:"working_directory"`
+	OrganizationID             *string   `json:"organization_id"`
+}
+
+func (s UpdateWorkspaceLockByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s UpdateWorkspaceLockByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s UpdateWorkspaceLockByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s UpdateWorkspaceLockByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetAutoApply() *bool { return s.AutoApply }
+func (s UpdateWorkspaceLockByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetDescription() *string { return s.Description }
+func (s UpdateWorkspaceLockByIDRow) GetEnvironment() *string { return s.Environment }
+func (s UpdateWorkspaceLockByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s UpdateWorkspaceLockByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceLockByIDRow) GetLocked() *bool { return s.Locked }
+func (s UpdateWorkspaceLockByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
+func (s UpdateWorkspaceLockByIDRow) GetName() *string { return s.Name }
+func (s UpdateWorkspaceLockByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
+func (s UpdateWorkspaceLockByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetSourceName() *string { return s.SourceName }
+func (s UpdateWorkspaceLockByIDRow) GetSourceUrl() *string { return s.SourceUrl }
+func (s UpdateWorkspaceLockByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceLockByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
+func (s UpdateWorkspaceLockByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
+func (s UpdateWorkspaceLockByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+
+
+// UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.
+func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock *bool, id *string) (UpdateWorkspaceLockByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceLockByID")
+	row := q.conn.QueryRow(ctx, updateWorkspaceLockByIDSQL, lock, id)
+	var item UpdateWorkspaceLockByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("query UpdateWorkspaceLockByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateWorkspaceLockByIDBatch implements Querier.UpdateWorkspaceLockByIDBatch.
+func (q *DBQuerier) UpdateWorkspaceLockByIDBatch(batch genericBatch, lock *bool, id *string) {
+	batch.Queue(updateWorkspaceLockByIDSQL, lock, id)
+}
+
+// UpdateWorkspaceLockByIDScan implements Querier.UpdateWorkspaceLockByIDScan.
+func (q *DBQuerier) UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (UpdateWorkspaceLockByIDRow, error) {
+	row := results.QueryRow()
+	var item UpdateWorkspaceLockByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("scan UpdateWorkspaceLockByIDBatch row: %w", err)
 	}
 	return item, nil
 }

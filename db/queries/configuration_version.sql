@@ -9,7 +9,8 @@ INSERT INTO configuration_versions (
     auto_queue_runs,
     source,
     speculative,
-    status
+    status,
+    workspace_id
 ) VALUES (
     pggen.arg('ID'),
     NOW(),
@@ -17,7 +18,8 @@ INSERT INTO configuration_versions (
     pggen.arg('AutoQueueRuns'),
     pggen.arg('Source'),
     pggen.arg('Speculative'),
-    pggen.arg('Status')
+    pggen.arg('Status'),
+    pggen.arg('WorkspaceID')
 )
 RETURNING *;
 
@@ -36,8 +38,23 @@ RETURNING *;
 -- FindConfigurationVersions finds configuration_versions for a given workspace.
 -- Results are paginated with limit and offset, and total count is returned.
 --
--- name: FindConfigurationVersions :many
-SELECT configuration_versions.*, (workspaces.*)::"workspaces" AS workspace, count(*) OVER() AS full_count
+-- name: FindConfigurationVersionsByWorkspaceID :many
+SELECT
+    configuration_versions.configuration_version_id,
+    configuration_versions.created_at,
+    configuration_versions.updated_at,
+    configuration_versions.auto_queue_runs,
+    configuration_versions.source,
+    configuration_versions.speculative,
+    configuration_versions.status,
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(t.*) AS configuration_version_status_timestamps
+        FROM configuration_version_status_timestamps t
+        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
+        GROUP BY configuration_version_id
+    ) AS configuration_version_status_timestamps,
+    count(*) OVER() AS full_count
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
 WHERE workspaces.workspace_id = pggen.arg('workspace_id')
@@ -55,10 +72,58 @@ SELECT
     configuration_versions.source,
     configuration_versions.speculative,
     configuration_versions.status,
-    (workspaces.*)::"workspaces" AS workspace
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(t.*) AS configuration_version_status_timestamps
+        FROM configuration_version_status_timestamps t
+        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
+        GROUP BY configuration_version_id
+    ) AS configuration_version_status_timestamps
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
 WHERE configuration_version_id = pggen.arg('configuration_version_id');
+
+-- name: FindConfigurationVersionLatestByWorkspaceID :one
+SELECT
+    configuration_versions.configuration_version_id,
+    configuration_versions.created_at,
+    configuration_versions.updated_at,
+    configuration_versions.auto_queue_runs,
+    configuration_versions.source,
+    configuration_versions.speculative,
+    configuration_versions.status,
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(t.*) AS configuration_version_status_timestamps
+        FROM configuration_version_status_timestamps t
+        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
+        GROUP BY configuration_version_id
+    ) AS configuration_version_status_timestamps
+FROM configuration_versions
+JOIN workspaces USING (workspace_id)
+WHERE workspace_id = pggen.arg('workspace_id')
+ORDER BY configuration_versions.created_at DESC;
+
+-- name: FindConfigurationVersionByIDForUpdate :one
+SELECT
+    configuration_versions.configuration_version_id,
+    configuration_versions.created_at,
+    configuration_versions.updated_at,
+    configuration_versions.auto_queue_runs,
+    configuration_versions.source,
+    configuration_versions.speculative,
+    configuration_versions.status,
+    (workspaces.*)::"workspaces" AS workspace,
+    (
+        SELECT array_agg(t.*) AS configuration_version_status_timestamps
+        FROM configuration_version_status_timestamps t
+        WHERE t.configuration_version_id = configuration_versions.configuration_version_id
+        GROUP BY configuration_version_id
+    ) AS configuration_version_status_timestamps
+FROM configuration_versions
+JOIN workspaces USING (workspace_id)
+WHERE configuration_version_id = pggen.arg('configuration_version_id')
+FOR UPDATE;
 
 -- DownloadConfigurationVersion gets a configuration_version config
 -- tarball.
@@ -68,14 +133,21 @@ SELECT config
 FROM configuration_versions
 WHERE configuration_version_id = pggen.arg('configuration_version_id');
 
--- UploadConfigurationVersion sets a config tarball on a configuration version,
--- and sets the status to uploaded.
---
--- name: UploadConfigurationVersion :one
+-- name: UpdateConfigurationVersionStatus :exec
+UPDATE configuration_versions
+SET
+    status = pggen.arg('status'),
+    updated_at = NOW()
+WHERE configuration_version_id = pggen.arg('id');
+
+-- name: UpdateConfigurationVersionConfig :exec
 UPDATE configuration_versions
 SET
     config = pggen.arg('config'),
-    status = 'uploaded',
     updated_at = NOW()
-WHERE configuration_version_id = pggen.arg('id')
-RETURNING *;
+WHERE configuration_version_id = pggen.arg('id');
+
+-- name: DeleteConfigurationVersionByID :exec
+DELETE
+FROM configuration_versions
+WHERE configuration_version_id = pggen.arg('id');

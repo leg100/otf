@@ -34,11 +34,9 @@ CREATE TABLE IF NOT EXISTS workspaces (
     trigger_prefixes                TEXT[]      NOT NULL,
     working_directory               TEXT        NOT NULL,
     organization_id                 TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                                    PRIMARY KEY (workspace_id)
+                                    PRIMARY KEY (workspace_id),
+                                    UNIQUE (name, organization_id)
 );
-
--- postgres does not support declaring a non-unique index in CREATE TABLE
-CREATE INDEX ON workspaces (name);
 
 CREATE TABLE IF NOT EXISTS users (
     user_id                 TEXT,
@@ -128,6 +126,7 @@ CREATE TABLE IF NOT EXISTS applies (
     resource_changes      INTEGER     NOT NULL,
     resource_destructions INTEGER     NOT NULL,
     status                TEXT        NOT NULL,
+    log_id                TEXT REFERENCES logs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                           PRIMARY KEY (apply_id)
 );
@@ -150,6 +149,7 @@ CREATE TABLE IF NOT EXISTS plans (
     status_timestamps     TEXT        NOT NULL,
     plan_bin              BYTEA,
     plan_json             BYTEA,
+    log_id                TEXT REFERENCES logs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                           PRIMARY KEY (plan_id)
 );
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS state_versions (
     vcs_commit_sha   TEXT,
     vcs_commit_url   TEXT,
     state            BYTEA       NOT NULL,
-    workspace_id     TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    run_id           TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                      PRIMARY KEY (state_version_id)
 );
 
@@ -185,29 +185,13 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
                             PRIMARY KEY (state_version_output_id)
 );
 
-CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id  TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id SERIAL  NOT NULL,
-    chunk    BYTEA   NOT NULL,
-    size     INTEGER NOT NULL,
-    start    BOOLEAN NOT NULL,
-    _end     BOOLEAN NOT NULL,
-             PRIMARY KEY (plan_id, chunk_id)
-);
-
-CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id SERIAL  NOT NULL,
-    chunk    BYTEA   NOT NULL,
-    size     INTEGER NOT NULL,
-    start    BOOLEAN NOT NULL,
-    _end     BOOLEAN NOT NULL,
-             PRIMARY KEY (apply_id, chunk_id)
+CREATE TABLE IF NOT EXISTS logs (
+    log_id   TEXT    NOT NULL,
+    chunk    BYTEA   NOT NULL
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS apply_logs;
-DROP TABLE IF EXISTS plan_logs;
+DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS plan_status_timestamps;

@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -46,10 +47,6 @@ type ConfigurationVersion struct {
 	Status           ConfigurationStatus
 	StatusTimestamps []ConfigurationVersionStatusTimestamp
 
-	// Config is a tarball of the uploaded configuration. Note: this is not
-	// necessarily populated.
-	Config []byte
-
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
 }
@@ -88,9 +85,16 @@ type ConfigurationVersionService interface {
 type ConfigurationVersionStore interface {
 	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
+	GetConfig(ctx context.Context, id string) ([]byte, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Update(id string, fn func(*ConfigurationVersion) error) (*ConfigurationVersion, error)
+	Update(id string, fn func(*ConfigurationVersion, ConfigurationVersionUpdater) error) error
 	Delete(id string) error
+}
+
+// ConfigurationVersionUpdater updates a config version within a transaction
+type ConfigurationVersionUpdater interface {
+	UpdateStatus(ctx context.Context, status ConfigurationStatus) (ConfigurationVersionStatusTimestamp, error)
+	SaveConfig(ctx context.Context, config []byte) error
 }
 
 // ConfigurationVersionGetOptions are options for retrieving a single config
@@ -101,9 +105,6 @@ type ConfigurationVersionGetOptions struct {
 
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
-
-	// Config toggles whether to retrieve the tarball of config files too.
-	Config bool
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a
@@ -128,6 +129,23 @@ type ConfigurationVersionFactory struct {
 
 func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
 func (cv *ConfigurationVersion) String() string { return cv.ID }
+
+// Upload saves the config to the db and updates status accordingly.
+func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, updater ConfigurationVersionUpdater) error {
+	if cv.Status != ConfigurationPending {
+		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.Status)
+	}
+
+	if err := updater.SaveConfig(ctx, config); err != nil {
+		return err
+	}
+
+	if _, err := updater.UpdateStatus(ctx, ConfigurationUploaded); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {

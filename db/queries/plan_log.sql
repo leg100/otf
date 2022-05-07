@@ -1,21 +1,15 @@
 -- name: InsertPlanLogChunk :one
-INSERT INTO plan_logs (
+INSERT INTO logs SELECT log_id
     plan_id,
-    chunk,
-    start,
-    _end,
-    size
+    chunk
 ) VALUES (
-    pggen.arg('PlanID'),
-    pggen.arg('Chunk'),
-    pggen.arg('Start'),
-    pggen.arg('End'),
-    pggen.arg('Size')
+    pggen.arg('LogID'),
+    pggen.arg('Chunk')
 )
 RETURNING *;
 
 -- name: FindPlanLogChunks :many
-SELECT chunk, start, _end
+SELECT chunk
 FROM plan_logs
 WHERE plan_id = pggen.arg('plan_id')
 ORDER BY chunk_id ASC

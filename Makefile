@@ -78,8 +78,11 @@ push: image
 # Generate sql code
 .PHONY: sql
 sql:
-	pggen gen go \
+	../pggen/dist/pggen-linux-amd64 gen go \
 		--postgres-connection "dbname=otf" \
 		--query-glob 'db/queries/*.sql' \
 		--output-dir sql \
-		--log info
+		--go-type 'text=*string' \
+		--go-type 'boolean=*bool' \
+		--go-type 'timestamptz=time.Time' \
+		--go-type 'bytea=[]byte'

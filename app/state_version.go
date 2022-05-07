@@ -18,14 +18,12 @@ type StateVersionService struct {
 	logr.Logger
 }
 
-func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, wss otf.WorkspaceService, cache otf.Cache) *StateVersionService {
+func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, cache otf.Cache) *StateVersionService {
 	return &StateVersionService{
-		db:     db,
-		cache:  cache,
-		Logger: logger,
-		StateVersionFactory: &otf.StateVersionFactory{
-			WorkspaceService: wss,
-		},
+		db:                  db,
+		cache:               cache,
+		Logger:              logger,
+		StateVersionFactory: &otf.StateVersionFactory{},
 	}
 }
 
@@ -45,7 +43,7 @@ func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCre
 		return nil, fmt.Errorf("caching state version: %w", err)
 	}
 
-	s.V(0).Info("created state version", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
+	s.V(0).Info("created state version", "id", sv.ID, "run", sv.Run.ID, "serial", sv.Serial)
 
 	return sv, nil
 }
@@ -75,7 +73,7 @@ func (s StateVersionService) Download(id string) ([]byte, error) {
 
 	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id, State: true})
 	if err != nil {
-		s.Error(err, "retrieving state version", "id", sv.ID, "workspace", sv.Workspace.Name, "serial", sv.Serial)
+		s.Error(err, "retrieving state version", "id", sv.ID, "run", sv.Run.ID, "serial", sv.Serial)
 		return nil, err
 	}
 
