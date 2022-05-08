@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -105,10 +104,6 @@ type RunService interface {
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
 	EnqueuePlan(ctx context.Context, id string) error
-
-	// GetLogs gets the logs for a run, combining the logs of both its plan and
-	// apply.
-	GetLogs(ctx context.Context, runID string) (io.Reader, error)
 
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error

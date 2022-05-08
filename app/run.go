@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"io"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -233,21 +231,6 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 	s.V(0).Info("uploaded plan file", "id", id, "format", format)
 
 	return nil
-}
-
-// GetLogs gets the logs for a run, combining the logs of both its plan and
-// apply.
-func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
-	run, err := s.Get(ctx, id)
-	if err != nil {
-		s.Error(err, "getting run for reading logs", "id", id)
-		return nil, err
-	}
-
-	streamer := otf.NewRunStreamer(run, s.planLogs, s.applyLogs, time.Millisecond*500)
-	go streamer.Stream(ctx)
-
-	return streamer, nil
 }
 
 // Delete deletes a terraform run.
