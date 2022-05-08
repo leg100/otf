@@ -7,12 +7,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-type chunk interface {
-	GetChunk() []byte
-	GetStart() *bool
-	GetEnd() *bool
-}
-
 func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk []byte, opts otf.PutChunkOptions) error {
 	insertBuilder := psql.Insert(table).
 		Columns(idCol, "chunk", "start", "_end", "size").

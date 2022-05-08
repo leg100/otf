@@ -6,16 +6,16 @@ import (
 )
 
 type testChunkStore struct {
-	store map[string][]byte
+	store map[string]Chunk
 
 	ChunkStore
 }
 
-func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts GetChunkOptions) ([]byte, error) {
-	data, ok := s.store[id]
+func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts GetChunkOptions) (Chunk, error) {
+	chunk, ok := s.store[id]
 	if !ok {
-		return nil, fmt.Errorf("no object found with id: %s", id)
+		return Chunk{}, fmt.Errorf("no object found with id: %s", id)
 	}
 
-	return GetChunk(data, opts)
+	return chunk.Cut(opts)
 }

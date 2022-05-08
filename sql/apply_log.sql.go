@@ -10,26 +10,12 @@ import (
 
 const insertApplyLogChunkSQL = `INSERT INTO apply_logs (
     apply_id,
-    chunk,
-    start,
-    _end,
-    size
+    chunk
 ) VALUES (
     $1,
-    $2,
-    $3,
-    $4,
-    $5
+    $2
 )
 RETURNING *;`
-
-type InsertApplyLogChunkParams struct {
-	ApplyID *string
-	Chunk   []byte
-	Start   *bool
-	End     *bool
-	Size    int32
-}
 
 type InsertApplyLogChunkRow struct {
 	ApplyID *string `json:"apply_id"`
@@ -49,9 +35,9 @@ func (s InsertApplyLogChunkRow) GetEnd() *bool { return s.End }
 
 
 // InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
-func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, params InsertApplyLogChunkParams) (InsertApplyLogChunkRow, error) {
+func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID *string, chunk []byte) (InsertApplyLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")
-	row := q.conn.QueryRow(ctx, insertApplyLogChunkSQL, params.ApplyID, params.Chunk, params.Start, params.End, params.Size)
+	row := q.conn.QueryRow(ctx, insertApplyLogChunkSQL, applyID, chunk)
 	var item InsertApplyLogChunkRow
 	if err := row.Scan(&item.ApplyID, &item.ChunkID, &item.Chunk, &item.Size, &item.Start, &item.End); err != nil {
 		return item, fmt.Errorf("query InsertApplyLogChunk: %w", err)
@@ -60,8 +46,8 @@ func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, params InsertApplyL
 }
 
 // InsertApplyLogChunkBatch implements Querier.InsertApplyLogChunkBatch.
-func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, params InsertApplyLogChunkParams) {
-	batch.Queue(insertApplyLogChunkSQL, params.ApplyID, params.Chunk, params.Start, params.End, params.Size)
+func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID *string, chunk []byte) {
+	batch.Queue(insertApplyLogChunkSQL, applyID, chunk)
 }
 
 // InsertApplyLogChunkScan implements Querier.InsertApplyLogChunkScan.
@@ -74,43 +60,25 @@ func (q *DBQuerier) InsertApplyLogChunkScan(results pgx.BatchResults) (InsertApp
 	return item, nil
 }
 
-const findApplyLogChunksSQL = `SELECT chunk, start, _end
-FROM apply_logs
-WHERE apply_id = $1
-ORDER BY chunk_id ASC
+const findApplyLogChunksSQL = `SELECT string_agg(chunk, '')
+FROM (
+    SELECT apply_id, chunk
+    FROM apply_logs
+    WHERE apply_id = $1
+    ORDER BY chunk_id
+) c
+GROUP BY apply_id
 ;`
 
-type FindApplyLogChunksRow struct {
-	Chunk []byte `json:"chunk"`
-	Start *bool  `json:"start"`
-	End   *bool  `json:"_end"`
-}
-
-func (s FindApplyLogChunksRow) GetChunk() []byte { return s.Chunk }
-func (s FindApplyLogChunksRow) GetStart() *bool { return s.Start }
-func (s FindApplyLogChunksRow) GetEnd() *bool { return s.End }
-
-
 // FindApplyLogChunks implements Querier.FindApplyLogChunks.
-func (q *DBQuerier) FindApplyLogChunks(ctx context.Context, applyID *string) ([]FindApplyLogChunksRow, error) {
+func (q *DBQuerier) FindApplyLogChunks(ctx context.Context, applyID *string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindApplyLogChunks")
-	rows, err := q.conn.Query(ctx, findApplyLogChunksSQL, applyID)
-	if err != nil {
-		return nil, fmt.Errorf("query FindApplyLogChunks: %w", err)
+	row := q.conn.QueryRow(ctx, findApplyLogChunksSQL, applyID)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindApplyLogChunks: %w", err)
 	}
-	defer rows.Close()
-	items := []FindApplyLogChunksRow{}
-	for rows.Next() {
-		var item FindApplyLogChunksRow
-		if err := rows.Scan(&item.Chunk, &item.Start, &item.End); err != nil {
-			return nil, fmt.Errorf("scan FindApplyLogChunks row: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindApplyLogChunks rows: %w", err)
-	}
-	return items, err
+	return item, nil
 }
 
 // FindApplyLogChunksBatch implements Querier.FindApplyLogChunksBatch.
@@ -119,22 +87,11 @@ func (q *DBQuerier) FindApplyLogChunksBatch(batch genericBatch, applyID *string)
 }
 
 // FindApplyLogChunksScan implements Querier.FindApplyLogChunksScan.
-func (q *DBQuerier) FindApplyLogChunksScan(results pgx.BatchResults) ([]FindApplyLogChunksRow, error) {
-	rows, err := results.Query()
-	if err != nil {
-		return nil, fmt.Errorf("query FindApplyLogChunksBatch: %w", err)
+func (q *DBQuerier) FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error) {
+	row := results.QueryRow()
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindApplyLogChunksBatch row: %w", err)
 	}
-	defer rows.Close()
-	items := []FindApplyLogChunksRow{}
-	for rows.Next() {
-		var item FindApplyLogChunksRow
-		if err := rows.Scan(&item.Chunk, &item.Start, &item.End); err != nil {
-			return nil, fmt.Errorf("scan FindApplyLogChunksBatch row: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindApplyLogChunksBatch rows: %w", err)
-	}
-	return items, err
+	return item, nil
 }

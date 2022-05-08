@@ -22,27 +22,46 @@ func NewPlanLogDB(conn *pgx.Conn) *PlanLogDB {
 }
 
 // PutChunk persists a log chunk to the DB.
-func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk []byte, opts otf.PutChunkOptions) error {
+func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk) error {
 	q := NewQuerier(db.Conn)
 
-	_, err := q.InsertPlanLogChunk(ctx, InsertPlanLogChunkParams{
-		PlanID: &planID,
-		Chunk:  chunk,
-		Start:  &opts.Start,
-		End:    &opts.End,
-		Size:   int32(len(chunk)),
-	})
+	if len(chunk.Data) == 0 {
+		return nil
+	}
+
+	data := chunk.Data
+
+	if chunk.End {
+		data = append(data, otf.ChunkEndMarker)
+	}
+
+	_, err := q.InsertPlanLogChunk(ctx, &planID, data)
 	return err
 }
 
-// GetChunk retrieves a log chunk from the DB.
-func (db PlanLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) ([]byte, error) {
+// GetChunk retrieves a log chunk from the DB. GetChunkOptions is ignored, so
+// the biggest chunk possible will be retrieved. Instead, it is expected an
+// in-memory cache is placed in front, calling this method and caching the
+// content.
+func (db PlanLogDB) GetChunk(ctx context.Context, planID string, _ otf.GetChunkOptions) (otf.Chunk, error) {
 	q := NewQuerier(db.Conn)
 
-	result, err := q.FindPlanLogChunks(ctx, &planID)
+	data, err := q.FindPlanLogChunks(ctx, &planID)
 	if err != nil {
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
-	return mergeChunks
+	chunk := otf.Chunk{Data: data}
+
+	// NOTE: data should always be non-zero but empty data may have been
+	// inserted into the DB in error.
+	if len(data) > 0 {
+		chunk.Start = true
+
+		if data[len(data)-1] == otf.ChunkEndMarker {
+			chunk.End = true
+		}
+	}
+
+	return chunk, nil
 }

@@ -73,9 +73,9 @@ func (s *RunStreamer) stream(ctx context.Context, store ChunkStore, id string, w
 			return fmt.Errorf("retrieving chunk: %w", err)
 		}
 
-		offset += len(chunk)
+		offset += len(chunk.Data)
 
-		if err := writeChunk(chunk, w); err != nil {
+		if err := writeChunk(chunk.Marshal(), w); err != nil {
 			return err
 		}
 

@@ -50,9 +50,17 @@ func TestRunStreamer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := testChunkStore{
-				store: map[string][]byte{
-					"plan-123":  []byte("\x02cat sat on the mat\x03"),
-					"apply-123": []byte("\x02and then ate some food\x03"),
+				store: map[string]Chunk{
+					"plan-123": Chunk{
+						Start: true,
+						End:   true,
+						Data:  []byte("cat sat on the mat"),
+					},
+					"apply-123": Chunk{
+						Start: true,
+						End:   true,
+						Data:  []byte("and then ate some food"),
+					},
 				},
 			}
 

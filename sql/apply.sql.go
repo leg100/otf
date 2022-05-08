@@ -45,19 +45,19 @@ type Querier interface {
 	// UpdateApplyResourcesScan scans the result of an executed UpdateApplyResourcesBatch query.
 	UpdateApplyResourcesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertApplyLogChunk(ctx context.Context, params InsertApplyLogChunkParams) (InsertApplyLogChunkRow, error)
+	InsertApplyLogChunk(ctx context.Context, applyID *string, chunk []byte) (InsertApplyLogChunkRow, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
 	// later by the batch.
-	InsertApplyLogChunkBatch(batch genericBatch, params InsertApplyLogChunkParams)
+	InsertApplyLogChunkBatch(batch genericBatch, applyID *string, chunk []byte)
 	// InsertApplyLogChunkScan scans the result of an executed InsertApplyLogChunkBatch query.
 	InsertApplyLogChunkScan(results pgx.BatchResults) (InsertApplyLogChunkRow, error)
 
-	FindApplyLogChunks(ctx context.Context, applyID *string) ([]FindApplyLogChunksRow, error)
+	FindApplyLogChunks(ctx context.Context, applyID *string) ([]byte, error)
 	// FindApplyLogChunksBatch enqueues a FindApplyLogChunks query into batch to be executed
 	// later by the batch.
 	FindApplyLogChunksBatch(batch genericBatch, applyID *string)
 	// FindApplyLogChunksScan scans the result of an executed FindApplyLogChunksBatch query.
-	FindApplyLogChunksScan(results pgx.BatchResults) ([]FindApplyLogChunksRow, error)
+	FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
 	// InsertConfigurationVersion inserts a configuration version and
 	// returns the entire row.
@@ -269,19 +269,19 @@ type Querier interface {
 	// UpdatePlanResourcesScan scans the result of an executed UpdatePlanResourcesBatch query.
 	UpdatePlanResourcesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertPlanLogChunk(ctx context.Context, params InsertPlanLogChunkParams) (InsertPlanLogChunkRow, error)
+	InsertPlanLogChunk(ctx context.Context, planID *string, chunk []byte) (InsertPlanLogChunkRow, error)
 	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
 	// later by the batch.
-	InsertPlanLogChunkBatch(batch genericBatch, params InsertPlanLogChunkParams)
+	InsertPlanLogChunkBatch(batch genericBatch, planID *string, chunk []byte)
 	// InsertPlanLogChunkScan scans the result of an executed InsertPlanLogChunkBatch query.
 	InsertPlanLogChunkScan(results pgx.BatchResults) (InsertPlanLogChunkRow, error)
 
-	FindPlanLogChunks(ctx context.Context, planID *string) ([]FindPlanLogChunksRow, error)
+	FindPlanLogChunks(ctx context.Context, planID *string) ([]byte, error)
 	// FindPlanLogChunksBatch enqueues a FindPlanLogChunks query into batch to be executed
 	// later by the batch.
 	FindPlanLogChunksBatch(batch genericBatch, planID *string)
 	// FindPlanLogChunksScan scans the result of an executed FindPlanLogChunksBatch query.
-	FindPlanLogChunksScan(results pgx.BatchResults) ([]FindPlanLogChunksRow, error)
+	FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (InsertRunRow, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
