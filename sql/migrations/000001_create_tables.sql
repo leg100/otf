@@ -164,9 +164,6 @@ CREATE TABLE IF NOT EXISTS plan_logs (
     plan_id  TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     chunk_id SERIAL  NOT NULL,
     chunk    BYTEA   NOT NULL,
-    size     INTEGER NOT NULL,
-    start    BOOLEAN NOT NULL,
-    _end     BOOLEAN NOT NULL,
              PRIMARY KEY (plan_id, chunk_id)
 );
 
@@ -174,9 +171,6 @@ CREATE TABLE IF NOT EXISTS apply_logs (
     apply_id TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     chunk_id SERIAL  NOT NULL,
     chunk    BYTEA   NOT NULL,
-    size     INTEGER NOT NULL,
-    start    BOOLEAN NOT NULL,
-    _end     BOOLEAN NOT NULL,
              PRIMARY KEY (apply_id, chunk_id)
 );
 

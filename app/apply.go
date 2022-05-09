@@ -40,25 +40,25 @@ func (s ApplyService) Get(id string) (*otf.Apply, error) {
 }
 
 // GetChunk reads a chunk of logs for a terraform apply.
-func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
 	return logs, nil
 }
 
 // PutChunk writes a chunk of logs for a terraform apply.
-func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
-	err := s.logs.PutChunk(ctx, id, chunk, opts)
+func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) error {
+	err := s.logs.PutChunk(ctx, id, chunk)
 	if err != nil {
-		s.Error(err, "writing apply logs", "id", id, "start", opts.Start, "end", opts.End)
+		s.Error(err, "writing apply logs", "id", id, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
 
-	if !opts.End {
+	if !chunk.End {
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk []byte, opt
 	}
 
 	_, err = s.db.Update(otf.RunGetOptions{ApplyID: otf.String(id)}, func(run *otf.Run) (err error) {
-		run.Apply.Resources, err = otf.ParseApplyOutput(string(logs))
+		run.Apply.Resources, err = otf.ParseApplyOutput(string(logs.Data))
 
 		return err
 	})

@@ -92,13 +92,13 @@ func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := s.PlanService().GetChunk(r.Context(), vars["id"], opts)
+	chunk, err := s.PlanService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
 
-	if _, err := w.Write(logs); err != nil {
+	if _, err := w.Write(chunk.Marshal()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -120,7 +120,13 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.PlanService().PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
+	chunk := otf.Chunk{
+		Data:  buf.Bytes(),
+		Start: opts.Start,
+		End:   opts.End,
+	}
+
+	if err := s.PlanService().PutChunk(r.Context(), vars["id"], chunk); err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
