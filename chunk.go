@@ -95,16 +95,6 @@ func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
 		opts.Limit = size - opts.Offset
 	}
 
-	// Toggle start marker if beginning is cut off
-	if c.Start && opts.Offset > 0 {
-		c.Start = false
-	}
-
-	// Toggle end marker if ending is cut off
-	if c.End && (opts.Offset+opts.Limit < size) {
-		c.End = false
-	}
-
 	// Cut data
 	data = data[opts.Offset:(opts.Offset + opts.Limit)]
 
