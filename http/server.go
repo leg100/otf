@@ -110,8 +110,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
 
-	router.HandleFunc("/app/{org}/{workspace}/runs/{id}", s.GetRunLogs).Methods("GET")
-
 	// Websocket connections
 	s.registerEventRoutes(router)
 

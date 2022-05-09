@@ -40,7 +40,7 @@ trap print_logs ERR
 
 # Start otfd if not already running
 if ! pgrep otfd; then
-    nohup otfd > otfd.log &
+    nohup otfd --log-color true > otfd.log &
     started=1
 fi
 

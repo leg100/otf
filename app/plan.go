@@ -40,21 +40,21 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 }
 
 // GetChunk reads a chunk of logs for a terraform plan.
-func (s PlanService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+func (s PlanService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
 	return logs, nil
 }
 
 // PutChunk writes a chunk of logs for a terraform plan.
-func (s PlanService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
-	err := s.logs.PutChunk(ctx, id, chunk, opts)
+func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) error {
+	err := s.logs.PutChunk(ctx, id, chunk)
 	if err != nil {
-		s.Error(err, "writing plan logs", "id", id, "start", opts.Start, "end", opts.End)
+		s.Error(err, "writing plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
 

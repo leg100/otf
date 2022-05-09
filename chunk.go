@@ -26,7 +26,9 @@ type GetChunkOptions struct {
 	// Limit is the size of the chunk to retrieve
 	Limit int `schema:"limit"`
 
-	// Offset is the position within the binary object to retrieve the chunk
+	// Offset is the position within the binary object to retrieve the chunk.
+	// NOTE: this includes the start and end marker bytes in an marshalled
+	// chunk.
 	Offset int `schema:"offset"`
 }
 
@@ -48,25 +50,33 @@ func (c Chunk) Marshal() []byte {
 	return c.Data
 }
 
-func MarshalChunk(chunk []byte) (ch Chunk) {
+func UnmarshalChunk(chunk []byte) (out Chunk) {
 	if len(chunk) == 0 {
-		return ch
+		return out
 	}
+
 	if chunk[0] == ChunkStartMarker {
-		ch.Start = true
-		ch.Data = chunk[1:]
+		out.Start = true
+		chunk = chunk[1:]
 	}
 	if chunk[len(chunk)-1] == ChunkEndMarker {
-		ch.End = true
-		ch.Data = chunk[:len(chunk)-1]
+		out.End = true
+		chunk = chunk[:len(chunk)-1]
 	}
-	return ch
+
+	out.Data = chunk
+
+	return out
 }
 
-// Cut returns a new smaller chunk.
+// Cut returns a new smaller chunk. NOTE: the options Offset and limit operate
+// on *marshalled* data.
 func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
-	if opts.Offset > len(c.Data) {
-		return Chunk{}, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, len(c.Data))
+	data := c.Marshal()
+	size := len(data)
+
+	if opts.Offset > size {
+		return Chunk{}, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, size)
 	}
 
 	// limit cannot be higher than the max
@@ -77,26 +87,24 @@ func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
 	// zero means limitless but we set it the size of the remaining data so that
 	// it is easier to work with.
 	if opts.Limit == 0 {
-		opts.Limit = len(c.Data) - opts.Offset
+		opts.Limit = size - opts.Offset
 	}
 
 	// Adjust limit if it extends beyond size of value
-	if (opts.Offset + opts.Limit) > len(c.Data) {
-		opts.Limit = len(c.Data) - opts.Offset
+	if (opts.Offset + opts.Limit) > size {
+		opts.Limit = size - opts.Offset
 	}
 
 	// Cut data
-	c.Data = c.Data[opts.Offset:(opts.Offset + opts.Limit)]
+	data = data[opts.Offset:(opts.Offset + opts.Limit)]
 
-	// Toggle start marker if beginning is cut off
-	if c.Start && opts.Offset > 0 {
-		c.Start = false
-	}
+	return UnmarshalChunk(data), nil
+}
 
-	// Toggle end marker if ending is cut off
-	if c.End && (opts.Offset+opts.Limit < len(c.Data)) {
-		c.End = false
-	}
-
-	return c, nil
+// Append appends a chunk to an existing chunk
+func (c Chunk) Append(chunk Chunk) Chunk {
+	c.Data = append(c.Data, chunk.Data...)
+	c.Start = chunk.Start
+	c.End = chunk.End
+	return c
 }

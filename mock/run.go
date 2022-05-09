@@ -2,7 +2,6 @@ package mock
 
 import (
 	"context"
-	"io"
 
 	"github.com/leg100/otf"
 )
@@ -19,7 +18,6 @@ type RunService struct {
 	CancelFn         func(id string, opts otf.RunCancelOptions) error
 	ForceCancelFn    func(id string, opts otf.RunForceCancelOptions) error
 	EnqueuePlanFn    func(id string) error
-	GetLogsFn        func(ctx context.Context, runID string) (io.Reader, error)
 	GetPlanFileFn    func(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error)
 	UploadPlanFileFn func(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error
 }
@@ -54,10 +52,6 @@ func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOpt
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
 	return s.ForceCancelFn(id, opts)
-}
-
-func (s RunService) GetLogs(ctx context.Context, id string) (io.Reader, error) {
-	return s.GetLogsFn(ctx, id)
 }
 
 func (s RunService) EnqueuePlan(ctx context.Context, id string) error {

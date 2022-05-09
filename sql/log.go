@@ -7,10 +7,10 @@ import (
 	"github.com/leg100/otf"
 )
 
-func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk []byte, opts otf.PutChunkOptions) error {
+func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk otf.Chunk) error {
 	insertBuilder := psql.Insert(table).
-		Columns(idCol, "chunk", "start", "_end", "size").
-		Values(idVal, chunk, opts.Start, opts.End, len(chunk))
+		Columns(idCol, "chunk").
+		Values(idVal, chunk.Marshal())
 
 	sql, args, err := insertBuilder.ToSql()
 	if err != nil {
@@ -41,5 +41,5 @@ func mergeChunks(ctx context.Context, chunks []chunk, opts otf.GetChunkOptions) 
 		}
 	}
 
-	return otf.GetChunk(merged, opts)
+	return otf.UnmarshalChunk(data).Cut(opts)
 }
