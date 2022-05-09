@@ -8,10 +8,10 @@ import (
 	"github.com/leg100/otf"
 )
 
-func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk []byte, opts otf.PutChunkOptions) error {
+func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk otf.Chunk) error {
 	insertBuilder := psql.Insert(table).
-		Columns(idCol, "chunk", "start", "_end", "size").
-		Values(idVal, chunk, opts.Start, opts.End, len(chunk))
+		Column(idCol, "chunk").
+		Values(idVal, chunk.Marshal())
 
 	sql, args, err := insertBuilder.ToSql()
 	if err != nil {
@@ -26,26 +26,20 @@ func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, c
 	return nil
 }
 
-func getChunk(ctx context.Context, db Getter, table, idCol, idVal string, opts otf.GetChunkOptions) ([]byte, error) {
-	type chunk struct {
-		Data  []byte `db:"chunk"`
-		Start bool
-		End   bool `db:"_end"`
-	}
-
-	selectBuilder := psql.Select("chunk", "start", "_end").
+func getChunk(ctx context.Context, db Getter, table, idCol, idVal string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	selectBuilder := psql.Select("string_agg(chunk, '')").
 		From(table).
 		Where(fmt.Sprintf("%s = $1", idCol), idVal).
-		OrderBy("chunk_id ASC")
+		OrderBy("chunk_id ASC").
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
-	var chunks []chunk
+	var chunks []otf.Chunk
 	if err := db.Select(&chunks, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
+		return otf.Chunk{}, databaseError(err, sql)
 	}
 
 	// merge all chunks, prefixing or suffixing with start or end marker as

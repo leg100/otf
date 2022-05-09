@@ -23,15 +23,15 @@ type JobWriter struct {
 
 // Write uploads a chunk of logs to the server.
 func (w *JobWriter) Write(p []byte) (int, error) {
-	opts := PutChunkOptions{}
+	chunk := Chunk{Data: p}
 
 	// First chunk is prefixed with STX
 	if !w.started {
 		w.started = true
-		opts.Start = true
+		chunk.Start = true
 	}
 
-	if err := w.PutChunk(context.Background(), w.ID, p, opts); err != nil {
+	if err := w.PutChunk(context.Background(), w.ID, chunk); err != nil {
 		w.Error(err, "unable to write logs")
 		w.started = false
 		return 0, err
@@ -42,9 +42,7 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *JobWriter) Close() error {
-	opts := PutChunkOptions{End: true}
-
-	if err := w.PutChunk(context.Background(), w.ID, nil, opts); err != nil {
+	if err := w.PutChunk(context.Background(), w.ID, Chunk{End: true}); err != nil {
 		w.Error(err, "unable to close logs")
 
 		return err

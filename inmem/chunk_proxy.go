@@ -20,50 +20,48 @@ func NewChunkProxy(cache otf.Cache, backend otf.ChunkStore) (otf.ChunkStore, err
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (c *ChunkProxy) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
-	if all, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
-		return otf.GetChunk(all, opts)
+func (c *ChunkProxy) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	// Try the cache first
+	if chunk, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
+		return otf.UnmarshalChunk(chunk).Cut(opts)
 	}
 
-	// Get all chunks from backend
-	all, err := c.backend.GetChunk(ctx, id, otf.GetChunkOptions{})
+	// Fall back to getting chunk from backend
+	chunk, err := c.backend.GetChunk(ctx, id, otf.GetChunkOptions{})
 	if err != nil {
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
-	// Populate cache
-	if err := c.cache.Set(otf.LogCacheKey(id), all); err != nil {
-		return nil, err
+	// Cache it
+	if err := c.cache.Set(otf.LogCacheKey(id), chunk.Marshal()); err != nil {
+		return otf.Chunk{}, err
 	}
 
-	// Return requested chunk
-	return otf.GetChunk(all, opts)
+	// Cut chunk down to requested size.
+	return chunk.Cut(opts)
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.
-func (c *ChunkProxy) PutChunk(ctx context.Context, key string, chunk []byte, opts otf.PutChunkOptions) error {
-	if err := c.backend.PutChunk(ctx, key, chunk, opts); err != nil {
+func (c *ChunkProxy) PutChunk(ctx context.Context, key string, chunk otf.Chunk) error {
+	// Write to backend
+	if err := c.backend.PutChunk(ctx, key, chunk); err != nil {
 		return err
 	}
 
 	// First chunk can safely be written straight to cache
-	if opts.Start {
-		return c.cache.Set(otf.LogCacheKey(key), chunk)
+	if chunk.Start {
+		return c.cache.Set(otf.LogCacheKey(key), chunk.Marshal())
 	}
 
 	// Otherwise, append chunk to cache
 	if previous, err := c.cache.Get(otf.LogCacheKey(key)); err == nil {
-		return c.cache.Set(otf.LogCacheKey(key), append(previous, chunk...))
+		return c.cache.Set(otf.LogCacheKey(key), append(previous, chunk.Marshal()...))
 	}
 
 	// Cache needs re-populating from store
-	all, err := c.backend.GetChunk(ctx, key, otf.GetChunkOptions{})
-	if err != nil {
+	if all, err := c.backend.GetChunk(ctx, key, otf.GetChunkOptions{}); err == nil {
+		return c.cache.Set(otf.LogCacheKey(key), all.Marshal())
+	} else {
 		return err
 	}
-	if err := c.cache.Set(otf.LogCacheKey(key), all); err != nil {
-		return err
-	}
-
-	return nil
 }
