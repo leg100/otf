@@ -27,6 +27,6 @@ func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chu
 }
 
 // GetChunk retrieves a log chunk from the DB.
-func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) ([]byte, error) {
+func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	return getChunk(ctx, db, "apply_logs", "apply_id", applyID, opts)
 }

@@ -10,7 +10,7 @@ import (
 
 func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, chunk otf.Chunk) error {
 	insertBuilder := psql.Insert(table).
-		Column(idCol, "chunk").
+		Columns(idCol, "chunk").
 		Values(idVal, chunk.Marshal())
 
 	sql, args, err := insertBuilder.ToSql()
@@ -27,35 +27,25 @@ func putChunk(ctx context.Context, db sqlx.Execer, table, idCol, idVal string, c
 }
 
 func getChunk(ctx context.Context, db Getter, table, idCol, idVal string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	selectBuilder := psql.Select("string_agg(chunk, '')").
-		From(table).
-		Where(fmt.Sprintf("%s = $1", idCol), idVal).
-		OrderBy("chunk_id ASC").
+	selectBuilder := psql.
+		Select("string_agg(chunk, '')").
+		FromSelect(
+			psql.Select(idCol, "chunk").
+				From(table).
+				Where(fmt.Sprintf("%s = ?", idCol), idVal).
+				OrderBy("chunk_id ASC"),
+			"t").
+		GroupBy(idCol)
 
 	sql, args, err := selectBuilder.ToSql()
 	if err != nil {
 		return otf.Chunk{}, err
 	}
 
-	var chunks []otf.Chunk
-	if err := db.Select(&chunks, sql, args...); err != nil {
+	var data []byte
+	if err := db.Get(&data, sql, args...); err != nil {
 		return otf.Chunk{}, databaseError(err, sql)
 	}
 
-	// merge all chunks, prefixing or suffixing with start or end marker as
-	// appropriate.
-	var merged []byte
-	for _, ch := range chunks {
-		if ch.Start {
-			merged = append(merged, otf.ChunkStartMarker)
-		}
-
-		merged = append(merged, ch.Data...)
-
-		if ch.End {
-			merged = append(merged, otf.ChunkEndMarker)
-		}
-	}
-
-	return otf.GetChunk(merged, opts)
+	return otf.UnmarshalChunk(data).Cut(opts)
 }

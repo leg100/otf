@@ -101,7 +101,7 @@ func TestChunkCut(t *testing.T) {
 			},
 			opts: GetChunkOptions{Offset: 3, Limit: 4},
 			want: Chunk{
-				Data:  []byte("lo w"),
+				Data:  []byte("llo "),
 				Start: false,
 				End:   false,
 			},
@@ -115,7 +115,7 @@ func TestChunkCut(t *testing.T) {
 			},
 			opts: GetChunkOptions{Offset: 3, Limit: 99},
 			want: Chunk{
-				Data:  []byte("lo world"),
+				Data:  []byte("llo world"),
 				Start: false,
 				End:   true,
 			},

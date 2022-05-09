@@ -27,7 +27,9 @@ type GetChunkOptions struct {
 	// Limit is the size of the chunk to retrieve
 	Limit int `schema:"limit"`
 
-	// Offset is the position within the binary object to retrieve the chunk
+	// Offset is the position within the binary object to retrieve the chunk.
+	// NOTE: this includes the start and end marker bytes in an marshalled
+	// chunk.
 	Offset int `schema:"offset"`
 }
 
@@ -68,10 +70,14 @@ func UnmarshalChunk(chunk []byte) (out Chunk) {
 	return out
 }
 
-// Cut returns a new smaller chunk.
+// Cut returns a new smaller chunk. NOTE: the options Offset and limit operate
+// on *marshalled* data.
 func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
-	if opts.Offset > len(c.Data) {
-		return Chunk{}, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, len(c.Data))
+	data := c.Marshal()
+	size := len(data)
+
+	if opts.Offset > size {
+		return Chunk{}, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, size)
 	}
 
 	// limit cannot be higher than the max
@@ -82,12 +88,12 @@ func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
 	// zero means limitless but we set it the size of the remaining data so that
 	// it is easier to work with.
 	if opts.Limit == 0 {
-		opts.Limit = len(c.Data) - opts.Offset
+		opts.Limit = size - opts.Offset
 	}
 
 	// Adjust limit if it extends beyond size of value
-	if (opts.Offset + opts.Limit) > len(c.Data) {
-		opts.Limit = len(c.Data) - opts.Offset
+	if (opts.Offset + opts.Limit) > size {
+		opts.Limit = size - opts.Offset
 	}
 
 	// Toggle start marker if beginning is cut off
@@ -96,14 +102,14 @@ func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
 	}
 
 	// Toggle end marker if ending is cut off
-	if c.End && (opts.Offset+opts.Limit < len(c.Data)) {
+	if c.End && (opts.Offset+opts.Limit < size) {
 		c.End = false
 	}
 
 	// Cut data
-	c.Data = c.Data[opts.Offset:(opts.Offset + opts.Limit)]
+	data = data[opts.Offset:(opts.Offset + opts.Limit)]
 
-	return c, nil
+	return UnmarshalChunk(data), nil
 }
 
 // Append appends a chunk to an existing chunk

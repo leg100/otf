@@ -97,17 +97,14 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	chunk, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// strip STX and ETX
-	logs = logs[1 : len(logs)-1]
-
 	// convert to string
-	logStr := string(logs)
+	logStr := string(chunk.Data)
 
 	// trim leading and trailing white space
 	logStr = strings.TrimSpace(logStr)
