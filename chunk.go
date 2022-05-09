@@ -8,9 +8,8 @@ import (
 // Chunk is a continuous portion of binary data, with start and end indicating
 // if the portion includes the start and/or end of the binary data.
 type Chunk struct {
-	Data  []byte `db:"chunk"`
-	Start bool
-	End   bool `db:"_end"`
+	Data       []byte
+	Start, End bool
 }
 
 // ChunkStore implementations provide a persistent store from and to which chunks

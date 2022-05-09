@@ -50,7 +50,7 @@ func TestApplyLog_GetChunk(t *testing.T) {
 			name: "first chunk",
 			opts: otf.GetChunkOptions{Limit: 4},
 			want: otf.Chunk{
-				Data:  []byte("hell"),
+				Data:  []byte("hel"),
 				Start: true,
 			},
 		},
@@ -58,14 +58,14 @@ func TestApplyLog_GetChunk(t *testing.T) {
 			name: "intermediate chunk",
 			opts: otf.GetChunkOptions{Offset: 4, Limit: 3},
 			want: otf.Chunk{
-				Data: []byte("o w"),
+				Data: []byte("lo "),
 			},
 		},
 		{
 			name: "last chunk",
 			opts: otf.GetChunkOptions{Offset: 7},
 			want: otf.Chunk{
-				Data: []byte("orld"),
+				Data: []byte("world"),
 				End:  true,
 			},
 		},
