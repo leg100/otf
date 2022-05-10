@@ -2,8 +2,9 @@ package sql
 
 import (
 	"context"
+	"math"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 )
 
@@ -12,21 +13,45 @@ var (
 )
 
 type ApplyLogDB struct {
-	*sqlx.DB
+	*pgx.Conn
 }
 
-func NewApplyLogDB(db *sqlx.DB) *ApplyLogDB {
+func NewApplyLogDB(conn *pgx.Conn) *ApplyLogDB {
 	return &ApplyLogDB{
-		DB: db,
+		Conn: conn,
 	}
 }
 
 // PutChunk persists a log chunk to the DB.
-func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chunk) error {
-	return putChunk(ctx, db, "apply_logs", "apply_id", applyID, chunk)
+func (db ApplyLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk) error {
+	q := NewQuerier(db.Conn)
+
+	if len(chunk.Data) == 0 {
+		return nil
+	}
+
+	_, err := q.InsertApplyLogChunk(ctx, &planID, chunk.Marshal())
+	return err
 }
 
 // GetChunk retrieves a log chunk from the DB.
-func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	return getChunk(ctx, db, "apply_logs", "apply_id", applyID, opts)
+func (db ApplyLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	q := NewQuerier(db.Conn)
+
+	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
+	// maximum a postgres INT can hold.
+	if opts.Limit == 0 {
+		opts.Limit = math.MaxInt32
+	}
+
+	chunk, err := q.FindApplyLogChunks(ctx, FindApplyLogChunksParams{
+		ApplyID: &planID,
+		Offset:  int32(opts.Offset),
+		Limit:   int32(opts.Limit),
+	})
+	if err != nil {
+		return otf.Chunk{}, err
+	}
+
+	return otf.UnmarshalChunk(chunk), nil
 }

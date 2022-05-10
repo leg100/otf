@@ -9,7 +9,8 @@ INSERT INTO apply_logs (
 RETURNING *;
 
 -- name: FindApplyLogChunks :one
-SELECT string_agg(chunk, '')
+SELECT
+    substring(string_agg(chunk, '') FROM pggen.arg('offset') FOR pggen.arg('limit'))
 FROM (
     SELECT apply_id, chunk
     FROM apply_logs

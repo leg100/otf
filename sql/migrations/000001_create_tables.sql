@@ -185,14 +185,14 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
 
 CREATE TABLE IF NOT EXISTS plan_logs (
     plan_id  TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id GENERATED ALWAYS AS IDENTITY,
+    chunk_id INT GENERATED ALWAYS AS IDENTITY,
     chunk    BYTEA   NOT NULL,
              PRIMARY KEY (plan_id, chunk_id)
 );
 
 CREATE TABLE IF NOT EXISTS apply_logs (
     apply_id TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id GENERATED ALWAYS AS IDENTITY,
+    chunk_id INT GENERATED ALWAYS AS IDENTITY,
     chunk    BYTEA   NOT NULL,
              PRIMARY KEY (apply_id, chunk_id)
 );

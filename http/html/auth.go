@@ -249,7 +249,7 @@ func synchroniseOrganizations(
 	user *otf.User,
 	githubOrganization ...*github.Organization) error {
 
-	user.Organizations = []*otf.Organization{}
+	var orgs []*otf.Organization
 
 	for _, githubOrganization := range githubOrganization {
 		org, err := organizationService.EnsureCreated(ctx, otf.OrganizationCreateOptions{
@@ -258,10 +258,11 @@ func synchroniseOrganizations(
 		if err != nil {
 			return err
 		}
-		user.Organizations = append(user.Organizations, org)
+		orgs = append(orgs, org)
 	}
 
-	if err := userService.Update(ctx, user.Username, user); err != nil {
+	_, err := userService.SyncOrganizationMemberships(ctx, user.ID, orgs)
+	if err != nil {
 		return err
 	}
 

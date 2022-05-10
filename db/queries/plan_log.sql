@@ -9,7 +9,8 @@ INSERT INTO plan_logs (
 RETURNING *;
 
 -- name: FindPlanLogChunks :one
-SELECT string_agg(chunk, '')
+SELECT
+    substring(string_agg(chunk, '') FROM pggen.arg('offset') FOR pggen.arg('limit'))
 FROM (
     SELECT plan_id, chunk
     FROM plan_logs

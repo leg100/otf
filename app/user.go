@@ -60,6 +60,19 @@ func (s UserService) Update(ctx context.Context, username string, updated *otf.U
 	return nil
 }
 
+func (s UserService) SyncOrganizationMemberships(ctx context.Context, id string, orgs []*otf.Organization) (*otf.User, error) {
+	user, err := s.db.UpdateOrganizationMemberships(id, func(user *otf.User, updater otf.OrganizationMembershipUpdater) error {
+		return user.SyncOrganizationMemberships(ctx, orgs, updater)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.V(1).Info("updated user", "username", username)
+
+	return nil
+}
+
 // CreateSession creates a session and adds it to the user.
 func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *otf.SessionData) (*otf.Session, error) {
 	session, err := user.AttachNewSession(data)

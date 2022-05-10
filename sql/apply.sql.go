@@ -52,10 +52,10 @@ type Querier interface {
 	// InsertApplyLogChunkScan scans the result of an executed InsertApplyLogChunkBatch query.
 	InsertApplyLogChunkScan(results pgx.BatchResults) (InsertApplyLogChunkRow, error)
 
-	FindApplyLogChunks(ctx context.Context, applyID *string) ([]byte, error)
+	FindApplyLogChunks(ctx context.Context, params FindApplyLogChunksParams) ([]byte, error)
 	// FindApplyLogChunksBatch enqueues a FindApplyLogChunks query into batch to be executed
 	// later by the batch.
-	FindApplyLogChunksBatch(batch genericBatch, applyID *string)
+	FindApplyLogChunksBatch(batch genericBatch, params FindApplyLogChunksParams)
 	// FindApplyLogChunksScan scans the result of an executed FindApplyLogChunksBatch query.
 	FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
@@ -276,10 +276,10 @@ type Querier interface {
 	// InsertPlanLogChunkScan scans the result of an executed InsertPlanLogChunkBatch query.
 	InsertPlanLogChunkScan(results pgx.BatchResults) (InsertPlanLogChunkRow, error)
 
-	FindPlanLogChunks(ctx context.Context, planID *string) ([]byte, error)
+	FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error)
 	// FindPlanLogChunksBatch enqueues a FindPlanLogChunks query into batch to be executed
 	// later by the batch.
-	FindPlanLogChunksBatch(batch genericBatch, planID *string)
+	FindPlanLogChunksBatch(batch genericBatch, params FindPlanLogChunksParams)
 	// FindPlanLogChunksScan scans the result of an executed FindPlanLogChunksBatch query.
 	FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
@@ -395,6 +395,13 @@ type Querier interface {
 	// DeleteSessionByTokenScan scans the result of an executed DeleteSessionByTokenBatch query.
 	DeleteSessionByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	DeleteSessionsExpired(ctx context.Context) (pgconn.CommandTag, error)
+	// DeleteSessionsExpiredBatch enqueues a DeleteSessionsExpired query into batch to be executed
+	// later by the batch.
+	DeleteSessionsExpiredBatch(batch genericBatch)
+	// DeleteSessionsExpiredScan scans the result of an executed DeleteSessionsExpiredBatch query.
+	DeleteSessionsExpiredScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (InsertStateVersionRow, error)
 	// InsertStateVersionBatch enqueues a InsertStateVersion query into batch to be executed
 	// later by the batch.
@@ -460,10 +467,24 @@ type Querier interface {
 	// InsertUserScan scans the result of an executed InsertUserBatch query.
 	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
 
-	FindUsers(ctx context.Context, limit int, offset int) ([]FindUsersRow, error)
+	InsertOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (InsertOrganizationMembershipRow, error)
+	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
+	// later by the batch.
+	InsertOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string)
+	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
+	InsertOrganizationMembershipScan(results pgx.BatchResults) (InsertOrganizationMembershipRow, error)
+
+	DeleteOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (pgconn.CommandTag, error)
+	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
+	// later by the batch.
+	DeleteOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string)
+	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
+	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindUsers(ctx context.Context) ([]FindUsersRow, error)
 	// FindUsersBatch enqueues a FindUsers query into batch to be executed
 	// later by the batch.
-	FindUsersBatch(batch genericBatch, limit int, offset int)
+	FindUsersBatch(batch genericBatch)
 	// FindUsersScan scans the result of an executed FindUsersBatch query.
 	FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, error)
 
@@ -851,6 +872,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteSessionByTokenSQL, deleteSessionByTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteSessionByToken': %w", err)
 	}
+	if _, err := p.Prepare(ctx, deleteSessionsExpiredSQL, deleteSessionsExpiredSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteSessionsExpired': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
 	}
@@ -877,6 +901,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertUserSQL, insertUserSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertUser': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertOrganizationMembershipSQL, insertOrganizationMembershipSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertOrganizationMembership': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUsersSQL, findUsersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsers': %w", err)

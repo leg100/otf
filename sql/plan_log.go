@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"math"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -29,39 +30,28 @@ func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk
 		return nil
 	}
 
-	data := chunk.Data
-
-	if chunk.End {
-		data = append(data, otf.ChunkEndMarker)
-	}
-
-	_, err := q.InsertPlanLogChunk(ctx, &planID, data)
+	_, err := q.InsertPlanLogChunk(ctx, &planID, chunk.Marshal())
 	return err
 }
 
-// GetChunk retrieves a log chunk from the DB. GetChunkOptions is ignored, so
-// the biggest chunk possible will be retrieved. Instead, it is expected an
-// in-memory cache is placed in front, calling this method and caching the
-// content.
-func (db PlanLogDB) GetChunk(ctx context.Context, planID string, _ otf.GetChunkOptions) (otf.Chunk, error) {
+// GetChunk retrieves a log chunk from the DB.
+func (db PlanLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	q := NewQuerier(db.Conn)
 
-	data, err := q.FindPlanLogChunks(ctx, &planID)
+	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
+	// maximum a postgres INT can hold.
+	if opts.Limit == 0 {
+		opts.Limit = math.MaxInt32
+	}
+
+	chunk, err := q.FindPlanLogChunks(ctx, FindPlanLogChunksParams{
+		PlanID: &planID,
+		Offset: int32(opts.Offset),
+		Limit:  int32(opts.Limit),
+	})
 	if err != nil {
 		return otf.Chunk{}, err
 	}
 
-	chunk := otf.Chunk{Data: data}
-
-	// NOTE: data should always be non-zero but empty data may have been
-	// inserted into the DB in error.
-	if len(data) > 0 {
-		chunk.Start = true
-
-		if data[len(data)-1] == otf.ChunkEndMarker {
-			chunk.End = true
-		}
-	}
-
-	return chunk, nil
+	return otf.UnmarshalChunk(chunk), nil
 }

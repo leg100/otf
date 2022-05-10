@@ -5,7 +5,6 @@ package sql
 import (
 	"context"
 	"fmt"
-
 	"github.com/jackc/pgx/v4"
 )
 
@@ -22,24 +21,19 @@ type InsertPlanLogChunkRow struct {
 	PlanID  *string `json:"plan_id"`
 	ChunkID int32   `json:"chunk_id"`
 	Chunk   []byte  `json:"chunk"`
-	Size    int32   `json:"size"`
-	Start   *bool   `json:"start"`
-	End     *bool   `json:"_end"`
 }
 
 func (s InsertPlanLogChunkRow) GetPlanID() *string { return s.PlanID }
-func (s InsertPlanLogChunkRow) GetChunkID() int32  { return s.ChunkID }
-func (s InsertPlanLogChunkRow) GetChunk() []byte   { return s.Chunk }
-func (s InsertPlanLogChunkRow) GetSize() int32     { return s.Size }
-func (s InsertPlanLogChunkRow) GetStart() *bool    { return s.Start }
-func (s InsertPlanLogChunkRow) GetEnd() *bool      { return s.End }
+func (s InsertPlanLogChunkRow) GetChunkID() int32 { return s.ChunkID }
+func (s InsertPlanLogChunkRow) GetChunk() []byte { return s.Chunk }
+
 
 // InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
 func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID *string, chunk []byte) (InsertPlanLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")
 	row := q.conn.QueryRow(ctx, insertPlanLogChunkSQL, planID, chunk)
 	var item InsertPlanLogChunkRow
-	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk, &item.Size, &item.Start, &item.End); err != nil {
+	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk); err != nil {
 		return item, fmt.Errorf("query InsertPlanLogChunk: %w", err)
 	}
 	return item, nil
@@ -54,26 +48,33 @@ func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID *string, 
 func (q *DBQuerier) InsertPlanLogChunkScan(results pgx.BatchResults) (InsertPlanLogChunkRow, error) {
 	row := results.QueryRow()
 	var item InsertPlanLogChunkRow
-	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk, &item.Size, &item.Start, &item.End); err != nil {
+	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk); err != nil {
 		return item, fmt.Errorf("scan InsertPlanLogChunkBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const findPlanLogChunksSQL = `SELECT string_agg(chunk, '')
+const findPlanLogChunksSQL = `SELECT
+    substring(string_agg(chunk, '') FROM $1 FOR $2)
 FROM (
     SELECT plan_id, chunk
     FROM plan_logs
-    WHERE plan_id = $1
+    WHERE plan_id = $3
     ORDER BY chunk_id
 ) c
 GROUP BY plan_id
 ;`
 
+type FindPlanLogChunksParams struct {
+	Offset int32
+	Limit  int32
+	PlanID *string
+}
+
 // FindPlanLogChunks implements Querier.FindPlanLogChunks.
-func (q *DBQuerier) FindPlanLogChunks(ctx context.Context, planID *string) ([]byte, error) {
+func (q *DBQuerier) FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindPlanLogChunks")
-	row := q.conn.QueryRow(ctx, findPlanLogChunksSQL, planID)
+	row := q.conn.QueryRow(ctx, findPlanLogChunksSQL, params.Offset, params.Limit, params.PlanID)
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query FindPlanLogChunks: %w", err)
@@ -82,8 +83,8 @@ func (q *DBQuerier) FindPlanLogChunks(ctx context.Context, planID *string) ([]by
 }
 
 // FindPlanLogChunksBatch implements Querier.FindPlanLogChunksBatch.
-func (q *DBQuerier) FindPlanLogChunksBatch(batch genericBatch, planID *string) {
-	batch.Queue(findPlanLogChunksSQL, planID)
+func (q *DBQuerier) FindPlanLogChunksBatch(batch genericBatch, params FindPlanLogChunksParams) {
+	batch.Queue(findPlanLogChunksSQL, params.Offset, params.Limit, params.PlanID)
 }
 
 // FindPlanLogChunksScan implements Querier.FindPlanLogChunksScan.

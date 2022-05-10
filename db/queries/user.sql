@@ -14,6 +14,23 @@ INSERT INTO users (
 )
 RETURNING *;
 
+-- name: InsertOrganizationMembership :one
+INSERT INTO organization_memberships (
+    user_id,
+    organization_id
+) VALUES (
+    pggen.arg('UserID'),
+    pggen.arg('OrganizationID')
+)
+RETURNING *;
+
+-- name: DeleteOrganizationMembership :exec
+DELETE FROM organization_memberships
+WHERE
+    user_id = pggen.arg('user_id') AND
+    organization_id = pggen.arg('organization_id')
+;
+
 -- name: FindUsers :many
 SELECT users.*,
     array_agg(sessions) AS sessions,
@@ -24,7 +41,6 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 GROUP BY users.user_id
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
 -- name: FindUserByID :one
@@ -38,6 +54,19 @@ JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.user_id = pggen.arg('user_id')
 GROUP BY users.user_id
+;
+
+-- name: FindUserByIDForUpdate :one
+SELECT users.*,
+    array_agg(sessions) AS sessions,
+    array_agg(tokens) AS tokens,
+    array_agg(organizations) AS organizations
+FROM users
+JOIN sessions USING(user_id)
+JOIN tokens USING(user_id)
+JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+WHERE users.user_id = pggen.arg('user_id')
+FOR UPDATE
 ;
 
 -- name: FindUserByUsername :one

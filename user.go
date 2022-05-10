@@ -111,6 +111,45 @@ type UserService interface {
 
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, id string) error
+
+	// SyncOrganizationMemberships synchronises a user's organization
+	// memberships, adding and removing them accordingly.
+	SyncOrganizationMemberships(ctx context.Context, id string, orgs []*Organization) (*User, error)
+}
+
+// OrganizationMembershipUpdater manages changes to a user's organization
+// memberships
+type OrganizationMembershipUpdater interface {
+	Add(ctx context.Context, orgID string) error
+	Remove(ctx context.Context, orgID string) error
+}
+
+// SyncOrganizationMemberships synchronises a user's organization
+// memberships, taking an authoritative list of memberships and ensuring its
+// memberships match, adding and removing memberships accordingly.
+func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, updater OrganizationMembershipUpdater) error {
+	// Iterate thru authoritative and if not in user's membership, add to db
+	for _, auth := range authoritative {
+		if !inOrganizationList(auth.ID, u.Organizations) {
+			if err := updater.Add(ctx, auth.ID); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Iterate thru existing and if not in authoritative list, remove from db
+	for _, existing := range u.Organizations {
+		if !inOrganizationList(existing.ID, authoritative) {
+			if err := updater.Remove(ctx, existing.ID); err != nil {
+				return err
+			}
+		}
+	}
+
+	// ...and update receiver too.
+	u.Organizations = authoritative
+
+	return nil
 }
 
 // UserStore is a persistence store for user accounts and their associated
@@ -144,6 +183,7 @@ type UserStore interface {
 }
 
 type UserSpec struct {
+	UserID                *string
 	Username              *string
 	SessionToken          *string
 	AuthenticationTokenID *string
@@ -182,4 +222,13 @@ func NewUser(username string) *User {
 	}
 
 	return &user
+}
+
+func inOrganizationList(orgID string, orgs []*Organization) bool {
+	for _, org := range orgs {
+		if org.ID == orgID {
+			return true
+		}
+	}
+	return false
 }

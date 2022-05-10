@@ -46,3 +46,8 @@ RETURNING *;
 DELETE
 FROM sessions
 WHERE token = pggen.arg('token');
+
+-- name: DeleteSessionsExpired :exec
+DELETE
+FROM sessions
+WHERE expiry < current_timestamp;

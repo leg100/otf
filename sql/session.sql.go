@@ -266,3 +266,31 @@ func (q *DBQuerier) DeleteSessionByTokenScan(results pgx.BatchResults) (pgconn.C
 	}
 	return cmdTag, err
 }
+
+const deleteSessionsExpiredSQL = `DELETE
+FROM sessions
+WHERE expiry < current_timestamp;`
+
+// DeleteSessionsExpired implements Querier.DeleteSessionsExpired.
+func (q *DBQuerier) DeleteSessionsExpired(ctx context.Context) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteSessionsExpired")
+	cmdTag, err := q.conn.Exec(ctx, deleteSessionsExpiredSQL)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query DeleteSessionsExpired: %w", err)
+	}
+	return cmdTag, err
+}
+
+// DeleteSessionsExpiredBatch implements Querier.DeleteSessionsExpiredBatch.
+func (q *DBQuerier) DeleteSessionsExpiredBatch(batch genericBatch) {
+	batch.Queue(deleteSessionsExpiredSQL)
+}
+
+// DeleteSessionsExpiredScan implements Querier.DeleteSessionsExpiredScan.
+func (q *DBQuerier) DeleteSessionsExpiredScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec DeleteSessionsExpiredBatch: %w", err)
+	}
+	return cmdTag, err
+}
