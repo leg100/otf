@@ -86,23 +86,9 @@ func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
 	w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
 }
 
-// TransferSession transfers the active session to the given user. Note: after
-// this returns, the context will refer to a user without an active session!
-func (s *sessions) TransferSession(ctx context.Context, to *otf.User) error {
-	existing := s.getUserFromContext(ctx)
-
-	existing.TransferSession(existing.Session, to)
-
-	if err := s.UserService.UpdateSession(ctx, to, existing.Session); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
-	user := s.getUserFromContext(ctx)
+	user := s.GetUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
@@ -112,10 +98,10 @@ func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
-	return s.getUserFromContext(ctx).IsAuthenticated()
+	return s.GetUserFromContext(ctx).IsAuthenticated()
 }
 
-func (s *sessions) getUserFromContext(ctx context.Context) *ActiveUser {
+func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
 	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
 	if !ok {
 		panic("no user in context")
@@ -126,7 +112,7 @@ func (s *sessions) getUserFromContext(ctx context.Context) *ActiveUser {
 // PopFlash retrieves a flash message from the current session. The message is
 // thereafter discarded. Nil is returned if there is no flash message.
 func (s *sessions) PopFlash(r *http.Request) (*otf.Flash, error) {
-	user := s.getUserFromContext(r.Context())
+	user := s.GetUserFromContext(r.Context())
 
 	flash := user.PopFlash()
 
@@ -151,7 +137,7 @@ func (s *sessions) FlashError(r *http.Request, msg ...interface{}) error {
 }
 
 func (s *sessions) flash(r *http.Request, t otf.FlashType, msg ...interface{}) error {
-	user := s.getUserFromContext(r.Context())
+	user := s.GetUserFromContext(r.Context())
 
 	user.SetFlash(t, msg...)
 

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/jmoiron/sqlx"
 	"github.com/leg100/otf"
 )
 
@@ -155,92 +153,18 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 	return getUser(ctx, NewQuerier(db.Conn), spec)
 }
 
-// CreateSession inserts the session, associating it with the user.
-func (db UserDB) CreateSession(ctx context.Context, session *otf.Session) error {
+func (db UserDB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
 	q := NewQuerier(db.Conn)
 
-	_, err := q.InsertSession(ctx, InsertSessionParams{
-		Token:   &session.Token,
-		Address: &session.Address,
-		Expiry:  session.Expiry,
-		UserID:  &session.UserID,
-	})
+	_, err := q.InsertOrganizationMembership(ctx, &id, &orgID)
 	return err
 }
 
-// UpdateSession updates a session row in the sessions table with the given
-// session. The token identifies the session row to update.
-func (db UserDB) UpdateSession(ctx context.Context, token string, updated *otf.Session) error {
+func (db UserDB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
 	q := NewQuerier(db.Conn)
 
-	existing, err := getSession(ctx, q, token)
-	if err != nil {
-		return err
-	}
-
-	updateBuilder := psql.
-		Update("sessions").
-		Where("token = ?", updated.Token)
-
-	var modified bool
-
-	if existing.Address != updated.Address {
-		return fmt.Errorf("address cannot be updated on a session")
-	}
-
-	if existing.Flash != updated.Flash {
-		modified = true
-		updateBuilder = updateBuilder.Set("flash", updated.Flash)
-	}
-
-	if existing.Expiry != updated.Expiry {
-		modified = true
-		updateBuilder = updateBuilder.Set("expiry", updated.Expiry)
-	}
-
-	if existing.UserID != updated.UserID {
-		modified = true
-		updateBuilder = updateBuilder.Set("user_id", updated.UserID)
-	}
-
-	if !modified {
-		return fmt.Errorf("update was requested but no changes were found")
-	}
-
-	sql, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
-}
-
-func (db UserDB) UpdateOrganizationMemberships(ctx context.Context, id string, fn func(*otf.User, otf.OrganizationMembershipUpdater) error) (*otf.User, error) {
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-
-	q := NewQuerier(tx)
-
-	// select ...for update
-	result, err := q.FindUserByIDForUpdate(ctx, &id)
-	if err != nil {
-		return nil, err
-	}
-	user := convertUser(result)
-
-	if err := fn(user, newUserStatusUpdater(tx, user.ID)); err != nil {
-		return nil, err
-	}
-
-	return user, tx.Commit(ctx)
+	_, err := q.DeleteOrganizationMembership(ctx, &id, &orgID)
+	return err
 }
 
 // Delete deletes a user from the DB.
@@ -263,16 +187,6 @@ func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
 
 	if result.RowsAffected() == 0 {
 		return otf.ErrResourceNotFound
-	}
-
-	return nil
-}
-
-// DeleteSession deletes a user's session from the DB.
-func (db UserDB) DeleteSession(ctx context.Context, token string) error {
-	_, err := db.Exec("DELETE FROM sessions WHERE token = $1", token)
-	if err != nil {
-		return fmt.Errorf("unable to delete session: %w", err)
 	}
 
 	return nil
@@ -415,97 +329,6 @@ func getSession(ctx context.Context, db Getter, token string) (*otf.Session, err
 	return &session, nil
 }
 
-func updateOrganizationMemberships(ctx context.Context, db *sqlx.DB, existing, updated *otf.User) error {
-	added, removed := diffOrganizationLists(existing.Organizations, updated.Organizations)
-
-	if err := addOrganizationMemberships(ctx, db, existing, added); err != nil {
-		return err
-	}
-
-	if err := deleteOrganizationMemberships(ctx, db, existing, removed); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func addOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
-	if len(organizations) == 0 {
-		return nil
-	}
-
-	insertBuilder := psql.Insert("organization_memberships").Columns("user_id", "organization_id")
-
-	for _, org := range organizations {
-		insertBuilder = insertBuilder.Values(user.ID, org.ID)
-	}
-
-	sql, args, err := insertBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
-}
-
-func deleteOrganizationMemberships(ctx context.Context, db *sqlx.DB, user *otf.User, organizations []*otf.Organization) error {
-	if len(organizations) == 0 {
-		return nil
-	}
-
-	var where squirrel.Or
-	for _, org := range organizations {
-		where = append(where, squirrel.Eq{"user_id": user.ID, "organization_id": org.ID})
-	}
-
-	sql, args, err := psql.Delete("organization_memberships").Where(where).ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
-}
-
-// diffOrganizationLists compares two lists of organizations, al and bl, and
-// returns organizations present in b but absent in a, and organizations absent
-// in b but present in a. Uses the organization ID for comparison.
-func diffOrganizationLists(al, bl []*otf.Organization) (added, removed []*otf.Organization) {
-	am := make(map[string]bool)
-	for _, ax := range al {
-		am[ax.ID] = true
-	}
-
-	bm := make(map[string]bool)
-	for _, bx := range bl {
-		bm[bx.ID] = true
-	}
-
-	// find those in a but not in b
-	for _, ax := range al {
-		if _, ok := bm[ax.ID]; !ok {
-			removed = append(removed, ax)
-		}
-	}
-
-	// find those in b but in in a
-	for _, bx := range bl {
-		if _, ok := am[bx.ID]; !ok {
-			added = append(added, bx)
-		}
-	}
-
-	return
-}
 func convertUser(row userRow) *otf.User {
 	user := otf.User{
 		ID:                  *row.GetUserID(),

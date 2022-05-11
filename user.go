@@ -100,6 +100,9 @@ type UserService interface {
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 
+	// Transfer session from one user to another
+	TransferSession(ctx context.Context, from, to *User, session *Session) error
+
 	// UpdateSession persists any updates to the user's session data
 	UpdateSession(ctx context.Context, user *User, session *Session) error
 
@@ -114,24 +117,17 @@ type UserService interface {
 
 	// SyncOrganizationMemberships synchronises a user's organization
 	// memberships, adding and removing them accordingly.
-	SyncOrganizationMemberships(ctx context.Context, id string, orgs []*Organization) (*User, error)
-}
-
-// OrganizationMembershipUpdater manages changes to a user's organization
-// memberships
-type OrganizationMembershipUpdater interface {
-	Add(ctx context.Context, orgID string) error
-	Remove(ctx context.Context, orgID string) error
+	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
 }
 
 // SyncOrganizationMemberships synchronises a user's organization
 // memberships, taking an authoritative list of memberships and ensuring its
 // memberships match, adding and removing memberships accordingly.
-func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, updater OrganizationMembershipUpdater) error {
+func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
 	// Iterate thru authoritative and if not in user's membership, add to db
 	for _, auth := range authoritative {
 		if !inOrganizationList(auth.ID, u.Organizations) {
-			if err := updater.Add(ctx, auth.ID); err != nil {
+			if err := store.AddOrganizationMembership(ctx, u.ID, auth.ID); err != nil {
 				return err
 			}
 		}
@@ -140,7 +136,7 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 	// Iterate thru existing and if not in authoritative list, remove from db
 	for _, existing := range u.Organizations {
 		if !inOrganizationList(existing.ID, authoritative) {
-			if err := updater.Remove(ctx, existing.ID); err != nil {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID, existing.ID); err != nil {
 				return err
 			}
 		}
@@ -180,6 +176,12 @@ type UserStore interface {
 
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, id string) error
+
+	// AddOrganizationMembership adds a user as a member of an organization
+	AddOrganizationMembership(ctx context.Context, id, orgID string) error
+	// RemoveOrganizationMembership removes a user as a member of an
+	// organization
+	RemoveOrganizationMembership(ctx context.Context, id, orgID string) error
 }
 
 type UserSpec struct {

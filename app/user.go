@@ -60,17 +60,14 @@ func (s UserService) Update(ctx context.Context, username string, updated *otf.U
 	return nil
 }
 
-func (s UserService) SyncOrganizationMemberships(ctx context.Context, id string, orgs []*otf.Organization) (*otf.User, error) {
-	user, err := s.db.UpdateOrganizationMemberships(id, func(user *otf.User, updater otf.OrganizationMembershipUpdater) error {
-		return user.SyncOrganizationMemberships(ctx, orgs, updater)
-	})
-	if err != nil {
+func (s UserService) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
+	if err := user.SyncOrganizationMemberships(ctx, orgs, s.db); err != nil {
 		return nil, err
 	}
 
-	s.V(1).Info("updated user", "username", username)
+	s.V(1).Info("synchronised user's organization memberships", "username", user.Username)
 
-	return nil
+	return user, nil
 }
 
 // CreateSession creates a session and adds it to the user.
@@ -109,6 +106,21 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 
 // UpdateSession updates a user session.
 func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
+	err := s.db.UpdateSession(ctx, session.Token, session)
+	if err != nil {
+		s.Error(err, "updating session", "username", user.Username)
+		return err
+	}
+
+	s.V(1).Info("updated session", "username", user.Username)
+
+	return nil
+}
+
+// TransferSession transfers a session from one user to another.
+func (s UserService) TransferSession(ctx context.Context, from, to *otf.User, session *otf.Session) error {
+	from.TransferSession(session, to)
+
 	err := s.db.UpdateSession(ctx, session.Token, session)
 	if err != nil {
 		s.Error(err, "updating session", "username", user.Username)
