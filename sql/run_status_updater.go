@@ -7,65 +7,64 @@ import (
 	"github.com/leg100/otf"
 )
 
+var _ otf.RunStatusUpdater = (*runStatusUpdater)(nil)
+
 type runStatusUpdater struct {
-	q  *DBQuerier
-	id string
+	q   *DBQuerier
+	run *otf.Run
 }
 
-func newRunStatusUpdater(tx pgx.Tx, id string) *runStatusUpdater {
+func newRunStatusUpdater(tx pgx.Tx, run *otf.Run) *runStatusUpdater {
 	return &runStatusUpdater{
-		q:  NewQuerier(tx),
-		id: id,
+		q:   NewQuerier(tx),
+		run: run,
 	}
 }
 
-func (u *runStatusUpdater) UpdateRunStatus(ctx context.Context, status otf.RunStatus) (otf.RunStatusTimestamp, error) {
-	_, err := u.q.UpdateRunStatus(ctx, otf.String(string(status)), &u.id)
+func (u *runStatusUpdater) UpdateRunStatus(ctx context.Context, run *otf.Run, status otf.RunStatus) error {
+	result, err := u.q.UpdateRunStatus(ctx, otf.String(string(status)), &u.run.ID)
 	if err != nil {
-		return otf.RunStatusTimestamp{}, nil
+		return err
 	}
+	addResultToRun(u.run, result)
 
-	ts, err := u.q.InsertRunStatusTimestamp(ctx, &u.id, otf.String(string(status)))
+	ts, err := u.q.InsertRunStatusTimestamp(ctx, &u.run.ID, otf.String(string(status)))
 	if err != nil {
-		return otf.RunStatusTimestamp{}, nil
+		return err
 	}
+	u.run.StatusTimestamps = append(u.run.StatusTimestamps, convertRunStatusTimestamp(ts))
 
-	return otf.RunStatusTimestamp{
-		Status:    otf.RunStatus(*ts.Status),
-		Timestamp: ts.Timestamp,
-	}, nil
+	return nil
 }
 
-func (u *runStatusUpdater) UpdatePlanStatus(ctx context.Context, status otf.PlanStatus) (otf.PlanStatusTimestamp, error) {
-	_, err := u.q.UpdatePlanStatus(ctx, otf.String(string(status)), &u.id)
+func (u *runStatusUpdater) UpdatePlanStatus(ctx context.Context, plan *otf.Plan, status otf.PlanStatus) error {
+	result, err := u.q.UpdatePlanStatus(ctx, otf.String(string(status)), &u.run.ID)
 	if err != nil {
-		return otf.PlanStatusTimestamp{}, nil
+		return nil
 	}
+	addResultToPlan(plan, result)
 
-	ts, err := u.q.InsertPlanStatusTimestamp(ctx, &u.id, otf.String(string(status)))
+	ts, err := u.q.InsertPlanStatusTimestamp(ctx, &u.run.ID, otf.String(string(status)))
 	if err != nil {
-		return otf.PlanStatusTimestamp{}, nil
+		return nil
 	}
+	plan.StatusTimestamps = append(plan.StatusTimestamps, convertPlanStatusTimestamp(ts))
 
-	return otf.PlanStatusTimestamp{
-		Status:    otf.PlanStatus(*ts.Status),
-		Timestamp: ts.Timestamp,
-	}, nil
+	return nil
 }
 
-func (u *runStatusUpdater) UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus) (otf.ApplyStatusTimestamp, error) {
-	_, err := u.q.UpdateApplyStatus(ctx, otf.String(string(status)), &u.id)
+func (u *runStatusUpdater) UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus) error {
+	result, err := u.q.UpdateApplyStatus(ctx, otf.String(string(status)), &u.run.ID)
 	if err != nil {
-		return otf.ApplyStatusTimestamp{}, nil
+		return nil
 	}
+	addResultToApply(u.run.Apply, result)
 
-	ts, err := u.q.InsertApplyStatusTimestamp(ctx, &u.id, otf.String(string(status)))
+	ts, err := u.q.InsertApplyStatusTimestamp(ctx, &u.run.ID, otf.String(string(status)))
 	if err != nil {
-		return otf.ApplyStatusTimestamp{}, nil
+		return nil
 	}
+	u.run.Apply.StatusTimestamps = append(u.run.Apply.StatusTimestamps, convertApplyStatusTimestamp(ts))
 
-	return otf.ApplyStatusTimestamp{
-		Status:    otf.ApplyStatus(*ts.Status),
-		Timestamp: ts.Timestamp,
-	}, nil
+	return nil
 }

@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"fmt"
 	"time"
 )
@@ -141,17 +140,4 @@ func (p *Plan) Finish(run *Run, updater RunStatusUpdater) (*Event, error) {
 		return nil, err
 	}
 	return &Event{Type: EventApplyQueued, Payload: run}, nil
-}
-
-func (p *Plan) updateStatus(status PlanStatus, updater RunStatusUpdater) error {
-	p.Status = status
-
-	pst, err := updater.UpdatePlanStatus(context.Background(), status)
-	if err != nil {
-		return err
-	}
-
-	p.StatusTimestamps = append(p.StatusTimestamps, pst)
-
-	return nil
 }

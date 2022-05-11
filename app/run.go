@@ -93,8 +93,8 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.ApplyRun(updater)
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+		return run.ApplyRun()
 	})
 	if err != nil {
 		s.Error(err, "applying run", "id", id)

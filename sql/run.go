@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var _ otf.RunStore = (*RunDB)(nil)
@@ -19,38 +20,6 @@ type RunDB struct {
 type Timestamps interface {
 	GetCreatedAt() time.Time
 	GetUpdatedAt() time.Time
-}
-
-type RunRow interface {
-	GetRunID() *string
-	GetIsDestroy() *bool
-	GetWorkspaceID() *string
-	GetStatus() *string
-	GetRunStatusTimestamps() []RunStatusTimestamps
-	GetConfigurationVersionID() *string
-	GetReplaceAddrs() []string
-	GetTargetAddrs() []string
-	GetPlan() Plans
-
-	Timestamps
-}
-
-type RunListRow interface {
-	RunRow
-
-	GetFullCount() *int
-}
-
-type PlanRow interface {
-	GetPlanID() *string
-	Timestamps
-	GetStatus() *string
-}
-
-type ApplyRow interface {
-	GetApplyID() *string
-	Timestamps
-	GetStatus() *string
 }
 
 func NewRunDB(db *pgx.Conn) *RunDB {
@@ -146,8 +115,39 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run, otf.RunStatusUpdater) 
 	}
 	run := convertRun(result)
 
-	if err := fn(run, newRunStatusUpdater(tx, run.ID)); err != nil {
+	cp, err := copystructure.Copy(run)
+	if err != nil {
 		return nil, err
+	}
+	oldRun, ok := cp.(*otf.Run)
+	if !ok {
+		return nil, fmt.Errorf("cannot cast copy of run to run")
+	}
+
+	if err := fn(run); err != nil {
+		return nil, err
+	}
+
+	if run.Status != oldRun.Status {
+		result, err := q.UpdateRunStatus(ctx, otf.String(string(run.Status)), &run.ID)
+		if err != nil {
+			return nil, err
+		}
+		addResultToRun(run, result)
+
+		ts, err := q.InsertRunStatusTimestamp(ctx, &run.ID, otf.String(string(run.Status)))
+		if err != nil {
+			return nil, err
+		}
+		run.StatusTimestamps = append(run.StatusTimestamps, convertRunStatusTimestamp(ts))
+	}
+
+	if run.Plan.Status != oldRun.Plan.Status {
+		result, err := q.UpdatePlanStatus(ctx, otf.String(string(run.Plan.Status)), &run.Plan.ID)
+		if err != nil {
+			return nil, err
+		}
+		addResultToPlan(run.Plan, result)
 	}
 
 	return run, tx.Commit(ctx)
@@ -214,7 +214,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 
 	var items []*otf.Run
 	for _, r := range convertToInterfaceSlice(result) {
-		items = append(items, convertRun(r.(RunRow)))
+		items = append(items, convertRun(r.(runResult)))
 	}
 
 	return &otf.RunList{
@@ -300,55 +300,6 @@ func getRun(ctx context.Context, q *DBQuerier, opts otf.RunGetOptions) (*otf.Run
 	} else {
 		return nil, fmt.Errorf("no ID specified")
 	}
-}
-
-func convertRun(row RunRow) *otf.Run {
-	run := otf.Run{
-		ID:               *row.GetRunID(),
-		Timestamps:       convertTimestamps(row),
-		Status:           otf.RunStatus(*row.GetStatus()),
-		StatusTimestamps: convertRunStatusTimestamps(row.GetRunStatusTimestamps()),
-		IsDestroy:        *row.GetIsDestroy(),
-		ReplaceAddrs:     row.GetReplaceAddrs(),
-		TargetAddrs:      row.GetTargetAddrs(),
-		Plan:             convertPlan(row.GetPlan()),
-	}
-
-	return &run
-}
-
-func convertPlan(row PlanRow) *otf.Plan {
-	return &otf.Plan{
-		ID:         *row.GetPlanID(),
-		Timestamps: convertTimestamps(row),
-		Status:     otf.PlanStatus(*row.GetStatus()),
-	}
-}
-
-func convertApply(row ApplyRow) *otf.Apply {
-	return &otf.Apply{
-		ID:         *row.GetApplyID(),
-		Timestamps: convertTimestamps(row),
-		Status:     otf.ApplyStatus(*row.GetStatus()),
-	}
-}
-
-func convertTimestamps(ts Timestamps) otf.Timestamps {
-	return otf.Timestamps{
-		CreatedAt: ts.GetCreatedAt(),
-		UpdatedAt: ts.GetUpdatedAt(),
-	}
-}
-
-func convertRunStatusTimestamps(rows []RunStatusTimestamps) []otf.RunStatusTimestamp {
-	timestamps := make([]otf.RunStatusTimestamp, len(rows))
-	for _, r := range rows {
-		timestamps = append(timestamps, otf.RunStatusTimestamp{
-			Status:    otf.RunStatus(*r.Status),
-			Timestamp: r.Timestamp,
-		})
-	}
-	return timestamps
 }
 
 func convertToStringSlice(i interface{}) (s []string) {
