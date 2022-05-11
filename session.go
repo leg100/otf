@@ -42,9 +42,6 @@ type SessionData struct {
 
 	// Web app flash message
 	Flash *Flash
-
-	// Current organization
-	Organization *string
 }
 
 const (

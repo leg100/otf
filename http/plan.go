@@ -145,21 +145,21 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 		Status:               p.Status,
 	}
 
-	for k, v := range p.StatusTimestamps {
+	for _, ts := range p.StatusTimestamps {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &PlanStatusTimestamps{}
 		}
-		switch otf.PlanStatus(k) {
+		switch ts.Status {
 		case otf.PlanCanceled:
-			result.StatusTimestamps.CanceledAt = &v
+			result.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.PlanErrored:
-			result.StatusTimestamps.ErroredAt = &v
+			result.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.PlanFinished:
-			result.StatusTimestamps.FinishedAt = &v
+			result.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.PlanQueued:
-			result.StatusTimestamps.QueuedAt = &v
+			result.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.PlanRunning:
-			result.StatusTimestamps.StartedAt = &v
+			result.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 

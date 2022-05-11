@@ -12,11 +12,13 @@ func TestStateVersion_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
 
 	out1 := appendOutput("out1", "string", "val1", false)
 	out2 := appendOutput("out2", "string", "val2", false)
 
-	_, err := db.StateVersionStore().Create(newTestStateVersion(ws, out1, out2))
+	_, err := db.StateVersionStore().Create(newTestStateVersion(run, out1, out2))
 	require.NoError(t, err)
 }
 
@@ -24,7 +26,9 @@ func TestStateVersion_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	sv := createTestStateVersion(t, db, ws,
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+	sv := createTestStateVersion(t, db, run,
 		appendOutput("out1", "string", "val1", false),
 		appendOutput("out2", "string", "val2", false),
 	)
@@ -50,7 +54,7 @@ func TestStateVersion_Get(t *testing.T) {
 
 			// Assertion won't succeed unless both have a workspace with a nil
 			// org.
-			sv.Workspace.Organization = nil
+			sv.Run.Workspace = nil
 
 			assert.Equal(t, sv, got)
 		})
@@ -61,8 +65,10 @@ func TestStateVersion_List(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	sv1 := createTestStateVersion(t, db, ws)
-	sv2 := createTestStateVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+	sv1 := createTestStateVersion(t, db, run)
+	sv2 := createTestStateVersion(t, db, run)
 
 	tests := []struct {
 		name string
@@ -77,7 +83,7 @@ func TestStateVersion_List(t *testing.T) {
 				for _, c := range created {
 					// Assertion won't succeed unless both have a workspace with
 					// a nil org.
-					c.Workspace.Organization = nil
+					c.Run.Workspace = nil
 
 					assert.Contains(t, l.Items, c)
 				}

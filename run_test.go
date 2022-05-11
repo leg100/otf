@@ -50,7 +50,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 				Apply:  &Apply{},
 			}
 
-			r.UpdateStatus(tt.toStatus)
+			r.UpdateStatus(tt.toStatus, &fakeUpdater{})
 
 			assert.Equal(t, tt.wantPlanStatus, r.Plan.Status)
 			assert.Equal(t, tt.wantApplyStatus, r.Apply.Status)
@@ -64,7 +64,7 @@ func TestRun_ForceCancelAvailableAt(t *testing.T) {
 		Apply: &Apply{},
 	}
 
-	run.UpdateStatus(RunCanceled)
+	run.UpdateStatus(RunCanceled, &fakeUpdater{})
 
 	assert.NotZero(t, run.ForceCancelAvailableAt())
 }
@@ -75,7 +75,7 @@ func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
 		Apply: &Apply{},
 	}
 
-	run.UpdateStatus(RunPending)
+	run.UpdateStatus(RunPending, &fakeUpdater{})
 
 	assert.Zero(t, run.ForceCancelAvailableAt())
 }

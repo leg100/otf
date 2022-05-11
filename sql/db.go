@@ -23,6 +23,8 @@ type db struct {
 	planLogStore              otf.PlanLogStore
 	applyLogStore             otf.ApplyLogStore
 	userStore                 otf.UserStore
+	sessionStore              otf.SessionStore
+	tokenStore                otf.TokenStore
 }
 
 func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpiry time.Duration) (otf.DB, error) {
@@ -44,7 +46,9 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 		runStore:                  NewRunDB(conn),
 		planLogStore:              NewPlanLogDB(conn),
 		applyLogStore:             NewApplyLogDB(conn),
-		userStore:                 NewUserDB(conn, sessionExpiry),
+		userStore:                 NewUserDB(conn),
+		sessionStore:              NewSessionDB(conn, sessionExpiry),
+		tokenStore:                NewTokenDB(conn),
 	}
 
 	if cache != nil {
@@ -62,7 +66,6 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 	return db, nil
 }
 
-func (db db) Handle() *pgx.Handle                      { return db.Handle }
 func (db db) Close() error                             { return db.Conn.Close(context.Background()) }
 func (db db) OrganizationStore() otf.OrganizationStore { return db.organizationStore }
 func (db db) WorkspaceStore() otf.WorkspaceStore       { return db.workspaceStore }
@@ -74,3 +77,5 @@ func (db db) RunStore() otf.RunStore           { return db.runStore }
 func (db db) PlanLogStore() otf.PlanLogStore   { return db.planLogStore }
 func (db db) ApplyLogStore() otf.ApplyLogStore { return db.applyLogStore }
 func (db db) UserStore() otf.UserStore         { return db.userStore }
+func (db db) SessionStore() otf.SessionStore   { return db.sessionStore }
+func (db db) TokenStore() otf.TokenStore       { return db.tokenStore }

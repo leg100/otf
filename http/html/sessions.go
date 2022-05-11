@@ -110,11 +110,7 @@ func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
 }
 
 func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
-	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
-	if !ok {
-		panic("no user in context")
-	}
-	return c.Session
+	return s.GetUserFromContext(ctx).Session
 }
 
 // PopFlash retrieves a flash message from the current session. The message is

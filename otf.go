@@ -9,8 +9,6 @@ import (
 	"math/rand"
 	"regexp"
 	"time"
-
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -55,7 +53,6 @@ type Application interface {
 
 // DB provides access to oTF database
 type DB interface {
-	Handle() *sqlx.DB
 	Close() error
 
 	OrganizationStore() OrganizationStore
@@ -66,6 +63,8 @@ type DB interface {
 	PlanLogStore() PlanLogStore
 	ApplyLogStore() ApplyLogStore
 	UserStore() UserStore
+	SessionStore() SessionStore
+	TokenStore() TokenStore
 }
 
 // Updateable is an obj that records when it was updated.

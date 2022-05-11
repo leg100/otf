@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -18,6 +17,9 @@ type userRow interface {
 	GetUserID() *string
 	GetUsername() *string
 	GetCurrentOrganization() *string
+	GetSessions() []Sessions
+	GetTokens() []Tokens
+	GetOrganizations() []Organizations
 
 	Timestamps
 }
@@ -26,14 +28,10 @@ type UserDB struct {
 	*pgx.Conn
 }
 
-func NewUserDB(conn *pgx.Conn, cleanupInterval time.Duration) *UserDB {
-	udb := &UserDB{
+func NewUserDB(conn *pgx.Conn) *UserDB {
+	return &UserDB{
 		Conn: conn,
 	}
-	if cleanupInterval > 0 {
-		go udb.startCleanup(cleanupInterval)
-	}
-	return udb
 }
 
 // Create persists a User to the DB.
@@ -65,46 +63,11 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return nil
 }
 
-// Update persists changes to the provided user object to the backend. The spec
-// identifies the user to update.
-func (db UserDB) Update(ctx context.Context, spec otf.UserSpec, updated *otf.User) error {
-	existing, err := getUser(ctx, db.DB, spec)
-	if err != nil {
-		return err
-	}
+func (db UserDB) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
+	q := NewQuerier(db.Conn)
 
-	// User's organization_memberships are updated separately in a many-to-many
-	// table.
-	if err := updateOrganizationMemberships(ctx, db.DB, existing, updated); err != nil {
-		return err
-	}
-
-	updateBuilder := psql.
-		Update("users").
-		Where("user_id = ?", existing.ID)
-
-	var modified bool
-
-	if existing.CurrentOrganization != updated.CurrentOrganization {
-		updateBuilder = updateBuilder.Set("current_organization", updated.CurrentOrganization)
-		modified = true
-	}
-
-	if !modified {
-		return nil
-	}
-
-	sql, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
+	_, err := q.UpdateUserCurrentOrganization(ctx, &orgName, &userID)
+	return err
 }
 
 func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
@@ -166,31 +129,6 @@ func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
 	return nil
 }
 
-// CreateToken inserts the token, associating it with the user.
-func (db UserDB) CreateToken(ctx context.Context, token *otf.Token) error {
-	sql, args, err := db.BindNamed(insertTokenSQL, token)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
-}
-
-// DeleteToken deletes a user's token from the DB.
-func (db UserDB) DeleteToken(ctx context.Context, id string) error {
-	_, err := db.Exec("DELETE FROM tokens WHERE token_id = $1", id)
-	if err != nil {
-		return fmt.Errorf("unable to delete token: %w", err)
-	}
-
-	return nil
-}
-
 func getUser(ctx context.Context, q *DBQuerier, spec otf.UserSpec) (*otf.User, error) {
 	if spec.UserID != nil {
 		result, err := q.FindUserByID(ctx, spec.UserID)
@@ -233,6 +171,18 @@ func convertUser(row userRow) *otf.User {
 		Timestamps:          convertTimestamps(row),
 		Username:            *row.GetUsername(),
 		CurrentOrganization: row.GetCurrentOrganization(),
+	}
+
+	for _, session := range row.GetSessions() {
+		user.Sessions = append(user.Sessions, convertSession(session))
+	}
+
+	for _, token := range row.GetTokens() {
+		user.Tokens = append(user.Tokens, convertToken(token))
+	}
+
+	for _, org := range row.GetOrganizations() {
+		user.Organizations = append(user.Organizations, convertOrganization(org))
 	}
 
 	return &user

@@ -180,9 +180,14 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	var spec otf.WorkspaceSpec
 
-	_, err := c.WorkspaceService.Lock(r.Context(), vars["id"], otf.WorkspaceLockOptions{})
+	if err := decodeRouteVars(r, &spec); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	_, err := c.WorkspaceService.Lock(r.Context(), spec, otf.WorkspaceLockOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,7 +197,12 @@ func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Unlock(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	var spec otf.WorkspaceSpec
+
+	if err := decodeRouteVars(r, &spec); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 
 	_, err := c.WorkspaceService.Unlock(r.Context(), spec)
 	if err != nil {

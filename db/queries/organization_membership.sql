@@ -11,5 +11,7 @@ RETURNING *;
 -- name: DeleteOrganizationMembership :exec
 DELETE
 FROM organization_memberships
-WHERE user_id = pggen.arg('UserID')
-AND organization_id = pggen.arg('OrganizationID');
+WHERE
+    user_id = pggen.arg('UserID') AND
+    organization_id = pggen.arg('OrganizationID')
+;

@@ -16,9 +16,11 @@ var (
 )
 
 type sessionRow interface {
+	GetToken() *string
+	GetAddress() *string
+	GetFlash() []byte
+	GetExpiry() time.Time
 	GetUserID() *string
-	GetUsername() *string
-	GetCurrentOrganization() *string
 
 	Timestamps
 }
@@ -130,4 +132,16 @@ func (db SessionDB) deleteExpired() error {
 
 	_, err := q.DeleteSessionsExpired(context.Background())
 	return err
+}
+
+func convertSession(row Sessions) *otf.Session {
+	return &otf.Session{
+		Token:      *row.GetToken(),
+		Timestamps: convertTimestamps(row),
+		Expiry:     row.GetExpiry(),
+		UserID:     *row.GetUserID(),
+		SessionData: otf.SessionData{
+			Address: *row.GetAddress(),
+		},
+	}
 }

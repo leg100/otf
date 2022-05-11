@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -23,13 +24,16 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	updated, err := db.ConfigurationVersionStore().Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
-		cv.Status = otf.ConfigurationUploaded
+	err := db.ConfigurationVersionStore().Update(cv.ID, func(cv *otf.ConfigurationVersion, updater otf.ConfigurationVersionUpdater) error {
+		updater.UpdateStatus(context.Background(), otf.ConfigurationUploaded)
 		return nil
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, otf.ConfigurationUploaded, updated.Status)
+	got, err := db.ConfigurationVersionStore().Get(otf.ConfigurationVersionGetOptions{ID: &cv.ID})
+	require.NoError(t, err)
+
+	assert.Equal(t, otf.ConfigurationUploaded, got.Status)
 }
 
 func TestConfigurationVersion_Get(t *testing.T) {

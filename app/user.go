@@ -12,6 +12,7 @@ var _ otf.UserService = (*UserService)(nil)
 type UserService struct {
 	db  otf.UserStore
 	sdb otf.SessionStore
+	tdb otf.TokenStore
 
 	logr.Logger
 }
@@ -50,17 +51,6 @@ func (s UserService) EnsureCreated(ctx context.Context, username string) (*otf.U
 	return s.Create(ctx, username)
 }
 
-func (s UserService) Update(ctx context.Context, username string, updated *otf.User) error {
-	if err := s.db.Update(ctx, otf.UserSpec{Username: &username}, updated); err != nil {
-		s.Error(err, "updating user", "username", username)
-		return err
-	}
-
-	s.V(1).Info("updated user", "username", username)
-
-	return nil
-}
-
 func (s UserService) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
 	if err := user.SyncOrganizationMemberships(ctx, orgs, s.db); err != nil {
 		return nil, err
@@ -79,7 +69,7 @@ func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *ot
 		return nil, err
 	}
 
-	if err := s.db.CreateSession(ctx, session); err != nil {
+	if err := s.sdb.CreateSession(ctx, session); err != nil {
 		s.Error(err, "creating session", "username", user.Username)
 		return nil, err
 	}
@@ -105,19 +95,6 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 	return s.Get(ctx, otf.UserSpec{Username: otf.String(otf.AnonymousUsername)})
 }
 
-// UpdateSession updates a user session.
-func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session *otf.Session) error {
-	err := s.db.UpdateSession(ctx, session.Token, session)
-	if err != nil {
-		s.Error(err, "updating session", "username", user.Username)
-		return err
-	}
-
-	s.V(1).Info("updated session", "username", user.Username)
-
-	return nil
-}
-
 // PopFlash pops a flash message for the given session.
 func (s UserService) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
 	return s.sdb.PopFlash(ctx, token)
@@ -125,6 +102,10 @@ func (s UserService) PopFlash(ctx context.Context, token string) (*otf.Flash, er
 
 func (s UserService) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
 	return s.sdb.SetFlash(ctx, token, flash)
+}
+
+func (s UserService) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
+	return s.db.SetCurrentOrganization(ctx, userID, orgName)
 }
 
 // TransferSession transfers a session from one user to another.
@@ -146,7 +127,7 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 		return err
 	}
 
-	if err := s.db.DeleteSession(ctx, token); err != nil {
+	if err := s.sdb.DeleteSession(ctx, token); err != nil {
 		s.Error(err, "deleting session", "username", user.Username)
 		return err
 	}
@@ -164,7 +145,7 @@ func (s UserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.
 		return nil, err
 	}
 
-	if err := s.db.CreateToken(ctx, token); err != nil {
+	if err := s.tdb.CreateToken(ctx, token); err != nil {
 		s.Error(err, "creating token", "username", user.Username)
 		return nil, err
 	}
@@ -174,14 +155,8 @@ func (s UserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.
 	return token, nil
 }
 
-func (s UserService) DeleteToken(ctx context.Context, id string) error {
-	// Retrieve user purely for logging purposes
-	user, err := s.Get(ctx, otf.UserSpec{AuthenticationTokenID: &id})
-	if err != nil {
-		return err
-	}
-
-	if err := s.db.DeleteToken(ctx, id); err != nil {
+func (s UserService) DeleteToken(ctx context.Context, user *otf.User, tokenID string) error {
+	if err := s.tdb.DeleteToken(ctx, tokenID); err != nil {
 		s.Error(err, "deleting token", "username", user.Username)
 		return err
 	}

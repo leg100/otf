@@ -481,20 +481,6 @@ type Querier interface {
 	// InsertUserScan scans the result of an executed InsertUserBatch query.
 	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
 
-	InsertOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (InsertOrganizationMembershipRow, error)
-	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
-	// later by the batch.
-	InsertOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string)
-	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
-	InsertOrganizationMembershipScan(results pgx.BatchResults) (InsertOrganizationMembershipRow, error)
-
-	DeleteOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (pgconn.CommandTag, error)
-	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
-	// later by the batch.
-	DeleteOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string)
-	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
-	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	FindUsers(ctx context.Context) ([]FindUsersRow, error)
 	// FindUsersBatch enqueues a FindUsers query into batch to be executed
 	// later by the batch.
@@ -921,12 +907,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertUserSQL, insertUserSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertUser': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertOrganizationMembershipSQL, insertOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertOrganizationMembership': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUsersSQL, findUsersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsers': %w", err)

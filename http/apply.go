@@ -120,21 +120,21 @@ func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 		Status:               a.Status,
 	}
 
-	for k, v := range a.StatusTimestamps {
+	for _, ts := range a.StatusTimestamps {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &ApplyStatusTimestamps{}
 		}
-		switch otf.ApplyStatus(k) {
+		switch ts.Status {
 		case otf.ApplyCanceled:
-			obj.StatusTimestamps.CanceledAt = &v
+			obj.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.ApplyErrored:
-			obj.StatusTimestamps.ErroredAt = &v
+			obj.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.ApplyFinished:
-			obj.StatusTimestamps.FinishedAt = &v
+			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.ApplyQueued:
-			obj.StatusTimestamps.QueuedAt = &v
+			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.ApplyRunning:
-			obj.StatusTimestamps.StartedAt = &v
+			obj.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 

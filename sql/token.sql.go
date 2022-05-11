@@ -12,21 +12,24 @@ import (
 
 const insertTokenSQL = `INSERT INTO tokens (
     token_id,
+    token,
     created_at,
     updated_at,
     description,
     user_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
     $2,
-    $3
+    NOW(),
+    NOW(),
+    $3,
+    $4
 )
 RETURNING *;`
 
 type InsertTokenParams struct {
 	TokenID     *string
+	Token       *string
 	Description *string
 	UserID      *string
 }
@@ -51,7 +54,7 @@ func (s InsertTokenRow) GetUserID() *string { return s.UserID }
 // InsertToken implements Querier.InsertToken.
 func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (InsertTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertToken")
-	row := q.conn.QueryRow(ctx, insertTokenSQL, params.TokenID, params.Description, params.UserID)
+	row := q.conn.QueryRow(ctx, insertTokenSQL, params.TokenID, params.Token, params.Description, params.UserID)
 	var item InsertTokenRow
 	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.UpdatedAt, &item.Description, &item.UserID); err != nil {
 		return item, fmt.Errorf("query InsertToken: %w", err)
@@ -61,7 +64,7 @@ func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (
 
 // InsertTokenBatch implements Querier.InsertTokenBatch.
 func (q *DBQuerier) InsertTokenBatch(batch genericBatch, params InsertTokenParams) {
-	batch.Queue(insertTokenSQL, params.TokenID, params.Description, params.UserID)
+	batch.Queue(insertTokenSQL, params.TokenID, params.Token, params.Description, params.UserID)
 }
 
 // InsertTokenScan implements Querier.InsertTokenScan.

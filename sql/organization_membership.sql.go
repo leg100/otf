@@ -55,8 +55,10 @@ func (q *DBQuerier) InsertOrganizationMembershipScan(results pgx.BatchResults) (
 
 const deleteOrganizationMembershipSQL = `DELETE
 FROM organization_memberships
-WHERE user_id = $1
-AND organization_id = $2;`
+WHERE
+    user_id = $1 AND
+    organization_id = $2
+;`
 
 // DeleteOrganizationMembership implements Querier.DeleteOrganizationMembership.
 func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (pgconn.CommandTag, error) {

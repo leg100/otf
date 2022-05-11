@@ -110,7 +110,7 @@ func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 
 		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
 			user.CurrentOrganization = &current
-			if err := app.UserService().Update(r.Context(), user.Username, user.User); err != nil {
+			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID, current); err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -202,13 +202,15 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.sessions.GetUserFromContext(r.Context())
+
 	id := r.FormValue("id")
 	if id == "" {
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := app.UserService().DeleteToken(r.Context(), id); err != nil {
+	if err := app.UserService().DeleteToken(r.Context(), user.User, id); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

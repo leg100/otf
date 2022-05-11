@@ -14,23 +14,6 @@ INSERT INTO users (
 )
 RETURNING *;
 
--- name: InsertOrganizationMembership :one
-INSERT INTO organization_memberships (
-    user_id,
-    organization_id
-) VALUES (
-    pggen.arg('UserID'),
-    pggen.arg('OrganizationID')
-)
-RETURNING *;
-
--- name: DeleteOrganizationMembership :exec
-DELETE FROM organization_memberships
-WHERE
-    user_id = pggen.arg('user_id') AND
-    organization_id = pggen.arg('organization_id')
-;
-
 -- name: FindUsers :many
 SELECT users.*,
     array_agg(sessions) AS sessions,
