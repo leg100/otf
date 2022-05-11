@@ -339,6 +339,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = $1
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;`
 
@@ -421,6 +422,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = $1
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;`
 
@@ -503,6 +505,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token = $1
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;`
 
@@ -587,6 +590,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token_id = $1
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;`
 

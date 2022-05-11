@@ -109,39 +109,34 @@ func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
 	return c
 }
 
+func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
+	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
+	if !ok {
+		panic("no user in context")
+	}
+	return c.Session
+}
+
 // PopFlash retrieves a flash message from the current session. The message is
 // thereafter discarded. Nil is returned if there is no flash message.
 func (s *sessions) PopFlash(r *http.Request) (*otf.Flash, error) {
-	user := s.GetUserFromContext(r.Context())
+	session := s.GetSessionFromContext(r.Context())
 
-	flash := user.PopFlash()
-
-	if flash == nil {
-		return nil, nil
-	}
-
-	// Discard flash in store
-	if err := s.UserService.UpdateSession(r.Context(), user.User, user.Session); err != nil {
-		return nil, fmt.Errorf("saving flash message in session backend: %w", err)
-	}
-
-	return flash, nil
+	return s.UserService.PopFlash(r.Context(), session.Token)
 }
 
 func (s *sessions) FlashSuccess(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashSuccessType, msg...)
+	return s.flash(r, otf.FlashSuccess(msg...))
 }
 
 func (s *sessions) FlashError(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashErrorType, msg...)
+	return s.flash(r, otf.FlashError(msg...))
 }
 
-func (s *sessions) flash(r *http.Request, t otf.FlashType, msg ...interface{}) error {
-	user := s.GetUserFromContext(r.Context())
+func (s *sessions) flash(r *http.Request, flash *otf.Flash) error {
+	session := s.GetSessionFromContext(r.Context())
 
-	user.SetFlash(t, msg...)
-
-	if err := s.UserService.UpdateSession(r.Context(), user.User, user.Session); err != nil {
+	if err := s.UserService.SetFlash(r.Context(), session.Token, flash); err != nil {
 		return fmt.Errorf("saving flash message in session backend: %w", err)
 	}
 

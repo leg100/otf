@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"time"
 )
@@ -32,27 +31,27 @@ RETURNING *;`
 
 type InsertSessionParams struct {
 	Token   *string
-	Flash   pgtype.JSONB
+	Flash   []byte
 	Address *string
 	Expiry  time.Time
 	UserID  *string
 }
 
 type InsertSessionRow struct {
-	Token     *string      `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Address   *string      `json:"address"`
-	Flash     pgtype.JSONB `json:"flash"`
-	Expiry    time.Time    `json:"expiry"`
-	UserID    *string      `json:"user_id"`
+	Token     *string   `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Address   *string   `json:"address"`
+	Flash     []byte    `json:"flash"`
+	Expiry    time.Time `json:"expiry"`
+	UserID    *string   `json:"user_id"`
 }
 
 func (s InsertSessionRow) GetToken() *string { return s.Token }
 func (s InsertSessionRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertSessionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s InsertSessionRow) GetAddress() *string { return s.Address }
-func (s InsertSessionRow) GetFlash() pgtype.JSONB { return s.Flash }
+func (s InsertSessionRow) GetFlash() []byte { return s.Flash }
 func (s InsertSessionRow) GetExpiry() time.Time { return s.Expiry }
 func (s InsertSessionRow) GetUserID() *string { return s.UserID }
 
@@ -83,6 +82,65 @@ func (q *DBQuerier) InsertSessionScan(results pgx.BatchResults) (InsertSessionRo
 	return item, nil
 }
 
+const findSessionFlashByTokenSQL = `SELECT flash
+FROM sessions
+WHERE token = $1;`
+
+// FindSessionFlashByToken implements Querier.FindSessionFlashByToken.
+func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token *string) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionFlashByToken")
+	row := q.conn.QueryRow(ctx, findSessionFlashByTokenSQL, token)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindSessionFlashByToken: %w", err)
+	}
+	return item, nil
+}
+
+// FindSessionFlashByTokenBatch implements Querier.FindSessionFlashByTokenBatch.
+func (q *DBQuerier) FindSessionFlashByTokenBatch(batch genericBatch, token *string) {
+	batch.Queue(findSessionFlashByTokenSQL, token)
+}
+
+// FindSessionFlashByTokenScan implements Querier.FindSessionFlashByTokenScan.
+func (q *DBQuerier) FindSessionFlashByTokenScan(results pgx.BatchResults) ([]byte, error) {
+	row := results.QueryRow()
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindSessionFlashByTokenBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateSessionFlashByTokenSQL = `UPDATE sessions
+SET
+    flash = $1
+WHERE token = $2;`
+
+// UpdateSessionFlashByToken implements Querier.UpdateSessionFlashByToken.
+func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte, token *string) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlashByToken")
+	cmdTag, err := q.conn.Exec(ctx, updateSessionFlashByTokenSQL, flash, token)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query UpdateSessionFlashByToken: %w", err)
+	}
+	return cmdTag, err
+}
+
+// UpdateSessionFlashByTokenBatch implements Querier.UpdateSessionFlashByTokenBatch.
+func (q *DBQuerier) UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token *string) {
+	batch.Queue(updateSessionFlashByTokenSQL, flash, token)
+}
+
+// UpdateSessionFlashByTokenScan implements Querier.UpdateSessionFlashByTokenScan.
+func (q *DBQuerier) UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec UpdateSessionFlashByTokenBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
 const updateSessionUserIDSQL = `UPDATE sessions
 SET
     user_id = $1,
@@ -91,20 +149,20 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionUserIDRow struct {
-	Token     *string      `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Address   *string      `json:"address"`
-	Flash     pgtype.JSONB `json:"flash"`
-	Expiry    time.Time    `json:"expiry"`
-	UserID    *string      `json:"user_id"`
+	Token     *string   `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Address   *string   `json:"address"`
+	Flash     []byte    `json:"flash"`
+	Expiry    time.Time `json:"expiry"`
+	UserID    *string   `json:"user_id"`
 }
 
 func (s UpdateSessionUserIDRow) GetToken() *string { return s.Token }
 func (s UpdateSessionUserIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionUserIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateSessionUserIDRow) GetAddress() *string { return s.Address }
-func (s UpdateSessionUserIDRow) GetFlash() pgtype.JSONB { return s.Flash }
+func (s UpdateSessionUserIDRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionUserIDRow) GetExpiry() time.Time { return s.Expiry }
 func (s UpdateSessionUserIDRow) GetUserID() *string { return s.UserID }
 
@@ -143,20 +201,20 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionExpiryRow struct {
-	Token     *string      `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Address   *string      `json:"address"`
-	Flash     pgtype.JSONB `json:"flash"`
-	Expiry    time.Time    `json:"expiry"`
-	UserID    *string      `json:"user_id"`
+	Token     *string   `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Address   *string   `json:"address"`
+	Flash     []byte    `json:"flash"`
+	Expiry    time.Time `json:"expiry"`
+	UserID    *string   `json:"user_id"`
 }
 
 func (s UpdateSessionExpiryRow) GetToken() *string { return s.Token }
 func (s UpdateSessionExpiryRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionExpiryRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateSessionExpiryRow) GetAddress() *string { return s.Address }
-func (s UpdateSessionExpiryRow) GetFlash() pgtype.JSONB { return s.Flash }
+func (s UpdateSessionExpiryRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionExpiryRow) GetExpiry() time.Time { return s.Expiry }
 func (s UpdateSessionExpiryRow) GetUserID() *string { return s.UserID }
 
@@ -195,26 +253,26 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionFlashRow struct {
-	Token     *string      `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Address   *string      `json:"address"`
-	Flash     pgtype.JSONB `json:"flash"`
-	Expiry    time.Time    `json:"expiry"`
-	UserID    *string      `json:"user_id"`
+	Token     *string   `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Address   *string   `json:"address"`
+	Flash     []byte    `json:"flash"`
+	Expiry    time.Time `json:"expiry"`
+	UserID    *string   `json:"user_id"`
 }
 
 func (s UpdateSessionFlashRow) GetToken() *string { return s.Token }
 func (s UpdateSessionFlashRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionFlashRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateSessionFlashRow) GetAddress() *string { return s.Address }
-func (s UpdateSessionFlashRow) GetFlash() pgtype.JSONB { return s.Flash }
+func (s UpdateSessionFlashRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionFlashRow) GetExpiry() time.Time { return s.Expiry }
 func (s UpdateSessionFlashRow) GetUserID() *string { return s.UserID }
 
 
 // UpdateSessionFlash implements Querier.UpdateSessionFlash.
-func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash pgtype.JSONB, token *string) (UpdateSessionFlashRow, error) {
+func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token *string) (UpdateSessionFlashRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlash")
 	row := q.conn.QueryRow(ctx, updateSessionFlashSQL, flash, token)
 	var item UpdateSessionFlashRow
@@ -225,7 +283,7 @@ func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash pgtype.JSONB, 
 }
 
 // UpdateSessionFlashBatch implements Querier.UpdateSessionFlashBatch.
-func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash pgtype.JSONB, token *string) {
+func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash []byte, token *string) {
 	batch.Queue(updateSessionFlashSQL, flash, token)
 }
 

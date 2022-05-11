@@ -56,19 +56,6 @@ WHERE users.user_id = pggen.arg('user_id')
 GROUP BY users.user_id
 ;
 
--- name: FindUserByIDForUpdate :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE users.user_id = pggen.arg('user_id')
-FOR UPDATE
-;
-
 -- name: FindUserByUsername :one
 SELECT users.*,
     array_agg(sessions) AS sessions,
@@ -79,6 +66,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = pggen.arg('username')
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;
 
@@ -92,6 +80,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = pggen.arg('token')
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;
 
@@ -105,6 +94,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token = pggen.arg('token')
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;
 
@@ -118,6 +108,7 @@ JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
 JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token_id = pggen.arg('token_id')
+AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
 ;
 

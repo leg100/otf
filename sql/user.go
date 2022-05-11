@@ -12,32 +12,6 @@ import (
 
 var (
 	_ otf.UserStore = (*UserDB)(nil)
-
-	DefaultSessionCleanupInterval = 5 * time.Minute
-
-	sessionColumns = []string{
-		"token",
-		"created_at",
-		"updated_at",
-		"flash",
-		"address",
-		"expiry",
-		"user_id",
-	}
-
-	tokenColumns = []string{
-		"token_id",
-		"created_at",
-		"updated_at",
-		"description",
-		"user_id",
-	}
-
-	insertSessionSQL = `INSERT INTO sessions (token, flash, address, created_at, updated_at, expiry, user_id)
-VALUES (:token, :flash, :address, :created_at, :updated_at, :expiry, :user_id)`
-
-	insertTokenSQL = `INSERT INTO tokens (token_id, token, created_at, updated_at, description, user_id)
-VALUES (:token_id, :token, :created_at, :updated_at, :description, :user_id)`
 )
 
 type userRow interface {
@@ -217,21 +191,6 @@ func (db UserDB) DeleteToken(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db UserDB) deleteExpired() error {
-	q := NewQuerier(db.Conn)
-
-	_, err := q.DeleteSessionsExpired(context.Background())
-	return err
-}
-
-func (db UserDB) startCleanup(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	for {
-		<-ticker.C
-		db.deleteExpired()
-	}
-}
-
 func getUser(ctx context.Context, q *DBQuerier, spec otf.UserSpec) (*otf.User, error) {
 	if spec.UserID != nil {
 		result, err := q.FindUserByID(ctx, spec.UserID)
@@ -266,67 +225,6 @@ func getUser(ctx context.Context, q *DBQuerier, spec otf.UserSpec) (*otf.User, e
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
-}
-
-// listSessions lists sessions belonging to the user with the given userID.
-func listSessions(ctx context.Context, db Getter, userID string) ([]*otf.Session, error) {
-	selectBuilder := psql.
-		Select(sessionColumns...).
-		From("sessions").
-		Where("user_id = ?", userID).
-		Where("expiry > current_timestamp")
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	var sessions []*otf.Session
-	if err := db.Select(&sessions, sql, args...); err != nil {
-		return nil, fmt.Errorf("unable to scan sessions from db: %w", err)
-	}
-
-	return sessions, nil
-}
-
-// listTokens lists tokens belonging to the user with the given userID.
-func listTokens(ctx context.Context, db Getter, userID string) ([]*otf.Token, error) {
-	selectBuilder := psql.
-		Select(tokenColumns...).
-		From("tokens").
-		Where("user_id = ?", userID)
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	var tokens []*otf.Token
-	if err := db.Select(&tokens, sql, args...); err != nil {
-		return nil, fmt.Errorf("unable to scan tokens from db: %w", err)
-	}
-
-	return tokens, nil
-}
-
-func getSession(ctx context.Context, db Getter, token string) (*otf.Session, error) {
-	selectBuilder := psql.
-		Select(sessionColumns...).
-		From("sessions").
-		Where("token = ?", token).
-		Where("expiry > current_timestamp")
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, fmt.Errorf("building SQL query: %w", err)
-	}
-
-	var session otf.Session
-	if err := db.Get(&session, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
-	}
-
-	return &session, nil
 }
 
 func convertUser(row userRow) *otf.User {

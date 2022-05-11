@@ -367,6 +367,20 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (InsertSessionRow, error)
 
+	FindSessionFlashByToken(ctx context.Context, token *string) ([]byte, error)
+	// FindSessionFlashByTokenBatch enqueues a FindSessionFlashByToken query into batch to be executed
+	// later by the batch.
+	FindSessionFlashByTokenBatch(batch genericBatch, token *string)
+	// FindSessionFlashByTokenScan scans the result of an executed FindSessionFlashByTokenBatch query.
+	FindSessionFlashByTokenScan(results pgx.BatchResults) ([]byte, error)
+
+	UpdateSessionFlashByToken(ctx context.Context, flash []byte, token *string) (pgconn.CommandTag, error)
+	// UpdateSessionFlashByTokenBatch enqueues a UpdateSessionFlashByToken query into batch to be executed
+	// later by the batch.
+	UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token *string)
+	// UpdateSessionFlashByTokenScan scans the result of an executed UpdateSessionFlashByTokenBatch query.
+	UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	UpdateSessionUserID(ctx context.Context, userID *string, token *string) (UpdateSessionUserIDRow, error)
 	// UpdateSessionUserIDBatch enqueues a UpdateSessionUserID query into batch to be executed
 	// later by the batch.
@@ -381,10 +395,10 @@ type Querier interface {
 	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
 	UpdateSessionExpiryScan(results pgx.BatchResults) (UpdateSessionExpiryRow, error)
 
-	UpdateSessionFlash(ctx context.Context, flash pgtype.JSONB, token *string) (UpdateSessionFlashRow, error)
+	UpdateSessionFlash(ctx context.Context, flash []byte, token *string) (UpdateSessionFlashRow, error)
 	// UpdateSessionFlashBatch enqueues a UpdateSessionFlash query into batch to be executed
 	// later by the batch.
-	UpdateSessionFlashBatch(batch genericBatch, flash pgtype.JSONB, token *string)
+	UpdateSessionFlashBatch(batch genericBatch, flash []byte, token *string)
 	// UpdateSessionFlashScan scans the result of an executed UpdateSessionFlashBatch query.
 	UpdateSessionFlashScan(results pgx.BatchResults) (UpdateSessionFlashRow, error)
 
@@ -860,6 +874,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findSessionFlashByTokenSQL, findSessionFlashByTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindSessionFlashByToken': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateSessionFlashByTokenSQL, updateSessionFlashByTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateSessionFlashByToken': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateSessionUserIDSQL, updateSessionUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateSessionUserID': %w", err)
 	}
@@ -1089,20 +1109,20 @@ func (s RunStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
 
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
-	Token     *string      `json:"token"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	Address   *string      `json:"address"`
-	Flash     pgtype.JSONB `json:"flash"`
-	Expiry    time.Time    `json:"expiry"`
-	UserID    *string      `json:"user_id"`
+	Token     *string   `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Address   *string   `json:"address"`
+	Flash     []byte    `json:"flash"`
+	Expiry    time.Time `json:"expiry"`
+	UserID    *string   `json:"user_id"`
 }
 
 func (s Sessions) GetToken() *string { return s.Token }
 func (s Sessions) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s Sessions) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s Sessions) GetAddress() *string { return s.Address }
-func (s Sessions) GetFlash() pgtype.JSONB { return s.Flash }
+func (s Sessions) GetFlash() []byte { return s.Flash }
 func (s Sessions) GetExpiry() time.Time { return s.Expiry }
 func (s Sessions) GetUserID() *string { return s.UserID }
 
@@ -1382,7 +1402,7 @@ func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"address", "text", &pgtype.Text{}},
-		compositeField{"flash", "jsonb", &pgtype.JSONB{}},
+		compositeField{"flash", "bytea", &pgtype.Bytea{}},
 		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"user_id", "text", &pgtype.Text{}},
 	)

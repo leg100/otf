@@ -2,7 +2,7 @@ package sql
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -13,33 +13,9 @@ var (
 	_ otf.SessionStore = (*SessionDB)(nil)
 
 	DefaultSessionCleanupInterval = 5 * time.Minute
-
-	sessionColumns = []string{
-		"token",
-		"created_at",
-		"updated_at",
-		"flash",
-		"address",
-		"expiry",
-		"user_id",
-	}
-
-	tokenColumns = []string{
-		"token_id",
-		"created_at",
-		"updated_at",
-		"description",
-		"user_id",
-	}
-
-	insertSessionSQL = `INSERT INTO sessions (token, flash, address, created_at, updated_at, expiry, user_id)
-VALUES (:token, :flash, :address, :created_at, :updated_at, :expiry, :user_id)`
-
-	insertTokenSQL = `INSERT INTO tokens (token_id, token, created_at, updated_at, description, user_id)
-VALUES (:token_id, :token, :created_at, :updated_at, :description, :user_id)`
 )
 
-type userRow interface {
+type sessionRow interface {
 	GetUserID() *string
 	GetUsername() *string
 	GetCurrentOrganization() *string
@@ -52,13 +28,13 @@ type SessionDB struct {
 }
 
 func NewSessionDB(conn *pgx.Conn, cleanupInterval time.Duration) *SessionDB {
-	udb := &SessionDB{
+	db := &SessionDB{
 		Conn: conn,
 	}
 	if cleanupInterval > 0 {
-		go udb.startCleanup(cleanupInterval)
+		go db.startCleanup(cleanupInterval)
 	}
-	return udb
+	return db
 }
 
 // CreateSession inserts the session, associating it with the user.
@@ -74,120 +50,55 @@ func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) err
 	return err
 }
 
-// UpdateSession updates a session row in the sessions table with the given
-// session. The token identifies the session row to update.
-func (db SessionDB) UpdateSession(ctx context.Context, token string, updated *otf.Session) error {
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
+	q := NewQuerier(db.Conn)
 
-	q := NewQuerier(tx)
-
-	existing, err := getSession(ctx, q, token)
+	data, err := json.Marshal(flash)
 	if err != nil {
 		return err
 	}
 
-	updateBuilder := psql.
-		Update("sessions").
-		Where("token = ?", updated.Token)
-
-	var modified bool
-
-	if existing.Address != updated.Address {
-		return fmt.Errorf("address cannot be updated on a session")
-	}
-
-	if existing.Flash != updated.Flash {
-		modified = true
-		updateBuilder = updateBuilder.Set("flash", updated.Flash)
-	}
-
-	if existing.Expiry != updated.Expiry {
-		modified = true
-		updateBuilder = updateBuilder.Set("expiry", updated.Expiry)
-	}
-
-	if existing.UserID != updated.UserID {
-		modified = true
-		updateBuilder = updateBuilder.Set("user_id", updated.UserID)
-	}
-
-	if !modified {
-		return fmt.Errorf("update was requested but no changes were found")
-	}
-
-	sql, args, err := updateBuilder.ToSql()
-	if err != nil {
+	if _, err := q.UpdateSessionFlashByToken(ctx, data, &token); err != nil {
 		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
 	}
 
 	return nil
 }
 
+func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
+	q := NewQuerier(db.Conn)
+
+	data, err := q.FindSessionFlashByToken(ctx, &token)
+	if err != nil {
+		return nil, err
+	}
+
+	// No flash found
+	if data == nil {
+		return nil, nil
+	}
+
+	// Set flash in DB to NULL
+	if _, err := q.UpdateSessionFlashByToken(ctx, nil, &token); err != nil {
+		return nil, err
+	}
+
+	// Marshal bytes into flash obj
+	var flash otf.Flash
+	if err := json.Unmarshal(data, &flash); err != nil {
+		return nil, err
+	}
+
+	return &flash, nil
+}
+
 // TransferSession updates a session row in the sessions table with the given
 // session.  The token identifies the session row to update.
-func (db SessionDB) TransferSession(ctx context.Context, from, to string, updated *otf.Session) error {
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+func (db SessionDB) TransferSession(ctx context.Context, token, to string) error {
+	q := NewQuerier(db.Conn)
 
-	q := NewQuerier(tx)
-
-	existing, err := getSession(ctx, q, token)
-	if err != nil {
-		return err
-	}
-
-	updateBuilder := psql.
-		Update("sessions").
-		Where("token = ?", updated.Token)
-
-	var modified bool
-
-	if existing.Address != updated.Address {
-		return fmt.Errorf("address cannot be updated on a session")
-	}
-
-	if existing.Flash != updated.Flash {
-		modified = true
-		updateBuilder = updateBuilder.Set("flash", updated.Flash)
-	}
-
-	if existing.Expiry != updated.Expiry {
-		modified = true
-		updateBuilder = updateBuilder.Set("expiry", updated.Expiry)
-	}
-
-	if existing.UserID != updated.UserID {
-		modified = true
-		updateBuilder = updateBuilder.Set("user_id", updated.UserID)
-	}
-
-	if !modified {
-		return fmt.Errorf("update was requested but no changes were found")
-	}
-
-	sql, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.DB.Exec(sql, args...)
-	if err != nil {
-		return databaseError(err, sql)
-	}
-
-	return nil
+	_, err := q.UpdateSessionUserID(ctx, &to, &token)
+	return err
 }
 
 // DeleteSession deletes a user's session from the DB.
@@ -204,4 +115,19 @@ func (db SessionDB) DeleteSession(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (db SessionDB) startCleanup(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	for {
+		<-ticker.C
+		db.deleteExpired()
+	}
+}
+
+func (db SessionDB) deleteExpired() error {
+	q := NewQuerier(db.Conn)
+
+	_, err := q.DeleteSessionsExpired(context.Background())
+	return err
 }

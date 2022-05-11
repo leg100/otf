@@ -18,6 +18,17 @@ INSERT INTO sessions (
 )
 RETURNING *;
 
+-- name: FindSessionFlashByToken :one
+SELECT flash
+FROM sessions
+WHERE token = pggen.arg('token');
+
+-- name: UpdateSessionFlashByToken :exec
+UPDATE sessions
+SET
+    flash = pggen.arg('flash')
+WHERE token = pggen.arg('token');
+
 -- name: UpdateSessionUserID :one
 UPDATE sessions
 SET

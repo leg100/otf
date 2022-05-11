@@ -63,7 +63,7 @@ func (u *User) String() string {
 }
 
 // TransferSession transfers a session from the receiver to another user.
-func (u *User) TransferSession(session *Session, to *User) {
+func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
 	// Update session's user reference
 	session.UserID = to.ID
 
@@ -75,8 +75,15 @@ func (u *User) TransferSession(session *Session, to *User) {
 		}
 	}
 
+	// Update in persistence store
+	if err := store.TransferSession(ctx, session.Token, to.ID); err != nil {
+		return err
+	}
+
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
+
+	return nil
 }
 
 // UserService provides methods to interact with user accounts and their
@@ -102,6 +109,12 @@ type UserService interface {
 
 	// Transfer session from one user to another
 	TransferSession(ctx context.Context, from, to *User, session *Session) error
+
+	// PopFlash pops a flash message for the session identified by token.
+	PopFlash(ctx context.Context, token string) (*Flash, error)
+
+	// SetFlash sets a flash message for the session identified by token.
+	SetFlash(ctx context.Context, token string, flash *Flash) error
 
 	// UpdateSession persists any updates to the user's session data
 	UpdateSession(ctx context.Context, user *User, session *Session) error

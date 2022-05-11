@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,
     address         TEXT        NOT NULL,
-    flash           JSONB,
+    flash           BYTEA,
     expiry          TIMESTAMPTZ NOT NULL,
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (token)

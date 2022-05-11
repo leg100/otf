@@ -10,7 +10,8 @@ import (
 var _ otf.UserService = (*UserService)(nil)
 
 type UserService struct {
-	db otf.UserStore
+	db  otf.UserStore
+	sdb otf.SessionStore
 
 	logr.Logger
 }
@@ -117,17 +118,23 @@ func (s UserService) UpdateSession(ctx context.Context, user *otf.User, session 
 	return nil
 }
 
+// PopFlash pops a flash message for the given session.
+func (s UserService) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
+	return s.sdb.PopFlash(ctx, token)
+}
+
+func (s UserService) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
+	return s.sdb.SetFlash(ctx, token, flash)
+}
+
 // TransferSession transfers a session from one user to another.
 func (s UserService) TransferSession(ctx context.Context, from, to *otf.User, session *otf.Session) error {
-	from.TransferSession(session, to)
-
-	err := s.db.UpdateSession(ctx, session.Token, session)
-	if err != nil {
-		s.Error(err, "updating session", "username", user.Username)
+	if err := from.TransferSession(ctx, session, to, s.sdb); err != nil {
+		s.Error(err, "transferring session", "from", from.Username, "to", to.Username)
 		return err
 	}
 
-	s.V(1).Info("updated session", "username", user.Username)
+	s.V(1).Info("transferred session", "from", from.Username, "to", to.Username)
 
 	return nil
 }
