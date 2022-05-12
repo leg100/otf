@@ -149,12 +149,12 @@ type Querier interface {
 	// FindOrganizationByNameScan scans the result of an executed FindOrganizationByNameBatch query.
 	FindOrganizationByNameScan(results pgx.BatchResults) (FindOrganizationByNameRow, error)
 
-	FindOrganizations(ctx context.Context, limit int, offset int) (FindOrganizationsRow, error)
+	FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error)
 	// FindOrganizationsBatch enqueues a FindOrganizations query into batch to be executed
 	// later by the batch.
 	FindOrganizationsBatch(batch genericBatch, limit int, offset int)
 	// FindOrganizationsScan scans the result of an executed FindOrganizationsBatch query.
-	FindOrganizationsScan(results pgx.BatchResults) (FindOrganizationsRow, error)
+	FindOrganizationsScan(results pgx.BatchResults) ([]FindOrganizationsRow, error)
 
 	// InsertOrganization inserts an organization and returns the entire row.
 	// 

@@ -3,9 +3,9 @@
 -- name: FindOrganizationByName :one
 SELECT * FROM organizations WHERE name = pggen.arg('name');
 
--- name: FindOrganizations :one
+-- name: FindOrganizations :many
 SELECT
-    array_agg(organizations) AS organizations,
+    *,
     count(*) OVER()          AS full_count
 FROM organizations
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');

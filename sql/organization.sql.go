@@ -5,9 +5,10 @@ package sql
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const findOrganizationByNameSQL = `SELECT * FROM organizations WHERE name = $1;`
@@ -22,12 +23,11 @@ type FindOrganizationByNameRow struct {
 }
 
 func (s FindOrganizationByNameRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s FindOrganizationByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindOrganizationByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindOrganizationByNameRow) GetName() *string { return s.Name }
+func (s FindOrganizationByNameRow) GetCreatedAt() time.Time    { return s.CreatedAt }
+func (s FindOrganizationByNameRow) GetUpdatedAt() time.Time    { return s.UpdatedAt }
+func (s FindOrganizationByNameRow) GetName() *string           { return s.Name }
 func (s FindOrganizationByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s FindOrganizationByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
+func (s FindOrganizationByNameRow) GetSessionTimeout() *int32  { return s.SessionTimeout }
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
 func (q *DBQuerier) FindOrganizationByName(ctx context.Context, name *string) (FindOrganizationByNameRow, error) {
@@ -56,33 +56,49 @@ func (q *DBQuerier) FindOrganizationByNameScan(results pgx.BatchResults) (FindOr
 }
 
 const findOrganizationsSQL = `SELECT
-    array_agg(organizations) AS organizations,
+    *,
     count(*) OVER()          AS full_count
 FROM organizations
 LIMIT $1 OFFSET $2;`
 
 type FindOrganizationsRow struct {
-	Organizations []Organizations `json:"organizations"`
-	FullCount     *int            `json:"full_count"`
+	OrganizationID  *string   `json:"organization_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	Name            *string   `json:"name"`
+	SessionRemember *int32    `json:"session_remember"`
+	SessionTimeout  *int32    `json:"session_timeout"`
+	FullCount       *int      `json:"full_count"`
 }
 
-func (s FindOrganizationsRow) GetOrganizations() []Organizations { return s.Organizations }
-func (s FindOrganizationsRow) GetFullCount() *int { return s.FullCount }
-
+func (s FindOrganizationsRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindOrganizationsRow) GetCreatedAt() time.Time    { return s.CreatedAt }
+func (s FindOrganizationsRow) GetUpdatedAt() time.Time    { return s.UpdatedAt }
+func (s FindOrganizationsRow) GetName() *string           { return s.Name }
+func (s FindOrganizationsRow) GetSessionRemember() *int32 { return s.SessionRemember }
+func (s FindOrganizationsRow) GetSessionTimeout() *int32  { return s.SessionTimeout }
+func (s FindOrganizationsRow) GetFullCount() *int         { return s.FullCount }
 
 // FindOrganizations implements Querier.FindOrganizations.
-func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) (FindOrganizationsRow, error) {
+func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizations")
-	row := q.conn.QueryRow(ctx, findOrganizationsSQL, limit, offset)
-	var item FindOrganizationsRow
-	organizationsArray := q.types.newOrganizationsArray()
-	if err := row.Scan(organizationsArray, &item.FullCount); err != nil {
-		return item, fmt.Errorf("query FindOrganizations: %w", err)
+	rows, err := q.conn.Query(ctx, findOrganizationsSQL, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizations: %w", err)
 	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindOrganizations row: %w", err)
+	defer rows.Close()
+	items := []FindOrganizationsRow{}
+	for rows.Next() {
+		var item FindOrganizationsRow
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.FullCount); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizations row: %w", err)
+		}
+		items = append(items, item)
 	}
-	return item, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizations rows: %w", err)
+	}
+	return items, err
 }
 
 // FindOrganizationsBatch implements Querier.FindOrganizationsBatch.
@@ -91,17 +107,24 @@ func (q *DBQuerier) FindOrganizationsBatch(batch genericBatch, limit int, offset
 }
 
 // FindOrganizationsScan implements Querier.FindOrganizationsScan.
-func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) (FindOrganizationsRow, error) {
-	row := results.QueryRow()
-	var item FindOrganizationsRow
-	organizationsArray := q.types.newOrganizationsArray()
-	if err := row.Scan(organizationsArray, &item.FullCount); err != nil {
-		return item, fmt.Errorf("scan FindOrganizationsBatch row: %w", err)
+func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrganizationsRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizationsBatch: %w", err)
 	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindOrganizations row: %w", err)
+	defer rows.Close()
+	items := []FindOrganizationsRow{}
+	for rows.Next() {
+		var item FindOrganizationsRow
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.FullCount); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizationsBatch row: %w", err)
+		}
+		items = append(items, item)
 	}
-	return item, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizationsBatch rows: %w", err)
+	}
+	return items, err
 }
 
 const insertOrganizationSQL = `INSERT INTO organizations (
@@ -138,12 +161,11 @@ type InsertOrganizationRow struct {
 }
 
 func (s InsertOrganizationRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s InsertOrganizationRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s InsertOrganizationRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertOrganizationRow) GetName() *string { return s.Name }
+func (s InsertOrganizationRow) GetCreatedAt() time.Time    { return s.CreatedAt }
+func (s InsertOrganizationRow) GetUpdatedAt() time.Time    { return s.UpdatedAt }
+func (s InsertOrganizationRow) GetName() *string           { return s.Name }
 func (s InsertOrganizationRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s InsertOrganizationRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
+func (s InsertOrganizationRow) GetSessionTimeout() *int32  { return s.SessionTimeout }
 
 // InsertOrganization implements Querier.InsertOrganization.
 func (q *DBQuerier) InsertOrganization(ctx context.Context, params InsertOrganizationParams) (InsertOrganizationRow, error) {
@@ -188,12 +210,11 @@ type UpdateOrganizationNameByNameRow struct {
 }
 
 func (s UpdateOrganizationNameByNameRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s UpdateOrganizationNameByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateOrganizationNameByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationNameByNameRow) GetName() *string { return s.Name }
+func (s UpdateOrganizationNameByNameRow) GetCreatedAt() time.Time    { return s.CreatedAt }
+func (s UpdateOrganizationNameByNameRow) GetUpdatedAt() time.Time    { return s.UpdatedAt }
+func (s UpdateOrganizationNameByNameRow) GetName() *string           { return s.Name }
 func (s UpdateOrganizationNameByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationNameByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
+func (s UpdateOrganizationNameByNameRow) GetSessionTimeout() *int32  { return s.SessionTimeout }
 
 // UpdateOrganizationNameByName implements Querier.UpdateOrganizationNameByName.
 func (q *DBQuerier) UpdateOrganizationNameByName(ctx context.Context, newName *string, name *string) (UpdateOrganizationNameByNameRow, error) {
@@ -237,13 +258,18 @@ type UpdateOrganizationSessionRememberByNameRow struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
 
-func (s UpdateOrganizationSessionRememberByNameRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateOrganizationSessionRememberByNameRow) GetOrganizationID() *string {
+	return s.OrganizationID
+}
 func (s UpdateOrganizationSessionRememberByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateOrganizationSessionRememberByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationSessionRememberByNameRow) GetName() *string { return s.Name }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
+func (s UpdateOrganizationSessionRememberByNameRow) GetName() *string        { return s.Name }
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() *int32 {
+	return s.SessionRemember
+}
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() *int32 {
+	return s.SessionTimeout
+}
 
 // UpdateOrganizationSessionRememberByName implements Querier.UpdateOrganizationSessionRememberByName.
 func (q *DBQuerier) UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int32, name *string) (UpdateOrganizationSessionRememberByNameRow, error) {
@@ -287,13 +313,18 @@ type UpdateOrganizationSessionTimeoutByNameRow struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
 
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetOrganizationID() *string {
+	return s.OrganizationID
+}
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetName() *string { return s.Name }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetName() *string        { return s.Name }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() *int32 {
+	return s.SessionRemember
+}
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() *int32 {
+	return s.SessionTimeout
+}
 
 // UpdateOrganizationSessionTimeoutByName implements Querier.UpdateOrganizationSessionTimeoutByName.
 func (q *DBQuerier) UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int32, name *string) (UpdateOrganizationSessionTimeoutByNameRow, error) {

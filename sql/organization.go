@@ -48,7 +48,7 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 		SessionTimeout:  int32(org.SessionTimeout),
 	})
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err, insertOrganizationSQL)
 	}
 
 	return convertOrganization(result), nil
@@ -68,39 +68,28 @@ func (db OrganizationDB) Update(name string, opts otf.OrganizationUpdateOptions)
 
 	q := NewQuerier(tx)
 
-	var modified bool
+	var result organizationRow
 
 	if opts.Name != nil {
-		_, err := q.UpdateOrganizationNameByName(ctx, opts.Name, &name)
+		result, err = q.UpdateOrganizationNameByName(ctx, opts.Name, &name)
 		if err != nil {
 			return nil, err
 		}
-		modified = true
 	}
-
 	if opts.SessionTimeout != nil {
-		_, err := q.UpdateOrganizationSessionTimeoutByName(ctx, int32(*opts.SessionTimeout), &name)
+		result, err = q.UpdateOrganizationSessionTimeoutByName(ctx, int32(*opts.SessionTimeout), &name)
 		if err != nil {
 			return nil, err
 		}
-		modified = true
 	}
-
 	if opts.SessionRemember != nil {
-		_, err := q.UpdateOrganizationSessionRememberByName(ctx, int32(*opts.SessionRemember), &name)
+		result, err = q.UpdateOrganizationSessionRememberByName(ctx, int32(*opts.SessionRemember), &name)
 		if err != nil {
 			return nil, err
 		}
-		modified = true
 	}
 
-	if modified {
-		if err := tx.Commit(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	return getOrganization(ctx, q, name)
+	return convertOrganization(result), tx.Commit(ctx)
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
@@ -113,13 +102,13 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	}
 
 	var items []*otf.Organization
-	for _, r := range result.Organizations {
+	for _, r := range result {
 		items = append(items, convertOrganization(r))
 	}
 
 	return &otf.OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *result.FullCount),
+		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
 	}, nil
 }
 
@@ -149,7 +138,7 @@ func (db OrganizationDB) Delete(name string) error {
 func getOrganization(ctx context.Context, q *DBQuerier, name string) (*otf.Organization, error) {
 	result, err := q.FindOrganizationByName(ctx, &name)
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err, findOrganizationByNameSQL)
 	}
 
 	return convertOrganization(result), nil

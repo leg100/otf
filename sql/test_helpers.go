@@ -31,14 +31,6 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 
 	require.Equal(t, "postgres", u.Scheme)
 
-	// We set both postgres and test fixtures to use TZ so that we can test for
-	// timestamp equality between the two. (A go time.Time may use "Local"
-	// whereas postgres may set "Europe/London", which would fail an equality
-	// test).
-	q := u.Query()
-	q.Add("TimeZone", "UTC")
-	u.RawQuery = q.Encode()
-
 	interval := DefaultSessionCleanupInterval
 	if len(sessionCleanupIntervalOverride) > 0 {
 		interval = sessionCleanupIntervalOverride[0]
