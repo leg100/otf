@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     created_at       TIMESTAMPTZ NOT NULL,
     updated_at       TIMESTAMPTZ NOT NULL,
     name             TEXT        NOT NULL,
-    session_remember INTEGER,
-    session_timeout  INTEGER,
+    session_remember INTEGER     NOT NULL,
+    session_timeout  INTEGER     NOT NULL,
                      UNIQUE  (name),
                      PRIMARY KEY (organization_id)
 );

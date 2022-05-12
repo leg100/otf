@@ -90,7 +90,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		OrganizationID:             &ws.Organization.ID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err, insertWorkspaceSQL)
 	}
 
 	// Return newly created workspcae to caller
