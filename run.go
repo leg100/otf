@@ -87,13 +87,19 @@ type RunService interface {
 	// Create a new run with the given options.
 	Create(ctx context.Context, opts RunCreateOptions) (*Run, error)
 
+	// Get retrieves a run with the given ID.
 	Get(ctx context.Context, id string) (*Run, error)
+
+	// List lists runs according to the given options.
 	List(ctx context.Context, opts RunListOptions) (*RunList, error)
+
+	// Delete deletes a run with the given ID.
 	Delete(ctx context.Context, id string) error
 
-	// Apply a run by its ID.
+	// Apply a run with the given ID.
 	Apply(ctx context.Context, id string, opts RunApplyOptions) error
 
+	// Discard discards a run with the given ID.
 	Discard(ctx context.Context, id string, opts RunDiscardOptions) error
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
@@ -198,6 +204,12 @@ type RunStore interface {
 	UpdatePlanResources(id string, summary Resources) error
 	UpdateApplyResources(id string, summary Resources) error
 	Delete(id string) error
+}
+
+type RunStatusUpdates struct {
+	RunStatus   RunStatus
+	PlanStatus  *PlanStatus
+	ApplyStatus *ApplyStatus
 }
 
 // RunStatusUpdater persists updates to run statuses and returns timestamps of
