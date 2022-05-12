@@ -106,11 +106,13 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace, otf
 		return nil, fmt.Errorf("invalid spec")
 	}
 
-	if err := fn(ws, newWorkspaceUpdater(tx, ws.ID)); err != nil {
+	updater := newWorkspaceUpdater(tx, ws.ID)
+
+	if err := fn(ws, updater); err != nil {
 		return nil, err
 	}
 
-	return ws, tx.Commit(ctx)
+	return convertWorkspaceComposite(updater.result), tx.Commit(ctx)
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {

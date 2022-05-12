@@ -7,8 +7,9 @@ import (
 )
 
 type workspaceUpdater struct {
-	q  *DBQuerier
-	id string
+	q      *DBQuerier
+	id     string
+	result workspaceComposite
 }
 
 func newWorkspaceUpdater(tx pgx.Tx, id string) *workspaceUpdater {
@@ -18,17 +19,17 @@ func newWorkspaceUpdater(tx pgx.Tx, id string) *workspaceUpdater {
 	}
 }
 
-func (u *workspaceUpdater) ToggleLock(ctx context.Context, lock bool) error {
-	_, err := u.q.UpdateWorkspaceLockByID(ctx, &lock, &u.id)
+func (u *workspaceUpdater) ToggleLock(ctx context.Context, lock bool) (err error) {
+	u.result, err = u.q.UpdateWorkspaceLockByID(ctx, &lock, &u.id)
 	return err
 }
 
-func (u *workspaceUpdater) UpdateName(ctx context.Context, name string) error {
-	_, err := u.q.UpdateWorkspaceNameByID(ctx, &name, &u.id)
+func (u *workspaceUpdater) UpdateName(ctx context.Context, name string) (err error) {
+	u.result, err = u.q.UpdateWorkspaceNameByID(ctx, &name, &u.id)
 	return err
 }
 
-func (u *workspaceUpdater) UpdateAllowDestroyPlan(ctx context.Context, allow bool) error {
-	_, err := u.q.UpdateWorkspaceAllowDestroyPlanByID(ctx, &allow, &u.id)
+func (u *workspaceUpdater) UpdateAllowDestroyPlan(ctx context.Context, allow bool) (err error) {
+	u.result, err = u.q.UpdateWorkspaceAllowDestroyPlanByID(ctx, &allow, &u.id)
 	return err
 }

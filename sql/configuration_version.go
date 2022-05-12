@@ -16,16 +16,21 @@ type ConfigurationVersionDB struct {
 	*pgx.Conn
 }
 
-type configurationVersionRow interface {
+type configurationVersionComposite interface {
 	GetConfigurationVersionID() *string
 	GetAutoQueueRuns() *bool
 	GetSource() *string
 	GetSpeculative() *bool
 	GetStatus() *string
-	GetWorkspace() Workspaces
-	GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps
 
 	Timestamps
+}
+
+type configurationVersionRow interface {
+	configurationVersionComposite
+
+	GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps
+	GetWorkspace() Workspaces
 }
 
 type configurationVersionRowList interface {
@@ -171,19 +176,24 @@ func getConfigurationVersion(ctx context.Context, q *DBQuerier, opts otf.Configu
 	}
 }
 
-func convertConfigurationVersion(row configurationVersionRow) *otf.ConfigurationVersion {
-	run := otf.ConfigurationVersion{
-		ID:               *row.GetConfigurationVersionID(),
-		Timestamps:       convertTimestamps(row),
-		Status:           otf.ConfigurationStatus(*row.GetStatus()),
-		StatusTimestamps: convertConfigurationVersionStatusTimestamps(row.GetConfigurationVersionStatusTimestamps()),
-		Source:           otf.ConfigurationSource(*row.GetSource()),
-		AutoQueueRuns:    *row.GetAutoQueueRuns(),
-		Speculative:      *row.GetSpeculative(),
-		Workspace:        convertWorkspaceComposite(row.GetWorkspace()),
+func convertConfigurationVersionComposite(row configurationVersionComposite) *otf.ConfigurationVersion {
+	cv := otf.ConfigurationVersion{
+		ID:            *row.GetConfigurationVersionID(),
+		Timestamps:    convertTimestamps(row),
+		Status:        otf.ConfigurationStatus(*row.GetStatus()),
+		Source:        otf.ConfigurationSource(*row.GetSource()),
+		AutoQueueRuns: *row.GetAutoQueueRuns(),
+		Speculative:   *row.GetSpeculative(),
 	}
 
-	return &run
+	return &cv
+}
+
+func convertConfigurationVersion(row configurationVersionRow) *otf.ConfigurationVersion {
+	cv := convertConfigurationVersionComposite(row)
+	cv.StatusTimestamps = convertConfigurationVersionStatusTimestamps(row.GetConfigurationVersionStatusTimestamps())
+	cv.Workspace = convertWorkspaceComposite(row.GetWorkspace())
+	return cv
 }
 
 func convertConfigurationVersionStatusTimestamps(rows []ConfigurationVersionStatusTimestamps) []otf.ConfigurationVersionStatusTimestamp {

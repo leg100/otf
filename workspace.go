@@ -459,6 +459,17 @@ func (ws *Workspace) ToggleLock(lock bool, updater WorkspaceUpdater) error {
 	return updater.ToggleLock(context.Background(), lock)
 }
 
+func (ws *Workspace) UpdateName(ctx context.Context, name string, updater WorkspaceUpdater) error {
+	if err := updater.UpdateName(ctx, name); err != nil {
+		return err
+	}
+	ws.Name = name
+
+	// TODO: UpdatedAt
+
+	return nil
+}
+
 func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions, updater WorkspaceUpdater) error {
 	if opts.Name != nil {
 		if err := updater.UpdateName(ctx, *opts.Name); err != nil {
