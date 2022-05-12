@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/jackc/pgx/v4"
 )
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"

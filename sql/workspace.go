@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -66,9 +67,27 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	_, err := q.InsertWorkspace(ctx, InsertWorkspaceParams{
-		ID:             &ws.ID,
-		Name:           &ws.Name,
-		OrganizationID: &ws.Organization.ID,
+		ID:                         &ws.ID,
+		Name:                       &ws.Name,
+		AllowDestroyPlan:           &ws.AllowDestroyPlan,
+		CanQueueDestroyPlan:        &ws.CanQueueDestroyPlan,
+		Environment:                &ws.Environment,
+		Description:                &ws.Description,
+		ExecutionMode:              &ws.ExecutionMode,
+		FileTriggersEnabled:        &ws.FileTriggersEnabled,
+		GlobalRemoteState:          &ws.GlobalRemoteState,
+		Locked:                     &ws.Locked,
+		MigrationEnvironment:       &ws.MigrationEnvironment,
+		SourceName:                 &ws.SourceName,
+		SourceUrl:                  &ws.SourceURL,
+		SpeculativeEnabled:         &ws.SpeculativeEnabled,
+		StructuredRunOutputEnabled: &ws.StructuredRunOutputEnabled,
+		TerraformVersion:           &ws.TerraformVersion,
+		TriggerPrefixes:            ws.TriggerPrefixes,
+		QueueAllRuns:               &ws.QueueAllRuns,
+		AutoApply:                  &ws.AutoApply,
+		WorkingDirectory:           &ws.WorkingDirectory,
+		OrganizationID:             &ws.Organization.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -78,7 +97,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	return getWorkspace(ctx, q, otf.WorkspaceSpec{ID: &ws.ID})
 }
 
-func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace, otf.WorkspaceUpdater) error) (*otf.Workspace, error) {
+func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -106,13 +125,36 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace, otf
 		return nil, fmt.Errorf("invalid spec")
 	}
 
-	updater := newWorkspaceUpdater(tx, ws.ID)
+	cp, err := copystructure.Copy(ws)
+	if err != nil {
+		return nil, err
+	}
+	xws, ok := cp.(*otf.Workspace)
+	if !ok {
+		return nil, fmt.Errorf("cannot cast copy of workspace")
+	}
 
-	if err := fn(ws, updater); err != nil {
+	if err := fn(ws); err != nil {
 		return nil, err
 	}
 
-	return convertWorkspaceComposite(updater.result), tx.Commit(ctx)
+	if ws.Description != xws.Description {
+		result, err := q.UpdateWorkspaceDescriptionByID(ctx, &ws.Description, &ws.ID)
+		if err != nil {
+			return nil, err
+		}
+		ws = convertWorkspaceComposite(result)
+	}
+
+	if ws.Locked != xws.Locked {
+		result, err := q.UpdateWorkspaceLockByID(ctx, &ws.Locked, &ws.ID)
+		if err != nil {
+			return nil, err
+		}
+		ws = convertWorkspaceComposite(result)
+	}
+
+	return ws, tx.Commit(ctx)
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {

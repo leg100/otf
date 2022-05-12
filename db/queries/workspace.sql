@@ -129,6 +129,14 @@ SET
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;
 
+-- name: UpdateWorkspaceDescriptionByID :one
+UPDATE workspaces
+SET
+    description = pggen.arg('description'),
+    updated_at = NOW()
+WHERE workspace_id = pggen.arg('id')
+RETURNING *;
+
 -- DeleteOrganization deletes an organization by id.
 -- DeleteWorkspaceByID deletes a workspace by id.
 --

@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pressly/goose/v3"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 //go:embed migrations/*.sql
@@ -16,9 +18,11 @@ func migrate(logger logr.Logger, connStr string) error {
 
 	goose.SetBaseFS(migrations)
 
+	goose.SetDialect("pgx")
+
 	db, err := goose.OpenDBWithDriver("pgx", connStr)
 	if err != nil {
-		return fmt.Errorf("connecting to db for migrations", err)
+		return fmt.Errorf("connecting to db for migrations: %w", err)
 	}
 
 	if err := goose.SetDialect("postgres"); err != nil {

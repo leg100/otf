@@ -43,7 +43,7 @@ type Workspace struct {
 	SourceName                 string
 	SourceURL                  string `db:"source_url"`
 	TerraformVersion           string
-	TriggerPrefixes            CSV
+	TriggerPrefixes            []string
 	VCSRepo                    *VCSRepo
 	WorkingDirectory           string
 
@@ -267,7 +267,7 @@ type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, fn func(ws *Workspace, updater WorkspaceUpdater) error) (*Workspace, error)
+	Update(spec WorkspaceSpec, fn func(ws *Workspace) error) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 
@@ -446,7 +446,7 @@ func (o WorkspaceUpdateOptions) Valid() error {
 }
 
 // ToggleLock toggles the workspace lock.
-func (ws *Workspace) ToggleLock(lock bool, updater WorkspaceUpdater) error {
+func (ws *Workspace) ToggleLock(lock bool) error {
 	if lock && ws.Locked {
 		return ErrWorkspaceAlreadyLocked
 	}
@@ -456,32 +456,16 @@ func (ws *Workspace) ToggleLock(lock bool, updater WorkspaceUpdater) error {
 
 	ws.Locked = lock
 
-	return updater.ToggleLock(context.Background(), lock)
-}
-
-func (ws *Workspace) UpdateName(ctx context.Context, name string, updater WorkspaceUpdater) error {
-	if err := updater.UpdateName(ctx, name); err != nil {
-		return err
-	}
-	ws.Name = name
-
-	// TODO: UpdatedAt
-
 	return nil
 }
 
-func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions, updater WorkspaceUpdater) error {
+func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) error {
 	if opts.Name != nil {
-		if err := updater.UpdateName(ctx, *opts.Name); err != nil {
-			return err
-		}
+		ws.Name = *opts.Name
 	}
 	if opts.AllowDestroyPlan != nil {
-		if err := updater.UpdateAllowDestroyPlan(ctx, *opts.AllowDestroyPlan); err != nil {
-			return err
-		}
+		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
 	}
-
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
 	}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 )
 
 var _ otf.RunStore = (*RunDB)(nil)
@@ -97,7 +96,7 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	return getRun(ctx, q, otf.RunGetOptions{ID: &run.ID})
 }
 
-func (db RunDB) UpdateStatus(id string, fn func(*otf.Run, otf.RunStatusUpdater) error) (*otf.Run, error) {
+func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -115,20 +114,16 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run, otf.RunStatusUpdater) 
 	}
 	run := convertRun(result)
 
-	cp, err := copystructure.Copy(run)
-	if err != nil {
-		return nil, err
-	}
-	oldRun, ok := cp.(*otf.Run)
-	if !ok {
-		return nil, fmt.Errorf("cannot cast copy of run to run")
-	}
+	// Make copies of statuses before update
+	runStatus := run.Status
+	planStatus := run.Plan.Status
+	applyStatus := run.Apply.Status
 
 	if err := fn(run); err != nil {
 		return nil, err
 	}
 
-	if run.Status != oldRun.Status {
+	if run.Status != runStatus {
 		result, err := q.UpdateRunStatus(ctx, otf.String(string(run.Status)), &run.ID)
 		if err != nil {
 			return nil, err
@@ -142,12 +137,32 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run, otf.RunStatusUpdater) 
 		run.StatusTimestamps = append(run.StatusTimestamps, convertRunStatusTimestamp(ts))
 	}
 
-	if run.Plan.Status != oldRun.Plan.Status {
+	if run.Plan.Status != planStatus {
 		result, err := q.UpdatePlanStatus(ctx, otf.String(string(run.Plan.Status)), &run.Plan.ID)
 		if err != nil {
 			return nil, err
 		}
 		addResultToPlan(run.Plan, result)
+
+		ts, err := q.InsertPlanStatusTimestamp(ctx, &run.Plan.ID, otf.String(string(run.Plan.Status)))
+		if err != nil {
+			return nil, err
+		}
+		run.Plan.StatusTimestamps = append(run.Plan.StatusTimestamps, convertPlanStatusTimestamp(ts))
+	}
+
+	if run.Apply.Status != applyStatus {
+		result, err := q.UpdateApplyStatus(ctx, otf.String(string(run.Apply.Status)), &run.Apply.ID)
+		if err != nil {
+			return nil, err
+		}
+		addResultToApply(run.Apply, result)
+
+		ts, err := q.InsertApplyStatusTimestamp(ctx, &run.Apply.ID, otf.String(string(run.Apply.Status)))
+		if err != nil {
+			return nil, err
+		}
+		run.Apply.StatusTimestamps = append(run.Apply.StatusTimestamps, convertApplyStatusTimestamp(ts))
 	}
 
 	return run, tx.Commit(ctx)

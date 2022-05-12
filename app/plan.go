@@ -63,8 +63,8 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 
 // Start marks a plan as having started
 func (s PlanService) Start(ctx context.Context, runID string, opts otf.JobStartOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.Plan.Start(run, updater)
+	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) error {
+		return run.Plan.Start(run)
 	})
 	if err != nil {
 		s.Error(err, "starting plan")
@@ -81,11 +81,8 @@ func (s PlanService) Start(ctx context.Context, runID string, opts otf.JobStartO
 func (s PlanService) Finish(ctx context.Context, runID string, opts otf.JobFinishOptions) (*otf.Run, error) {
 	var event *otf.Event
 
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run, updater otf.RunStatusUpdater) (err error) {
-		event, err = run.Plan.Finish(run, updater)
-		if err != nil {
-			return err
-		}
+	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) (err error) {
+		event, err = run.Plan.Finish(run)
 		return err
 	})
 	if err != nil {

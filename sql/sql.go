@@ -15,8 +15,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/leg100/otf"
-
-	_ "github.com/lib/pq"
 )
 
 // psql is our SQL builder, customized to use postgres placeholders ($N).

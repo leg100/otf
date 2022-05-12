@@ -5,9 +5,10 @@ package sql
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const insertWorkspaceSQL = `INSERT INTO workspaces (
@@ -111,30 +112,31 @@ type InsertWorkspaceRow struct {
 	OrganizationID             *string   `json:"organization_id"`
 }
 
-func (s InsertWorkspaceRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s InsertWorkspaceRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s InsertWorkspaceRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertWorkspaceRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s InsertWorkspaceRow) GetAutoApply() *bool { return s.AutoApply }
-func (s InsertWorkspaceRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s InsertWorkspaceRow) GetDescription() *string { return s.Description }
-func (s InsertWorkspaceRow) GetEnvironment() *string { return s.Environment }
-func (s InsertWorkspaceRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s InsertWorkspaceRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s InsertWorkspaceRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s InsertWorkspaceRow) GetLocked() *bool { return s.Locked }
+func (s InsertWorkspaceRow) GetWorkspaceID() *string          { return s.WorkspaceID }
+func (s InsertWorkspaceRow) GetCreatedAt() time.Time          { return s.CreatedAt }
+func (s InsertWorkspaceRow) GetUpdatedAt() time.Time          { return s.UpdatedAt }
+func (s InsertWorkspaceRow) GetAllowDestroyPlan() *bool       { return s.AllowDestroyPlan }
+func (s InsertWorkspaceRow) GetAutoApply() *bool              { return s.AutoApply }
+func (s InsertWorkspaceRow) GetCanQueueDestroyPlan() *bool    { return s.CanQueueDestroyPlan }
+func (s InsertWorkspaceRow) GetDescription() *string          { return s.Description }
+func (s InsertWorkspaceRow) GetEnvironment() *string          { return s.Environment }
+func (s InsertWorkspaceRow) GetExecutionMode() *string        { return s.ExecutionMode }
+func (s InsertWorkspaceRow) GetFileTriggersEnabled() *bool    { return s.FileTriggersEnabled }
+func (s InsertWorkspaceRow) GetGlobalRemoteState() *bool      { return s.GlobalRemoteState }
+func (s InsertWorkspaceRow) GetLocked() *bool                 { return s.Locked }
 func (s InsertWorkspaceRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s InsertWorkspaceRow) GetName() *string { return s.Name }
-func (s InsertWorkspaceRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s InsertWorkspaceRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s InsertWorkspaceRow) GetSourceName() *string { return s.SourceName }
-func (s InsertWorkspaceRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s InsertWorkspaceRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s InsertWorkspaceRow) GetName() *string                 { return s.Name }
+func (s InsertWorkspaceRow) GetQueueAllRuns() *bool           { return s.QueueAllRuns }
+func (s InsertWorkspaceRow) GetSpeculativeEnabled() *bool     { return s.SpeculativeEnabled }
+func (s InsertWorkspaceRow) GetSourceName() *string           { return s.SourceName }
+func (s InsertWorkspaceRow) GetSourceUrl() *string            { return s.SourceUrl }
+func (s InsertWorkspaceRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
 func (s InsertWorkspaceRow) GetTerraformVersion() *string { return s.TerraformVersion }
 func (s InsertWorkspaceRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
 func (s InsertWorkspaceRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s InsertWorkspaceRow) GetOrganizationID() *string { return s.OrganizationID }
-
+func (s InsertWorkspaceRow) GetOrganizationID() *string   { return s.OrganizationID }
 
 // InsertWorkspace implements Querier.InsertWorkspace.
 func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error) {
@@ -206,32 +208,31 @@ type FindWorkspacesRow struct {
 	FullCount                  *int          `json:"full_count"`
 }
 
-func (s FindWorkspacesRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s FindWorkspacesRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindWorkspacesRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindWorkspacesRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s FindWorkspacesRow) GetAutoApply() *bool { return s.AutoApply }
-func (s FindWorkspacesRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s FindWorkspacesRow) GetDescription() *string { return s.Description }
-func (s FindWorkspacesRow) GetEnvironment() *string { return s.Environment }
-func (s FindWorkspacesRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s FindWorkspacesRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s FindWorkspacesRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s FindWorkspacesRow) GetLocked() *bool { return s.Locked }
-func (s FindWorkspacesRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s FindWorkspacesRow) GetName() *string { return s.Name }
-func (s FindWorkspacesRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s FindWorkspacesRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s FindWorkspacesRow) GetSourceName() *string { return s.SourceName }
-func (s FindWorkspacesRow) GetSourceUrl() *string { return s.SourceUrl }
+func (s FindWorkspacesRow) GetWorkspaceID() *string              { return s.WorkspaceID }
+func (s FindWorkspacesRow) GetCreatedAt() time.Time              { return s.CreatedAt }
+func (s FindWorkspacesRow) GetUpdatedAt() time.Time              { return s.UpdatedAt }
+func (s FindWorkspacesRow) GetAllowDestroyPlan() *bool           { return s.AllowDestroyPlan }
+func (s FindWorkspacesRow) GetAutoApply() *bool                  { return s.AutoApply }
+func (s FindWorkspacesRow) GetCanQueueDestroyPlan() *bool        { return s.CanQueueDestroyPlan }
+func (s FindWorkspacesRow) GetDescription() *string              { return s.Description }
+func (s FindWorkspacesRow) GetEnvironment() *string              { return s.Environment }
+func (s FindWorkspacesRow) GetExecutionMode() *string            { return s.ExecutionMode }
+func (s FindWorkspacesRow) GetFileTriggersEnabled() *bool        { return s.FileTriggersEnabled }
+func (s FindWorkspacesRow) GetGlobalRemoteState() *bool          { return s.GlobalRemoteState }
+func (s FindWorkspacesRow) GetLocked() *bool                     { return s.Locked }
+func (s FindWorkspacesRow) GetMigrationEnvironment() *string     { return s.MigrationEnvironment }
+func (s FindWorkspacesRow) GetName() *string                     { return s.Name }
+func (s FindWorkspacesRow) GetQueueAllRuns() *bool               { return s.QueueAllRuns }
+func (s FindWorkspacesRow) GetSpeculativeEnabled() *bool         { return s.SpeculativeEnabled }
+func (s FindWorkspacesRow) GetSourceName() *string               { return s.SourceName }
+func (s FindWorkspacesRow) GetSourceUrl() *string                { return s.SourceUrl }
 func (s FindWorkspacesRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s FindWorkspacesRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s FindWorkspacesRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s FindWorkspacesRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s FindWorkspacesRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s FindWorkspacesRow) GetOrganization() Organizations { return s.Organization }
-func (s FindWorkspacesRow) GetFullCount() *int { return s.FullCount }
-
+func (s FindWorkspacesRow) GetTerraformVersion() *string         { return s.TerraformVersion }
+func (s FindWorkspacesRow) GetTriggerPrefixes() []string         { return s.TriggerPrefixes }
+func (s FindWorkspacesRow) GetWorkingDirectory() *string         { return s.WorkingDirectory }
+func (s FindWorkspacesRow) GetOrganizationID() *string           { return s.OrganizationID }
+func (s FindWorkspacesRow) GetOrganization() Organizations       { return s.Organization }
+func (s FindWorkspacesRow) GetFullCount() *int                   { return s.FullCount }
 
 // FindWorkspaces implements Querier.FindWorkspaces.
 func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error) {
@@ -322,31 +323,32 @@ type FindWorkspaceByNameRow struct {
 	Organization               Organizations `json:"organization"`
 }
 
-func (s FindWorkspaceByNameRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s FindWorkspaceByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindWorkspaceByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindWorkspaceByNameRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s FindWorkspaceByNameRow) GetAutoApply() *bool { return s.AutoApply }
-func (s FindWorkspaceByNameRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s FindWorkspaceByNameRow) GetDescription() *string { return s.Description }
-func (s FindWorkspaceByNameRow) GetEnvironment() *string { return s.Environment }
-func (s FindWorkspaceByNameRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s FindWorkspaceByNameRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s FindWorkspaceByNameRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s FindWorkspaceByNameRow) GetLocked() *bool { return s.Locked }
+func (s FindWorkspaceByNameRow) GetWorkspaceID() *string          { return s.WorkspaceID }
+func (s FindWorkspaceByNameRow) GetCreatedAt() time.Time          { return s.CreatedAt }
+func (s FindWorkspaceByNameRow) GetUpdatedAt() time.Time          { return s.UpdatedAt }
+func (s FindWorkspaceByNameRow) GetAllowDestroyPlan() *bool       { return s.AllowDestroyPlan }
+func (s FindWorkspaceByNameRow) GetAutoApply() *bool              { return s.AutoApply }
+func (s FindWorkspaceByNameRow) GetCanQueueDestroyPlan() *bool    { return s.CanQueueDestroyPlan }
+func (s FindWorkspaceByNameRow) GetDescription() *string          { return s.Description }
+func (s FindWorkspaceByNameRow) GetEnvironment() *string          { return s.Environment }
+func (s FindWorkspaceByNameRow) GetExecutionMode() *string        { return s.ExecutionMode }
+func (s FindWorkspaceByNameRow) GetFileTriggersEnabled() *bool    { return s.FileTriggersEnabled }
+func (s FindWorkspaceByNameRow) GetGlobalRemoteState() *bool      { return s.GlobalRemoteState }
+func (s FindWorkspaceByNameRow) GetLocked() *bool                 { return s.Locked }
 func (s FindWorkspaceByNameRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s FindWorkspaceByNameRow) GetName() *string { return s.Name }
-func (s FindWorkspaceByNameRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s FindWorkspaceByNameRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s FindWorkspaceByNameRow) GetSourceName() *string { return s.SourceName }
-func (s FindWorkspaceByNameRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s FindWorkspaceByNameRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s FindWorkspaceByNameRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s FindWorkspaceByNameRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s FindWorkspaceByNameRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s FindWorkspaceByNameRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByNameRow) GetName() *string                 { return s.Name }
+func (s FindWorkspaceByNameRow) GetQueueAllRuns() *bool           { return s.QueueAllRuns }
+func (s FindWorkspaceByNameRow) GetSpeculativeEnabled() *bool     { return s.SpeculativeEnabled }
+func (s FindWorkspaceByNameRow) GetSourceName() *string           { return s.SourceName }
+func (s FindWorkspaceByNameRow) GetSourceUrl() *string            { return s.SourceUrl }
+func (s FindWorkspaceByNameRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s FindWorkspaceByNameRow) GetTerraformVersion() *string   { return s.TerraformVersion }
+func (s FindWorkspaceByNameRow) GetTriggerPrefixes() []string   { return s.TriggerPrefixes }
+func (s FindWorkspaceByNameRow) GetWorkingDirectory() *string   { return s.WorkingDirectory }
+func (s FindWorkspaceByNameRow) GetOrganizationID() *string     { return s.OrganizationID }
 func (s FindWorkspaceByNameRow) GetOrganization() Organizations { return s.Organization }
-
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
 func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name *string, organizationName *string) (FindWorkspaceByNameRow, error) {
@@ -416,31 +418,34 @@ type FindWorkspaceByNameForUpdateRow struct {
 	Organization               Organizations `json:"organization"`
 }
 
-func (s FindWorkspaceByNameForUpdateRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s FindWorkspaceByNameForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindWorkspaceByNameForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindWorkspaceByNameForUpdateRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s FindWorkspaceByNameForUpdateRow) GetAutoApply() *bool { return s.AutoApply }
+func (s FindWorkspaceByNameForUpdateRow) GetWorkspaceID() *string       { return s.WorkspaceID }
+func (s FindWorkspaceByNameForUpdateRow) GetCreatedAt() time.Time       { return s.CreatedAt }
+func (s FindWorkspaceByNameForUpdateRow) GetUpdatedAt() time.Time       { return s.UpdatedAt }
+func (s FindWorkspaceByNameForUpdateRow) GetAllowDestroyPlan() *bool    { return s.AllowDestroyPlan }
+func (s FindWorkspaceByNameForUpdateRow) GetAutoApply() *bool           { return s.AutoApply }
 func (s FindWorkspaceByNameForUpdateRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s FindWorkspaceByNameForUpdateRow) GetDescription() *string { return s.Description }
-func (s FindWorkspaceByNameForUpdateRow) GetEnvironment() *string { return s.Environment }
-func (s FindWorkspaceByNameForUpdateRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s FindWorkspaceByNameForUpdateRow) GetDescription() *string       { return s.Description }
+func (s FindWorkspaceByNameForUpdateRow) GetEnvironment() *string       { return s.Environment }
+func (s FindWorkspaceByNameForUpdateRow) GetExecutionMode() *string     { return s.ExecutionMode }
 func (s FindWorkspaceByNameForUpdateRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s FindWorkspaceByNameForUpdateRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s FindWorkspaceByNameForUpdateRow) GetLocked() *bool { return s.Locked }
-func (s FindWorkspaceByNameForUpdateRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s FindWorkspaceByNameForUpdateRow) GetName() *string { return s.Name }
-func (s FindWorkspaceByNameForUpdateRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
+func (s FindWorkspaceByNameForUpdateRow) GetGlobalRemoteState() *bool   { return s.GlobalRemoteState }
+func (s FindWorkspaceByNameForUpdateRow) GetLocked() *bool              { return s.Locked }
+func (s FindWorkspaceByNameForUpdateRow) GetMigrationEnvironment() *string {
+	return s.MigrationEnvironment
+}
+func (s FindWorkspaceByNameForUpdateRow) GetName() *string             { return s.Name }
+func (s FindWorkspaceByNameForUpdateRow) GetQueueAllRuns() *bool       { return s.QueueAllRuns }
 func (s FindWorkspaceByNameForUpdateRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s FindWorkspaceByNameForUpdateRow) GetSourceName() *string { return s.SourceName }
-func (s FindWorkspaceByNameForUpdateRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s FindWorkspaceByNameForUpdateRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s FindWorkspaceByNameForUpdateRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s FindWorkspaceByNameForUpdateRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s FindWorkspaceByNameForUpdateRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s FindWorkspaceByNameForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByNameForUpdateRow) GetSourceName() *string       { return s.SourceName }
+func (s FindWorkspaceByNameForUpdateRow) GetSourceUrl() *string        { return s.SourceUrl }
+func (s FindWorkspaceByNameForUpdateRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s FindWorkspaceByNameForUpdateRow) GetTerraformVersion() *string   { return s.TerraformVersion }
+func (s FindWorkspaceByNameForUpdateRow) GetTriggerPrefixes() []string   { return s.TriggerPrefixes }
+func (s FindWorkspaceByNameForUpdateRow) GetWorkingDirectory() *string   { return s.WorkingDirectory }
+func (s FindWorkspaceByNameForUpdateRow) GetOrganizationID() *string     { return s.OrganizationID }
 func (s FindWorkspaceByNameForUpdateRow) GetOrganization() Organizations { return s.Organization }
-
 
 // FindWorkspaceByNameForUpdate implements Querier.FindWorkspaceByNameForUpdate.
 func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name *string, organizationName *string) (FindWorkspaceByNameForUpdateRow, error) {
@@ -508,31 +513,32 @@ type FindWorkspaceByIDRow struct {
 	Organization               Organizations `json:"organization"`
 }
 
-func (s FindWorkspaceByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s FindWorkspaceByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindWorkspaceByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindWorkspaceByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s FindWorkspaceByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s FindWorkspaceByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s FindWorkspaceByIDRow) GetDescription() *string { return s.Description }
-func (s FindWorkspaceByIDRow) GetEnvironment() *string { return s.Environment }
-func (s FindWorkspaceByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s FindWorkspaceByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s FindWorkspaceByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s FindWorkspaceByIDRow) GetLocked() *bool { return s.Locked }
+func (s FindWorkspaceByIDRow) GetWorkspaceID() *string          { return s.WorkspaceID }
+func (s FindWorkspaceByIDRow) GetCreatedAt() time.Time          { return s.CreatedAt }
+func (s FindWorkspaceByIDRow) GetUpdatedAt() time.Time          { return s.UpdatedAt }
+func (s FindWorkspaceByIDRow) GetAllowDestroyPlan() *bool       { return s.AllowDestroyPlan }
+func (s FindWorkspaceByIDRow) GetAutoApply() *bool              { return s.AutoApply }
+func (s FindWorkspaceByIDRow) GetCanQueueDestroyPlan() *bool    { return s.CanQueueDestroyPlan }
+func (s FindWorkspaceByIDRow) GetDescription() *string          { return s.Description }
+func (s FindWorkspaceByIDRow) GetEnvironment() *string          { return s.Environment }
+func (s FindWorkspaceByIDRow) GetExecutionMode() *string        { return s.ExecutionMode }
+func (s FindWorkspaceByIDRow) GetFileTriggersEnabled() *bool    { return s.FileTriggersEnabled }
+func (s FindWorkspaceByIDRow) GetGlobalRemoteState() *bool      { return s.GlobalRemoteState }
+func (s FindWorkspaceByIDRow) GetLocked() *bool                 { return s.Locked }
 func (s FindWorkspaceByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s FindWorkspaceByIDRow) GetName() *string { return s.Name }
-func (s FindWorkspaceByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s FindWorkspaceByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s FindWorkspaceByIDRow) GetSourceName() *string { return s.SourceName }
-func (s FindWorkspaceByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s FindWorkspaceByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s FindWorkspaceByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s FindWorkspaceByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s FindWorkspaceByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s FindWorkspaceByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByIDRow) GetName() *string                 { return s.Name }
+func (s FindWorkspaceByIDRow) GetQueueAllRuns() *bool           { return s.QueueAllRuns }
+func (s FindWorkspaceByIDRow) GetSpeculativeEnabled() *bool     { return s.SpeculativeEnabled }
+func (s FindWorkspaceByIDRow) GetSourceName() *string           { return s.SourceName }
+func (s FindWorkspaceByIDRow) GetSourceUrl() *string            { return s.SourceUrl }
+func (s FindWorkspaceByIDRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s FindWorkspaceByIDRow) GetTerraformVersion() *string   { return s.TerraformVersion }
+func (s FindWorkspaceByIDRow) GetTriggerPrefixes() []string   { return s.TriggerPrefixes }
+func (s FindWorkspaceByIDRow) GetWorkingDirectory() *string   { return s.WorkingDirectory }
+func (s FindWorkspaceByIDRow) GetOrganizationID() *string     { return s.OrganizationID }
 func (s FindWorkspaceByIDRow) GetOrganization() Organizations { return s.Organization }
-
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
 func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id *string) (FindWorkspaceByIDRow, error) {
@@ -601,31 +607,34 @@ type FindWorkspaceByIDForUpdateRow struct {
 	Organization               Organizations `json:"organization"`
 }
 
-func (s FindWorkspaceByIDForUpdateRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s FindWorkspaceByIDForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindWorkspaceByIDForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindWorkspaceByIDForUpdateRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s FindWorkspaceByIDForUpdateRow) GetAutoApply() *bool { return s.AutoApply }
+func (s FindWorkspaceByIDForUpdateRow) GetWorkspaceID() *string       { return s.WorkspaceID }
+func (s FindWorkspaceByIDForUpdateRow) GetCreatedAt() time.Time       { return s.CreatedAt }
+func (s FindWorkspaceByIDForUpdateRow) GetUpdatedAt() time.Time       { return s.UpdatedAt }
+func (s FindWorkspaceByIDForUpdateRow) GetAllowDestroyPlan() *bool    { return s.AllowDestroyPlan }
+func (s FindWorkspaceByIDForUpdateRow) GetAutoApply() *bool           { return s.AutoApply }
 func (s FindWorkspaceByIDForUpdateRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s FindWorkspaceByIDForUpdateRow) GetDescription() *string { return s.Description }
-func (s FindWorkspaceByIDForUpdateRow) GetEnvironment() *string { return s.Environment }
-func (s FindWorkspaceByIDForUpdateRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s FindWorkspaceByIDForUpdateRow) GetDescription() *string       { return s.Description }
+func (s FindWorkspaceByIDForUpdateRow) GetEnvironment() *string       { return s.Environment }
+func (s FindWorkspaceByIDForUpdateRow) GetExecutionMode() *string     { return s.ExecutionMode }
 func (s FindWorkspaceByIDForUpdateRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s FindWorkspaceByIDForUpdateRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s FindWorkspaceByIDForUpdateRow) GetLocked() *bool { return s.Locked }
-func (s FindWorkspaceByIDForUpdateRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s FindWorkspaceByIDForUpdateRow) GetName() *string { return s.Name }
-func (s FindWorkspaceByIDForUpdateRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
+func (s FindWorkspaceByIDForUpdateRow) GetGlobalRemoteState() *bool   { return s.GlobalRemoteState }
+func (s FindWorkspaceByIDForUpdateRow) GetLocked() *bool              { return s.Locked }
+func (s FindWorkspaceByIDForUpdateRow) GetMigrationEnvironment() *string {
+	return s.MigrationEnvironment
+}
+func (s FindWorkspaceByIDForUpdateRow) GetName() *string             { return s.Name }
+func (s FindWorkspaceByIDForUpdateRow) GetQueueAllRuns() *bool       { return s.QueueAllRuns }
 func (s FindWorkspaceByIDForUpdateRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s FindWorkspaceByIDForUpdateRow) GetSourceName() *string { return s.SourceName }
-func (s FindWorkspaceByIDForUpdateRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s FindWorkspaceByIDForUpdateRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s FindWorkspaceByIDForUpdateRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s FindWorkspaceByIDForUpdateRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s FindWorkspaceByIDForUpdateRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s FindWorkspaceByIDForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindWorkspaceByIDForUpdateRow) GetSourceName() *string       { return s.SourceName }
+func (s FindWorkspaceByIDForUpdateRow) GetSourceUrl() *string        { return s.SourceUrl }
+func (s FindWorkspaceByIDForUpdateRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s FindWorkspaceByIDForUpdateRow) GetTerraformVersion() *string   { return s.TerraformVersion }
+func (s FindWorkspaceByIDForUpdateRow) GetTriggerPrefixes() []string   { return s.TriggerPrefixes }
+func (s FindWorkspaceByIDForUpdateRow) GetWorkingDirectory() *string   { return s.WorkingDirectory }
+func (s FindWorkspaceByIDForUpdateRow) GetOrganizationID() *string     { return s.OrganizationID }
 func (s FindWorkspaceByIDForUpdateRow) GetOrganization() Organizations { return s.Organization }
-
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
 func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id *string) (FindWorkspaceByIDForUpdateRow, error) {
@@ -694,30 +703,31 @@ type UpdateWorkspaceNameByIDRow struct {
 	OrganizationID             *string   `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceNameByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s UpdateWorkspaceNameByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateWorkspaceNameByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceNameByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceNameByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceNameByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceNameByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceNameByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceNameByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceNameByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceNameByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceNameByIDRow) GetLocked() *bool { return s.Locked }
+func (s UpdateWorkspaceNameByIDRow) GetWorkspaceID() *string          { return s.WorkspaceID }
+func (s UpdateWorkspaceNameByIDRow) GetCreatedAt() time.Time          { return s.CreatedAt }
+func (s UpdateWorkspaceNameByIDRow) GetUpdatedAt() time.Time          { return s.UpdatedAt }
+func (s UpdateWorkspaceNameByIDRow) GetAllowDestroyPlan() *bool       { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceNameByIDRow) GetAutoApply() *bool              { return s.AutoApply }
+func (s UpdateWorkspaceNameByIDRow) GetCanQueueDestroyPlan() *bool    { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceNameByIDRow) GetDescription() *string          { return s.Description }
+func (s UpdateWorkspaceNameByIDRow) GetEnvironment() *string          { return s.Environment }
+func (s UpdateWorkspaceNameByIDRow) GetExecutionMode() *string        { return s.ExecutionMode }
+func (s UpdateWorkspaceNameByIDRow) GetFileTriggersEnabled() *bool    { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetGlobalRemoteState() *bool      { return s.GlobalRemoteState }
+func (s UpdateWorkspaceNameByIDRow) GetLocked() *bool                 { return s.Locked }
 func (s UpdateWorkspaceNameByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceNameByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceNameByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceNameByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceNameByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceNameByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceNameByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetName() *string                 { return s.Name }
+func (s UpdateWorkspaceNameByIDRow) GetQueueAllRuns() *bool           { return s.QueueAllRuns }
+func (s UpdateWorkspaceNameByIDRow) GetSpeculativeEnabled() *bool     { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetSourceName() *string           { return s.SourceName }
+func (s UpdateWorkspaceNameByIDRow) GetSourceUrl() *string            { return s.SourceUrl }
+func (s UpdateWorkspaceNameByIDRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
 func (s UpdateWorkspaceNameByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
 func (s UpdateWorkspaceNameByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
 func (s UpdateWorkspaceNameByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceNameByIDRow) GetOrganizationID() *string { return s.OrganizationID }
-
+func (s UpdateWorkspaceNameByIDRow) GetOrganizationID() *string   { return s.OrganizationID }
 
 // UpdateWorkspaceNameByID implements Querier.UpdateWorkspaceNameByID.
 func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name *string, id *string) (UpdateWorkspaceNameByIDRow, error) {
@@ -781,27 +791,46 @@ type UpdateWorkspaceAllowDestroyPlanByIDRow struct {
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAllowDestroyPlan() *bool {
+	return s.AllowDestroyPlan
+}
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetEnvironment() *string { return s.Environment }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCanQueueDestroyPlan() *bool {
+	return s.CanQueueDestroyPlan
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetDescription() *string   { return s.Description }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetEnvironment() *string   { return s.Environment }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetFileTriggersEnabled() *bool {
+	return s.FileTriggersEnabled
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetGlobalRemoteState() *bool {
+	return s.GlobalRemoteState
+}
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetLocked() *bool { return s.Locked }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetName() *string { return s.Name }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetMigrationEnvironment() *string {
+	return s.MigrationEnvironment
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetName() *string       { return s.Name }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSpeculativeEnabled() *bool {
+	return s.SpeculativeEnabled
+}
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceUrl() *string  { return s.SourceUrl }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTerraformVersion() *string {
+	return s.TerraformVersion
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTriggerPrefixes() []string {
+	return s.TriggerPrefixes
+}
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkingDirectory() *string {
+	return s.WorkingDirectory
+}
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetOrganizationID() *string { return s.OrganizationID }
-
 
 // UpdateWorkspaceAllowDestroyPlanByID implements Querier.UpdateWorkspaceAllowDestroyPlanByID.
 func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan *bool, id *string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
@@ -862,30 +891,31 @@ type UpdateWorkspaceLockByIDRow struct {
 	OrganizationID             *string   `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceLockByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s UpdateWorkspaceLockByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateWorkspaceLockByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceLockByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceLockByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceLockByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceLockByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceLockByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceLockByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceLockByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceLockByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceLockByIDRow) GetLocked() *bool { return s.Locked }
+func (s UpdateWorkspaceLockByIDRow) GetWorkspaceID() *string          { return s.WorkspaceID }
+func (s UpdateWorkspaceLockByIDRow) GetCreatedAt() time.Time          { return s.CreatedAt }
+func (s UpdateWorkspaceLockByIDRow) GetUpdatedAt() time.Time          { return s.UpdatedAt }
+func (s UpdateWorkspaceLockByIDRow) GetAllowDestroyPlan() *bool       { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetAutoApply() *bool              { return s.AutoApply }
+func (s UpdateWorkspaceLockByIDRow) GetCanQueueDestroyPlan() *bool    { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetDescription() *string          { return s.Description }
+func (s UpdateWorkspaceLockByIDRow) GetEnvironment() *string          { return s.Environment }
+func (s UpdateWorkspaceLockByIDRow) GetExecutionMode() *string        { return s.ExecutionMode }
+func (s UpdateWorkspaceLockByIDRow) GetFileTriggersEnabled() *bool    { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetGlobalRemoteState() *bool      { return s.GlobalRemoteState }
+func (s UpdateWorkspaceLockByIDRow) GetLocked() *bool                 { return s.Locked }
 func (s UpdateWorkspaceLockByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceLockByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceLockByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceLockByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceLockByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceLockByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceLockByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetName() *string                 { return s.Name }
+func (s UpdateWorkspaceLockByIDRow) GetQueueAllRuns() *bool           { return s.QueueAllRuns }
+func (s UpdateWorkspaceLockByIDRow) GetSpeculativeEnabled() *bool     { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetSourceName() *string           { return s.SourceName }
+func (s UpdateWorkspaceLockByIDRow) GetSourceUrl() *string            { return s.SourceUrl }
+func (s UpdateWorkspaceLockByIDRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
 func (s UpdateWorkspaceLockByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
 func (s UpdateWorkspaceLockByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
 func (s UpdateWorkspaceLockByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceLockByIDRow) GetOrganizationID() *string { return s.OrganizationID }
-
+func (s UpdateWorkspaceLockByIDRow) GetOrganizationID() *string   { return s.OrganizationID }
 
 // UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.
 func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock *bool, id *string) (UpdateWorkspaceLockByIDRow, error) {
@@ -909,6 +939,97 @@ func (q *DBQuerier) UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (Updat
 	var item UpdateWorkspaceLockByIDRow
 	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("scan UpdateWorkspaceLockByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateWorkspaceDescriptionByIDSQL = `UPDATE workspaces
+SET
+    description = $1,
+    updated_at = NOW()
+WHERE workspace_id = $2
+RETURNING *;`
+
+type UpdateWorkspaceDescriptionByIDRow struct {
+	WorkspaceID                *string   `json:"workspace_id"`
+	CreatedAt                  time.Time `json:"created_at"`
+	UpdatedAt                  time.Time `json:"updated_at"`
+	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
+	AutoApply                  *bool     `json:"auto_apply"`
+	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
+	Description                *string   `json:"description"`
+	Environment                *string   `json:"environment"`
+	ExecutionMode              *string   `json:"execution_mode"`
+	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
+	GlobalRemoteState          *bool     `json:"global_remote_state"`
+	Locked                     *bool     `json:"locked"`
+	MigrationEnvironment       *string   `json:"migration_environment"`
+	Name                       *string   `json:"name"`
+	QueueAllRuns               *bool     `json:"queue_all_runs"`
+	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
+	SourceName                 *string   `json:"source_name"`
+	SourceUrl                  *string   `json:"source_url"`
+	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
+	TerraformVersion           *string   `json:"terraform_version"`
+	TriggerPrefixes            []string  `json:"trigger_prefixes"`
+	WorkingDirectory           *string   `json:"working_directory"`
+	OrganizationID             *string   `json:"organization_id"`
+}
+
+func (s UpdateWorkspaceDescriptionByIDRow) GetWorkspaceID() *string    { return s.WorkspaceID }
+func (s UpdateWorkspaceDescriptionByIDRow) GetCreatedAt() time.Time    { return s.CreatedAt }
+func (s UpdateWorkspaceDescriptionByIDRow) GetUpdatedAt() time.Time    { return s.UpdatedAt }
+func (s UpdateWorkspaceDescriptionByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceDescriptionByIDRow) GetAutoApply() *bool        { return s.AutoApply }
+func (s UpdateWorkspaceDescriptionByIDRow) GetCanQueueDestroyPlan() *bool {
+	return s.CanQueueDestroyPlan
+}
+func (s UpdateWorkspaceDescriptionByIDRow) GetDescription() *string   { return s.Description }
+func (s UpdateWorkspaceDescriptionByIDRow) GetEnvironment() *string   { return s.Environment }
+func (s UpdateWorkspaceDescriptionByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
+func (s UpdateWorkspaceDescriptionByIDRow) GetFileTriggersEnabled() *bool {
+	return s.FileTriggersEnabled
+}
+func (s UpdateWorkspaceDescriptionByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceDescriptionByIDRow) GetLocked() *bool            { return s.Locked }
+func (s UpdateWorkspaceDescriptionByIDRow) GetMigrationEnvironment() *string {
+	return s.MigrationEnvironment
+}
+func (s UpdateWorkspaceDescriptionByIDRow) GetName() *string             { return s.Name }
+func (s UpdateWorkspaceDescriptionByIDRow) GetQueueAllRuns() *bool       { return s.QueueAllRuns }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSourceName() *string       { return s.SourceName }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSourceUrl() *string        { return s.SourceUrl }
+func (s UpdateWorkspaceDescriptionByIDRow) GetStructuredRunOutputEnabled() *bool {
+	return s.StructuredRunOutputEnabled
+}
+func (s UpdateWorkspaceDescriptionByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceDescriptionByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
+func (s UpdateWorkspaceDescriptionByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
+func (s UpdateWorkspaceDescriptionByIDRow) GetOrganizationID() *string   { return s.OrganizationID }
+
+// UpdateWorkspaceDescriptionByID implements Querier.UpdateWorkspaceDescriptionByID.
+func (q *DBQuerier) UpdateWorkspaceDescriptionByID(ctx context.Context, description *string, id *string) (UpdateWorkspaceDescriptionByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceDescriptionByID")
+	row := q.conn.QueryRow(ctx, updateWorkspaceDescriptionByIDSQL, description, id)
+	var item UpdateWorkspaceDescriptionByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("query UpdateWorkspaceDescriptionByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateWorkspaceDescriptionByIDBatch implements Querier.UpdateWorkspaceDescriptionByIDBatch.
+func (q *DBQuerier) UpdateWorkspaceDescriptionByIDBatch(batch genericBatch, description *string, id *string) {
+	batch.Queue(updateWorkspaceDescriptionByIDSQL, description, id)
+}
+
+// UpdateWorkspaceDescriptionByIDScan implements Querier.UpdateWorkspaceDescriptionByIDScan.
+func (q *DBQuerier) UpdateWorkspaceDescriptionByIDScan(results pgx.BatchResults) (UpdateWorkspaceDescriptionByIDRow, error) {
+	row := results.QueryRow()
+	var item UpdateWorkspaceDescriptionByIDRow
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceUrl, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+		return item, fmt.Errorf("scan UpdateWorkspaceDescriptionByIDBatch row: %w", err)
 	}
 	return item, nil
 }

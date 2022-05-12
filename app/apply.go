@@ -86,8 +86,8 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) 
 
 // Start marks a apply as having started
 func (s ApplyService) Start(ctx context.Context, runID string, opts otf.JobStartOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.Apply.Start(run, updater)
+	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) error {
+		return run.Apply.Start(run)
 	})
 	if err != nil {
 		s.Error(err, "starting apply")
@@ -102,8 +102,8 @@ func (s ApplyService) Start(ctx context.Context, runID string, opts otf.JobStart
 // Finish marks a apply as having finished.  An event is emitted to notify any
 // subscribers of the new state.
 func (s ApplyService) Finish(ctx context.Context, runID string, opts otf.JobFinishOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run, updater otf.RunStatusUpdater) (err error) {
-		return run.Apply.Finish(run, updater)
+	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) (err error) {
+		return run.Apply.Finish(run)
 	})
 	if err != nil {
 		s.Error(err, "finishing apply", "id", runID)

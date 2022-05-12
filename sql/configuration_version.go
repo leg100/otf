@@ -16,29 +16,6 @@ type ConfigurationVersionDB struct {
 	*pgx.Conn
 }
 
-type configurationVersionComposite interface {
-	GetConfigurationVersionID() *string
-	GetAutoQueueRuns() *bool
-	GetSource() *string
-	GetSpeculative() *bool
-	GetStatus() *string
-
-	Timestamps
-}
-
-type configurationVersionRow interface {
-	configurationVersionComposite
-
-	GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps
-	GetWorkspace() Workspaces
-}
-
-type configurationVersionRowList interface {
-	configurationVersionRow
-
-	GetFullCount() *int
-}
-
 func NewConfigurationVersionDB(conn *pgx.Conn) *ConfigurationVersionDB {
 	return &ConfigurationVersionDB{
 		Conn: conn,
@@ -56,7 +33,7 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 
 	q := NewQuerier(tx)
 
-	_, err = q.InsertConfigurationVersion(ctx, InsertConfigurationVersionParams{
+	result, err := q.InsertConfigurationVersion(ctx, InsertConfigurationVersionParams{
 		ID:            &cv.ID,
 		AutoQueueRuns: &cv.AutoQueueRuns,
 		Source:        otf.String(string(cv.Source)),
@@ -67,19 +44,16 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	if err != nil {
 		return nil, err
 	}
+	addResultToConfigurationVersion(cv, result)
 
 	// Insert timestamp for current status
-	_, err = q.InsertConfigurationVersionStatusTimestamp(ctx, &cv.ID, otf.String(string(cv.Status)))
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, &cv.ID, otf.String(string(cv.Status)))
 	if err != nil {
 		return nil, err
 	}
+	cv.StatusTimestamps = append(cv.StatusTimestamps, convertConfigurationVersionStatusTimestamps(ts))
 
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-
-	// Return newly created cv to caller
-	return getConfigurationVersion(ctx, q, otf.ConfigurationVersionGetOptions{ID: &cv.ID})
+	return cv, tx.Commit(ctx)
 }
 
 func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVersion, otf.ConfigurationVersionUpdater) error) error {
@@ -174,35 +148,4 @@ func getConfigurationVersion(ctx context.Context, q *DBQuerier, opts otf.Configu
 	} else {
 		return nil, fmt.Errorf("no configuration version spec provided")
 	}
-}
-
-func convertConfigurationVersionComposite(row configurationVersionComposite) *otf.ConfigurationVersion {
-	cv := otf.ConfigurationVersion{
-		ID:            *row.GetConfigurationVersionID(),
-		Timestamps:    convertTimestamps(row),
-		Status:        otf.ConfigurationStatus(*row.GetStatus()),
-		Source:        otf.ConfigurationSource(*row.GetSource()),
-		AutoQueueRuns: *row.GetAutoQueueRuns(),
-		Speculative:   *row.GetSpeculative(),
-	}
-
-	return &cv
-}
-
-func convertConfigurationVersion(row configurationVersionRow) *otf.ConfigurationVersion {
-	cv := convertConfigurationVersionComposite(row)
-	cv.StatusTimestamps = convertConfigurationVersionStatusTimestamps(row.GetConfigurationVersionStatusTimestamps())
-	cv.Workspace = convertWorkspaceComposite(row.GetWorkspace())
-	return cv
-}
-
-func convertConfigurationVersionStatusTimestamps(rows []ConfigurationVersionStatusTimestamps) []otf.ConfigurationVersionStatusTimestamp {
-	timestamps := make([]otf.ConfigurationVersionStatusTimestamp, len(rows))
-	for _, r := range rows {
-		timestamps = append(timestamps, otf.ConfigurationVersionStatusTimestamp{
-			Status:    otf.ConfigurationStatus(*r.Status),
-			Timestamp: r.Timestamp,
-		})
-	}
-	return timestamps
 }

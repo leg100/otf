@@ -60,7 +60,7 @@ func convertRun(result runResult) *otf.Run {
 	run.Plan = convertPlan(result.GetPlan())
 	run.Apply = convertApply(result.GetApply())
 	run.Workspace = convertWorkspaceComposite(result.GetWorkspace())
-	run.ConfigurationVersion = convertConfigurationVersionComposite(result.GetConfigurationVersion())
+	run.ConfigurationVersion = convertConfigurationVersionResult(result.GetConfigurationVersion())
 
 	for _, ts := range result.GetRunStatusTimestamps() {
 		run.StatusTimestamps = append(run.StatusTimestamps, convertRunStatusTimestamp(ts))

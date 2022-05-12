@@ -109,34 +109,34 @@ func (p *Plan) Do(run *Run, env Environment) error {
 }
 
 // Start updates the plan to reflect its plan having started
-func (p *Plan) Start(run *Run, updater RunStatusUpdater) error {
+func (p *Plan) Start(run *Run) error {
 	if run.Status != RunPlanQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
 
-	run.UpdateStatus(RunPlanning, updater)
+	run.UpdateStatus(RunPlanning)
 
 	return nil
 }
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish(run *Run, updater RunStatusUpdater) (*Event, error) {
+func (p *Plan) Finish(run *Run) (*Event, error) {
 	if !p.HasChanges() || run.IsSpeculative() {
-		if err := run.UpdateStatus(RunPlannedAndFinished, updater); err != nil {
+		if err := run.UpdateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
 	}
 
 	if !run.Workspace.AutoApply {
-		if err := run.UpdateStatus(RunPlanned, updater); err != nil {
+		if err := run.UpdateStatus(RunPlanned); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: run, Type: EventRunPlanned}, nil
 	}
 
-	if err := run.UpdateStatus(RunApplyQueued, updater); err != nil {
+	if err := run.UpdateStatus(RunApplyQueued); err != nil {
 		return nil, err
 	}
 	return &Event{Type: EventApplyQueued, Payload: run}, nil

@@ -109,8 +109,8 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 }
 
 func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.Discard(updater)
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+		return run.Discard()
 	})
 	if err != nil {
 		s.Error(err, "discarding run", "id", id)
@@ -127,15 +127,15 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.Cancel(updater)
+	_, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.ForceCancel(updater)
+	_, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+		return run.ForceCancel()
 
 		// TODO: send KILL signal to running terraform process
 
@@ -147,8 +147,8 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 }
 
 func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run, updater otf.RunStatusUpdater) error {
-		return run.EnqueuePlan(updater)
+	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+		return run.EnqueuePlan()
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", id)

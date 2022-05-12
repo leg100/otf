@@ -286,39 +286,23 @@ func (r *Run) GetStatus() string {
 }
 
 // Discard updates the state of a run to reflect it having been discarded.
-func (r *Run) Discard(updater RunStatusUpdater) error {
+func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
 		return ErrRunDiscardNotAllowed
 	}
 
-	r.UpdateStatus(RunDiscarded, updater)
+	r.UpdateStatus(RunDiscarded)
 
 	return nil
 }
 
 // Cancel run.
-func (r *Run) Cancel(updater RunStatusUpdater) error {
-	ctx := context.Background()
-
+func (r *Run) Cancel() error {
 	if !r.IsCancelable() {
 		return ErrRunCancelNotAllowed
 	}
 
-	var err error
-	r, err = updater.UpdateRunStatus(ctx, RunCanceled)
-	if err != nil {
-		return nil
-	}
-
-	switch r.Status {
-	case RunPlanQueued, RunPlanning:
-		r.Plan, err = updater.UpdatePlanStatus(ctx, PlanCanceled)
-	case RunApplyQueued, RunApplying:
-		r.Apply, err = updater.UpdateApplyStatus(ctx, ApplyCanceled)
-	}
-	if err != nil {
-		return err
-	}
+	r.UpdateStatus(RunCanceled)
 
 	return nil
 }
@@ -339,12 +323,12 @@ func (r *Run) ForceCancelAvailableAt() time.Time {
 
 // ForceCancel updates the state of a run to reflect it having been forcefully
 // cancelled.
-func (r *Run) ForceCancel(updater RunStatusUpdater) error {
+func (r *Run) ForceCancel() error {
 	if !r.IsForceCancelable() {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	return r.UpdateStatus(RunForceCanceled, updater)
+	return r.UpdateStatus(RunForceCanceled)
 }
 
 // IsCancelable determines whether run can be cancelled.
@@ -412,87 +396,52 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
-func (r *Run) ApplyRun(updater RunStatusUpdater) error {
-	return r.UpdateStatus(RunApplyQueued, updater)
+func (r *Run) ApplyRun() error {
+	return r.UpdateStatus(RunApplyQueued)
 }
 
-func (r *Run) EnqueuePlan(updater RunStatusUpdater) error {
-	return r.UpdateStatus(RunPlanQueued, updater)
-}
-
-func (r *Run) calculatePlanOrApplyStatus(status RunStatus) (*PlanStatus, *ApplyStatus) {
-	switch status {
-	case RunPending:
-		return PlanPending, nil
-	case RunPlanQueued:
-		err = updater.UpdatePlanStatus(context.Background(), PlanQueued)
-	case RunPlanning:
-		err = updater.UpdatePlanStatus(context.Background(), PlanRunning)
-	case RunPlanned, RunPlannedAndFinished:
-		err = updater.UpdatePlanStatus(context.Background(), PlanFinished)
-	case RunApplyQueued:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyQueued)
-	case RunApplying:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyRunning)
-	case RunApplied:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyFinished)
-	case RunErrored:
-		switch r.Status {
-		case RunPlanning:
-			err = updater.UpdatePlanStatus(context.Background(), PlanErrored)
-		case RunApplying:
-			err = updater.UpdateApplyStatus(context.Background(), ApplyErrored)
-		}
-	case RunCanceled:
-		switch r.Status {
-		case RunPlanQueued, RunPlanning:
-			err = updater.UpdatePlanStatus(context.Background(), PlanCanceled)
-		case RunApplyQueued, RunApplying:
-			err = updater.UpdateApplyStatus(context.Background(), ApplyCanceled)
-		}
-	}
+func (r *Run) EnqueuePlan() error {
+	return r.UpdateStatus(RunPlanQueued)
 }
 
 // UpdateStatus updates the status of the run as well as its plan and apply
-func (r *Run) UpdateStatus(status RunStatus, updater RunStatusUpdater) error {
+func (r *Run) UpdateStatus(status RunStatus) error {
 	var err error
 	switch status {
 	case RunPending:
-		err = updater.UpdatePlanStatus(context.Background(), PlanPending)
+		r.Plan.Status = PlanPending
 	case RunPlanQueued:
-		err = updater.UpdatePlanStatus(context.Background(), PlanQueued)
+		r.Plan.Status = PlanQueued
 	case RunPlanning:
-		err = updater.UpdatePlanStatus(context.Background(), PlanRunning)
+		r.Plan.Status = PlanRunning
 	case RunPlanned, RunPlannedAndFinished:
-		err = updater.UpdatePlanStatus(context.Background(), PlanFinished)
+		r.Plan.Status = PlanFinished
 	case RunApplyQueued:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyQueued)
+		r.Apply.Status = ApplyQueued
 	case RunApplying:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyRunning)
+		r.Apply.Status = ApplyRunning
 	case RunApplied:
-		err = updater.UpdateApplyStatus(context.Background(), ApplyFinished)
+		r.Apply.Status = ApplyFinished
 	case RunErrored:
 		switch r.Status {
 		case RunPlanning:
-			err = updater.UpdatePlanStatus(context.Background(), PlanErrored)
+			r.Plan.Status = PlanErrored
 		case RunApplying:
-			err = updater.UpdateApplyStatus(context.Background(), ApplyErrored)
+			r.Apply.Status = ApplyErrored
 		}
 	case RunCanceled:
 		switch r.Status {
 		case RunPlanQueued, RunPlanning:
-			err = updater.UpdatePlanStatus(context.Background(), PlanCanceled)
+			r.Plan.Status = PlanCanceled
 		case RunApplyQueued, RunApplying:
-			err = updater.UpdateApplyStatus(context.Background(), ApplyCanceled)
+			r.Apply.Status = ApplyCanceled
 		}
 	}
 	if err != nil {
 		return err
 	}
 
-	if err := updater.UpdateRunStatus(context.Background(), status); err != nil {
-		return err
-	}
+	r.Status = status
 
 	// TODO: determine when ApplyUnreachable is applicable and set accordingly
 

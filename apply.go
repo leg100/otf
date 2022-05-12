@@ -90,20 +90,20 @@ func (a *Apply) Do(run *Run, env Environment) error {
 }
 
 // Start updates the run to reflect its apply having started
-func (a *Apply) Start(run *Run, updater RunStatusUpdater) error {
+func (a *Apply) Start(run *Run) error {
 	if run.Status != RunApplyQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
 
-	run.UpdateStatus(RunApplying, updater)
+	run.UpdateStatus(RunApplying)
 
 	return nil
 }
 
 // Finish updates the run to reflect its apply having finished. An event is
 // returned reflecting the run's new status.
-func (a *Apply) Finish(run *Run, updater RunStatusUpdater) error {
-	return run.UpdateStatus(RunApplied, updater)
+func (a *Apply) Finish(run *Run) error {
+	return run.UpdateStatus(RunApplied)
 }
 
 func (a *Apply) updateStatus(status ApplyStatus) {
