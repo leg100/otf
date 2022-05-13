@@ -199,7 +199,7 @@ type RunStore interface {
 	GetPlanFile(id string, format PlanFormat) ([]byte, error)
 	List(opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
-	// perform updates within a transaction.
+	// perform updates in a transaction.
 	UpdateStatus(id string, fn func(*Run) error) (*Run, error)
 	UpdatePlanResources(id string, summary Resources) error
 	UpdateApplyResources(id string, summary Resources) error

@@ -36,8 +36,8 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
     organization_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4,
@@ -664,7 +664,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 const updateWorkspaceNameByIDSQL = `UPDATE workspaces
 SET
     name = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = $2
 RETURNING *;`
 
@@ -748,7 +748,7 @@ func (q *DBQuerier) UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (Updat
 const updateWorkspaceAllowDestroyPlanByIDSQL = `UPDATE workspaces
 SET
     allow_destroy_plan = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = $2
 RETURNING *;`
 
@@ -832,7 +832,7 @@ func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchRes
 const updateWorkspaceLockByIDSQL = `UPDATE workspaces
 SET
     locked = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = $2
 RETURNING *;`
 
@@ -916,7 +916,7 @@ func (q *DBQuerier) UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (Updat
 const updateWorkspaceDescriptionByIDSQL = `UPDATE workspaces
 SET
     description = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = $2
 RETURNING *;`
 

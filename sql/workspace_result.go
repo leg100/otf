@@ -6,44 +6,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-type workspaceResultWithoutRelations interface {
-	GetWorkspaceID() *string
-	GetAllowDestroyPlan() *bool
-	GetAutoApply() *bool
-	GetCanQueueDestroyPlan() *bool
-	GetDescription() *string
-	GetEnvironment() *string
-	GetExecutionMode() *string
-	GetFileTriggersEnabled() *bool
-	GetGlobalRemoteState() *bool
-	GetLocked() *bool
-	GetMigrationEnvironment() *string
-	GetName() *string
-	GetQueueAllRuns() *bool
-	GetSpeculativeEnabled() *bool
-	GetSourceName() *string
-	GetSourceUrl() *string
-	GetStructuredRunOutputEnabled() *bool
-	GetTerraformVersion() *string
-	GetTriggerPrefixes() []string
-	GetWorkingDirectory() *string
-	GetOrganizationID() *string
-
-	Timestamps
-}
-
-type workspaceResult interface {
-	workspaceResultWithoutRelations
-
-	GetOrganization() Organizations
-}
-
-type workspaceListResult interface {
-	workspaceResult
-
-	GetFullCount() *int
-}
-
 type workspaceRow struct {
 	WorkspaceID                *string       `json:"workspace_id"`
 	CreatedAt                  time.Time     `json:"created_at"`
@@ -96,13 +58,34 @@ func (row workspaceRow) convert() *otf.Workspace {
 	ws.TriggerPrefixes = row.TriggerPrefixes
 	ws.WorkingDirectory = *row.WorkingDirectory
 
-	ws.Organization = organizationRow(row.Organization).convert()
+	ws.Organization = convertOrganizationComposite(Organizations(row.Organization))
 	return &ws
 }
 
-func convertWorkspace(result workspaceResult) *otf.Workspace {
-	ws := convertWorkspaceComposite(result)
-	ws.Organization = convertOrganization(result.GetOrganization())
+func convertWorkspaceComposite(row Workspaces) *otf.Workspace {
+	ws := otf.Workspace{}
+	ws.ID = *row.WorkspaceID
+	ws.CreatedAt = row.CreatedAt
+	ws.UpdatedAt = row.UpdatedAt
+	ws.AllowDestroyPlan = *row.AllowDestroyPlan
+	ws.AutoApply = *row.AutoApply
+	ws.CanQueueDestroyPlan = *row.CanQueueDestroyPlan
+	ws.Description = *row.Description
+	ws.Environment = *row.Environment
+	ws.ExecutionMode = *row.ExecutionMode
+	ws.FileTriggersEnabled = *row.FileTriggersEnabled
+	ws.GlobalRemoteState = *row.GlobalRemoteState
+	ws.Locked = *row.Locked
+	ws.MigrationEnvironment = *row.MigrationEnvironment
+	ws.Name = *row.Name
+	ws.QueueAllRuns = *row.QueueAllRuns
+	ws.SpeculativeEnabled = *row.SpeculativeEnabled
+	ws.StructuredRunOutputEnabled = *row.StructuredRunOutputEnabled
+	ws.SourceName = *row.SourceName
+	ws.SourceURL = *row.SourceUrl
+	ws.TerraformVersion = *row.TerraformVersion
+	ws.TriggerPrefixes = row.TriggerPrefixes
+	ws.WorkingDirectory = *row.WorkingDirectory
 
-	return ws
+	return &ws
 }

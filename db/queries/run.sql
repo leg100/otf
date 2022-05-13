@@ -14,8 +14,8 @@ INSERT INTO runs (
     workspace_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('IsDestroy'),
     pggen.arg('PositionInQueue'),
     pggen.arg('Refresh'),
@@ -36,7 +36,7 @@ INSERT INTO run_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    NOW()
+    current_timestamp
 )
 RETURNING *;
 
@@ -195,7 +195,7 @@ FOR UPDATE
 UPDATE runs
 SET
     status = pggen.arg('status'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE run_id = pggen.arg('id')
 RETURNING *;
 

@@ -12,8 +12,8 @@ INSERT INTO state_version_outputs (
     state_version_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Name'),
     pggen.arg('Sensitive'),
     pggen.arg('Type'),

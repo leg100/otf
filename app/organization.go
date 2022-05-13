@@ -76,7 +76,9 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	return s.db.Update(name, *opts)
+	return s.db.Update(name, func(org *otf.Organization) error {
+		return otf.UpdateOrganizationFromOpts(org, *opts)
+	})
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {

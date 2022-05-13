@@ -60,9 +60,7 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	return cv, tx.Commit(ctx)
 }
 
-func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVersion, otf.ConfigurationVersionUpdater) error) error {
-	ctx := context.Background()
-
+func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
 	tx, err := db.Conn.Begin(ctx)
 	if err != nil {
 		return err
@@ -76,9 +74,9 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 	if err != nil {
 		return err
 	}
-	cv := convertConfigurationVersion(result)
+	cv := convertConfigurationVersion(configurationVersionRow(result))
 
-	if err := fn(cv, newConfigurationVersionUpdater(tx, cv.ID)); err != nil {
+	if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
 		return err
 	}
 
@@ -100,7 +98,18 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 
 	var items []*otf.ConfigurationVersion
 	for _, r := range result {
-		items = append(items, convertConfigurationVersion(r))
+		items = append(items, &otf.ConfigurationVersion{
+			ID: *r.ConfigurationVersionID,
+			Timestamps: otf.Timestamps{
+				CreatedAt: r.CreatedAt,
+				UpdatedAt: r.UpdatedAt,
+			},
+			Status:        otf.ConfigurationStatus(*r.Status),
+			Source:        otf.ConfigurationSource(*r.Source),
+			AutoQueueRuns: *r.AutoQueueRuns,
+			Speculative:   *r.Speculative,
+			Workspace:     convertWorkspaceComposite(r.Workspace),
+		})
 	}
 
 	return &otf.ConfigurationVersionList{
@@ -110,7 +119,24 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 }
 
 func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	return getConfigurationVersion(context.Background(), NewQuerier(db.Conn), opts)
+	ctx := context.Background()
+	q := NewQuerier(db.Conn)
+
+	if opts.ID != nil {
+		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
+		if err != nil {
+			return nil, err
+		}
+		return convertConfigurationVersion(configurationVersionRow(result)), nil
+	} else if opts.WorkspaceID != nil {
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return convertConfigurationVersion(configurationVersionRow(result)), nil
+	} else {
+		return nil, fmt.Errorf("no configuration version spec provided")
+	}
 }
 
 func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
@@ -134,22 +160,4 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 	}
 
 	return nil
-}
-
-func getConfigurationVersion(ctx context.Context, q *DBQuerier, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, opts.ID)
-		if err != nil {
-			return nil, err
-		}
-		return convertConfigurationVersion(result), nil
-	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, opts.WorkspaceID)
-		if err != nil {
-			return nil, err
-		}
-		return convertConfigurationVersion(result), nil
-	} else {
-		return nil, fmt.Errorf("no configuration version spec provided")
-	}
 }

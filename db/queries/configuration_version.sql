@@ -13,8 +13,8 @@ INSERT INTO configuration_versions (
     workspace_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('AutoQueueRuns'),
     pggen.arg('Source'),
     pggen.arg('Speculative'),
@@ -31,7 +31,7 @@ INSERT INTO configuration_version_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    NOW()
+    current_timestamp
 )
 RETURNING *;
 
@@ -133,18 +133,19 @@ SELECT config
 FROM configuration_versions
 WHERE configuration_version_id = pggen.arg('configuration_version_id');
 
--- name: UpdateConfigurationVersionStatus :exec
+-- name: UpdateConfigurationVersionErroredByID :exec
 UPDATE configuration_versions
 SET
-    status = pggen.arg('status'),
-    updated_at = NOW()
+    status = 'errored',
+    updated_at = current_timestamp
 WHERE configuration_version_id = pggen.arg('id');
 
--- name: UpdateConfigurationVersionConfig :exec
+-- name: UpdateConfigurationVersionConfigByID :exec
 UPDATE configuration_versions
 SET
     config = pggen.arg('config'),
-    updated_at = NOW()
+    status = 'uploaded',
+    updated_at = current_timestamp
 WHERE configuration_version_id = pggen.arg('id');
 
 -- name: DeleteConfigurationVersionByID :exec

@@ -6,28 +6,19 @@ import (
 	"github.com/leg100/otf"
 )
 
-type planResult interface {
-	GetPlanID() *string
-	Timestamps
-	GetStatus() *string
-}
+func convertPlan(row Plans) *otf.Plan {
+	plan := otf.Plan{}
+	plan.ID               =     *row.PlanID
+	plan.CreatedAt            = row.CreatedAt            
+	plan.UpdatedAt            = row.UpdatedAt            
+	plan.ResourceAdditions    = int(*row.ResourceAdditions    )
+	plan.ResourceChanges      = int(*row.ResourceChanges      )
+	plan.ResourceDestructions = int(*row.ResourceDestructions )
+	plan.Status               = otf.PlanStatus(*row.Status               )
+	plan.RunID                = *row.RunID                
 
-type planStatusTimestamp interface {
-	GetPlanID() *string
-	GetStatus() *string
-	GetTimestamp() time.Time
-}
-
-func addResultToPlan(plan *otf.Plan, result planResult) {
-	plan.ID = *result.GetPlanID()
-	plan.Timestamps = convertTimestamps(result)
-	plan.Status = otf.PlanStatus(*result.GetStatus())
-}
-
-func convertPlan(result planResult) *otf.Plan {
-	var plan otf.Plan
-	addResultToPlan(&plan, result)
-	return &plan
+	for _, p := range row.StatusTimestamps
+	plan.StatusTimestamps     = row.StatusTimestamps     
 }
 
 func convertPlanStatusTimestamp(r planStatusTimestamp) otf.PlanStatusTimestamp {

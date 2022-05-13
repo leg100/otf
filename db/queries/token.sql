@@ -9,8 +9,8 @@ INSERT INTO tokens (
 ) VALUES (
     pggen.arg('TokenID'),
     pggen.arg('Token'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Description'),
     pggen.arg('UserID')
 )

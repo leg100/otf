@@ -78,8 +78,8 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.Configu
 
 // Upload a configuration version tarball
 func (s ConfigurationVersionService) Upload(id string, config []byte) error {
-	err := s.db.Update(id, func(cv *otf.ConfigurationVersion, updater otf.ConfigurationVersionUpdater) error {
-		return cv.Upload(context.Background(), config, updater)
+	err := s.db.Upload(context.Background(), id, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+		return cv.Upload(context.Background(), config, uploader)
 	})
 	if err != nil {
 		s.Error(err, "uploading configuration version")

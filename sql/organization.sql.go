@@ -17,16 +17,16 @@ type FindOrganizationByNameRow struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	Name            string    `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	SessionRemember int32     `json:"session_remember"`
+	SessionTimeout  int32     `json:"session_timeout"`
 }
 
 func (s FindOrganizationByNameRow) GetOrganizationID() string { return s.OrganizationID }
 func (s FindOrganizationByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s FindOrganizationByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s FindOrganizationByNameRow) GetName() string { return s.Name }
-func (s FindOrganizationByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s FindOrganizationByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+func (s FindOrganizationByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
+func (s FindOrganizationByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
 
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
@@ -51,6 +51,55 @@ func (q *DBQuerier) FindOrganizationByNameScan(results pgx.BatchResults) (FindOr
 	var item FindOrganizationByNameRow
 	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
 		return item, fmt.Errorf("scan FindOrganizationByNameBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findOrganizationByNameForUpdateSQL = `SELECT *
+FROM organizations
+WHERE name = $1
+FOR UPDATE
+;`
+
+type FindOrganizationByNameForUpdateRow struct {
+	OrganizationID  *string   `json:"organization_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	Name            *string   `json:"name"`
+	SessionRemember *int32    `json:"session_remember"`
+	SessionTimeout  *int32    `json:"session_timeout"`
+}
+
+func (s FindOrganizationByNameForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s FindOrganizationByNameForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindOrganizationByNameForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindOrganizationByNameForUpdateRow) GetName() *string { return s.Name }
+func (s FindOrganizationByNameForUpdateRow) GetSessionRemember() *int32 { return s.SessionRemember }
+func (s FindOrganizationByNameForUpdateRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+
+
+// FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
+func (q *DBQuerier) FindOrganizationByNameForUpdate(ctx context.Context, name string) (FindOrganizationByNameForUpdateRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByNameForUpdate")
+	row := q.conn.QueryRow(ctx, findOrganizationByNameForUpdateSQL, name)
+	var item FindOrganizationByNameForUpdateRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("query FindOrganizationByNameForUpdate: %w", err)
+	}
+	return item, nil
+}
+
+// FindOrganizationByNameForUpdateBatch implements Querier.FindOrganizationByNameForUpdateBatch.
+func (q *DBQuerier) FindOrganizationByNameForUpdateBatch(batch genericBatch, name string) {
+	batch.Queue(findOrganizationByNameForUpdateSQL, name)
+}
+
+// FindOrganizationByNameForUpdateScan implements Querier.FindOrganizationByNameForUpdateScan.
+func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults) (FindOrganizationByNameForUpdateRow, error) {
+	row := results.QueryRow()
+	var item FindOrganizationByNameForUpdateRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationByNameForUpdateBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -137,8 +186,8 @@ const insertOrganizationSQL = `INSERT INTO organizations (
     session_timeout
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4
@@ -157,16 +206,16 @@ type InsertOrganizationRow struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	Name            string    `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	SessionRemember int32     `json:"session_remember"`
+	SessionTimeout  int32     `json:"session_timeout"`
 }
 
 func (s InsertOrganizationRow) GetOrganizationID() string { return s.OrganizationID }
 func (s InsertOrganizationRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertOrganizationRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s InsertOrganizationRow) GetName() string { return s.Name }
-func (s InsertOrganizationRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s InsertOrganizationRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+func (s InsertOrganizationRow) GetSessionRemember() int32 { return s.SessionRemember }
+func (s InsertOrganizationRow) GetSessionTimeout() int32 { return s.SessionTimeout }
 
 
 // InsertOrganization implements Querier.InsertOrganization.
@@ -198,7 +247,7 @@ func (q *DBQuerier) InsertOrganizationScan(results pgx.BatchResults) (InsertOrga
 const updateOrganizationNameByNameSQL = `UPDATE organizations
 SET
     name = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = $2
 RETURNING *;`
 
@@ -207,16 +256,16 @@ type UpdateOrganizationNameByNameRow struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	Name            string    `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	SessionRemember int32     `json:"session_remember"`
+	SessionTimeout  int32     `json:"session_timeout"`
 }
 
 func (s UpdateOrganizationNameByNameRow) GetOrganizationID() string { return s.OrganizationID }
 func (s UpdateOrganizationNameByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateOrganizationNameByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateOrganizationNameByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationNameByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationNameByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+func (s UpdateOrganizationNameByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
+func (s UpdateOrganizationNameByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
 
 
 // UpdateOrganizationNameByName implements Querier.UpdateOrganizationNameByName.
@@ -248,7 +297,7 @@ func (q *DBQuerier) UpdateOrganizationNameByNameScan(results pgx.BatchResults) (
 const updateOrganizationSessionRememberByNameSQL = `UPDATE organizations
 SET
     session_remember = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = $2
 RETURNING *;`
 
@@ -257,16 +306,16 @@ type UpdateOrganizationSessionRememberByNameRow struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	Name            string    `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	SessionRemember int32     `json:"session_remember"`
+	SessionTimeout  int32     `json:"session_timeout"`
 }
 
 func (s UpdateOrganizationSessionRememberByNameRow) GetOrganizationID() string { return s.OrganizationID }
 func (s UpdateOrganizationSessionRememberByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateOrganizationSessionRememberByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateOrganizationSessionRememberByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
+func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
 
 
 // UpdateOrganizationSessionRememberByName implements Querier.UpdateOrganizationSessionRememberByName.
@@ -298,7 +347,7 @@ func (q *DBQuerier) UpdateOrganizationSessionRememberByNameScan(results pgx.Batc
 const updateOrganizationSessionTimeoutByNameSQL = `UPDATE organizations
 SET
     session_timeout = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = $2
 RETURNING *;`
 
@@ -307,16 +356,16 @@ type UpdateOrganizationSessionTimeoutByNameRow struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	Name            string    `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	SessionRemember int32     `json:"session_remember"`
+	SessionTimeout  int32     `json:"session_timeout"`
 }
 
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetOrganizationID() string { return s.OrganizationID }
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdateOrganizationSessionTimeoutByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
+func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
 
 
 // UpdateOrganizationSessionTimeoutByName implements Querier.UpdateOrganizationSessionTimeoutByName.

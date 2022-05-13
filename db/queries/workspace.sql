@@ -27,8 +27,8 @@ INSERT INTO workspaces (
     organization_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('AllowDestroyPlan'),
     pggen.arg('AutoApply'),
     pggen.arg('CanQueueDestroyPlan'),
@@ -106,7 +106,7 @@ FOR UPDATE;
 UPDATE workspaces
 SET
     name = pggen.arg('name'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;
 
@@ -117,7 +117,7 @@ RETURNING *;
 UPDATE workspaces
 SET
     allow_destroy_plan = pggen.arg('allow_destroy_plan'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;
 
@@ -125,7 +125,7 @@ RETURNING *;
 UPDATE workspaces
 SET
     locked = pggen.arg('lock'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;
 
@@ -133,7 +133,7 @@ RETURNING *;
 UPDATE workspaces
 SET
     description = pggen.arg('description'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
 RETURNING *;
 

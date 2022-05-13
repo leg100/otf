@@ -7,8 +7,8 @@ INSERT INTO users (
     current_organization
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Username'),
     pggen.arg('CurrentOrganization')
 )
@@ -99,7 +99,7 @@ GROUP BY users.user_id
 UPDATE users
 SET
     current_organization = pggen.arg('current_organization'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE user_id = pggen.arg('id')
 RETURNING *;
 

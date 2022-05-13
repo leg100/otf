@@ -21,8 +21,8 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     workspace_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4,
@@ -96,7 +96,7 @@ const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_
 ) VALUES (
     $1,
     $2,
-    NOW()
+    current_timestamp
 )
 RETURNING *;`
 
@@ -538,62 +538,63 @@ func (q *DBQuerier) DownloadConfigurationVersionScan(results pgx.BatchResults) (
 	return item, nil
 }
 
-const updateConfigurationVersionStatusSQL = `UPDATE configuration_versions
+const updateConfigurationVersionErroredByIDSQL = `UPDATE configuration_versions
 SET
-    status = $1,
-    updated_at = NOW()
-WHERE configuration_version_id = $2;`
+    status = 'errored',
+    updated_at = current_timestamp
+WHERE configuration_version_id = $1;`
 
-// UpdateConfigurationVersionStatus implements Querier.UpdateConfigurationVersionStatus.
-func (q *DBQuerier) UpdateConfigurationVersionStatus(ctx context.Context, status string, id string) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionStatus")
-	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionStatusSQL, status, id)
+// UpdateConfigurationVersionErroredByID implements Querier.UpdateConfigurationVersionErroredByID.
+func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, id string) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionErroredByID")
+	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionErroredByIDSQL, id)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionStatus: %w", err)
+		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionErroredByID: %w", err)
 	}
 	return cmdTag, err
 }
 
-// UpdateConfigurationVersionStatusBatch implements Querier.UpdateConfigurationVersionStatusBatch.
-func (q *DBQuerier) UpdateConfigurationVersionStatusBatch(batch genericBatch, status string, id string) {
-	batch.Queue(updateConfigurationVersionStatusSQL, status, id)
+// UpdateConfigurationVersionErroredByIDBatch implements Querier.UpdateConfigurationVersionErroredByIDBatch.
+func (q *DBQuerier) UpdateConfigurationVersionErroredByIDBatch(batch genericBatch, id string) {
+	batch.Queue(updateConfigurationVersionErroredByIDSQL, id)
 }
 
-// UpdateConfigurationVersionStatusScan implements Querier.UpdateConfigurationVersionStatusScan.
-func (q *DBQuerier) UpdateConfigurationVersionStatusScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// UpdateConfigurationVersionErroredByIDScan implements Querier.UpdateConfigurationVersionErroredByIDScan.
+func (q *DBQuerier) UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionStatusBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionErroredByIDBatch: %w", err)
 	}
 	return cmdTag, err
 }
 
-const updateConfigurationVersionConfigSQL = `UPDATE configuration_versions
+const updateConfigurationVersionConfigByIDSQL = `UPDATE configuration_versions
 SET
     config = $1,
-    updated_at = NOW()
+    status = 'uploaded',
+    updated_at = current_timestamp
 WHERE configuration_version_id = $2;`
 
-// UpdateConfigurationVersionConfig implements Querier.UpdateConfigurationVersionConfig.
-func (q *DBQuerier) UpdateConfigurationVersionConfig(ctx context.Context, config []byte, id string) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionConfig")
-	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionConfigSQL, config, id)
+// UpdateConfigurationVersionConfigByID implements Querier.UpdateConfigurationVersionConfigByID.
+func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id string) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionConfigByID")
+	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionConfigByIDSQL, config, id)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionConfig: %w", err)
+		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionConfigByID: %w", err)
 	}
 	return cmdTag, err
 }
 
-// UpdateConfigurationVersionConfigBatch implements Querier.UpdateConfigurationVersionConfigBatch.
-func (q *DBQuerier) UpdateConfigurationVersionConfigBatch(batch genericBatch, config []byte, id string) {
-	batch.Queue(updateConfigurationVersionConfigSQL, config, id)
+// UpdateConfigurationVersionConfigByIDBatch implements Querier.UpdateConfigurationVersionConfigByIDBatch.
+func (q *DBQuerier) UpdateConfigurationVersionConfigByIDBatch(batch genericBatch, config []byte, id string) {
+	batch.Queue(updateConfigurationVersionConfigByIDSQL, config, id)
 }
 
-// UpdateConfigurationVersionConfigScan implements Querier.UpdateConfigurationVersionConfigScan.
-func (q *DBQuerier) UpdateConfigurationVersionConfigScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// UpdateConfigurationVersionConfigByIDScan implements Querier.UpdateConfigurationVersionConfigByIDScan.
+func (q *DBQuerier) UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionConfigBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionConfigByIDBatch: %w", err)
 	}
 	return cmdTag, err
 }

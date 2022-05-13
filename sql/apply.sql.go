@@ -119,19 +119,19 @@ type Querier interface {
 	// DownloadConfigurationVersionScan scans the result of an executed DownloadConfigurationVersionBatch query.
 	DownloadConfigurationVersionScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdateConfigurationVersionStatus(ctx context.Context, status string, id string) (pgconn.CommandTag, error)
-	// UpdateConfigurationVersionStatusBatch enqueues a UpdateConfigurationVersionStatus query into batch to be executed
+	UpdateConfigurationVersionErroredByID(ctx context.Context, id string) (pgconn.CommandTag, error)
+	// UpdateConfigurationVersionErroredByIDBatch enqueues a UpdateConfigurationVersionErroredByID query into batch to be executed
 	// later by the batch.
-	UpdateConfigurationVersionStatusBatch(batch genericBatch, status string, id string)
-	// UpdateConfigurationVersionStatusScan scans the result of an executed UpdateConfigurationVersionStatusBatch query.
-	UpdateConfigurationVersionStatusScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionErroredByIDBatch(batch genericBatch, id string)
+	// UpdateConfigurationVersionErroredByIDScan scans the result of an executed UpdateConfigurationVersionErroredByIDBatch query.
+	UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateConfigurationVersionConfig(ctx context.Context, config []byte, id string) (pgconn.CommandTag, error)
-	// UpdateConfigurationVersionConfigBatch enqueues a UpdateConfigurationVersionConfig query into batch to be executed
+	UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id string) (pgconn.CommandTag, error)
+	// UpdateConfigurationVersionConfigByIDBatch enqueues a UpdateConfigurationVersionConfigByID query into batch to be executed
 	// later by the batch.
-	UpdateConfigurationVersionConfigBatch(batch genericBatch, config []byte, id string)
-	// UpdateConfigurationVersionConfigScan scans the result of an executed UpdateConfigurationVersionConfigBatch query.
-	UpdateConfigurationVersionConfigScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionConfigByIDBatch(batch genericBatch, config []byte, id string)
+	// UpdateConfigurationVersionConfigByIDScan scans the result of an executed UpdateConfigurationVersionConfigByIDBatch query.
+	UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	DeleteConfigurationVersionByID(ctx context.Context, id string) (pgconn.CommandTag, error)
 	// DeleteConfigurationVersionByIDBatch enqueues a DeleteConfigurationVersionByID query into batch to be executed
@@ -148,6 +148,13 @@ type Querier interface {
 	FindOrganizationByNameBatch(batch genericBatch, name string)
 	// FindOrganizationByNameScan scans the result of an executed FindOrganizationByNameBatch query.
 	FindOrganizationByNameScan(results pgx.BatchResults) (FindOrganizationByNameRow, error)
+
+	FindOrganizationByNameForUpdate(ctx context.Context, name string) (FindOrganizationByNameForUpdateRow, error)
+	// FindOrganizationByNameForUpdateBatch enqueues a FindOrganizationByNameForUpdate query into batch to be executed
+	// later by the batch.
+	FindOrganizationByNameForUpdateBatch(batch genericBatch, name string)
+	// FindOrganizationByNameForUpdateScan scans the result of an executed FindOrganizationByNameForUpdateBatch query.
+	FindOrganizationByNameForUpdateScan(results pgx.BatchResults) (FindOrganizationByNameForUpdateRow, error)
 
 	FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error)
 	// FindOrganizationsBatch enqueues a FindOrganizations query into batch to be executed
@@ -765,17 +772,20 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, downloadConfigurationVersionSQL, downloadConfigurationVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'DownloadConfigurationVersion': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateConfigurationVersionStatusSQL, updateConfigurationVersionStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateConfigurationVersionStatus': %w", err)
+	if _, err := p.Prepare(ctx, updateConfigurationVersionErroredByIDSQL, updateConfigurationVersionErroredByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateConfigurationVersionErroredByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateConfigurationVersionConfigSQL, updateConfigurationVersionConfigSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateConfigurationVersionConfig': %w", err)
+	if _, err := p.Prepare(ctx, updateConfigurationVersionConfigByIDSQL, updateConfigurationVersionConfigByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateConfigurationVersionConfigByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteConfigurationVersionByIDSQL, deleteConfigurationVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteConfigurationVersionByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationByNameForUpdateSQL, findOrganizationByNameForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationByNameForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationsSQL, findOrganizationsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizations': %w", err)
@@ -1066,7 +1076,6 @@ type Plans struct {
 	ResourceChanges      *int32    `json:"resource_changes"`
 	ResourceDestructions *int32    `json:"resource_destructions"`
 	Status               *string   `json:"status"`
-	StatusTimestamps     *string   `json:"status_timestamps"`
 	PlanBin              []byte    `json:"plan_bin"`
 	PlanJson             []byte    `json:"plan_json"`
 	RunID                *string   `json:"run_id"`
@@ -1079,7 +1088,6 @@ func (s Plans) GetResourceAdditions() *int32 { return s.ResourceAdditions }
 func (s Plans) GetResourceChanges() *int32 { return s.ResourceChanges }
 func (s Plans) GetResourceDestructions() *int32 { return s.ResourceDestructions }
 func (s Plans) GetStatus() *string { return s.Status }
-func (s Plans) GetStatusTimestamps() *string { return s.StatusTimestamps }
 func (s Plans) GetPlanBin() []byte { return s.PlanBin }
 func (s Plans) GetPlanJson() []byte { return s.PlanJson }
 func (s Plans) GetRunID() *string { return s.RunID }
@@ -1365,7 +1373,6 @@ func (tr *typeResolver) newPlans() pgtype.ValueTranscoder {
 		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
 		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
 		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"status_timestamps", "text", &pgtype.Text{}},
 		compositeField{"plan_bin", "bytea", &pgtype.Bytea{}},
 		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
 		compositeField{"run_id", "text", &pgtype.Text{}},
@@ -1503,8 +1510,8 @@ const insertApplySQL = `INSERT INTO applies (
     run_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3
 )
@@ -1570,7 +1577,7 @@ const insertApplyStatusTimestampSQL = `INSERT INTO apply_status_timestamps (
 ) VALUES (
     $1,
     $2,
-    NOW()
+    current_timestamp
 )
 RETURNING *;`
 
@@ -1614,7 +1621,7 @@ func (q *DBQuerier) InsertApplyStatusTimestampScan(results pgx.BatchResults) (In
 const updateApplyStatusSQL = `UPDATE applies
 SET
     status = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE apply_id = $2
 RETURNING *;`
 

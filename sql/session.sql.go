@@ -20,8 +20,8 @@ const insertSessionSQL = `INSERT INTO sessions (
     user_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4,
@@ -144,7 +144,7 @@ func (q *DBQuerier) UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgc
 const updateSessionUserIDSQL = `UPDATE sessions
 SET
     user_id = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = $2
 RETURNING *;`
 
@@ -196,7 +196,7 @@ func (q *DBQuerier) UpdateSessionUserIDScan(results pgx.BatchResults) (UpdateSes
 const updateSessionExpirySQL = `UPDATE sessions
 SET
     expiry = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = $2
 RETURNING *;`
 
@@ -248,7 +248,7 @@ func (q *DBQuerier) UpdateSessionExpiryScan(results pgx.BatchResults) (UpdateSes
 const updateSessionFlashSQL = `UPDATE sessions
 SET
     flash = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = $2
 RETURNING *;`
 

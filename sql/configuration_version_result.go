@@ -6,63 +6,34 @@ import (
 	"github.com/leg100/otf"
 )
 
-type configurationVersionResultWithoutRelations interface {
-	GetConfigurationVersionID() *string
-	GetAutoQueueRuns() *bool
-	GetSource() *string
-	GetSpeculative() *bool
-	GetStatus() *string
-
-	Timestamps
+type configurationVersionRow struct {
+	ConfigurationVersionID               *string                                `json:"configuration_version_id"`
+	CreatedAt                            time.Time                              `json:"created_at"`
+	UpdatedAt                            time.Time                              `json:"updated_at"`
+	AutoQueueRuns                        *bool                                  `json:"auto_queue_runs"`
+	Source                               *string                                `json:"source"`
+	Speculative                          *bool                                  `json:"speculative"`
+	Status                               *string                                `json:"status"`
+	Workspace                            Workspaces                             `json:"workspace"`
+	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
-type configurationVersionResult interface {
-	configurationVersionResultWithoutRelations
-
-	GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps
-	GetWorkspace() Workspaces
-}
-
-type configurationVersionListResult interface {
-	configurationVersionResult
-
-	GetFullCount() *int
-}
-
-type configurationVersionStatusTimestamp interface {
-	GetConfigurationVersionID() *string
-	GetStatus() *string
-	GetTimestamp() time.Time
-}
-
-func addResultToConfigurationVersion(cv *otf.ConfigurationVersion, result configurationVersionResultWithoutRelations) {
-	cv.ID = *result.GetConfigurationVersionID()
-	cv.Timestamps = convertTimestamps(result)
-	cv.Status = otf.ConfigurationStatus(*result.GetStatus())
-	cv.Source = otf.ConfigurationSource(*result.GetSource())
-	cv.AutoQueueRuns = *result.GetAutoQueueRuns()
-	cv.Speculative = *result.GetSpeculative()
-}
-
-func convertConfigurationVersionResult(row configurationVersionResultWithoutRelations) *otf.ConfigurationVersion {
+func convertConfigurationVersion(result configurationVersionRow) *otf.ConfigurationVersion {
 	cv := otf.ConfigurationVersion{}
-	addResultToConfigurationVersion(&cv, row)
+	cv.ID = *result.ConfigurationVersionID
+	cv.CreatedAt = result.CreatedAt
+	cv.UpdatedAt = result.UpdatedAt
+	cv.Status = otf.ConfigurationStatus(*result.Status)
+	cv.Source = otf.ConfigurationSource(*result.Source)
+	cv.AutoQueueRuns = *result.AutoQueueRuns
+	cv.Speculative = *result.Speculative
+	cv.Workspace = convertWorkspaceComposite(result.Workspace)
+
+	for _, ts := range result.ConfigurationVersionStatusTimestamps {
+		cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
+			Status:    otf.ConfigurationStatus(*ts.Status),
+			Timestamp: ts.Timestamp,
+		})
+	}
 	return &cv
-}
-
-func convertConfigurationVersion(result configurationVersionResult) *otf.ConfigurationVersion {
-	cv := convertConfigurationVersionResult(result)
-	cv.Workspace = convertWorkspaceComposite(result.GetWorkspace())
-
-	for _, ts := range result.GetConfigurationVersionStatusTimestamps() {
-		cv.StatusTimestamps = append(cv.StatusTimestamps, convertConfigurationVersionStatusTimestamps(ts))
-	}
-	return cv
-}
-
-func convertConfigurationVersionStatusTimestamps(r configurationVersionStatusTimestamp) otf.ConfigurationVersionStatusTimestamp {
-	return otf.ConfigurationVersionStatusTimestamp{
-		Status:    otf.ConfigurationStatus(*r.GetStatus()),
-		Timestamp: r.GetTimestamp(),
-	}
 }

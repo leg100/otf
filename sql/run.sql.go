@@ -25,8 +25,8 @@ const insertRunSQL = `INSERT INTO runs (
     workspace_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4,
@@ -114,7 +114,7 @@ const insertRunStatusTimestampSQL = `INSERT INTO run_status_timestamps (
 ) VALUES (
     $1,
     $2,
-    NOW()
+    current_timestamp
 )
 RETURNING *;`
 
@@ -1128,7 +1128,7 @@ func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunB
 const updateRunStatusSQL = `UPDATE runs
 SET
     status = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE run_id = $2
 RETURNING *;`
 

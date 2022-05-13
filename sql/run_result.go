@@ -6,32 +6,25 @@ import (
 	"github.com/leg100/otf"
 )
 
-type runResult interface {
-	runResultWithoutRelations
-
-	GetRunStatusTimestamps() []RunStatusTimestamps
-	GetPlan() Plans
-	GetApply() Applies
-	GetWorkspace() Workspaces
-	GetConfigurationVersion() ConfigurationVersions
-}
-
-type runResultWithoutRelations interface {
-	GetRunID() *string
-	GetIsDestroy() *bool
-	GetWorkspaceID() *string
-	GetStatus() *string
-	GetConfigurationVersionID() *string
-	GetReplaceAddrs() []string
-	GetTargetAddrs() []string
-
-	Timestamps
-}
-
-type runListResult interface {
-	runResult
-
-	GetFullCount() *int
+type runListResult struct {
+	RunID                  *string               `json:"run_id"`
+	CreatedAt              time.Time             `json:"created_at"`
+	UpdatedAt              time.Time             `json:"updated_at"`
+	IsDestroy              *bool                 `json:"is_destroy"`
+	PositionInQueue        *int32                `json:"position_in_queue"`
+	Refresh                *bool                 `json:"refresh"`
+	RefreshOnly            *bool                 `json:"refresh_only"`
+	Status                 *string               `json:"status"`
+	ReplaceAddrs           []string              `json:"replace_addrs"`
+	TargetAddrs            []string              `json:"target_addrs"`
+	WorkspaceID            *string               `json:"workspace_id"`
+	ConfigurationVersionID *string               `json:"configuration_version_id"`
+	Plan                   Plans                 `json:"plan"`
+	Apply                  Applies               `json:"apply"`
+	ConfigurationVersion   ConfigurationVersions `json:"configuration_version"`
+	Workspace              Workspaces            `json:"workspace"`
+	RunStatusTimestamps    []RunStatusTimestamps `json:"run_status_timestamps"`
+	FullCount              *int                  `json:"full_count"`
 }
 
 type runStatusTimestamp interface {

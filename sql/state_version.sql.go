@@ -19,8 +19,8 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
     run_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4

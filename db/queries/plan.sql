@@ -7,8 +7,8 @@ INSERT INTO plans (
     run_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Status'),
     pggen.arg('RunID')
 )
@@ -22,7 +22,7 @@ INSERT INTO plan_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    NOW()
+    current_timestamp
 )
 RETURNING *;
 
@@ -30,7 +30,7 @@ RETURNING *;
 UPDATE plans
 SET
     status = pggen.arg('status'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE plan_id = pggen.arg('id')
 RETURNING *;
 

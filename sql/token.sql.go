@@ -20,8 +20,8 @@ const insertTokenSQL = `INSERT INTO tokens (
 ) VALUES (
     $1,
     $2,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $3,
     $4
 )

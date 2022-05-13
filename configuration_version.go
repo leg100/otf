@@ -78,23 +78,43 @@ type ConfigurationVersionService interface {
 	Get(id string) (*ConfigurationVersion, error)
 	GetLatest(workspaceID string) (*ConfigurationVersion, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Upload(id string, payload []byte) error
+
+	// Upload handles verification and upload of the config tarball, updating
+	// the config version upon success or failure.
+	Upload(id string, uploader ConfigUploader) error
+
+	// Download retrieves the config tarball for the given config version ID.
 	Download(id string) ([]byte, error)
 }
 
 type ConfigurationVersionStore interface {
+	// Creates a config version.
 	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
+
+	// Get retrieves a config version.
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
+
+	// GetConfig retrieves the config tarball for the given config version ID.
 	GetConfig(ctx context.Context, id string) ([]byte, error)
+
+	// List lists config versions for the given workspace.
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Update(id string, fn func(*ConfigurationVersion, ConfigurationVersionUpdater) error) error
+
+	// Delete deletes the config version from the store
 	Delete(id string) error
+
+	// Upload uploads a config tarball for the given config version ID
+	Upload(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
 }
 
-// ConfigurationVersionUpdater updates a config version within a transaction
-type ConfigurationVersionUpdater interface {
-	UpdateStatus(ctx context.Context, status ConfigurationStatus) (ConfigurationVersionStatusTimestamp, error)
-	SaveConfig(ctx context.Context, config []byte) error
+// ConfigUploader uploads a config
+type ConfigUploader interface {
+	// Upload uploads the config tarball and returns a status indicating success
+	// or failure.
+	Upload(ctx context.Context, config []byte) (ConfigurationStatus, error)
+
+	// SetErrored sets the config version status to 'errored' in the store.
+	SetErrored(ctx context.Context) error
 }
 
 // ConfigurationVersionGetOptions are options for retrieving a single config
@@ -125,16 +145,17 @@ func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
 func (cv *ConfigurationVersion) String() string { return cv.ID }
 
 // Upload saves the config to the db and updates status accordingly.
-func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, updater ConfigurationVersionUpdater) error {
+func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	if cv.Status != ConfigurationPending {
 		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.Status)
 	}
 
-	if err := updater.SaveConfig(ctx, config); err != nil {
-		return err
-	}
+	// check config untars successfully and set errored status if not
 
-	if _, err := updater.UpdateStatus(ctx, ConfigurationUploaded); err != nil {
+	// upload config and set status depending on success
+	var err error
+	cv.Status, err = uploader.Upload(ctx, config)
+	if err != nil {
 		return err
 	}
 

@@ -8,8 +8,8 @@ INSERT INTO state_versions (
     run_id
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Serial'),
     pggen.arg('State'),
     pggen.arg('RunID')

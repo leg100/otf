@@ -39,61 +39,74 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 
 	q := NewQuerier(tx)
 
-	_, err = q.InsertRun(ctx, InsertRunParams{
-		ID:                     &run.ID,
-		IsDestroy:              &run.IsDestroy,
-		Refresh:                &run.Refresh,
-		RefreshOnly:            &run.RefreshOnly,
-		Status:                 otf.String(string(run.Status)),
+	result, err := q.InsertRun(ctx, InsertRunParams{
+		ID:                     run.ID,
+		IsDestroy:              run.IsDestroy,
+		Refresh:                run.Refresh,
+		RefreshOnly:            run.RefreshOnly,
+		Status:                 string(run.Status),
 		ReplaceAddrs:           run.ReplaceAddrs,
 		TargetAddrs:            run.TargetAddrs,
-		ConfigurationVersionID: &run.ConfigurationVersion.ID,
-		WorkspaceID:            &run.Workspace.ID,
+		ConfigurationVersionID: run.ConfigurationVersion.ID,
+		WorkspaceID:            run.Workspace.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
+	run.CreatedAt = result.CreatedAt
+	run.UpdatedAt = result.UpdatedAt
 
 	// Insert timestamp for current run status
-	_, err = q.InsertRunStatusTimestamp(ctx, &run.ID, otf.String(string(run.Status)))
+	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status))
 	if err != nil {
 		return nil, err
 	}
+	run.StatusTimestamps = append(run.StatusTimestamps, otf.RunStatusTimestamp{
+		Status:    otf.RunStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
 
 	// Insert plan
-	_, err = q.InsertPlan(ctx, InsertPlanParams{
-		ID: &run.Plan.ID,
+	plan, err := q.InsertPlan(ctx, InsertPlanParams{
+		ID: run.Plan.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
+	run.Plan.CreatedAt = plan.CreatedAt
+	run.Plan.UpdatedAt = plan.UpdatedAt
 
 	// Insert timestamp for current plan status
-	_, err = q.InsertPlanStatusTimestamp(ctx, &run.Plan.ID, otf.String(string(run.Plan.Status)))
+	pts, err := q.InsertPlanStatusTimestamp(ctx, run.Plan.ID, string(run.Plan.Status))
 	if err != nil {
 		return nil, err
 	}
+	run.Plan.StatusTimestamps = append(run.Plan.StatusTimestamps, otf.PlanStatusTimestamp{
+		Status:    otf.PlanStatus(pts.Status),
+		Timestamp: pts.Timestamp,
+	})
 
 	// Insert apply
-	_, err = q.InsertApply(ctx, InsertApplyParams{
-		ID: &run.Apply.ID,
+	apply, err := q.InsertApply(ctx, InsertApplyParams{
+		ID: run.Apply.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
+	run.Apply.CreatedAt = apply.CreatedAt
+	run.Apply.UpdatedAt = apply.UpdatedAt
 
 	// Insert timestamp for current apply status
-	_, err = q.InsertApplyStatusTimestamp(ctx, &run.Apply.ID, otf.String(string(run.Apply.Status)))
+	ats, err := q.InsertApplyStatusTimestamp(ctx, run.Apply.ID, string(run.Apply.Status))
 	if err != nil {
 		return nil, err
 	}
+	run.Apply.StatusTimestamps = append(run.Apply.StatusTimestamps, otf.ApplyStatusTimestamp{
+		Status:    otf.ApplyStatus(ats.Status),
+		Timestamp: ats.Timestamp,
+	})
 
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-
-	// Return newly created run to caller
-	return getRun(ctx, q, otf.RunGetOptions{ID: &run.ID})
+	return run, tx.Commit(ctx)
 }
 
 func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, error) {
@@ -108,7 +121,7 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	q := NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindRunByIDForUpdate(ctx, &id)
+	result, err := q.FindRunByIDForUpdate(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -124,45 +137,39 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	}
 
 	if run.Status != runStatus {
-		result, err := q.UpdateRunStatus(ctx, otf.String(string(run.Status)), &run.ID)
+		result, err := q.UpdateRunStatus(ctx, string(run.Status), run.ID)
 		if err != nil {
 			return nil, err
 		}
-		addResultToRun(run, result)
+		run.UpdatedAt = result.UpdatedAt
 
-		ts, err := q.InsertRunStatusTimestamp(ctx, &run.ID, otf.String(string(run.Status)))
-		if err != nil {
+		if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
 			return nil, err
 		}
-		run.StatusTimestamps = append(run.StatusTimestamps, convertRunStatusTimestamp(ts))
 	}
 
 	if run.Plan.Status != planStatus {
-		result, err := q.UpdatePlanStatus(ctx, otf.String(string(run.Plan.Status)), &run.Plan.ID)
+		result, err := q.UpdatePlanStatus(ctx, string(run.Plan.Status), run.Plan.ID)
 		if err != nil {
 			return nil, err
 		}
-		addResultToPlan(run.Plan, result)
+		run.UpdatedAt = result.UpdatedAt
 
-		ts, err := q.InsertPlanStatusTimestamp(ctx, &run.Plan.ID, otf.String(string(run.Plan.Status)))
-		if err != nil {
+		if err := insertPlanStatusTimestamp(ctx, q, run.Plan); err != nil {
 			return nil, err
 		}
-		run.Plan.StatusTimestamps = append(run.Plan.StatusTimestamps, convertPlanStatusTimestamp(ts))
 	}
 
 	if run.Apply.Status != applyStatus {
-		result, err := q.UpdateApplyStatus(ctx, otf.String(string(run.Apply.Status)), &run.Apply.ID)
+		result, err := q.UpdateApplyStatus(ctx, string(run.Apply.Status), run.Apply.ID)
 		if err != nil {
 			return nil, err
 		}
-		addResultToApply(run.Apply, result)
+		run.UpdatedAt = result.UpdatedAt
 
-		ts, err := q.InsertApplyStatusTimestamp(ctx, &run.Apply.ID, otf.String(string(run.Apply.Status)))
-		if err != nil {
+		if err := insertApplyStatusTimestamp(ctx, q, run.Apply); err != nil {
 			return nil, err
 		}
-		run.Apply.StatusTimestamps = append(run.Apply.StatusTimestamps, convertApplyStatusTimestamp(ts))
 	}
 
 	return run, tx.Commit(ctx)
@@ -173,7 +180,7 @@ func (db RunDB) UpdatePlanResources(id string, summary otf.Resources) error {
 	ctx := context.Background()
 
 	_, err := q.UpdatePlanResources(ctx, UpdatePlanResourcesParams{
-		RunID:                &id,
+		RunID:                id,
 		ResourceAdditions:    int32(summary.ResourceAdditions),
 		ResourceChanges:      int32(summary.ResourceChanges),
 		ResourceDestructions: int32(summary.ResourceDestructions),
@@ -186,7 +193,7 @@ func (db RunDB) UpdateApplyResources(id string, summary otf.Resources) error {
 	ctx := context.Background()
 
 	_, err := q.UpdateApplyResources(ctx, UpdateApplyResourcesParams{
-		RunID:                &id,
+		RunID:                id,
 		ResourceAdditions:    int32(summary.ResourceAdditions),
 		ResourceChanges:      int32(summary.ResourceChanges),
 		ResourceDestructions: int32(summary.ResourceDestructions),
@@ -198,43 +205,75 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	var err error
-	var result interface{}
+	var results []runListResult
 
 	if opts.WorkspaceID != nil {
-		result, err = q.FindRunsByWorkspaceID(ctx, FindRunsByWorkspaceIDParams{
-			WorkspaceID: opts.WorkspaceID,
+		rows, err := q.FindRunsByWorkspaceID(ctx, FindRunsByWorkspaceIDParams{
+			WorkspaceID: *opts.WorkspaceID,
 			Limit:       opts.GetLimit(),
 			Offset:      opts.GetOffset(),
 		})
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rows {
+			results = append(results, runListResult(r))
+		}
 	} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-		result, err = q.FindRunsByWorkspaceName(ctx, FindRunsByWorkspaceNameParams{
-			OrganizationName: opts.OrganizationName,
-			WorkspaceName:    opts.WorkspaceName,
+		rows, err := q.FindRunsByWorkspaceName(ctx, FindRunsByWorkspaceNameParams{
+			OrganizationName: *opts.OrganizationName,
+			WorkspaceName:    *opts.WorkspaceName,
 			Limit:            opts.GetLimit(),
 			Offset:           opts.GetOffset(),
 		})
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rows {
+			results = append(results, runListResult(r))
+		}
 	} else if len(opts.Statuses) > 0 {
-		result, err = q.FindRunsByStatuses(ctx, FindRunsByStatusesParams{
+		rows, err := q.FindRunsByStatuses(ctx, FindRunsByStatusesParams{
 			Statuses: convertToStringSlice(opts.Statuses),
 			Limit:    opts.GetLimit(),
 			Offset:   opts.GetOffset(),
 		})
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rows {
+			results = append(results, runListResult(r))
+		}
 	} else {
 		return nil, fmt.Errorf("no list filter specified")
 	}
-	if err != nil {
-		return nil, err
-	}
 
 	var items []*otf.Run
-	for _, r := range convertToInterfaceSlice(result) {
-		items = append(items, convertRun(r.(runResult)))
+	for _, r := range results {
+		items = append(items, &otf.Run{
+			ID: *r.RunID,
+			Timestamps: otf.Timestamps{
+				CreatedAt: r.CreatedAt,
+				UpdatedAt: r.UpdatedAt,
+			},
+			IsDestroy:            *r.IsDestroy,
+			PositionInQueue:      int(*r.PositionInQueue),
+			Refresh:              *r.Refresh,
+			RefreshOnly:          *r.RefreshOnly,
+			Status:               otf.RunStatus(*r.Status),
+			ReplaceAddrs:         r.ReplaceAddrs,
+			TargetAddrs:          r.TargetAddrs,
+			Plan:                 convertPlan(r.Plan),
+			Apply:                r.Apply,
+			ConfigurationVersion: r.ConfigurationVersion,
+			Workspace:            r.Workspace,
+			RunStatusTimestamps:  r.RunStatusTimestamps,
+		})
 	}
 
 	return &otf.RunList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
+		Pagination: otf.NewPagination(opts.ListOptions, getCount(rows)),
 	}, nil
 }
 
@@ -251,10 +290,10 @@ func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error
 
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := q.PutPlanBinByRunID(ctx, file, &id)
+		_, err := q.PutPlanBinByRunID(ctx, file, id)
 		return err
 	case otf.PlanFormatJSON:
-		_, err := q.PutPlanJSONByRunID(ctx, file, &id)
+		_, err := q.PutPlanJSONByRunID(ctx, file, id)
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -268,9 +307,9 @@ func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
 
 	switch format {
 	case otf.PlanFormatBinary:
-		return q.GetPlanBinByRunID(ctx, &id)
+		return q.GetPlanBinByRunID(ctx, id)
 	case otf.PlanFormatJSON:
-		return q.GetPlanJSONByRunID(ctx, &id)
+		return q.GetPlanJSONByRunID(ctx, id)
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -281,7 +320,7 @@ func (db RunDB) Delete(id string) error {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	result, err := q.DeleteRunByID(ctx, &id)
+	result, err := q.DeleteRunByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -295,19 +334,19 @@ func (db RunDB) Delete(id string) error {
 
 func getRun(ctx context.Context, q *DBQuerier, opts otf.RunGetOptions) (*otf.Run, error) {
 	if opts.ID != nil {
-		result, err := q.FindRunByID(ctx, opts.ID)
+		result, err := q.FindRunByID(ctx, *opts.ID)
 		if err != nil {
 			return nil, err
 		}
 		return convertRun(result), nil
 	} else if opts.PlanID != nil {
-		result, err := q.FindRunByPlanID(ctx, opts.PlanID)
+		result, err := q.FindRunByPlanID(ctx, *opts.PlanID)
 		if err != nil {
 			return nil, err
 		}
 		return convertRun(result), nil
 	} else if opts.ApplyID != nil {
-		result, err := q.FindRunByApplyID(ctx, opts.ApplyID)
+		result, err := q.FindRunByApplyID(ctx, *opts.ApplyID)
 		if err != nil {
 			return nil, err
 		}
@@ -315,6 +354,45 @@ func getRun(ctx context.Context, q *DBQuerier, opts otf.RunGetOptions) (*otf.Run
 	} else {
 		return nil, fmt.Errorf("no ID specified")
 	}
+}
+
+func insertRunStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) error {
+	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status))
+	if err != nil {
+		return err
+	}
+	run.StatusTimestamps = append(run.StatusTimestamps, otf.RunStatusTimestamp{
+		Status:    otf.RunStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
+
+	return nil
+}
+
+func insertPlanStatusTimestamp(ctx context.Context, q *DBQuerier, plan *otf.Plan) error {
+	ts, err := q.InsertRunStatusTimestamp(ctx, plan.ID, string(plan.Status))
+	if err != nil {
+		return err
+	}
+	plan.StatusTimestamps = append(plan.StatusTimestamps, otf.PlanStatusTimestamp{
+		Status:    otf.PlanStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
+
+	return nil
+}
+
+func insertApplyStatusTimestamp(ctx context.Context, q *DBQuerier, apply *otf.Apply) error {
+	ts, err := q.InsertRunStatusTimestamp(ctx, apply.ID, string(apply.Status))
+	if err != nil {
+		return err
+	}
+	apply.StatusTimestamps = append(apply.StatusTimestamps, otf.ApplyStatusTimestamp{
+		Status:    otf.ApplyStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
+
+	return nil
 }
 
 func convertToStringSlice(i interface{}) (s []string) {

@@ -18,8 +18,8 @@ const insertPlanSQL = `INSERT INTO plans (
     run_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3
 )
@@ -39,7 +39,6 @@ type InsertPlanRow struct {
 	ResourceChanges      int32     `json:"resource_changes"`
 	ResourceDestructions int32     `json:"resource_destructions"`
 	Status               string    `json:"status"`
-	StatusTimestamps     string    `json:"status_timestamps"`
 	PlanBin              []byte    `json:"plan_bin"`
 	PlanJson             []byte    `json:"plan_json"`
 	RunID                string    `json:"run_id"`
@@ -52,7 +51,6 @@ func (s InsertPlanRow) GetResourceAdditions() int32 { return s.ResourceAdditions
 func (s InsertPlanRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s InsertPlanRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s InsertPlanRow) GetStatus() string { return s.Status }
-func (s InsertPlanRow) GetStatusTimestamps() string { return s.StatusTimestamps }
 func (s InsertPlanRow) GetPlanBin() []byte { return s.PlanBin }
 func (s InsertPlanRow) GetPlanJson() []byte { return s.PlanJson }
 func (s InsertPlanRow) GetRunID() string { return s.RunID }
@@ -63,7 +61,7 @@ func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (In
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlan")
 	row := q.conn.QueryRow(ctx, insertPlanSQL, params.ID, params.Status, params.RunID)
 	var item InsertPlanRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("query InsertPlan: %w", err)
 	}
 	return item, nil
@@ -78,7 +76,7 @@ func (q *DBQuerier) InsertPlanBatch(batch genericBatch, params InsertPlanParams)
 func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (InsertPlanRow, error) {
 	row := results.QueryRow()
 	var item InsertPlanRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("scan InsertPlanBatch row: %w", err)
 	}
 	return item, nil
@@ -91,7 +89,7 @@ const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
 ) VALUES (
     $1,
     $2,
-    NOW()
+    current_timestamp
 )
 RETURNING *;`
 
@@ -135,7 +133,7 @@ func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (Ins
 const updatePlanStatusSQL = `UPDATE plans
 SET
     status = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE plan_id = $2
 RETURNING *;`
 
@@ -147,7 +145,6 @@ type UpdatePlanStatusRow struct {
 	ResourceChanges      int32     `json:"resource_changes"`
 	ResourceDestructions int32     `json:"resource_destructions"`
 	Status               string    `json:"status"`
-	StatusTimestamps     string    `json:"status_timestamps"`
 	PlanBin              []byte    `json:"plan_bin"`
 	PlanJson             []byte    `json:"plan_json"`
 	RunID                string    `json:"run_id"`
@@ -160,7 +157,6 @@ func (s UpdatePlanStatusRow) GetResourceAdditions() int32 { return s.ResourceAdd
 func (s UpdatePlanStatusRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s UpdatePlanStatusRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
 func (s UpdatePlanStatusRow) GetStatus() string { return s.Status }
-func (s UpdatePlanStatusRow) GetStatusTimestamps() string { return s.StatusTimestamps }
 func (s UpdatePlanStatusRow) GetPlanBin() []byte { return s.PlanBin }
 func (s UpdatePlanStatusRow) GetPlanJson() []byte { return s.PlanJson }
 func (s UpdatePlanStatusRow) GetRunID() string { return s.RunID }
@@ -171,7 +167,7 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id stri
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
 	var item UpdatePlanStatusRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("query UpdatePlanStatus: %w", err)
 	}
 	return item, nil
@@ -186,7 +182,7 @@ func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id 
 func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (UpdatePlanStatusRow, error) {
 	row := results.QueryRow()
 	var item UpdatePlanStatusRow
-	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.StatusTimestamps, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
+	if err := row.Scan(&item.PlanID, &item.CreatedAt, &item.UpdatedAt, &item.ResourceAdditions, &item.ResourceChanges, &item.ResourceDestructions, &item.Status, &item.PlanBin, &item.PlanJson, &item.RunID); err != nil {
 		return item, fmt.Errorf("scan UpdatePlanStatusBatch row: %w", err)
 	}
 	return item, nil

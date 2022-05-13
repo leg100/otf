@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 )
 
 var (
@@ -92,20 +91,11 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 
 	ws := row.convert()
 
-	cp, err := copystructure.Copy(ws)
-	if err != nil {
-		return nil, err
-	}
-	xws, ok := cp.(*otf.Workspace)
-	if !ok {
-		return nil, fmt.Errorf("cannot cast copy of workspace")
-	}
-
 	if err := fn(ws); err != nil {
 		return nil, err
 	}
 
-	if ws.Description != xws.Description {
+	if ws.Description != *row.Description {
 		result, err := q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
 		if err != nil {
 			return nil, err
@@ -113,7 +103,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		ws.UpdatedAt = result.UpdatedAt
 	}
 
-	if ws.Locked != xws.Locked {
+	if ws.Locked != *row.Locked {
 		result, err := q.UpdateWorkspaceLockByID(ctx, ws.Locked, ws.ID)
 		if err != nil {
 			return nil, err
@@ -122,10 +112,6 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	}
 
 	return ws, tx.Commit(ctx)
-}
-
-func doSomethingWithWorkspaceRow(row workspaceRow) {
-	// do something
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
@@ -143,8 +129,33 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	}
 
 	var items []*otf.Workspace
-	for _, r := range result {
-		items = append(items, convertWorkspace(r))
+	for _, row := range result {
+		items = append(items, &otf.Workspace{
+			ID: *row.WorkspaceID,
+			Timestamps: otf.Timestamps{
+				CreatedAt: row.CreatedAt,
+				UpdatedAt: row.UpdatedAt,
+			},
+			AllowDestroyPlan:           *row.AllowDestroyPlan,
+			AutoApply:                  *row.AutoApply,
+			CanQueueDestroyPlan:        *row.CanQueueDestroyPlan,
+			Description:                *row.Description,
+			Environment:                *row.Environment,
+			ExecutionMode:              *row.ExecutionMode,
+			FileTriggersEnabled:        *row.FileTriggersEnabled,
+			GlobalRemoteState:          *row.GlobalRemoteState,
+			Locked:                     *row.Locked,
+			MigrationEnvironment:       *row.MigrationEnvironment,
+			Name:                       *row.Name,
+			QueueAllRuns:               *row.QueueAllRuns,
+			SpeculativeEnabled:         *row.SpeculativeEnabled,
+			StructuredRunOutputEnabled: *row.StructuredRunOutputEnabled,
+			SourceName:                 *row.SourceName,
+			SourceURL:                  *row.SourceUrl,
+			TerraformVersion:           *row.TerraformVersion,
+			TriggerPrefixes:            row.TriggerPrefixes,
+			WorkingDirectory:           *row.WorkingDirectory,
+		})
 	}
 
 	return &otf.WorkspaceList{
@@ -157,7 +168,21 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	ctx := context.Background()
 	q := NewQuerier(db.Conn)
 
-	return getWorkspace(ctx, q, spec)
+	if spec.ID != nil {
+		result, err := q.FindWorkspaceByID(ctx, *spec.ID)
+		if err != nil {
+			return nil, err
+		}
+		return workspaceRow(result).convert(), nil
+	} else if spec.Name != nil && spec.OrganizationName != nil {
+		result, err := q.FindWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		return workspaceRow(result).convert(), nil
+	} else {
+		return nil, fmt.Errorf("no workspace spec provided")
+	}
 }
 
 // Delete deletes a specific workspace, along with its child records (runs etc).
@@ -184,22 +209,4 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	}
 
 	return nil
-}
-
-func getWorkspace(ctx context.Context, q *DBQuerier, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	if spec.ID != nil {
-		result, err := q.FindWorkspaceByID(ctx, *spec.ID)
-		if err != nil {
-			return nil, err
-		}
-		return workspaceRow(result).convert(), nil
-	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := q.FindWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
-		if err != nil {
-			return nil, err
-		}
-		return workspaceRow(result).convert(), nil
-	} else {
-		return nil, fmt.Errorf("no workspace spec provided")
-	}
 }

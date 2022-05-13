@@ -20,8 +20,8 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
     state_version_id
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3,
     $4,

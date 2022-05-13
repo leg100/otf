@@ -3,6 +3,13 @@
 -- name: FindOrganizationByName :one
 SELECT * FROM organizations WHERE name = pggen.arg('name');
 
+-- name: FindOrganizationByNameForUpdate :one
+SELECT *
+FROM organizations
+WHERE name = pggen.arg('name')
+FOR UPDATE
+;
+
 -- name: FindOrganizations :many
 SELECT
     *,
@@ -22,8 +29,8 @@ INSERT INTO organizations (
     session_timeout
 ) VALUES (
     pggen.arg('ID'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Name'),
     pggen.arg('SessionRemember'),
     pggen.arg('SessionTimeout')
@@ -38,7 +45,7 @@ RETURNING *;
 UPDATE organizations
 SET
     name = pggen.arg('new_name'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = pggen.arg('name')
 RETURNING *;
 
@@ -46,7 +53,7 @@ RETURNING *;
 UPDATE organizations
 SET
     session_remember = pggen.arg('session_remember'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = pggen.arg('name')
 RETURNING *;
 
@@ -54,7 +61,7 @@ RETURNING *;
 UPDATE organizations
 SET
     session_timeout = pggen.arg('session_timeout'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE name = pggen.arg('name')
 RETURNING *;
 

@@ -106,6 +106,10 @@ CREATE TABLE IF NOT EXISTS runs (
     status                   TEXT        NOT NULL,
     replace_addrs            TEXT[],
     target_addrs             TEXT[],
+    applied_resource_additions    INTEGER     NOT NULL,
+    applied_resource_changes      INTEGER     NOT NULL,
+    applied_resource_destructions INTEGER     NOT NULL,
+    apply_status             TEXT        NOT NULL,
     workspace_id             TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                              PRIMARY KEY (run_id)
@@ -145,7 +149,6 @@ CREATE TABLE IF NOT EXISTS plans (
     resource_changes      INTEGER     NOT NULL,
     resource_destructions INTEGER     NOT NULL,
     status                TEXT        NOT NULL,
-    status_timestamps     TEXT        NOT NULL,
     plan_bin              BYTEA,
     plan_json             BYTEA,
     run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,

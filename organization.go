@@ -100,7 +100,7 @@ type OrganizationStore interface {
 	Create(org *Organization) (*Organization, error)
 	Get(name string) (*Organization, error)
 	List(opts OrganizationListOptions) (*OrganizationList, error)
-	Update(name string, opts OrganizationUpdateOptions) (*Organization, error)
+	Update(name string, fn func(*Organization) error) (*Organization, error)
 	Delete(name string) error
 }
 
@@ -135,4 +135,20 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	}
 
 	return &org, nil
+}
+
+func UpdateOrganizationFromOpts(org *Organization, opts OrganizationUpdateOptions) error {
+	if opts.Name != nil {
+		org.Name = *opts.Name
+	}
+
+	if opts.SessionTimeout != nil {
+		org.SessionTimeout = *opts.SessionTimeout
+	}
+
+	if opts.SessionRemember != nil {
+		org.SessionRemember = *opts.SessionRemember
+	}
+
+	return nil
 }

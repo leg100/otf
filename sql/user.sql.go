@@ -18,8 +18,8 @@ const insertUserSQL = `INSERT INTO users (
     current_organization
 ) VALUES (
     $1,
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     $2,
     $3
 )
@@ -598,7 +598,7 @@ func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults
 const updateUserCurrentOrganizationSQL = `UPDATE users
 SET
     current_organization = $1,
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE user_id = $2
 RETURNING *;`
 

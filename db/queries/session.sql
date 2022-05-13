@@ -9,8 +9,8 @@ INSERT INTO sessions (
     user_id
 ) VALUES (
     pggen.arg('Token'),
-    NOW(),
-    NOW(),
+    current_timestamp,
+    current_timestamp,
     pggen.arg('Flash'),
     pggen.arg('Address'),
     pggen.arg('Expiry'),
@@ -33,7 +33,7 @@ WHERE token = pggen.arg('token');
 UPDATE sessions
 SET
     user_id = pggen.arg('user_id'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = pggen.arg('token')
 RETURNING *;
 
@@ -41,7 +41,7 @@ RETURNING *;
 UPDATE sessions
 SET
     expiry = pggen.arg('expiry'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = pggen.arg('token')
 RETURNING *;
 
@@ -49,7 +49,7 @@ RETURNING *;
 UPDATE sessions
 SET
     flash = pggen.arg('flash'),
-    updated_at = NOW()
+    updated_at = current_timestamp
 WHERE token = pggen.arg('token')
 RETURNING *;
 
