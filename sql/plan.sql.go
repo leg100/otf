@@ -26,36 +26,36 @@ const insertPlanSQL = `INSERT INTO plans (
 RETURNING *;`
 
 type InsertPlanParams struct {
-	ID     *string
-	Status *string
-	RunID  *string
+	ID     string
+	Status string
+	RunID  string
 }
 
 type InsertPlanRow struct {
-	PlanID               *string   `json:"plan_id"`
+	PlanID               string    `json:"plan_id"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 	ResourceAdditions    int32     `json:"resource_additions"`
 	ResourceChanges      int32     `json:"resource_changes"`
 	ResourceDestructions int32     `json:"resource_destructions"`
-	Status               *string   `json:"status"`
-	StatusTimestamps     *string   `json:"status_timestamps"`
+	Status               string    `json:"status"`
+	StatusTimestamps     string    `json:"status_timestamps"`
 	PlanBin              []byte    `json:"plan_bin"`
 	PlanJson             []byte    `json:"plan_json"`
-	RunID                *string   `json:"run_id"`
+	RunID                string    `json:"run_id"`
 }
 
-func (s InsertPlanRow) GetPlanID() *string { return s.PlanID }
+func (s InsertPlanRow) GetPlanID() string { return s.PlanID }
 func (s InsertPlanRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertPlanRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s InsertPlanRow) GetResourceAdditions() int32 { return s.ResourceAdditions }
 func (s InsertPlanRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s InsertPlanRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
-func (s InsertPlanRow) GetStatus() *string { return s.Status }
-func (s InsertPlanRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
+func (s InsertPlanRow) GetStatus() string { return s.Status }
+func (s InsertPlanRow) GetStatusTimestamps() string { return s.StatusTimestamps }
 func (s InsertPlanRow) GetPlanBin() []byte { return s.PlanBin }
 func (s InsertPlanRow) GetPlanJson() []byte { return s.PlanJson }
-func (s InsertPlanRow) GetRunID() *string { return s.RunID }
+func (s InsertPlanRow) GetRunID() string { return s.RunID }
 
 
 // InsertPlan implements Querier.InsertPlan.
@@ -96,18 +96,18 @@ const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
 RETURNING *;`
 
 type InsertPlanStatusTimestampRow struct {
-	PlanID    *string   `json:"plan_id"`
-	Status    *string   `json:"status"`
+	PlanID    string    `json:"plan_id"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s InsertPlanStatusTimestampRow) GetPlanID() *string { return s.PlanID }
-func (s InsertPlanStatusTimestampRow) GetStatus() *string { return s.Status }
+func (s InsertPlanStatusTimestampRow) GetPlanID() string { return s.PlanID }
+func (s InsertPlanStatusTimestampRow) GetStatus() string { return s.Status }
 func (s InsertPlanStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
 
 
 // InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.
-func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, id *string, status *string) (InsertPlanStatusTimestampRow, error) {
+func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, id string, status string) (InsertPlanStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanStatusTimestamp")
 	row := q.conn.QueryRow(ctx, insertPlanStatusTimestampSQL, id, status)
 	var item InsertPlanStatusTimestampRow
@@ -118,7 +118,7 @@ func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, id *string, s
 }
 
 // InsertPlanStatusTimestampBatch implements Querier.InsertPlanStatusTimestampBatch.
-func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, id *string, status *string) {
+func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, id string, status string) {
 	batch.Queue(insertPlanStatusTimestampSQL, id, status)
 }
 
@@ -140,34 +140,34 @@ WHERE plan_id = $2
 RETURNING *;`
 
 type UpdatePlanStatusRow struct {
-	PlanID               *string   `json:"plan_id"`
+	PlanID               string    `json:"plan_id"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
 	ResourceAdditions    int32     `json:"resource_additions"`
 	ResourceChanges      int32     `json:"resource_changes"`
 	ResourceDestructions int32     `json:"resource_destructions"`
-	Status               *string   `json:"status"`
-	StatusTimestamps     *string   `json:"status_timestamps"`
+	Status               string    `json:"status"`
+	StatusTimestamps     string    `json:"status_timestamps"`
 	PlanBin              []byte    `json:"plan_bin"`
 	PlanJson             []byte    `json:"plan_json"`
-	RunID                *string   `json:"run_id"`
+	RunID                string    `json:"run_id"`
 }
 
-func (s UpdatePlanStatusRow) GetPlanID() *string { return s.PlanID }
+func (s UpdatePlanStatusRow) GetPlanID() string { return s.PlanID }
 func (s UpdatePlanStatusRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdatePlanStatusRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s UpdatePlanStatusRow) GetResourceAdditions() int32 { return s.ResourceAdditions }
 func (s UpdatePlanStatusRow) GetResourceChanges() int32 { return s.ResourceChanges }
 func (s UpdatePlanStatusRow) GetResourceDestructions() int32 { return s.ResourceDestructions }
-func (s UpdatePlanStatusRow) GetStatus() *string { return s.Status }
-func (s UpdatePlanStatusRow) GetStatusTimestamps() *string { return s.StatusTimestamps }
+func (s UpdatePlanStatusRow) GetStatus() string { return s.Status }
+func (s UpdatePlanStatusRow) GetStatusTimestamps() string { return s.StatusTimestamps }
 func (s UpdatePlanStatusRow) GetPlanBin() []byte { return s.PlanBin }
 func (s UpdatePlanStatusRow) GetPlanJson() []byte { return s.PlanJson }
-func (s UpdatePlanStatusRow) GetRunID() *string { return s.RunID }
+func (s UpdatePlanStatusRow) GetRunID() string { return s.RunID }
 
 
 // UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status *string, id *string) (UpdatePlanStatusRow, error) {
+func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (UpdatePlanStatusRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
 	var item UpdatePlanStatusRow
@@ -178,7 +178,7 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status *string, id *st
 }
 
 // UpdatePlanStatusBatch implements Querier.UpdatePlanStatusBatch.
-func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status *string, id *string) {
+func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id string) {
 	batch.Queue(updatePlanStatusSQL, status, id)
 }
 
@@ -198,7 +198,7 @@ WHERE run_id = $1
 ;`
 
 // GetPlanBinByRunID implements Querier.GetPlanBinByRunID.
-func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID *string) ([]byte, error) {
+func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanBinByRunID")
 	row := q.conn.QueryRow(ctx, getPlanBinByRunIDSQL, runID)
 	item := []byte{}
@@ -209,7 +209,7 @@ func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID *string) ([]byt
 }
 
 // GetPlanBinByRunIDBatch implements Querier.GetPlanBinByRunIDBatch.
-func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID *string) {
+func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID string) {
 	batch.Queue(getPlanBinByRunIDSQL, runID)
 }
 
@@ -229,7 +229,7 @@ WHERE run_id = $1
 ;`
 
 // GetPlanJSONByRunID implements Querier.GetPlanJSONByRunID.
-func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) ([]byte, error) {
+func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanJSONByRunID")
 	row := q.conn.QueryRow(ctx, getPlanJSONByRunIDSQL, runID)
 	item := []byte{}
@@ -240,7 +240,7 @@ func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID *string) ([]by
 }
 
 // GetPlanJSONByRunIDBatch implements Querier.GetPlanJSONByRunIDBatch.
-func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID *string) {
+func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID string) {
 	batch.Queue(getPlanJSONByRunIDSQL, runID)
 }
 
@@ -260,7 +260,7 @@ WHERE run_id = $2
 ;`
 
 // PutPlanBinByRunID implements Querier.PutPlanBinByRunID.
-func (q *DBQuerier) PutPlanBinByRunID(ctx context.Context, planBin []byte, runID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) PutPlanBinByRunID(ctx context.Context, planBin []byte, runID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "PutPlanBinByRunID")
 	cmdTag, err := q.conn.Exec(ctx, putPlanBinByRunIDSQL, planBin, runID)
 	if err != nil {
@@ -270,7 +270,7 @@ func (q *DBQuerier) PutPlanBinByRunID(ctx context.Context, planBin []byte, runID
 }
 
 // PutPlanBinByRunIDBatch implements Querier.PutPlanBinByRunIDBatch.
-func (q *DBQuerier) PutPlanBinByRunIDBatch(batch genericBatch, planBin []byte, runID *string) {
+func (q *DBQuerier) PutPlanBinByRunIDBatch(batch genericBatch, planBin []byte, runID string) {
 	batch.Queue(putPlanBinByRunIDSQL, planBin, runID)
 }
 
@@ -289,7 +289,7 @@ WHERE run_id = $2
 ;`
 
 // PutPlanJSONByRunID implements Querier.PutPlanJSONByRunID.
-func (q *DBQuerier) PutPlanJSONByRunID(ctx context.Context, planJson []byte, runID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) PutPlanJSONByRunID(ctx context.Context, planJson []byte, runID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "PutPlanJSONByRunID")
 	cmdTag, err := q.conn.Exec(ctx, putPlanJSONByRunIDSQL, planJson, runID)
 	if err != nil {
@@ -299,7 +299,7 @@ func (q *DBQuerier) PutPlanJSONByRunID(ctx context.Context, planJson []byte, run
 }
 
 // PutPlanJSONByRunIDBatch implements Querier.PutPlanJSONByRunIDBatch.
-func (q *DBQuerier) PutPlanJSONByRunIDBatch(batch genericBatch, planJson []byte, runID *string) {
+func (q *DBQuerier) PutPlanJSONByRunIDBatch(batch genericBatch, planJson []byte, runID string) {
 	batch.Queue(putPlanJSONByRunIDSQL, planJson, runID)
 }
 
@@ -324,7 +324,7 @@ type UpdatePlanResourcesParams struct {
 	ResourceAdditions    int32
 	ResourceChanges      int32
 	ResourceDestructions int32
-	RunID                *string
+	RunID                string
 }
 
 // UpdatePlanResources implements Querier.UpdatePlanResources.

@@ -31,33 +31,33 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
 RETURNING *;`
 
 type InsertStateVersionOutputParams struct {
-	ID             *string
-	Name           *string
-	Sensitive      *bool
-	Type           *string
-	Value          *string
-	StateVersionID *string
+	ID             string
+	Name           string
+	Sensitive      bool
+	Type           string
+	Value          string
+	StateVersionID string
 }
 
 type InsertStateVersionOutputRow struct {
-	StateVersionOutputID *string   `json:"state_version_output_id"`
+	StateVersionOutputID string    `json:"state_version_output_id"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
-	Name                 *string   `json:"name"`
-	Sensitive            *bool     `json:"sensitive"`
-	Type                 *string   `json:"type"`
-	Value                *string   `json:"value"`
-	StateVersionID       *string   `json:"state_version_id"`
+	Name                 string    `json:"name"`
+	Sensitive            bool      `json:"sensitive"`
+	Type                 string    `json:"type"`
+	Value                string    `json:"value"`
+	StateVersionID       string    `json:"state_version_id"`
 }
 
-func (s InsertStateVersionOutputRow) GetStateVersionOutputID() *string { return s.StateVersionOutputID }
+func (s InsertStateVersionOutputRow) GetStateVersionOutputID() string { return s.StateVersionOutputID }
 func (s InsertStateVersionOutputRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertStateVersionOutputRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertStateVersionOutputRow) GetName() *string { return s.Name }
-func (s InsertStateVersionOutputRow) GetSensitive() *bool { return s.Sensitive }
-func (s InsertStateVersionOutputRow) GetType() *string { return s.Type }
-func (s InsertStateVersionOutputRow) GetValue() *string { return s.Value }
-func (s InsertStateVersionOutputRow) GetStateVersionID() *string { return s.StateVersionID }
+func (s InsertStateVersionOutputRow) GetName() string { return s.Name }
+func (s InsertStateVersionOutputRow) GetSensitive() bool { return s.Sensitive }
+func (s InsertStateVersionOutputRow) GetType() string { return s.Type }
+func (s InsertStateVersionOutputRow) GetValue() string { return s.Value }
+func (s InsertStateVersionOutputRow) GetStateVersionID() string { return s.StateVersionID }
 
 
 // InsertStateVersionOutput implements Querier.InsertStateVersionOutput.

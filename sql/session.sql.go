@@ -30,30 +30,30 @@ const insertSessionSQL = `INSERT INTO sessions (
 RETURNING *;`
 
 type InsertSessionParams struct {
-	Token   *string
+	Token   string
 	Flash   []byte
-	Address *string
+	Address string
 	Expiry  time.Time
-	UserID  *string
+	UserID  string
 }
 
 type InsertSessionRow struct {
-	Token     *string   `json:"token"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Address   *string   `json:"address"`
+	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
-	UserID    *string   `json:"user_id"`
+	UserID    string    `json:"user_id"`
 }
 
-func (s InsertSessionRow) GetToken() *string { return s.Token }
+func (s InsertSessionRow) GetToken() string { return s.Token }
 func (s InsertSessionRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertSessionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertSessionRow) GetAddress() *string { return s.Address }
+func (s InsertSessionRow) GetAddress() string { return s.Address }
 func (s InsertSessionRow) GetFlash() []byte { return s.Flash }
 func (s InsertSessionRow) GetExpiry() time.Time { return s.Expiry }
-func (s InsertSessionRow) GetUserID() *string { return s.UserID }
+func (s InsertSessionRow) GetUserID() string { return s.UserID }
 
 
 // InsertSession implements Querier.InsertSession.
@@ -87,7 +87,7 @@ FROM sessions
 WHERE token = $1;`
 
 // FindSessionFlashByToken implements Querier.FindSessionFlashByToken.
-func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token *string) ([]byte, error) {
+func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token string) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionFlashByToken")
 	row := q.conn.QueryRow(ctx, findSessionFlashByTokenSQL, token)
 	item := []byte{}
@@ -98,7 +98,7 @@ func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token *string) 
 }
 
 // FindSessionFlashByTokenBatch implements Querier.FindSessionFlashByTokenBatch.
-func (q *DBQuerier) FindSessionFlashByTokenBatch(batch genericBatch, token *string) {
+func (q *DBQuerier) FindSessionFlashByTokenBatch(batch genericBatch, token string) {
 	batch.Queue(findSessionFlashByTokenSQL, token)
 }
 
@@ -118,7 +118,7 @@ SET
 WHERE token = $2;`
 
 // UpdateSessionFlashByToken implements Querier.UpdateSessionFlashByToken.
-func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte, token *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte, token string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlashByToken")
 	cmdTag, err := q.conn.Exec(ctx, updateSessionFlashByTokenSQL, flash, token)
 	if err != nil {
@@ -128,7 +128,7 @@ func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte,
 }
 
 // UpdateSessionFlashByTokenBatch implements Querier.UpdateSessionFlashByTokenBatch.
-func (q *DBQuerier) UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token *string) {
+func (q *DBQuerier) UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token string) {
 	batch.Queue(updateSessionFlashByTokenSQL, flash, token)
 }
 
@@ -149,26 +149,26 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionUserIDRow struct {
-	Token     *string   `json:"token"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Address   *string   `json:"address"`
+	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
-	UserID    *string   `json:"user_id"`
+	UserID    string    `json:"user_id"`
 }
 
-func (s UpdateSessionUserIDRow) GetToken() *string { return s.Token }
+func (s UpdateSessionUserIDRow) GetToken() string { return s.Token }
 func (s UpdateSessionUserIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionUserIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionUserIDRow) GetAddress() *string { return s.Address }
+func (s UpdateSessionUserIDRow) GetAddress() string { return s.Address }
 func (s UpdateSessionUserIDRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionUserIDRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionUserIDRow) GetUserID() *string { return s.UserID }
+func (s UpdateSessionUserIDRow) GetUserID() string { return s.UserID }
 
 
 // UpdateSessionUserID implements Querier.UpdateSessionUserID.
-func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID *string, token *string) (UpdateSessionUserIDRow, error) {
+func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID string, token string) (UpdateSessionUserIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionUserID")
 	row := q.conn.QueryRow(ctx, updateSessionUserIDSQL, userID, token)
 	var item UpdateSessionUserIDRow
@@ -179,7 +179,7 @@ func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID *string, tok
 }
 
 // UpdateSessionUserIDBatch implements Querier.UpdateSessionUserIDBatch.
-func (q *DBQuerier) UpdateSessionUserIDBatch(batch genericBatch, userID *string, token *string) {
+func (q *DBQuerier) UpdateSessionUserIDBatch(batch genericBatch, userID string, token string) {
 	batch.Queue(updateSessionUserIDSQL, userID, token)
 }
 
@@ -201,26 +201,26 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionExpiryRow struct {
-	Token     *string   `json:"token"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Address   *string   `json:"address"`
+	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
-	UserID    *string   `json:"user_id"`
+	UserID    string    `json:"user_id"`
 }
 
-func (s UpdateSessionExpiryRow) GetToken() *string { return s.Token }
+func (s UpdateSessionExpiryRow) GetToken() string { return s.Token }
 func (s UpdateSessionExpiryRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionExpiryRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionExpiryRow) GetAddress() *string { return s.Address }
+func (s UpdateSessionExpiryRow) GetAddress() string { return s.Address }
 func (s UpdateSessionExpiryRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionExpiryRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionExpiryRow) GetUserID() *string { return s.UserID }
+func (s UpdateSessionExpiryRow) GetUserID() string { return s.UserID }
 
 
 // UpdateSessionExpiry implements Querier.UpdateSessionExpiry.
-func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token *string) (UpdateSessionExpiryRow, error) {
+func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token string) (UpdateSessionExpiryRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionExpiry")
 	row := q.conn.QueryRow(ctx, updateSessionExpirySQL, expiry, token)
 	var item UpdateSessionExpiryRow
@@ -231,7 +231,7 @@ func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, t
 }
 
 // UpdateSessionExpiryBatch implements Querier.UpdateSessionExpiryBatch.
-func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token *string) {
+func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token string) {
 	batch.Queue(updateSessionExpirySQL, expiry, token)
 }
 
@@ -253,26 +253,26 @@ WHERE token = $2
 RETURNING *;`
 
 type UpdateSessionFlashRow struct {
-	Token     *string   `json:"token"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Address   *string   `json:"address"`
+	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
-	UserID    *string   `json:"user_id"`
+	UserID    string    `json:"user_id"`
 }
 
-func (s UpdateSessionFlashRow) GetToken() *string { return s.Token }
+func (s UpdateSessionFlashRow) GetToken() string { return s.Token }
 func (s UpdateSessionFlashRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateSessionFlashRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionFlashRow) GetAddress() *string { return s.Address }
+func (s UpdateSessionFlashRow) GetAddress() string { return s.Address }
 func (s UpdateSessionFlashRow) GetFlash() []byte { return s.Flash }
 func (s UpdateSessionFlashRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionFlashRow) GetUserID() *string { return s.UserID }
+func (s UpdateSessionFlashRow) GetUserID() string { return s.UserID }
 
 
 // UpdateSessionFlash implements Querier.UpdateSessionFlash.
-func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token *string) (UpdateSessionFlashRow, error) {
+func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token string) (UpdateSessionFlashRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlash")
 	row := q.conn.QueryRow(ctx, updateSessionFlashSQL, flash, token)
 	var item UpdateSessionFlashRow
@@ -283,7 +283,7 @@ func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token 
 }
 
 // UpdateSessionFlashBatch implements Querier.UpdateSessionFlashBatch.
-func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash []byte, token *string) {
+func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash []byte, token string) {
 	batch.Queue(updateSessionFlashSQL, flash, token)
 }
 
@@ -302,7 +302,7 @@ FROM sessions
 WHERE token = $1;`
 
 // DeleteSessionByToken implements Querier.DeleteSessionByToken.
-func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteSessionByToken")
 	cmdTag, err := q.conn.Exec(ctx, deleteSessionByTokenSQL, token)
 	if err != nil {
@@ -312,7 +312,7 @@ func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token *string) (pg
 }
 
 // DeleteSessionByTokenBatch implements Querier.DeleteSessionByTokenBatch.
-func (q *DBQuerier) DeleteSessionByTokenBatch(batch genericBatch, token *string) {
+func (q *DBQuerier) DeleteSessionByTokenBatch(batch genericBatch, token string) {
 	batch.Queue(deleteSessionByTokenSQL, token)
 }
 

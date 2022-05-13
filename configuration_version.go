@@ -114,12 +114,6 @@ type ConfigurationVersionListOptions struct {
 	Include *string `schema:"include"`
 
 	ListOptions
-
-	// Filter by run statuses (with an implicit OR condition)
-	Statuses []ConfigurationStatus
-
-	// Filter by workspace ID
-	WorkspaceID *string
 }
 
 // ConfigurationVersionFactory creates ConfigurationVersion objects

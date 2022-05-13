@@ -103,15 +103,8 @@ func TestWorkspace_List(t *testing.T) {
 		want func(*testing.T, *otf.WorkspaceList)
 	}{
 		{
-			name: "default",
-			opts: otf.WorkspaceListOptions{},
-			want: func(t *testing.T, l *otf.WorkspaceList) {
-				assert.Contains(t, l.Items, ws1, ws2)
-			},
-		},
-		{
 			name: "filter by org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)},
+			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name), Prefix: otf.String("")},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, ws1)

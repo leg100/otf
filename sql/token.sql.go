@@ -28,27 +28,27 @@ const insertTokenSQL = `INSERT INTO tokens (
 RETURNING *;`
 
 type InsertTokenParams struct {
-	TokenID     *string
-	Token       *string
-	Description *string
-	UserID      *string
+	TokenID     string
+	Token       string
+	Description string
+	UserID      string
 }
 
 type InsertTokenRow struct {
-	TokenID     *string   `json:"token_id"`
+	TokenID     string    `json:"token_id"`
 	Token       *string   `json:"token"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	Description *string   `json:"description"`
-	UserID      *string   `json:"user_id"`
+	Description string    `json:"description"`
+	UserID      string    `json:"user_id"`
 }
 
-func (s InsertTokenRow) GetTokenID() *string { return s.TokenID }
+func (s InsertTokenRow) GetTokenID() string { return s.TokenID }
 func (s InsertTokenRow) GetToken() *string { return s.Token }
 func (s InsertTokenRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertTokenRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertTokenRow) GetDescription() *string { return s.Description }
-func (s InsertTokenRow) GetUserID() *string { return s.UserID }
+func (s InsertTokenRow) GetDescription() string { return s.Description }
+func (s InsertTokenRow) GetUserID() string { return s.UserID }
 
 
 // InsertToken implements Querier.InsertToken.
@@ -82,7 +82,7 @@ FROM tokens
 WHERE token_id = $1;`
 
 // DeleteTokenByID implements Querier.DeleteTokenByID.
-func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTokenByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteTokenByIDSQL, tokenID)
 	if err != nil {
@@ -92,7 +92,7 @@ func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID *string) (pgcon
 }
 
 // DeleteTokenByIDBatch implements Querier.DeleteTokenByIDBatch.
-func (q *DBQuerier) DeleteTokenByIDBatch(batch genericBatch, tokenID *string) {
+func (q *DBQuerier) DeleteTokenByIDBatch(batch genericBatch, tokenID string) {
 	batch.Queue(deleteTokenByIDSQL, tokenID)
 }
 

@@ -30,7 +30,7 @@ func (db ApplyLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chun
 		return nil
 	}
 
-	_, err := q.InsertApplyLogChunk(ctx, &planID, chunk.Marshal())
+	_, err := q.InsertApplyLogChunk(ctx, planID, chunk.Marshal())
 	return err
 }
 
@@ -45,7 +45,7 @@ func (db ApplyLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetCh
 	}
 
 	chunk, err := q.FindApplyLogChunks(ctx, FindApplyLogChunksParams{
-		ApplyID: &planID,
+		ApplyID: planID,
 		Offset:  int32(opts.Offset),
 		Limit:   int32(opts.Limit),
 	})

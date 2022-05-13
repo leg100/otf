@@ -34,24 +34,28 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	q := NewQuerier(tx)
 
 	result, err := q.InsertConfigurationVersion(ctx, InsertConfigurationVersionParams{
-		ID:            &cv.ID,
-		AutoQueueRuns: &cv.AutoQueueRuns,
-		Source:        otf.String(string(cv.Source)),
-		Speculative:   &cv.Speculative,
-		Status:        otf.String(string(cv.Status)),
-		WorkspaceID:   &cv.Workspace.ID,
+		ID:            cv.ID,
+		AutoQueueRuns: cv.AutoQueueRuns,
+		Source:        string(cv.Source),
+		Speculative:   cv.Speculative,
+		Status:        string(cv.Status),
+		WorkspaceID:   cv.Workspace.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	addResultToConfigurationVersion(cv, result)
+	cv.CreatedAt = result.CreatedAt
+	cv.UpdatedAt = result.UpdatedAt
 
 	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, &cv.ID, otf.String(string(cv.Status)))
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID, string(cv.Status))
 	if err != nil {
 		return nil, err
 	}
-	cv.StatusTimestamps = append(cv.StatusTimestamps, convertConfigurationVersionStatusTimestamps(ts))
+	cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
+		Status:    otf.ConfigurationStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
 
 	return cv, tx.Commit(ctx)
 }
@@ -68,7 +72,7 @@ func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVer
 	q := NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, &id)
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -86,7 +90,7 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 	ctx := context.Background()
 
 	result, err := q.FindConfigurationVersionsByWorkspaceID(ctx, FindConfigurationVersionsByWorkspaceIDParams{
-		WorkspaceID: opts.WorkspaceID,
+		WorkspaceID: workspaceID,
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
@@ -112,7 +116,7 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
 	q := NewQuerier(db.Conn)
 
-	return q.DownloadConfigurationVersion(ctx, &id)
+	return q.DownloadConfigurationVersion(ctx, id)
 }
 
 // Delete deletes a configuration version from the DB
@@ -120,7 +124,7 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	result, err := q.DeleteConfigurationVersionByID(ctx, &id)
+	result, err := q.DeleteConfigurationVersionByID(ctx, id)
 	if err != nil {
 		return err
 	}

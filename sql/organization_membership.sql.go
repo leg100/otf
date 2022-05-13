@@ -19,16 +19,16 @@ const insertOrganizationMembershipSQL = `INSERT INTO organization_memberships (
 RETURNING *;`
 
 type InsertOrganizationMembershipRow struct {
-	UserID         *string `json:"user_id"`
-	OrganizationID *string `json:"organization_id"`
+	UserID         string `json:"user_id"`
+	OrganizationID string `json:"organization_id"`
 }
 
-func (s InsertOrganizationMembershipRow) GetUserID() *string { return s.UserID }
-func (s InsertOrganizationMembershipRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s InsertOrganizationMembershipRow) GetUserID() string { return s.UserID }
+func (s InsertOrganizationMembershipRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // InsertOrganizationMembership implements Querier.InsertOrganizationMembership.
-func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (InsertOrganizationMembershipRow, error) {
+func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID string, organizationID string) (InsertOrganizationMembershipRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertOrganizationMembership")
 	row := q.conn.QueryRow(ctx, insertOrganizationMembershipSQL, userID, organizationID)
 	var item InsertOrganizationMembershipRow
@@ -39,7 +39,7 @@ func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID *st
 }
 
 // InsertOrganizationMembershipBatch implements Querier.InsertOrganizationMembershipBatch.
-func (q *DBQuerier) InsertOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string) {
+func (q *DBQuerier) InsertOrganizationMembershipBatch(batch genericBatch, userID string, organizationID string) {
 	batch.Queue(insertOrganizationMembershipSQL, userID, organizationID)
 }
 
@@ -61,7 +61,7 @@ WHERE
 ;`
 
 // DeleteOrganizationMembership implements Querier.DeleteOrganizationMembership.
-func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID *string, organizationID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID string, organizationID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteOrganizationMembership")
 	cmdTag, err := q.conn.Exec(ctx, deleteOrganizationMembershipSQL, userID, organizationID)
 	if err != nil {
@@ -71,7 +71,7 @@ func (q *DBQuerier) DeleteOrganizationMembership(ctx context.Context, userID *st
 }
 
 // DeleteOrganizationMembershipBatch implements Querier.DeleteOrganizationMembershipBatch.
-func (q *DBQuerier) DeleteOrganizationMembershipBatch(batch genericBatch, userID *string, organizationID *string) {
+func (q *DBQuerier) DeleteOrganizationMembershipBatch(batch genericBatch, userID string, organizationID string) {
 	batch.Queue(deleteOrganizationMembershipSQL, userID, organizationID)
 }
 

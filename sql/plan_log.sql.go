@@ -18,18 +18,18 @@ const insertPlanLogChunkSQL = `INSERT INTO plan_logs (
 RETURNING *;`
 
 type InsertPlanLogChunkRow struct {
-	PlanID  *string `json:"plan_id"`
-	ChunkID int32   `json:"chunk_id"`
-	Chunk   []byte  `json:"chunk"`
+	PlanID  string `json:"plan_id"`
+	ChunkID int32  `json:"chunk_id"`
+	Chunk   []byte `json:"chunk"`
 }
 
-func (s InsertPlanLogChunkRow) GetPlanID() *string { return s.PlanID }
+func (s InsertPlanLogChunkRow) GetPlanID() string { return s.PlanID }
 func (s InsertPlanLogChunkRow) GetChunkID() int32 { return s.ChunkID }
 func (s InsertPlanLogChunkRow) GetChunk() []byte { return s.Chunk }
 
 
 // InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
-func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID *string, chunk []byte) (InsertPlanLogChunkRow, error) {
+func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID string, chunk []byte) (InsertPlanLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")
 	row := q.conn.QueryRow(ctx, insertPlanLogChunkSQL, planID, chunk)
 	var item InsertPlanLogChunkRow
@@ -40,7 +40,7 @@ func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID *string, chun
 }
 
 // InsertPlanLogChunkBatch implements Querier.InsertPlanLogChunkBatch.
-func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID *string, chunk []byte) {
+func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID string, chunk []byte) {
 	batch.Queue(insertPlanLogChunkSQL, planID, chunk)
 }
 
@@ -68,7 +68,7 @@ GROUP BY plan_id
 type FindPlanLogChunksParams struct {
 	Offset int32
 	Limit  int32
-	PlanID *string
+	PlanID string
 }
 
 // FindPlanLogChunks implements Querier.FindPlanLogChunks.

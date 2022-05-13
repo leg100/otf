@@ -62,78 +62,78 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
 RETURNING *;`
 
 type InsertWorkspaceParams struct {
-	ID                         *string
-	AllowDestroyPlan           *bool
-	AutoApply                  *bool
-	CanQueueDestroyPlan        *bool
-	Description                *string
-	Environment                *string
-	ExecutionMode              *string
-	FileTriggersEnabled        *bool
-	GlobalRemoteState          *bool
-	Locked                     *bool
-	MigrationEnvironment       *string
-	Name                       *string
-	QueueAllRuns               *bool
-	SpeculativeEnabled         *bool
-	SourceName                 *string
-	SourceUrl                  *string
-	StructuredRunOutputEnabled *bool
-	TerraformVersion           *string
+	ID                         string
+	AllowDestroyPlan           bool
+	AutoApply                  bool
+	CanQueueDestroyPlan        bool
+	Description                string
+	Environment                string
+	ExecutionMode              string
+	FileTriggersEnabled        bool
+	GlobalRemoteState          bool
+	Locked                     bool
+	MigrationEnvironment       string
+	Name                       string
+	QueueAllRuns               bool
+	SpeculativeEnabled         bool
+	SourceName                 string
+	SourceUrl                  string
+	StructuredRunOutputEnabled bool
+	TerraformVersion           string
 	TriggerPrefixes            []string
-	WorkingDirectory           *string
-	OrganizationID             *string
+	WorkingDirectory           string
+	OrganizationID             string
 }
 
 type InsertWorkspaceRow struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
-func (s InsertWorkspaceRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s InsertWorkspaceRow) GetWorkspaceID() string { return s.WorkspaceID }
 func (s InsertWorkspaceRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertWorkspaceRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertWorkspaceRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s InsertWorkspaceRow) GetAutoApply() *bool { return s.AutoApply }
-func (s InsertWorkspaceRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s InsertWorkspaceRow) GetDescription() *string { return s.Description }
-func (s InsertWorkspaceRow) GetEnvironment() *string { return s.Environment }
-func (s InsertWorkspaceRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s InsertWorkspaceRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s InsertWorkspaceRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s InsertWorkspaceRow) GetLocked() *bool { return s.Locked }
-func (s InsertWorkspaceRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s InsertWorkspaceRow) GetName() *string { return s.Name }
-func (s InsertWorkspaceRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s InsertWorkspaceRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s InsertWorkspaceRow) GetSourceName() *string { return s.SourceName }
-func (s InsertWorkspaceRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s InsertWorkspaceRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s InsertWorkspaceRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s InsertWorkspaceRow) GetAllowDestroyPlan() bool { return s.AllowDestroyPlan }
+func (s InsertWorkspaceRow) GetAutoApply() bool { return s.AutoApply }
+func (s InsertWorkspaceRow) GetCanQueueDestroyPlan() bool { return s.CanQueueDestroyPlan }
+func (s InsertWorkspaceRow) GetDescription() string { return s.Description }
+func (s InsertWorkspaceRow) GetEnvironment() string { return s.Environment }
+func (s InsertWorkspaceRow) GetExecutionMode() string { return s.ExecutionMode }
+func (s InsertWorkspaceRow) GetFileTriggersEnabled() bool { return s.FileTriggersEnabled }
+func (s InsertWorkspaceRow) GetGlobalRemoteState() bool { return s.GlobalRemoteState }
+func (s InsertWorkspaceRow) GetLocked() bool { return s.Locked }
+func (s InsertWorkspaceRow) GetMigrationEnvironment() string { return s.MigrationEnvironment }
+func (s InsertWorkspaceRow) GetName() string { return s.Name }
+func (s InsertWorkspaceRow) GetQueueAllRuns() bool { return s.QueueAllRuns }
+func (s InsertWorkspaceRow) GetSpeculativeEnabled() bool { return s.SpeculativeEnabled }
+func (s InsertWorkspaceRow) GetSourceName() string { return s.SourceName }
+func (s InsertWorkspaceRow) GetSourceUrl() string { return s.SourceUrl }
+func (s InsertWorkspaceRow) GetStructuredRunOutputEnabled() bool { return s.StructuredRunOutputEnabled }
+func (s InsertWorkspaceRow) GetTerraformVersion() string { return s.TerraformVersion }
 func (s InsertWorkspaceRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s InsertWorkspaceRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s InsertWorkspaceRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s InsertWorkspaceRow) GetWorkingDirectory() string { return s.WorkingDirectory }
+func (s InsertWorkspaceRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // InsertWorkspace implements Querier.InsertWorkspace.
@@ -172,8 +172,8 @@ OFFSET $4
 ;`
 
 type FindWorkspacesParams struct {
-	Prefix           *string
-	OrganizationName *string
+	Prefix           string
+	OrganizationName string
 	Limit            int
 	Offset           int
 }
@@ -349,7 +349,7 @@ func (s FindWorkspaceByNameRow) GetOrganization() Organizations { return s.Organ
 
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
-func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name *string, organizationName *string) (FindWorkspaceByNameRow, error) {
+func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name string, organizationName string) (FindWorkspaceByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByName")
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameSQL, name, organizationName)
 	var item FindWorkspaceByNameRow
@@ -364,7 +364,7 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name *string, organ
 }
 
 // FindWorkspaceByNameBatch implements Querier.FindWorkspaceByNameBatch.
-func (q *DBQuerier) FindWorkspaceByNameBatch(batch genericBatch, name *string, organizationName *string) {
+func (q *DBQuerier) FindWorkspaceByNameBatch(batch genericBatch, name string, organizationName string) {
 	batch.Queue(findWorkspaceByNameSQL, name, organizationName)
 }
 
@@ -443,7 +443,7 @@ func (s FindWorkspaceByNameForUpdateRow) GetOrganization() Organizations { retur
 
 
 // FindWorkspaceByNameForUpdate implements Querier.FindWorkspaceByNameForUpdate.
-func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name *string, organizationName *string) (FindWorkspaceByNameForUpdateRow, error) {
+func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name string, organizationName string) (FindWorkspaceByNameForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByNameForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameForUpdateSQL, name, organizationName)
 	var item FindWorkspaceByNameForUpdateRow
@@ -458,7 +458,7 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name *stri
 }
 
 // FindWorkspaceByNameForUpdateBatch implements Querier.FindWorkspaceByNameForUpdateBatch.
-func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name *string, organizationName *string) {
+func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name string, organizationName string) {
 	batch.Queue(findWorkspaceByNameForUpdateSQL, name, organizationName)
 }
 
@@ -535,7 +535,7 @@ func (s FindWorkspaceByIDRow) GetOrganization() Organizations { return s.Organiz
 
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
-func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id *string) (FindWorkspaceByIDRow, error) {
+func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id string) (FindWorkspaceByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByID")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDSQL, id)
 	var item FindWorkspaceByIDRow
@@ -550,7 +550,7 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id *string) (FindWork
 }
 
 // FindWorkspaceByIDBatch implements Querier.FindWorkspaceByIDBatch.
-func (q *DBQuerier) FindWorkspaceByIDBatch(batch genericBatch, id *string) {
+func (q *DBQuerier) FindWorkspaceByIDBatch(batch genericBatch, id string) {
 	batch.Queue(findWorkspaceByIDSQL, id)
 }
 
@@ -628,7 +628,7 @@ func (s FindWorkspaceByIDForUpdateRow) GetOrganization() Organizations { return 
 
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
-func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id *string) (FindWorkspaceByIDForUpdateRow, error) {
+func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (FindWorkspaceByIDForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
 	var item FindWorkspaceByIDForUpdateRow
@@ -643,7 +643,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id *string) 
 }
 
 // FindWorkspaceByIDForUpdateBatch implements Querier.FindWorkspaceByIDForUpdateBatch.
-func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id *string) {
+func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id string) {
 	batch.Queue(findWorkspaceByIDForUpdateSQL, id)
 }
 
@@ -669,58 +669,58 @@ WHERE workspace_id = $2
 RETURNING *;`
 
 type UpdateWorkspaceNameByIDRow struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceNameByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s UpdateWorkspaceNameByIDRow) GetWorkspaceID() string { return s.WorkspaceID }
 func (s UpdateWorkspaceNameByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateWorkspaceNameByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceNameByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceNameByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceNameByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceNameByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceNameByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceNameByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceNameByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceNameByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceNameByIDRow) GetLocked() *bool { return s.Locked }
-func (s UpdateWorkspaceNameByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceNameByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceNameByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceNameByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceNameByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceNameByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceNameByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s UpdateWorkspaceNameByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceNameByIDRow) GetAllowDestroyPlan() bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceNameByIDRow) GetAutoApply() bool { return s.AutoApply }
+func (s UpdateWorkspaceNameByIDRow) GetCanQueueDestroyPlan() bool { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceNameByIDRow) GetDescription() string { return s.Description }
+func (s UpdateWorkspaceNameByIDRow) GetEnvironment() string { return s.Environment }
+func (s UpdateWorkspaceNameByIDRow) GetExecutionMode() string { return s.ExecutionMode }
+func (s UpdateWorkspaceNameByIDRow) GetFileTriggersEnabled() bool { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetGlobalRemoteState() bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceNameByIDRow) GetLocked() bool { return s.Locked }
+func (s UpdateWorkspaceNameByIDRow) GetMigrationEnvironment() string { return s.MigrationEnvironment }
+func (s UpdateWorkspaceNameByIDRow) GetName() string { return s.Name }
+func (s UpdateWorkspaceNameByIDRow) GetQueueAllRuns() bool { return s.QueueAllRuns }
+func (s UpdateWorkspaceNameByIDRow) GetSpeculativeEnabled() bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetSourceName() string { return s.SourceName }
+func (s UpdateWorkspaceNameByIDRow) GetSourceUrl() string { return s.SourceUrl }
+func (s UpdateWorkspaceNameByIDRow) GetStructuredRunOutputEnabled() bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceNameByIDRow) GetTerraformVersion() string { return s.TerraformVersion }
 func (s UpdateWorkspaceNameByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s UpdateWorkspaceNameByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceNameByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateWorkspaceNameByIDRow) GetWorkingDirectory() string { return s.WorkingDirectory }
+func (s UpdateWorkspaceNameByIDRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // UpdateWorkspaceNameByID implements Querier.UpdateWorkspaceNameByID.
-func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name *string, id *string) (UpdateWorkspaceNameByIDRow, error) {
+func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (UpdateWorkspaceNameByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceNameByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceNameByIDSQL, name, id)
 	var item UpdateWorkspaceNameByIDRow
@@ -731,7 +731,7 @@ func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name *string, i
 }
 
 // UpdateWorkspaceNameByIDBatch implements Querier.UpdateWorkspaceNameByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceNameByIDBatch(batch genericBatch, name *string, id *string) {
+func (q *DBQuerier) UpdateWorkspaceNameByIDBatch(batch genericBatch, name string, id string) {
 	batch.Queue(updateWorkspaceNameByIDSQL, name, id)
 }
 
@@ -753,58 +753,58 @@ WHERE workspace_id = $2
 RETURNING *;`
 
 type UpdateWorkspaceAllowDestroyPlanByIDRow struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkspaceID() string { return s.WorkspaceID }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetLocked() *bool { return s.Locked }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAllowDestroyPlan() bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetAutoApply() bool { return s.AutoApply }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetCanQueueDestroyPlan() bool { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetDescription() string { return s.Description }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetEnvironment() string { return s.Environment }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetExecutionMode() string { return s.ExecutionMode }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetFileTriggersEnabled() bool { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetGlobalRemoteState() bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetLocked() bool { return s.Locked }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetMigrationEnvironment() string { return s.MigrationEnvironment }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetName() string { return s.Name }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetQueueAllRuns() bool { return s.QueueAllRuns }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSpeculativeEnabled() bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceName() string { return s.SourceName }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetSourceUrl() string { return s.SourceUrl }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetStructuredRunOutputEnabled() bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTerraformVersion() string { return s.TerraformVersion }
 func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetWorkingDirectory() string { return s.WorkingDirectory }
+func (s UpdateWorkspaceAllowDestroyPlanByIDRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // UpdateWorkspaceAllowDestroyPlanByID implements Querier.UpdateWorkspaceAllowDestroyPlanByID.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan *bool, id *string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan bool, id string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceAllowDestroyPlanByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
 	var item UpdateWorkspaceAllowDestroyPlanByIDRow
@@ -815,7 +815,7 @@ func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, all
 }
 
 // UpdateWorkspaceAllowDestroyPlanByIDBatch implements Querier.UpdateWorkspaceAllowDestroyPlanByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan *bool, id *string) {
+func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan bool, id string) {
 	batch.Queue(updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
 }
 
@@ -837,58 +837,58 @@ WHERE workspace_id = $2
 RETURNING *;`
 
 type UpdateWorkspaceLockByIDRow struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceLockByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s UpdateWorkspaceLockByIDRow) GetWorkspaceID() string { return s.WorkspaceID }
 func (s UpdateWorkspaceLockByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateWorkspaceLockByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceLockByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceLockByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceLockByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceLockByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceLockByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceLockByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceLockByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceLockByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceLockByIDRow) GetLocked() *bool { return s.Locked }
-func (s UpdateWorkspaceLockByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceLockByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceLockByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceLockByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceLockByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceLockByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceLockByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s UpdateWorkspaceLockByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceLockByIDRow) GetAllowDestroyPlan() bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetAutoApply() bool { return s.AutoApply }
+func (s UpdateWorkspaceLockByIDRow) GetCanQueueDestroyPlan() bool { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceLockByIDRow) GetDescription() string { return s.Description }
+func (s UpdateWorkspaceLockByIDRow) GetEnvironment() string { return s.Environment }
+func (s UpdateWorkspaceLockByIDRow) GetExecutionMode() string { return s.ExecutionMode }
+func (s UpdateWorkspaceLockByIDRow) GetFileTriggersEnabled() bool { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetGlobalRemoteState() bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceLockByIDRow) GetLocked() bool { return s.Locked }
+func (s UpdateWorkspaceLockByIDRow) GetMigrationEnvironment() string { return s.MigrationEnvironment }
+func (s UpdateWorkspaceLockByIDRow) GetName() string { return s.Name }
+func (s UpdateWorkspaceLockByIDRow) GetQueueAllRuns() bool { return s.QueueAllRuns }
+func (s UpdateWorkspaceLockByIDRow) GetSpeculativeEnabled() bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetSourceName() string { return s.SourceName }
+func (s UpdateWorkspaceLockByIDRow) GetSourceUrl() string { return s.SourceUrl }
+func (s UpdateWorkspaceLockByIDRow) GetStructuredRunOutputEnabled() bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceLockByIDRow) GetTerraformVersion() string { return s.TerraformVersion }
 func (s UpdateWorkspaceLockByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s UpdateWorkspaceLockByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceLockByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateWorkspaceLockByIDRow) GetWorkingDirectory() string { return s.WorkingDirectory }
+func (s UpdateWorkspaceLockByIDRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.
-func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock *bool, id *string) (UpdateWorkspaceLockByIDRow, error) {
+func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock bool, id string) (UpdateWorkspaceLockByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceLockByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceLockByIDSQL, lock, id)
 	var item UpdateWorkspaceLockByIDRow
@@ -899,7 +899,7 @@ func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock *bool, id 
 }
 
 // UpdateWorkspaceLockByIDBatch implements Querier.UpdateWorkspaceLockByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceLockByIDBatch(batch genericBatch, lock *bool, id *string) {
+func (q *DBQuerier) UpdateWorkspaceLockByIDBatch(batch genericBatch, lock bool, id string) {
 	batch.Queue(updateWorkspaceLockByIDSQL, lock, id)
 }
 
@@ -921,58 +921,58 @@ WHERE workspace_id = $2
 RETURNING *;`
 
 type UpdateWorkspaceDescriptionByIDRow struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
-func (s UpdateWorkspaceDescriptionByIDRow) GetWorkspaceID() *string { return s.WorkspaceID }
+func (s UpdateWorkspaceDescriptionByIDRow) GetWorkspaceID() string { return s.WorkspaceID }
 func (s UpdateWorkspaceDescriptionByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateWorkspaceDescriptionByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateWorkspaceDescriptionByIDRow) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s UpdateWorkspaceDescriptionByIDRow) GetAutoApply() *bool { return s.AutoApply }
-func (s UpdateWorkspaceDescriptionByIDRow) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s UpdateWorkspaceDescriptionByIDRow) GetDescription() *string { return s.Description }
-func (s UpdateWorkspaceDescriptionByIDRow) GetEnvironment() *string { return s.Environment }
-func (s UpdateWorkspaceDescriptionByIDRow) GetExecutionMode() *string { return s.ExecutionMode }
-func (s UpdateWorkspaceDescriptionByIDRow) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s UpdateWorkspaceDescriptionByIDRow) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s UpdateWorkspaceDescriptionByIDRow) GetLocked() *bool { return s.Locked }
-func (s UpdateWorkspaceDescriptionByIDRow) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s UpdateWorkspaceDescriptionByIDRow) GetName() *string { return s.Name }
-func (s UpdateWorkspaceDescriptionByIDRow) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s UpdateWorkspaceDescriptionByIDRow) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s UpdateWorkspaceDescriptionByIDRow) GetSourceName() *string { return s.SourceName }
-func (s UpdateWorkspaceDescriptionByIDRow) GetSourceUrl() *string { return s.SourceUrl }
-func (s UpdateWorkspaceDescriptionByIDRow) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s UpdateWorkspaceDescriptionByIDRow) GetTerraformVersion() *string { return s.TerraformVersion }
+func (s UpdateWorkspaceDescriptionByIDRow) GetAllowDestroyPlan() bool { return s.AllowDestroyPlan }
+func (s UpdateWorkspaceDescriptionByIDRow) GetAutoApply() bool { return s.AutoApply }
+func (s UpdateWorkspaceDescriptionByIDRow) GetCanQueueDestroyPlan() bool { return s.CanQueueDestroyPlan }
+func (s UpdateWorkspaceDescriptionByIDRow) GetDescription() string { return s.Description }
+func (s UpdateWorkspaceDescriptionByIDRow) GetEnvironment() string { return s.Environment }
+func (s UpdateWorkspaceDescriptionByIDRow) GetExecutionMode() string { return s.ExecutionMode }
+func (s UpdateWorkspaceDescriptionByIDRow) GetFileTriggersEnabled() bool { return s.FileTriggersEnabled }
+func (s UpdateWorkspaceDescriptionByIDRow) GetGlobalRemoteState() bool { return s.GlobalRemoteState }
+func (s UpdateWorkspaceDescriptionByIDRow) GetLocked() bool { return s.Locked }
+func (s UpdateWorkspaceDescriptionByIDRow) GetMigrationEnvironment() string { return s.MigrationEnvironment }
+func (s UpdateWorkspaceDescriptionByIDRow) GetName() string { return s.Name }
+func (s UpdateWorkspaceDescriptionByIDRow) GetQueueAllRuns() bool { return s.QueueAllRuns }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSpeculativeEnabled() bool { return s.SpeculativeEnabled }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSourceName() string { return s.SourceName }
+func (s UpdateWorkspaceDescriptionByIDRow) GetSourceUrl() string { return s.SourceUrl }
+func (s UpdateWorkspaceDescriptionByIDRow) GetStructuredRunOutputEnabled() bool { return s.StructuredRunOutputEnabled }
+func (s UpdateWorkspaceDescriptionByIDRow) GetTerraformVersion() string { return s.TerraformVersion }
 func (s UpdateWorkspaceDescriptionByIDRow) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s UpdateWorkspaceDescriptionByIDRow) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s UpdateWorkspaceDescriptionByIDRow) GetOrganizationID() *string { return s.OrganizationID }
+func (s UpdateWorkspaceDescriptionByIDRow) GetWorkingDirectory() string { return s.WorkingDirectory }
+func (s UpdateWorkspaceDescriptionByIDRow) GetOrganizationID() string { return s.OrganizationID }
 
 
 // UpdateWorkspaceDescriptionByID implements Querier.UpdateWorkspaceDescriptionByID.
-func (q *DBQuerier) UpdateWorkspaceDescriptionByID(ctx context.Context, description *string, id *string) (UpdateWorkspaceDescriptionByIDRow, error) {
+func (q *DBQuerier) UpdateWorkspaceDescriptionByID(ctx context.Context, description string, id string) (UpdateWorkspaceDescriptionByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceDescriptionByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceDescriptionByIDSQL, description, id)
 	var item UpdateWorkspaceDescriptionByIDRow
@@ -983,7 +983,7 @@ func (q *DBQuerier) UpdateWorkspaceDescriptionByID(ctx context.Context, descript
 }
 
 // UpdateWorkspaceDescriptionByIDBatch implements Querier.UpdateWorkspaceDescriptionByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceDescriptionByIDBatch(batch genericBatch, description *string, id *string) {
+func (q *DBQuerier) UpdateWorkspaceDescriptionByIDBatch(batch genericBatch, description string, id string) {
 	batch.Queue(updateWorkspaceDescriptionByIDSQL, description, id)
 }
 
@@ -1002,7 +1002,7 @@ FROM workspaces
 WHERE workspace_id = $1;`
 
 // DeleteWorkspaceByID implements Querier.DeleteWorkspaceByID.
-func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceByIDSQL, workspaceID)
 	if err != nil {
@@ -1012,7 +1012,7 @@ func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID *string
 }
 
 // DeleteWorkspaceByIDBatch implements Querier.DeleteWorkspaceByIDBatch.
-func (q *DBQuerier) DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID *string) {
+func (q *DBQuerier) DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID string) {
 	batch.Queue(deleteWorkspaceByIDSQL, workspaceID)
 }
 
@@ -1033,7 +1033,7 @@ AND workspaces.name = $1
 AND organizations.name = $2;`
 
 // DeleteWorkspaceByName implements Querier.DeleteWorkspaceByName.
-func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name *string, organizationName *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name string, organizationName string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceByName")
 	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceByNameSQL, name, organizationName)
 	if err != nil {
@@ -1043,7 +1043,7 @@ func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name *string, org
 }
 
 // DeleteWorkspaceByNameBatch implements Querier.DeleteWorkspaceByNameBatch.
-func (q *DBQuerier) DeleteWorkspaceByNameBatch(batch genericBatch, name *string, organizationName *string) {
+func (q *DBQuerier) DeleteWorkspaceByNameBatch(batch genericBatch, name string, organizationName string) {
 	batch.Queue(deleteWorkspaceByNameSQL, name, organizationName)
 }
 

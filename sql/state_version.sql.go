@@ -29,31 +29,31 @@ RETURNING *
 ;`
 
 type InsertStateVersionParams struct {
-	ID     *string
+	ID     string
 	Serial int32
 	State  []byte
-	RunID  *string
+	RunID  string
 }
 
 type InsertStateVersionRow struct {
-	StateVersionID *string   `json:"state_version_id"`
+	StateVersionID string    `json:"state_version_id"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Serial         int32     `json:"serial"`
 	VcsCommitSha   *string   `json:"vcs_commit_sha"`
 	VcsCommitUrl   *string   `json:"vcs_commit_url"`
 	State          []byte    `json:"state"`
-	RunID          *string   `json:"run_id"`
+	RunID          string    `json:"run_id"`
 }
 
-func (s InsertStateVersionRow) GetStateVersionID() *string { return s.StateVersionID }
+func (s InsertStateVersionRow) GetStateVersionID() string { return s.StateVersionID }
 func (s InsertStateVersionRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertStateVersionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
 func (s InsertStateVersionRow) GetSerial() int32 { return s.Serial }
 func (s InsertStateVersionRow) GetVcsCommitSha() *string { return s.VcsCommitSha }
 func (s InsertStateVersionRow) GetVcsCommitUrl() *string { return s.VcsCommitUrl }
 func (s InsertStateVersionRow) GetState() []byte { return s.State }
-func (s InsertStateVersionRow) GetRunID() *string { return s.RunID }
+func (s InsertStateVersionRow) GetRunID() string { return s.RunID }
 
 
 // InsertStateVersion implements Querier.InsertStateVersion.
@@ -98,8 +98,8 @@ OFFSET $4
 ;`
 
 type FindStateVersionsByWorkspaceNameParams struct {
-	WorkspaceName    *string
-	OrganizationName *string
+	WorkspaceName    string
+	OrganizationName string
 	Limit            int
 	Offset           int
 }
@@ -219,7 +219,7 @@ func (s FindStateVersionByIDRow) GetStateVersionOutputs() []StateVersionOutputs 
 
 
 // FindStateVersionByID implements Querier.FindStateVersionByID.
-func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id *string) (FindStateVersionByIDRow, error) {
+func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id string) (FindStateVersionByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionByID")
 	row := q.conn.QueryRow(ctx, findStateVersionByIDSQL, id)
 	var item FindStateVersionByIDRow
@@ -234,7 +234,7 @@ func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id *string) (FindS
 }
 
 // FindStateVersionByIDBatch implements Querier.FindStateVersionByIDBatch.
-func (q *DBQuerier) FindStateVersionByIDBatch(batch genericBatch, id *string) {
+func (q *DBQuerier) FindStateVersionByIDBatch(batch genericBatch, id string) {
 	batch.Queue(findStateVersionByIDSQL, id)
 }
 
@@ -287,7 +287,7 @@ func (s FindStateVersionLatestByWorkspaceIDRow) GetStateVersionOutputs() []State
 
 
 // FindStateVersionLatestByWorkspaceID implements Querier.FindStateVersionLatestByWorkspaceID.
-func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, workspaceID *string) (FindStateVersionLatestByWorkspaceIDRow, error) {
+func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, workspaceID string) (FindStateVersionLatestByWorkspaceIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionLatestByWorkspaceID")
 	row := q.conn.QueryRow(ctx, findStateVersionLatestByWorkspaceIDSQL, workspaceID)
 	var item FindStateVersionLatestByWorkspaceIDRow
@@ -302,7 +302,7 @@ func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, wor
 }
 
 // FindStateVersionLatestByWorkspaceIDBatch implements Querier.FindStateVersionLatestByWorkspaceIDBatch.
-func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID *string) {
+func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID string) {
 	batch.Queue(findStateVersionLatestByWorkspaceIDSQL, workspaceID)
 }
 
@@ -326,7 +326,7 @@ WHERE state_version_id = $1
 ;`
 
 // DeleteStateVersionByID implements Querier.DeleteStateVersionByID.
-func (q *DBQuerier) DeleteStateVersionByID(ctx context.Context, stateVersionID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteStateVersionByID(ctx context.Context, stateVersionID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteStateVersionByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteStateVersionByIDSQL, stateVersionID)
 	if err != nil {
@@ -336,7 +336,7 @@ func (q *DBQuerier) DeleteStateVersionByID(ctx context.Context, stateVersionID *
 }
 
 // DeleteStateVersionByIDBatch implements Querier.DeleteStateVersionByIDBatch.
-func (q *DBQuerier) DeleteStateVersionByIDBatch(batch genericBatch, stateVersionID *string) {
+func (q *DBQuerier) DeleteStateVersionByIDBatch(batch genericBatch, stateVersionID string) {
 	batch.Queue(deleteStateVersionByIDSQL, stateVersionID)
 }
 

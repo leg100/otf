@@ -40,45 +40,45 @@ const insertRunSQL = `INSERT INTO runs (
 RETURNING *;`
 
 type InsertRunParams struct {
-	ID                     *string
-	IsDestroy              *bool
+	ID                     string
+	IsDestroy              bool
 	PositionInQueue        int32
-	Refresh                *bool
-	RefreshOnly            *bool
-	Status                 *string
+	Refresh                bool
+	RefreshOnly            bool
+	Status                 string
 	ReplaceAddrs           []string
 	TargetAddrs            []string
-	ConfigurationVersionID *string
-	WorkspaceID            *string
+	ConfigurationVersionID string
+	WorkspaceID            string
 }
 
 type InsertRunRow struct {
-	RunID                  *string   `json:"run_id"`
+	RunID                  string    `json:"run_id"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
-	IsDestroy              *bool     `json:"is_destroy"`
+	IsDestroy              bool      `json:"is_destroy"`
 	PositionInQueue        int32     `json:"position_in_queue"`
-	Refresh                *bool     `json:"refresh"`
-	RefreshOnly            *bool     `json:"refresh_only"`
-	Status                 *string   `json:"status"`
+	Refresh                bool      `json:"refresh"`
+	RefreshOnly            bool      `json:"refresh_only"`
+	Status                 string    `json:"status"`
 	ReplaceAddrs           []string  `json:"replace_addrs"`
 	TargetAddrs            []string  `json:"target_addrs"`
-	WorkspaceID            *string   `json:"workspace_id"`
-	ConfigurationVersionID *string   `json:"configuration_version_id"`
+	WorkspaceID            string    `json:"workspace_id"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
 }
 
-func (s InsertRunRow) GetRunID() *string { return s.RunID }
+func (s InsertRunRow) GetRunID() string { return s.RunID }
 func (s InsertRunRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertRunRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertRunRow) GetIsDestroy() *bool { return s.IsDestroy }
+func (s InsertRunRow) GetIsDestroy() bool { return s.IsDestroy }
 func (s InsertRunRow) GetPositionInQueue() int32 { return s.PositionInQueue }
-func (s InsertRunRow) GetRefresh() *bool { return s.Refresh }
-func (s InsertRunRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s InsertRunRow) GetStatus() *string { return s.Status }
+func (s InsertRunRow) GetRefresh() bool { return s.Refresh }
+func (s InsertRunRow) GetRefreshOnly() bool { return s.RefreshOnly }
+func (s InsertRunRow) GetStatus() string { return s.Status }
 func (s InsertRunRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
 func (s InsertRunRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s InsertRunRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s InsertRunRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s InsertRunRow) GetWorkspaceID() string { return s.WorkspaceID }
+func (s InsertRunRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
 
 
 // InsertRun implements Querier.InsertRun.
@@ -119,18 +119,18 @@ const insertRunStatusTimestampSQL = `INSERT INTO run_status_timestamps (
 RETURNING *;`
 
 type InsertRunStatusTimestampRow struct {
-	RunID     *string   `json:"run_id"`
-	Status    *string   `json:"status"`
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s InsertRunStatusTimestampRow) GetRunID() *string { return s.RunID }
-func (s InsertRunStatusTimestampRow) GetStatus() *string { return s.Status }
+func (s InsertRunStatusTimestampRow) GetRunID() string { return s.RunID }
+func (s InsertRunStatusTimestampRow) GetStatus() string { return s.Status }
 func (s InsertRunStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
 
 
 // InsertRunStatusTimestamp implements Querier.InsertRunStatusTimestamp.
-func (q *DBQuerier) InsertRunStatusTimestamp(ctx context.Context, id *string, status *string) (InsertRunStatusTimestampRow, error) {
+func (q *DBQuerier) InsertRunStatusTimestamp(ctx context.Context, id string, status string) (InsertRunStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRunStatusTimestamp")
 	row := q.conn.QueryRow(ctx, insertRunStatusTimestampSQL, id, status)
 	var item InsertRunStatusTimestampRow
@@ -141,7 +141,7 @@ func (q *DBQuerier) InsertRunStatusTimestamp(ctx context.Context, id *string, st
 }
 
 // InsertRunStatusTimestampBatch implements Querier.InsertRunStatusTimestampBatch.
-func (q *DBQuerier) InsertRunStatusTimestampBatch(batch genericBatch, id *string, status *string) {
+func (q *DBQuerier) InsertRunStatusTimestampBatch(batch genericBatch, id string, status string) {
 	batch.Queue(insertRunStatusTimestampSQL, id, status)
 }
 
@@ -178,7 +178,7 @@ LIMIT $2 OFFSET $3
 ;`
 
 type FindRunsByWorkspaceIDParams struct {
-	WorkspaceID *string
+	WorkspaceID string
 	Limit       int
 	Offset      int
 }
@@ -337,8 +337,8 @@ LIMIT $3 OFFSET $4
 ;`
 
 type FindRunsByWorkspaceNameParams struct {
-	WorkspaceName    *string
-	OrganizationName *string
+	WorkspaceName    string
+	OrganizationName string
 	Limit            int
 	Offset           int
 }
@@ -687,7 +687,7 @@ func (s FindRunByIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return 
 
 
 // FindRunByID implements Querier.FindRunByID.
-func (q *DBQuerier) FindRunByID(ctx context.Context, runID *string) (FindRunByIDRow, error) {
+func (q *DBQuerier) FindRunByID(ctx context.Context, runID string) (FindRunByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByID")
 	row := q.conn.QueryRow(ctx, findRunByIDSQL, runID)
 	var item FindRunByIDRow
@@ -718,7 +718,7 @@ func (q *DBQuerier) FindRunByID(ctx context.Context, runID *string) (FindRunByID
 }
 
 // FindRunByIDBatch implements Querier.FindRunByIDBatch.
-func (q *DBQuerier) FindRunByIDBatch(batch genericBatch, runID *string) {
+func (q *DBQuerier) FindRunByIDBatch(batch genericBatch, runID string) {
 	batch.Queue(findRunByIDSQL, runID)
 }
 
@@ -811,7 +811,7 @@ func (s FindRunByPlanIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { ret
 
 
 // FindRunByPlanID implements Querier.FindRunByPlanID.
-func (q *DBQuerier) FindRunByPlanID(ctx context.Context, planID *string) (FindRunByPlanIDRow, error) {
+func (q *DBQuerier) FindRunByPlanID(ctx context.Context, planID string) (FindRunByPlanIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByPlanID")
 	row := q.conn.QueryRow(ctx, findRunByPlanIDSQL, planID)
 	var item FindRunByPlanIDRow
@@ -842,7 +842,7 @@ func (q *DBQuerier) FindRunByPlanID(ctx context.Context, planID *string) (FindRu
 }
 
 // FindRunByPlanIDBatch implements Querier.FindRunByPlanIDBatch.
-func (q *DBQuerier) FindRunByPlanIDBatch(batch genericBatch, planID *string) {
+func (q *DBQuerier) FindRunByPlanIDBatch(batch genericBatch, planID string) {
 	batch.Queue(findRunByPlanIDSQL, planID)
 }
 
@@ -935,7 +935,7 @@ func (s FindRunByApplyIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { re
 
 
 // FindRunByApplyID implements Querier.FindRunByApplyID.
-func (q *DBQuerier) FindRunByApplyID(ctx context.Context, applyID *string) (FindRunByApplyIDRow, error) {
+func (q *DBQuerier) FindRunByApplyID(ctx context.Context, applyID string) (FindRunByApplyIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByApplyID")
 	row := q.conn.QueryRow(ctx, findRunByApplyIDSQL, applyID)
 	var item FindRunByApplyIDRow
@@ -966,7 +966,7 @@ func (q *DBQuerier) FindRunByApplyID(ctx context.Context, applyID *string) (Find
 }
 
 // FindRunByApplyIDBatch implements Querier.FindRunByApplyIDBatch.
-func (q *DBQuerier) FindRunByApplyIDBatch(batch genericBatch, applyID *string) {
+func (q *DBQuerier) FindRunByApplyIDBatch(batch genericBatch, applyID string) {
 	batch.Queue(findRunByApplyIDSQL, applyID)
 }
 
@@ -1060,7 +1060,7 @@ func (s FindRunByIDForUpdateRow) GetRunStatusTimestamps() []RunStatusTimestamps 
 
 
 // FindRunByIDForUpdate implements Querier.FindRunByIDForUpdate.
-func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID *string) (FindRunByIDForUpdateRow, error) {
+func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID string) (FindRunByIDForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findRunByIDForUpdateSQL, runID)
 	var item FindRunByIDForUpdateRow
@@ -1091,7 +1091,7 @@ func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID *string) (Fi
 }
 
 // FindRunByIDForUpdateBatch implements Querier.FindRunByIDForUpdateBatch.
-func (q *DBQuerier) FindRunByIDForUpdateBatch(batch genericBatch, runID *string) {
+func (q *DBQuerier) FindRunByIDForUpdateBatch(batch genericBatch, runID string) {
 	batch.Queue(findRunByIDForUpdateSQL, runID)
 }
 
@@ -1133,36 +1133,36 @@ WHERE run_id = $2
 RETURNING *;`
 
 type UpdateRunStatusRow struct {
-	RunID                  *string   `json:"run_id"`
+	RunID                  string    `json:"run_id"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
-	IsDestroy              *bool     `json:"is_destroy"`
+	IsDestroy              bool      `json:"is_destroy"`
 	PositionInQueue        int32     `json:"position_in_queue"`
-	Refresh                *bool     `json:"refresh"`
-	RefreshOnly            *bool     `json:"refresh_only"`
-	Status                 *string   `json:"status"`
+	Refresh                bool      `json:"refresh"`
+	RefreshOnly            bool      `json:"refresh_only"`
+	Status                 string    `json:"status"`
 	ReplaceAddrs           []string  `json:"replace_addrs"`
 	TargetAddrs            []string  `json:"target_addrs"`
-	WorkspaceID            *string   `json:"workspace_id"`
-	ConfigurationVersionID *string   `json:"configuration_version_id"`
+	WorkspaceID            string    `json:"workspace_id"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
 }
 
-func (s UpdateRunStatusRow) GetRunID() *string { return s.RunID }
+func (s UpdateRunStatusRow) GetRunID() string { return s.RunID }
 func (s UpdateRunStatusRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s UpdateRunStatusRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateRunStatusRow) GetIsDestroy() *bool { return s.IsDestroy }
+func (s UpdateRunStatusRow) GetIsDestroy() bool { return s.IsDestroy }
 func (s UpdateRunStatusRow) GetPositionInQueue() int32 { return s.PositionInQueue }
-func (s UpdateRunStatusRow) GetRefresh() *bool { return s.Refresh }
-func (s UpdateRunStatusRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s UpdateRunStatusRow) GetStatus() *string { return s.Status }
+func (s UpdateRunStatusRow) GetRefresh() bool { return s.Refresh }
+func (s UpdateRunStatusRow) GetRefreshOnly() bool { return s.RefreshOnly }
+func (s UpdateRunStatusRow) GetStatus() string { return s.Status }
 func (s UpdateRunStatusRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
 func (s UpdateRunStatusRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s UpdateRunStatusRow) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s UpdateRunStatusRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s UpdateRunStatusRow) GetWorkspaceID() string { return s.WorkspaceID }
+func (s UpdateRunStatusRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
 
 
 // UpdateRunStatus implements Querier.UpdateRunStatus.
-func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status *string, id *string) (UpdateRunStatusRow, error) {
+func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status string, id string) (UpdateRunStatusRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunStatus")
 	row := q.conn.QueryRow(ctx, updateRunStatusSQL, status, id)
 	var item UpdateRunStatusRow
@@ -1173,7 +1173,7 @@ func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status *string, id *str
 }
 
 // UpdateRunStatusBatch implements Querier.UpdateRunStatusBatch.
-func (q *DBQuerier) UpdateRunStatusBatch(batch genericBatch, status *string, id *string) {
+func (q *DBQuerier) UpdateRunStatusBatch(batch genericBatch, status string, id string) {
 	batch.Queue(updateRunStatusSQL, status, id)
 }
 
@@ -1192,7 +1192,7 @@ FROM runs
 WHERE run_id = $1;`
 
 // DeleteRunByID implements Querier.DeleteRunByID.
-func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID *string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteRunByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteRunByIDSQL, runID)
 	if err != nil {
@@ -1202,7 +1202,7 @@ func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID *string) (pgconn.Co
 }
 
 // DeleteRunByIDBatch implements Querier.DeleteRunByIDBatch.
-func (q *DBQuerier) DeleteRunByIDBatch(batch genericBatch, runID *string) {
+func (q *DBQuerier) DeleteRunByIDBatch(batch genericBatch, runID string) {
 	batch.Queue(deleteRunByIDSQL, runID)
 }
 

@@ -9,7 +9,7 @@ import (
 type workspaceUpdater struct {
 	q      *DBQuerier
 	id     string
-	result workspaceComposite
+	result workspaceResultWithoutRelations
 }
 
 func newWorkspaceUpdater(tx pgx.Tx, id string) *workspaceUpdater {

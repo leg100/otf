@@ -18,18 +18,18 @@ const insertApplyLogChunkSQL = `INSERT INTO apply_logs (
 RETURNING *;`
 
 type InsertApplyLogChunkRow struct {
-	ApplyID *string `json:"apply_id"`
-	ChunkID int32   `json:"chunk_id"`
-	Chunk   []byte  `json:"chunk"`
+	ApplyID string `json:"apply_id"`
+	ChunkID int32  `json:"chunk_id"`
+	Chunk   []byte `json:"chunk"`
 }
 
-func (s InsertApplyLogChunkRow) GetApplyID() *string { return s.ApplyID }
+func (s InsertApplyLogChunkRow) GetApplyID() string { return s.ApplyID }
 func (s InsertApplyLogChunkRow) GetChunkID() int32 { return s.ChunkID }
 func (s InsertApplyLogChunkRow) GetChunk() []byte { return s.Chunk }
 
 
 // InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
-func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID *string, chunk []byte) (InsertApplyLogChunkRow, error) {
+func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")
 	row := q.conn.QueryRow(ctx, insertApplyLogChunkSQL, applyID, chunk)
 	var item InsertApplyLogChunkRow
@@ -40,7 +40,7 @@ func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID *string, ch
 }
 
 // InsertApplyLogChunkBatch implements Querier.InsertApplyLogChunkBatch.
-func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID *string, chunk []byte) {
+func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID string, chunk []byte) {
 	batch.Queue(insertApplyLogChunkSQL, applyID, chunk)
 }
 
@@ -68,7 +68,7 @@ GROUP BY apply_id
 type FindApplyLogChunksParams struct {
 	Offset  int32
 	Limit   int32
-	ApplyID *string
+	ApplyID string
 }
 
 // FindApplyLogChunks implements Querier.FindApplyLogChunks.

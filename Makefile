@@ -82,7 +82,5 @@ sql:
 		--postgres-connection "dbname=otf" \
 		--query-glob 'db/queries/*.sql' \
 		--output-dir sql \
-		--go-type 'text=*string' \
-		--go-type 'boolean=*bool' \
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte'

@@ -6,6 +6,7 @@ package otf
 import (
 	crypto "crypto/rand"
 	"encoding/base64"
+	"math"
 	"math/rand"
 	"regexp"
 	"time"
@@ -142,7 +143,7 @@ func (o *ListOptions) GetOffset() int {
 // GetLimit calculates the limit for use in SQL queries.
 func (o *ListOptions) GetLimit() int {
 	if o.PageSize == 0 {
-		return DefaultPageSize
+		return math.MaxInt
 	} else if o.PageSize > MaxPageSize {
 		return MaxPageSize
 	}
