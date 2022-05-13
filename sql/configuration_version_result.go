@@ -37,3 +37,16 @@ func convertConfigurationVersion(result configurationVersionRow) *otf.Configurat
 	}
 	return &cv
 }
+
+func convertConfigurationVersionComposite(result ConfigurationVersions) *otf.ConfigurationVersion {
+	cv := otf.ConfigurationVersion{}
+	cv.ID = *result.ConfigurationVersionID
+	cv.CreatedAt = result.CreatedAt
+	cv.UpdatedAt = result.UpdatedAt
+	cv.Status = otf.ConfigurationStatus(*result.Status)
+	cv.Source = otf.ConfigurationSource(*result.Source)
+	cv.AutoQueueRuns = *result.AutoQueueRuns
+	cv.Speculative = *result.Speculative
+	cv.Workspace.ID = *result.WorkspaceID
+	return &cv
+}

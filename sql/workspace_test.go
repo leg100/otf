@@ -104,7 +104,7 @@ func TestWorkspace_List(t *testing.T) {
 	}{
 		{
 			name: "filter by org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name), Prefix: otf.String("")},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, ws1)
@@ -113,7 +113,7 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String(ws1.Name[:5])},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, Prefix: ws1.Name[:5]},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 1, len(l.Items))
 				assert.Equal(t, ws1, l.Items[0])
@@ -121,14 +121,14 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by non-existent org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("non-existent")},
+			opts: otf.WorkspaceListOptions{OrganizationName: "non-existent"},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
 		{
 			name: "filter by non-existent prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String("xyz")},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, Prefix: "xyz"},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
@@ -176,7 +176,7 @@ func TestWorkspace_Delete(t *testing.T) {
 			err := db.WorkspaceStore().Delete(tt.spec(ws))
 			require.NoError(t, err)
 
-			results, err := db.WorkspaceStore().List(otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)})
+			results, err := db.WorkspaceStore().List(otf.WorkspaceListOptions{OrganizationName: org.Name})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(results.Items))

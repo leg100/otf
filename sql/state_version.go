@@ -57,10 +57,10 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	ctx := context.Background()
 
 	_, err := q.InsertStateVersion(ctx, InsertStateVersionParams{
-		ID:     &sv.ID,
+		ID:     sv.ID,
 		Serial: int32(sv.Serial),
 		State:  sv.State,
-		RunID:  &sv.Run.ID,
+		RunID:  sv.Run.ID,
 	})
 	if err != nil {
 		return nil, err
@@ -69,12 +69,12 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
 		_, err = q.InsertStateVersionOutput(ctx, InsertStateVersionOutputParams{
-			ID:             &svo.ID,
-			Name:           &svo.Name,
-			Sensitive:      &svo.Sensitive,
-			Type:           &svo.Type,
-			Value:          &svo.Value,
-			StateVersionID: &svo.StateVersionID,
+			ID:             svo.ID,
+			Name:           svo.Name,
+			Sensitive:      svo.Sensitive,
+			Type:           svo.Type,
+			Value:          svo.Value,
+			StateVersionID: svo.StateVersionID,
 		})
 		if err != nil {
 			return nil, err
@@ -97,8 +97,8 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 	ctx := context.Background()
 
 	result, err := q.FindStateVersionsByWorkspaceName(ctx, FindStateVersionsByWorkspaceNameParams{
-		WorkspaceName:    opts.Workspace,
-		OrganizationName: opts.Organization,
+		WorkspaceName:    *opts.Workspace,
+		OrganizationName: *opts.Organization,
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
@@ -129,7 +129,7 @@ func (s StateVersionService) Delete(id string) error {
 	ctx := context.Background()
 	q := NewQuerier(s.Conn)
 
-	result, err := q.DeleteStateVersionByID(ctx, &id)
+	result, err := q.DeleteStateVersionByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -142,13 +142,13 @@ func (s StateVersionService) Delete(id string) error {
 
 func getStateVersion(ctx context.Context, q *DBQuerier, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	if opts.ID != nil {
-		result, err := q.FindStateVersionByID(ctx, opts.ID)
+		result, err := q.FindStateVersionByID(ctx, *opts.ID)
 		if err != nil {
 			return nil, err
 		}
 		return convertStateVersion(result), nil
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindStateVersionLatestByWorkspaceID(ctx, opts.WorkspaceID)
+		result, err := q.FindStateVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
 		if err != nil {
 			return nil, err
 		}

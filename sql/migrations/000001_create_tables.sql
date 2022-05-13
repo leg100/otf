@@ -96,70 +96,54 @@ CREATE TABLE IF NOT EXISTS configuration_version_status_timestamps (
 );
 
 CREATE TABLE IF NOT EXISTS runs (
-    run_id                   TEXT,
-    created_at               TIMESTAMPTZ NOT NULL,
-    updated_at               TIMESTAMPTZ NOT NULL,
-    is_destroy               BOOLEAN     NOT NULL,
-    position_in_queue        INTEGER     NOT NULL,
-    refresh                  BOOLEAN     NOT NULL,
-    refresh_only             BOOLEAN     NOT NULL,
-    status                   TEXT        NOT NULL,
-    replace_addrs            TEXT[],
-    target_addrs             TEXT[],
-    applied_resource_additions    INTEGER     NOT NULL,
-    applied_resource_changes      INTEGER     NOT NULL,
-    applied_resource_destructions INTEGER     NOT NULL,
-    apply_status             TEXT        NOT NULL,
-    workspace_id             TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    configuration_version_id TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                             PRIMARY KEY (run_id)
+    run_id                          TEXT,
+    plan_id                         TEXT        NOT NULL,
+    apply_id                        TEXT        NOT NULL,
+    created_at                      TIMESTAMPTZ NOT NULL,
+    updated_at                      TIMESTAMPTZ NOT NULL,
+    is_destroy                      BOOLEAN     NOT NULL,
+    position_in_queue               INTEGER     NOT NULL,
+    refresh                         BOOLEAN     NOT NULL,
+    refresh_only                    BOOLEAN     NOT NULL,
+    status                          TEXT        NOT NULL,
+    replace_addrs                   TEXT[],
+    target_addrs                    TEXT[],
+    plan_status                     TEXT        NOT NULL,
+    plan_bin                        BYTEA,
+    plan_json                       BYTEA,
+    planned_resource_additions      INTEGER,
+    planned_resource_changes        INTEGER,
+    planned_resource_destructions   INTEGER,
+    apply_status                    TEXT        NOT NULL,
+    applied_resource_additions      INTEGER,
+    applied_resource_changes        INTEGER,
+    applied_resource_destructions   INTEGER,
+    workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                                    PRIMARY KEY (run_id),
+                                    UNIQUE (plan_id),
+                                    UNIQUE (apply_id)
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
-    run_id                   TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status                   TEXT        NOT NULL,
-    timestamp                TIMESTAMPTZ NOT NULL,
-                             PRIMARY KEY (run_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS applies (
-    apply_id              TEXT,
-    created_at            TIMESTAMPTZ NOT NULL,
-    updated_at            TIMESTAMPTZ NOT NULL,
-    resource_additions    INTEGER     NOT NULL,
-    resource_changes      INTEGER     NOT NULL,
-    resource_destructions INTEGER     NOT NULL,
-    status                TEXT        NOT NULL,
-    run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                          PRIMARY KEY (apply_id)
+    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        NOT NULL,
+    timestamp   TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (run_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS apply_status_timestamps (
-    apply_id        TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status          TEXT        NOT NULL,
-    timestamp       TIMESTAMPTZ NOT NULL,
-                    PRIMARY KEY (apply_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS plans (
-    plan_id               TEXT,
-    created_at            TIMESTAMPTZ NOT NULL,
-    updated_at            TIMESTAMPTZ NOT NULL,
-    resource_additions    INTEGER     NOT NULL,
-    resource_changes      INTEGER     NOT NULL,
-    resource_destructions INTEGER     NOT NULL,
-    status                TEXT        NOT NULL,
-    plan_bin              BYTEA,
-    plan_json             BYTEA,
-    run_id                TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                          PRIMARY KEY (plan_id)
+    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        NOT NULL,
+    timestamp   TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (run_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS plan_status_timestamps (
-    plan_id         TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status          TEXT        NOT NULL,
-    timestamp       TIMESTAMPTZ NOT NULL,
-                    PRIMARY KEY (plan_id, status)
+    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        NOT NULL,
+    timestamp   TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (run_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS state_versions (
@@ -187,17 +171,17 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
 );
 
 CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id  TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id INT GENERATED ALWAYS AS IDENTITY,
-    chunk    BYTEA   NOT NULL,
-             PRIMARY KEY (plan_id, chunk_id)
+    plan_id     TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
+    chunk       BYTEA   NOT NULL,
+                PRIMARY KEY (plan_id, chunk_id)
 );
 
 CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id INT GENERATED ALWAYS AS IDENTITY,
-    chunk    BYTEA   NOT NULL,
-             PRIMARY KEY (apply_id, chunk_id)
+    apply_id    TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
+    chunk       BYTEA   NOT NULL,
+                PRIMARY KEY (apply_id, chunk_id)
 );
 
 -- +goose Down
@@ -206,9 +190,7 @@ DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS plan_status_timestamps;
-DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS apply_status_timestamps;
-DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;

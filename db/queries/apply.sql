@@ -1,22 +1,6 @@
--- name: InsertApply :one
-INSERT INTO applies (
-    apply_id,
-    created_at,
-    updated_at,
-    status,
-    run_id
-) VALUES (
-    pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
-    pggen.arg('Status'),
-    pggen.arg('RunID')
-)
-RETURNING *;
-
 -- name: InsertApplyStatusTimestamp :one
 INSERT INTO apply_status_timestamps (
-    apply_id,
+    run_id,
     status,
     timestamp
 ) VALUES (
@@ -27,7 +11,7 @@ INSERT INTO apply_status_timestamps (
 RETURNING *;
 
 -- name: UpdateApplyStatus :one
-UPDATE applies
+UPDATE runs
 SET
     status = pggen.arg('status'),
     updated_at = current_timestamp
@@ -35,10 +19,10 @@ WHERE apply_id = pggen.arg('id')
 RETURNING *;
 
 -- name: UpdateApplyResources :exec
-UPDATE applies
+UPDATE runs
 SET
-    resource_additions = pggen.arg('resource_additions'),
-    resource_changes = pggen.arg('resource_changes'),
-    resource_destructions = pggen.arg('resource_destructions')
-WHERE run_id = pggen.arg('run_id')
+    applied_resource_additions = pggen.arg('applied_resource_additions'),
+    applied_resource_changes = pggen.arg('applied_resource_changes'),
+    applied_resource_destructions = pggen.arg('applied_resource_destructions')
+WHERE apply_id = pggen.arg('apply_id')
 ;

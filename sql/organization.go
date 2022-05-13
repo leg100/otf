@@ -103,6 +103,7 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	var items []*otf.Organization
 	for _, r := range result {
 		items = append(items, &otf.Organization{
+			ID:   *r.OrganizationID,
 			Name: *r.Name,
 			Timestamps: otf.Timestamps{
 				CreatedAt: r.CreatedAt,
@@ -134,8 +135,8 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 			CreatedAt: r.CreatedAt,
 			UpdatedAt: r.UpdatedAt,
 		},
-		SessionRemember: int(*r.SessionRemember),
-		SessionTimeout:  int(*r.SessionTimeout),
+		SessionRemember: int(r.SessionRemember),
+		SessionTimeout:  int(r.SessionTimeout),
 	}, nil
 }
 

@@ -3,8 +3,8 @@ INSERT INTO apply_logs (
     apply_id,
     chunk
 ) VALUES (
-    pggen.arg('ApplyID'),
-    pggen.arg('Chunk')
+    pggen.arg('apply_id'),
+    pggen.arg('chunk')
 )
 RETURNING *;
 

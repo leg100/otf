@@ -6,12 +6,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-type organizationListResult interface {
-	GetOrganizations() []Organizations
-
-	GetFullCount() *int
-}
-
 type organizationRow struct {
 	OrganizationID  string    `json:"organization_id"`
 	CreatedAt       time.Time `json:"created_at"`

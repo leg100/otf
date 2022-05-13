@@ -24,9 +24,9 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	err := db.ConfigurationVersionStore().Update(cv.ID, func(cv *otf.ConfigurationVersion, updater otf.ConfigurationVersionUpdater) error {
-		updater.UpdateStatus(context.Background(), otf.ConfigurationUploaded)
-		return nil
+	err := db.ConfigurationVersionStore().Upload(context.Background(), cv.ID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+		_, err := uploader.Upload(context.Background(), nil)
+		return err
 	})
 	require.NoError(t, err)
 

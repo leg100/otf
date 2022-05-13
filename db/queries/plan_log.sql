@@ -3,8 +3,8 @@ INSERT INTO plan_logs (
     plan_id,
     chunk
 ) VALUES (
-    pggen.arg('PlanID'),
-    pggen.arg('Chunk')
+    pggen.arg('plan_id'),
+    pggen.arg('chunk')
 )
 RETURNING *;
 

@@ -1,22 +1,6 @@
--- name: InsertPlan :one
-INSERT INTO plans (
-    plan_id,
-    created_at,
-    updated_at,
-    status,
-    run_id
-) VALUES (
-    pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
-    pggen.arg('Status'),
-    pggen.arg('RunID')
-)
-RETURNING *;
-
 -- name: InsertPlanStatusTimestamp :one
 INSERT INTO plan_status_timestamps (
-    plan_id,
+    run_id,
     status,
     timestamp
 ) VALUES (
@@ -27,7 +11,7 @@ INSERT INTO plan_status_timestamps (
 RETURNING *;
 
 -- name: UpdatePlanStatus :one
-UPDATE plans
+UPDATE runs
 SET
     status = pggen.arg('status'),
     updated_at = current_timestamp
@@ -36,33 +20,33 @@ RETURNING *;
 
 -- name: GetPlanBinByRunID :one
 SELECT plan_bin
-FROM plans
+FROM runs
 WHERE run_id = pggen.arg('run_id')
 ;
 
 -- name: GetPlanJSONByRunID :one
 SELECT plan_json
-FROM plans
+FROM runs
 WHERE run_id = pggen.arg('run_id')
 ;
 
 -- name: PutPlanBinByRunID :exec
-UPDATE plans
+UPDATE runs
 SET plan_bin = pggen.arg('plan_bin')
 WHERE run_id = pggen.arg('run_id')
 ;
 
 -- name: PutPlanJSONByRunID :exec
-UPDATE plans
+UPDATE runs
 SET plan_json = pggen.arg('plan_json')
 WHERE run_id = pggen.arg('run_id')
 ;
 
 -- name: UpdatePlanResources :exec
-UPDATE plans
+UPDATE runs
 SET
-    resource_additions = pggen.arg('resource_additions'),
-    resource_changes = pggen.arg('resource_changes'),
-    resource_destructions = pggen.arg('resource_destructions')
-WHERE run_id = pggen.arg('run_id')
+    planned_resource_additions = pggen.arg('planned_resource_additions'),
+    planned_resource_changes = pggen.arg('planned_resource_changes'),
+    planned_resource_destructions = pggen.arg('planned_resource_destructions')
+WHERE plan_id = pggen.arg('plan_id')
 ;

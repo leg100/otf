@@ -43,12 +43,18 @@ func NewSessionDB(conn *pgx.Conn, cleanupInterval time.Duration) *SessionDB {
 func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) error {
 	q := NewQuerier(db.Conn)
 
-	_, err := q.InsertSession(ctx, InsertSessionParams{
-		Token:   &session.Token,
-		Address: &session.Address,
+	result, err := q.InsertSession(ctx, InsertSessionParams{
+		Token:   session.Token,
+		Address: session.Address,
 		Expiry:  session.Expiry,
-		UserID:  &session.UserID,
+		UserID:  session.UserID,
 	})
+	if err != nil {
+		return err
+	}
+	session.CreatedAt = result.CreatedAt
+	session.UpdatedAt = result.UpdatedAt
+
 	return err
 }
 
@@ -60,7 +66,8 @@ func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash
 		return err
 	}
 
-	if _, err := q.UpdateSessionFlashByToken(ctx, data, &token); err != nil {
+	_, err = q.UpdateSessionFlashByToken(ctx, data, token)
+	if err != nil {
 		return err
 	}
 
@@ -70,7 +77,7 @@ func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash
 func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
 	q := NewQuerier(db.Conn)
 
-	data, err := q.FindSessionFlashByToken(ctx, &token)
+	data, err := q.FindSessionFlashByToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +88,7 @@ func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, err
 	}
 
 	// Set flash in DB to NULL
-	if _, err := q.UpdateSessionFlashByToken(ctx, nil, &token); err != nil {
+	if _, err := q.UpdateSessionFlashByToken(ctx, nil, token); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +106,7 @@ func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, err
 func (db SessionDB) TransferSession(ctx context.Context, token, to string) error {
 	q := NewQuerier(db.Conn)
 
-	_, err := q.UpdateSessionUserID(ctx, &to, &token)
+	_, err := q.UpdateSessionUserID(ctx, to, token)
 	return err
 }
 
@@ -107,7 +114,7 @@ func (db SessionDB) TransferSession(ctx context.Context, token, to string) error
 func (db SessionDB) DeleteSession(ctx context.Context, token string) error {
 	q := NewQuerier(db.Conn)
 
-	result, err := q.DeleteSessionByToken(ctx, &token)
+	result, err := q.DeleteSessionByToken(ctx, token)
 	if err != nil {
 		return err
 	}

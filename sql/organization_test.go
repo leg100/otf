@@ -31,7 +31,10 @@ func TestOrganization_Update(t *testing.T) {
 	org := createTestOrganization(t, db)
 
 	newName := uuid.NewString()
-	org, err := db.OrganizationStore().Update(org.Name, otf.OrganizationUpdateOptions{Name: &newName})
+	org, err := db.OrganizationStore().Update(org.Name, func(org *otf.Organization) error {
+		org.Name = newName
+		return nil
+	})
 	require.NoError(t, err)
 
 	assert.Equal(t, newName, org.Name)

@@ -53,7 +53,6 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	if err != nil {
 		return nil, databaseError(err, insertWorkspaceSQL)
 	}
-
 	ws.CreatedAt = result.CreatedAt
 	ws.UpdatedAt = result.UpdatedAt
 
@@ -97,6 +96,14 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 
 	if ws.Description != *row.Description {
 		result, err := q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+		ws.UpdatedAt = result.UpdatedAt
+	}
+
+	if ws.Name != *row.Name {
+		result, err := q.UpdateWorkspaceNameByID(ctx, ws.Name, ws.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -155,6 +162,7 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 			TerraformVersion:           *row.TerraformVersion,
 			TriggerPrefixes:            row.TriggerPrefixes,
 			WorkingDirectory:           *row.WorkingDirectory,
+			Organization:               convertOrganizationComposite(row.Organization),
 		})
 	}
 
@@ -194,7 +202,7 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	var err error
 
 	if spec.ID != nil {
-		_, err = q.DeleteWorkspaceByID(ctx, *spec.ID)
+		result, err = q.DeleteWorkspaceByID(ctx, *spec.ID)
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err = q.DeleteWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
 	} else {
