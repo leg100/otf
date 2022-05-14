@@ -23,19 +23,19 @@ func NewApplyLogDB(conn *pgx.Conn) *ApplyLogDB {
 }
 
 // PutChunk persists a log chunk to the DB.
-func (db ApplyLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk) error {
+func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chunk) error {
 	q := NewQuerier(db.Conn)
 
 	if len(chunk.Data) == 0 {
 		return nil
 	}
 
-	_, err := q.InsertApplyLogChunk(ctx, planID, chunk.Marshal())
+	_, err := q.InsertApplyLogChunk(ctx, applyID, chunk.Marshal())
 	return err
 }
 
 // GetChunk retrieves a log chunk from the DB.
-func (db ApplyLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	q := NewQuerier(db.Conn)
 
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
@@ -45,7 +45,7 @@ func (db ApplyLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetCh
 	}
 
 	chunk, err := q.FindApplyLogChunks(ctx, FindApplyLogChunksParams{
-		ApplyID: planID,
+		ApplyID: applyID,
 		Offset:  int32(opts.Offset),
 		Limit:   int32(opts.Limit),
 	})
