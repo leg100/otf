@@ -16,7 +16,8 @@ SET
     status = pggen.arg('status'),
     updated_at = current_timestamp
 WHERE plan_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at
+;
 
 -- name: GetPlanBinByRunID :one
 SELECT plan_bin
@@ -42,11 +43,16 @@ SET plan_json = pggen.arg('plan_json')
 WHERE run_id = pggen.arg('run_id')
 ;
 
--- name: UpdatePlanResources :exec
-UPDATE runs
-SET
-    planned_resource_additions = pggen.arg('planned_resource_additions'),
-    planned_resource_changes = pggen.arg('planned_resource_changes'),
-    planned_resource_destructions = pggen.arg('planned_resource_destructions')
-WHERE plan_id = pggen.arg('plan_id')
+-- name: InsertPlanResourceReport :exec
+INSERT INTO plan_resource_reports (
+    plan_id,
+    resource_additions,
+    resource_changes,
+    resource_destructions
+) VALUES (
+    pggen.arg('plan_id'),
+    pggen.arg('additions'),
+    pggen.arg('changes'),
+    pggen.arg('destructions')
+)
 ;

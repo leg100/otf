@@ -35,11 +35,8 @@ type ApplyLogStore interface {
 type Apply struct {
 	ID string `db:"apply_id"`
 
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
-	// Resources is a summary of applied resource changes
-	Resources
+	// ResourcesReport is a report of applied resource changes
+	*ResourceReport
 
 	// Status is the current status
 	Status ApplyStatus
@@ -62,9 +59,8 @@ func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
-		ID:         NewID("apply"),
-		Timestamps: NewTimestamps(),
-		RunID:      runID,
+		ID:    NewID("apply"),
+		RunID: runID,
 	}
 }
 

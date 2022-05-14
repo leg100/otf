@@ -143,12 +143,15 @@ func (db SessionDB) deleteExpired() error {
 
 func convertSession(row Sessions) *otf.Session {
 	return &otf.Session{
-		Token:      *row.GetToken(),
-		Timestamps: convertTimestamps(row),
-		Expiry:     row.GetExpiry(),
-		UserID:     *row.GetUserID(),
+		Token: *row.Token,
+		Timestamps: otf.Timestamps{
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+		},
+		Expiry: row.Expiry,
+		UserID: *row.UserID,
 		SessionData: otf.SessionData{
-			Address: *row.GetAddress(),
+			Address: *row.Address,
 		},
 	}
 }

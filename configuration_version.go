@@ -81,7 +81,7 @@ type ConfigurationVersionService interface {
 
 	// Upload handles verification and upload of the config tarball, updating
 	// the config version upon success or failure.
-	Upload(id string, uploader ConfigUploader) error
+	Upload(id string, config []byte) error
 
 	// Download retrieves the config tarball for the given config version ID.
 	Download(id string) ([]byte, error)

@@ -156,14 +156,12 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 		Timestamps: newTestTimestamps(),
 		Status:     otf.RunPending,
 		Plan: &otf.Plan{
-			ID:         otf.NewID("plan"),
-			Timestamps: newTestTimestamps(),
-			RunID:      id,
+			ID:    otf.NewID("plan"),
+			RunID: id,
 		},
 		Apply: &otf.Apply{
-			ID:         otf.NewID("apply"),
-			Timestamps: newTestTimestamps(),
-			RunID:      id,
+			ID:    otf.NewID("apply"),
+			RunID: id,
 		},
 		Workspace:            ws,
 		ConfigurationVersion: cv,

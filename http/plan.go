@@ -45,7 +45,7 @@ type PlanFileOptions struct {
 func (p *Plan) ToDomain() *otf.Plan {
 	return &otf.Plan{
 		ID: p.ID,
-		Resources: otf.Resources{
+		ResourcesReport: otf.ResourcesReport{
 			ResourceAdditions:    p.ResourceAdditions,
 			ResourceChanges:      p.ResourceChanges,
 			ResourceDestructions: p.ResourceDestructions,

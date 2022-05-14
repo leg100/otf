@@ -23,11 +23,6 @@ type InsertPlanLogChunkRow struct {
 	Chunk   []byte `json:"chunk"`
 }
 
-func (s InsertPlanLogChunkRow) GetPlanID() string { return s.PlanID }
-func (s InsertPlanLogChunkRow) GetChunkID() int32 { return s.ChunkID }
-func (s InsertPlanLogChunkRow) GetChunk() []byte { return s.Chunk }
-
-
 // InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
 func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID string, chunk []byte) (InsertPlanLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")

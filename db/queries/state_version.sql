@@ -36,7 +36,7 @@ OFFSET pggen.arg('offset')
 -- name: FindStateVersionByID :one
 SELECT
     state_versions.*,
-    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs,
+    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
 JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
@@ -47,7 +47,7 @@ GROUP BY state_versions.state_version_id
 -- name: FindStateVersionLatestByWorkspaceID :one
 SELECT
     state_versions.*,
-    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs,
+    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
 JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
 LEFT JOIN state_version_outputs USING (state_version_id)

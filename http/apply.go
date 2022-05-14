@@ -37,7 +37,7 @@ type ApplyStatusTimestamps struct {
 func (a *Apply) ToDomain() *otf.Apply {
 	return &otf.Apply{
 		ID: a.ID,
-		Resources: otf.Resources{
+		ResourcesReport: otf.ResourcesReport{
 			ResourceAdditions:    a.ResourceAdditions,
 			ResourceChanges:      a.ResourceChanges,
 			ResourceDestructions: a.ResourceDestructions,

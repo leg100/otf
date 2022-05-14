@@ -58,9 +58,12 @@ func convertStateVersion(row stateVersionRow) *otf.StateVersion {
 
 func convertStateVersionOutput(row StateVersionOutputs) *otf.StateVersionOutput {
 	svo := otf.StateVersionOutput{
-		ID:             *row.StateVersionOutputID,
-		Sensitive:      *row.Sensitive,
-		Timestamps:     convertTimestamps(row),
+		ID:        *row.StateVersionOutputID,
+		Sensitive: *row.Sensitive,
+		Timestamps: otf.Timestamps{
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+		},
 		Type:           *row.Type,
 		Value:          *row.Value,
 		Name:           *row.Name,

@@ -103,11 +103,10 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	}
 
 	if ws.Name != *row.Name {
-		result, err := q.UpdateWorkspaceNameByID(ctx, ws.Name, ws.ID)
+		ws.UpdatedAt, err = q.UpdateWorkspaceNameByID(ctx, ws.Name, ws.ID)
 		if err != nil {
 			return nil, err
 		}
-		ws.UpdatedAt = result.UpdatedAt
 	}
 
 	if ws.Locked != *row.Locked {

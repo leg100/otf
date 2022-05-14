@@ -16,13 +16,19 @@ SET
     status = pggen.arg('status'),
     updated_at = current_timestamp
 WHERE apply_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at
+;
 
--- name: UpdateApplyResources :exec
-UPDATE runs
-SET
-    applied_resource_additions = pggen.arg('applied_resource_additions'),
-    applied_resource_changes = pggen.arg('applied_resource_changes'),
-    applied_resource_destructions = pggen.arg('applied_resource_destructions')
-WHERE apply_id = pggen.arg('apply_id')
+-- name: InsertApplyResourceReport :exec
+INSERT INTO apply_resource_reports (
+    apply_id,
+    resource_additions,
+    resource_changes,
+    resource_destructions
+) VALUES (
+    pggen.arg('apply_id'),
+    pggen.arg('additions'),
+    pggen.arg('changes'),
+    pggen.arg('destructions')
+)
 ;

@@ -83,4 +83,6 @@ sql:
 		--query-glob 'db/queries/*.sql' \
 		--output-dir sql \
 		--go-type 'timestamptz=time.Time' \
-		--go-type 'bytea=[]byte'
+		--go-type 'bytea=[]byte' \
+		--go-type 'plan_resource_reports=*github.com/leg100/otf.ResourceReport' \
+		--go-type 'apply_resource_reports=*github.com/leg100/otf.ResourceReport'

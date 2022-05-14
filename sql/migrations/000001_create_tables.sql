@@ -111,13 +111,7 @@ CREATE TABLE IF NOT EXISTS runs (
     plan_status                     TEXT        NOT NULL,
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
-    planned_resource_additions      INTEGER,
-    planned_resource_changes        INTEGER,
-    planned_resource_destructions   INTEGER,
     apply_status                    TEXT        NOT NULL,
-    applied_resource_additions      INTEGER,
-    applied_resource_changes        INTEGER,
-    applied_resource_destructions   INTEGER,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                     PRIMARY KEY (run_id),
@@ -144,6 +138,20 @@ CREATE TABLE IF NOT EXISTS plan_status_timestamps (
     status      TEXT        NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (run_id, status)
+);
+
+CREATE TABLE IF NOT EXISTS plan_resource_reports (
+    plan_id                 TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    resource_additions      INTEGER NOT NULL,
+    resource_changes        INTEGER NOT NULL,
+    resource_destructions   INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS apply_resource_reports (
+    apply_id                TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    resource_additions      INTEGER NOT NULL,
+    resource_changes        INTEGER NOT NULL,
+    resource_destructions   INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS plan_logs (
@@ -189,6 +197,10 @@ DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
+DROP TABLE IF EXISTS plan_resource_reports;
+DROP TABLE IF EXISTS apply_resource_reports;
+DROP TABLE IF EXISTS plan_resources_reports;
+DROP TABLE IF EXISTS apply_resources_reports;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;

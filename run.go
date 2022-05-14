@@ -201,8 +201,8 @@ type RunStore interface {
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
 	UpdateStatus(id string, fn func(*Run) error) (*Run, error)
-	UpdatePlanResources(id string, summary Resources) error
-	UpdateApplyResources(id string, summary Resources) error
+	CreatePlanReport(planID string, report ResourceReport) error
+	CreateApplyReport(applyID string, report ResourceReport) error
 	Delete(id string) error
 }
 

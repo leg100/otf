@@ -108,7 +108,7 @@ SET
     name = pggen.arg('name'),
     updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at;
 
 -- UpdateWorkspaceAllowDestroyPlanByID updates the AllowDestroyPlan
 -- attribute on a workspace identified by id, and returns the updated row.

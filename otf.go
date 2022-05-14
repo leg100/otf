@@ -104,9 +104,9 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
-// Resources summaries updates to a workspace's resources, either proposed as
-// part of a plan, or made as a result of an apply.
-type Resources struct {
+// ResourceReport reports a summary of additions, changes, and deletions of
+// resources in a plan or an apply.
+type ResourceReport struct {
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int

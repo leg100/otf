@@ -86,6 +86,9 @@ func convertWorkspaceComposite(row Workspaces) *otf.Workspace {
 	ws.TerraformVersion = *row.TerraformVersion
 	ws.TriggerPrefixes = row.TriggerPrefixes
 	ws.WorkingDirectory = *row.WorkingDirectory
+	ws.Organization = &otf.Organization{
+		ID: *row.OrganizationID,
+	}
 
 	return &ws
 }

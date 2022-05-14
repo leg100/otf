@@ -24,19 +24,19 @@ type Querier interface {
 	// InsertApplyStatusTimestampScan scans the result of an executed InsertApplyStatusTimestampBatch query.
 	InsertApplyStatusTimestampScan(results pgx.BatchResults) (InsertApplyStatusTimestampRow, error)
 
-	UpdateApplyStatus(ctx context.Context, status string, id string) (UpdateApplyStatusRow, error)
+	UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdateApplyStatusBatch enqueues a UpdateApplyStatus query into batch to be executed
 	// later by the batch.
 	UpdateApplyStatusBatch(batch genericBatch, status string, id string)
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
-	UpdateApplyStatusScan(results pgx.BatchResults) (UpdateApplyStatusRow, error)
+	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
 
-	UpdateApplyResources(ctx context.Context, params UpdateApplyResourcesParams) (pgconn.CommandTag, error)
-	// UpdateApplyResourcesBatch enqueues a UpdateApplyResources query into batch to be executed
+	InsertApplyResourceReport(ctx context.Context, params InsertApplyResourceReportParams) (pgconn.CommandTag, error)
+	// InsertApplyResourceReportBatch enqueues a InsertApplyResourceReport query into batch to be executed
 	// later by the batch.
-	UpdateApplyResourcesBatch(batch genericBatch, params UpdateApplyResourcesParams)
-	// UpdateApplyResourcesScan scans the result of an executed UpdateApplyResourcesBatch query.
-	UpdateApplyResourcesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertApplyResourceReportBatch(batch genericBatch, params InsertApplyResourceReportParams)
+	// InsertApplyResourceReportScan scans the result of an executed InsertApplyResourceReportBatch query.
+	InsertApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
@@ -220,12 +220,12 @@ type Querier interface {
 	// InsertPlanStatusTimestampScan scans the result of an executed InsertPlanStatusTimestampBatch query.
 	InsertPlanStatusTimestampScan(results pgx.BatchResults) (InsertPlanStatusTimestampRow, error)
 
-	UpdatePlanStatus(ctx context.Context, status string, id string) (UpdatePlanStatusRow, error)
+	UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdatePlanStatusBatch enqueues a UpdatePlanStatus query into batch to be executed
 	// later by the batch.
 	UpdatePlanStatusBatch(batch genericBatch, status string, id string)
 	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
-	UpdatePlanStatusScan(results pgx.BatchResults) (UpdatePlanStatusRow, error)
+	UpdatePlanStatusScan(results pgx.BatchResults) (time.Time, error)
 
 	GetPlanBinByRunID(ctx context.Context, runID string) ([]byte, error)
 	// GetPlanBinByRunIDBatch enqueues a GetPlanBinByRunID query into batch to be executed
@@ -255,12 +255,12 @@ type Querier interface {
 	// PutPlanJSONByRunIDScan scans the result of an executed PutPlanJSONByRunIDBatch query.
 	PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdatePlanResources(ctx context.Context, params UpdatePlanResourcesParams) (pgconn.CommandTag, error)
-	// UpdatePlanResourcesBatch enqueues a UpdatePlanResources query into batch to be executed
+	InsertPlanResourceReport(ctx context.Context, params InsertPlanResourceReportParams) (pgconn.CommandTag, error)
+	// InsertPlanResourceReportBatch enqueues a InsertPlanResourceReport query into batch to be executed
 	// later by the batch.
-	UpdatePlanResourcesBatch(batch genericBatch, params UpdatePlanResourcesParams)
-	// UpdatePlanResourcesScan scans the result of an executed UpdatePlanResourcesBatch query.
-	UpdatePlanResourcesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertPlanResourceReportBatch(batch genericBatch, params InsertPlanResourceReportParams)
+	// InsertPlanResourceReportScan scans the result of an executed InsertPlanResourceReportBatch query.
+	InsertPlanResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertPlanLogChunk(ctx context.Context, planID string, chunk []byte) (InsertPlanLogChunkRow, error)
 	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
@@ -339,12 +339,12 @@ type Querier interface {
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
-	UpdateRunStatus(ctx context.Context, status string, id string) (UpdateRunStatusRow, error)
+	UpdateRunStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
 	// later by the batch.
 	UpdateRunStatusBatch(batch genericBatch, status string, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
-	UpdateRunStatusScan(results pgx.BatchResults) (UpdateRunStatusRow, error)
+	UpdateRunStatusScan(results pgx.BatchResults) (time.Time, error)
 
 	DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
@@ -593,12 +593,12 @@ type Querier interface {
 	// identifying the workspace with its id, and returns the
 	// updated row.
 	// 
-	UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (UpdateWorkspaceNameByIDRow, error)
+	UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (time.Time, error)
 	// UpdateWorkspaceNameByIDBatch enqueues a UpdateWorkspaceNameByID query into batch to be executed
 	// later by the batch.
 	UpdateWorkspaceNameByIDBatch(batch genericBatch, name string, id string)
 	// UpdateWorkspaceNameByIDScan scans the result of an executed UpdateWorkspaceNameByIDBatch query.
-	UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (UpdateWorkspaceNameByIDRow, error)
+	UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (time.Time, error)
 
 	// UpdateWorkspaceAllowDestroyPlanByID updates the AllowDestroyPlan
 	// attribute on a workspace identified by id, and returns the updated row.
@@ -725,8 +725,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateApplyStatusSQL, updateApplyStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateApplyStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateApplyResourcesSQL, updateApplyResourcesSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateApplyResources': %w", err)
+	if _, err := p.Prepare(ctx, insertApplyResourceReportSQL, insertApplyResourceReportSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertApplyResourceReport': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertApplyLogChunkSQL, insertApplyLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertApplyLogChunk': %w", err)
@@ -812,8 +812,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, putPlanJSONByRunIDSQL, putPlanJSONByRunIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'PutPlanJSONByRunID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updatePlanResourcesSQL, updatePlanResourcesSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdatePlanResources': %w", err)
+	if _, err := p.Prepare(ctx, insertPlanResourceReportSQL, insertPlanResourceReportSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertPlanResourceReport': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertPlanLogChunkSQL, insertPlanLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPlanLogChunk': %w", err)
@@ -978,22 +978,12 @@ type ApplyStatusTimestamps struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s ApplyStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s ApplyStatusTimestamps) GetStatus() *string { return s.Status }
-func (s ApplyStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
-
 // ConfigurationVersionStatusTimestamps represents the Postgres composite type "configuration_version_status_timestamps".
 type ConfigurationVersionStatusTimestamps struct {
 	ConfigurationVersionID *string   `json:"configuration_version_id"`
 	Status                 *string   `json:"status"`
 	Timestamp              time.Time `json:"timestamp"`
 }
-
-func (s ConfigurationVersionStatusTimestamps) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
-func (s ConfigurationVersionStatusTimestamps) GetStatus() *string { return s.Status }
-func (s ConfigurationVersionStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // ConfigurationVersions represents the Postgres composite type "configuration_versions".
 type ConfigurationVersions struct {
@@ -1008,17 +998,6 @@ type ConfigurationVersions struct {
 	WorkspaceID            *string   `json:"workspace_id"`
 }
 
-func (s ConfigurationVersions) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
-func (s ConfigurationVersions) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s ConfigurationVersions) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s ConfigurationVersions) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
-func (s ConfigurationVersions) GetSource() *string { return s.Source }
-func (s ConfigurationVersions) GetSpeculative() *bool { return s.Speculative }
-func (s ConfigurationVersions) GetStatus() *string { return s.Status }
-func (s ConfigurationVersions) GetConfig() []byte { return s.Config }
-func (s ConfigurationVersions) GetWorkspaceID() *string { return s.WorkspaceID }
-
-
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
 	OrganizationID  *string   `json:"organization_id"`
@@ -1029,14 +1008,6 @@ type Organizations struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
 
-func (s Organizations) GetOrganizationID() *string { return s.OrganizationID }
-func (s Organizations) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Organizations) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Organizations) GetName() *string { return s.Name }
-func (s Organizations) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s Organizations) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
-
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
 type PlanStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
@@ -1044,22 +1015,12 @@ type PlanStatusTimestamps struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s PlanStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s PlanStatusTimestamps) GetStatus() *string { return s.Status }
-func (s PlanStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
-
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
 type RunStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
 	Status    *string   `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
-
-func (s RunStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s RunStatusTimestamps) GetStatus() *string { return s.Status }
-func (s RunStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
@@ -1071,15 +1032,6 @@ type Sessions struct {
 	Expiry    time.Time `json:"expiry"`
 	UserID    *string   `json:"user_id"`
 }
-
-func (s Sessions) GetToken() *string { return s.Token }
-func (s Sessions) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Sessions) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Sessions) GetAddress() *string { return s.Address }
-func (s Sessions) GetFlash() []byte { return s.Flash }
-func (s Sessions) GetExpiry() time.Time { return s.Expiry }
-func (s Sessions) GetUserID() *string { return s.UserID }
-
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
@@ -1093,16 +1045,6 @@ type StateVersionOutputs struct {
 	StateVersionID       *string   `json:"state_version_id"`
 }
 
-func (s StateVersionOutputs) GetStateVersionOutputID() *string { return s.StateVersionOutputID }
-func (s StateVersionOutputs) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s StateVersionOutputs) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s StateVersionOutputs) GetName() *string { return s.Name }
-func (s StateVersionOutputs) GetSensitive() *bool { return s.Sensitive }
-func (s StateVersionOutputs) GetType() *string { return s.Type }
-func (s StateVersionOutputs) GetValue() *string { return s.Value }
-func (s StateVersionOutputs) GetStateVersionID() *string { return s.StateVersionID }
-
-
 // Tokens represents the Postgres composite type "tokens".
 type Tokens struct {
 	TokenID     *string   `json:"token_id"`
@@ -1112,14 +1054,6 @@ type Tokens struct {
 	Description *string   `json:"description"`
 	UserID      *string   `json:"user_id"`
 }
-
-func (s Tokens) GetTokenID() *string { return s.TokenID }
-func (s Tokens) GetToken() *string { return s.Token }
-func (s Tokens) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Tokens) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Tokens) GetDescription() *string { return s.Description }
-func (s Tokens) GetUserID() *string { return s.UserID }
-
 
 // Workspaces represents the Postgres composite type "workspaces".
 type Workspaces struct {
@@ -1147,31 +1081,6 @@ type Workspaces struct {
 	WorkingDirectory           *string   `json:"working_directory"`
 	OrganizationID             *string   `json:"organization_id"`
 }
-
-func (s Workspaces) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s Workspaces) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Workspaces) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Workspaces) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s Workspaces) GetAutoApply() *bool { return s.AutoApply }
-func (s Workspaces) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s Workspaces) GetDescription() *string { return s.Description }
-func (s Workspaces) GetEnvironment() *string { return s.Environment }
-func (s Workspaces) GetExecutionMode() *string { return s.ExecutionMode }
-func (s Workspaces) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s Workspaces) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s Workspaces) GetLocked() *bool { return s.Locked }
-func (s Workspaces) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s Workspaces) GetName() *string { return s.Name }
-func (s Workspaces) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s Workspaces) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s Workspaces) GetSourceName() *string { return s.SourceName }
-func (s Workspaces) GetSourceUrl() *string { return s.SourceUrl }
-func (s Workspaces) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s Workspaces) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s Workspaces) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s Workspaces) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s Workspaces) GetOrganizationID() *string { return s.OrganizationID }
-
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
 type typeResolver struct {
@@ -1475,11 +1384,6 @@ type InsertApplyStatusTimestampRow struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s InsertApplyStatusTimestampRow) GetRunID() string { return s.RunID }
-func (s InsertApplyStatusTimestampRow) GetStatus() string { return s.Status }
-func (s InsertApplyStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
-
-
 // InsertApplyStatusTimestamp implements Querier.InsertApplyStatusTimestamp.
 func (q *DBQuerier) InsertApplyStatusTimestamp(ctx context.Context, id string, status string) (InsertApplyStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyStatusTimestamp")
@@ -1511,67 +1415,15 @@ SET
     status = $1,
     updated_at = current_timestamp
 WHERE apply_id = $2
-RETURNING *;`
-
-type UpdateApplyStatusRow struct {
-	RunID                       string    `json:"run_id"`
-	PlanID                      string    `json:"plan_id"`
-	ApplyID                     string    `json:"apply_id"`
-	CreatedAt                   time.Time `json:"created_at"`
-	UpdatedAt                   time.Time `json:"updated_at"`
-	IsDestroy                   bool      `json:"is_destroy"`
-	PositionInQueue             int32     `json:"position_in_queue"`
-	Refresh                     bool      `json:"refresh"`
-	RefreshOnly                 bool      `json:"refresh_only"`
-	Status                      string    `json:"status"`
-	ReplaceAddrs                []string  `json:"replace_addrs"`
-	TargetAddrs                 []string  `json:"target_addrs"`
-	PlanStatus                  string    `json:"plan_status"`
-	PlanBin                     []byte    `json:"plan_bin"`
-	PlanJson                    []byte    `json:"plan_json"`
-	PlannedResourceAdditions    *int32    `json:"planned_resource_additions"`
-	PlannedResourceChanges      *int32    `json:"planned_resource_changes"`
-	PlannedResourceDestructions *int32    `json:"planned_resource_destructions"`
-	ApplyStatus                 string    `json:"apply_status"`
-	AppliedResourceAdditions    *int32    `json:"applied_resource_additions"`
-	AppliedResourceChanges      *int32    `json:"applied_resource_changes"`
-	AppliedResourceDestructions *int32    `json:"applied_resource_destructions"`
-	WorkspaceID                 string    `json:"workspace_id"`
-	ConfigurationVersionID      string    `json:"configuration_version_id"`
-}
-
-func (s UpdateApplyStatusRow) GetRunID() string { return s.RunID }
-func (s UpdateApplyStatusRow) GetPlanID() string { return s.PlanID }
-func (s UpdateApplyStatusRow) GetApplyID() string { return s.ApplyID }
-func (s UpdateApplyStatusRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateApplyStatusRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateApplyStatusRow) GetIsDestroy() bool { return s.IsDestroy }
-func (s UpdateApplyStatusRow) GetPositionInQueue() int32 { return s.PositionInQueue }
-func (s UpdateApplyStatusRow) GetRefresh() bool { return s.Refresh }
-func (s UpdateApplyStatusRow) GetRefreshOnly() bool { return s.RefreshOnly }
-func (s UpdateApplyStatusRow) GetStatus() string { return s.Status }
-func (s UpdateApplyStatusRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s UpdateApplyStatusRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s UpdateApplyStatusRow) GetPlanStatus() string { return s.PlanStatus }
-func (s UpdateApplyStatusRow) GetPlanBin() []byte { return s.PlanBin }
-func (s UpdateApplyStatusRow) GetPlanJson() []byte { return s.PlanJson }
-func (s UpdateApplyStatusRow) GetPlannedResourceAdditions() *int32 { return s.PlannedResourceAdditions }
-func (s UpdateApplyStatusRow) GetPlannedResourceChanges() *int32 { return s.PlannedResourceChanges }
-func (s UpdateApplyStatusRow) GetPlannedResourceDestructions() *int32 { return s.PlannedResourceDestructions }
-func (s UpdateApplyStatusRow) GetApplyStatus() string { return s.ApplyStatus }
-func (s UpdateApplyStatusRow) GetAppliedResourceAdditions() *int32 { return s.AppliedResourceAdditions }
-func (s UpdateApplyStatusRow) GetAppliedResourceChanges() *int32 { return s.AppliedResourceChanges }
-func (s UpdateApplyStatusRow) GetAppliedResourceDestructions() *int32 { return s.AppliedResourceDestructions }
-func (s UpdateApplyStatusRow) GetWorkspaceID() string { return s.WorkspaceID }
-func (s UpdateApplyStatusRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
-
+RETURNING updated_at
+;`
 
 // UpdateApplyStatus implements Querier.UpdateApplyStatus.
-func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (UpdateApplyStatusRow, error) {
+func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyStatus")
 	row := q.conn.QueryRow(ctx, updateApplyStatusSQL, status, id)
-	var item UpdateApplyStatusRow
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanStatus, &item.PlanBin, &item.PlanJson, &item.PlannedResourceAdditions, &item.PlannedResourceChanges, &item.PlannedResourceDestructions, &item.ApplyStatus, &item.AppliedResourceAdditions, &item.AppliedResourceChanges, &item.AppliedResourceDestructions, &item.WorkspaceID, &item.ConfigurationVersionID); err != nil {
+	var item time.Time
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateApplyStatus: %w", err)
 	}
 	return item, nil
@@ -1583,50 +1435,55 @@ func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status string, id
 }
 
 // UpdateApplyStatusScan implements Querier.UpdateApplyStatusScan.
-func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (UpdateApplyStatusRow, error) {
+func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error) {
 	row := results.QueryRow()
-	var item UpdateApplyStatusRow
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanStatus, &item.PlanBin, &item.PlanJson, &item.PlannedResourceAdditions, &item.PlannedResourceChanges, &item.PlannedResourceDestructions, &item.ApplyStatus, &item.AppliedResourceAdditions, &item.AppliedResourceChanges, &item.AppliedResourceDestructions, &item.WorkspaceID, &item.ConfigurationVersionID); err != nil {
+	var item time.Time
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateApplyStatusBatch row: %w", err)
 	}
 	return item, nil
 }
 
-const updateApplyResourcesSQL = `UPDATE runs
-SET
-    applied_resource_additions = $1,
-    applied_resource_changes = $2,
-    applied_resource_destructions = $3
-WHERE apply_id = $4
+const insertApplyResourceReportSQL = `INSERT INTO apply_resource_reports (
+    apply_id,
+    resource_additions,
+    resource_changes,
+    resource_destructions
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+)
 ;`
 
-type UpdateApplyResourcesParams struct {
-	AppliedResourceAdditions    int32
-	AppliedResourceChanges      int32
-	AppliedResourceDestructions int32
-	ApplyID                     string
+type InsertApplyResourceReportParams struct {
+	ApplyID      string
+	Additions    int32
+	Changes      int32
+	Destructions int32
 }
 
-// UpdateApplyResources implements Querier.UpdateApplyResources.
-func (q *DBQuerier) UpdateApplyResources(ctx context.Context, params UpdateApplyResourcesParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyResources")
-	cmdTag, err := q.conn.Exec(ctx, updateApplyResourcesSQL, params.AppliedResourceAdditions, params.AppliedResourceChanges, params.AppliedResourceDestructions, params.ApplyID)
+// InsertApplyResourceReport implements Querier.InsertApplyResourceReport.
+func (q *DBQuerier) InsertApplyResourceReport(ctx context.Context, params InsertApplyResourceReportParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyResourceReport")
+	cmdTag, err := q.conn.Exec(ctx, insertApplyResourceReportSQL, params.ApplyID, params.Additions, params.Changes, params.Destructions)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateApplyResources: %w", err)
+		return cmdTag, fmt.Errorf("exec query InsertApplyResourceReport: %w", err)
 	}
 	return cmdTag, err
 }
 
-// UpdateApplyResourcesBatch implements Querier.UpdateApplyResourcesBatch.
-func (q *DBQuerier) UpdateApplyResourcesBatch(batch genericBatch, params UpdateApplyResourcesParams) {
-	batch.Queue(updateApplyResourcesSQL, params.AppliedResourceAdditions, params.AppliedResourceChanges, params.AppliedResourceDestructions, params.ApplyID)
+// InsertApplyResourceReportBatch implements Querier.InsertApplyResourceReportBatch.
+func (q *DBQuerier) InsertApplyResourceReportBatch(batch genericBatch, params InsertApplyResourceReportParams) {
+	batch.Queue(insertApplyResourceReportSQL, params.ApplyID, params.Additions, params.Changes, params.Destructions)
 }
 
-// UpdateApplyResourcesScan implements Querier.UpdateApplyResourcesScan.
-func (q *DBQuerier) UpdateApplyResourcesScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// InsertApplyResourceReportScan implements Querier.InsertApplyResourceReportScan.
+func (q *DBQuerier) InsertApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateApplyResourcesBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec InsertApplyResourceReportBatch: %w", err)
 	}
 	return cmdTag, err
 }

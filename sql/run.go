@@ -91,7 +91,35 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	if err != nil {
 		return nil, err
 	}
-	run := convertRun(runResult(result))
+	run := &otf.Run{
+		ID: *result.RunID,
+		Timestamps: otf.Timestamps{
+			CreatedAt: result.CreatedAt,
+			UpdatedAt: result.UpdatedAt,
+		},
+		IsDestroy:       *result.IsDestroy,
+		PositionInQueue: int(*result.PositionInQueue),
+		Refresh:         *result.Refresh,
+		RefreshOnly:     *result.RefreshOnly,
+		Status:          otf.RunStatus(*result.Status),
+		ReplaceAddrs:    result.ReplaceAddrs,
+		TargetAddrs:     result.TargetAddrs,
+		Apply: &otf.Apply{
+			ID:               *result.ApplyID,
+			RunID:            *result.RunID,
+			Status:           otf.ApplyStatus(*result.ApplyStatus),
+			StatusTimestamps: convertApplyStatusTimestamps(result.ApplyStatusTimestamps),
+		},
+		Plan: &otf.Plan{
+			ID:               *result.PlanID,
+			RunID:            *result.RunID,
+			Status:           otf.PlanStatus(*result.PlanStatus),
+			StatusTimestamps: convertPlanStatusTimestamps(result.PlanStatusTimestamps),
+		},
+		ConfigurationVersion: convertConfigurationVersionComposite(result.ConfigurationVersion),
+		Workspace:            convertWorkspaceComposite(result.Workspace),
+		StatusTimestamps:     convertRunStatusTimestamps(result.RunStatusTimestamps),
+	}
 
 	// Make copies of statuses before update
 	runStatus := run.Status
@@ -103,11 +131,11 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	}
 
 	if run.Status != runStatus {
-		result, err := q.UpdateRunStatus(ctx, string(run.Status), run.ID)
+		var err error
+		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status), run.ID)
 		if err != nil {
 			return nil, err
 		}
-		run.UpdatedAt = result.UpdatedAt
 
 		if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
 			return nil, err
@@ -115,11 +143,11 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	}
 
 	if run.Plan.Status != planStatus {
-		result, err := q.UpdatePlanStatus(ctx, string(run.Plan.Status), run.Plan.ID)
+		var err error
+		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status), run.Plan.ID)
 		if err != nil {
 			return nil, err
 		}
-		run.UpdatedAt = result.UpdatedAt
 
 		if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
 			return nil, err
@@ -127,11 +155,11 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	}
 
 	if run.Apply.Status != applyStatus {
-		result, err := q.UpdateApplyStatus(ctx, string(run.Apply.Status), run.Apply.ID)
+		var err error
+		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status), run.Apply.ID)
 		if err != nil {
 			return nil, err
 		}
-		run.UpdatedAt = result.UpdatedAt
 
 		if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
 			return nil, err
@@ -141,28 +169,28 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	return run, tx.Commit(ctx)
 }
 
-func (db RunDB) UpdatePlanResources(planID string, summary otf.Resources) error {
+func (db RunDB) CreatePlanReport(planID string, summary otf.ResourceReport) error {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	_, err := q.UpdatePlanResources(ctx, UpdatePlanResourcesParams{
-		PlanID:                      planID,
-		PlannedResourceAdditions:    int32(summary.ResourceAdditions),
-		PlannedResourceChanges:      int32(summary.ResourceChanges),
-		PlannedResourceDestructions: int32(summary.ResourceDestructions),
+	_, err := q.InsertPlanResourceReport(ctx, InsertPlanResourceReportParams{
+		PlanID:       planID,
+		Additions:    int32(summary.ResourceAdditions),
+		Changes:      int32(summary.ResourceChanges),
+		Destructions: int32(summary.ResourceDestructions),
 	})
 	return err
 }
 
-func (db RunDB) UpdateApplyResources(applyID string, summary otf.Resources) error {
+func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) error {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	_, err := q.UpdateApplyResources(ctx, UpdateApplyResourcesParams{
-		ApplyID:                     applyID,
-		AppliedResourceAdditions:    int32(summary.ResourceAdditions),
-		AppliedResourceChanges:      int32(summary.ResourceChanges),
-		AppliedResourceDestructions: int32(summary.ResourceDestructions),
+	_, err := q.InsertApplyResourceReport(ctx, InsertApplyResourceReportParams{
+		ApplyID:      applyID,
+		Additions:    int32(summary.ResourceAdditions),
+		Changes:      int32(summary.ResourceChanges),
+		Destructions: int32(summary.ResourceDestructions),
 	})
 	return err
 }

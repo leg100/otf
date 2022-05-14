@@ -29,7 +29,7 @@ func (f PlanFormat) SQLColumn() string {
 
 // PlanFile represents the schema of a plan file
 type PlanFile struct {
-	ResourcesChanges []ResourceChange `json:"resource_changes"`
+	ResourceChanges []ResourceChange `json:"resource_changes"`
 }
 
 // ResourceChange represents a proposed change to a resource in a plan file
@@ -45,8 +45,8 @@ type Change struct {
 type ChangeAction string
 
 // Changes provides a tally of the types of changes proposed in the plan file.
-func (pf *PlanFile) Changes() (tally Resources) {
-	for _, rc := range pf.ResourcesChanges {
+func (pf *PlanFile) Changes() (tally ResourceReport) {
+	for _, rc := range pf.ResourceChanges {
 		for _, action := range rc.Change.Actions {
 			switch action {
 			case CreateAction:
@@ -64,10 +64,10 @@ func (pf *PlanFile) Changes() (tally Resources) {
 
 // CalculatePlanSummary calculates a summary of planned changes from a JSON
 // representation of a plan file.
-func CalculatePlanSummary(planJSON []byte) (Resources, error) {
+func CalculatePlanSummary(planJSON []byte) (ResourceReport, error) {
 	planFile := PlanFile{}
 	if err := json.Unmarshal(planJSON, &planFile); err != nil {
-		return Resources{}, err
+		return ResourceReport{}, err
 	}
 
 	// Parse plan output

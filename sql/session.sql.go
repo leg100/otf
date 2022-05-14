@@ -47,15 +47,6 @@ type InsertSessionRow struct {
 	UserID    string    `json:"user_id"`
 }
 
-func (s InsertSessionRow) GetToken() string { return s.Token }
-func (s InsertSessionRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s InsertSessionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertSessionRow) GetAddress() string { return s.Address }
-func (s InsertSessionRow) GetFlash() []byte { return s.Flash }
-func (s InsertSessionRow) GetExpiry() time.Time { return s.Expiry }
-func (s InsertSessionRow) GetUserID() string { return s.UserID }
-
-
 // InsertSession implements Querier.InsertSession.
 func (q *DBQuerier) InsertSession(ctx context.Context, params InsertSessionParams) (InsertSessionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertSession")
@@ -158,15 +149,6 @@ type UpdateSessionUserIDRow struct {
 	UserID    string    `json:"user_id"`
 }
 
-func (s UpdateSessionUserIDRow) GetToken() string { return s.Token }
-func (s UpdateSessionUserIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateSessionUserIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionUserIDRow) GetAddress() string { return s.Address }
-func (s UpdateSessionUserIDRow) GetFlash() []byte { return s.Flash }
-func (s UpdateSessionUserIDRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionUserIDRow) GetUserID() string { return s.UserID }
-
-
 // UpdateSessionUserID implements Querier.UpdateSessionUserID.
 func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID string, token string) (UpdateSessionUserIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionUserID")
@@ -210,15 +192,6 @@ type UpdateSessionExpiryRow struct {
 	UserID    string    `json:"user_id"`
 }
 
-func (s UpdateSessionExpiryRow) GetToken() string { return s.Token }
-func (s UpdateSessionExpiryRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateSessionExpiryRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionExpiryRow) GetAddress() string { return s.Address }
-func (s UpdateSessionExpiryRow) GetFlash() []byte { return s.Flash }
-func (s UpdateSessionExpiryRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionExpiryRow) GetUserID() string { return s.UserID }
-
-
 // UpdateSessionExpiry implements Querier.UpdateSessionExpiry.
 func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token string) (UpdateSessionExpiryRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionExpiry")
@@ -261,15 +234,6 @@ type UpdateSessionFlashRow struct {
 	Expiry    time.Time `json:"expiry"`
 	UserID    string    `json:"user_id"`
 }
-
-func (s UpdateSessionFlashRow) GetToken() string { return s.Token }
-func (s UpdateSessionFlashRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateSessionFlashRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateSessionFlashRow) GetAddress() string { return s.Address }
-func (s UpdateSessionFlashRow) GetFlash() []byte { return s.Flash }
-func (s UpdateSessionFlashRow) GetExpiry() time.Time { return s.Expiry }
-func (s UpdateSessionFlashRow) GetUserID() string { return s.UserID }
-
 
 // UpdateSessionFlash implements Querier.UpdateSessionFlash.
 func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token string) (UpdateSessionFlashRow, error) {

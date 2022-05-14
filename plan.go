@@ -30,11 +30,8 @@ type PlanStatus string
 type Plan struct {
 	ID string `db:"plan_id"`
 
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
-	// Resources is a summary of planned resource changes
-	Resources
+	// Resources is a report of planned resource changes
+	*ResourceReport
 
 	// Status is the current status
 	Status PlanStatus
@@ -67,9 +64,8 @@ type PlanLogStore interface {
 
 func newPlan(runID string) *Plan {
 	return &Plan{
-		ID:         NewID("plan"),
-		Timestamps: NewTimestamps(),
-		RunID:      runID,
+		ID:    NewID("plan"),
+		RunID: runID,
 		// new plans always start off in pending state
 		Status: PlanPending,
 	}

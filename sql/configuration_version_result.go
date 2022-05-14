@@ -47,6 +47,8 @@ func convertConfigurationVersionComposite(result ConfigurationVersions) *otf.Con
 	cv.Source = otf.ConfigurationSource(*result.Source)
 	cv.AutoQueueRuns = *result.AutoQueueRuns
 	cv.Speculative = *result.Speculative
-	cv.Workspace.ID = *result.WorkspaceID
+	cv.Workspace = &otf.Workspace{
+		ID: *result.WorkspaceID,
+	}
 	return &cv
 }

@@ -17,14 +17,14 @@ type organizationRow struct {
 
 func convertOrganizationComposite(row Organizations) *otf.Organization {
 	organization := otf.Organization{
-		ID:   *row.GetOrganizationID(),
-		Name: *row.GetName(),
+		ID:   *row.OrganizationID,
+		Name: *row.Name,
 		Timestamps: otf.Timestamps{
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 		},
-		SessionRemember: int(*row.GetSessionRemember()),
-		SessionTimeout:  int(*row.GetSessionTimeout()),
+		SessionRemember: int(*row.SessionRemember),
+		SessionTimeout:  int(*row.SessionTimeout),
 	}
 
 	return &organization

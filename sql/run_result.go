@@ -7,61 +7,57 @@ import (
 )
 
 type runResult struct {
-	RunID                       *string                 `json:"run_id"`
-	CreatedAt                   time.Time               `json:"created_at"`
-	UpdatedAt                   time.Time               `json:"updated_at"`
-	IsDestroy                   *bool                   `json:"is_destroy"`
-	PositionInQueue             *int32                  `json:"position_in_queue"`
-	Refresh                     *bool                   `json:"refresh"`
-	RefreshOnly                 *bool                   `json:"refresh_only"`
-	Status                      *string                 `json:"status"`
-	PlanStatus                  *string                 `json:"plan_status"`
-	PlannedResourceAdditions    *int32                  `json:"planned_resource_additions"`
-	PlannedResourceChanges      *int32                  `json:"planned_resource_changes"`
-	PlannedResourceDestructions *int32                  `json:"planned_resource_destructions"`
-	ApplyStatus                 *string                 `json:"apply_status"`
-	AppliedResourceAdditions    *int32                  `json:"applied_resource_additions"`
-	AppliedResourceChanges      *int32                  `json:"applied_resource_changes"`
-	AppliedResourceDestructions *int32                  `json:"applied_resource_destructions"`
-	ReplaceAddrs                []string                `json:"replace_addrs"`
-	TargetAddrs                 []string                `json:"target_addrs"`
-	ConfigurationVersion        ConfigurationVersions   `json:"configuration_version"`
-	Workspace                   Workspaces              `json:"workspace"`
-	RunStatusTimestamps         []RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps        []PlanStatusTimestamps  `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps       []ApplyStatusTimestamps `json:"apply_status_timestamps"`
+	RunID                 *string                 `json:"run_id"`
+	PlanID                *string                 `json:"plan_id"`
+	ApplyID               *string                 `json:"apply_id"`
+	CreatedAt             time.Time               `json:"created_at"`
+	UpdatedAt             time.Time               `json:"updated_at"`
+	IsDestroy             *bool                   `json:"is_destroy"`
+	PositionInQueue       *int32                  `json:"position_in_queue"`
+	Refresh               *bool                   `json:"refresh"`
+	RefreshOnly           *bool                   `json:"refresh_only"`
+	Status                *string                 `json:"status"`
+	PlanStatus            *string                 `json:"plan_status"`
+	ApplyStatus           *string                 `json:"apply_status"`
+	ReplaceAddrs          []string                `json:"replace_addrs"`
+	TargetAddrs           []string                `json:"target_addrs"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
+	Workspace             Workspaces              `json:"workspace"`
+	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
+	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
 
 type runListResult struct {
-	RunID                       *string                 `json:"run_id"`
-	CreatedAt                   time.Time               `json:"created_at"`
-	UpdatedAt                   time.Time               `json:"updated_at"`
-	IsDestroy                   *bool                   `json:"is_destroy"`
-	PositionInQueue             *int32                  `json:"position_in_queue"`
-	Refresh                     *bool                   `json:"refresh"`
-	RefreshOnly                 *bool                   `json:"refresh_only"`
-	Status                      *string                 `json:"status"`
-	PlanStatus                  *string                 `json:"plan_status"`
-	PlannedResourceAdditions    *int32                  `json:"planned_resource_additions"`
-	PlannedResourceChanges      *int32                  `json:"planned_resource_changes"`
-	PlannedResourceDestructions *int32                  `json:"planned_resource_destructions"`
-	ApplyStatus                 *string                 `json:"apply_status"`
-	AppliedResourceAdditions    *int32                  `json:"applied_resource_additions"`
-	AppliedResourceChanges      *int32                  `json:"applied_resource_changes"`
-	AppliedResourceDestructions *int32                  `json:"applied_resource_destructions"`
-	ReplaceAddrs                []string                `json:"replace_addrs"`
-	TargetAddrs                 []string                `json:"target_addrs"`
-	ConfigurationVersion        ConfigurationVersions   `json:"configuration_version"`
-	Workspace                   Workspaces              `json:"workspace"`
-	RunStatusTimestamps         []RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps        []PlanStatusTimestamps  `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps       []ApplyStatusTimestamps `json:"apply_status_timestamps"`
-	FullCount                   *int                    `json:"full_count"`
+	RunID                 *string                 `json:"run_id"`
+	PlanID                *string                 `json:"plan_id"`
+	ApplyID               *string                 `json:"apply_id"`
+	CreatedAt             time.Time               `json:"created_at"`
+	UpdatedAt             time.Time               `json:"updated_at"`
+	IsDestroy             *bool                   `json:"is_destroy"`
+	PositionInQueue       *int32                  `json:"position_in_queue"`
+	Refresh               *bool                   `json:"refresh"`
+	RefreshOnly           *bool                   `json:"refresh_only"`
+	Status                *string                 `json:"status"`
+	PlanStatus            *string                 `json:"plan_status"`
+	ApplyStatus           *string                 `json:"apply_status"`
+	ReplaceAddrs          []string                `json:"replace_addrs"`
+	TargetAddrs           []string                `json:"target_addrs"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
+	Workspace             Workspaces              `json:"workspace"`
+	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
+	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
+	FullCount             *int                    `json:"full_count"`
 }
 
 func convertRunList(results []runListResult) (items []*otf.Run) {
 	for _, r := range results {
-		items = append(items, &otf.Run{
+		run := otf.Run{
 			ID: *r.RunID,
 			Timestamps: otf.Timestamps{
 				CreatedAt: r.CreatedAt,
@@ -75,66 +71,64 @@ func convertRunList(results []runListResult) (items []*otf.Run) {
 			ReplaceAddrs:    r.ReplaceAddrs,
 			TargetAddrs:     r.TargetAddrs,
 			Apply: &otf.Apply{
+				ID:               *r.ApplyID,
+				RunID:            *r.RunID,
 				Status:           otf.ApplyStatus(*r.ApplyStatus),
 				StatusTimestamps: convertApplyStatusTimestamps(r.ApplyStatusTimestamps),
-				Resources: otf.Resources{
-					ResourceAdditions: int(*r.AppliedResourceAdditions),
-				},
 			},
 			Plan: &otf.Plan{
+				ID:               *r.PlanID,
+				RunID:            *r.RunID,
 				Status:           otf.PlanStatus(*r.PlanStatus),
 				StatusTimestamps: convertPlanStatusTimestamps(r.PlanStatusTimestamps),
-				Resources: otf.Resources{
-					ResourceAdditions: int(*r.PlannedResourceAdditions),
-				},
 			},
 			ConfigurationVersion: convertConfigurationVersionComposite(r.ConfigurationVersion),
 			Workspace:            convertWorkspaceComposite(r.Workspace),
 			StatusTimestamps:     convertRunStatusTimestamps(r.RunStatusTimestamps),
-		})
+		}
+		items = append(items, &run)
 	}
 
 	return items
 }
-func convertRun(result runResult) *otf.Run {
+
+func convertRun(r runResult) *otf.Run {
 	return &otf.Run{
-		ID: *result.RunID,
+		ID: *r.RunID,
 		Timestamps: otf.Timestamps{
-			CreatedAt: result.CreatedAt,
-			UpdatedAt: result.UpdatedAt,
+			CreatedAt: r.CreatedAt,
+			UpdatedAt: r.UpdatedAt,
 		},
-		IsDestroy:       *result.IsDestroy,
-		PositionInQueue: int(*result.PositionInQueue),
-		Refresh:         *result.Refresh,
-		RefreshOnly:     *result.RefreshOnly,
-		Status:          otf.RunStatus(*result.Status),
-		ReplaceAddrs:    result.ReplaceAddrs,
-		TargetAddrs:     result.TargetAddrs,
+		IsDestroy:       *r.IsDestroy,
+		PositionInQueue: int(*r.PositionInQueue),
+		Refresh:         *r.Refresh,
+		RefreshOnly:     *r.RefreshOnly,
+		Status:          otf.RunStatus(*r.Status),
+		ReplaceAddrs:    r.ReplaceAddrs,
+		TargetAddrs:     r.TargetAddrs,
 		Apply: &otf.Apply{
-			Status:           otf.ApplyStatus(*result.ApplyStatus),
-			StatusTimestamps: convertApplyStatusTimestamps(result.ApplyStatusTimestamps),
-			Resources: otf.Resources{
-				ResourceAdditions: int(*result.AppliedResourceAdditions),
-			},
+			RunID:            *r.RunID,
+			ID:               *r.ApplyID,
+			Status:           otf.ApplyStatus(*r.ApplyStatus),
+			StatusTimestamps: convertApplyStatusTimestamps(r.ApplyStatusTimestamps),
 		},
 		Plan: &otf.Plan{
-			Status:           otf.PlanStatus(*result.PlanStatus),
-			StatusTimestamps: convertPlanStatusTimestamps(result.PlanStatusTimestamps),
-			Resources: otf.Resources{
-				ResourceAdditions: int(*result.PlannedResourceAdditions),
-			},
+			ID:               *r.PlanID,
+			RunID:            *r.RunID,
+			Status:           otf.PlanStatus(*r.PlanStatus),
+			StatusTimestamps: convertPlanStatusTimestamps(r.PlanStatusTimestamps),
 		},
-		ConfigurationVersion: convertConfigurationVersionComposite(result.ConfigurationVersion),
-		Workspace:            convertWorkspaceComposite(result.Workspace),
-		StatusTimestamps:     convertRunStatusTimestamps(result.RunStatusTimestamps),
+		ConfigurationVersion: convertConfigurationVersionComposite(r.ConfigurationVersion),
+		Workspace:            convertWorkspaceComposite(r.Workspace),
+		StatusTimestamps:     convertRunStatusTimestamps(r.RunStatusTimestamps),
 	}
 }
 
 func convertRunStatusTimestamps(rows []RunStatusTimestamps) (timestamps []otf.RunStatusTimestamp) {
 	for _, r := range rows {
 		timestamps = append(timestamps, otf.RunStatusTimestamp{
-			Status:    otf.RunStatus(*r.GetStatus()),
-			Timestamp: r.GetTimestamp(),
+			Status:    otf.RunStatus(*r.Status),
+			Timestamp: r.Timestamp,
 		})
 	}
 	return timestamps
@@ -143,8 +137,8 @@ func convertRunStatusTimestamps(rows []RunStatusTimestamps) (timestamps []otf.Ru
 func convertPlanStatusTimestamps(rows []PlanStatusTimestamps) (timestamps []otf.PlanStatusTimestamp) {
 	for _, r := range rows {
 		timestamps = append(timestamps, otf.PlanStatusTimestamp{
-			Status:    otf.PlanStatus(*r.GetStatus()),
-			Timestamp: r.GetTimestamp(),
+			Status:    otf.PlanStatus(*r.Status),
+			Timestamp: r.Timestamp,
 		})
 	}
 	return timestamps
@@ -153,8 +147,8 @@ func convertPlanStatusTimestamps(rows []PlanStatusTimestamps) (timestamps []otf.
 func convertApplyStatusTimestamps(rows []ApplyStatusTimestamps) (timestamps []otf.ApplyStatusTimestamp) {
 	for _, r := range rows {
 		timestamps = append(timestamps, otf.ApplyStatusTimestamp{
-			Status:    otf.ApplyStatus(*r.GetStatus()),
-			Timestamp: r.GetTimestamp(),
+			Status:    otf.ApplyStatus(*r.Status),
+			Timestamp: r.Timestamp,
 		})
 	}
 	return timestamps
