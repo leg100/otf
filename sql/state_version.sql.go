@@ -25,7 +25,7 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
     $3,
     $4
 )
-RETURNING *
+RETURNING created_at, updated_at
 ;`
 
 type InsertStateVersionParams struct {
@@ -36,24 +36,12 @@ type InsertStateVersionParams struct {
 }
 
 type InsertStateVersionRow struct {
-	StateVersionID string    `json:"state_version_id"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Serial         int32     `json:"serial"`
-	VcsCommitSha   *string   `json:"vcs_commit_sha"`
-	VcsCommitUrl   *string   `json:"vcs_commit_url"`
-	State          []byte    `json:"state"`
-	RunID          string    `json:"run_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (s InsertStateVersionRow) GetStateVersionID() string { return s.StateVersionID }
 func (s InsertStateVersionRow) GetCreatedAt() time.Time { return s.CreatedAt }
 func (s InsertStateVersionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertStateVersionRow) GetSerial() int32 { return s.Serial }
-func (s InsertStateVersionRow) GetVcsCommitSha() *string { return s.VcsCommitSha }
-func (s InsertStateVersionRow) GetVcsCommitUrl() *string { return s.VcsCommitUrl }
-func (s InsertStateVersionRow) GetState() []byte { return s.State }
-func (s InsertStateVersionRow) GetRunID() string { return s.RunID }
 
 
 // InsertStateVersion implements Querier.InsertStateVersion.
@@ -61,7 +49,7 @@ func (q *DBQuerier) InsertStateVersion(ctx context.Context, params InsertStateVe
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertStateVersion")
 	row := q.conn.QueryRow(ctx, insertStateVersionSQL, params.ID, params.Serial, params.State, params.RunID)
 	var item InsertStateVersionRow
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("query InsertStateVersion: %w", err)
 	}
 	return item, nil
@@ -76,7 +64,7 @@ func (q *DBQuerier) InsertStateVersionBatch(batch genericBatch, params InsertSta
 func (q *DBQuerier) InsertStateVersionScan(results pgx.BatchResults) (InsertStateVersionRow, error) {
 	row := results.QueryRow()
 	var item InsertStateVersionRow
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("scan InsertStateVersionBatch row: %w", err)
 	}
 	return item, nil
@@ -84,12 +72,12 @@ func (q *DBQuerier) InsertStateVersionScan(results pgx.BatchResults) (InsertStat
 
 const findStateVersionsByWorkspaceNameSQL = `SELECT
     state_versions.*,
-    array_agg(state_version_outputs) AS state_version_outputs,
+    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs,
     count(*) OVER() AS full_count
 FROM state_versions
 JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
 JOIN organizations USING (organization_id)
-JOIN state_version_outputs USING (state_version_id)
+LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.name = $1
 AND organizations.name = $2
 GROUP BY state_versions.state_version_id
@@ -190,9 +178,9 @@ const findStateVersionByIDSQL = `SELECT
     array_agg(state_version_outputs) AS state_version_outputs
 FROM state_versions
 JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
-JOIN state_version_outputs USING (state_version_id)
+LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE state_versions.state_version_id = $1
-GROUP BY state_versions.state_version_id, workspaces.workspace_id
+GROUP BY state_versions.state_version_id
 ;`
 
 type FindStateVersionByIDRow struct {
@@ -257,9 +245,9 @@ const findStateVersionLatestByWorkspaceIDSQL = `SELECT
     array_agg(state_version_outputs) AS state_version_outputs
 FROM state_versions
 JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
-JOIN state_version_outputs USING (state_version_id)
+LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.workspace_id = $1
-GROUP BY state_versions.state_version_id, workspaces.workspace_id
+GROUP BY state_versions.state_version_id
 ORDER BY state_versions.serial DESC, state_versions.created_at DESC
 ;`
 

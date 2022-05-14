@@ -17,9 +17,12 @@ type organizationRow struct {
 
 func convertOrganizationComposite(row Organizations) *otf.Organization {
 	organization := otf.Organization{
-		ID:              *row.GetOrganizationID(),
-		Name:            *row.GetName(),
-		Timestamps:      convertTimestamps(row),
+		ID:   *row.GetOrganizationID(),
+		Name: *row.GetName(),
+		Timestamps: otf.Timestamps{
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+		},
 		SessionRemember: int(*row.GetSessionRemember()),
 		SessionTimeout:  int(*row.GetSessionTimeout()),
 	}

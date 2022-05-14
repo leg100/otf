@@ -86,9 +86,11 @@ func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 
 func newTestStateVersion(run *otf.Run, opts ...newTestStateVersionOption) *otf.StateVersion {
 	sv := &otf.StateVersion{
-		ID:         otf.NewID("sv"),
-		Timestamps: newTestTimestamps(),
-		Run:        run,
+		ID: otf.NewID("sv"),
+		Run: &otf.Run{
+			ID: run.ID,
+		},
+		State: []byte("stuff"),
 	}
 	for _, o := range opts {
 		o(sv)
@@ -136,11 +138,12 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
 	return func(sv *otf.StateVersion) error {
 		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
-			ID:        otf.NewID("wsout"),
-			Name:      name,
-			Type:      outputType,
-			Value:     value,
-			Sensitive: sensitive,
+			ID:             otf.NewID("wsout"),
+			Name:           name,
+			Type:           outputType,
+			Value:          value,
+			Sensitive:      sensitive,
+			StateVersionID: sv.ID,
 		})
 		return nil
 	}

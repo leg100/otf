@@ -30,7 +30,6 @@ func TestStateVersion_Get(t *testing.T) {
 	run := createTestRun(t, db, ws, cv)
 	sv := createTestStateVersion(t, db, run,
 		appendOutput("out1", "string", "val1", false),
-		appendOutput("out2", "string", "val2", false),
 	)
 
 	tests := []struct {
@@ -51,10 +50,6 @@ func TestStateVersion_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.StateVersionStore().Get(tt.opts)
 			require.NoError(t, err)
-
-			// Assertion won't succeed unless both have a workspace with a nil
-			// org.
-			sv.Run.Workspace = nil
 
 			assert.Equal(t, sv, got)
 		})
@@ -81,10 +76,6 @@ func TestStateVersion_List(t *testing.T) {
 			want: func(t *testing.T, l *otf.StateVersionList, created ...*otf.StateVersion) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, c := range created {
-					// Assertion won't succeed unless both have a workspace with
-					// a nil org.
-					c.Run.Workspace = nil
-
 					assert.Contains(t, l.Items, c)
 				}
 			},

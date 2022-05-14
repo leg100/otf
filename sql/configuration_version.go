@@ -98,7 +98,7 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 
 	var items []*otf.ConfigurationVersion
 	for _, r := range result {
-		items = append(items, &otf.ConfigurationVersion{
+		cv := &otf.ConfigurationVersion{
 			ID: *r.ConfigurationVersionID,
 			Timestamps: otf.Timestamps{
 				CreatedAt: r.CreatedAt,
@@ -109,7 +109,14 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 			AutoQueueRuns: *r.AutoQueueRuns,
 			Speculative:   *r.Speculative,
 			Workspace:     convertWorkspaceComposite(r.Workspace),
-		})
+		}
+		for _, ts := range r.ConfigurationVersionStatusTimestamps {
+			cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
+				Status:    otf.ConfigurationStatus(*ts.Status),
+				Timestamp: ts.Timestamp,
+			})
+		}
+		items = append(items, cv)
 	}
 
 	return &otf.ConfigurationVersionList{

@@ -10,7 +10,7 @@ type StateVersionOutput struct {
 	Type      string
 	Value     string
 
-	// StateVersionOutput belongs to State Version
+	// StateVersionOutput belongs to StateVersion
 	StateVersionID string
 }
 

@@ -35,7 +35,6 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 	if err != nil {
 		return nil, databaseError(err, insertOrganizationSQL)
 	}
-
 	org.CreatedAt = result.CreatedAt
 	org.UpdatedAt = result.UpdatedAt
 
