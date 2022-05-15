@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -40,9 +39,9 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 		IsDestroy:              run.IsDestroy,
 		Refresh:                run.Refresh,
 		RefreshOnly:            run.RefreshOnly,
-		Status:                 string(run.Status),
-		PlanStatus:             string(run.Plan.Status),
-		ApplyStatus:            string(run.Apply.Status),
+		Status:                 run.Status,
+		PlanStatus:             run.Plan.Status,
+		ApplyStatus:            run.Apply.Status,
 		ReplaceAddrs:           run.ReplaceAddrs,
 		TargetAddrs:            run.TargetAddrs,
 		ConfigurationVersionID: run.ConfigurationVersion.ID,
@@ -69,7 +68,7 @@ func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
 	return run, tx.Commit(ctx)
 }
 
-func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, error) {
+func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
 	ctx := context.Background()
 
 	tx, err := db.Conn.Begin(ctx)
@@ -81,7 +80,17 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	q := NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindRunByIDForUpdate(ctx, id)
+	var result interface{}
+	switch {
+	case opts.ID != nil:
+		result, err = q.FindRunByIDForUpdate(ctx, *opts.ID)
+	case opts.PlanID != nil:
+		result, err = q.FindRunByPlanIDForUpdate(ctx, *opts.PlanID)
+	case opts.ApplyID != nil:
+		result, err = q.FindRunByApplyIDForUpdate(ctx, *opts.ApplyID)
+	default:
+		return nil, fmt.Errorf("invalid run get spec")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +110,7 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 
 	if run.Status != runStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status), run.ID)
+		run.UpdatedAt, err = q.UpdateRunStatus(ctx, run.Status, run.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +122,7 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 
 	if run.Plan.Status != planStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status), run.Plan.ID)
+		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, run.Plan.Status, run.Plan.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +134,7 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 
 	if run.Apply.Status != applyStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status), run.Apply.ID)
+		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, run.Apply.Status, run.Apply.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -144,9 +153,9 @@ func (db RunDB) CreatePlanReport(planID string, summary otf.ResourceReport) erro
 
 	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, UpdateRunPlannedChangesByPlanIDParams{
 		ID:           planID,
-		Additions:    int32(summary.ResourceAdditions),
-		Changes:      int32(summary.ResourceChanges),
-		Destructions: int32(summary.ResourceDestructions),
+		Additions:    int32(summary.Additions),
+		Changes:      int32(summary.Changes),
+		Destructions: int32(summary.Destructions),
 	})
 	return err
 }
@@ -157,9 +166,9 @@ func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) er
 
 	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, UpdateRunAppliedChangesByApplyIDParams{
 		ID:           applyID,
-		Additions:    int32(summary.ResourceAdditions),
-		Changes:      int32(summary.ResourceChanges),
-		Destructions: int32(summary.ResourceDestructions),
+		Additions:    int32(summary.Additions),
+		Changes:      int32(summary.Changes),
+		Destructions: int32(summary.Destructions),
 	})
 	return err
 }
@@ -185,7 +194,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		})
 	} else if len(opts.Statuses) > 0 {
 		rows, err = q.FindRunsByStatuses(ctx, FindRunsByStatusesParams{
-			Statuses: convertToStringSlice(opts.Statuses),
+			Statuses: convertStatusSliceToStringSlice(opts.Statuses),
 			Limit:    opts.GetLimit(),
 			Offset:   opts.GetOffset(),
 		})
@@ -322,11 +331,9 @@ func insertApplyStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run)
 	return nil
 }
 
-func convertToStringSlice(i interface{}) (s []string) {
-	slice := reflect.ValueOf(i)
-	for i := 0; i < slice.Len(); i++ {
-		v := slice.Index(i)
-		s = append(s, v.Interface().(string))
+func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {
+	for _, status := range statuses {
+		s = append(s, string(status))
 	}
 	return
 }

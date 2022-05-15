@@ -45,10 +45,10 @@ type PlanFileOptions struct {
 func (p *Plan) ToDomain() *otf.Plan {
 	return &otf.Plan{
 		ID: p.ID,
-		ResourcesReport: otf.ResourcesReport{
-			ResourceAdditions:    p.ResourceAdditions,
-			ResourceChanges:      p.ResourceChanges,
-			ResourceDestructions: p.ResourceDestructions,
+		ResourceReport: &otf.ResourceReport{
+			Additions:    p.ResourceAdditions,
+			Changes:      p.ResourceChanges,
+			Destructions: p.ResourceDestructions,
 		},
 		Status: p.Status,
 	}
@@ -139,9 +139,9 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 		ID:                   p.ID,
 		HasChanges:           p.HasChanges(),
 		LogReadURL:           httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
-		ResourceAdditions:    p.ResourceAdditions,
-		ResourceChanges:      p.ResourceChanges,
-		ResourceDestructions: p.ResourceDestructions,
+		ResourceAdditions:    p.Additions,
+		ResourceChanges:      p.Changes,
+		ResourceDestructions: p.Destructions,
 		Status:               p.Status,
 	}
 

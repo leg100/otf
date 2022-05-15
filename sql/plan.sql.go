@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/leg100/otf"
 	"time"
 )
 
@@ -55,14 +56,14 @@ func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (Ins
 
 const updatePlanStatusSQL = `UPDATE runs
 SET
-    status = $1,
+    plan_status = $1,
     updated_at = current_timestamp
 WHERE plan_id = $2
 RETURNING updated_at
 ;`
 
 // UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error) {
+func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status otf.PlanStatus, id string) (time.Time, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
 	var item time.Time
@@ -73,7 +74,7 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id stri
 }
 
 // UpdatePlanStatusBatch implements Querier.UpdatePlanStatusBatch.
-func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id string) {
+func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status otf.PlanStatus, id string) {
 	batch.Queue(updatePlanStatusSQL, status, id)
 }
 

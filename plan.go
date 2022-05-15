@@ -73,7 +73,7 @@ func newPlan(runID string) *Plan {
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
-	if p.ResourceAdditions > 0 || p.ResourceChanges > 0 || p.ResourceDestructions > 0 {
+	if p.Additions > 0 || p.Changes > 0 || p.Destructions > 0 {
 		return true
 	}
 	return false

@@ -93,7 +93,7 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.ApplyRun()
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 }
 
 func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -127,14 +127,14 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.ForceCancel()
 
 		// TODO: send KILL signal to running terraform process
@@ -147,7 +147,7 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 }
 
 func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
-	run, err := s.db.UpdateStatus(id, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {

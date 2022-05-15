@@ -51,7 +51,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			run := createTestRun(t, db, ws, cv)
 
-			got, err := db.RunStore().UpdateStatus(run.ID, tt.update)
+			got, err := db.RunStore().UpdateStatus(otf.RunGetOptions{ID: &run.ID}, tt.update)
 			require.NoError(t, err)
 
 			tt.want(t, got)
@@ -119,6 +119,23 @@ func TestRun_List(t *testing.T) {
 				assert.Contains(t, l.Items, run3)
 			},
 		},
+		{
+			name: "by statuses",
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
+			},
+		},
+		{
+			name: "by statuses - no match",
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPlanned}},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 0, len(l.Items))
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -138,9 +155,9 @@ func TestRun_CreatePlanReport(t *testing.T) {
 	run := createTestRun(t, db, ws, cv)
 
 	report := otf.ResourceReport{
-		ResourceAdditions:    5,
-		ResourceChanges:      2,
-		ResourceDestructions: 99,
+		Additions:    5,
+		Changes:      2,
+		Destructions: 99,
 	}
 
 	err := db.RunStore().CreatePlanReport(run.Plan.ID, report)

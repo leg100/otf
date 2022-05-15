@@ -153,12 +153,14 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 		ID:     id,
 		Status: otf.RunPending,
 		Plan: &otf.Plan{
-			ID:    otf.NewID("plan"),
-			RunID: id,
+			ID:     otf.NewID("plan"),
+			RunID:  id,
+			Status: otf.PlanPending,
 		},
 		Apply: &otf.Apply{
-			ID:    otf.NewID("apply"),
-			RunID: id,
+			ID:     otf.NewID("apply"),
+			RunID:  id,
+			Status: otf.ApplyPending,
 		},
 		Workspace:            newShallowNestedWorkspace(ws),
 		ConfigurationVersion: newShallowNestedConfigurationVersion(cv),

@@ -129,6 +129,7 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 	}
 
 	return &otf.Organization{
+		ID:   r.OrganizationID,
 		Name: r.Name,
 		Timestamps: otf.Timestamps{
 			CreatedAt: r.CreatedAt,

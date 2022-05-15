@@ -50,11 +50,11 @@ func (pf *PlanFile) Changes() (tally ResourceReport) {
 		for _, action := range rc.Change.Actions {
 			switch action {
 			case CreateAction:
-				tally.ResourceAdditions++
+				tally.Additions++
 			case UpdateAction:
-				tally.ResourceChanges++
+				tally.Changes++
 			case DeleteAction:
-				tally.ResourceDestructions++
+				tally.Destructions++
 			}
 		}
 	}

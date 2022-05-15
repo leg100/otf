@@ -55,6 +55,8 @@ var (
 // RunStatus represents a run state.
 type RunStatus string
 
+func (r RunStatus) String() string { return string(r) }
+
 type Run struct {
 	ID string `db:"run_id" jsonapi:"primary,runs" json:"run_id"`
 
@@ -200,7 +202,7 @@ type RunStore interface {
 	List(opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
-	UpdateStatus(id string, fn func(*Run) error) (*Run, error)
+	UpdateStatus(opts RunGetOptions, fn func(*Run) error) (*Run, error)
 	CreatePlanReport(planID string, report ResourceReport) error
 	CreateApplyReport(applyID string, report ResourceReport) error
 	Delete(id string) error

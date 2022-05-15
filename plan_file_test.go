@@ -46,7 +46,7 @@ func TestPlanFile_Changes(t *testing.T) {
 
 	changes := file.Changes()
 
-	assert.Equal(t, 2, changes.ResourceAdditions)
-	assert.Equal(t, 0, changes.ResourceChanges)
-	assert.Equal(t, 0, changes.ResourceDestructions)
+	assert.Equal(t, 2, changes.Additions)
+	assert.Equal(t, 0, changes.Changes)
+	assert.Equal(t, 0, changes.Destructions)
 }

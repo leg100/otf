@@ -13,7 +13,7 @@ RETURNING *;
 -- name: UpdatePlanStatus :one
 UPDATE runs
 SET
-    status = pggen.arg('status'),
+    plan_status = pggen.arg('status'),
     updated_at = current_timestamp
 WHERE plan_id = pggen.arg('id')
 RETURNING updated_at

@@ -13,7 +13,7 @@ RETURNING *;
 -- name: UpdateApplyStatus :one
 UPDATE runs
 SET
-    status = pggen.arg('status'),
+    apply_status = pggen.arg('status'),
     updated_at = current_timestamp
 WHERE apply_id = pggen.arg('id')
 RETURNING updated_at

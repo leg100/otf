@@ -95,6 +95,45 @@ CREATE TABLE IF NOT EXISTS configuration_version_status_timestamps (
                              PRIMARY KEY (configuration_version_id, status)
 );
 
+CREATE TYPE run_status AS ENUM (
+	'applied',
+	'apply_queued',
+	'applying',
+	'canceled',
+	'force_canceled',
+	'confirmed',
+	'discarded',
+	'errored',
+	'pending',
+	'plan_queued',
+	'planned',
+	'planned_and_finished',
+	'planning'
+);
+
+CREATE TYPE plan_status AS ENUM (
+    'canceled',
+    'created',
+    'errored',
+    'finished',
+    'mfa_waiting',
+    'pending',
+    'queued',
+    'running',
+    'unreachable'
+);
+
+CREATE TYPE apply_status AS ENUM (
+    'canceled',
+    'created',
+    'errored',
+    'finished',
+    'pending',
+    'queued',
+    'running',
+    'unreachable'
+);
+
 CREATE TYPE resource_report AS (
     additions       INTEGER,
     changes         INTEGER,
@@ -103,21 +142,21 @@ CREATE TYPE resource_report AS (
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
-    plan_id                         TEXT        NOT NULL,
-    apply_id                        TEXT        NOT NULL,
-    created_at                      TIMESTAMPTZ NOT NULL,
-    updated_at                      TIMESTAMPTZ NOT NULL,
-    is_destroy                      BOOLEAN     NOT NULL,
-    position_in_queue               INTEGER     NOT NULL,
-    refresh                         BOOLEAN     NOT NULL,
-    refresh_only                    BOOLEAN     NOT NULL,
-    status                          TEXT        NOT NULL,
+    plan_id                         TEXT            NOT NULL,
+    apply_id                        TEXT            NOT NULL,
+    created_at                      TIMESTAMPTZ     NOT NULL,
+    updated_at                      TIMESTAMPTZ     NOT NULL,
+    is_destroy                      BOOLEAN         NOT NULL,
+    position_in_queue               INTEGER         NOT NULL,
+    refresh                         BOOLEAN         NOT NULL,
+    refresh_only                    BOOLEAN         NOT NULL,
+    status                          RUN_STATUS      NOT NULL,
     replace_addrs                   TEXT[],
     target_addrs                    TEXT[],
-    plan_status                     TEXT        NOT NULL,
+    plan_status                     PLAN_STATUS     NOT NULL,
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
-    apply_status                    TEXT        NOT NULL,
+    apply_status                    APPLY_STATUS    NOT NULL,
     planned_changes                 RESOURCE_REPORT,
     applied_changes                 RESOURCE_REPORT,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
@@ -200,6 +239,9 @@ DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
 DROP TYPE resource_report;
+DROP TYPE apply_status;
+DROP TYPE plan_status;
+DROP TYPE run_status;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;

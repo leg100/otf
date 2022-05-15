@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+	"github.com/leg100/otf"
 	"time"
 )
 
@@ -24,10 +25,10 @@ type Querier interface {
 	// InsertApplyStatusTimestampScan scans the result of an executed InsertApplyStatusTimestampBatch query.
 	InsertApplyStatusTimestampScan(results pgx.BatchResults) (InsertApplyStatusTimestampRow, error)
 
-	UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error)
+	UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus, id string) (time.Time, error)
 	// UpdateApplyStatusBatch enqueues a UpdateApplyStatus query into batch to be executed
 	// later by the batch.
-	UpdateApplyStatusBatch(batch genericBatch, status string, id string)
+	UpdateApplyStatusBatch(batch genericBatch, status otf.ApplyStatus, id string)
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
 	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
 
@@ -213,10 +214,10 @@ type Querier interface {
 	// InsertPlanStatusTimestampScan scans the result of an executed InsertPlanStatusTimestampBatch query.
 	InsertPlanStatusTimestampScan(results pgx.BatchResults) (InsertPlanStatusTimestampRow, error)
 
-	UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error)
+	UpdatePlanStatus(ctx context.Context, status otf.PlanStatus, id string) (time.Time, error)
 	// UpdatePlanStatusBatch enqueues a UpdatePlanStatus query into batch to be executed
 	// later by the batch.
-	UpdatePlanStatusBatch(batch genericBatch, status string, id string)
+	UpdatePlanStatusBatch(batch genericBatch, status otf.PlanStatus, id string)
 	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
 	UpdatePlanStatusScan(results pgx.BatchResults) (time.Time, error)
 
@@ -325,10 +326,24 @@ type Querier interface {
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
-	UpdateRunStatus(ctx context.Context, status string, id string) (time.Time, error)
+	FindRunByPlanIDForUpdate(ctx context.Context, planID string) (FindRunByPlanIDForUpdateRow, error)
+	// FindRunByPlanIDForUpdateBatch enqueues a FindRunByPlanIDForUpdate query into batch to be executed
+	// later by the batch.
+	FindRunByPlanIDForUpdateBatch(batch genericBatch, planID string)
+	// FindRunByPlanIDForUpdateScan scans the result of an executed FindRunByPlanIDForUpdateBatch query.
+	FindRunByPlanIDForUpdateScan(results pgx.BatchResults) (FindRunByPlanIDForUpdateRow, error)
+
+	FindRunByApplyIDForUpdate(ctx context.Context, applyID string) (FindRunByApplyIDForUpdateRow, error)
+	// FindRunByApplyIDForUpdateBatch enqueues a FindRunByApplyIDForUpdate query into batch to be executed
+	// later by the batch.
+	FindRunByApplyIDForUpdateBatch(batch genericBatch, applyID string)
+	// FindRunByApplyIDForUpdateScan scans the result of an executed FindRunByApplyIDForUpdateBatch query.
+	FindRunByApplyIDForUpdateScan(results pgx.BatchResults) (FindRunByApplyIDForUpdateRow, error)
+
+	UpdateRunStatus(ctx context.Context, status otf.RunStatus, id string) (time.Time, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
 	// later by the batch.
-	UpdateRunStatusBatch(batch genericBatch, status string, id string)
+	UpdateRunStatusBatch(batch genericBatch, status otf.RunStatus, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (time.Time, error)
 
@@ -841,6 +856,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findRunByIDForUpdateSQL, findRunByIDForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRunByIDForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunByPlanIDForUpdateSQL, findRunByPlanIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunByPlanIDForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunByApplyIDForUpdateSQL, findRunByApplyIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunByApplyIDForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
@@ -1430,14 +1451,14 @@ func (q *DBQuerier) InsertApplyStatusTimestampScan(results pgx.BatchResults) (In
 
 const updateApplyStatusSQL = `UPDATE runs
 SET
-    status = $1,
+    apply_status = $1,
     updated_at = current_timestamp
 WHERE apply_id = $2
 RETURNING updated_at
 ;`
 
 // UpdateApplyStatus implements Querier.UpdateApplyStatus.
-func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error) {
+func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus, id string) (time.Time, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyStatus")
 	row := q.conn.QueryRow(ctx, updateApplyStatusSQL, status, id)
 	var item time.Time
@@ -1448,7 +1469,7 @@ func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id str
 }
 
 // UpdateApplyStatusBatch implements Querier.UpdateApplyStatusBatch.
-func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status string, id string) {
+func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status otf.ApplyStatus, id string) {
 	batch.Queue(updateApplyStatusSQL, status, id)
 }
 

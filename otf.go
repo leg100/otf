@@ -111,9 +111,9 @@ var _ pgtype.BinaryDecoder = (*ResourceReport)(nil)
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
-	ResourceAdditions    int `json:"additions"`
-	ResourceChanges      int `json:"changes"`
-	ResourceDestructions int `json:"destructions"`
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
 }
 
 func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
@@ -137,17 +137,17 @@ func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
 
 	// type compatibility is checked by AssignTo
 	// only lossless assignments will succeed
-	if err := a.AssignTo(&t.ResourceAdditions); err != nil {
+	if err := a.AssignTo(&t.Additions); err != nil {
 		return err
 	}
 
 	// AssignTo also deals with null value handling
-	if err := b.AssignTo(&t.ResourceChanges); err != nil {
+	if err := b.AssignTo(&t.Changes); err != nil {
 		return err
 	}
 
 	// AssignTo also deals with null value handling
-	if err := c.AssignTo(&t.ResourceDestructions); err != nil {
+	if err := c.AssignTo(&t.Destructions); err != nil {
 		return err
 	}
 	return nil

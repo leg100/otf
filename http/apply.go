@@ -37,10 +37,10 @@ type ApplyStatusTimestamps struct {
 func (a *Apply) ToDomain() *otf.Apply {
 	return &otf.Apply{
 		ID: a.ID,
-		ResourcesReport: otf.ResourcesReport{
-			ResourceAdditions:    a.ResourceAdditions,
-			ResourceChanges:      a.ResourceChanges,
-			ResourceDestructions: a.ResourceDestructions,
+		ResourceReport: &otf.ResourceReport{
+			Additions:    a.ResourceAdditions,
+			Changes:      a.ResourceChanges,
+			Destructions: a.ResourceDestructions,
 		},
 		Status: a.Status,
 	}
@@ -114,9 +114,9 @@ func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
 		ID:                   a.ID,
 		LogReadURL:           httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		ResourceAdditions:    a.ResourceAdditions,
-		ResourceChanges:      a.ResourceChanges,
-		ResourceDestructions: a.ResourceDestructions,
+		ResourceAdditions:    a.Additions,
+		ResourceChanges:      a.Changes,
+		ResourceDestructions: a.Destructions,
 		Status:               a.Status,
 	}
 

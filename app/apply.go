@@ -85,8 +85,8 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) 
 }
 
 // Start marks a apply as having started
-func (s ApplyService) Start(ctx context.Context, runID string, opts otf.JobStartOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) error {
+func (s ApplyService) Start(ctx context.Context, applyID string, opts otf.JobStartOptions) (*otf.Run, error) {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) error {
 		return run.Apply.Start(run)
 	})
 	if err != nil {
@@ -101,16 +101,16 @@ func (s ApplyService) Start(ctx context.Context, runID string, opts otf.JobStart
 
 // Finish marks a apply as having finished.  An event is emitted to notify any
 // subscribers of the new state.
-func (s ApplyService) Finish(ctx context.Context, runID string, opts otf.JobFinishOptions) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(runID, func(run *otf.Run) (err error) {
+func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.JobFinishOptions) (*otf.Run, error) {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) (err error) {
 		return run.Apply.Finish(run)
 	})
 	if err != nil {
-		s.Error(err, "finishing apply", "id", runID)
+		s.Error(err, "finishing apply", "id", applyID)
 		return nil, err
 	}
 
-	s.V(0).Info("finished apply", "id", runID)
+	s.V(0).Info("finished apply", "id", applyID)
 
 	s.Publish(otf.Event{Payload: run, Type: otf.EventRunApplied})
 
