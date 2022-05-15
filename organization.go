@@ -16,13 +16,13 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	ID string `db:"organization_id"`
+	ID string `json:"organization_id"`
 
 	Timestamps
 
-	Name            string
-	SessionRemember int
-	SessionTimeout  int
+	Name            string `json:"name"`
+	SessionRemember int    `json:"session_remember"`
+	SessionTimeout  int    `json:"session_timeout"`
 }
 
 // OrganizationPermissions represents the organization permissions.

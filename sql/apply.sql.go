@@ -971,6 +971,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	return nil
 }
 
+// ApplyResourceReports represents the Postgres composite type "apply_resource_reports".
+type ApplyResourceReports struct {
+	ApplyID              *string `json:"apply_id"`
+	ResourceAdditions    *int32  `json:"resource_additions"`
+	ResourceChanges      *int32  `json:"resource_changes"`
+	ResourceDestructions *int32  `json:"resource_destructions"`
+}
+
 // ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
 type ApplyStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
@@ -1006,6 +1014,14 @@ type Organizations struct {
 	Name            *string   `json:"name"`
 	SessionRemember *int32    `json:"session_remember"`
 	SessionTimeout  *int32    `json:"session_timeout"`
+}
+
+// PlanResourceReports represents the Postgres composite type "plan_resource_reports".
+type PlanResourceReports struct {
+	PlanID               *string `json:"plan_id"`
+	ResourceAdditions    *int32  `json:"resource_additions"`
+	ResourceChanges      *int32  `json:"resource_changes"`
+	ResourceDestructions *int32  `json:"resource_destructions"`
 }
 
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
@@ -1168,6 +1184,18 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
+// newApplyResourceReports creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'apply_resource_reports'.
+func (tr *typeResolver) newApplyResourceReports() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"apply_resource_reports",
+		compositeField{"apply_id", "text", &pgtype.Text{}},
+		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
+		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
+		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
+	)
+}
+
 // newApplyStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'apply_status_timestamps'.
 func (tr *typeResolver) newApplyStatusTimestamps() pgtype.ValueTranscoder {
@@ -1218,6 +1246,18 @@ func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"session_remember", "int4", &pgtype.Int4{}},
 		compositeField{"session_timeout", "int4", &pgtype.Int4{}},
+	)
+}
+
+// newPlanResourceReports creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'plan_resource_reports'.
+func (tr *typeResolver) newPlanResourceReports() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"plan_resource_reports",
+		compositeField{"plan_id", "text", &pgtype.Text{}},
+		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
+		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
+		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
 	)
 }
 

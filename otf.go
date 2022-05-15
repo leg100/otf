@@ -210,8 +210,8 @@ func validSemanticVersion(v string) bool {
 }
 
 type Timestamps struct {
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func (m *Timestamps) SetUpdatedAt(t time.Time) {

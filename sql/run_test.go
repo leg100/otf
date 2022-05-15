@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -70,4 +71,26 @@ func TestRun_CreatePlanReport(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan.ResourceReport)
+}
+
+func TestRun_Unmarshal(t *testing.T) {
+	testdb := newTestDB(t)
+	org := createTestOrganization(t, testdb)
+	ws := createTestWorkspace(t, testdb, org)
+	cv := createTestConfigurationVersion(t, testdb, ws)
+	run := createTestRun(t, testdb, ws, cv)
+
+	conn := testdb.(db).Conn
+	q := NewQuerier(conn)
+	row, err := q.FindRunByID(context.Background(), run.ID)
+	require.NoError(t, err)
+
+	got, err := otf.UnmarshalRunFromDB(row)
+	require.NoError(t, err)
+
+	assert.Equal(t, run.ID, got.ID)
+	assert.Equal(t, run.StatusTimestamps, got.StatusTimestamps)
+	assert.Equal(t, run.Workspace, got.Workspace)
+	assert.Equal(t, run.Workspace.Organization, got.Workspace.Organization)
+	assert.Equal(t, run, got)
 }

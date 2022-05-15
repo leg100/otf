@@ -21,7 +21,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
+	ID string `json:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -48,7 +48,7 @@ type Workspace struct {
 	WorkingDirectory           string
 
 	// Workspace belongs to an organization
-	Organization *Organization `db:"organizations"`
+	Organization *Organization `json:"organization"`
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

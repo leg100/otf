@@ -56,7 +56,7 @@ var (
 type RunStatus string
 
 type Run struct {
-	ID string `db:"run_id" jsonapi:"primary,runs"`
+	ID string `db:"run_id" jsonapi:"primary,runs" json:"run_id"`
 
 	Timestamps
 
@@ -66,20 +66,20 @@ type Run struct {
 	Refresh          bool
 	RefreshOnly      bool
 	Status           RunStatus
-	StatusTimestamps []RunStatusTimestamp
+	StatusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
 	ReplaceAddrs     []string
 	TargetAddrs      []string
 
 	// Relations
-	Plan                 *Plan                 `db:"plans"`
-	Apply                *Apply                `db:"applies"`
-	Workspace            *Workspace            `db:"workspaces"`
-	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
+	Plan                 *Plan
+	Apply                *Apply
+	Workspace            *Workspace            `json:"workspace"`
+	ConfigurationVersion *ConfigurationVersion `json:"configuration_version"`
 }
 
 type RunStatusTimestamp struct {
-	Status    RunStatus
-	Timestamp time.Time
+	Status    RunStatus `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // RunService implementations allow interactions with runs

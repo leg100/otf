@@ -85,34 +85,9 @@ func (db RunDB) UpdateStatus(id string, fn func(*otf.Run) error) (*otf.Run, erro
 	if err != nil {
 		return nil, err
 	}
-	run := &otf.Run{
-		ID: *result.RunID,
-		Timestamps: otf.Timestamps{
-			CreatedAt: result.CreatedAt,
-			UpdatedAt: result.UpdatedAt,
-		},
-		IsDestroy:       *result.IsDestroy,
-		PositionInQueue: int(*result.PositionInQueue),
-		Refresh:         *result.Refresh,
-		RefreshOnly:     *result.RefreshOnly,
-		Status:          otf.RunStatus(*result.Status),
-		ReplaceAddrs:    result.ReplaceAddrs,
-		TargetAddrs:     result.TargetAddrs,
-		Apply: &otf.Apply{
-			ID:               *result.ApplyID,
-			RunID:            *result.RunID,
-			Status:           otf.ApplyStatus(*result.ApplyStatus),
-			StatusTimestamps: convertApplyStatusTimestamps(result.ApplyStatusTimestamps),
-		},
-		Plan: &otf.Plan{
-			ID:               *result.PlanID,
-			RunID:            *result.RunID,
-			Status:           otf.PlanStatus(*result.PlanStatus),
-			StatusTimestamps: convertPlanStatusTimestamps(result.PlanStatusTimestamps),
-		},
-		ConfigurationVersion: convertConfigurationVersionComposite(result.ConfigurationVersion),
-		Workspace:            convertWorkspaceComposite(result.Workspace),
-		StatusTimestamps:     convertRunStatusTimestamps(result.RunStatusTimestamps),
+	run, err := otf.UnmarshalRunFromDB(result)
+	if err != nil {
+		return nil, err
 	}
 
 	// Make copies of statuses before update
@@ -193,52 +168,41 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	var results []runListResult
-
+	var rows interface{}
+	var err error
 	if opts.WorkspaceID != nil {
-		rows, err := q.FindRunsByWorkspaceID(ctx, FindRunsByWorkspaceIDParams{
+		rows, err = q.FindRunsByWorkspaceID(ctx, FindRunsByWorkspaceIDParams{
 			WorkspaceID: *opts.WorkspaceID,
 			Limit:       opts.GetLimit(),
 			Offset:      opts.GetOffset(),
 		})
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range rows {
-			results = append(results, runListResult(r))
-		}
 	} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-		rows, err := q.FindRunsByWorkspaceName(ctx, FindRunsByWorkspaceNameParams{
+		rows, err = q.FindRunsByWorkspaceName(ctx, FindRunsByWorkspaceNameParams{
 			OrganizationName: *opts.OrganizationName,
 			WorkspaceName:    *opts.WorkspaceName,
 			Limit:            opts.GetLimit(),
 			Offset:           opts.GetOffset(),
 		})
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range rows {
-			results = append(results, runListResult(r))
-		}
 	} else if len(opts.Statuses) > 0 {
-		rows, err := q.FindRunsByStatuses(ctx, FindRunsByStatusesParams{
+		rows, err = q.FindRunsByStatuses(ctx, FindRunsByStatusesParams{
 			Statuses: convertToStringSlice(opts.Statuses),
 			Limit:    opts.GetLimit(),
 			Offset:   opts.GetOffset(),
 		})
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range rows {
-			results = append(results, runListResult(r))
-		}
 	} else {
 		return nil, fmt.Errorf("no list filter specified")
 	}
+	if err != nil {
+		return nil, err
+	}
+	runs, count, err := otf.UnmarshalRunListFromDB(rows)
+	if err != nil {
+		return nil, err
+	}
 
 	return &otf.RunList{
-		Items:      convertRunList(results),
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(results)),
+		Items:      runs,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -252,19 +216,19 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 		if err != nil {
 			return nil, err
 		}
-		return convertRun(runResult(result)), nil
+		return otf.UnmarshalRunFromDB(result)
 	} else if opts.PlanID != nil {
 		result, err := q.FindRunByPlanID(ctx, *opts.PlanID)
 		if err != nil {
 			return nil, err
 		}
-		return convertRun(runResult(result)), nil
+		return otf.UnmarshalRunFromDB(result)
 	} else if opts.ApplyID != nil {
 		result, err := q.FindRunByApplyID(ctx, *opts.ApplyID)
 		if err != nil {
 			return nil, err
 		}
-		return convertRun(runResult(result)), nil
+		return otf.UnmarshalRunFromDB(result)
 	} else {
 		return nil, fmt.Errorf("no ID specified")
 	}

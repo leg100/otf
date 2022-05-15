@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
 	"time"
 )
 
@@ -223,8 +222,8 @@ type FindRunsByWorkspaceIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -242,6 +241,8 @@ func (q *DBQuerier) FindRunsByWorkspaceID(ctx context.Context, params FindRunsBy
 	}
 	defer rows.Close()
 	items := []FindRunsByWorkspaceIDRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -249,8 +250,14 @@ func (q *DBQuerier) FindRunsByWorkspaceID(ctx context.Context, params FindRunsBy
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceIDRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceID row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
@@ -288,6 +295,8 @@ func (q *DBQuerier) FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindR
 	}
 	defer rows.Close()
 	items := []FindRunsByWorkspaceIDRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -295,8 +304,14 @@ func (q *DBQuerier) FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindR
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceIDRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceIDBatch row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByWorkspaceID row: %w", err)
@@ -392,8 +407,8 @@ type FindRunsByWorkspaceNameRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -411,6 +426,8 @@ func (q *DBQuerier) FindRunsByWorkspaceName(ctx context.Context, params FindRuns
 	}
 	defer rows.Close()
 	items := []FindRunsByWorkspaceNameRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -418,8 +435,14 @@ func (q *DBQuerier) FindRunsByWorkspaceName(ctx context.Context, params FindRuns
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceNameRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceName row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
@@ -457,6 +480,8 @@ func (q *DBQuerier) FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]Fin
 	}
 	defer rows.Close()
 	items := []FindRunsByWorkspaceNameRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -464,8 +489,14 @@ func (q *DBQuerier) FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]Fin
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByWorkspaceNameRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByWorkspaceNameBatch row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByWorkspaceName row: %w", err)
@@ -558,8 +589,8 @@ type FindRunsByStatusesRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -577,6 +608,8 @@ func (q *DBQuerier) FindRunsByStatuses(ctx context.Context, params FindRunsBySta
 	}
 	defer rows.Close()
 	items := []FindRunsByStatusesRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -584,8 +617,14 @@ func (q *DBQuerier) FindRunsByStatuses(ctx context.Context, params FindRunsBySta
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByStatusesRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByStatuses row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
@@ -623,6 +662,8 @@ func (q *DBQuerier) FindRunsByStatusesScan(results pgx.BatchResults) ([]FindRuns
 	}
 	defer rows.Close()
 	items := []FindRunsByStatusesRow{}
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
@@ -630,8 +671,14 @@ func (q *DBQuerier) FindRunsByStatusesScan(results pgx.BatchResults) ([]FindRuns
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsByStatusesRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindRunsByStatusesBatch row: %w", err)
+		}
+		if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
+		}
+		if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
 		}
 		if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 			return nil, fmt.Errorf("assign FindRunsByStatuses row: %w", err)
@@ -716,8 +763,8 @@ type FindRunByIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -730,13 +777,21 @@ func (q *DBQuerier) FindRunByID(ctx context.Context, runID string) (FindRunByIDR
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByID")
 	row := q.conn.QueryRow(ctx, findRunByIDSQL, runID)
 	var item FindRunByIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindRunByID: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByID row: %w", err)
@@ -765,13 +820,21 @@ func (q *DBQuerier) FindRunByIDBatch(batch genericBatch, runID string) {
 func (q *DBQuerier) FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error) {
 	row := results.QueryRow()
 	var item FindRunByIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByIDBatch row: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByID row: %w", err)
@@ -851,8 +914,8 @@ type FindRunByPlanIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -865,13 +928,21 @@ func (q *DBQuerier) FindRunByPlanID(ctx context.Context, planID string) (FindRun
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByPlanID")
 	row := q.conn.QueryRow(ctx, findRunByPlanIDSQL, planID)
 	var item FindRunByPlanIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindRunByPlanID: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
@@ -900,13 +971,21 @@ func (q *DBQuerier) FindRunByPlanIDBatch(batch genericBatch, planID string) {
 func (q *DBQuerier) FindRunByPlanIDScan(results pgx.BatchResults) (FindRunByPlanIDRow, error) {
 	row := results.QueryRow()
 	var item FindRunByPlanIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByPlanIDBatch row: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByPlanID row: %w", err)
@@ -986,8 +1065,8 @@ type FindRunByApplyIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    PlanResourceReports     `json:"plan_resource_report"`
+	ApplyResourceReport   ApplyResourceReports    `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -1000,13 +1079,21 @@ func (q *DBQuerier) FindRunByApplyID(ctx context.Context, applyID string) (FindR
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunByApplyID")
 	row := q.conn.QueryRow(ctx, findRunByApplyIDSQL, applyID)
 	var item FindRunByApplyIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindRunByApplyID: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
@@ -1035,13 +1122,21 @@ func (q *DBQuerier) FindRunByApplyIDBatch(batch genericBatch, applyID string) {
 func (q *DBQuerier) FindRunByApplyIDScan(results pgx.BatchResults) (FindRunByApplyIDRow, error) {
 	row := results.QueryRow()
 	var item FindRunByApplyIDRow
+	planResourceReportRow := q.types.newPlanResourceReports()
+	applyResourceReportRow := q.types.newApplyResourceReports()
 	configurationVersionRow := q.types.newConfigurationVersions()
 	workspaceRow := q.types.newWorkspaces()
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanResourceReport, &item.ApplyResourceReport, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, planResourceReportRow, applyResourceReportRow, configurationVersionRow, workspaceRow, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByApplyIDBatch row: %w", err)
+	}
+	if err := planResourceReportRow.AssignTo(&item.PlanResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
+	}
+	if err := applyResourceReportRow.AssignTo(&item.ApplyResourceReport); err != nil {
+		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
 	}
 	if err := configurationVersionRow.AssignTo(&item.ConfigurationVersion); err != nil {
 		return item, fmt.Errorf("assign FindRunByApplyID row: %w", err)
