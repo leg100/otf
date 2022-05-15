@@ -64,8 +64,6 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -88,8 +86,6 @@ SELECT
     ) AS apply_status_timestamps,
     count(*) OVER() AS full_count
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE workspaces.workspace_id = pggen.arg('workspace_id')
@@ -112,8 +108,6 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -136,8 +130,6 @@ SELECT
     ) AS apply_status_timestamps,
     count(*) OVER() AS full_count
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
@@ -162,8 +154,6 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -186,8 +176,6 @@ SELECT
     ) AS apply_status_timestamps,
     count(*) OVER() AS full_count
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.status = ANY(pggen.arg('statuses'))
@@ -210,8 +198,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -233,8 +221,6 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.run_id = pggen.arg('run_id')
@@ -256,8 +242,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -279,8 +265,6 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.plan_id = pggen.arg('plan_id')
@@ -302,8 +286,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    (plan_resource_reports.*)::"plan_resource_reports" AS plan_resource_report,
-    (apply_resource_reports.*)::"apply_resource_reports" AS apply_resource_report,
+    runs.planned_changes::"resource_report",
+    runs.applied_changes::"resource_report",
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -325,8 +309,6 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-LEFT JOIN plan_resource_reports USING(plan_id)
-LEFT JOIN apply_resource_reports USING(apply_id)
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 WHERE runs.apply_id = pggen.arg('apply_id')

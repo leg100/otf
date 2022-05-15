@@ -31,12 +31,12 @@ type Querier interface {
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
 	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
 
-	InsertApplyResourceReport(ctx context.Context, params InsertApplyResourceReportParams) (pgconn.CommandTag, error)
-	// InsertApplyResourceReportBatch enqueues a InsertApplyResourceReport query into batch to be executed
+	UpdateApplyResourceReport(ctx context.Context, params UpdateApplyResourceReportParams) (pgconn.CommandTag, error)
+	// UpdateApplyResourceReportBatch enqueues a UpdateApplyResourceReport query into batch to be executed
 	// later by the batch.
-	InsertApplyResourceReportBatch(batch genericBatch, params InsertApplyResourceReportParams)
-	// InsertApplyResourceReportScan scans the result of an executed InsertApplyResourceReportBatch query.
-	InsertApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateApplyResourceReportBatch(batch genericBatch, params UpdateApplyResourceReportParams)
+	// UpdateApplyResourceReportScan scans the result of an executed UpdateApplyResourceReportBatch query.
+	UpdateApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
@@ -725,8 +725,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateApplyStatusSQL, updateApplyStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateApplyStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertApplyResourceReportSQL, insertApplyResourceReportSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertApplyResourceReport': %w", err)
+	if _, err := p.Prepare(ctx, updateApplyResourceReportSQL, updateApplyResourceReportSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateApplyResourceReport': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertApplyLogChunkSQL, insertApplyLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertApplyLogChunk': %w", err)
@@ -971,14 +971,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	return nil
 }
 
-// ApplyResourceReports represents the Postgres composite type "apply_resource_reports".
-type ApplyResourceReports struct {
-	ApplyID              *string `json:"apply_id"`
-	ResourceAdditions    *int32  `json:"resource_additions"`
-	ResourceChanges      *int32  `json:"resource_changes"`
-	ResourceDestructions *int32  `json:"resource_destructions"`
-}
-
 // ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
 type ApplyStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
@@ -1016,19 +1008,18 @@ type Organizations struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
 
-// PlanResourceReports represents the Postgres composite type "plan_resource_reports".
-type PlanResourceReports struct {
-	PlanID               *string `json:"plan_id"`
-	ResourceAdditions    *int32  `json:"resource_additions"`
-	ResourceChanges      *int32  `json:"resource_changes"`
-	ResourceDestructions *int32  `json:"resource_destructions"`
-}
-
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
 type PlanStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
 	Status    *string   `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
+}
+
+// ResourceReport represents the Postgres composite type "resource_report".
+type ResourceReport struct {
+	Additions    *int32 `json:"additions"`
+	Changes      *int32 `json:"changes"`
+	Destructions *int32 `json:"destructions"`
 }
 
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
@@ -1184,18 +1175,6 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
-// newApplyResourceReports creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'apply_resource_reports'.
-func (tr *typeResolver) newApplyResourceReports() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"apply_resource_reports",
-		compositeField{"apply_id", "text", &pgtype.Text{}},
-		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
-		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
-		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
-	)
-}
-
 // newApplyStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'apply_status_timestamps'.
 func (tr *typeResolver) newApplyStatusTimestamps() pgtype.ValueTranscoder {
@@ -1249,18 +1228,6 @@ func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
 	)
 }
 
-// newPlanResourceReports creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'plan_resource_reports'.
-func (tr *typeResolver) newPlanResourceReports() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"plan_resource_reports",
-		compositeField{"plan_id", "text", &pgtype.Text{}},
-		compositeField{"resource_additions", "int4", &pgtype.Int4{}},
-		compositeField{"resource_changes", "int4", &pgtype.Int4{}},
-		compositeField{"resource_destructions", "int4", &pgtype.Int4{}},
-	)
-}
-
 // newPlanStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'plan_status_timestamps'.
 func (tr *typeResolver) newPlanStatusTimestamps() pgtype.ValueTranscoder {
@@ -1269,6 +1236,17 @@ func (tr *typeResolver) newPlanStatusTimestamps() pgtype.ValueTranscoder {
 		compositeField{"run_id", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+	)
+}
+
+// newResourceReport creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'resource_report'.
+func (tr *typeResolver) newResourceReport() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"resource_report",
+		compositeField{"additions", "int4", &pgtype.Int4{}},
+		compositeField{"changes", "int4", &pgtype.Int4{}},
+		compositeField{"destructions", "int4", &pgtype.Int4{}},
 	)
 }
 
@@ -1484,46 +1462,36 @@ func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, 
 	return item, nil
 }
 
-const insertApplyResourceReportSQL = `INSERT INTO apply_resource_reports (
-    apply_id,
-    resource_additions,
-    resource_changes,
-    resource_destructions
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4
-)
+const updateApplyResourceReportSQL = `UPDATE runs
+SET applied_changes = ROW($1, $2, $3)
 ;`
 
-type InsertApplyResourceReportParams struct {
-	ApplyID      string
+type UpdateApplyResourceReportParams struct {
 	Additions    int32
 	Changes      int32
 	Destructions int32
 }
 
-// InsertApplyResourceReport implements Querier.InsertApplyResourceReport.
-func (q *DBQuerier) InsertApplyResourceReport(ctx context.Context, params InsertApplyResourceReportParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyResourceReport")
-	cmdTag, err := q.conn.Exec(ctx, insertApplyResourceReportSQL, params.ApplyID, params.Additions, params.Changes, params.Destructions)
+// UpdateApplyResourceReport implements Querier.UpdateApplyResourceReport.
+func (q *DBQuerier) UpdateApplyResourceReport(ctx context.Context, params UpdateApplyResourceReportParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyResourceReport")
+	cmdTag, err := q.conn.Exec(ctx, updateApplyResourceReportSQL, params.Additions, params.Changes, params.Destructions)
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertApplyResourceReport: %w", err)
+		return cmdTag, fmt.Errorf("exec query UpdateApplyResourceReport: %w", err)
 	}
 	return cmdTag, err
 }
 
-// InsertApplyResourceReportBatch implements Querier.InsertApplyResourceReportBatch.
-func (q *DBQuerier) InsertApplyResourceReportBatch(batch genericBatch, params InsertApplyResourceReportParams) {
-	batch.Queue(insertApplyResourceReportSQL, params.ApplyID, params.Additions, params.Changes, params.Destructions)
+// UpdateApplyResourceReportBatch implements Querier.UpdateApplyResourceReportBatch.
+func (q *DBQuerier) UpdateApplyResourceReportBatch(batch genericBatch, params UpdateApplyResourceReportParams) {
+	batch.Queue(updateApplyResourceReportSQL, params.Additions, params.Changes, params.Destructions)
 }
 
-// InsertApplyResourceReportScan implements Querier.InsertApplyResourceReportScan.
-func (q *DBQuerier) InsertApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+// UpdateApplyResourceReportScan implements Querier.UpdateApplyResourceReportScan.
+func (q *DBQuerier) UpdateApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
 	cmdTag, err := results.Exec()
 	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertApplyResourceReportBatch: %w", err)
+		return cmdTag, fmt.Errorf("exec UpdateApplyResourceReportBatch: %w", err)
 	}
 	return cmdTag, err
 }

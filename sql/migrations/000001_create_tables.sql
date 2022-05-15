@@ -95,6 +95,12 @@ CREATE TABLE IF NOT EXISTS configuration_version_status_timestamps (
                              PRIMARY KEY (configuration_version_id, status)
 );
 
+CREATE TYPE resource_report AS (
+    additions       INTEGER,
+    changes         INTEGER,
+    destructions    INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
     plan_id                         TEXT        NOT NULL,
@@ -112,6 +118,8 @@ CREATE TABLE IF NOT EXISTS runs (
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
     apply_status                    TEXT        NOT NULL,
+    planned_changes                 RESOURCE_REPORT NOT NULL,
+    applied_changes                 RESOURCE_REPORT,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                     PRIMARY KEY (run_id),
@@ -138,20 +146,6 @@ CREATE TABLE IF NOT EXISTS plan_status_timestamps (
     status      TEXT        NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (run_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS plan_resource_reports (
-    plan_id                 TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    resource_additions      INTEGER NOT NULL,
-    resource_changes        INTEGER NOT NULL,
-    resource_destructions   INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS apply_resource_reports (
-    apply_id                TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    resource_additions      INTEGER NOT NULL,
-    resource_changes        INTEGER NOT NULL,
-    resource_destructions   INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS plan_logs (

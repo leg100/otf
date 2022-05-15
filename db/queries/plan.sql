@@ -44,15 +44,6 @@ WHERE run_id = pggen.arg('run_id')
 ;
 
 -- name: InsertPlanResourceReport :exec
-INSERT INTO plan_resource_reports (
-    plan_id,
-    resource_additions,
-    resource_changes,
-    resource_destructions
-) VALUES (
-    pggen.arg('plan_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
-)
+UPDATE runs
+SET planned_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
 ;

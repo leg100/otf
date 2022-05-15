@@ -19,16 +19,7 @@ WHERE apply_id = pggen.arg('id')
 RETURNING updated_at
 ;
 
--- name: InsertApplyResourceReport :exec
-INSERT INTO apply_resource_reports (
-    apply_id,
-    resource_additions,
-    resource_changes,
-    resource_destructions
-) VALUES (
-    pggen.arg('apply_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
-)
+-- name: UpdateApplyResourceReport :exec
+UPDATE runs
+SET applied_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
 ;

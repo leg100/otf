@@ -207,21 +207,11 @@ func (q *DBQuerier) PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.Com
 	return cmdTag, err
 }
 
-const insertPlanResourceReportSQL = `INSERT INTO plan_resource_reports (
-    plan_id,
-    resource_additions,
-    resource_changes,
-    resource_destructions
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4
-)
+const insertPlanResourceReportSQL = `UPDATE runs
+SET planned_changes = ROW($1, $2, $3)
 ;`
 
 type InsertPlanResourceReportParams struct {
-	PlanID       string
 	Additions    int32
 	Changes      int32
 	Destructions int32
@@ -230,7 +220,7 @@ type InsertPlanResourceReportParams struct {
 // InsertPlanResourceReport implements Querier.InsertPlanResourceReport.
 func (q *DBQuerier) InsertPlanResourceReport(ctx context.Context, params InsertPlanResourceReportParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanResourceReport")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanResourceReportSQL, params.PlanID, params.Additions, params.Changes, params.Destructions)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanResourceReportSQL, params.Additions, params.Changes, params.Destructions)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertPlanResourceReport: %w", err)
 	}
@@ -239,7 +229,7 @@ func (q *DBQuerier) InsertPlanResourceReport(ctx context.Context, params InsertP
 
 // InsertPlanResourceReportBatch implements Querier.InsertPlanResourceReportBatch.
 func (q *DBQuerier) InsertPlanResourceReportBatch(batch genericBatch, params InsertPlanResourceReportParams) {
-	batch.Queue(insertPlanResourceReportSQL, params.PlanID, params.Additions, params.Changes, params.Destructions)
+	batch.Queue(insertPlanResourceReportSQL, params.Additions, params.Changes, params.Destructions)
 }
 
 // InsertPlanResourceReportScan implements Querier.InsertPlanResourceReportScan.
