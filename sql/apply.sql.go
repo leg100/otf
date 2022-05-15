@@ -978,22 +978,12 @@ type ApplyStatusTimestamps struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s ApplyStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s ApplyStatusTimestamps) GetStatus() *string { return s.Status }
-func (s ApplyStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
-
 // ConfigurationVersionStatusTimestamps represents the Postgres composite type "configuration_version_status_timestamps".
 type ConfigurationVersionStatusTimestamps struct {
 	ConfigurationVersionID *string   `json:"configuration_version_id"`
 	Status                 *string   `json:"status"`
 	Timestamp              time.Time `json:"timestamp"`
 }
-
-func (s ConfigurationVersionStatusTimestamps) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
-func (s ConfigurationVersionStatusTimestamps) GetStatus() *string { return s.Status }
-func (s ConfigurationVersionStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // ConfigurationVersions represents the Postgres composite type "configuration_versions".
 type ConfigurationVersions struct {
@@ -1008,17 +998,6 @@ type ConfigurationVersions struct {
 	WorkspaceID            *string   `json:"workspace_id"`
 }
 
-func (s ConfigurationVersions) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
-func (s ConfigurationVersions) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s ConfigurationVersions) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s ConfigurationVersions) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
-func (s ConfigurationVersions) GetSource() *string { return s.Source }
-func (s ConfigurationVersions) GetSpeculative() *bool { return s.Speculative }
-func (s ConfigurationVersions) GetStatus() *string { return s.Status }
-func (s ConfigurationVersions) GetConfig() []byte { return s.Config }
-func (s ConfigurationVersions) GetWorkspaceID() *string { return s.WorkspaceID }
-
-
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
 	OrganizationID  *string   `json:"organization_id"`
@@ -1029,14 +1008,6 @@ type Organizations struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
 
-func (s Organizations) GetOrganizationID() *string { return s.OrganizationID }
-func (s Organizations) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Organizations) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Organizations) GetName() *string { return s.Name }
-func (s Organizations) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s Organizations) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
-
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
 type PlanStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
@@ -1044,22 +1015,12 @@ type PlanStatusTimestamps struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (s PlanStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s PlanStatusTimestamps) GetStatus() *string { return s.Status }
-func (s PlanStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
-
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
 type RunStatusTimestamps struct {
 	RunID     *string   `json:"run_id"`
 	Status    *string   `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
-
-func (s RunStatusTimestamps) GetRunID() *string { return s.RunID }
-func (s RunStatusTimestamps) GetStatus() *string { return s.Status }
-func (s RunStatusTimestamps) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
@@ -1071,15 +1032,6 @@ type Sessions struct {
 	Expiry    time.Time `json:"expiry"`
 	UserID    *string   `json:"user_id"`
 }
-
-func (s Sessions) GetToken() *string { return s.Token }
-func (s Sessions) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Sessions) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Sessions) GetAddress() *string { return s.Address }
-func (s Sessions) GetFlash() []byte { return s.Flash }
-func (s Sessions) GetExpiry() time.Time { return s.Expiry }
-func (s Sessions) GetUserID() *string { return s.UserID }
-
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
@@ -1093,16 +1045,6 @@ type StateVersionOutputs struct {
 	StateVersionID       *string   `json:"state_version_id"`
 }
 
-func (s StateVersionOutputs) GetStateVersionOutputID() *string { return s.StateVersionOutputID }
-func (s StateVersionOutputs) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s StateVersionOutputs) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s StateVersionOutputs) GetName() *string { return s.Name }
-func (s StateVersionOutputs) GetSensitive() *bool { return s.Sensitive }
-func (s StateVersionOutputs) GetType() *string { return s.Type }
-func (s StateVersionOutputs) GetValue() *string { return s.Value }
-func (s StateVersionOutputs) GetStateVersionID() *string { return s.StateVersionID }
-
-
 // Tokens represents the Postgres composite type "tokens".
 type Tokens struct {
 	TokenID     *string   `json:"token_id"`
@@ -1112,14 +1054,6 @@ type Tokens struct {
 	Description *string   `json:"description"`
 	UserID      *string   `json:"user_id"`
 }
-
-func (s Tokens) GetTokenID() *string { return s.TokenID }
-func (s Tokens) GetToken() *string { return s.Token }
-func (s Tokens) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Tokens) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Tokens) GetDescription() *string { return s.Description }
-func (s Tokens) GetUserID() *string { return s.UserID }
-
 
 // Workspaces represents the Postgres composite type "workspaces".
 type Workspaces struct {
@@ -1147,31 +1081,6 @@ type Workspaces struct {
 	WorkingDirectory           *string   `json:"working_directory"`
 	OrganizationID             *string   `json:"organization_id"`
 }
-
-func (s Workspaces) GetWorkspaceID() *string { return s.WorkspaceID }
-func (s Workspaces) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s Workspaces) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s Workspaces) GetAllowDestroyPlan() *bool { return s.AllowDestroyPlan }
-func (s Workspaces) GetAutoApply() *bool { return s.AutoApply }
-func (s Workspaces) GetCanQueueDestroyPlan() *bool { return s.CanQueueDestroyPlan }
-func (s Workspaces) GetDescription() *string { return s.Description }
-func (s Workspaces) GetEnvironment() *string { return s.Environment }
-func (s Workspaces) GetExecutionMode() *string { return s.ExecutionMode }
-func (s Workspaces) GetFileTriggersEnabled() *bool { return s.FileTriggersEnabled }
-func (s Workspaces) GetGlobalRemoteState() *bool { return s.GlobalRemoteState }
-func (s Workspaces) GetLocked() *bool { return s.Locked }
-func (s Workspaces) GetMigrationEnvironment() *string { return s.MigrationEnvironment }
-func (s Workspaces) GetName() *string { return s.Name }
-func (s Workspaces) GetQueueAllRuns() *bool { return s.QueueAllRuns }
-func (s Workspaces) GetSpeculativeEnabled() *bool { return s.SpeculativeEnabled }
-func (s Workspaces) GetSourceName() *string { return s.SourceName }
-func (s Workspaces) GetSourceUrl() *string { return s.SourceUrl }
-func (s Workspaces) GetStructuredRunOutputEnabled() *bool { return s.StructuredRunOutputEnabled }
-func (s Workspaces) GetTerraformVersion() *string { return s.TerraformVersion }
-func (s Workspaces) GetTriggerPrefixes() []string { return s.TriggerPrefixes }
-func (s Workspaces) GetWorkingDirectory() *string { return s.WorkingDirectory }
-func (s Workspaces) GetOrganizationID() *string { return s.OrganizationID }
-
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
 type typeResolver struct {
@@ -1474,11 +1383,6 @@ type InsertApplyStatusTimestampRow struct {
 	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
-
-func (s InsertApplyStatusTimestampRow) GetRunID() string { return s.RunID }
-func (s InsertApplyStatusTimestampRow) GetStatus() string { return s.Status }
-func (s InsertApplyStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // InsertApplyStatusTimestamp implements Querier.InsertApplyStatusTimestamp.
 func (q *DBQuerier) InsertApplyStatusTimestamp(ctx context.Context, id string, status string) (InsertApplyStatusTimestampRow, error) {

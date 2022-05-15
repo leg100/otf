@@ -86,26 +86,6 @@ type InsertRunRow struct {
 	ConfigurationVersionID string    `json:"configuration_version_id"`
 }
 
-func (s InsertRunRow) GetRunID() string { return s.RunID }
-func (s InsertRunRow) GetPlanID() string { return s.PlanID }
-func (s InsertRunRow) GetApplyID() string { return s.ApplyID }
-func (s InsertRunRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s InsertRunRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertRunRow) GetIsDestroy() bool { return s.IsDestroy }
-func (s InsertRunRow) GetPositionInQueue() int32 { return s.PositionInQueue }
-func (s InsertRunRow) GetRefresh() bool { return s.Refresh }
-func (s InsertRunRow) GetRefreshOnly() bool { return s.RefreshOnly }
-func (s InsertRunRow) GetStatus() string { return s.Status }
-func (s InsertRunRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s InsertRunRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s InsertRunRow) GetPlanStatus() string { return s.PlanStatus }
-func (s InsertRunRow) GetPlanBin() []byte { return s.PlanBin }
-func (s InsertRunRow) GetPlanJson() []byte { return s.PlanJson }
-func (s InsertRunRow) GetApplyStatus() string { return s.ApplyStatus }
-func (s InsertRunRow) GetWorkspaceID() string { return s.WorkspaceID }
-func (s InsertRunRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
-
-
 // InsertRun implements Querier.InsertRun.
 func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (InsertRunRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
@@ -148,11 +128,6 @@ type InsertRunStatusTimestampRow struct {
 	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
-
-func (s InsertRunStatusTimestampRow) GetRunID() string { return s.RunID }
-func (s InsertRunStatusTimestampRow) GetStatus() string { return s.Status }
-func (s InsertRunStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
-
 
 // InsertRunStatusTimestamp implements Querier.InsertRunStatusTimestamp.
 func (q *DBQuerier) InsertRunStatusTimestamp(ctx context.Context, id string, status string) (InsertRunStatusTimestampRow, error) {
@@ -248,8 +223,8 @@ type FindRunsByWorkspaceIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -257,30 +232,6 @@ type FindRunsByWorkspaceIDRow struct {
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 	FullCount             *int                    `json:"full_count"`
 }
-
-func (s FindRunsByWorkspaceIDRow) GetRunID() *string { return s.RunID }
-func (s FindRunsByWorkspaceIDRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunsByWorkspaceIDRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunsByWorkspaceIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunsByWorkspaceIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunsByWorkspaceIDRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunsByWorkspaceIDRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunsByWorkspaceIDRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunsByWorkspaceIDRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunsByWorkspaceIDRow) GetStatus() *string { return s.Status }
-func (s FindRunsByWorkspaceIDRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunsByWorkspaceIDRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunsByWorkspaceIDRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunsByWorkspaceIDRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunsByWorkspaceIDRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunsByWorkspaceIDRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunsByWorkspaceIDRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunsByWorkspaceIDRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByWorkspaceIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunsByWorkspaceIDRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunsByWorkspaceIDRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-func (s FindRunsByWorkspaceIDRow) GetFullCount() *int { return s.FullCount }
-
 
 // FindRunsByWorkspaceID implements Querier.FindRunsByWorkspaceID.
 func (q *DBQuerier) FindRunsByWorkspaceID(ctx context.Context, params FindRunsByWorkspaceIDParams) ([]FindRunsByWorkspaceIDRow, error) {
@@ -441,8 +392,8 @@ type FindRunsByWorkspaceNameRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -450,30 +401,6 @@ type FindRunsByWorkspaceNameRow struct {
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 	FullCount             *int                    `json:"full_count"`
 }
-
-func (s FindRunsByWorkspaceNameRow) GetRunID() *string { return s.RunID }
-func (s FindRunsByWorkspaceNameRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunsByWorkspaceNameRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunsByWorkspaceNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunsByWorkspaceNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunsByWorkspaceNameRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunsByWorkspaceNameRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunsByWorkspaceNameRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunsByWorkspaceNameRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunsByWorkspaceNameRow) GetStatus() *string { return s.Status }
-func (s FindRunsByWorkspaceNameRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunsByWorkspaceNameRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunsByWorkspaceNameRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunsByWorkspaceNameRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunsByWorkspaceNameRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunsByWorkspaceNameRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunsByWorkspaceNameRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunsByWorkspaceNameRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByWorkspaceNameRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunsByWorkspaceNameRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunsByWorkspaceNameRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-func (s FindRunsByWorkspaceNameRow) GetFullCount() *int { return s.FullCount }
-
 
 // FindRunsByWorkspaceName implements Querier.FindRunsByWorkspaceName.
 func (q *DBQuerier) FindRunsByWorkspaceName(ctx context.Context, params FindRunsByWorkspaceNameParams) ([]FindRunsByWorkspaceNameRow, error) {
@@ -631,8 +558,8 @@ type FindRunsByStatusesRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -640,30 +567,6 @@ type FindRunsByStatusesRow struct {
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 	FullCount             *int                    `json:"full_count"`
 }
-
-func (s FindRunsByStatusesRow) GetRunID() *string { return s.RunID }
-func (s FindRunsByStatusesRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunsByStatusesRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunsByStatusesRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunsByStatusesRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunsByStatusesRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunsByStatusesRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunsByStatusesRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunsByStatusesRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunsByStatusesRow) GetStatus() *string { return s.Status }
-func (s FindRunsByStatusesRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunsByStatusesRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunsByStatusesRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunsByStatusesRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunsByStatusesRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunsByStatusesRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunsByStatusesRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunsByStatusesRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunsByStatusesRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunsByStatusesRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunsByStatusesRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-func (s FindRunsByStatusesRow) GetFullCount() *int { return s.FullCount }
-
 
 // FindRunsByStatuses implements Querier.FindRunsByStatuses.
 func (q *DBQuerier) FindRunsByStatuses(ctx context.Context, params FindRunsByStatusesParams) ([]FindRunsByStatusesRow, error) {
@@ -813,37 +716,14 @@ type FindRunByIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
-
-func (s FindRunByIDRow) GetRunID() *string { return s.RunID }
-func (s FindRunByIDRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunByIDRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunByIDRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunByIDRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunByIDRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunByIDRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunByIDRow) GetStatus() *string { return s.Status }
-func (s FindRunByIDRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunByIDRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunByIDRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunByIDRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunByIDRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunByIDRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunByIDRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunByIDRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunByIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunByIDRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunByIDRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-
 
 // FindRunByID implements Querier.FindRunByID.
 func (q *DBQuerier) FindRunByID(ctx context.Context, runID string) (FindRunByIDRow, error) {
@@ -971,37 +851,14 @@ type FindRunByPlanIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
-
-func (s FindRunByPlanIDRow) GetRunID() *string { return s.RunID }
-func (s FindRunByPlanIDRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunByPlanIDRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunByPlanIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunByPlanIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunByPlanIDRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunByPlanIDRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunByPlanIDRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunByPlanIDRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunByPlanIDRow) GetStatus() *string { return s.Status }
-func (s FindRunByPlanIDRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunByPlanIDRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunByPlanIDRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunByPlanIDRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunByPlanIDRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunByPlanIDRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunByPlanIDRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunByPlanIDRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunByPlanIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunByPlanIDRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunByPlanIDRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-
 
 // FindRunByPlanID implements Querier.FindRunByPlanID.
 func (q *DBQuerier) FindRunByPlanID(ctx context.Context, planID string) (FindRunByPlanIDRow, error) {
@@ -1129,37 +986,14 @@ type FindRunByApplyIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlanResourceReport    otf.*ResourceReport     `json:"plan_resource_report"`
-	ApplyResourceReport   otf.*ResourceReport     `json:"apply_resource_report"`
+	PlanResourceReport    *otf.ResourceReport     `json:"plan_resource_report"`
+	ApplyResourceReport   *otf.ResourceReport     `json:"apply_resource_report"`
 	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
 	Workspace             Workspaces              `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
-
-func (s FindRunByApplyIDRow) GetRunID() *string { return s.RunID }
-func (s FindRunByApplyIDRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunByApplyIDRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunByApplyIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunByApplyIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunByApplyIDRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunByApplyIDRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunByApplyIDRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunByApplyIDRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunByApplyIDRow) GetStatus() *string { return s.Status }
-func (s FindRunByApplyIDRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunByApplyIDRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunByApplyIDRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunByApplyIDRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunByApplyIDRow) GetPlanResourceReport() otf.*ResourceReport { return s.PlanResourceReport }
-func (s FindRunByApplyIDRow) GetApplyResourceReport() otf.*ResourceReport { return s.ApplyResourceReport }
-func (s FindRunByApplyIDRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunByApplyIDRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunByApplyIDRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunByApplyIDRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunByApplyIDRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-
 
 // FindRunByApplyID implements Querier.FindRunByApplyID.
 func (q *DBQuerier) FindRunByApplyID(ctx context.Context, applyID string) (FindRunByApplyIDRow, error) {
@@ -1290,27 +1124,6 @@ type FindRunByIDForUpdateRow struct {
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
-
-func (s FindRunByIDForUpdateRow) GetRunID() *string { return s.RunID }
-func (s FindRunByIDForUpdateRow) GetPlanID() *string { return s.PlanID }
-func (s FindRunByIDForUpdateRow) GetApplyID() *string { return s.ApplyID }
-func (s FindRunByIDForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindRunByIDForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindRunByIDForUpdateRow) GetIsDestroy() *bool { return s.IsDestroy }
-func (s FindRunByIDForUpdateRow) GetPositionInQueue() *int32 { return s.PositionInQueue }
-func (s FindRunByIDForUpdateRow) GetRefresh() *bool { return s.Refresh }
-func (s FindRunByIDForUpdateRow) GetRefreshOnly() *bool { return s.RefreshOnly }
-func (s FindRunByIDForUpdateRow) GetStatus() *string { return s.Status }
-func (s FindRunByIDForUpdateRow) GetPlanStatus() *string { return s.PlanStatus }
-func (s FindRunByIDForUpdateRow) GetApplyStatus() *string { return s.ApplyStatus }
-func (s FindRunByIDForUpdateRow) GetReplaceAddrs() []string { return s.ReplaceAddrs }
-func (s FindRunByIDForUpdateRow) GetTargetAddrs() []string { return s.TargetAddrs }
-func (s FindRunByIDForUpdateRow) GetConfigurationVersion() ConfigurationVersions { return s.ConfigurationVersion }
-func (s FindRunByIDForUpdateRow) GetWorkspace() Workspaces { return s.Workspace }
-func (s FindRunByIDForUpdateRow) GetRunStatusTimestamps() []RunStatusTimestamps { return s.RunStatusTimestamps }
-func (s FindRunByIDForUpdateRow) GetPlanStatusTimestamps() []PlanStatusTimestamps { return s.PlanStatusTimestamps }
-func (s FindRunByIDForUpdateRow) GetApplyStatusTimestamps() []ApplyStatusTimestamps { return s.ApplyStatusTimestamps }
-
 
 // FindRunByIDForUpdate implements Querier.FindRunByIDForUpdate.
 func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID string) (FindRunByIDForUpdateRow, error) {

@@ -21,14 +21,6 @@ type FindOrganizationByNameRow struct {
 	SessionTimeout  int32     `json:"session_timeout"`
 }
 
-func (s FindOrganizationByNameRow) GetOrganizationID() string { return s.OrganizationID }
-func (s FindOrganizationByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindOrganizationByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindOrganizationByNameRow) GetName() string { return s.Name }
-func (s FindOrganizationByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
-func (s FindOrganizationByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
-
-
 // FindOrganizationByName implements Querier.FindOrganizationByName.
 func (q *DBQuerier) FindOrganizationByName(ctx context.Context, name string) (FindOrganizationByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByName")
@@ -69,14 +61,6 @@ type FindOrganizationByNameForUpdateRow struct {
 	SessionRemember *int32    `json:"session_remember"`
 	SessionTimeout  *int32    `json:"session_timeout"`
 }
-
-func (s FindOrganizationByNameForUpdateRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s FindOrganizationByNameForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindOrganizationByNameForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindOrganizationByNameForUpdateRow) GetName() *string { return s.Name }
-func (s FindOrganizationByNameForUpdateRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s FindOrganizationByNameForUpdateRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-
 
 // FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
 func (q *DBQuerier) FindOrganizationByNameForUpdate(ctx context.Context, name string) (FindOrganizationByNameForUpdateRow, error) {
@@ -119,15 +103,6 @@ type FindOrganizationsRow struct {
 	SessionTimeout  *int32    `json:"session_timeout"`
 	FullCount       *int      `json:"full_count"`
 }
-
-func (s FindOrganizationsRow) GetOrganizationID() *string { return s.OrganizationID }
-func (s FindOrganizationsRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s FindOrganizationsRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s FindOrganizationsRow) GetName() *string { return s.Name }
-func (s FindOrganizationsRow) GetSessionRemember() *int32 { return s.SessionRemember }
-func (s FindOrganizationsRow) GetSessionTimeout() *int32 { return s.SessionTimeout }
-func (s FindOrganizationsRow) GetFullCount() *int { return s.FullCount }
-
 
 // FindOrganizations implements Querier.FindOrganizations.
 func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int) ([]FindOrganizationsRow, error) {
@@ -210,14 +185,6 @@ type InsertOrganizationRow struct {
 	SessionTimeout  int32     `json:"session_timeout"`
 }
 
-func (s InsertOrganizationRow) GetOrganizationID() string { return s.OrganizationID }
-func (s InsertOrganizationRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s InsertOrganizationRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s InsertOrganizationRow) GetName() string { return s.Name }
-func (s InsertOrganizationRow) GetSessionRemember() int32 { return s.SessionRemember }
-func (s InsertOrganizationRow) GetSessionTimeout() int32 { return s.SessionTimeout }
-
-
 // InsertOrganization implements Querier.InsertOrganization.
 func (q *DBQuerier) InsertOrganization(ctx context.Context, params InsertOrganizationParams) (InsertOrganizationRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertOrganization")
@@ -259,14 +226,6 @@ type UpdateOrganizationNameByNameRow struct {
 	SessionRemember int32     `json:"session_remember"`
 	SessionTimeout  int32     `json:"session_timeout"`
 }
-
-func (s UpdateOrganizationNameByNameRow) GetOrganizationID() string { return s.OrganizationID }
-func (s UpdateOrganizationNameByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateOrganizationNameByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationNameByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationNameByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
-func (s UpdateOrganizationNameByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
-
 
 // UpdateOrganizationNameByName implements Querier.UpdateOrganizationNameByName.
 func (q *DBQuerier) UpdateOrganizationNameByName(ctx context.Context, newName string, name string) (UpdateOrganizationNameByNameRow, error) {
@@ -310,14 +269,6 @@ type UpdateOrganizationSessionRememberByNameRow struct {
 	SessionTimeout  int32     `json:"session_timeout"`
 }
 
-func (s UpdateOrganizationSessionRememberByNameRow) GetOrganizationID() string { return s.OrganizationID }
-func (s UpdateOrganizationSessionRememberByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateOrganizationSessionRememberByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationSessionRememberByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionRememberByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
-
-
 // UpdateOrganizationSessionRememberByName implements Querier.UpdateOrganizationSessionRememberByName.
 func (q *DBQuerier) UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int32, name string) (UpdateOrganizationSessionRememberByNameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateOrganizationSessionRememberByName")
@@ -359,14 +310,6 @@ type UpdateOrganizationSessionTimeoutByNameRow struct {
 	SessionRemember int32     `json:"session_remember"`
 	SessionTimeout  int32     `json:"session_timeout"`
 }
-
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetOrganizationID() string { return s.OrganizationID }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetName() string { return s.Name }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionRemember() int32 { return s.SessionRemember }
-func (s UpdateOrganizationSessionTimeoutByNameRow) GetSessionTimeout() int32 { return s.SessionTimeout }
-
 
 // UpdateOrganizationSessionTimeoutByName implements Querier.UpdateOrganizationSessionTimeoutByName.
 func (q *DBQuerier) UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int32, name string) (UpdateOrganizationSessionTimeoutByNameRow, error) {
