@@ -76,8 +76,8 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) 
 		return err
 	}
 
-	if err := s.db.UpdateApplyResources(id, summary); err != nil {
-		s.Error(err, "persisting summary of applied changes", "id", id)
+	if err := s.db.CreateApplyReport(id, summary); err != nil {
+		s.Error(err, "persisting applied changes report", "id", id)
 		return err
 	}
 

@@ -209,13 +209,13 @@ func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, 
 	}
 
 	if format == otf.PlanFormatJSON {
-		summary, err := otf.CalculatePlanSummary(plan)
+		report, err := otf.CompilePlanReport(plan)
 		if err != nil {
-			s.Error(err, "calculating summary of planned changes", "id", id)
+			s.Error(err, "compiling planned changes report", "id", id)
 			return err
 		}
-		if err := s.db.UpdatePlanResources(id, summary); err != nil {
-			s.Error(err, "persisting summary of planned changes", "id", id)
+		if err := s.db.CreatePlanReport(id, report); err != nil {
+			s.Error(err, "persisting planned changes report", "id", id)
 			return err
 		}
 	}

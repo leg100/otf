@@ -62,9 +62,9 @@ func (pf *PlanFile) Changes() (tally ResourceReport) {
 	return
 }
 
-// CalculatePlanSummary calculates a summary of planned changes from a JSON
+// CompilePlanReport compiles a report of planned changes from a JSON
 // representation of a plan file.
-func CalculatePlanSummary(planJSON []byte) (ResourceReport, error) {
+func CompilePlanReport(planJSON []byte) (ResourceReport, error) {
 	planFile := PlanFile{}
 	if err := json.Unmarshal(planJSON, &planFile); err != nil {
 		return ResourceReport{}, err
