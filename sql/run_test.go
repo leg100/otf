@@ -19,6 +19,46 @@ func TestRun_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestRun_UpdateStatus(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+
+	tests := []struct {
+		name   string
+		update func(run *otf.Run) error
+		want   func(*testing.T, *otf.Run)
+	}{
+		{
+			name: "enqueue plan",
+			update: func(run *otf.Run) error {
+				run.Status = otf.RunPlanQueued
+				return nil
+			},
+			want: func(t *testing.T, got *otf.Run) {
+				assert.Equal(t, otf.RunPlanQueued, got.Status)
+				assert.True(t, got.UpdatedAt.After(got.CreatedAt))
+
+				timestamp, found := got.FindRunStatusTimestamp(otf.RunPlanQueued)
+				assert.True(t, found)
+				assert.True(t, timestamp.After(got.CreatedAt))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := createTestRun(t, db, ws, cv)
+
+			got, err := db.RunStore().UpdateStatus(run.ID, tt.update)
+			require.NoError(t, err)
+
+			tt.want(t, got)
+		})
+	}
+}
+
 func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
@@ -39,14 +79,53 @@ func TestRun_Get(t *testing.T) {
 			name: "by plan id",
 			opts: otf.RunGetOptions{PlanID: &want.Plan.ID},
 		},
+		{
+			name: "by apply id",
+			opts: otf.RunGetOptions{ApplyID: &want.Apply.ID},
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.RunStore().Get(tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, want, got)
+		})
+	}
+}
+
+func TestRun_List(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+
+	run1 := createTestRun(t, db, ws, cv)
+	run2 := createTestRun(t, db, ws, cv)
+	run3 := createTestRun(t, db, ws, cv)
+
+	tests := []struct {
+		name string
+		opts otf.RunListOptions
+		want func(*testing.T, *otf.RunList)
+	}{
+		{
+			name: "by workspace id",
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.RunStore().List(tt.opts)
+			require.NoError(t, err)
+
+			tt.want(t, got)
 		})
 	}
 }
@@ -71,6 +150,7 @@ func TestRun_CreatePlanReport(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan.ResourceReport)
+	assert.Equal(t, &report, run.Plan.ResourceReport)
 }
 
 func TestRun_Unmarshal(t *testing.T) {

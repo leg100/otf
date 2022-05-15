@@ -20,14 +20,14 @@ type RunDBRow struct {
 	ApplyStatus           ApplyStatus               `json:"apply_status"`
 	ReplaceAddrs          []string                  `json:"replace_addrs"`
 	TargetAddrs           []string                  `json:"target_addrs"`
-	PlanResourceReport    *ResourceReport           `json:"plan_resource_report"`
-	ApplyResourceReport   *ResourceReport           `json:"apply_resource_report"`
+	PlanResourceReport    *ResourceReport           `json:"planned_changes"`
+	ApplyResourceReport   *ResourceReport           `json:"applied_changes"`
 	ConfigurationVersion  ConfigurationVersionDBRow `json:"configuration_version"`
 	Workspace             WorkspaceDBRow            `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamp      `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamp     `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamp    `json:"apply_status_timestamps"`
-	FullCount             *int                      `json:"full_count"`
+	FullCount             int                       `json:"full_count"`
 }
 
 func UnmarshalRunListFromDB(pgresult interface{}) (runs []*Run, count int, err error) {
@@ -49,7 +49,7 @@ func UnmarshalRunListFromDB(pgresult interface{}) (runs []*Run, count int, err e
 	}
 
 	if len(rows) > 0 {
-		count = *rows[0].FullCount
+		count = rows[0].FullCount
 	}
 
 	return runs, count, nil

@@ -70,31 +70,31 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 
 	q := NewQuerier(tx)
 
-	var row workspaceRow
-
+	var result interface{}
 	if spec.ID != nil {
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, *spec.ID)
-		if err != nil {
-			return nil, err
-		}
-		row = workspaceRow(result)
+		result, err = q.FindWorkspaceByIDForUpdate(ctx, *spec.ID)
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := q.FindWorkspaceByNameForUpdate(ctx, *spec.Name, *spec.OrganizationName)
-		if err != nil {
-			return nil, err
-		}
-		row = workspaceRow(result)
+		result, err = q.FindWorkspaceByNameForUpdate(ctx, *spec.Name, *spec.OrganizationName)
 	} else {
 		return nil, fmt.Errorf("invalid spec")
 	}
+	if err != nil {
+		return nil, err
+	}
+	ws, err := otf.UnmarshalWorkspaceFromDB(result)
+	if err != nil {
+		return nil, err
+	}
 
-	ws := row.convert()
+	xdescription := ws.Description
+	xname := ws.Name
+	xlocked := ws.Locked
 
 	if err := fn(ws); err != nil {
 		return nil, err
 	}
 
-	if ws.Description != *row.Description {
+	if ws.Description != xdescription {
 		result, err := q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
 		if err != nil {
 			return nil, err
@@ -102,14 +102,14 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		ws.UpdatedAt = result.UpdatedAt
 	}
 
-	if ws.Name != *row.Name {
+	if ws.Name != xname {
 		ws.UpdatedAt, err = q.UpdateWorkspaceNameByID(ctx, ws.Name, ws.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if ws.Locked != *row.Locked {
+	if ws.Locked != xlocked {
 		result, err := q.UpdateWorkspaceLockByID(ctx, ws.Locked, ws.ID)
 		if err != nil {
 			return nil, err
@@ -133,41 +133,14 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	if err != nil {
 		return nil, err
 	}
-
-	var items []*otf.Workspace
-	for _, row := range result {
-		items = append(items, &otf.Workspace{
-			ID: *row.WorkspaceID,
-			Timestamps: otf.Timestamps{
-				CreatedAt: row.CreatedAt,
-				UpdatedAt: row.UpdatedAt,
-			},
-			AllowDestroyPlan:           *row.AllowDestroyPlan,
-			AutoApply:                  *row.AutoApply,
-			CanQueueDestroyPlan:        *row.CanQueueDestroyPlan,
-			Description:                *row.Description,
-			Environment:                *row.Environment,
-			ExecutionMode:              *row.ExecutionMode,
-			FileTriggersEnabled:        *row.FileTriggersEnabled,
-			GlobalRemoteState:          *row.GlobalRemoteState,
-			Locked:                     *row.Locked,
-			MigrationEnvironment:       *row.MigrationEnvironment,
-			Name:                       *row.Name,
-			QueueAllRuns:               *row.QueueAllRuns,
-			SpeculativeEnabled:         *row.SpeculativeEnabled,
-			StructuredRunOutputEnabled: *row.StructuredRunOutputEnabled,
-			SourceName:                 *row.SourceName,
-			SourceURL:                  *row.SourceUrl,
-			TerraformVersion:           *row.TerraformVersion,
-			TriggerPrefixes:            row.TriggerPrefixes,
-			WorkingDirectory:           *row.WorkingDirectory,
-			Organization:               convertOrganizationComposite(row.Organization),
-		})
+	workspaces, count, err := otf.UnmarshalWorkspaceListFromDB(result)
+	if err != nil {
+		return nil, err
 	}
 
 	return &otf.WorkspaceList{
-		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
+		Items:      workspaces,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -180,13 +153,13 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 		if err != nil {
 			return nil, err
 		}
-		return workspaceRow(result).convert(), nil
+		return otf.UnmarshalWorkspaceFromDB(result)
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := q.FindWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
 		if err != nil {
 			return nil, err
 		}
-		return workspaceRow(result).convert(), nil
+		return otf.UnmarshalWorkspaceFromDB(result)
 	} else {
 		return nil, fmt.Errorf("no workspace spec provided")
 	}

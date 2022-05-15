@@ -31,13 +31,6 @@ type Querier interface {
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
 	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
 
-	UpdateApplyResourceReport(ctx context.Context, params UpdateApplyResourceReportParams) (pgconn.CommandTag, error)
-	// UpdateApplyResourceReportBatch enqueues a UpdateApplyResourceReport query into batch to be executed
-	// later by the batch.
-	UpdateApplyResourceReportBatch(batch genericBatch, params UpdateApplyResourceReportParams)
-	// UpdateApplyResourceReportScan scans the result of an executed UpdateApplyResourceReportBatch query.
-	UpdateApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
 	// later by the batch.
@@ -255,13 +248,6 @@ type Querier interface {
 	// PutPlanJSONByRunIDScan scans the result of an executed PutPlanJSONByRunIDBatch query.
 	PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertPlanResourceReport(ctx context.Context, params InsertPlanResourceReportParams) (pgconn.CommandTag, error)
-	// InsertPlanResourceReportBatch enqueues a InsertPlanResourceReport query into batch to be executed
-	// later by the batch.
-	InsertPlanResourceReportBatch(batch genericBatch, params InsertPlanResourceReportParams)
-	// InsertPlanResourceReportScan scans the result of an executed InsertPlanResourceReportBatch query.
-	InsertPlanResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	InsertPlanLogChunk(ctx context.Context, planID string, chunk []byte) (InsertPlanLogChunkRow, error)
 	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
 	// later by the batch.
@@ -345,6 +331,20 @@ type Querier interface {
 	UpdateRunStatusBatch(batch genericBatch, status string, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgconn.CommandTag, error)
+	// UpdateRunPlannedChangesByPlanIDBatch enqueues a UpdateRunPlannedChangesByPlanID query into batch to be executed
+	// later by the batch.
+	UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, params UpdateRunPlannedChangesByPlanIDParams)
+	// UpdateRunPlannedChangesByPlanIDScan scans the result of an executed UpdateRunPlannedChangesByPlanIDBatch query.
+	UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgconn.CommandTag, error)
+	// UpdateRunAppliedChangesByApplyIDBatch enqueues a UpdateRunAppliedChangesByApplyID query into batch to be executed
+	// later by the batch.
+	UpdateRunAppliedChangesByApplyIDBatch(batch genericBatch, params UpdateRunAppliedChangesByApplyIDParams)
+	// UpdateRunAppliedChangesByApplyIDScan scans the result of an executed UpdateRunAppliedChangesByApplyIDBatch query.
+	UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
@@ -725,9 +725,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateApplyStatusSQL, updateApplyStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateApplyStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateApplyResourceReportSQL, updateApplyResourceReportSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateApplyResourceReport': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertApplyLogChunkSQL, insertApplyLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertApplyLogChunk': %w", err)
 	}
@@ -812,9 +809,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, putPlanJSONByRunIDSQL, putPlanJSONByRunIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'PutPlanJSONByRunID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertPlanResourceReportSQL, insertPlanResourceReportSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertPlanResourceReport': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertPlanLogChunkSQL, insertPlanLogChunkSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPlanLogChunk': %w", err)
 	}
@@ -850,6 +844,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateRunPlannedChangesByPlanIDSQL, updateRunPlannedChangesByPlanIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunPlannedChangesByPlanID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateRunAppliedChangesByApplyIDSQL, updateRunAppliedChangesByApplyIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunAppliedChangesByApplyID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
@@ -1460,40 +1460,6 @@ func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, 
 		return item, fmt.Errorf("scan UpdateApplyStatusBatch row: %w", err)
 	}
 	return item, nil
-}
-
-const updateApplyResourceReportSQL = `UPDATE runs
-SET applied_changes = ROW($1, $2, $3)
-;`
-
-type UpdateApplyResourceReportParams struct {
-	Additions    int32
-	Changes      int32
-	Destructions int32
-}
-
-// UpdateApplyResourceReport implements Querier.UpdateApplyResourceReport.
-func (q *DBQuerier) UpdateApplyResourceReport(ctx context.Context, params UpdateApplyResourceReportParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyResourceReport")
-	cmdTag, err := q.conn.Exec(ctx, updateApplyResourceReportSQL, params.Additions, params.Changes, params.Destructions)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateApplyResourceReport: %w", err)
-	}
-	return cmdTag, err
-}
-
-// UpdateApplyResourceReportBatch implements Querier.UpdateApplyResourceReportBatch.
-func (q *DBQuerier) UpdateApplyResourceReportBatch(batch genericBatch, params UpdateApplyResourceReportParams) {
-	batch.Queue(updateApplyResourceReportSQL, params.Additions, params.Changes, params.Destructions)
-}
-
-// UpdateApplyResourceReportScan implements Querier.UpdateApplyResourceReportScan.
-func (q *DBQuerier) UpdateApplyResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateApplyResourceReportBatch: %w", err)
-	}
-	return cmdTag, err
 }
 
 // textPreferrer wraps a pgtype.ValueTranscoder and sets the preferred encoding

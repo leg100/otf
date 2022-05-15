@@ -157,7 +157,7 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	Source                               *string                                `json:"source"`
 	Speculative                          *bool                                  `json:"speculative"`
 	Status                               *string                                `json:"status"`
-	Workspace                            Workspaces                             `json:"workspace"`
+	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 	FullCount                            *int                                   `json:"full_count"`
 }
@@ -253,7 +253,7 @@ type FindConfigurationVersionByIDRow struct {
 	Source                               *string                                `json:"source"`
 	Speculative                          *bool                                  `json:"speculative"`
 	Status                               *string                                `json:"status"`
-	Workspace                            Workspaces                             `json:"workspace"`
+	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
@@ -327,7 +327,7 @@ type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	Source                               *string                                `json:"source"`
 	Speculative                          *bool                                  `json:"speculative"`
 	Status                               *string                                `json:"status"`
-	Workspace                            Workspaces                             `json:"workspace"`
+	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
@@ -401,7 +401,7 @@ type FindConfigurationVersionByIDForUpdateRow struct {
 	Source                               *string                                `json:"source"`
 	Speculative                          *bool                                  `json:"speculative"`
 	Status                               *string                                `json:"status"`
-	Workspace                            Workspaces                             `json:"workspace"`
+	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 

@@ -142,8 +142,8 @@ func (db RunDB) CreatePlanReport(planID string, summary otf.ResourceReport) erro
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	_, err := q.InsertPlanResourceReport(ctx, InsertPlanResourceReportParams{
-		PlanID:       planID,
+	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, UpdateRunPlannedChangesByPlanIDParams{
+		ID:           planID,
 		Additions:    int32(summary.ResourceAdditions),
 		Changes:      int32(summary.ResourceChanges),
 		Destructions: int32(summary.ResourceDestructions),
@@ -155,8 +155,8 @@ func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) er
 	q := NewQuerier(db.Conn)
 	ctx := context.Background()
 
-	_, err := q.InsertApplyResourceReport(ctx, InsertApplyResourceReportParams{
-		ApplyID:      applyID,
+	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, UpdateRunAppliedChangesByApplyIDParams{
+		ID:           applyID,
 		Additions:    int32(summary.ResourceAdditions),
 		Changes:      int32(summary.ResourceChanges),
 		Destructions: int32(summary.ResourceDestructions),

@@ -206,37 +206,3 @@ func (q *DBQuerier) PutPlanJSONByRunIDScan(results pgx.BatchResults) (pgconn.Com
 	}
 	return cmdTag, err
 }
-
-const insertPlanResourceReportSQL = `UPDATE runs
-SET planned_changes = ROW($1, $2, $3)
-;`
-
-type InsertPlanResourceReportParams struct {
-	Additions    int32
-	Changes      int32
-	Destructions int32
-}
-
-// InsertPlanResourceReport implements Querier.InsertPlanResourceReport.
-func (q *DBQuerier) InsertPlanResourceReport(ctx context.Context, params InsertPlanResourceReportParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanResourceReport")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanResourceReportSQL, params.Additions, params.Changes, params.Destructions)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertPlanResourceReport: %w", err)
-	}
-	return cmdTag, err
-}
-
-// InsertPlanResourceReportBatch implements Querier.InsertPlanResourceReportBatch.
-func (q *DBQuerier) InsertPlanResourceReportBatch(batch genericBatch, params InsertPlanResourceReportParams) {
-	batch.Queue(insertPlanResourceReportSQL, params.Additions, params.Changes, params.Destructions)
-}
-
-// InsertPlanResourceReportScan implements Querier.InsertPlanResourceReportScan.
-func (q *DBQuerier) InsertPlanResourceReportScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertPlanResourceReportBatch: %w", err)
-	}
-	return cmdTag, err
-}

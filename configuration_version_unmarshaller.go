@@ -19,6 +19,31 @@ type ConfigurationVersionDBRow struct {
 	FullCount                            int                                   `json:"full_count"`
 }
 
+func UnmarshalConfigurationVersionListFromDB(pgresult interface{}) (cvs []*ConfigurationVersion, count int, err error) {
+	data, err := json.Marshal(pgresult)
+	if err != nil {
+		return nil, 0, err
+	}
+	var rows []ConfigurationVersionDBRow
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return nil, 0, err
+	}
+
+	for _, row := range rows {
+		cv, err := unmarshalConfigurationVersionDBRow(row)
+		if err != nil {
+			return nil, 0, err
+		}
+		cvs = append(cvs, cv)
+	}
+
+	if len(rows) > 0 {
+		count = rows[0].FullCount
+	}
+
+	return cvs, count, nil
+}
+
 func UnmarshalConfigurationVersionFromDB(pgresult interface{}) (*ConfigurationVersion, error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
@@ -29,6 +54,10 @@ func UnmarshalConfigurationVersionFromDB(pgresult interface{}) (*ConfigurationVe
 		return nil, err
 	}
 
+	return unmarshalConfigurationVersionDBRow(row)
+}
+
+func unmarshalConfigurationVersionDBRow(row ConfigurationVersionDBRow) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID: row.ConfigurationVersionID,
 		Timestamps: Timestamps{

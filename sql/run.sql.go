@@ -5,9 +5,10 @@ package sql
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const insertRunSQL = `INSERT INTO runs (
@@ -45,7 +46,7 @@ const insertRunSQL = `INSERT INTO runs (
     $13,
     $14
 )
-RETURNING *;`
+RETURNING created_at, updated_at;`
 
 type InsertRunParams struct {
 	ID                     string
@@ -65,26 +66,8 @@ type InsertRunParams struct {
 }
 
 type InsertRunRow struct {
-	RunID                  string         `json:"run_id"`
-	PlanID                 string         `json:"plan_id"`
-	ApplyID                string         `json:"apply_id"`
-	CreatedAt              time.Time      `json:"created_at"`
-	UpdatedAt              time.Time      `json:"updated_at"`
-	IsDestroy              bool           `json:"is_destroy"`
-	PositionInQueue        int32          `json:"position_in_queue"`
-	Refresh                bool           `json:"refresh"`
-	RefreshOnly            bool           `json:"refresh_only"`
-	Status                 string         `json:"status"`
-	ReplaceAddrs           []string       `json:"replace_addrs"`
-	TargetAddrs            []string       `json:"target_addrs"`
-	PlanStatus             string         `json:"plan_status"`
-	PlanBin                []byte         `json:"plan_bin"`
-	PlanJson               []byte         `json:"plan_json"`
-	ApplyStatus            string         `json:"apply_status"`
-	PlannedChanges         ResourceReport `json:"planned_changes"`
-	AppliedChanges         ResourceReport `json:"applied_changes"`
-	WorkspaceID            string         `json:"workspace_id"`
-	ConfigurationVersionID string         `json:"configuration_version_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // InsertRun implements Querier.InsertRun.
@@ -92,16 +75,8 @@ func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (Inse
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
 	row := q.conn.QueryRow(ctx, insertRunSQL, params.ID, params.PlanID, params.ApplyID, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.PlanStatus, params.ApplyStatus, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 	var item InsertRunRow
-	plannedChangesRow := q.types.newResourceReport()
-	appliedChangesRow := q.types.newResourceReport()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanStatus, &item.PlanBin, &item.PlanJson, &item.ApplyStatus, plannedChangesRow, appliedChangesRow, &item.WorkspaceID, &item.ConfigurationVersionID); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("query InsertRun: %w", err)
-	}
-	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
-		return item, fmt.Errorf("assign InsertRun row: %w", err)
-	}
-	if err := appliedChangesRow.AssignTo(&item.AppliedChanges); err != nil {
-		return item, fmt.Errorf("assign InsertRun row: %w", err)
 	}
 	return item, nil
 }
@@ -115,16 +90,8 @@ func (q *DBQuerier) InsertRunBatch(batch genericBatch, params InsertRunParams) {
 func (q *DBQuerier) InsertRunScan(results pgx.BatchResults) (InsertRunRow, error) {
 	row := results.QueryRow()
 	var item InsertRunRow
-	plannedChangesRow := q.types.newResourceReport()
-	appliedChangesRow := q.types.newResourceReport()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.UpdatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.ReplaceAddrs, &item.TargetAddrs, &item.PlanStatus, &item.PlanBin, &item.PlanJson, &item.ApplyStatus, plannedChangesRow, appliedChangesRow, &item.WorkspaceID, &item.ConfigurationVersionID); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("scan InsertRunBatch row: %w", err)
-	}
-	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
-		return item, fmt.Errorf("assign InsertRun row: %w", err)
-	}
-	if err := appliedChangesRow.AssignTo(&item.AppliedChanges); err != nil {
-		return item, fmt.Errorf("assign InsertRun row: %w", err)
 	}
 	return item, nil
 }
@@ -236,8 +203,8 @@ type FindRunsByWorkspaceIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -399,8 +366,8 @@ type FindRunsByWorkspaceNameRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -559,8 +526,8 @@ type FindRunsByStatusesRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -713,10 +680,10 @@ type FindRunByIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlannedChanges        ResourceReport          `json:"planned_changes"`
-	AppliedChanges        ResourceReport          `json:"applied_changes"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	PlannedChanges        *ResourceReport         `json:"planned_changes"`
+	AppliedChanges        *ResourceReport         `json:"applied_changes"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -862,10 +829,10 @@ type FindRunByPlanIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlannedChanges        ResourceReport          `json:"planned_changes"`
-	AppliedChanges        ResourceReport          `json:"applied_changes"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	PlannedChanges        *ResourceReport         `json:"planned_changes"`
+	AppliedChanges        *ResourceReport         `json:"applied_changes"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -968,7 +935,7 @@ const findRunByApplyIDSQL = `SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    runs.planned_changes::"resource_report",
+    runs.planned_changes::"resource_report" AS planned_changes,
     runs.applied_changes::"resource_report",
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
@@ -1011,10 +978,10 @@ type FindRunByApplyIDRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	PlannedChanges        ResourceReport          `json:"planned_changes"`
-	AppliedChanges        ResourceReport          `json:"applied_changes"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	PlannedChanges        *ResourceReport         `json:"planned_changes"`
+	AppliedChanges        *ResourceReport         `json:"applied_changes"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -1159,8 +1126,8 @@ type FindRunByIDForUpdateRow struct {
 	ApplyStatus           *string                 `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
-	ConfigurationVersion  ConfigurationVersions   `json:"configuration_version"`
-	Workspace             Workspaces              `json:"workspace"`
+	ConfigurationVersion  *ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *Workspaces             `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamps  `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamps `json:"apply_status_timestamps"`
@@ -1264,6 +1231,78 @@ func (q *DBQuerier) UpdateRunStatusScan(results pgx.BatchResults) (time.Time, er
 		return item, fmt.Errorf("scan UpdateRunStatusBatch row: %w", err)
 	}
 	return item, nil
+}
+
+const updateRunPlannedChangesByPlanIDSQL = `UPDATE runs
+SET planned_changes = ROW($1, $2, $3)
+WHERE plan_id = $4
+;`
+
+type UpdateRunPlannedChangesByPlanIDParams struct {
+	Additions    int32
+	Changes      int32
+	Destructions int32
+	ID           string
+}
+
+// UpdateRunPlannedChangesByPlanID implements Querier.UpdateRunPlannedChangesByPlanID.
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlannedChangesByPlanID")
+	cmdTag, err := q.conn.Exec(ctx, updateRunPlannedChangesByPlanIDSQL, params.Additions, params.Changes, params.Destructions, params.ID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query UpdateRunPlannedChangesByPlanID: %w", err)
+	}
+	return cmdTag, err
+}
+
+// UpdateRunPlannedChangesByPlanIDBatch implements Querier.UpdateRunPlannedChangesByPlanIDBatch.
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, params UpdateRunPlannedChangesByPlanIDParams) {
+	batch.Queue(updateRunPlannedChangesByPlanIDSQL, params.Additions, params.Changes, params.Destructions, params.ID)
+}
+
+// UpdateRunPlannedChangesByPlanIDScan implements Querier.UpdateRunPlannedChangesByPlanIDScan.
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec UpdateRunPlannedChangesByPlanIDBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const updateRunAppliedChangesByApplyIDSQL = `UPDATE runs
+SET applied_changes = ROW($1, $2, $3)
+WHERE apply_id = $4
+;`
+
+type UpdateRunAppliedChangesByApplyIDParams struct {
+	Additions    int32
+	Changes      int32
+	Destructions int32
+	ID           string
+}
+
+// UpdateRunAppliedChangesByApplyID implements Querier.UpdateRunAppliedChangesByApplyID.
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunAppliedChangesByApplyID")
+	cmdTag, err := q.conn.Exec(ctx, updateRunAppliedChangesByApplyIDSQL, params.Additions, params.Changes, params.Destructions, params.ID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query UpdateRunAppliedChangesByApplyID: %w", err)
+	}
+	return cmdTag, err
+}
+
+// UpdateRunAppliedChangesByApplyIDBatch implements Querier.UpdateRunAppliedChangesByApplyIDBatch.
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDBatch(batch genericBatch, params UpdateRunAppliedChangesByApplyIDParams) {
+	batch.Queue(updateRunAppliedChangesByApplyIDSQL, params.Additions, params.Changes, params.Destructions, params.ID)
+}
+
+// UpdateRunAppliedChangesByApplyIDScan implements Querier.UpdateRunAppliedChangesByApplyIDScan.
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec UpdateRunAppliedChangesByApplyIDBatch: %w", err)
+	}
+	return cmdTag, err
 }
 
 const deleteRunByIDSQL = `DELETE

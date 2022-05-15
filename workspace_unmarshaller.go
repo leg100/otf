@@ -33,6 +33,31 @@ type WorkspaceDBRow struct {
 	FullCount                  int                `json:"full_count"`
 }
 
+func UnmarshalWorkspaceListFromDB(pgresult interface{}) (workspaces []*Workspace, count int, err error) {
+	data, err := json.Marshal(pgresult)
+	if err != nil {
+		return nil, 0, err
+	}
+	var rows []WorkspaceDBRow
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return nil, 0, err
+	}
+
+	for _, row := range rows {
+		ws, err := unmarshalWorkspaceDBRow(row)
+		if err != nil {
+			return nil, 0, err
+		}
+		workspaces = append(workspaces, ws)
+	}
+
+	if len(rows) > 0 {
+		count = rows[0].FullCount
+	}
+
+	return workspaces, count, nil
+}
+
 func UnmarshalWorkspaceFromDB(pgresult interface{}) (*Workspace, error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
@@ -42,25 +67,43 @@ func UnmarshalWorkspaceFromDB(pgresult interface{}) (*Workspace, error) {
 	if err := json.Unmarshal(data, &row); err != nil {
 		return nil, err
 	}
+	return unmarshalWorkspaceDBRow(row)
+}
 
+func unmarshalWorkspaceDBRow(row WorkspaceDBRow) (*Workspace, error) {
 	ws := Workspace{
-		ID:               row.WorkspaceID,
-		Name:             row.Name,
-		WorkingDirectory: row.WorkingDirectory,
-		TerraformVersion: row.TerraformVersion,
+		ID: row.WorkspaceID,
 		Timestamps: Timestamps{
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 		},
+		AllowDestroyPlan:           row.AllowDestroyPlan,
+		AutoApply:                  row.AutoApply,
+		CanQueueDestroyPlan:        row.CanQueueDestroyPlan,
+		Description:                row.Description,
+		Environment:                row.Environment,
+		ExecutionMode:              row.ExecutionMode,
+		FileTriggersEnabled:        row.FileTriggersEnabled,
+		GlobalRemoteState:          row.GlobalRemoteState,
+		Locked:                     row.Locked,
+		MigrationEnvironment:       row.MigrationEnvironment,
+		Name:                       row.Name,
+		SpeculativeEnabled:         row.SpeculativeEnabled,
+		StructuredRunOutputEnabled: row.StructuredRunOutputEnabled,
+		SourceName:                 row.SourceName,
+		SourceURL:                  row.SourceUrl,
+		TerraformVersion:           row.TerraformVersion,
+		TriggerPrefixes:            row.TriggerPrefixes,
+		WorkingDirectory:           row.WorkingDirectory,
 	}
 
 	if row.Organization != nil {
+		var err error
 		ws.Organization, err = UnmarshalOrganizationFromDB(row.Organization)
 		if err != nil {
 			return nil, err
 		}
-	}
-	if row.OrganizationID != nil {
+	} else if row.OrganizationID != nil {
 		ws.Organization = &Organization{ID: *row.OrganizationID}
 	}
 

@@ -42,8 +42,3 @@ UPDATE runs
 SET plan_json = pggen.arg('plan_json')
 WHERE run_id = pggen.arg('run_id')
 ;
-
--- name: InsertPlanResourceReport :exec
-UPDATE runs
-SET planned_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
-;

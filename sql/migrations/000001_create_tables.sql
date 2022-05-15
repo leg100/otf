@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS runs (
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
     apply_status                    TEXT        NOT NULL,
-    planned_changes                 RESOURCE_REPORT NOT NULL,
+    planned_changes                 RESOURCE_REPORT,
     applied_changes                 RESOURCE_REPORT,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
@@ -199,6 +199,7 @@ DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
+DROP TYPE resource_report;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;

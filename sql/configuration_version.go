@@ -74,7 +74,10 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 	if err != nil {
 		return err
 	}
-	cv := convertConfigurationVersion(configurationVersionRow(result))
+	cv, err := otf.UnmarshalConfigurationVersionFromDB(result)
+	if err != nil {
+		return err
+	}
 
 	if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
 		return err
@@ -96,32 +99,14 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 		return nil, err
 	}
 
-	var items []*otf.ConfigurationVersion
-	for _, r := range result {
-		cv := &otf.ConfigurationVersion{
-			ID: *r.ConfigurationVersionID,
-			Timestamps: otf.Timestamps{
-				CreatedAt: r.CreatedAt,
-				UpdatedAt: r.UpdatedAt,
-			},
-			Status:        otf.ConfigurationStatus(*r.Status),
-			Source:        otf.ConfigurationSource(*r.Source),
-			AutoQueueRuns: *r.AutoQueueRuns,
-			Speculative:   *r.Speculative,
-			Workspace:     convertWorkspaceComposite(r.Workspace),
-		}
-		for _, ts := range r.ConfigurationVersionStatusTimestamps {
-			cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
-				Status:    otf.ConfigurationStatus(*ts.Status),
-				Timestamp: ts.Timestamp,
-			})
-		}
-		items = append(items, cv)
+	cvs, count, err := otf.UnmarshalConfigurationVersionListFromDB(result)
+	if err != nil {
+		return nil, err
 	}
 
 	return &otf.ConfigurationVersionList{
-		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
+		Items:      cvs,
+		Pagination: otf.NewPagination(opts.ListOptions, count),
 	}, nil
 }
 
@@ -134,13 +119,13 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		return convertConfigurationVersion(configurationVersionRow(result)), nil
+		return otf.UnmarshalConfigurationVersionFromDB(result)
 	} else if opts.WorkspaceID != nil {
 		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
 		if err != nil {
 			return nil, err
 		}
-		return convertConfigurationVersion(configurationVersionRow(result)), nil
+		return otf.UnmarshalConfigurationVersionFromDB(result)
 	} else {
 		return nil, fmt.Errorf("no configuration version spec provided")
 	}

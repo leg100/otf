@@ -312,7 +312,7 @@ func (r *Run) ForceCancelAvailableAt() time.Time {
 		return time.Time{}
 	}
 
-	canceledAt, found := r.findRunStatusTimestamp(r.Status)
+	canceledAt, found := r.FindRunStatusTimestamp(r.Status)
 	if !found {
 		panic("no corresponding timestamp found for canceled status")
 	}
@@ -571,7 +571,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) findRunStatusTimestamp(status RunStatus) (time.Time, bool) {
+func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
 	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, true

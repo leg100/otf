@@ -34,7 +34,7 @@ INSERT INTO runs (
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 )
-RETURNING *;
+RETURNING created_at, updated_at;
 
 -- name: InsertRunStatusTimestamp :one
 INSERT INTO run_status_timestamps (
@@ -286,7 +286,7 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    runs.planned_changes::"resource_report",
+    runs.planned_changes::"resource_report" AS planned_changes,
     runs.applied_changes::"resource_report",
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
@@ -364,6 +364,18 @@ SET
     updated_at = current_timestamp
 WHERE run_id = pggen.arg('id')
 RETURNING updated_at
+;
+
+-- name: UpdateRunPlannedChangesByPlanID :exec
+UPDATE runs
+SET planned_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
+WHERE plan_id = pggen.arg('id')
+;
+
+-- name: UpdateRunAppliedChangesByApplyID :exec
+UPDATE runs
+SET applied_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
+WHERE apply_id = pggen.arg('id')
 ;
 
 -- name: DeleteRunByID :exec

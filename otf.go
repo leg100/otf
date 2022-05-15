@@ -111,9 +111,9 @@ var _ pgtype.BinaryDecoder = (*ResourceReport)(nil)
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
-	ResourceAdditions    int
-	ResourceChanges      int
-	ResourceDestructions int
+	ResourceAdditions    int `json:"additions"`
+	ResourceChanges      int `json:"changes"`
+	ResourceDestructions int `json:"destructions"`
 }
 
 func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {

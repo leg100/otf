@@ -18,8 +18,3 @@ SET
 WHERE apply_id = pggen.arg('id')
 RETURNING updated_at
 ;
-
--- name: UpdateApplyResourceReport :exec
-UPDATE runs
-SET applied_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
-;
