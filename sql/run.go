@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -14,11 +13,6 @@ var _ otf.RunStore = (*RunDB)(nil)
 
 type RunDB struct {
 	*pgx.Conn
-}
-
-type Timestamps interface {
-	GetCreatedAt() time.Time
-	GetUpdatedAt() time.Time
 }
 
 func NewRunDB(db *pgx.Conn) *RunDB {

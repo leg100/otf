@@ -25,7 +25,6 @@ func TestRun_Get(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 
 	want := createTestRun(t, db, ws, cv)
-	want.Workspace.Organization = nil
 	want.ConfigurationVersion.StatusTimestamps = nil
 
 	tests := []struct {

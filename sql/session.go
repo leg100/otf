@@ -15,16 +15,6 @@ var (
 	DefaultSessionCleanupInterval = 5 * time.Minute
 )
 
-type sessionRow interface {
-	GetToken() *string
-	GetAddress() *string
-	GetFlash() []byte
-	GetExpiry() time.Time
-	GetUserID() *string
-
-	Timestamps
-}
-
 type SessionDB struct {
 	*pgx.Conn
 }

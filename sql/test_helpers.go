@@ -47,40 +47,30 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	return db
 }
 
-// newTestTimestamps constructs timestamps suitable for unit tests interfacing with
-// postgres; tests may want to test for equality with timestamps retrieved from
-// postgres, and so the timestamps must be of a certain precision and timezone.
-func newTestTimestamps() otf.Timestamps {
-	now := time.Now().Round(time.Millisecond).UTC()
-	return otf.Timestamps{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
 func newTestOrganization() *otf.Organization {
 	return &otf.Organization{
-		ID:         otf.NewID("org"),
-		Timestamps: newTestTimestamps(),
-		Name:       uuid.NewString(),
+		ID:   otf.NewID("org"),
+		Name: uuid.NewString(),
 	}
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return &otf.Workspace{
-		ID:           otf.NewID("ws"),
-		Timestamps:   newTestTimestamps(),
-		Name:         uuid.NewString(),
-		Organization: org,
+		ID:   otf.NewID("ws"),
+		Name: uuid.NewString(),
+		Organization: &otf.Organization{
+			ID: org.ID,
+		},
 	}
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
-		ID:         otf.NewID("cv"),
-		Timestamps: newTestTimestamps(),
-		Status:     otf.ConfigurationPending,
-		Workspace:  ws,
+		ID:     otf.NewID("cv"),
+		Status: otf.ConfigurationPending,
+		Workspace: &otf.Workspace{
+			ID: ws.ID,
+		},
 	}
 }
 
@@ -100,9 +90,8 @@ func newTestStateVersion(run *otf.Run, opts ...newTestStateVersionOption) *otf.S
 
 func newTestUser() *otf.User {
 	return &otf.User{
-		ID:         otf.NewID("user"),
-		Timestamps: newTestTimestamps(),
-		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
+		ID:       otf.NewID("user"),
+		Username: fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
 	}
 }
 
@@ -130,8 +119,6 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 		o(session)
 	}
 
-	session.Timestamps = newTestTimestamps()
-
 	return session
 }
 
@@ -152,9 +139,8 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	id := otf.NewID("run")
 	return &otf.Run{
-		ID:         id,
-		Timestamps: newTestTimestamps(),
-		Status:     otf.RunPending,
+		ID:     id,
+		Status: otf.RunPending,
 		Plan: &otf.Plan{
 			ID:    otf.NewID("plan"),
 			RunID: id,
