@@ -39,6 +39,13 @@ type InsertUserRow struct {
 	CurrentOrganization *string   `json:"current_organization"`
 }
 
+func (s InsertUserRow) GetUserID() string { return s.UserID }
+func (s InsertUserRow) GetUsername() string { return s.Username }
+func (s InsertUserRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s InsertUserRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s InsertUserRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+
+
 // InsertUser implements Querier.InsertUser.
 func (q *DBQuerier) InsertUser(ctx context.Context, params InsertUserParams) (InsertUserRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertUser")
@@ -86,6 +93,16 @@ type FindUsersRow struct {
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
+
+func (s FindUsersRow) GetUserID() *string { return s.UserID }
+func (s FindUsersRow) GetUsername() *string { return s.Username }
+func (s FindUsersRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUsersRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUsersRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUsersRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUsersRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUsersRow) GetOrganizations() []Organizations { return s.Organizations }
+
 
 // FindUsers implements Querier.FindUsers.
 func (q *DBQuerier) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
@@ -182,6 +199,16 @@ type FindUserByIDRow struct {
 	Organizations       []Organizations `json:"organizations"`
 }
 
+func (s FindUserByIDRow) GetUserID() *string { return s.UserID }
+func (s FindUserByIDRow) GetUsername() *string { return s.Username }
+func (s FindUserByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUserByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUserByIDRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUserByIDRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUserByIDRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUserByIDRow) GetOrganizations() []Organizations { return s.Organizations }
+
+
 // FindUserByID implements Querier.FindUserByID.
 func (q *DBQuerier) FindUserByID(ctx context.Context, userID string) (FindUserByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByID")
@@ -255,6 +282,16 @@ type FindUserByUsernameRow struct {
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
+
+func (s FindUserByUsernameRow) GetUserID() *string { return s.UserID }
+func (s FindUserByUsernameRow) GetUsername() *string { return s.Username }
+func (s FindUserByUsernameRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUserByUsernameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUserByUsernameRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUserByUsernameRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUserByUsernameRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUserByUsernameRow) GetOrganizations() []Organizations { return s.Organizations }
+
 
 // FindUserByUsername implements Querier.FindUserByUsername.
 func (q *DBQuerier) FindUserByUsername(ctx context.Context, username string) (FindUserByUsernameRow, error) {
@@ -330,6 +367,16 @@ type FindUserBySessionTokenRow struct {
 	Organizations       []Organizations `json:"organizations"`
 }
 
+func (s FindUserBySessionTokenRow) GetUserID() *string { return s.UserID }
+func (s FindUserBySessionTokenRow) GetUsername() *string { return s.Username }
+func (s FindUserBySessionTokenRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUserBySessionTokenRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUserBySessionTokenRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUserBySessionTokenRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUserBySessionTokenRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUserBySessionTokenRow) GetOrganizations() []Organizations { return s.Organizations }
+
+
 // FindUserBySessionToken implements Querier.FindUserBySessionToken.
 func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token string) (FindUserBySessionTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserBySessionToken")
@@ -403,6 +450,16 @@ type FindUserByAuthenticationTokenRow struct {
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
+
+func (s FindUserByAuthenticationTokenRow) GetUserID() *string { return s.UserID }
+func (s FindUserByAuthenticationTokenRow) GetUsername() *string { return s.Username }
+func (s FindUserByAuthenticationTokenRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUserByAuthenticationTokenRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUserByAuthenticationTokenRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUserByAuthenticationTokenRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUserByAuthenticationTokenRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUserByAuthenticationTokenRow) GetOrganizations() []Organizations { return s.Organizations }
+
 
 // FindUserByAuthenticationToken implements Querier.FindUserByAuthenticationToken.
 func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token string) (FindUserByAuthenticationTokenRow, error) {
@@ -478,6 +535,16 @@ type FindUserByAuthenticationTokenIDRow struct {
 	Organizations       []Organizations `json:"organizations"`
 }
 
+func (s FindUserByAuthenticationTokenIDRow) GetUserID() *string { return s.UserID }
+func (s FindUserByAuthenticationTokenIDRow) GetUsername() *string { return s.Username }
+func (s FindUserByAuthenticationTokenIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindUserByAuthenticationTokenIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindUserByAuthenticationTokenIDRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+func (s FindUserByAuthenticationTokenIDRow) GetSessions() []Sessions { return s.Sessions }
+func (s FindUserByAuthenticationTokenIDRow) GetTokens() []Tokens { return s.Tokens }
+func (s FindUserByAuthenticationTokenIDRow) GetOrganizations() []Organizations { return s.Organizations }
+
+
 // FindUserByAuthenticationTokenID implements Querier.FindUserByAuthenticationTokenID.
 func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationTokenID")
@@ -542,6 +609,13 @@ type UpdateUserCurrentOrganizationRow struct {
 	UpdatedAt           time.Time `json:"updated_at"`
 	CurrentOrganization *string   `json:"current_organization"`
 }
+
+func (s UpdateUserCurrentOrganizationRow) GetUserID() string { return s.UserID }
+func (s UpdateUserCurrentOrganizationRow) GetUsername() string { return s.Username }
+func (s UpdateUserCurrentOrganizationRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s UpdateUserCurrentOrganizationRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s UpdateUserCurrentOrganizationRow) GetCurrentOrganization() *string { return s.CurrentOrganization }
+
 
 // UpdateUserCurrentOrganization implements Querier.UpdateUserCurrentOrganization.
 func (q *DBQuerier) UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error) {

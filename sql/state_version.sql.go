@@ -40,6 +40,10 @@ type InsertStateVersionRow struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (s InsertStateVersionRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s InsertStateVersionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+
+
 // InsertStateVersion implements Querier.InsertStateVersion.
 func (q *DBQuerier) InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (InsertStateVersionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertStateVersion")
@@ -100,6 +104,18 @@ type FindStateVersionsByWorkspaceNameRow struct {
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 	FullCount           *int                  `json:"full_count"`
 }
+
+func (s FindStateVersionsByWorkspaceNameRow) GetStateVersionID() *string { return s.StateVersionID }
+func (s FindStateVersionsByWorkspaceNameRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindStateVersionsByWorkspaceNameRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindStateVersionsByWorkspaceNameRow) GetSerial() *int32 { return s.Serial }
+func (s FindStateVersionsByWorkspaceNameRow) GetVcsCommitSha() *string { return s.VcsCommitSha }
+func (s FindStateVersionsByWorkspaceNameRow) GetVcsCommitUrl() *string { return s.VcsCommitUrl }
+func (s FindStateVersionsByWorkspaceNameRow) GetState() []byte { return s.State }
+func (s FindStateVersionsByWorkspaceNameRow) GetRunID() *string { return s.RunID }
+func (s FindStateVersionsByWorkspaceNameRow) GetStateVersionOutputs() []StateVersionOutputs { return s.StateVersionOutputs }
+func (s FindStateVersionsByWorkspaceNameRow) GetFullCount() *int { return s.FullCount }
+
 
 // FindStateVersionsByWorkspaceName implements Querier.FindStateVersionsByWorkspaceName.
 func (q *DBQuerier) FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error) {
@@ -179,6 +195,17 @@ type FindStateVersionByIDRow struct {
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
 
+func (s FindStateVersionByIDRow) GetStateVersionID() *string { return s.StateVersionID }
+func (s FindStateVersionByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindStateVersionByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindStateVersionByIDRow) GetSerial() *int32 { return s.Serial }
+func (s FindStateVersionByIDRow) GetVcsCommitSha() *string { return s.VcsCommitSha }
+func (s FindStateVersionByIDRow) GetVcsCommitUrl() *string { return s.VcsCommitUrl }
+func (s FindStateVersionByIDRow) GetState() []byte { return s.State }
+func (s FindStateVersionByIDRow) GetRunID() *string { return s.RunID }
+func (s FindStateVersionByIDRow) GetStateVersionOutputs() []StateVersionOutputs { return s.StateVersionOutputs }
+
+
 // FindStateVersionByID implements Querier.FindStateVersionByID.
 func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id string) (FindStateVersionByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindStateVersionByID")
@@ -235,6 +262,17 @@ type FindStateVersionLatestByWorkspaceIDRow struct {
 	RunID               *string               `json:"run_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
+
+func (s FindStateVersionLatestByWorkspaceIDRow) GetStateVersionID() *string { return s.StateVersionID }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetSerial() *int32 { return s.Serial }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetVcsCommitSha() *string { return s.VcsCommitSha }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetVcsCommitUrl() *string { return s.VcsCommitUrl }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetState() []byte { return s.State }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetRunID() *string { return s.RunID }
+func (s FindStateVersionLatestByWorkspaceIDRow) GetStateVersionOutputs() []StateVersionOutputs { return s.StateVersionOutputs }
+
 
 // FindStateVersionLatestByWorkspaceID implements Querier.FindStateVersionLatestByWorkspaceID.
 func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, workspaceID string) (FindStateVersionLatestByWorkspaceIDRow, error) {

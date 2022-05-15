@@ -52,6 +52,17 @@ type InsertConfigurationVersionRow struct {
 	WorkspaceID            string    `json:"workspace_id"`
 }
 
+func (s InsertConfigurationVersionRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
+func (s InsertConfigurationVersionRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s InsertConfigurationVersionRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s InsertConfigurationVersionRow) GetAutoQueueRuns() bool { return s.AutoQueueRuns }
+func (s InsertConfigurationVersionRow) GetSource() string { return s.Source }
+func (s InsertConfigurationVersionRow) GetSpeculative() bool { return s.Speculative }
+func (s InsertConfigurationVersionRow) GetStatus() string { return s.Status }
+func (s InsertConfigurationVersionRow) GetConfig() []byte { return s.Config }
+func (s InsertConfigurationVersionRow) GetWorkspaceID() string { return s.WorkspaceID }
+
+
 // InsertConfigurationVersion implements Querier.InsertConfigurationVersion.
 func (q *DBQuerier) InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersion")
@@ -94,6 +105,11 @@ type InsertConfigurationVersionStatusTimestampRow struct {
 	Status                 string    `json:"status"`
 	Timestamp              time.Time `json:"timestamp"`
 }
+
+func (s InsertConfigurationVersionStatusTimestampRow) GetConfigurationVersionID() string { return s.ConfigurationVersionID }
+func (s InsertConfigurationVersionStatusTimestampRow) GetStatus() string { return s.Status }
+func (s InsertConfigurationVersionStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
+
 
 // InsertConfigurationVersionStatusTimestamp implements Querier.InsertConfigurationVersionStatusTimestamp.
 func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, id string, status string) (InsertConfigurationVersionStatusTimestampRow, error) {
@@ -161,6 +177,18 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 	FullCount                            *int                                   `json:"full_count"`
 }
+
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetSource() *string { return s.Source }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetSpeculative() *bool { return s.Speculative }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetStatus() *string { return s.Status }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetWorkspace() Workspaces { return s.Workspace }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps { return s.ConfigurationVersionStatusTimestamps }
+func (s FindConfigurationVersionsByWorkspaceIDRow) GetFullCount() *int { return s.FullCount }
+
 
 // FindConfigurationVersionsByWorkspaceID implements Querier.FindConfigurationVersionsByWorkspaceID.
 func (q *DBQuerier) FindConfigurationVersionsByWorkspaceID(ctx context.Context, params FindConfigurationVersionsByWorkspaceIDParams) ([]FindConfigurationVersionsByWorkspaceIDRow, error) {
@@ -257,6 +285,17 @@ type FindConfigurationVersionByIDRow struct {
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
+func (s FindConfigurationVersionByIDRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s FindConfigurationVersionByIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindConfigurationVersionByIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindConfigurationVersionByIDRow) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
+func (s FindConfigurationVersionByIDRow) GetSource() *string { return s.Source }
+func (s FindConfigurationVersionByIDRow) GetSpeculative() *bool { return s.Speculative }
+func (s FindConfigurationVersionByIDRow) GetStatus() *string { return s.Status }
+func (s FindConfigurationVersionByIDRow) GetWorkspace() Workspaces { return s.Workspace }
+func (s FindConfigurationVersionByIDRow) GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps { return s.ConfigurationVersionStatusTimestamps }
+
+
 // FindConfigurationVersionByID implements Querier.FindConfigurationVersionByID.
 func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindConfigurationVersionByID")
@@ -331,6 +370,17 @@ type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetSource() *string { return s.Source }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetSpeculative() *bool { return s.Speculative }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetStatus() *string { return s.Status }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetWorkspace() Workspaces { return s.Workspace }
+func (s FindConfigurationVersionLatestByWorkspaceIDRow) GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps { return s.ConfigurationVersionStatusTimestamps }
+
+
 // FindConfigurationVersionLatestByWorkspaceID implements Querier.FindConfigurationVersionLatestByWorkspaceID.
 func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, workspaceID string) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindConfigurationVersionLatestByWorkspaceID")
@@ -404,6 +454,17 @@ type FindConfigurationVersionByIDForUpdateRow struct {
 	Workspace                            Workspaces                             `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
+
+func (s FindConfigurationVersionByIDForUpdateRow) GetConfigurationVersionID() *string { return s.ConfigurationVersionID }
+func (s FindConfigurationVersionByIDForUpdateRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s FindConfigurationVersionByIDForUpdateRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s FindConfigurationVersionByIDForUpdateRow) GetAutoQueueRuns() *bool { return s.AutoQueueRuns }
+func (s FindConfigurationVersionByIDForUpdateRow) GetSource() *string { return s.Source }
+func (s FindConfigurationVersionByIDForUpdateRow) GetSpeculative() *bool { return s.Speculative }
+func (s FindConfigurationVersionByIDForUpdateRow) GetStatus() *string { return s.Status }
+func (s FindConfigurationVersionByIDForUpdateRow) GetWorkspace() Workspaces { return s.Workspace }
+func (s FindConfigurationVersionByIDForUpdateRow) GetConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamps { return s.ConfigurationVersionStatusTimestamps }
+
 
 // FindConfigurationVersionByIDForUpdate implements Querier.FindConfigurationVersionByIDForUpdate.
 func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDForUpdateRow, error) {

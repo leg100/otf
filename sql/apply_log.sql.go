@@ -23,6 +23,11 @@ type InsertApplyLogChunkRow struct {
 	Chunk   []byte `json:"chunk"`
 }
 
+func (s InsertApplyLogChunkRow) GetApplyID() string { return s.ApplyID }
+func (s InsertApplyLogChunkRow) GetChunkID() int32 { return s.ChunkID }
+func (s InsertApplyLogChunkRow) GetChunk() []byte { return s.Chunk }
+
+
 // InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
 func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")

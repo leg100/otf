@@ -50,6 +50,16 @@ type InsertStateVersionOutputRow struct {
 	StateVersionID       string    `json:"state_version_id"`
 }
 
+func (s InsertStateVersionOutputRow) GetStateVersionOutputID() string { return s.StateVersionOutputID }
+func (s InsertStateVersionOutputRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s InsertStateVersionOutputRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s InsertStateVersionOutputRow) GetName() string { return s.Name }
+func (s InsertStateVersionOutputRow) GetSensitive() bool { return s.Sensitive }
+func (s InsertStateVersionOutputRow) GetType() string { return s.Type }
+func (s InsertStateVersionOutputRow) GetValue() string { return s.Value }
+func (s InsertStateVersionOutputRow) GetStateVersionID() string { return s.StateVersionID }
+
+
 // InsertStateVersionOutput implements Querier.InsertStateVersionOutput.
 func (q *DBQuerier) InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (InsertStateVersionOutputRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertStateVersionOutput")

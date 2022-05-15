@@ -23,6 +23,10 @@ type InsertOrganizationMembershipRow struct {
 	OrganizationID string `json:"organization_id"`
 }
 
+func (s InsertOrganizationMembershipRow) GetUserID() string { return s.UserID }
+func (s InsertOrganizationMembershipRow) GetOrganizationID() string { return s.OrganizationID }
+
+
 // InsertOrganizationMembership implements Querier.InsertOrganizationMembership.
 func (q *DBQuerier) InsertOrganizationMembership(ctx context.Context, userID string, organizationID string) (InsertOrganizationMembershipRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertOrganizationMembership")

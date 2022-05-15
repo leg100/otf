@@ -43,6 +43,14 @@ type InsertTokenRow struct {
 	UserID      string    `json:"user_id"`
 }
 
+func (s InsertTokenRow) GetTokenID() string { return s.TokenID }
+func (s InsertTokenRow) GetToken() *string { return s.Token }
+func (s InsertTokenRow) GetCreatedAt() time.Time { return s.CreatedAt }
+func (s InsertTokenRow) GetUpdatedAt() time.Time { return s.UpdatedAt }
+func (s InsertTokenRow) GetDescription() string { return s.Description }
+func (s InsertTokenRow) GetUserID() string { return s.UserID }
+
+
 // InsertToken implements Querier.InsertToken.
 func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (InsertTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertToken")

@@ -27,6 +27,11 @@ type InsertPlanStatusTimestampRow struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+func (s InsertPlanStatusTimestampRow) GetRunID() string { return s.RunID }
+func (s InsertPlanStatusTimestampRow) GetStatus() string { return s.Status }
+func (s InsertPlanStatusTimestampRow) GetTimestamp() time.Time { return s.Timestamp }
+
+
 // InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.
 func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, id string, status string) (InsertPlanStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanStatusTimestamp")
