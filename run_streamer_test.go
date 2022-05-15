@@ -27,7 +27,7 @@ func TestRunStreamer(t *testing.T) {
 		{
 			name: "speculative plan",
 			run: Run{
-				Plan:  &Plan{ID: "plan-123", Resources: Resources{ResourceAdditions: 1}},
+				Plan:  &Plan{ID: "plan-123", ResourceReport: &ResourceReport{ResourceAdditions: 1}},
 				Apply: &Apply{ID: "plan-123"},
 				ConfigurationVersion: &ConfigurationVersion{
 					Speculative: true,
@@ -38,7 +38,7 @@ func TestRunStreamer(t *testing.T) {
 		{
 			name: "plan and apply",
 			run: Run{
-				Plan:  &Plan{ID: "plan-123", Resources: Resources{ResourceAdditions: 1}},
+				Plan:  &Plan{ID: "plan-123", ResourceReport: &ResourceReport{ResourceAdditions: 1}},
 				Apply: &Apply{ID: "apply-123"},
 				ConfigurationVersion: &ConfigurationVersion{
 					Speculative: false,

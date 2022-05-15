@@ -17,7 +17,7 @@ func TestPlanFile(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &file))
 
 	want := PlanFile{
-		ResourcesChanges: []ResourceChange{
+		ResourceChanges: []ResourceChange{
 			{
 				Change: Change{
 					Actions: []ChangeAction{
