@@ -61,10 +61,6 @@ func TestConfigurationVersion_Get(t *testing.T) {
 			got, err := db.ConfigurationVersionStore().Get(tt.opts)
 			require.NoError(t, err)
 
-			// Assertion won't succeed unless both have a workspace with a nil
-			// org.
-			cv.Workspace.Organization = nil
-
 			assert.Equal(t, cv, got)
 		})
 	}
@@ -89,10 +85,6 @@ func TestConfigurationVersion_List(t *testing.T) {
 			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, cv := range created {
-					// Assertion won't succeed unless both have a workspace with
-					// a nil org.
-					cv.Workspace.Organization = nil
-
 					assert.Contains(t, l.Items, cv)
 				}
 			},

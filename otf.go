@@ -10,6 +10,8 @@ import (
 	"math/rand"
 	"regexp"
 	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 const (
@@ -104,12 +106,51 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
+var _ pgtype.BinaryDecoder = (*ResourceReport)(nil)
+
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
 	ResourceAdditions    int
 	ResourceChanges      int
 	ResourceDestructions int
+}
+
+func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
+	r := pgtype.Record{
+		Fields: []pgtype.Value{&pgtype.Int4{}, &pgtype.Int4{}, &pgtype.Int4{}},
+	}
+
+	if err := r.DecodeBinary(ci, src); err != nil {
+		return err
+	}
+
+	// NULL -> nil
+	if r.Status != pgtype.Present {
+		t = nil
+		return nil
+	}
+
+	a := r.Fields[0].(*pgtype.Int4)
+	b := r.Fields[1].(*pgtype.Int4)
+	c := r.Fields[2].(*pgtype.Int4)
+
+	// type compatibility is checked by AssignTo
+	// only lossless assignments will succeed
+	if err := a.AssignTo(&t.ResourceAdditions); err != nil {
+		return err
+	}
+
+	// AssignTo also deals with null value handling
+	if err := b.AssignTo(&t.ResourceChanges); err != nil {
+		return err
+	}
+
+	// AssignTo also deals with null value handling
+	if err := c.AssignTo(&t.ResourceDestructions); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Pagination is used to return the pagination details of an API request.

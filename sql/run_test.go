@@ -25,7 +25,6 @@ func TestRun_Get(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 
 	want := createTestRun(t, db, ws, cv)
-	want.ConfigurationVersion.StatusTimestamps = nil
 
 	tests := []struct {
 		name string
@@ -49,4 +48,26 @@ func TestRun_Get(t *testing.T) {
 			assert.Equal(t, want, got)
 		})
 	}
+}
+
+func TestRun_CreatePlanReport(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+
+	report := otf.ResourceReport{
+		ResourceAdditions:    5,
+		ResourceChanges:      2,
+		ResourceDestructions: 99,
+	}
+
+	err := db.RunStore().CreatePlanReport(run.Plan.ID, report)
+	require.NoError(t, err)
+
+	run, err = db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
+	require.NoError(t, err)
+
+	assert.NotNil(t, run.Plan.ResourceReport)
 }
