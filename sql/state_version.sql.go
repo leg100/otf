@@ -16,7 +16,7 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
     updated_at,
     serial,
     state,
-    run_id
+    workspace_id
 ) VALUES (
     $1,
     current_timestamp,
@@ -29,10 +29,10 @@ RETURNING created_at, updated_at
 ;`
 
 type InsertStateVersionParams struct {
-	ID     string
-	Serial int32
-	State  []byte
-	RunID  string
+	ID          string
+	Serial      int32
+	State       []byte
+	WorkspaceID string
 }
 
 type InsertStateVersionRow struct {
@@ -43,7 +43,7 @@ type InsertStateVersionRow struct {
 // InsertStateVersion implements Querier.InsertStateVersion.
 func (q *DBQuerier) InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (InsertStateVersionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertStateVersion")
-	row := q.conn.QueryRow(ctx, insertStateVersionSQL, params.ID, params.Serial, params.State, params.RunID)
+	row := q.conn.QueryRow(ctx, insertStateVersionSQL, params.ID, params.Serial, params.State, params.WorkspaceID)
 	var item InsertStateVersionRow
 	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("query InsertStateVersion: %w", err)
@@ -53,7 +53,7 @@ func (q *DBQuerier) InsertStateVersion(ctx context.Context, params InsertStateVe
 
 // InsertStateVersionBatch implements Querier.InsertStateVersionBatch.
 func (q *DBQuerier) InsertStateVersionBatch(batch genericBatch, params InsertStateVersionParams) {
-	batch.Queue(insertStateVersionSQL, params.ID, params.Serial, params.State, params.RunID)
+	batch.Queue(insertStateVersionSQL, params.ID, params.Serial, params.State, params.WorkspaceID)
 }
 
 // InsertStateVersionScan implements Querier.InsertStateVersionScan.
@@ -62,6 +62,40 @@ func (q *DBQuerier) InsertStateVersionScan(results pgx.BatchResults) (InsertStat
 	var item InsertStateVersionRow
 	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("scan InsertStateVersionBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateStateVersionRunIDByIDSQL = `UPDATE state_versions
+SET
+    run_id = $1,
+    updated_at = current_timestamp
+WHERE state_version_id = $2
+RETURNING updated_at
+;`
+
+// UpdateStateVersionRunIDByID implements Querier.UpdateStateVersionRunIDByID.
+func (q *DBQuerier) UpdateStateVersionRunIDByID(ctx context.Context, runID string, stateVersionID string) (time.Time, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateStateVersionRunIDByID")
+	row := q.conn.QueryRow(ctx, updateStateVersionRunIDByIDSQL, runID, stateVersionID)
+	var item time.Time
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateStateVersionRunIDByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateStateVersionRunIDByIDBatch implements Querier.UpdateStateVersionRunIDByIDBatch.
+func (q *DBQuerier) UpdateStateVersionRunIDByIDBatch(batch genericBatch, runID string, stateVersionID string) {
+	batch.Queue(updateStateVersionRunIDByIDSQL, runID, stateVersionID)
+}
+
+// UpdateStateVersionRunIDByIDScan implements Querier.UpdateStateVersionRunIDByIDScan.
+func (q *DBQuerier) UpdateStateVersionRunIDByIDScan(results pgx.BatchResults) (time.Time, error) {
+	row := results.QueryRow()
+	var item time.Time
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateStateVersionRunIDByIDBatch row: %w", err)
 	}
 	return item, nil
 }
@@ -97,6 +131,7 @@ type FindStateVersionsByWorkspaceNameRow struct {
 	VcsCommitUrl        *string               `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	RunID               *string               `json:"run_id"`
+	WorkspaceID         *string               `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 	FullCount           *int                  `json:"full_count"`
 }
@@ -113,7 +148,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceName(ctx context.Context, params
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceName row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -143,7 +178,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResult
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray, &item.FullCount); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceNameBatch row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -176,6 +211,7 @@ type FindStateVersionByIDRow struct {
 	VcsCommitUrl        *string               `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	RunID               *string               `json:"run_id"`
+	WorkspaceID         *string               `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
 
@@ -185,7 +221,7 @@ func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id string) (FindSt
 	row := q.conn.QueryRow(ctx, findStateVersionByIDSQL, id)
 	var item FindStateVersionByIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("query FindStateVersionByID: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -204,7 +240,7 @@ func (q *DBQuerier) FindStateVersionByIDScan(results pgx.BatchResults) (FindStat
 	row := results.QueryRow()
 	var item FindStateVersionByIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("scan FindStateVersionByIDBatch row: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -233,6 +269,7 @@ type FindStateVersionLatestByWorkspaceIDRow struct {
 	VcsCommitUrl        *string               `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	RunID               *string               `json:"run_id"`
+	WorkspaceID         *string               `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
 }
 
@@ -242,7 +279,7 @@ func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, wor
 	row := q.conn.QueryRow(ctx, findStateVersionLatestByWorkspaceIDSQL, workspaceID)
 	var item FindStateVersionLatestByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("query FindStateVersionLatestByWorkspaceID: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -261,7 +298,7 @@ func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDScan(results pgx.BatchRes
 	row := results.QueryRow()
 	var item FindStateVersionLatestByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("scan FindStateVersionLatestByWorkspaceIDBatch row: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {

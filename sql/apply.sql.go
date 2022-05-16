@@ -430,6 +430,13 @@ type Querier interface {
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
 	InsertStateVersionScan(results pgx.BatchResults) (InsertStateVersionRow, error)
 
+	UpdateStateVersionRunIDByID(ctx context.Context, runID string, stateVersionID string) (time.Time, error)
+	// UpdateStateVersionRunIDByIDBatch enqueues a UpdateStateVersionRunIDByID query into batch to be executed
+	// later by the batch.
+	UpdateStateVersionRunIDByIDBatch(batch genericBatch, runID string, stateVersionID string)
+	// UpdateStateVersionRunIDByIDScan scans the result of an executed UpdateStateVersionRunIDByIDBatch query.
+	UpdateStateVersionRunIDByIDScan(results pgx.BatchResults) (time.Time, error)
+
 	FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error)
 	// FindStateVersionsByWorkspaceNameBatch enqueues a FindStateVersionsByWorkspaceName query into batch to be executed
 	// later by the batch.
@@ -952,6 +959,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateStateVersionRunIDByIDSQL, updateStateVersionRunIDByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateStateVersionRunIDByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceNameSQL, findStateVersionsByWorkspaceNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceName': %w", err)

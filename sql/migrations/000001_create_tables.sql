@@ -218,7 +218,8 @@ CREATE TABLE IF NOT EXISTS state_versions (
     vcs_commit_sha   TEXT,
     vcs_commit_url   TEXT,
     state            BYTEA       NOT NULL,
-    run_id           TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE,
+    run_id           TEXT REFERENCES runs,
+    workspace_id     TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
                      PRIMARY KEY (state_version_id)
 );
 
