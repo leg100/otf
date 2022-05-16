@@ -30,32 +30,27 @@ type WorkspaceDBRow struct {
 	WorkingDirectory           string             `json:"working_directory"`
 	OrganizationID             *string            `json:"organization_id"`
 	Organization               *OrganizationDBRow `json:"organization"`
-	FullCount                  int                `json:"full_count"`
 }
 
-func UnmarshalWorkspaceListFromDB(pgresult interface{}) (workspaces []*Workspace, count int, err error) {
+func UnmarshalWorkspaceListFromDB(pgresult interface{}) (workspaces []*Workspace, err error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []WorkspaceDBRow
 	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	for _, row := range rows {
 		ws, err := unmarshalWorkspaceDBRow(row)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		workspaces = append(workspaces, ws)
 	}
 
-	if len(rows) > 0 {
-		count = rows[0].FullCount
-	}
-
-	return workspaces, count, nil
+	return workspaces, nil
 }
 
 func UnmarshalWorkspaceFromDB(pgresult interface{}) (*Workspace, error) {

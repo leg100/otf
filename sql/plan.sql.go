@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
 	"time"
 )
 
@@ -63,7 +62,7 @@ RETURNING updated_at
 ;`
 
 // UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status otf.PlanStatus, id string) (time.Time, error) {
+func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
 	var item time.Time
@@ -74,7 +73,7 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status otf.PlanStatus,
 }
 
 // UpdatePlanStatusBatch implements Querier.UpdatePlanStatusBatch.
-func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status otf.PlanStatus, id string) {
+func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id string) {
 	batch.Queue(updatePlanStatusSQL, status, id)
 }
 

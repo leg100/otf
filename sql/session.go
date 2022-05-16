@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -16,12 +16,12 @@ var (
 )
 
 type SessionDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewSessionDB(conn *pgx.Conn, cleanupInterval time.Duration) *SessionDB {
+func NewSessionDB(conn *pgxpool.Pool, cleanupInterval time.Duration) *SessionDB {
 	db := &SessionDB{
-		Conn: conn,
+		Pool: conn,
 	}
 	if cleanupInterval > 0 {
 		go db.startCleanup(cleanupInterval)
@@ -31,7 +31,7 @@ func NewSessionDB(conn *pgx.Conn, cleanupInterval time.Duration) *SessionDB {
 
 // CreateSession inserts the session, associating it with the user.
 func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	result, err := q.InsertSession(ctx, InsertSessionParams{
 		Token:   session.Token,
@@ -49,7 +49,7 @@ func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) err
 }
 
 func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	data, err := json.Marshal(flash)
 	if err != nil {
@@ -65,7 +65,7 @@ func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash
 }
 
 func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	data, err := q.FindSessionFlashByToken(ctx, token)
 	if err != nil {
@@ -94,7 +94,7 @@ func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, err
 // TransferSession updates a session row in the sessions table with the given
 // session.  The token identifies the session row to update.
 func (db SessionDB) TransferSession(ctx context.Context, token, to string) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	_, err := q.UpdateSessionUserID(ctx, to, token)
 	return err
@@ -102,7 +102,7 @@ func (db SessionDB) TransferSession(ctx context.Context, token, to string) error
 
 // DeleteSession deletes a user's session from the DB.
 func (db SessionDB) DeleteSession(ctx context.Context, token string) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	result, err := q.DeleteSessionByToken(ctx, token)
 	if err != nil {
@@ -125,7 +125,7 @@ func (db SessionDB) startCleanup(interval time.Duration) {
 }
 
 func (db SessionDB) deleteExpired() error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	_, err := q.DeleteSessionsExpired(context.Background())
 	return err

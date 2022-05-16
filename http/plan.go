@@ -136,13 +136,15 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 	result := &Plan{
-		ID:                   p.ID,
-		HasChanges:           p.HasChanges(),
-		LogReadURL:           httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
-		ResourceAdditions:    p.Additions,
-		ResourceChanges:      p.Changes,
-		ResourceDestructions: p.Destructions,
-		Status:               p.Status,
+		ID:         p.ID,
+		HasChanges: p.HasChanges(),
+		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
+		Status:     p.Status,
+	}
+	if p.ResourceReport != nil {
+		result.ResourceAdditions = p.Additions
+		result.ResourceChanges = p.Changes
+		result.ResourceDestructions = p.Destructions
 	}
 
 	for _, ts := range p.StatusTimestamps {

@@ -52,12 +52,10 @@ INSERT INTO workspaces (
 )
 RETURNING *;
 
--- FindWorkspaces finds workspaces for a given organization.
--- Workspace name can be filtered with a prefix.
--- Results are paginated with limit and offset, and total count is returned.
---
 -- name: FindWorkspaces :many
-SELECT workspaces.*, (organizations.*)::"organizations" AS organization, count(*) OVER() AS full_count
+SELECT
+    workspaces.*,
+    (organizations.*)::"organizations" AS organization
 FROM workspaces
 JOIN organizations USING (organization_id)
 WHERE workspaces.name LIKE pggen.arg('prefix') || '%'
@@ -65,6 +63,21 @@ AND organizations.name = pggen.arg('organization_name')
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
 ;
+
+-- name: CountWorkspaces :one
+SELECT count(*)
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.name LIKE pggen.arg('prefix') || '%'
+AND organizations.name = pggen.arg('organization_name')
+;
+
+-- name: FindWorkspaceIDByName :one
+SELECT workspaces.workspace_id
+FROM workspaces
+JOIN organizations USING (organization_id)
+WHERE workspaces.name = pggen.arg('name')
+AND organizations.name = pggen.arg('organization_name');
 
 -- FindWorkspaceByName finds a workspace by name and organization name.
 --
@@ -119,7 +132,15 @@ SET
     allow_destroy_plan = pggen.arg('allow_destroy_plan'),
     updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceExecutionModeByID :one
+UPDATE workspaces
+SET
+    execution_mode = pggen.arg('execution_mode'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
 
 -- name: UpdateWorkspaceLockByID :one
 UPDATE workspaces
@@ -127,7 +148,7 @@ SET
     locked = pggen.arg('lock'),
     updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at;
 
 -- name: UpdateWorkspaceDescriptionByID :one
 UPDATE workspaces
@@ -135,7 +156,47 @@ SET
     description = pggen.arg('description'),
     updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')
-RETURNING *;
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceSpeculativeEnabledByID :one
+UPDATE workspaces
+SET
+    speculative_enabled = pggen.arg('speculative_enabled'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceStructuredRunOutputEnabledByID :one
+UPDATE workspaces
+SET
+    structured_run_output_enabled = pggen.arg('structured_run_output_enabled'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceTerraformVersionByID :one
+UPDATE workspaces
+SET
+    terraform_version = pggen.arg('terraform_version'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceTriggerPrefixesByID :one
+UPDATE workspaces
+SET
+    trigger_prefixes = pggen.arg('trigger_prefixes'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
+
+-- name: UpdateWorkspaceWorkingDirectoryByID :one
+UPDATE workspaces
+SET
+    working_directory = pggen.arg('working_directory'),
+    updated_at = current_timestamp
+WHERE workspace_id = pggen.arg('id')
+RETURNING updated_at;
 
 -- DeleteOrganization deletes an organization by id.
 -- DeleteWorkspaceByID deletes a workspace by id.

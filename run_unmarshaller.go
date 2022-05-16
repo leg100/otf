@@ -20,39 +20,34 @@ type RunDBRow struct {
 	ApplyStatus           ApplyStatus               `json:"apply_status"`
 	ReplaceAddrs          []string                  `json:"replace_addrs"`
 	TargetAddrs           []string                  `json:"target_addrs"`
-	PlanResourceReport    *ResourceReport           `json:"planned_changes"`
-	ApplyResourceReport   *ResourceReport           `json:"applied_changes"`
+	PlannedChanges        *ResourceReport           `json:"planned_changes"`
+	AppliedChanges        *ResourceReport           `json:"applied_changes"`
 	ConfigurationVersion  ConfigurationVersionDBRow `json:"configuration_version"`
 	Workspace             WorkspaceDBRow            `json:"workspace"`
 	RunStatusTimestamps   []RunStatusTimestamp      `json:"run_status_timestamps"`
 	PlanStatusTimestamps  []PlanStatusTimestamp     `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps []ApplyStatusTimestamp    `json:"apply_status_timestamps"`
-	FullCount             int                       `json:"full_count"`
 }
 
-func UnmarshalRunListFromDB(pgresult interface{}) (runs []*Run, count int, err error) {
+func UnmarshalRunListFromDB(pgresult interface{}) (runs []*Run, err error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []RunDBRow
 	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	for _, row := range rows {
 		run, err := unmarshalRunDBRow(row)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		runs = append(runs, run)
 	}
 
-	if len(rows) > 0 {
-		count = rows[0].FullCount
-	}
-
-	return runs, count, nil
+	return runs, nil
 }
 
 func UnmarshalRunFromDB(pgresult interface{}) (*Run, error) {
@@ -86,14 +81,14 @@ func unmarshalRunDBRow(row RunDBRow) (*Run, error) {
 		Plan: &Plan{
 			ID:               row.PlanID,
 			Status:           row.PlanStatus,
-			ResourceReport:   row.PlanResourceReport,
+			ResourceReport:   row.PlannedChanges,
 			StatusTimestamps: row.PlanStatusTimestamps,
 			RunID:            row.RunID,
 		},
 		Apply: &Apply{
 			ID:               row.ApplyID,
 			Status:           row.ApplyStatus,
-			ResourceReport:   row.ApplyResourceReport,
+			ResourceReport:   row.AppliedChanges,
 			StatusTimestamps: row.ApplyStatusTimestamps,
 			RunID:            row.RunID,
 		},

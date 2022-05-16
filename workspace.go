@@ -288,6 +288,16 @@ type WorkspaceSpec struct {
 	OrganizationName *string `schema:"organization_name"`
 }
 
+func (s WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
+	if s.ID != nil {
+		keysAndValues = append(keysAndValues, "id", *s.ID)
+	}
+	if s.Name != nil && s.OrganizationName != nil {
+		keysAndValues = append(keysAndValues, "name", *s.Name, "organization", *s.OrganizationName)
+	}
+	return keysAndValues
+}
+
 // WorkspaceListOptions are options for paginating and filtering a list of
 // Workspaces
 type WorkspaceListOptions struct {

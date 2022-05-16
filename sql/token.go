@@ -3,7 +3,7 @@ package sql
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -12,18 +12,18 @@ var (
 )
 
 type TokenDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewTokenDB(conn *pgx.Conn) *TokenDB {
+func NewTokenDB(conn *pgxpool.Pool) *TokenDB {
 	return &TokenDB{
-		Conn: conn,
+		Pool: conn,
 	}
 }
 
 // CreateToken inserts the token, associating it with the user.
 func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	result, err := q.InsertToken(ctx, InsertTokenParams{
 		TokenID:     token.ID,
@@ -42,7 +42,7 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 
 // DeleteToken deletes a user's token from the DB.
 func (db TokenDB) DeleteToken(ctx context.Context, id string) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	result, err := q.DeleteTokenByID(ctx, id)
 	if err != nil {

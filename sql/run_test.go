@@ -15,7 +15,7 @@ func TestRun_Create(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	_, err := db.RunStore().Create(newTestRun(ws, cv))
+	err := db.RunStore().Create(newTestRun(ws, cv))
 	require.NoError(t, err)
 }
 
@@ -121,7 +121,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPending}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 3, len(l.Items))
 				assert.Contains(t, l.Items, run1)
@@ -131,7 +131,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses - no match",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPlanned}},
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
@@ -160,7 +160,7 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.RunStore().CreatePlanReport(run.Plan.ID, report)
+	err := db.RunStore().CreatePlanReport(run.ID, report)
 	require.NoError(t, err)
 
 	run, err = db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
@@ -177,7 +177,7 @@ func TestRun_Unmarshal(t *testing.T) {
 	cv := createTestConfigurationVersion(t, testdb, ws)
 	run := createTestRun(t, testdb, ws, cv)
 
-	conn := testdb.(db).Conn
+	conn := testdb.(db).Pool
 	q := NewQuerier(conn)
 	row, err := q.FindRunByID(context.Background(), run.ID)
 	require.NoError(t, err)

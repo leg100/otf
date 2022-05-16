@@ -25,7 +25,6 @@ type JobWriter struct {
 func (w *JobWriter) Write(p []byte) (int, error) {
 	chunk := Chunk{Data: p}
 
-	// First chunk is prefixed with STX
 	if !w.started {
 		w.started = true
 		chunk.Start = true
@@ -42,7 +41,13 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 
 // Close must be called to complete writing job logs
 func (w *JobWriter) Close() error {
-	if err := w.PutChunk(context.Background(), w.ID, Chunk{End: true}); err != nil {
+	chunk := Chunk{End: true}
+
+	if !w.started {
+		chunk.Start = true
+	}
+
+	if err := w.PutChunk(context.Background(), w.ID, chunk); err != nil {
 		w.Error(err, "unable to close logs")
 
 		return err

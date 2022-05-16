@@ -135,8 +135,7 @@ const findConfigurationVersionsByWorkspaceIDSQL = `SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps,
-    count(*) OVER() AS full_count
+    ) AS configuration_version_status_timestamps
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
 WHERE workspaces.workspace_id = $1
@@ -159,7 +158,6 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	Status                               *string                                `json:"status"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
-	FullCount                            *int                                   `json:"full_count"`
 }
 
 // FindConfigurationVersionsByWorkspaceID implements Querier.FindConfigurationVersionsByWorkspaceID.
@@ -175,7 +173,7 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceID(ctx context.Context, 
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow, configurationVersionStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceID row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -209,7 +207,7 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceIDScan(results pgx.Batch
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow, configurationVersionStatusTimestampsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceIDBatch row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -224,6 +222,37 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceIDScan(results pgx.Batch
 		return nil, fmt.Errorf("close FindConfigurationVersionsByWorkspaceIDBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const countConfigurationVersionsByWorkspaceIDSQL = `SELECT count(*)
+FROM configuration_versions
+WHERE configuration_versions.workspace_id = $1
+;`
+
+// CountConfigurationVersionsByWorkspaceID implements Querier.CountConfigurationVersionsByWorkspaceID.
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID string) (*int, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "CountConfigurationVersionsByWorkspaceID")
+	row := q.conn.QueryRow(ctx, countConfigurationVersionsByWorkspaceIDSQL, workspaceID)
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("query CountConfigurationVersionsByWorkspaceID: %w", err)
+	}
+	return &item, nil
+}
+
+// CountConfigurationVersionsByWorkspaceIDBatch implements Querier.CountConfigurationVersionsByWorkspaceIDBatch.
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID string) {
+	batch.Queue(countConfigurationVersionsByWorkspaceIDSQL, workspaceID)
+}
+
+// CountConfigurationVersionsByWorkspaceIDScan implements Querier.CountConfigurationVersionsByWorkspaceIDScan.
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (*int, error) {
+	row := results.QueryRow()
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("scan CountConfigurationVersionsByWorkspaceIDBatch row: %w", err)
+	}
+	return &item, nil
 }
 
 const findConfigurationVersionByIDSQL = `SELECT

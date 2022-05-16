@@ -3,9 +3,11 @@ package sql
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -14,17 +16,17 @@ var (
 )
 
 type WorkspaceDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewWorkspaceDB(conn *pgx.Conn) *WorkspaceDB {
+func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
 	return &WorkspaceDB{
-		Conn: conn,
+		Pool: conn,
 	}
 }
 
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.InsertWorkspace(ctx, InsertWorkspaceParams{
@@ -62,7 +64,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -86,20 +88,34 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		return nil, err
 	}
 
+	// make copies of workspace attributes for comparison after update
 	xdescription := ws.Description
 	xname := ws.Name
+	xexecutionMode := ws.ExecutionMode
 	xlocked := ws.Locked
+	xworkingDirectory := ws.WorkingDirectory
+	xqueueAllRuns := ws.QueueAllRuns
+	xspeculativeEnabled := ws.SpeculativeEnabled
+	xstructuredRunOutputEnabled := ws.StructuredRunOutputEnabled
+	xterraformVersion := ws.TerraformVersion
+	xtriggerPrefixes := ws.TriggerPrefixes
 
 	if err := fn(ws); err != nil {
 		return nil, err
 	}
 
 	if ws.Description != xdescription {
-		result, err := q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
+		ws.UpdatedAt, err = q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
 		if err != nil {
 			return nil, err
 		}
-		ws.UpdatedAt = result.UpdatedAt
+	}
+
+	if ws.ExecutionMode != xexecutionMode {
+		ws.UpdatedAt, err = q.UpdateWorkspaceExecutionModeByID(ctx, ws.ExecutionMode, ws.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if ws.Name != xname {
@@ -110,43 +126,96 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	}
 
 	if ws.Locked != xlocked {
-		result, err := q.UpdateWorkspaceLockByID(ctx, ws.Locked, ws.ID)
+		ws.UpdatedAt, err = q.UpdateWorkspaceLockByID(ctx, ws.Locked, ws.ID)
 		if err != nil {
 			return nil, err
 		}
-		ws.UpdatedAt = result.UpdatedAt
+	}
+
+	if ws.QueueAllRuns != xqueueAllRuns {
+		ws.UpdatedAt, err = q.UpdateWorkspaceLockByID(ctx, ws.QueueAllRuns, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !reflect.DeepEqual(ws.TriggerPrefixes, xtriggerPrefixes) {
+		ws.UpdatedAt, err = q.UpdateWorkspaceTriggerPrefixesByID(ctx, ws.TriggerPrefixes, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ws.SpeculativeEnabled != xspeculativeEnabled {
+		ws.UpdatedAt, err = q.UpdateWorkspaceSpeculativeEnabledByID(ctx, ws.SpeculativeEnabled, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ws.StructuredRunOutputEnabled != xstructuredRunOutputEnabled {
+		ws.UpdatedAt, err = q.UpdateWorkspaceStructuredRunOutputEnabledByID(ctx, ws.StructuredRunOutputEnabled, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ws.TerraformVersion != xterraformVersion {
+		ws.UpdatedAt, err = q.UpdateWorkspaceTerraformVersionByID(ctx, ws.TerraformVersion, ws.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ws.WorkingDirectory != xworkingDirectory {
+		ws.UpdatedAt, err = q.UpdateWorkspaceWorkingDirectoryByID(ctx, ws.WorkingDirectory, ws.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return ws, tx.Commit(ctx)
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	result, err := q.FindWorkspaces(ctx, FindWorkspacesParams{
+	q.FindWorkspacesBatch(batch, FindWorkspacesParams{
 		OrganizationName: opts.OrganizationName,
 		Prefix:           opts.Prefix,
-		Limit:            100,
-		Offset:           0,
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
 	})
+	q.CountWorkspacesBatch(batch, opts.Prefix, opts.OrganizationName)
+
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindWorkspacesScan(results)
 	if err != nil {
 		return nil, err
 	}
-	workspaces, count, err := otf.UnmarshalWorkspaceListFromDB(result)
+	count, err := q.CountWorkspacesScan(results)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaces, err := otf.UnmarshalWorkspaceListFromDB(rows)
 	if err != nil {
 		return nil, err
 	}
 
 	return &otf.WorkspaceList{
 		Items:      workspaces,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	ctx := context.Background()
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	if spec.ID != nil {
 		result, err := q.FindWorkspaceByID(ctx, *spec.ID)
@@ -168,7 +237,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 // Delete deletes a specific workspace, along with its child records (runs etc).
 func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	ctx := context.Background()
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	var result pgconn.CommandTag
 	var err error

@@ -7,13 +7,13 @@ import (
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
 )
 
 type db struct {
-	*pgx.Conn
+	*pgxpool.Pool
 
 	organizationStore         otf.OrganizationStore
 	workspaceStore            otf.WorkspaceStore
@@ -28,7 +28,7 @@ type db struct {
 }
 
 func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpiry time.Duration) (otf.DB, error) {
-	conn, err := pgx.Connect(context.Background(), path)
+	conn, err := pgxpool.Connect(context.Background(), path)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 	}
 
 	db := db{
-		Conn:                      conn,
+		Pool:                      conn,
 		organizationStore:         NewOrganizationDB(conn),
 		workspaceStore:            NewWorkspaceDB(conn),
 		stateVersionStore:         NewStateVersionDB(conn),
@@ -66,7 +66,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 	return db, nil
 }
 
-func (db db) Close() error                             { return db.Conn.Close(context.Background()) }
+func (db db) Close() error                             { db.Pool.Close(); return nil }
 func (db db) OrganizationStore() otf.OrganizationStore { return db.organizationStore }
 func (db db) WorkspaceStore() otf.WorkspaceStore       { return db.workspaceStore }
 func (db db) StateVersionStore() otf.StateVersionStore { return db.stateVersionStore }

@@ -28,30 +28,49 @@ func TestStateVersion_Get(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
-	sv := createTestStateVersion(t, db, run,
+	want := createTestStateVersion(t, db, run,
 		appendOutput("out1", "string", "val1", false),
 	)
 
 	tests := []struct {
 		name string
 		opts otf.StateVersionGetOptions
+		want func(t *testing.T, got *otf.StateVersion, err error)
 	}{
 		{
 			name: "by id",
-			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID)},
+			opts: otf.StateVersionGetOptions{ID: otf.String(want.ID)},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, want, got)
+			},
+		},
+		{
+			name: "by id - missing",
+			opts: otf.StateVersionGetOptions{ID: otf.String("sv-does-not-exist")},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, otf.ErrResourceNotFound, err)
+			},
 		},
 		{
 			name: "by workspace",
 			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, want, got)
+			},
+		},
+		{
+			name: "by workspace - missing",
+			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String("ws-does-not-exist")},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, otf.ErrResourceNotFound, err)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.StateVersionStore().Get(tt.opts)
-			require.NoError(t, err)
-
-			assert.Equal(t, sv, got)
+			tt.want(t, got, err)
 		})
 	}
 }

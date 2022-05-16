@@ -95,44 +95,53 @@ CREATE TABLE IF NOT EXISTS configuration_version_status_timestamps (
                              PRIMARY KEY (configuration_version_id, status)
 );
 
-CREATE TYPE run_status AS ENUM (
-	'applied',
-	'apply_queued',
-	'applying',
-	'canceled',
-	'force_canceled',
-	'confirmed',
-	'discarded',
-	'errored',
-	'pending',
-	'plan_queued',
-	'planned',
-	'planned_and_finished',
-	'planning'
+CREATE TABLE IF NOT EXISTS run_statuses (
+    status TEXT PRIMARY KEY
 );
 
-CREATE TYPE plan_status AS ENUM (
-    'canceled',
-    'created',
-    'errored',
-    'finished',
-    'mfa_waiting',
-    'pending',
-    'queued',
-    'running',
-    'unreachable'
+CREATE TABLE IF NOT EXISTS plan_statuses (
+    status TEXT PRIMARY KEY
 );
 
-CREATE TYPE apply_status AS ENUM (
-    'canceled',
-    'created',
-    'errored',
-    'finished',
-    'pending',
-    'queued',
-    'running',
-    'unreachable'
+CREATE TABLE IF NOT EXISTS apply_statuses (
+    status TEXT PRIMARY KEY
 );
+
+INSERT INTO run_statuses (status) VALUES
+	('applied'),
+	('apply_queued'),
+	('applying'),
+	('canceled'),
+	('force_canceled'),
+	('confirmed'),
+	('discarded'),
+	('errored'),
+	('pending'),
+	('plan_queued'),
+	('planned'),
+	('planned_and_finished'),
+	('planning');
+
+INSERT INTO plan_statuses (status) VALUES
+    ('canceled'),
+    ('created'),
+    ('errored'),
+    ('finished'),
+    ('mfa_waiting'),
+    ('pending'),
+    ('queued'),
+    ('running'),
+    ('unreachable');
+
+INSERT INTO apply_statuses (status) VALUES
+    ('canceled'),
+    ('created'),
+    ('errored'),
+    ('finished'),
+    ('pending'),
+    ('queued'),
+    ('running'),
+    ('unreachable');
 
 CREATE TYPE resource_report AS (
     additions       INTEGER,
@@ -150,15 +159,15 @@ CREATE TABLE IF NOT EXISTS runs (
     position_in_queue               INTEGER         NOT NULL,
     refresh                         BOOLEAN         NOT NULL,
     refresh_only                    BOOLEAN         NOT NULL,
-    status                          RUN_STATUS      NOT NULL,
     replace_addrs                   TEXT[],
     target_addrs                    TEXT[],
-    plan_status                     PLAN_STATUS     NOT NULL,
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
-    apply_status                    APPLY_STATUS    NOT NULL,
     planned_changes                 RESOURCE_REPORT,
     applied_changes                 RESOURCE_REPORT,
+    status                          TEXT REFERENCES run_statuses  NOT NULL,
+    plan_status                     TEXT REFERENCES plan_statuses NOT NULL,
+    apply_status                    TEXT REFERENCES plan_statuses NOT NULL,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                     PRIMARY KEY (run_id),
@@ -167,22 +176,22 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
-    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT        NOT NULL,
-    timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (run_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS apply_status_timestamps (
-    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT        NOT NULL,
+    run_id      TEXT        REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        REFERENCES run_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (run_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS plan_status_timestamps (
-    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT        NOT NULL,
+    run_id      TEXT        REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        REFERENCES plan_statuses NOT NULL,
+    timestamp   TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (run_id, status)
+);
+
+CREATE TABLE IF NOT EXISTS apply_status_timestamps (
+    run_id      TEXT        REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        REFERENCES apply_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
                 PRIMARY KEY (run_id, status)
 );
@@ -209,7 +218,7 @@ CREATE TABLE IF NOT EXISTS state_versions (
     vcs_commit_sha   TEXT,
     vcs_commit_url   TEXT,
     state            BYTEA       NOT NULL,
-    run_id           TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    run_id           TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE,
                      PRIMARY KEY (state_version_id)
 );
 
@@ -234,14 +243,14 @@ DROP TABLE IF EXISTS plan_resource_reports;
 DROP TABLE IF EXISTS apply_resource_reports;
 DROP TABLE IF EXISTS plan_resources_reports;
 DROP TABLE IF EXISTS apply_resources_reports;
-DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS apply_status_timestamps;
+DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
+DROP TABLE IF EXISTS apply_statuses;
+DROP TABLE IF EXISTS plan_statuses;
+DROP TABLE IF EXISTS run_statuses;
 DROP TYPE resource_report;
-DROP TYPE apply_status;
-DROP TYPE plan_status;
-DROP TYPE run_status;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;

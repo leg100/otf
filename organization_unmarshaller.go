@@ -15,6 +15,27 @@ type OrganizationDBRow struct {
 	FullCount       int       `json:"full_count"`
 }
 
+func UnmarshalOrganizationListFromDB(pgresult interface{}) (organizations []*Organization, err error) {
+	data, err := json.Marshal(pgresult)
+	if err != nil {
+		return nil, err
+	}
+	var rows []OrganizationDBRow
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		org, err := unmarshalOrganizationDBRow(row)
+		if err != nil {
+			return nil, err
+		}
+		organizations = append(organizations, org)
+	}
+
+	return organizations, nil
+}
+
 func UnmarshalOrganizationFromDB(pgresult interface{}) (*Organization, error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
@@ -25,6 +46,10 @@ func UnmarshalOrganizationFromDB(pgresult interface{}) (*Organization, error) {
 		return nil, err
 	}
 
+	return unmarshalOrganizationDBRow(row)
+}
+
+func unmarshalOrganizationDBRow(row OrganizationDBRow) (*Organization, error) {
 	org := Organization{
 		ID: row.OrganizationID,
 		Timestamps: Timestamps{

@@ -73,6 +73,9 @@ func newPlan(runID string) *Plan {
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
+	if p.ResourceReport == nil {
+		return false
+	}
 	if p.Additions > 0 || p.Changes > 0 || p.Destructions > 0 {
 		return true
 	}
@@ -117,7 +120,13 @@ func (p *Plan) Start(run *Run) error {
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish(run *Run) (*Event, error) {
+func (p *Plan) Finish(run *Run, opts JobFinishOptions) (*Event, error) {
+	if opts.Errored {
+		if err := run.UpdateStatus(RunErrored); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: run, Type: EventRunErrored}, nil
+	}
 	if !p.HasChanges() || run.IsSpeculative() {
 		if err := run.UpdateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err

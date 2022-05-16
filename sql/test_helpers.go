@@ -216,7 +216,8 @@ func createTestStateVersion(t *testing.T, db otf.DB, run *otf.Run, opts ...newTe
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	cv.StatusTimestamps = nil
-	run, err := db.RunStore().Create(newTestRun(ws, cv))
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

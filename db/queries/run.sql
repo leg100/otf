@@ -48,7 +48,7 @@ INSERT INTO run_status_timestamps (
 )
 RETURNING *;
 
--- name: FindRunsByWorkspaceID :many
+-- name: FindRuns :many
 SELECT
     runs.run_id,
     runs.plan_id,
@@ -64,6 +64,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -83,103 +85,21 @@ SELECT
         FROM apply_status_timestamps ast
         WHERE ast.run_id = runs.run_id
         GROUP BY run_id
-    ) AS apply_status_timestamps,
-    count(*) OVER() AS full_count
-FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
-WHERE workspaces.workspace_id = pggen.arg('workspace_id')
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
-;
-
--- name: FindRunsByWorkspaceName :many
-SELECT
-    runs.run_id,
-    runs.plan_id,
-    runs.apply_id,
-    runs.created_at,
-    runs.updated_at,
-    runs.is_destroy,
-    runs.position_in_queue,
-    runs.refresh,
-    runs.refresh_only,
-    runs.status,
-    runs.plan_status,
-    runs.apply_status,
-    runs.replace_addrs,
-    runs.target_addrs,
-    (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace,
-    (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamps,
-    (
-        SELECT array_agg(pst.*) AS plan_status_timestamps
-        FROM plan_status_timestamps pst
-        WHERE pst.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS plan_status_timestamps,
-    (
-        SELECT array_agg(ast.*) AS apply_status_timestamps
-        FROM apply_status_timestamps ast
-        WHERE ast.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS apply_status_timestamps,
-    count(*) OVER() AS full_count
+    ) AS apply_status_timestamps
 FROM runs
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
-WHERE workspaces.name = pggen.arg('workspace_name')
-AND organizations.name = pggen.arg('organization_name')
+WHERE runs.workspace_id = pggen.arg('workspace_id')
+AND runs.status LIKE ANY(pggen.arg('statuses'))
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 
--- name: FindRunsByStatuses :many
-SELECT
-    runs.run_id,
-    runs.plan_id,
-    runs.apply_id,
-    runs.created_at,
-    runs.updated_at,
-    runs.is_destroy,
-    runs.position_in_queue,
-    runs.refresh,
-    runs.refresh_only,
-    runs.status,
-    runs.plan_status,
-    runs.apply_status,
-    runs.replace_addrs,
-    runs.target_addrs,
-    (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace,
-    (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS run_status_timestamps,
-    (
-        SELECT array_agg(pst.*) AS plan_status_timestamps
-        FROM plan_status_timestamps pst
-        WHERE pst.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS plan_status_timestamps,
-    (
-        SELECT array_agg(ast.*) AS apply_status_timestamps
-        FROM apply_status_timestamps ast
-        WHERE ast.run_id = runs.run_id
-        GROUP BY run_id
-    ) AS apply_status_timestamps,
-    count(*) OVER() AS full_count
+-- name: CountRuns :one
+SELECT count(*)
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
-WHERE runs.status::text = ANY(pggen.arg('statuses'))
-LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
+WHERE workspace_id = pggen.arg('workspace_id')
+AND status LIKE ANY(pggen.arg('statuses'))
 ;
 
 -- name: FindRunByID :one
@@ -286,8 +206,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
-    runs.planned_changes::"resource_report" AS planned_changes,
-    runs.applied_changes::"resource_report",
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -330,6 +250,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -373,6 +295,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -416,6 +340,8 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_changes,
+    runs.applied_changes,
     (configuration_versions.*)::"configuration_versions" AS configuration_version,
     (workspaces.*)::"workspaces" AS workspace,
     (
@@ -452,10 +378,10 @@ WHERE run_id = pggen.arg('id')
 RETURNING updated_at
 ;
 
--- name: UpdateRunPlannedChangesByPlanID :exec
+-- name: UpdateRunPlannedChangesByRunID :exec
 UPDATE runs
 SET planned_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
-WHERE plan_id = pggen.arg('id')
+WHERE run_id = pggen.arg('id')
 ;
 
 -- name: UpdateRunAppliedChangesByApplyID :exec

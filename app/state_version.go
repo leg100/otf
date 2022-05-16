@@ -30,6 +30,7 @@ func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, cache 
 func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
 	sv, err := s.NewStateVersion(workspaceID, opts)
 	if err != nil {
+		s.Error(err, "constructing state version")
 		return nil, err
 	}
 

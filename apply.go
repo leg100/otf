@@ -59,8 +59,9 @@ func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
-		ID:    NewID("apply"),
-		RunID: runID,
+		ID:     NewID("apply"),
+		RunID:  runID,
+		Status: ApplyPending,
 	}
 }
 

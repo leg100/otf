@@ -195,7 +195,7 @@ type RunPermissions struct {
 
 // RunStore implementations persist Run objects.
 type RunStore interface {
-	Create(run *Run) (*Run, error)
+	Create(run *Run) error
 	Get(opts RunGetOptions) (*Run, error)
 	SetPlanFile(id string, file []byte, format PlanFormat) error
 	GetPlanFile(id string, format PlanFormat) ([]byte, error)
@@ -565,6 +565,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,
 		Serial:  Int64(state.Serial),
+		Run:     r,
 	})
 	if err != nil {
 		return err

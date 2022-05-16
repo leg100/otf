@@ -16,32 +16,27 @@ type ConfigurationVersionDBRow struct {
 	Workspace                            *WorkspaceDBRow                       `json:"workspace"`
 	WorkspaceID                          *string                               `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamp `json:"configuration_version_status_timestamps"`
-	FullCount                            int                                   `json:"full_count"`
 }
 
-func UnmarshalConfigurationVersionListFromDB(pgresult interface{}) (cvs []*ConfigurationVersion, count int, err error) {
+func UnmarshalConfigurationVersionListFromDB(pgresult interface{}) (cvs []*ConfigurationVersion, err error) {
 	data, err := json.Marshal(pgresult)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var rows []ConfigurationVersionDBRow
 	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	for _, row := range rows {
 		cv, err := unmarshalConfigurationVersionDBRow(row)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		cvs = append(cvs, cv)
 	}
 
-	if len(rows) > 0 {
-		count = rows[0].FullCount
-	}
-
-	return cvs, count, nil
+	return cvs, nil
 }
 
 func UnmarshalConfigurationVersionFromDB(pgresult interface{}) (*ConfigurationVersion, error) {

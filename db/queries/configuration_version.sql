@@ -53,13 +53,18 @@ SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps,
-    count(*) OVER() AS full_count
+    ) AS configuration_version_status_timestamps
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
 WHERE workspaces.workspace_id = pggen.arg('workspace_id')
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset');
+
+-- name: CountConfigurationVersionsByWorkspaceID :one
+SELECT count(*)
+FROM configuration_versions
+WHERE configuration_versions.workspace_id = pggen.arg('workspace_id')
+;
 
 -- FindConfigurationVersionByID finds a configuration_version by its id.
 --

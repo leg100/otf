@@ -58,6 +58,8 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 		return err
 	}
 
+	s.V(2).Info("written plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
+
 	return nil
 }
 
@@ -82,7 +84,7 @@ func (s PlanService) Finish(ctx context.Context, planID string, opts otf.JobFini
 	var event *otf.Event
 
 	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
-		event, err = run.Plan.Finish(run)
+		event, err = run.Plan.Finish(run, opts)
 		return err
 	})
 	if err != nil {

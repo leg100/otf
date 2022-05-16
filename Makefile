@@ -83,10 +83,4 @@ sql:
 		--query-glob 'db/queries/*.sql' \
 		--output-dir sql \
 		--go-type 'timestamptz=time.Time' \
-		--go-type 'bytea=[]byte' \
-		--go-type '_run_status=[]github.com/leg100/otf.RunStatus' \
-		--go-type 'run_status=github.com/leg100/otf.RunStatus' \
-		--go-type '_plan_status=[]github.com/leg100/otf.PlanStatus' \
-		--go-type 'plan_status=github.com/leg100/otf.PlanStatus' \
-		--go-type '_apply_status=[]github.com/leg100/otf.ApplyStatus' \
-		--go-type 'apply_status=github.com/leg100/otf.ApplyStatus'
+		--go-type 'bytea=[]byte'

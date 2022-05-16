@@ -4,7 +4,7 @@ import (
 	"context"
 	"math"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -13,18 +13,18 @@ var (
 )
 
 type PlanLogDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewPlanLogDB(conn *pgx.Conn) *PlanLogDB {
+func NewPlanLogDB(conn *pgxpool.Pool) *PlanLogDB {
 	return &PlanLogDB{
-		Conn: conn,
+		Pool: conn,
 	}
 }
 
 // PutChunk persists a log chunk to the DB.
 func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	if len(chunk.Data) == 0 {
 		return nil
@@ -36,7 +36,7 @@ func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk
 
 // GetChunk retrieves a log chunk from the DB.
 func (db PlanLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
 	// maximum a postgres INT can hold.

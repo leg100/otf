@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -13,19 +14,19 @@ var (
 )
 
 type ConfigurationVersionDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewConfigurationVersionDB(conn *pgx.Conn) *ConfigurationVersionDB {
+func NewConfigurationVersionDB(conn *pgxpool.Pool) *ConfigurationVersionDB {
 	return &ConfigurationVersionDB{
-		Conn: conn,
+		Pool: conn,
 	}
 }
 
 func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 }
 
 func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -87,32 +88,43 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	result, err := q.FindConfigurationVersionsByWorkspaceID(ctx, FindConfigurationVersionsByWorkspaceIDParams{
+	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: workspaceID,
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
+	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, workspaceID)
+
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindConfigurationVersionsByWorkspaceIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+	count, err := q.CountConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
 
-	cvs, count, err := otf.UnmarshalConfigurationVersionListFromDB(result)
+	cvs, err := otf.UnmarshalConfigurationVersionListFromDB(rows)
 	if err != nil {
 		return nil, err
 	}
 
 	return &otf.ConfigurationVersionList{
 		Items:      cvs,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	ctx := context.Background()
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	if opts.ID != nil {
 		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
@@ -132,14 +144,14 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 }
 
 func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 
 	return q.DownloadConfigurationVersion(ctx, id)
 }
 
 // Delete deletes a configuration version from the DB
 func (db ConfigurationVersionDB) Delete(id string) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.DeleteConfigurationVersionByID(ctx, id)

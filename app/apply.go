@@ -51,12 +51,14 @@ func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunk
 }
 
 // PutChunk writes a chunk of logs for a terraform apply.
-func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) error {
-	err := s.logs.PutChunk(ctx, id, chunk)
+func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Chunk) error {
+	err := s.logs.PutChunk(ctx, applyID, chunk)
 	if err != nil {
-		s.Error(err, "writing apply logs", "id", id, "start", chunk.Start, "end", chunk.End)
+		s.Error(err, "writing apply logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
+
+	s.V(2).Info("written apply logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
 
 	if !chunk.End {
 		return nil
@@ -64,22 +66,27 @@ func (s ApplyService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) 
 
 	// Last chunk uploaded. A summary of applied changes can now be parsed from
 	// the full logs and set on the apply obj.
-	chunk, err = s.logs.GetChunk(ctx, id, otf.GetChunkOptions{})
+	chunk, err = s.logs.GetChunk(ctx, applyID, otf.GetChunkOptions{})
 	if err != nil {
-		s.Error(err, "reading apply logs", "id", id)
+		s.Error(err, "reading apply logs", "id", applyID)
 		return err
 	}
 
-	summary, err := otf.ParseApplyOutput(string(chunk.Data))
+	report, err := otf.ParseApplyOutput(string(chunk.Data))
 	if err != nil {
-		s.Error(err, "summarising applied changes", "id", id)
+		s.Error(err, "compiling report of applied changes", "id", applyID)
 		return err
 	}
 
-	if err := s.db.CreateApplyReport(id, summary); err != nil {
-		s.Error(err, "persisting applied changes report", "id", id)
+	if err := s.db.CreateApplyReport(applyID, report); err != nil {
+		s.Error(err, "saving applied changes report", "id", applyID)
 		return err
 	}
+
+	s.V(1).Info("created applied changes report", "id", applyID,
+		"adds", report.Additions,
+		"changes", report.Changes,
+		"destructions", report.Destructions)
 
 	return nil
 }

@@ -58,6 +58,8 @@ func TestWorkspace_Update(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "updated description", got.Description)
+
+			assert.True(t, got.UpdatedAt.After(got.CreatedAt))
 		})
 	}
 }
@@ -131,6 +133,15 @@ func TestWorkspace_List(t *testing.T) {
 			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, Prefix: "xyz"},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name: "stray pagination",
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				// zero results but count should ignore pagination
+				assert.Equal(t, 0, len(l.Items))
+				assert.Equal(t, 2, l.TotalCount)
 			},
 		},
 	}

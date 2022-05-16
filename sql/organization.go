@@ -3,7 +3,7 @@ package sql
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
 
@@ -12,18 +12,18 @@ var (
 )
 
 type OrganizationDB struct {
-	*pgx.Conn
+	*pgxpool.Pool
 }
 
-func NewOrganizationDB(conn *pgx.Conn) *OrganizationDB {
+func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 	return &OrganizationDB{
-		Conn: conn,
+		Pool: conn,
 	}
 }
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.InsertOrganization(ctx, InsertOrganizationParams{
@@ -47,7 +47,7 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	ctx := context.Background()
 
-	tx, err := db.Conn.Begin(ctx)
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,10 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	if err != nil {
 		return nil, err
 	}
-	org := convertOrganizationComposite(Organizations(result))
+	org, err := otf.UnmarshalOrganizationFromDB(result)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := fn(org); err != nil {
 		return nil, err
@@ -73,14 +76,14 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		org.UpdatedAt = result.UpdatedAt
 	}
 	if org.SessionRemember != int(*result.SessionRemember) {
-		result, err := q.UpdateOrganizationSessionRememberByName(ctx, int32(org.SessionRemember), name)
+		result, err := q.UpdateOrganizationSessionRememberByName(ctx, int32(org.SessionRemember), org.Name)
 		if err != nil {
 			return nil, err
 		}
 		org.UpdatedAt = result.UpdatedAt
 	}
 	if org.SessionTimeout != int(*result.SessionTimeout) {
-		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, int32(org.SessionTimeout), name)
+		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, int32(org.SessionTimeout), org.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +94,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.FindOrganizations(ctx, opts.GetLimit(), opts.GetOffset())
@@ -120,7 +123,7 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 }
 
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	r, err := q.FindOrganizationByName(ctx, name)
@@ -141,7 +144,7 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 }
 
 func (db OrganizationDB) Delete(name string) error {
-	q := NewQuerier(db.Conn)
+	q := NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.DeleteOrganization(ctx, name)

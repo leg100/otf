@@ -23,7 +23,7 @@ type StateVersion struct {
 	// State is the state file itself.
 	State []byte
 
-	// Run that created this state version.
+	// Run associated with this state version. Optional.
 	Run *Run
 
 	// State version has many outputs
@@ -105,7 +105,16 @@ type StateVersionCreateOptions struct {
 
 type StateVersionFactory struct{}
 
+// TODO: populate body
+func (opts *StateVersionCreateOptions) Valid() error {
+	return nil
+}
+
 func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
+	if err := opts.Valid(); err != nil {
+		return nil, fmt.Errorf("invalid create options: %w", err)
+	}
+
 	sv := StateVersion{
 		ID:         NewID("sv"),
 		Timestamps: NewTimestamps(),

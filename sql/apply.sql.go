@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/leg100/otf"
 	"time"
 )
 
@@ -25,10 +24,10 @@ type Querier interface {
 	// InsertApplyStatusTimestampScan scans the result of an executed InsertApplyStatusTimestampBatch query.
 	InsertApplyStatusTimestampScan(results pgx.BatchResults) (InsertApplyStatusTimestampRow, error)
 
-	UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus, id string) (time.Time, error)
+	UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdateApplyStatusBatch enqueues a UpdateApplyStatus query into batch to be executed
 	// later by the batch.
-	UpdateApplyStatusBatch(batch genericBatch, status otf.ApplyStatus, id string)
+	UpdateApplyStatusBatch(batch genericBatch, status string, id string)
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
 	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
 
@@ -72,6 +71,13 @@ type Querier interface {
 	FindConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, params FindConfigurationVersionsByWorkspaceIDParams)
 	// FindConfigurationVersionsByWorkspaceIDScan scans the result of an executed FindConfigurationVersionsByWorkspaceIDBatch query.
 	FindConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) ([]FindConfigurationVersionsByWorkspaceIDRow, error)
+
+	CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID string) (*int, error)
+	// CountConfigurationVersionsByWorkspaceIDBatch enqueues a CountConfigurationVersionsByWorkspaceID query into batch to be executed
+	// later by the batch.
+	CountConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID string)
+	// CountConfigurationVersionsByWorkspaceIDScan scans the result of an executed CountConfigurationVersionsByWorkspaceIDBatch query.
+	CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (*int, error)
 
 	// FindConfigurationVersionByID finds a configuration_version by its id.
 	// 
@@ -214,10 +220,10 @@ type Querier interface {
 	// InsertPlanStatusTimestampScan scans the result of an executed InsertPlanStatusTimestampBatch query.
 	InsertPlanStatusTimestampScan(results pgx.BatchResults) (InsertPlanStatusTimestampRow, error)
 
-	UpdatePlanStatus(ctx context.Context, status otf.PlanStatus, id string) (time.Time, error)
+	UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdatePlanStatusBatch enqueues a UpdatePlanStatus query into batch to be executed
 	// later by the batch.
-	UpdatePlanStatusBatch(batch genericBatch, status otf.PlanStatus, id string)
+	UpdatePlanStatusBatch(batch genericBatch, status string, id string)
 	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
 	UpdatePlanStatusScan(results pgx.BatchResults) (time.Time, error)
 
@@ -277,26 +283,19 @@ type Querier interface {
 	// InsertRunStatusTimestampScan scans the result of an executed InsertRunStatusTimestampBatch query.
 	InsertRunStatusTimestampScan(results pgx.BatchResults) (InsertRunStatusTimestampRow, error)
 
-	FindRunsByWorkspaceID(ctx context.Context, params FindRunsByWorkspaceIDParams) ([]FindRunsByWorkspaceIDRow, error)
-	// FindRunsByWorkspaceIDBatch enqueues a FindRunsByWorkspaceID query into batch to be executed
+	FindRuns(ctx context.Context, params FindRunsParams) ([]FindRunsRow, error)
+	// FindRunsBatch enqueues a FindRuns query into batch to be executed
 	// later by the batch.
-	FindRunsByWorkspaceIDBatch(batch genericBatch, params FindRunsByWorkspaceIDParams)
-	// FindRunsByWorkspaceIDScan scans the result of an executed FindRunsByWorkspaceIDBatch query.
-	FindRunsByWorkspaceIDScan(results pgx.BatchResults) ([]FindRunsByWorkspaceIDRow, error)
+	FindRunsBatch(batch genericBatch, params FindRunsParams)
+	// FindRunsScan scans the result of an executed FindRunsBatch query.
+	FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error)
 
-	FindRunsByWorkspaceName(ctx context.Context, params FindRunsByWorkspaceNameParams) ([]FindRunsByWorkspaceNameRow, error)
-	// FindRunsByWorkspaceNameBatch enqueues a FindRunsByWorkspaceName query into batch to be executed
+	CountRuns(ctx context.Context, workspaceID string, statuses []string) (*int, error)
+	// CountRunsBatch enqueues a CountRuns query into batch to be executed
 	// later by the batch.
-	FindRunsByWorkspaceNameBatch(batch genericBatch, params FindRunsByWorkspaceNameParams)
-	// FindRunsByWorkspaceNameScan scans the result of an executed FindRunsByWorkspaceNameBatch query.
-	FindRunsByWorkspaceNameScan(results pgx.BatchResults) ([]FindRunsByWorkspaceNameRow, error)
-
-	FindRunsByStatuses(ctx context.Context, params FindRunsByStatusesParams) ([]FindRunsByStatusesRow, error)
-	// FindRunsByStatusesBatch enqueues a FindRunsByStatuses query into batch to be executed
-	// later by the batch.
-	FindRunsByStatusesBatch(batch genericBatch, params FindRunsByStatusesParams)
-	// FindRunsByStatusesScan scans the result of an executed FindRunsByStatusesBatch query.
-	FindRunsByStatusesScan(results pgx.BatchResults) ([]FindRunsByStatusesRow, error)
+	CountRunsBatch(batch genericBatch, workspaceID string, statuses []string)
+	// CountRunsScan scans the result of an executed CountRunsBatch query.
+	CountRunsScan(results pgx.BatchResults) (*int, error)
 
 	FindRunByID(ctx context.Context, runID string) (FindRunByIDRow, error)
 	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
@@ -340,19 +339,19 @@ type Querier interface {
 	// FindRunByApplyIDForUpdateScan scans the result of an executed FindRunByApplyIDForUpdateBatch query.
 	FindRunByApplyIDForUpdateScan(results pgx.BatchResults) (FindRunByApplyIDForUpdateRow, error)
 
-	UpdateRunStatus(ctx context.Context, status otf.RunStatus, id string) (time.Time, error)
+	UpdateRunStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
 	// later by the batch.
-	UpdateRunStatusBatch(batch genericBatch, status otf.RunStatus, id string)
+	UpdateRunStatusBatch(batch genericBatch, status string, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (time.Time, error)
 
-	UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgconn.CommandTag, error)
-	// UpdateRunPlannedChangesByPlanIDBatch enqueues a UpdateRunPlannedChangesByPlanID query into batch to be executed
+	UpdateRunPlannedChangesByRunID(ctx context.Context, params UpdateRunPlannedChangesByRunIDParams) (pgconn.CommandTag, error)
+	// UpdateRunPlannedChangesByRunIDBatch enqueues a UpdateRunPlannedChangesByRunID query into batch to be executed
 	// later by the batch.
-	UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, params UpdateRunPlannedChangesByPlanIDParams)
-	// UpdateRunPlannedChangesByPlanIDScan scans the result of an executed UpdateRunPlannedChangesByPlanIDBatch query.
-	UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateRunPlannedChangesByRunIDBatch(batch genericBatch, params UpdateRunPlannedChangesByRunIDParams)
+	// UpdateRunPlannedChangesByRunIDScan scans the result of an executed UpdateRunPlannedChangesByRunIDBatch query.
+	UpdateRunPlannedChangesByRunIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgconn.CommandTag, error)
 	// UpdateRunAppliedChangesByApplyIDBatch enqueues a UpdateRunAppliedChangesByApplyID query into batch to be executed
@@ -561,16 +560,26 @@ type Querier interface {
 	// InsertWorkspaceScan scans the result of an executed InsertWorkspaceBatch query.
 	InsertWorkspaceScan(results pgx.BatchResults) (InsertWorkspaceRow, error)
 
-	// FindWorkspaces finds workspaces for a given organization.
-	// Workspace name can be filtered with a prefix.
-	// Results are paginated with limit and offset, and total count is returned.
-	// 
 	FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error)
 	// FindWorkspacesBatch enqueues a FindWorkspaces query into batch to be executed
 	// later by the batch.
 	FindWorkspacesBatch(batch genericBatch, params FindWorkspacesParams)
 	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
 	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
+
+	CountWorkspaces(ctx context.Context, prefix string, organizationName string) (*int, error)
+	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
+	// later by the batch.
+	CountWorkspacesBatch(batch genericBatch, prefix string, organizationName string)
+	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
+	CountWorkspacesScan(results pgx.BatchResults) (*int, error)
+
+	FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (*string, error)
+	// FindWorkspaceIDByNameBatch enqueues a FindWorkspaceIDByName query into batch to be executed
+	// later by the batch.
+	FindWorkspaceIDByNameBatch(batch genericBatch, name string, organizationName string)
+	// FindWorkspaceIDByNameScan scans the result of an executed FindWorkspaceIDByNameBatch query.
+	FindWorkspaceIDByNameScan(results pgx.BatchResults) (*string, error)
 
 	// FindWorkspaceByName finds a workspace by name and organization name.
 	// 
@@ -618,26 +627,68 @@ type Querier interface {
 	// UpdateWorkspaceAllowDestroyPlanByID updates the AllowDestroyPlan
 	// attribute on a workspace identified by id, and returns the updated row.
 	// 
-	UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan bool, id string) (UpdateWorkspaceAllowDestroyPlanByIDRow, error)
+	UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan bool, id string) (time.Time, error)
 	// UpdateWorkspaceAllowDestroyPlanByIDBatch enqueues a UpdateWorkspaceAllowDestroyPlanByID query into batch to be executed
 	// later by the batch.
 	UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan bool, id string)
 	// UpdateWorkspaceAllowDestroyPlanByIDScan scans the result of an executed UpdateWorkspaceAllowDestroyPlanByIDBatch query.
-	UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchResults) (UpdateWorkspaceAllowDestroyPlanByIDRow, error)
+	UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchResults) (time.Time, error)
 
-	UpdateWorkspaceLockByID(ctx context.Context, lock bool, id string) (UpdateWorkspaceLockByIDRow, error)
+	UpdateWorkspaceExecutionModeByID(ctx context.Context, executionMode string, id string) (time.Time, error)
+	// UpdateWorkspaceExecutionModeByIDBatch enqueues a UpdateWorkspaceExecutionModeByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceExecutionModeByIDBatch(batch genericBatch, executionMode string, id string)
+	// UpdateWorkspaceExecutionModeByIDScan scans the result of an executed UpdateWorkspaceExecutionModeByIDBatch query.
+	UpdateWorkspaceExecutionModeByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceLockByID(ctx context.Context, lock bool, id string) (time.Time, error)
 	// UpdateWorkspaceLockByIDBatch enqueues a UpdateWorkspaceLockByID query into batch to be executed
 	// later by the batch.
 	UpdateWorkspaceLockByIDBatch(batch genericBatch, lock bool, id string)
 	// UpdateWorkspaceLockByIDScan scans the result of an executed UpdateWorkspaceLockByIDBatch query.
-	UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (UpdateWorkspaceLockByIDRow, error)
+	UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (time.Time, error)
 
-	UpdateWorkspaceDescriptionByID(ctx context.Context, description string, id string) (UpdateWorkspaceDescriptionByIDRow, error)
+	UpdateWorkspaceDescriptionByID(ctx context.Context, description string, id string) (time.Time, error)
 	// UpdateWorkspaceDescriptionByIDBatch enqueues a UpdateWorkspaceDescriptionByID query into batch to be executed
 	// later by the batch.
 	UpdateWorkspaceDescriptionByIDBatch(batch genericBatch, description string, id string)
 	// UpdateWorkspaceDescriptionByIDScan scans the result of an executed UpdateWorkspaceDescriptionByIDBatch query.
-	UpdateWorkspaceDescriptionByIDScan(results pgx.BatchResults) (UpdateWorkspaceDescriptionByIDRow, error)
+	UpdateWorkspaceDescriptionByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceSpeculativeEnabledByID(ctx context.Context, speculativeEnabled bool, id string) (time.Time, error)
+	// UpdateWorkspaceSpeculativeEnabledByIDBatch enqueues a UpdateWorkspaceSpeculativeEnabledByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceSpeculativeEnabledByIDBatch(batch genericBatch, speculativeEnabled bool, id string)
+	// UpdateWorkspaceSpeculativeEnabledByIDScan scans the result of an executed UpdateWorkspaceSpeculativeEnabledByIDBatch query.
+	UpdateWorkspaceSpeculativeEnabledByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceStructuredRunOutputEnabledByID(ctx context.Context, structuredRunOutputEnabled bool, id string) (time.Time, error)
+	// UpdateWorkspaceStructuredRunOutputEnabledByIDBatch enqueues a UpdateWorkspaceStructuredRunOutputEnabledByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceStructuredRunOutputEnabledByIDBatch(batch genericBatch, structuredRunOutputEnabled bool, id string)
+	// UpdateWorkspaceStructuredRunOutputEnabledByIDScan scans the result of an executed UpdateWorkspaceStructuredRunOutputEnabledByIDBatch query.
+	UpdateWorkspaceStructuredRunOutputEnabledByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceTerraformVersionByID(ctx context.Context, terraformVersion string, id string) (time.Time, error)
+	// UpdateWorkspaceTerraformVersionByIDBatch enqueues a UpdateWorkspaceTerraformVersionByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceTerraformVersionByIDBatch(batch genericBatch, terraformVersion string, id string)
+	// UpdateWorkspaceTerraformVersionByIDScan scans the result of an executed UpdateWorkspaceTerraformVersionByIDBatch query.
+	UpdateWorkspaceTerraformVersionByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceTriggerPrefixesByID(ctx context.Context, triggerPrefixes []string, id string) (time.Time, error)
+	// UpdateWorkspaceTriggerPrefixesByIDBatch enqueues a UpdateWorkspaceTriggerPrefixesByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceTriggerPrefixesByIDBatch(batch genericBatch, triggerPrefixes []string, id string)
+	// UpdateWorkspaceTriggerPrefixesByIDScan scans the result of an executed UpdateWorkspaceTriggerPrefixesByIDBatch query.
+	UpdateWorkspaceTriggerPrefixesByIDScan(results pgx.BatchResults) (time.Time, error)
+
+	UpdateWorkspaceWorkingDirectoryByID(ctx context.Context, workingDirectory string, id string) (time.Time, error)
+	// UpdateWorkspaceWorkingDirectoryByIDBatch enqueues a UpdateWorkspaceWorkingDirectoryByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceWorkingDirectoryByIDBatch(batch genericBatch, workingDirectory string, id string)
+	// UpdateWorkspaceWorkingDirectoryByIDScan scans the result of an executed UpdateWorkspaceWorkingDirectoryByIDBatch query.
+	UpdateWorkspaceWorkingDirectoryByIDScan(results pgx.BatchResults) (time.Time, error)
 
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
@@ -755,6 +806,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findConfigurationVersionsByWorkspaceIDSQL, findConfigurationVersionsByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindConfigurationVersionsByWorkspaceID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, countConfigurationVersionsByWorkspaceIDSQL, countConfigurationVersionsByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountConfigurationVersionsByWorkspaceID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findConfigurationVersionByIDSQL, findConfigurationVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindConfigurationVersionByID': %w", err)
 	}
@@ -836,14 +890,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertRunStatusTimestampSQL, insertRunStatusTimestampSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRunStatusTimestamp': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findRunsByWorkspaceIDSQL, findRunsByWorkspaceIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunsByWorkspaceID': %w", err)
+	if _, err := p.Prepare(ctx, findRunsSQL, findRunsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRuns': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findRunsByWorkspaceNameSQL, findRunsByWorkspaceNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunsByWorkspaceName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunsByStatusesSQL, findRunsByStatusesSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunsByStatuses': %w", err)
+	if _, err := p.Prepare(ctx, countRunsSQL, countRunsSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountRuns': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findRunByIDSQL, findRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRunByID': %w", err)
@@ -866,8 +917,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateRunPlannedChangesByPlanIDSQL, updateRunPlannedChangesByPlanIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateRunPlannedChangesByPlanID': %w", err)
+	if _, err := p.Prepare(ctx, updateRunPlannedChangesByRunIDSQL, updateRunPlannedChangesByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunPlannedChangesByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateRunAppliedChangesByApplyIDSQL, updateRunAppliedChangesByApplyIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunAppliedChangesByApplyID': %w", err)
@@ -959,6 +1010,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacesSQL, findWorkspacesSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaces': %w", err)
 	}
+	if _, err := p.Prepare(ctx, countWorkspacesSQL, countWorkspacesSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountWorkspaces': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspaceIDByNameSQL, findWorkspaceIDByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceIDByName': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)
 	}
@@ -977,11 +1034,29 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, updateWorkspaceAllowDestroyPlanByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceAllowDestroyPlanByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateWorkspaceExecutionModeByIDSQL, updateWorkspaceExecutionModeByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceExecutionModeByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateWorkspaceLockByIDSQL, updateWorkspaceLockByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceLockByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateWorkspaceDescriptionByIDSQL, updateWorkspaceDescriptionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceDescriptionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceSpeculativeEnabledByIDSQL, updateWorkspaceSpeculativeEnabledByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceSpeculativeEnabledByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceStructuredRunOutputEnabledByIDSQL, updateWorkspaceStructuredRunOutputEnabledByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceStructuredRunOutputEnabledByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceTerraformVersionByIDSQL, updateWorkspaceTerraformVersionByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceTerraformVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceTriggerPrefixesByIDSQL, updateWorkspaceTriggerPrefixesByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceTriggerPrefixesByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceWorkingDirectoryByIDSQL, updateWorkspaceWorkingDirectoryByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceWorkingDirectoryByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
@@ -1458,7 +1533,7 @@ RETURNING updated_at
 ;`
 
 // UpdateApplyStatus implements Querier.UpdateApplyStatus.
-func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status otf.ApplyStatus, id string) (time.Time, error) {
+func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyStatus")
 	row := q.conn.QueryRow(ctx, updateApplyStatusSQL, status, id)
 	var item time.Time
@@ -1469,7 +1544,7 @@ func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status otf.ApplyStatu
 }
 
 // UpdateApplyStatusBatch implements Querier.UpdateApplyStatusBatch.
-func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status otf.ApplyStatus, id string) {
+func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status string, id string) {
 	batch.Queue(updateApplyStatusSQL, status, id)
 }
 

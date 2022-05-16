@@ -112,12 +112,14 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
-		ID:                   a.ID,
-		LogReadURL:           httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		ResourceAdditions:    a.Additions,
-		ResourceChanges:      a.Changes,
-		ResourceDestructions: a.Destructions,
-		Status:               a.Status,
+		ID:         a.ID,
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
+		Status:     a.Status,
+	}
+	if a.ResourceReport != nil {
+		obj.ResourceAdditions = a.Additions
+		obj.ResourceChanges = a.Changes
+		obj.ResourceDestructions = a.Destructions
 	}
 
 	for _, ts := range a.StatusTimestamps {
