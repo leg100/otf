@@ -211,6 +211,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	if len(opts.Statuses) > 0 {
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	} else {
+		// Match any status
 		statuses = []string{"%"}
 	}
 
