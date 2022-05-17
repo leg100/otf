@@ -282,12 +282,12 @@ type WorkspaceSpec struct {
 	OrganizationName *string `schema:"organization_name"`
 }
 
-func (s WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
-	if s.ID != nil {
-		keysAndValues = append(keysAndValues, "id", *s.ID)
+func (spec WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
+	if spec.ID != nil {
+		keysAndValues = append(keysAndValues, "id", *spec.ID)
 	}
-	if s.Name != nil && s.OrganizationName != nil {
-		keysAndValues = append(keysAndValues, "name", *s.Name, "organization", *s.OrganizationName)
+	if spec.Name != nil && spec.OrganizationName != nil {
+		keysAndValues = append(keysAndValues, "name", *spec.Name, "organization", *spec.OrganizationName)
 	}
 	return keysAndValues
 }

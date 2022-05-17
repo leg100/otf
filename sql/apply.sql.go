@@ -502,10 +502,10 @@ type Querier interface {
 	// DeleteTokenByIDScan scans the result of an executed DeleteTokenByIDBatch query.
 	DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertUser(ctx context.Context, params InsertUserParams) (InsertUserRow, error)
+	InsertUser(ctx context.Context, id string, username string) (InsertUserRow, error)
 	// InsertUserBatch enqueues a InsertUser query into batch to be executed
 	// later by the batch.
-	InsertUserBatch(batch genericBatch, params InsertUserParams)
+	InsertUserBatch(batch genericBatch, id string, username string)
 	// InsertUserScan scans the result of an executed InsertUserBatch query.
 	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
 

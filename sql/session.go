@@ -130,18 +130,3 @@ func (db SessionDB) deleteExpired() error {
 	_, err := q.DeleteSessionsExpired(context.Background())
 	return err
 }
-
-func convertSession(row Sessions) *otf.Session {
-	return &otf.Session{
-		Token: *row.Token,
-		Timestamps: otf.Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-		},
-		Expiry: row.Expiry,
-		UserID: *row.UserID,
-		SessionData: otf.SessionData{
-			Address: *row.Address,
-		},
-	}
-}

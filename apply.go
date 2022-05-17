@@ -102,7 +102,3 @@ func (a *Apply) Start(run *Run) error {
 func (a *Apply) Finish(run *Run) error {
 	return run.UpdateStatus(RunApplied)
 }
-
-func (a *Apply) updateStatus(status ApplyStatus) {
-	a.Status = status
-}

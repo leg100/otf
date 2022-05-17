@@ -3,16 +3,14 @@ INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username,
-    current_organization
+    username
 ) VALUES (
     pggen.arg('ID'),
     current_timestamp,
     current_timestamp,
-    pggen.arg('Username'),
-    pggen.arg('CurrentOrganization')
+    pggen.arg('Username')
 )
-RETURNING *;
+RETURNING created_at, updated_at;
 
 -- name: FindUsers :many
 SELECT users.*,
@@ -20,9 +18,9 @@ SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 GROUP BY users.user_id
 ;
 
@@ -32,9 +30,9 @@ SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.user_id = pggen.arg('user_id')
 GROUP BY users.user_id
 ;
@@ -45,9 +43,9 @@ SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = pggen.arg('username')
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -60,8 +58,8 @@ SELECT users.*,
     array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = pggen.arg('token')
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -73,9 +71,9 @@ SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
+LEFT JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token = pggen.arg('token')
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -87,9 +85,9 @@ SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
+LEFT JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token_id = pggen.arg('token_id')
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id

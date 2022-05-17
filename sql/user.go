@@ -33,11 +33,7 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 
 	q := NewQuerier(tx)
 
-	result, err := q.InsertUser(ctx, InsertUserParams{
-		ID:                  user.ID,
-		Username:            user.Username,
-		CurrentOrganization: *user.CurrentOrganization,
-	})
+	result, err := q.InsertUser(ctx, user.ID, user.Username)
 	if err != nil {
 		return err
 	}

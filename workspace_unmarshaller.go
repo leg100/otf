@@ -23,7 +23,7 @@ type WorkspaceDBRow struct {
 	QueueAllRuns               bool               `json:"queue_all_runs"`
 	SpeculativeEnabled         bool               `json:"speculative_enabled"`
 	SourceName                 string             `json:"source_name"`
-	SourceUrl                  string             `json:"source_url"`
+	SourceURL                  string             `json:"source_url"`
 	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
 	TerraformVersion           string             `json:"terraform_version"`
 	TriggerPrefixes            []string           `json:"trigger_prefixes"`
@@ -87,7 +87,7 @@ func unmarshalWorkspaceDBRow(row WorkspaceDBRow) (*Workspace, error) {
 		SpeculativeEnabled:         row.SpeculativeEnabled,
 		StructuredRunOutputEnabled: row.StructuredRunOutputEnabled,
 		SourceName:                 row.SourceName,
-		SourceURL:                  row.SourceUrl,
+		SourceURL:                  row.SourceURL,
 		TerraformVersion:           row.TerraformVersion,
 		TriggerPrefixes:            row.TriggerPrefixes,
 		WorkingDirectory:           row.WorkingDirectory,

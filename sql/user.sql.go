@@ -14,52 +14,41 @@ const insertUserSQL = `INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username,
-    current_organization
+    username
 ) VALUES (
     $1,
     current_timestamp,
     current_timestamp,
-    $2,
-    $3
+    $2
 )
-RETURNING *;`
-
-type InsertUserParams struct {
-	ID                  string
-	Username            string
-	CurrentOrganization string
-}
+RETURNING created_at, updated_at;`
 
 type InsertUserRow struct {
-	UserID              string    `json:"user_id"`
-	Username            string    `json:"username"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
-	CurrentOrganization *string   `json:"current_organization"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // InsertUser implements Querier.InsertUser.
-func (q *DBQuerier) InsertUser(ctx context.Context, params InsertUserParams) (InsertUserRow, error) {
+func (q *DBQuerier) InsertUser(ctx context.Context, id string, username string) (InsertUserRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertUser")
-	row := q.conn.QueryRow(ctx, insertUserSQL, params.ID, params.Username, params.CurrentOrganization)
+	row := q.conn.QueryRow(ctx, insertUserSQL, id, username)
 	var item InsertUserRow
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("query InsertUser: %w", err)
 	}
 	return item, nil
 }
 
 // InsertUserBatch implements Querier.InsertUserBatch.
-func (q *DBQuerier) InsertUserBatch(batch genericBatch, params InsertUserParams) {
-	batch.Queue(insertUserSQL, params.ID, params.Username, params.CurrentOrganization)
+func (q *DBQuerier) InsertUserBatch(batch genericBatch, id string, username string) {
+	batch.Queue(insertUserSQL, id, username)
 }
 
 // InsertUserScan implements Querier.InsertUserScan.
 func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (InsertUserRow, error) {
 	row := results.QueryRow()
 	var item InsertUserRow
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization); err != nil {
+	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
 		return item, fmt.Errorf("scan InsertUserBatch row: %w", err)
 	}
 	return item, nil
@@ -70,9 +59,9 @@ const findUsersSQL = `SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 GROUP BY users.user_id
 ;`
 
@@ -164,9 +153,9 @@ const findUserByIDSQL = `SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.user_id = $1
 GROUP BY users.user_id
 ;`
@@ -237,9 +226,9 @@ const findUserByUsernameSQL = `SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN sessions USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE users.username = $1
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -312,8 +301,8 @@ const findUserBySessionTokenSQL = `SELECT users.*,
     array_agg(organizations) AS organizations
 FROM users
 JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN tokens USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE sessions.token = $1
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -385,9 +374,9 @@ const findUserByAuthenticationTokenSQL = `SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
+LEFT JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token = $1
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
@@ -459,9 +448,9 @@ const findUserByAuthenticationTokenIDSQL = `SELECT users.*,
     array_agg(tokens) AS tokens,
     array_agg(organizations) AS organizations
 FROM users
-JOIN sessions USING(user_id)
+LEFT JOIN sessions USING(user_id)
 JOIN tokens USING(user_id)
-JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
+LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
 WHERE tokens.token_id = $1
 AND sessions.expiry > current_timestamp
 GROUP BY users.user_id
