@@ -140,6 +140,16 @@ func TestRun_List(t *testing.T) {
 			},
 		},
 		{
+			name: "by statuses, without specifying workspace",
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
+			},
+		},
+		{
 			name: "by statuses - no match",
 			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {

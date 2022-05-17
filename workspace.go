@@ -267,18 +267,12 @@ type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, fn func(ws *Workspace) error) (*Workspace, error)
+	Update(spec WorkspaceSpec, ws func(ws *Workspace) (bool, error)) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 
-type WorkspaceUpdater interface {
-	ToggleLock(ctx context.Context, lock bool) error
-	UpdateName(ctx context.Context, name string) error
-	UpdateAllowDestroyPlan(ctx context.Context, allow bool) error
-}
-
-// WorkspaceSpec is used for identifying an individual workspace. Either ID
-// *or* both Name and OrganizationName must be specfiied.
+// WorkspaceSpec is used for identifying an individual workspace. Either ID *or*
+// both Name and OrganizationName must be specfiied.
 type WorkspaceSpec struct {
 	// Specify workspace using its ID
 	ID *string `db:"workspace_id"`
@@ -469,24 +463,30 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	return nil
 }
 
-func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) error {
+func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) (updated bool, err error) {
 	if opts.Name != nil {
 		ws.Name = *opts.Name
+		updated = true
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+		updated = true
 	}
 	if opts.AutoApply != nil {
 		ws.AutoApply = *opts.AutoApply
+		updated = true
 	}
 	if opts.Description != nil {
 		ws.Description = *opts.Description
+		updated = true
 	}
 	if opts.ExecutionMode != nil {
 		ws.ExecutionMode = *opts.ExecutionMode
+		updated = true
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+		updated = true
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -494,27 +494,34 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		} else {
 			ws.ExecutionMode = "local"
 		}
+		updated = true
 	}
 	if opts.QueueAllRuns != nil {
 		ws.QueueAllRuns = *opts.QueueAllRuns
+		updated = true
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+		updated = true
 	}
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+		updated = true
 	}
 	if opts.TerraformVersion != nil {
 		ws.TerraformVersion = *opts.TerraformVersion
+		updated = true
 	}
 	if opts.TriggerPrefixes != nil {
 		ws.TriggerPrefixes = opts.TriggerPrefixes
+		updated = true
 	}
 	if opts.WorkingDirectory != nil {
 		ws.WorkingDirectory = *opts.WorkingDirectory
+		updated = true
 	}
 
-	return nil
+	return updated, nil
 }
 
 func (spec *WorkspaceSpec) String() string {

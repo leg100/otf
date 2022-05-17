@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
@@ -95,30 +96,30 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	q := NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	result, err := q.FindOrganizations(ctx, opts.GetLimit(), opts.GetOffset())
+	q.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
+	q.CountOrganizationsBatch(batch)
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindOrganizationsScan(results)
+	if err != nil {
+		return nil, err
+	}
+	count, err := q.CountOrganizationsScan(results)
+	if err != nil {
+		return nil, err
+	}
+	items, err := otf.UnmarshalOrganizationListFromDB(rows)
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*otf.Organization
-	for _, r := range result {
-		items = append(items, &otf.Organization{
-			ID:   *r.OrganizationID,
-			Name: *r.Name,
-			Timestamps: otf.Timestamps{
-				CreatedAt: r.CreatedAt,
-				UpdatedAt: r.UpdatedAt,
-			},
-			SessionRemember: int(*r.SessionRemember),
-			SessionTimeout:  int(*r.SessionTimeout),
-		})
-	}
-
 	return &otf.OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 

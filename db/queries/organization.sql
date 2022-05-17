@@ -11,11 +11,13 @@ FOR UPDATE
 ;
 
 -- name: FindOrganizations :many
-SELECT
-    *,
-    count(*) OVER()          AS full_count
+SELECT *
 FROM organizations
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');
+
+-- name: CountOrganizations :one
+SELECT count(*)
+FROM organizations;
 
 -- InsertOrganization inserts an organization and returns the entire row.
 --

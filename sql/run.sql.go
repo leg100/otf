@@ -179,16 +179,16 @@ FROM runs
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
-WHERE runs.workspace_id = $1
+WHERE runs.workspace_id LIKE ANY($1)
 AND runs.status LIKE ANY($2)
 LIMIT $3 OFFSET $4
 ;`
 
 type FindRunsParams struct {
-	WorkspaceID string
-	Statuses    []string
-	Limit       int
-	Offset      int
+	WorkspaceIds []string
+	Statuses     []string
+	Limit        int
+	Offset       int
 }
 
 type FindRunsRow struct {
@@ -218,7 +218,7 @@ type FindRunsRow struct {
 // FindRuns implements Querier.FindRuns.
 func (q *DBQuerier) FindRuns(ctx context.Context, params FindRunsParams) ([]FindRunsRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRuns")
-	rows, err := q.conn.Query(ctx, findRunsSQL, params.WorkspaceID, params.Statuses, params.Limit, params.Offset)
+	rows, err := q.conn.Query(ctx, findRunsSQL, params.WorkspaceIds, params.Statuses, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query FindRuns: %w", err)
 	}
@@ -267,7 +267,7 @@ func (q *DBQuerier) FindRuns(ctx context.Context, params FindRunsParams) ([]Find
 
 // FindRunsBatch implements Querier.FindRunsBatch.
 func (q *DBQuerier) FindRunsBatch(batch genericBatch, params FindRunsParams) {
-	batch.Queue(findRunsSQL, params.WorkspaceID, params.Statuses, params.Limit, params.Offset)
+	batch.Queue(findRunsSQL, params.WorkspaceIds, params.Statuses, params.Limit, params.Offset)
 }
 
 // FindRunsScan implements Querier.FindRunsScan.
@@ -321,14 +321,14 @@ func (q *DBQuerier) FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error
 
 const countRunsSQL = `SELECT count(*)
 FROM runs
-WHERE workspace_id = $1
+WHERE workspace_id LIKE ANY($1)
 AND status LIKE ANY($2)
 ;`
 
 // CountRuns implements Querier.CountRuns.
-func (q *DBQuerier) CountRuns(ctx context.Context, workspaceID string, statuses []string) (*int, error) {
+func (q *DBQuerier) CountRuns(ctx context.Context, workspaceIds []string, statuses []string) (*int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountRuns")
-	row := q.conn.QueryRow(ctx, countRunsSQL, workspaceID, statuses)
+	row := q.conn.QueryRow(ctx, countRunsSQL, workspaceIds, statuses)
 	var item int
 	if err := row.Scan(&item); err != nil {
 		return &item, fmt.Errorf("query CountRuns: %w", err)
@@ -337,8 +337,8 @@ func (q *DBQuerier) CountRuns(ctx context.Context, workspaceID string, statuses 
 }
 
 // CountRunsBatch implements Querier.CountRunsBatch.
-func (q *DBQuerier) CountRunsBatch(batch genericBatch, workspaceID string, statuses []string) {
-	batch.Queue(countRunsSQL, workspaceID, statuses)
+func (q *DBQuerier) CountRunsBatch(batch genericBatch, workspaceIds []string, statuses []string) {
+	batch.Queue(countRunsSQL, workspaceIds, statuses)
 }
 
 // CountRunsScan implements Querier.CountRunsScan.

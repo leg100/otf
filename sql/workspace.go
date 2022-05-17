@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -61,7 +60,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	return ws, nil
 }
 
-func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
+func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bool, error)) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	tx, err := db.Pool.Begin(ctx)
@@ -88,90 +87,30 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		return nil, err
 	}
 
-	// make copies of workspace attributes for comparison after update
-	xdescription := ws.Description
-	xname := ws.Name
-	xexecutionMode := ws.ExecutionMode
-	xlocked := ws.Locked
-	xworkingDirectory := ws.WorkingDirectory
-	xqueueAllRuns := ws.QueueAllRuns
-	xspeculativeEnabled := ws.SpeculativeEnabled
-	xstructuredRunOutputEnabled := ws.StructuredRunOutputEnabled
-	xterraformVersion := ws.TerraformVersion
-	xtriggerPrefixes := ws.TriggerPrefixes
-
-	if err := fn(ws); err != nil {
+	updated, err := fn(ws)
+	if err != nil {
 		return nil, err
 	}
-
-	if ws.Description != xdescription {
-		ws.UpdatedAt, err = q.UpdateWorkspaceDescriptionByID(ctx, ws.Description, ws.ID)
-		if err != nil {
-			return nil, err
-		}
+	if !updated {
+		return ws, nil
 	}
 
-	if ws.ExecutionMode != xexecutionMode {
-		ws.UpdatedAt, err = q.UpdateWorkspaceExecutionModeByID(ctx, ws.ExecutionMode, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.Name != xname {
-		ws.UpdatedAt, err = q.UpdateWorkspaceNameByID(ctx, ws.Name, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.Locked != xlocked {
-		ws.UpdatedAt, err = q.UpdateWorkspaceLockByID(ctx, ws.Locked, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.QueueAllRuns != xqueueAllRuns {
-		ws.UpdatedAt, err = q.UpdateWorkspaceLockByID(ctx, ws.QueueAllRuns, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if !reflect.DeepEqual(ws.TriggerPrefixes, xtriggerPrefixes) {
-		ws.UpdatedAt, err = q.UpdateWorkspaceTriggerPrefixesByID(ctx, ws.TriggerPrefixes, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.SpeculativeEnabled != xspeculativeEnabled {
-		ws.UpdatedAt, err = q.UpdateWorkspaceSpeculativeEnabledByID(ctx, ws.SpeculativeEnabled, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.StructuredRunOutputEnabled != xstructuredRunOutputEnabled {
-		ws.UpdatedAt, err = q.UpdateWorkspaceStructuredRunOutputEnabledByID(ctx, ws.StructuredRunOutputEnabled, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.TerraformVersion != xterraformVersion {
-		ws.UpdatedAt, err = q.UpdateWorkspaceTerraformVersionByID(ctx, ws.TerraformVersion, ws.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if ws.WorkingDirectory != xworkingDirectory {
-		ws.UpdatedAt, err = q.UpdateWorkspaceWorkingDirectoryByID(ctx, ws.WorkingDirectory, ws.ID)
-		if err != nil {
-			return nil, err
-		}
+	ws.UpdatedAt, err = q.UpdateWorkspaceByID(ctx, UpdateWorkspaceByIDParams{
+		AllowDestroyPlan:           ws.AllowDestroyPlan,
+		Description:                ws.Description,
+		ExecutionMode:              ws.ExecutionMode,
+		Locked:                     ws.Locked,
+		Name:                       ws.Name,
+		QueueAllRuns:               ws.QueueAllRuns,
+		SpeculativeEnabled:         ws.SpeculativeEnabled,
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
+		TerraformVersion:           ws.TerraformVersion,
+		TriggerPrefixes:            ws.TriggerPrefixes,
+		WorkingDirectory:           ws.WorkingDirectory,
+		ID:                         ws.ID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return ws, tx.Commit(ctx)

@@ -83,6 +83,7 @@ func unmarshalWorkspaceDBRow(row WorkspaceDBRow) (*Workspace, error) {
 		Locked:                     row.Locked,
 		MigrationEnvironment:       row.MigrationEnvironment,
 		Name:                       row.Name,
+		QueueAllRuns:               row.QueueAllRuns,
 		SpeculativeEnabled:         row.SpeculativeEnabled,
 		StructuredRunOutputEnabled: row.StructuredRunOutputEnabled,
 		SourceName:                 row.SourceName,

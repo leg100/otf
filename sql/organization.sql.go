@@ -5,9 +5,10 @@ package sql
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const findOrganizationByNameSQL = `SELECT * FROM organizations WHERE name = $1;`
@@ -88,9 +89,7 @@ func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults
 	return item, nil
 }
 
-const findOrganizationsSQL = `SELECT
-    *,
-    count(*) OVER()          AS full_count
+const findOrganizationsSQL = `SELECT *
 FROM organizations
 LIMIT $1 OFFSET $2;`
 
@@ -101,7 +100,6 @@ type FindOrganizationsRow struct {
 	Name            *string   `json:"name"`
 	SessionRemember *int32    `json:"session_remember"`
 	SessionTimeout  *int32    `json:"session_timeout"`
-	FullCount       *int      `json:"full_count"`
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
@@ -115,7 +113,7 @@ func (q *DBQuerier) FindOrganizations(ctx context.Context, limit int, offset int
 	items := []FindOrganizationsRow{}
 	for rows.Next() {
 		var item FindOrganizationsRow
-		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizations row: %w", err)
 		}
 		items = append(items, item)
@@ -141,7 +139,7 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 	items := []FindOrganizationsRow{}
 	for rows.Next() {
 		var item FindOrganizationsRow
-		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
 			return nil, fmt.Errorf("scan FindOrganizationsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -150,6 +148,35 @@ func (q *DBQuerier) FindOrganizationsScan(results pgx.BatchResults) ([]FindOrgan
 		return nil, fmt.Errorf("close FindOrganizationsBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const countOrganizationsSQL = `SELECT count(*)
+FROM organizations;`
+
+// CountOrganizations implements Querier.CountOrganizations.
+func (q *DBQuerier) CountOrganizations(ctx context.Context) (*int, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "CountOrganizations")
+	row := q.conn.QueryRow(ctx, countOrganizationsSQL)
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("query CountOrganizations: %w", err)
+	}
+	return &item, nil
+}
+
+// CountOrganizationsBatch implements Querier.CountOrganizationsBatch.
+func (q *DBQuerier) CountOrganizationsBatch(batch genericBatch) {
+	batch.Queue(countOrganizationsSQL)
+}
+
+// CountOrganizationsScan implements Querier.CountOrganizationsScan.
+func (q *DBQuerier) CountOrganizationsScan(results pgx.BatchResults) (*int, error) {
+	row := results.QueryRow()
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("scan CountOrganizationsBatch row: %w", err)
+	}
+	return &item, nil
 }
 
 const insertOrganizationSQL = `INSERT INTO organizations (

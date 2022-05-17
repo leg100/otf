@@ -57,9 +57,17 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 		return nil, err
 	}
 
-	return s.db.Update(spec, func(ws *otf.Workspace) error {
+	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (bool, error) {
 		return ws.UpdateWithOptions(ctx, opts)
 	})
+	if err != nil {
+		s.Error(err, "updating workspace", spec.LogInfo()...)
+		return nil, err
+	}
+
+	s.V(0).Info("updated workspace", spec.LogInfo()...)
+
+	return ws, nil
 }
 
 func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
@@ -103,29 +111,31 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 }
 
 func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(true)
+	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (bool, error) {
+		err := ws.ToggleLock(true)
+		return true, err
 	})
 	if err != nil {
-		s.Error(err, "locking workspace", spec.LogInfo())
+		s.Error(err, "locking workspace", spec.LogInfo()...)
 		return nil, err
 	}
 
-	s.V(1).Info("locked workspace", spec.LogInfo())
+	s.V(1).Info("locked workspace", spec.LogInfo()...)
 
 	return ws, nil
 }
 
 func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (err error) {
-		return ws.ToggleLock(false)
+	ws, err := s.db.Update(spec, func(ws *otf.Workspace) (bool, error) {
+		err := ws.ToggleLock(false)
+		return true, err
 	})
 	if err != nil {
-		s.Error(err, "unlocking workspace", spec.LogInfo())
+		s.Error(err, "unlocking workspace", spec.LogInfo()...)
 		return nil, err
 	}
 
-	s.V(1).Info("unlocked workspace", spec.LogInfo())
+	s.V(1).Info("unlocked workspace", spec.LogInfo()...)
 
 	return ws, nil
 }

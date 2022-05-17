@@ -48,7 +48,7 @@ type StateVersionService interface {
 }
 
 type StateVersionStore interface {
-	Create(sv *StateVersion) (*StateVersion, error)
+	Create(workspaceID string, sv *StateVersion) error
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
 	List(opts StateVersionListOptions) (*StateVersionList, error)
 	Delete(id string) error
@@ -110,7 +110,7 @@ func (opts *StateVersionCreateOptions) Valid() error {
 	return nil
 }
 
-func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
+func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, fmt.Errorf("invalid create options: %w", err)
 	}

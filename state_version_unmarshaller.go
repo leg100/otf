@@ -13,7 +13,7 @@ type StateVersionDBRow struct {
 	VcsCommitSha        string                    `json:"vcs_commit_sha"`
 	VcsCommitUrl        string                    `json:"vcs_commit_url"`
 	State               []byte                    `json:"state"`
-	RunID               string                    `json:"run_id"`
+	RunID               *string                   `json:"run_id"`
 	StateVersionOutputs []StateVersionOutputDBRow `json:"state_version_outputs"`
 }
 
@@ -59,7 +59,10 @@ func unmarshalStateVersionDBRow(row StateVersionDBRow) (*StateVersion, error) {
 		},
 		Serial: int64(row.Serial),
 		State:  row.State,
-		Run:    &Run{ID: row.RunID},
+	}
+
+	if row.RunID != nil {
+		sv.Run = &Run{ID: *row.RunID}
 	}
 
 	var err error

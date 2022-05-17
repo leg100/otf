@@ -90,7 +90,7 @@ FROM runs
 JOIN configuration_versions USING(workspace_id)
 JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
-WHERE runs.workspace_id = pggen.arg('workspace_id')
+WHERE runs.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND runs.status LIKE ANY(pggen.arg('statuses'))
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -98,7 +98,7 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 -- name: CountRuns :one
 SELECT count(*)
 FROM runs
-WHERE workspace_id = pggen.arg('workspace_id')
+WHERE workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND status LIKE ANY(pggen.arg('statuses'))
 ;
 

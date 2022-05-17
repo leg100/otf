@@ -102,10 +102,9 @@ func (q *DBQuerier) UpdateStateVersionRunIDByIDScan(results pgx.BatchResults) (t
 
 const findStateVersionsByWorkspaceNameSQL = `SELECT
     state_versions.*,
-    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs,
-    count(*) OVER() AS full_count
+    array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
-JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
+JOIN workspaces USING (workspace_id)
 JOIN organizations USING (organization_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE workspaces.name = $1
@@ -133,7 +132,6 @@ type FindStateVersionsByWorkspaceNameRow struct {
 	RunID               *string               `json:"run_id"`
 	WorkspaceID         *string               `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
-	FullCount           *int                  `json:"full_count"`
 }
 
 // FindStateVersionsByWorkspaceName implements Querier.FindStateVersionsByWorkspaceName.
@@ -148,7 +146,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceName(ctx context.Context, params
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceName row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -178,7 +176,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResult
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray, &item.FullCount); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.UpdatedAt, &item.Serial, &item.VcsCommitSha, &item.VcsCommitUrl, &item.State, &item.RunID, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceNameBatch row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -192,11 +190,44 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResult
 	return items, err
 }
 
+const countStateVersionsByWorkspaceNameSQL = `SELECT count(*)
+FROM state_versions
+JOIN workspaces USING (workspace_id)
+JOIN organizations USING (organization_id)
+WHERE workspaces.name = $1
+AND organizations.name = $2
+;`
+
+// CountStateVersionsByWorkspaceName implements Querier.CountStateVersionsByWorkspaceName.
+func (q *DBQuerier) CountStateVersionsByWorkspaceName(ctx context.Context, workspaceName string, organizationName string) (*int, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "CountStateVersionsByWorkspaceName")
+	row := q.conn.QueryRow(ctx, countStateVersionsByWorkspaceNameSQL, workspaceName, organizationName)
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("query CountStateVersionsByWorkspaceName: %w", err)
+	}
+	return &item, nil
+}
+
+// CountStateVersionsByWorkspaceNameBatch implements Querier.CountStateVersionsByWorkspaceNameBatch.
+func (q *DBQuerier) CountStateVersionsByWorkspaceNameBatch(batch genericBatch, workspaceName string, organizationName string) {
+	batch.Queue(countStateVersionsByWorkspaceNameSQL, workspaceName, organizationName)
+}
+
+// CountStateVersionsByWorkspaceNameScan implements Querier.CountStateVersionsByWorkspaceNameScan.
+func (q *DBQuerier) CountStateVersionsByWorkspaceNameScan(results pgx.BatchResults) (*int, error) {
+	row := results.QueryRow()
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return &item, fmt.Errorf("scan CountStateVersionsByWorkspaceNameBatch row: %w", err)
+	}
+	return &item, nil
+}
+
 const findStateVersionByIDSQL = `SELECT
     state_versions.*,
     array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
-JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
 WHERE state_versions.state_version_id = $1
 GROUP BY state_versions.state_version_id
@@ -253,9 +284,8 @@ const findStateVersionLatestByWorkspaceIDSQL = `SELECT
     state_versions.*,
     array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
-JOIN (runs JOIN workspaces USING (workspace_id)) USING (run_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE workspaces.workspace_id = $1
+WHERE state_versions.workspace_id = $1
 GROUP BY state_versions.state_version_id
 ORDER BY state_versions.serial DESC, state_versions.created_at DESC
 ;`

@@ -111,88 +111,19 @@ JOIN organizations USING (organization_id)
 WHERE workspaces.workspace_id = pggen.arg('id')
 FOR UPDATE;
 
--- UpdateWorkspaceNameByID updates an workspace with a new name,
--- identifying the workspace with its id, and returns the
--- updated row.
---
--- name: UpdateWorkspaceNameByID :one
-UPDATE workspaces
-SET
-    name = pggen.arg('name'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- UpdateWorkspaceAllowDestroyPlanByID updates the AllowDestroyPlan
--- attribute on a workspace identified by id, and returns the updated row.
---
--- name: UpdateWorkspaceAllowDestroyPlanByID :one
+-- name: UpdateWorkspaceByID :one
 UPDATE workspaces
 SET
     allow_destroy_plan = pggen.arg('allow_destroy_plan'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceExecutionModeByID :one
-UPDATE workspaces
-SET
-    execution_mode = pggen.arg('execution_mode'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceLockByID :one
-UPDATE workspaces
-SET
-    locked = pggen.arg('lock'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceDescriptionByID :one
-UPDATE workspaces
-SET
     description = pggen.arg('description'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceSpeculativeEnabledByID :one
-UPDATE workspaces
-SET
+    execution_mode = pggen.arg('execution_mode'),
+    locked = pggen.arg('locked'),
+    name = pggen.arg('name'),
+    queue_all_runs = pggen.arg('queue_all_runs'),
     speculative_enabled = pggen.arg('speculative_enabled'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceStructuredRunOutputEnabledByID :one
-UPDATE workspaces
-SET
     structured_run_output_enabled = pggen.arg('structured_run_output_enabled'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceTerraformVersionByID :one
-UPDATE workspaces
-SET
     terraform_version = pggen.arg('terraform_version'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceTriggerPrefixesByID :one
-UPDATE workspaces
-SET
     trigger_prefixes = pggen.arg('trigger_prefixes'),
-    updated_at = current_timestamp
-WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
-
--- name: UpdateWorkspaceWorkingDirectoryByID :one
-UPDATE workspaces
-SET
     working_directory = pggen.arg('working_directory'),
     updated_at = current_timestamp
 WHERE workspace_id = pggen.arg('id')

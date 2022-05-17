@@ -85,12 +85,9 @@ func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	}
 }
 
-func newTestStateVersion(run *otf.Run, opts ...newTestStateVersionOption) *otf.StateVersion {
+func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {
 	sv := &otf.StateVersion{
-		ID: otf.NewID("sv"),
-		Run: &otf.Run{
-			ID: run.ID,
-		},
+		ID:    otf.NewID("sv"),
 		State: []byte("stuff"),
 	}
 	for _, o := range opts {
@@ -203,8 +200,9 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) 
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db otf.DB, run *otf.Run, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv, err := db.StateVersionStore().Create(newTestStateVersion(run, opts...))
+func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
+	sv := newTestStateVersion(opts...)
+	err := db.StateVersionStore().Create(ws.ID, sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

@@ -203,7 +203,8 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	} else if opts.WorkspaceID != nil {
 		workspaceID = *opts.WorkspaceID
 	} else {
-		return nil, fmt.Errorf("no list filter specified")
+		// Match any workspace ID
+		workspaceID = "%"
 	}
 
 	var statuses []string
@@ -214,12 +215,12 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	}
 
 	q.FindRunsBatch(batch, FindRunsParams{
-		WorkspaceID: workspaceID,
-		Statuses:    statuses,
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
+		WorkspaceIds: []string{workspaceID},
+		Statuses:     statuses,
+		Limit:        opts.GetLimit(),
+		Offset:       opts.GetOffset(),
 	})
-	q.CountRunsBatch(batch, workspaceID, statuses)
+	q.CountRunsBatch(batch, []string{workspaceID}, statuses)
 	results := db.Pool.SendBatch(ctx, batch)
 	defer results.Close()
 

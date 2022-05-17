@@ -48,9 +48,9 @@ func TestWorkspace_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
 
-			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) error {
+			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) (bool, error) {
 				ws.Description = "updated description"
-				return nil
+				return true, nil
 			})
 			require.NoError(t, err)
 

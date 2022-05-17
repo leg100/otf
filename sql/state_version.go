@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 )
@@ -23,25 +24,25 @@ func NewStateVersionDB(conn *pgxpool.Pool) *StateVersionService {
 }
 
 // Create persists a StateVersion to the DB.
-func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
+func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) error {
 	ctx := context.Background()
 
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback(ctx)
 
 	q := NewQuerier(tx)
 
 	result, err := q.InsertStateVersion(ctx, InsertStateVersionParams{
-		ID:     sv.ID,
-		Serial: int32(sv.Serial),
-		State:  sv.State,
-		RunID:  sv.Run.ID,
+		ID:          sv.ID,
+		Serial:      int32(sv.Serial),
+		State:       sv.State,
+		WorkspaceID: workspaceID,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	sv.CreatedAt = result.CreatedAt
 	sv.UpdatedAt = result.UpdatedAt
@@ -57,13 +58,13 @@ func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, er
 			StateVersionID: sv.ID,
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 		svo.CreatedAt = result.CreatedAt
 		svo.UpdatedAt = result.UpdatedAt
 	}
 
-	return sv, tx.Commit(ctx)
+	return tx.Commit(ctx)
 }
 
 func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
@@ -75,25 +76,37 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 	}
 
 	q := NewQuerier(s.Pool)
+	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	result, err := q.FindStateVersionsByWorkspaceName(ctx, FindStateVersionsByWorkspaceNameParams{
+	q.FindStateVersionsByWorkspaceNameBatch(batch, FindStateVersionsByWorkspaceNameParams{
 		WorkspaceName:    *opts.Workspace,
 		OrganizationName: *opts.Organization,
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
+	q.CountStateVersionsByWorkspaceNameBatch(batch, *opts.Workspace, *opts.Organization)
+
+	results := s.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindStateVersionsByWorkspaceNameScan(results)
 	if err != nil {
 		return nil, err
 	}
-	items, err := otf.UnmarshalStateVersionListFromDB(result)
+	count, err := q.CountStateVersionsByWorkspaceNameScan(results)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := otf.UnmarshalStateVersionListFromDB(rows)
 	if err != nil {
 		return nil, err
 	}
 
 	return &otf.StateVersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, getCount(result)),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 

@@ -571,332 +571,60 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 	return item, nil
 }
 
-const updateWorkspaceNameByIDSQL = `UPDATE workspaces
-SET
-    name = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceNameByID implements Querier.UpdateWorkspaceNameByID.
-func (q *DBQuerier) UpdateWorkspaceNameByID(ctx context.Context, name string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceNameByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceNameByIDSQL, name, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceNameByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceNameByIDBatch implements Querier.UpdateWorkspaceNameByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceNameByIDBatch(batch genericBatch, name string, id string) {
-	batch.Queue(updateWorkspaceNameByIDSQL, name, id)
-}
-
-// UpdateWorkspaceNameByIDScan implements Querier.UpdateWorkspaceNameByIDScan.
-func (q *DBQuerier) UpdateWorkspaceNameByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceNameByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceAllowDestroyPlanByIDSQL = `UPDATE workspaces
+const updateWorkspaceByIDSQL = `UPDATE workspaces
 SET
     allow_destroy_plan = $1,
+    description = $2,
+    execution_mode = $3,
+    locked = $4,
+    name = $5,
+    queue_all_runs = $6,
+    speculative_enabled = $7,
+    structured_run_output_enabled = $8,
+    terraform_version = $9,
+    trigger_prefixes = $10,
+    working_directory = $11,
     updated_at = current_timestamp
-WHERE workspace_id = $2
+WHERE workspace_id = $12
 RETURNING updated_at;`
 
-// UpdateWorkspaceAllowDestroyPlanByID implements Querier.UpdateWorkspaceAllowDestroyPlanByID.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByID(ctx context.Context, allowDestroyPlan bool, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceAllowDestroyPlanByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
+type UpdateWorkspaceByIDParams struct {
+	AllowDestroyPlan           bool
+	Description                string
+	ExecutionMode              string
+	Locked                     bool
+	Name                       string
+	QueueAllRuns               bool
+	SpeculativeEnabled         bool
+	StructuredRunOutputEnabled bool
+	TerraformVersion           string
+	TriggerPrefixes            []string
+	WorkingDirectory           string
+	ID                         string
+}
+
+// UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
+func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (time.Time, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
+	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Locked, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.ID)
 	var item time.Time
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceAllowDestroyPlanByID: %w", err)
+		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
 	}
 	return item, nil
 }
 
-// UpdateWorkspaceAllowDestroyPlanByIDBatch implements Querier.UpdateWorkspaceAllowDestroyPlanByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDBatch(batch genericBatch, allowDestroyPlan bool, id string) {
-	batch.Queue(updateWorkspaceAllowDestroyPlanByIDSQL, allowDestroyPlan, id)
+// UpdateWorkspaceByIDBatch implements Querier.UpdateWorkspaceByIDBatch.
+func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams) {
+	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Locked, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.ID)
 }
 
-// UpdateWorkspaceAllowDestroyPlanByIDScan implements Querier.UpdateWorkspaceAllowDestroyPlanByIDScan.
-func (q *DBQuerier) UpdateWorkspaceAllowDestroyPlanByIDScan(results pgx.BatchResults) (time.Time, error) {
+// UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.
+func (q *DBQuerier) UpdateWorkspaceByIDScan(results pgx.BatchResults) (time.Time, error) {
 	row := results.QueryRow()
 	var item time.Time
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceAllowDestroyPlanByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceExecutionModeByIDSQL = `UPDATE workspaces
-SET
-    execution_mode = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceExecutionModeByID implements Querier.UpdateWorkspaceExecutionModeByID.
-func (q *DBQuerier) UpdateWorkspaceExecutionModeByID(ctx context.Context, executionMode string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceExecutionModeByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceExecutionModeByIDSQL, executionMode, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceExecutionModeByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceExecutionModeByIDBatch implements Querier.UpdateWorkspaceExecutionModeByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceExecutionModeByIDBatch(batch genericBatch, executionMode string, id string) {
-	batch.Queue(updateWorkspaceExecutionModeByIDSQL, executionMode, id)
-}
-
-// UpdateWorkspaceExecutionModeByIDScan implements Querier.UpdateWorkspaceExecutionModeByIDScan.
-func (q *DBQuerier) UpdateWorkspaceExecutionModeByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceExecutionModeByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceLockByIDSQL = `UPDATE workspaces
-SET
-    locked = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.
-func (q *DBQuerier) UpdateWorkspaceLockByID(ctx context.Context, lock bool, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceLockByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceLockByIDSQL, lock, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceLockByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceLockByIDBatch implements Querier.UpdateWorkspaceLockByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceLockByIDBatch(batch genericBatch, lock bool, id string) {
-	batch.Queue(updateWorkspaceLockByIDSQL, lock, id)
-}
-
-// UpdateWorkspaceLockByIDScan implements Querier.UpdateWorkspaceLockByIDScan.
-func (q *DBQuerier) UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceLockByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceDescriptionByIDSQL = `UPDATE workspaces
-SET
-    description = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceDescriptionByID implements Querier.UpdateWorkspaceDescriptionByID.
-func (q *DBQuerier) UpdateWorkspaceDescriptionByID(ctx context.Context, description string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceDescriptionByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceDescriptionByIDSQL, description, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceDescriptionByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceDescriptionByIDBatch implements Querier.UpdateWorkspaceDescriptionByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceDescriptionByIDBatch(batch genericBatch, description string, id string) {
-	batch.Queue(updateWorkspaceDescriptionByIDSQL, description, id)
-}
-
-// UpdateWorkspaceDescriptionByIDScan implements Querier.UpdateWorkspaceDescriptionByIDScan.
-func (q *DBQuerier) UpdateWorkspaceDescriptionByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceDescriptionByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceSpeculativeEnabledByIDSQL = `UPDATE workspaces
-SET
-    speculative_enabled = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceSpeculativeEnabledByID implements Querier.UpdateWorkspaceSpeculativeEnabledByID.
-func (q *DBQuerier) UpdateWorkspaceSpeculativeEnabledByID(ctx context.Context, speculativeEnabled bool, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceSpeculativeEnabledByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceSpeculativeEnabledByIDSQL, speculativeEnabled, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceSpeculativeEnabledByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceSpeculativeEnabledByIDBatch implements Querier.UpdateWorkspaceSpeculativeEnabledByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceSpeculativeEnabledByIDBatch(batch genericBatch, speculativeEnabled bool, id string) {
-	batch.Queue(updateWorkspaceSpeculativeEnabledByIDSQL, speculativeEnabled, id)
-}
-
-// UpdateWorkspaceSpeculativeEnabledByIDScan implements Querier.UpdateWorkspaceSpeculativeEnabledByIDScan.
-func (q *DBQuerier) UpdateWorkspaceSpeculativeEnabledByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceSpeculativeEnabledByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceStructuredRunOutputEnabledByIDSQL = `UPDATE workspaces
-SET
-    structured_run_output_enabled = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceStructuredRunOutputEnabledByID implements Querier.UpdateWorkspaceStructuredRunOutputEnabledByID.
-func (q *DBQuerier) UpdateWorkspaceStructuredRunOutputEnabledByID(ctx context.Context, structuredRunOutputEnabled bool, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceStructuredRunOutputEnabledByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceStructuredRunOutputEnabledByIDSQL, structuredRunOutputEnabled, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceStructuredRunOutputEnabledByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceStructuredRunOutputEnabledByIDBatch implements Querier.UpdateWorkspaceStructuredRunOutputEnabledByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceStructuredRunOutputEnabledByIDBatch(batch genericBatch, structuredRunOutputEnabled bool, id string) {
-	batch.Queue(updateWorkspaceStructuredRunOutputEnabledByIDSQL, structuredRunOutputEnabled, id)
-}
-
-// UpdateWorkspaceStructuredRunOutputEnabledByIDScan implements Querier.UpdateWorkspaceStructuredRunOutputEnabledByIDScan.
-func (q *DBQuerier) UpdateWorkspaceStructuredRunOutputEnabledByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceStructuredRunOutputEnabledByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceTerraformVersionByIDSQL = `UPDATE workspaces
-SET
-    terraform_version = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceTerraformVersionByID implements Querier.UpdateWorkspaceTerraformVersionByID.
-func (q *DBQuerier) UpdateWorkspaceTerraformVersionByID(ctx context.Context, terraformVersion string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceTerraformVersionByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceTerraformVersionByIDSQL, terraformVersion, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceTerraformVersionByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceTerraformVersionByIDBatch implements Querier.UpdateWorkspaceTerraformVersionByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceTerraformVersionByIDBatch(batch genericBatch, terraformVersion string, id string) {
-	batch.Queue(updateWorkspaceTerraformVersionByIDSQL, terraformVersion, id)
-}
-
-// UpdateWorkspaceTerraformVersionByIDScan implements Querier.UpdateWorkspaceTerraformVersionByIDScan.
-func (q *DBQuerier) UpdateWorkspaceTerraformVersionByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceTerraformVersionByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceTriggerPrefixesByIDSQL = `UPDATE workspaces
-SET
-    trigger_prefixes = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceTriggerPrefixesByID implements Querier.UpdateWorkspaceTriggerPrefixesByID.
-func (q *DBQuerier) UpdateWorkspaceTriggerPrefixesByID(ctx context.Context, triggerPrefixes []string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceTriggerPrefixesByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceTriggerPrefixesByIDSQL, triggerPrefixes, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceTriggerPrefixesByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceTriggerPrefixesByIDBatch implements Querier.UpdateWorkspaceTriggerPrefixesByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceTriggerPrefixesByIDBatch(batch genericBatch, triggerPrefixes []string, id string) {
-	batch.Queue(updateWorkspaceTriggerPrefixesByIDSQL, triggerPrefixes, id)
-}
-
-// UpdateWorkspaceTriggerPrefixesByIDScan implements Querier.UpdateWorkspaceTriggerPrefixesByIDScan.
-func (q *DBQuerier) UpdateWorkspaceTriggerPrefixesByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceTriggerPrefixesByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const updateWorkspaceWorkingDirectoryByIDSQL = `UPDATE workspaces
-SET
-    working_directory = $1,
-    updated_at = current_timestamp
-WHERE workspace_id = $2
-RETURNING updated_at;`
-
-// UpdateWorkspaceWorkingDirectoryByID implements Querier.UpdateWorkspaceWorkingDirectoryByID.
-func (q *DBQuerier) UpdateWorkspaceWorkingDirectoryByID(ctx context.Context, workingDirectory string, id string) (time.Time, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceWorkingDirectoryByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceWorkingDirectoryByIDSQL, workingDirectory, id)
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateWorkspaceWorkingDirectoryByID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateWorkspaceWorkingDirectoryByIDBatch implements Querier.UpdateWorkspaceWorkingDirectoryByIDBatch.
-func (q *DBQuerier) UpdateWorkspaceWorkingDirectoryByIDBatch(batch genericBatch, workingDirectory string, id string) {
-	batch.Queue(updateWorkspaceWorkingDirectoryByIDSQL, workingDirectory, id)
-}
-
-// UpdateWorkspaceWorkingDirectoryByIDScan implements Querier.UpdateWorkspaceWorkingDirectoryByIDScan.
-func (q *DBQuerier) UpdateWorkspaceWorkingDirectoryByIDScan(results pgx.BatchResults) (time.Time, error) {
-	row := results.QueryRow()
-	var item time.Time
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateWorkspaceWorkingDirectoryByIDBatch row: %w", err)
+		return item, fmt.Errorf("scan UpdateWorkspaceByIDBatch row: %w", err)
 	}
 	return item, nil
 }
