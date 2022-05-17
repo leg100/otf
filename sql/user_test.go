@@ -22,35 +22,31 @@ func TestUser_Create(t *testing.T) {
 func TestUser_AddOrganizationMembership(t *testing.T) {
 	db := newTestDB(t)
 
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
+	org := createTestOrganization(t, db)
+	user := createTestUser(t, db)
 
-	user := createTestUser(t, db, withOrganizationMemberships(org1))
-
-	err := db.UserStore().AddOrganizationMembership(context.Background(), user.ID, org2.ID)
+	err := db.UserStore().AddOrganizationMembership(context.Background(), user.ID, org.ID)
 	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
-	assert.Equal(t, user.Organizations, got.Organizations)
+	assert.Contains(t, got.Organizations, org)
 }
 
 func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	db := newTestDB(t)
 
-	org1 := createTestOrganization(t, db)
-	org2 := createTestOrganization(t, db)
+	org := createTestOrganization(t, db)
+	user := createTestUser(t, db, withOrganizationMemberships(org))
 
-	user := createTestUser(t, db, withOrganizationMemberships(org1, org2))
-
-	err := db.UserStore().RemoveOrganizationMembership(context.Background(), user.ID, org2.ID)
+	err := db.UserStore().RemoveOrganizationMembership(context.Background(), user.ID, org.ID)
 	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)
 
-	assert.Equal(t, user.Organizations, got.Organizations)
+	assert.NotContains(t, got.Organizations, org)
 }
 
 func TestUser_Update_CurrentOrganization(t *testing.T) {
@@ -119,36 +115,6 @@ func TestUser_Get_WithSessions(t *testing.T) {
 
 	assert.Equal(t, 2, len(got.Sessions))
 
-}
-
-// TestUser_SessionFlash demonstrates the session flash object is successfully
-// serialized/deserialized from/to its struct
-func TestUser_SessionFlash(t *testing.T) {
-	db := newTestDB(t)
-	user := createTestUser(t, db)
-
-	t.Run("WithFlash", func(t *testing.T) {
-		flash := &otf.Flash{
-			Type:    otf.FlashSuccessType,
-			Message: "test succeeded",
-		}
-
-		_ = createTestSession(t, db, user.ID, withFlash(flash))
-
-		got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
-		require.NoError(t, err)
-
-		assert.Equal(t, flash, got.Sessions[0].Flash)
-	})
-
-	t.Run("WithNoFlash", func(t *testing.T) {
-		_ = createTestSession(t, db, user.ID)
-
-		got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
-		require.NoError(t, err)
-
-		assert.Nil(t, got.Sessions[0].Flash)
-	})
 }
 
 func TestUser_List(t *testing.T) {

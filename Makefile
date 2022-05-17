@@ -84,3 +84,4 @@ sql:
 		--output-dir sql \
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte'
+	go fmt ./sql

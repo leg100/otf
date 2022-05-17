@@ -54,15 +54,15 @@ func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (InsertUserRow, err
 	return item, nil
 }
 
-const findUsersSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-GROUP BY users.user_id
+const findUsersSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+GROUP BY u.user_id
 ;`
 
 type FindUsersRow struct {
@@ -148,16 +148,16 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 	return items, err
 }
 
-const findUserByIDSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE users.user_id = $1
-GROUP BY users.user_id
+const findUserByIDSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE u.user_id = $1
+GROUP BY u.user_id
 ;`
 
 type FindUserByIDRow struct {
@@ -221,17 +221,16 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 	return item, nil
 }
 
-const findUserByUsernameSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE users.username = $1
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+const findUserByUsernameSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE u.username = $1
+GROUP BY u.user_id
 ;`
 
 type FindUserByUsernameRow struct {
@@ -295,17 +294,16 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 	return item, nil
 }
 
-const findUserBySessionTokenSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE sessions.token = $1
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+const findUserBySessionTokenSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE s.token = $1
+GROUP BY u.user_id
 ;`
 
 type FindUserBySessionTokenRow struct {
@@ -369,17 +367,16 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 	return item, nil
 }
 
-const findUserByAuthenticationTokenSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE tokens.token = $1
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+const findUserByAuthenticationTokenSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE t.token = $1
+GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenRow struct {
@@ -443,17 +440,16 @@ func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) 
 	return item, nil
 }
 
-const findUserByAuthenticationTokenIDSQL = `SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE tokens.token_id = $1
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+const findUserByAuthenticationTokenIDSQL = `SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s USING(user_id)
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE t.token_id = $1
+GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenIDRow struct {

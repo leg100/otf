@@ -60,12 +60,28 @@ func unmarshalUserDBRow(row UserDBRow) (*User, error) {
 		CurrentOrganization: row.CurrentOrganization,
 	}
 
-	var err error
 	if row.Organizations != nil {
-		user.Organizations, err = UnmarshalOrganizationListFromDB(row.Organizations)
+		orgs, err := UnmarshalOrganizationListFromDB(row.Organizations)
 		if err != nil {
 			return nil, err
 		}
+		user.Organizations = orgs
+	}
+
+	if row.Sessions != nil {
+		sessions, err := UnmarshalSessionListFromDB(row.Sessions)
+		if err != nil {
+			return nil, err
+		}
+		user.Sessions = sessions
+	}
+
+	if row.Tokens != nil {
+		tokens, err := UnmarshalTokenListFromDB(row.Tokens)
+		if err != nil {
+			return nil, err
+		}
+		user.Tokens = tokens
 	}
 
 	return &user, nil

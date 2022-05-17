@@ -13,84 +13,80 @@ INSERT INTO users (
 RETURNING created_at, updated_at;
 
 -- name: FindUsers :many
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByID :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE users.user_id = pggen.arg('user_id')
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE u.user_id = pggen.arg('user_id')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByUsername :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE users.username = pggen.arg('username')
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE u.username = pggen.arg('username')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserBySessionToken :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-JOIN sessions USING(user_id)
-LEFT JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE sessions.token = pggen.arg('token')
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE s.token = pggen.arg('token')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByAuthenticationToken :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE tokens.token = pggen.arg('token')
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE t.token = pggen.arg('token')
+GROUP BY u.user_id
 ;
 
 -- name: FindUserByAuthenticationTokenID :one
-SELECT users.*,
-    array_agg(sessions) AS sessions,
-    array_agg(tokens) AS tokens,
-    array_agg(organizations) AS organizations
-FROM users
-LEFT JOIN sessions USING(user_id)
-JOIN tokens USING(user_id)
-LEFT JOIN (organization_memberships JOIN organizations USING (organization_id)) USING(user_id)
-WHERE tokens.token_id = pggen.arg('token_id')
-AND sessions.expiry > current_timestamp
-GROUP BY users.user_id
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    array_remove(array_agg(o), NULL) AS organizations
+FROM users u
+LEFT JOIN sessions s USING(user_id)
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+WHERE t.token_id = pggen.arg('token_id')
+GROUP BY u.user_id
 ;
 
 -- name: UpdateUserCurrentOrganization :one

@@ -252,27 +252,29 @@ func createTestUser(t *testing.T, db otf.DB, opts ...createTestUserOpt) *otf.Use
 
 func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
 	session := newTestSession(t, userID, opts...)
+	ctx := context.Background()
 
-	err := db.SessionStore().CreateSession(context.Background(), session)
+	err := db.SessionStore().CreateSession(ctx, session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.SessionStore().DeleteSession(context.Background(), session.Token)
-		require.NoError(t, err)
+		db.SessionStore().DeleteSession(ctx, session.Token)
 	})
 
 	return session
 }
 
 func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
+	ctx := context.Background()
+
 	token, err := otf.NewToken(userID, description)
 	require.NoError(t, err)
 
-	err = db.TokenStore().CreateToken(context.Background(), token)
+	err = db.TokenStore().CreateToken(ctx, token)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.TokenStore().DeleteToken(context.Background(), token.Token)
+		db.TokenStore().DeleteToken(ctx, token.Token)
 	})
 
 	return token

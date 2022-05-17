@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUser_CreateSession(t *testing.T) {
+func TestSession_CreateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 	session := newTestSession(t, user.ID)
@@ -21,7 +21,7 @@ func TestUser_CreateSession(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUser_Flash(t *testing.T) {
+func TestSession_Flash(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 	session := createTestSession(t, db, user.ID)
@@ -36,14 +36,18 @@ func TestUser_Flash(t *testing.T) {
 
 	got, err := db.SessionStore().PopFlash(context.Background(), session.Token)
 	require.NoError(t, err)
-
 	assert.Equal(t, flash, got)
+
+	// no flash second time round
+	got, err = db.SessionStore().PopFlash(context.Background(), session.Token)
+	require.NoError(t, err)
+	assert.Nil(t, got)
 }
 
-// TestUser_SessionCleanup tests the session cleanup background routine. We
+// TestSession_SessionCleanup tests the session cleanup background routine. We
 // override the cleanup interval to just every 100ms, so after waiting for 300ms
 // the sessions should be cleaned up.
-func TestUser_SessionCleanup(t *testing.T) {
+func TestSession_SessionCleanup(t *testing.T) {
 	db := newTestDB(t, 100*time.Millisecond)
 	user := createTestUser(t, db)
 
