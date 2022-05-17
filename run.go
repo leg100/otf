@@ -450,8 +450,6 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 	return nil
 }
 
-// TODO: rename this to something like 'setup' or 'beforeSteps' (unexported).
-//
 // Do invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) Do(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {

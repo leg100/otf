@@ -105,12 +105,6 @@ func newTestUser() *otf.User {
 
 type newTestSessionOption func(*otf.Session)
 
-func withFlash(flash *otf.Flash) newTestSessionOption {
-	return func(session *otf.Session) {
-		session.SessionData.Flash = flash
-	}
-}
-
 func overrideExpiry(expiry time.Time) newTestSessionOption {
 	return func(session *otf.Session) {
 		session.Expiry = expiry

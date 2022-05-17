@@ -105,7 +105,7 @@ type StateVersionCreateOptions struct {
 
 type StateVersionFactory struct{}
 
-// TODO: populate body
+// Valid validates state version create options
 func (opts *StateVersionCreateOptions) Valid() error {
 	return nil
 }
