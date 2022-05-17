@@ -45,6 +45,9 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 		require.NoError(t, err)
 	})
 
+	err = os.Unsetenv("TZ")
+	require.NoError(t, err)
+
 	return db
 }
 
