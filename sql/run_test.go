@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -198,7 +199,7 @@ func TestRun_Unmarshal(t *testing.T) {
 	run := createTestRun(t, testdb, ws, cv)
 
 	conn := testdb.(db).Pool
-	q := NewQuerier(conn)
+	q := pggen.NewQuerier(conn)
 	row, err := q.FindRunByID(context.Background(), run.ID)
 	require.NoError(t, err)
 

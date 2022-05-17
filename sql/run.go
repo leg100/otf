@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var _ otf.RunStore = (*RunDB)(nil)
@@ -31,9 +32,9 @@ func (db RunDB) Create(run *otf.Run) error {
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
-	result, err := q.InsertRun(ctx, InsertRunParams{
+	result, err := q.InsertRun(ctx, pggen.InsertRunParams{
 		ID:                     run.ID,
 		PlanID:                 run.Plan.ID,
 		ApplyID:                run.Apply.ID,
@@ -78,7 +79,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
 	// select ...for update
 	var result interface{}
@@ -149,10 +150,10 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 }
 
 func (db RunDB) CreatePlanReport(runID string, report otf.ResourceReport) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.UpdateRunPlannedChangesByRunID(ctx, UpdateRunPlannedChangesByRunIDParams{
+	result, err := q.UpdateRunPlannedChangesByRunID(ctx, pggen.UpdateRunPlannedChangesByRunIDParams{
 		ID:           runID,
 		Additions:    int32(report.Additions),
 		Changes:      int32(report.Changes),
@@ -169,10 +170,10 @@ func (db RunDB) CreatePlanReport(runID string, report otf.ResourceReport) error 
 }
 
 func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.UpdateRunAppliedChangesByApplyID(ctx, UpdateRunAppliedChangesByApplyIDParams{
+	result, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
 		ID:           applyID,
 		Additions:    int32(summary.Additions),
 		Changes:      int32(summary.Changes),
@@ -189,7 +190,7 @@ func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) er
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
@@ -215,7 +216,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		statuses = []string{"%"}
 	}
 
-	q.FindRunsBatch(batch, FindRunsParams{
+	q.FindRunsBatch(batch, pggen.FindRunsParams{
 		WorkspaceIds: []string{workspaceID},
 		Statuses:     statuses,
 		Limit:        opts.GetLimit(),
@@ -247,7 +248,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 
 // Get retrieves a Run domain obj
 func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	if opts.ID != nil {
@@ -275,7 +276,7 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 
 // SetPlanFile writes a plan file to the db
 func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	switch format {
@@ -292,7 +293,7 @@ func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error
 
 // GetPlanFile retrieves a plan file for the run
 func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	switch format {
@@ -307,7 +308,7 @@ func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
 
 // Delete deletes a run from the DB
 func (db RunDB) Delete(id string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.DeleteRunByID(ctx, id)
@@ -322,7 +323,7 @@ func (db RunDB) Delete(id string) error {
 	return nil
 }
 
-func insertRunStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) error {
+func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
 	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status))
 	if err != nil {
 		return err
@@ -335,7 +336,7 @@ func insertRunStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) e
 	return nil
 }
 
-func insertPlanStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) error {
+func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
 	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID, string(run.Plan.Status))
 	if err != nil {
 		return err
@@ -348,7 +349,7 @@ func insertPlanStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) 
 	return nil
 }
 
-func insertApplyStatusTimestamp(ctx context.Context, q *DBQuerier, run *otf.Run) error {
+func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
 	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID, string(run.Apply.Status))
 	if err != nil {
 		return err

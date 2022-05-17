@@ -5,13 +5,12 @@ package sql
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgconn"
 	"github.com/leg100/otf"
 )
 
-func databaseError(err error, sqlstmt string) error {
+func databaseError(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
 	case noRowsInResultError(err):
@@ -23,7 +22,7 @@ func databaseError(err error, sqlstmt string) error {
 		}
 		fallthrough
 	default:
-		return fmt.Errorf("running SQL statement: %s resulted in an error: %w", sqlstmt, err)
+		return err
 	}
 }
 

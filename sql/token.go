@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -23,9 +24,9 @@ func NewTokenDB(conn *pgxpool.Pool) *TokenDB {
 
 // CreateToken inserts the token, associating it with the user.
 func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
-	result, err := q.InsertToken(ctx, InsertTokenParams{
+	result, err := q.InsertToken(ctx, pggen.InsertTokenParams{
 		TokenID:     token.ID,
 		Token:       token.Token,
 		Description: token.Description,
@@ -42,7 +43,7 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 
 // DeleteToken deletes a user's token from the DB.
 func (db TokenDB) DeleteToken(ctx context.Context, id string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	result, err := q.DeleteTokenByID(ctx, id)
 	if err != nil {

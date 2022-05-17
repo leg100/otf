@@ -52,7 +52,7 @@ install-latest-release:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	staticcheck ./...
+	staticcheck . ./agent/... ./app/... ./cmd/... ./http/... ./inmem/... ./sql
 
 # Run go fmt against code
 .PHONY: fmt
@@ -80,8 +80,8 @@ push: image
 sql:
 	../pggen/dist/pggen-linux-amd64 gen go \
 		--postgres-connection "dbname=otf" \
-		--query-glob 'db/queries/*.sql' \
-		--output-dir sql \
+		--query-glob 'sql/queries/*.sql' \
+		--output-dir sql/pggen \
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte'
 	go fmt ./sql

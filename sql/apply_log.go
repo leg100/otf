@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -24,7 +25,7 @@ func NewApplyLogDB(conn *pgxpool.Pool) *ApplyLogDB {
 
 // PutChunk persists a log chunk to the DB.
 func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chunk) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	if len(chunk.Data) == 0 {
 		return nil
@@ -36,7 +37,7 @@ func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chu
 
 // GetChunk retrieves a log chunk from the DB.
 func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
 	// maximum a postgres INT can hold.
@@ -44,7 +45,7 @@ func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetC
 		opts.Limit = math.MaxInt32
 	}
 
-	chunk, err := q.FindApplyLogChunks(ctx, FindApplyLogChunksParams{
+	chunk, err := q.FindApplyLogChunks(ctx, pggen.FindApplyLogChunksParams{
 		ApplyID: applyID,
 		Offset:  int32(opts.Offset) + 1,
 		Limit:   int32(opts.Limit),

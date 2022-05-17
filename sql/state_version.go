@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -33,9 +34,9 @@ func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) er
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
-	result, err := q.InsertStateVersion(ctx, InsertStateVersionParams{
+	result, err := q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 		ID:          sv.ID,
 		Serial:      int32(sv.Serial),
 		State:       sv.State,
@@ -49,7 +50,7 @@ func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) er
 
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
-		result, err := q.InsertStateVersionOutput(ctx, InsertStateVersionOutputParams{
+		result, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
 			ID:             svo.ID,
 			Name:           svo.Name,
 			Sensitive:      svo.Sensitive,
@@ -75,11 +76,11 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, fmt.Errorf("missing required option: organization")
 	}
 
-	q := NewQuerier(s.Pool)
+	q := pggen.NewQuerier(s.Pool)
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	q.FindStateVersionsByWorkspaceNameBatch(batch, FindStateVersionsByWorkspaceNameParams{
+	q.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
 		WorkspaceName:    *opts.Workspace,
 		OrganizationName: *opts.Organization,
 		Limit:            opts.GetLimit(),
@@ -112,7 +113,7 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 
 func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	ctx := context.Background()
-	q := NewQuerier(s.Pool)
+	q := pggen.NewQuerier(s.Pool)
 
 	var result interface{}
 	var err error
@@ -125,7 +126,7 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 		return nil, fmt.Errorf("no state version spec provided")
 	}
 	if err != nil {
-		return nil, databaseError(err, findStateVersionByIDSQL)
+		return nil, databaseError(err)
 	}
 	return otf.UnmarshalStateVersionFromDB(result)
 }
@@ -133,7 +134,7 @@ func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVer
 // Delete deletes a state version from the DB
 func (s StateVersionService) Delete(id string) error {
 	ctx := context.Background()
-	q := NewQuerier(s.Pool)
+	q := pggen.NewQuerier(s.Pool)
 
 	result, err := q.DeleteStateVersionByID(ctx, id)
 	if err != nil {

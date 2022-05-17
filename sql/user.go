@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -31,7 +32,7 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
 	result, err := q.InsertUser(ctx, user.ID, user.Username)
 	if err != nil {
@@ -51,14 +52,14 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 }
 
 func (db UserDB) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	_, err := q.UpdateUserCurrentOrganization(ctx, orgName, userID)
 	return err
 }
 
 func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	result, err := q.FindUsers(ctx)
 	if err != nil {
@@ -70,7 +71,7 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 
 // Get retrieves a user from the DB, along with its sessions.
 func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	if spec.UserID != nil {
 		result, err := q.FindUserByID(ctx, *spec.UserID)
@@ -108,14 +109,14 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 }
 
 func (db UserDB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	_, err := q.InsertOrganizationMembership(ctx, id, orgID)
 	return err
 }
 
 func (db UserDB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	result, err := q.DeleteOrganizationMembership(ctx, id, orgID)
 	if err != nil {
@@ -130,7 +131,7 @@ func (db UserDB) RemoveOrganizationMembership(ctx context.Context, id, orgID str
 
 // Delete deletes a user from the DB.
 func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	var result pgconn.CommandTag
 	var err error

@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -25,10 +26,10 @@ func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
 }
 
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.InsertWorkspace(ctx, InsertWorkspaceParams{
+	result, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         ws.ID,
 		Name:                       ws.Name,
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
@@ -52,7 +53,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		OrganizationID:             ws.Organization.ID,
 	})
 	if err != nil {
-		return nil, databaseError(err, insertWorkspaceSQL)
+		return nil, databaseError(err)
 	}
 	ws.CreatedAt = result.CreatedAt
 	ws.UpdatedAt = result.UpdatedAt
@@ -69,7 +70,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
 	var result interface{}
 	if spec.ID != nil {
@@ -95,7 +96,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		return ws, nil
 	}
 
-	ws.UpdatedAt, err = q.UpdateWorkspaceByID(ctx, UpdateWorkspaceByIDParams{
+	ws.UpdatedAt, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
 		AllowDestroyPlan:           ws.AllowDestroyPlan,
 		Description:                ws.Description,
 		ExecutionMode:              ws.ExecutionMode,
@@ -117,11 +118,11 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	q.FindWorkspacesBatch(batch, FindWorkspacesParams{
+	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
 		OrganizationName: opts.OrganizationName,
 		Prefix:           opts.Prefix,
 		Limit:            opts.GetLimit(),
@@ -154,7 +155,7 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 
 func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	ctx := context.Background()
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	if spec.ID != nil {
 		result, err := q.FindWorkspaceByID(ctx, *spec.ID)
@@ -176,7 +177,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 // Delete deletes a specific workspace, along with its child records (runs etc).
 func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	ctx := context.Background()
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 
 	var result pgconn.CommandTag
 	var err error

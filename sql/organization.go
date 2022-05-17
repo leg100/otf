@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
@@ -24,17 +25,17 @@ func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 
 // Create persists a Organization to the DB.
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.InsertOrganization(ctx, InsertOrganizationParams{
+	result, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              org.ID,
 		Name:            org.Name,
 		SessionRemember: int32(org.SessionRemember),
 		SessionTimeout:  int32(org.SessionTimeout),
 	})
 	if err != nil {
-		return nil, databaseError(err, insertOrganizationSQL)
+		return nil, databaseError(err)
 	}
 	org.CreatedAt = result.CreatedAt
 	org.UpdatedAt = result.UpdatedAt
@@ -54,7 +55,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	}
 	defer tx.Rollback(ctx)
 
-	q := NewQuerier(tx)
+	q := pggen.NewQuerier(tx)
 
 	result, err := q.FindOrganizationByNameForUpdate(ctx, name)
 	if err != nil {
@@ -95,7 +96,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
@@ -124,12 +125,12 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 }
 
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	r, err := q.FindOrganizationByName(ctx, name)
 	if err != nil {
-		return nil, databaseError(err, findOrganizationByNameSQL)
+		return nil, databaseError(err)
 	}
 
 	return &otf.Organization{
@@ -145,7 +146,7 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 }
 
 func (db OrganizationDB) Delete(name string) error {
-	q := NewQuerier(db.Pool)
+	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	result, err := q.DeleteOrganization(ctx, name)

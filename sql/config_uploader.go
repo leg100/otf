@@ -5,16 +5,17 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 type cvUploader struct {
-	q  *DBQuerier
+	q  *pggen.DBQuerier
 	id string
 }
 
 func newConfigUploader(tx pgx.Tx, id string) *cvUploader {
 	return &cvUploader{
-		q:  NewQuerier(tx),
+		q:  pggen.NewQuerier(tx),
 		id: id,
 	}
 }
