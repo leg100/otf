@@ -10,8 +10,6 @@ import (
 	"math/rand"
 	"regexp"
 	"time"
-
-	"github.com/jackc/pgtype"
 )
 
 const (
@@ -70,12 +68,6 @@ type DB interface {
 	TokenStore() TokenStore
 }
 
-// Updateable is an obj that records when it was updated.
-type Updateable interface {
-	GetID() string
-	SetUpdatedAt(time.Time)
-}
-
 func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
@@ -106,51 +98,12 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
-var _ pgtype.BinaryDecoder = (*ResourceReport)(nil)
-
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
 	Additions    int `json:"additions"`
 	Changes      int `json:"changes"`
 	Destructions int `json:"destructions"`
-}
-
-func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
-	r := pgtype.Record{
-		Fields: []pgtype.Value{&pgtype.Int4{}, &pgtype.Int4{}, &pgtype.Int4{}},
-	}
-
-	if err := r.DecodeBinary(ci, src); err != nil {
-		return err
-	}
-
-	// NULL -> nil
-	if r.Status != pgtype.Present {
-		t = nil
-		return nil
-	}
-
-	a := r.Fields[0].(*pgtype.Int4)
-	b := r.Fields[1].(*pgtype.Int4)
-	c := r.Fields[2].(*pgtype.Int4)
-
-	// type compatibility is checked by AssignTo
-	// only lossless assignments will succeed
-	if err := a.AssignTo(&t.Additions); err != nil {
-		return err
-	}
-
-	// AssignTo also deals with null value handling
-	if err := b.AssignTo(&t.Changes); err != nil {
-		return err
-	}
-
-	// AssignTo also deals with null value handling
-	if err := c.AssignTo(&t.Destructions); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Pagination is used to return the pagination details of an API request.
