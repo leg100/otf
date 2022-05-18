@@ -6,7 +6,7 @@ import (
 
 // Token is a user authentication token.
 type Token struct {
-	ID string `db:"token_id"`
+	ID string
 
 	Token string
 
@@ -27,7 +27,6 @@ func NewToken(uid, description string) (*Token, error) {
 	session := Token{
 		ID:          NewID("ut"),
 		Token:       token,
-		Timestamps:  NewTimestamps(),
 		Description: description,
 		UserID:      uid,
 	}

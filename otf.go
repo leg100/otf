@@ -211,20 +211,8 @@ func validSemanticVersion(v string) bool {
 }
 
 type Timestamps struct {
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-}
-
-func (m *Timestamps) SetUpdatedAt(t time.Time) {
-	m.UpdatedAt = t
-}
-
-func NewTimestamps() Timestamps {
-	now := time.Now()
-	return Timestamps{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func GetMapKeys(m map[string]interface{}) []string {

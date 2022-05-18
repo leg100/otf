@@ -1,7 +1,7 @@
 package otf
 
 type StateVersionOutput struct {
-	ID string `db:"state_version_output_id"`
+	ID string
 
 	Timestamps
 

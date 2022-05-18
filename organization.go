@@ -121,7 +121,6 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		Name:            *opts.Name,
 		ID:              NewID("org"),
-		Timestamps:      NewTimestamps(),
 		SessionTimeout:  DefaultSessionTimeout,
 		SessionRemember: DefaultSessionExpiration,
 	}

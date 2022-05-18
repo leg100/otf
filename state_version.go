@@ -12,7 +12,7 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string `db:"state_version_id"`
+	ID string
 
 	Timestamps
 
@@ -24,7 +24,7 @@ type StateVersion struct {
 	State []byte
 
 	// State version has many outputs
-	Outputs []*StateVersionOutput `db:"state_version_outputs"`
+	Outputs []*StateVersionOutput
 }
 
 func (sv *StateVersion) GetID() string  { return sv.ID }
@@ -111,9 +111,8 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	}
 
 	sv := StateVersion{
-		ID:         NewID("sv"),
-		Timestamps: NewTimestamps(),
-		Serial:     *opts.Serial,
+		ID:     NewID("sv"),
+		Serial: *opts.Serial,
 	}
 
 	var err error

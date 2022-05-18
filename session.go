@@ -26,7 +26,6 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 
 	session := Session{
 		Token:       token,
-		Timestamps:  NewTimestamps(),
 		SessionData: *data,
 		Expiry:      time.Now().Add(DefaultSessionExpiry),
 		UserID:      uid,
