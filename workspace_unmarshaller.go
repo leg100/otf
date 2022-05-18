@@ -24,7 +24,7 @@ type WorkspaceDBResult struct {
 	QueueAllRuns               bool                 `json:"queue_all_runs"`
 	SpeculativeEnabled         bool                 `json:"speculative_enabled"`
 	SourceName                 string               `json:"source_name"`
-	SourceUrl                  string               `json:"source_url"`
+	SourceURL                  string               `json:"source_url"`
 	StructuredRunOutputEnabled bool                 `json:"structured_run_output_enabled"`
 	TerraformVersion           string               `json:"terraform_version"`
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
@@ -55,7 +55,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		SpeculativeEnabled:         row.SpeculativeEnabled,
 		StructuredRunOutputEnabled: row.StructuredRunOutputEnabled,
 		SourceName:                 row.SourceName,
-		SourceURL:                  row.SourceUrl,
+		SourceURL:                  row.SourceURL,
 		TerraformVersion:           row.TerraformVersion,
 		TriggerPrefixes:            row.TriggerPrefixes,
 		WorkingDirectory:           row.WorkingDirectory,
@@ -92,7 +92,7 @@ func unmarshalWorkspaceDBType(typ *pggen.Workspaces) (*Workspace, error) {
 		SpeculativeEnabled:         typ.SpeculativeEnabled,
 		StructuredRunOutputEnabled: typ.StructuredRunOutputEnabled,
 		SourceName:                 typ.SourceName,
-		SourceURL:                  typ.SourceUrl,
+		SourceURL:                  typ.SourceURL,
 		TerraformVersion:           typ.TerraformVersion,
 		TriggerPrefixes:            typ.TriggerPrefixes,
 		WorkingDirectory:           typ.WorkingDirectory,

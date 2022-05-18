@@ -86,5 +86,7 @@ sql:
 		--go-type 'int4=int' \
 		--go-type 'bool=bool' \
 		--go-type 'timestamptz=time.Time' \
-		--go-type 'bytea=[]byte'
+		--go-type 'bytea=[]byte' \
+		--acronym url \
+		--acronym sha
 	go fmt ./sql

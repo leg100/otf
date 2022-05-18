@@ -465,6 +465,13 @@ type Querier interface {
 	// FindStateVersionLatestByWorkspaceIDScan scans the result of an executed FindStateVersionLatestByWorkspaceIDBatch query.
 	FindStateVersionLatestByWorkspaceIDScan(results pgx.BatchResults) (FindStateVersionLatestByWorkspaceIDRow, error)
 
+	FindStateVersionStateByID(ctx context.Context, id string) ([]byte, error)
+	// FindStateVersionStateByIDBatch enqueues a FindStateVersionStateByID query into batch to be executed
+	// later by the batch.
+	FindStateVersionStateByIDBatch(batch genericBatch, id string)
+	// FindStateVersionStateByIDScan scans the result of an executed FindStateVersionStateByIDBatch query.
+	FindStateVersionStateByIDScan(results pgx.BatchResults) ([]byte, error)
+
 	DeleteStateVersionByID(ctx context.Context, stateVersionID string) (pgconn.CommandTag, error)
 	// DeleteStateVersionByIDBatch enqueues a DeleteStateVersionByID query into batch to be executed
 	// later by the batch.
@@ -912,6 +919,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findStateVersionLatestByWorkspaceIDSQL, findStateVersionLatestByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionLatestByWorkspaceID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findStateVersionStateByIDSQL, findStateVersionStateByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindStateVersionStateByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteStateVersionByIDSQL, deleteStateVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteStateVersionByID': %w", err)
 	}
@@ -1100,7 +1110,7 @@ type Workspaces struct {
 	QueueAllRuns               bool      `json:"queue_all_runs"`
 	SpeculativeEnabled         bool      `json:"speculative_enabled"`
 	SourceName                 string    `json:"source_name"`
-	SourceUrl                  string    `json:"source_url"`
+	SourceURL                  string    `json:"source_url"`
 	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
 	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`

@@ -136,6 +136,13 @@ func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion,
 	}
 }
 
+func (s StateVersionDB) GetState(id string) ([]byte, error) {
+	ctx := context.Background()
+	q := pggen.NewQuerier(s.Pool)
+
+	return q.FindStateVersionStateByID(ctx, id)
+}
+
 // Delete deletes a state version from the DB
 func (s StateVersionDB) Delete(id string) error {
 	ctx := context.Background()

@@ -47,6 +47,7 @@ type StateVersionService interface {
 type StateVersionStore interface {
 	Create(workspaceID string, sv *StateVersion) error
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
+	GetState(id string) ([]byte, error)
 	List(opts StateVersionListOptions) (*StateVersionList, error)
 	Delete(id string) error
 }

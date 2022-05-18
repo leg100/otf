@@ -66,6 +66,12 @@ GROUP BY state_versions.state_version_id
 ORDER BY state_versions.serial DESC, state_versions.created_at DESC
 ;
 
+-- name: FindStateVersionStateByID :one
+SELECT state
+FROM state_versions
+WHERE state_version_id = pggen.arg('id')
+;
+
 -- name: DeleteStateVersionByID :exec
 DELETE
 FROM state_versions

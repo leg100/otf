@@ -42,7 +42,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		Locked:                     ws.Locked,
 		MigrationEnvironment:       ws.MigrationEnvironment,
 		SourceName:                 ws.SourceName,
-		SourceUrl:                  ws.SourceURL,
+		SourceURL:                  ws.SourceURL,
 		SpeculativeEnabled:         ws.SpeculativeEnabled,
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
 		TerraformVersion:           ws.TerraformVersion,

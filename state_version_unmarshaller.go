@@ -11,8 +11,8 @@ type StateVersionDBRow struct {
 	CreatedAt           time.Time                   `json:"created_at"`
 	UpdatedAt           time.Time                   `json:"updated_at"`
 	Serial              int                         `json:"serial"`
-	VcsCommitSha        string                      `json:"vcs_commit_sha"`
-	VcsCommitUrl        string                      `json:"vcs_commit_url"`
+	VcsCommitSHA        string                      `json:"vcs_commit_sha"`
+	VcsCommitURL        string                      `json:"vcs_commit_url"`
 	State               []byte                      `json:"state"`
 	WorkspaceID         string                      `json:"workspace_id"`
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`

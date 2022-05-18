@@ -72,15 +72,15 @@ func (s StateVersionService) Download(id string) ([]byte, error) {
 		return state, nil
 	}
 
-	sv, err := s.db.Get(otf.StateVersionGetOptions{ID: &id, State: true})
+	state, err := s.db.GetState(id)
 	if err != nil {
-		s.Error(err, "retrieving state version", "id", sv.ID, "serial", sv.Serial)
+		s.Error(err, "downloading state", "id", id)
 		return nil, err
 	}
 
-	if err := s.cache.Set(otf.StateVersionCacheKey(id), sv.State); err != nil {
-		return nil, fmt.Errorf("caching state version: %w", err)
+	if err := s.cache.Set(otf.StateVersionCacheKey(id), state); err != nil {
+		return nil, fmt.Errorf("caching state: %w", err)
 	}
 
-	return sv.State, nil
+	return state, nil
 }
