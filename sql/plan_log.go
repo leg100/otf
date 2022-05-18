@@ -47,8 +47,8 @@ func (db PlanLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChu
 
 	chunk, err := q.FindPlanLogChunks(ctx, pggen.FindPlanLogChunksParams{
 		PlanID: planID,
-		Offset: int32(opts.Offset) + 1,
-		Limit:  int32(opts.Limit),
+		Offset: opts.Offset + 1,
+		Limit:  opts.Limit,
 	})
 	if err != nil {
 		return otf.Chunk{}, err

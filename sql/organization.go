@@ -28,17 +28,17 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+	createdAt, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              org.ID,
 		Name:            org.Name,
-		SessionRemember: int32(org.SessionRemember),
-		SessionTimeout:  int32(org.SessionTimeout),
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
 	})
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	org.CreatedAt = result.CreatedAt
-	org.UpdatedAt = result.UpdatedAt
+	org.CreatedAt = createdAt
+	org.UpdatedAt = createdAt
 
 	return org, nil
 }
@@ -61,7 +61,7 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	if err != nil {
 		return nil, err
 	}
-	org, err := otf.UnmarshalOrganizationFromDB(result)
+	org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
 	if err != nil {
 		return nil, err
 	}
@@ -70,22 +70,22 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	if org.Name != *result.Name {
+	if org.Name != result.Name {
 		result, err := q.UpdateOrganizationNameByName(ctx, org.Name, name)
 		if err != nil {
 			return nil, err
 		}
 		org.UpdatedAt = result.UpdatedAt
 	}
-	if org.SessionRemember != int(*result.SessionRemember) {
-		result, err := q.UpdateOrganizationSessionRememberByName(ctx, int32(org.SessionRemember), org.Name)
+	if org.SessionRemember != result.SessionRemember {
+		result, err := q.UpdateOrganizationSessionRememberByName(ctx, org.SessionRemember, org.Name)
 		if err != nil {
 			return nil, err
 		}
 		org.UpdatedAt = result.UpdatedAt
 	}
-	if org.SessionTimeout != int(*result.SessionTimeout) {
-		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, int32(org.SessionTimeout), org.Name)
+	if org.SessionTimeout != result.SessionTimeout {
+		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, org.SessionTimeout, org.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -113,9 +113,14 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	if err != nil {
 		return nil, err
 	}
-	items, err := otf.UnmarshalOrganizationListFromDB(rows)
-	if err != nil {
-		return nil, err
+
+	var items []*otf.Organization
+	for _, r := range rows {
+		org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, org)
 	}
 
 	return &otf.OrganizationList{

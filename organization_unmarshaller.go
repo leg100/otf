@@ -1,64 +1,19 @@
 package otf
 
 import (
-	"encoding/json"
-	"time"
+	"github.com/leg100/otf/sql/pggen"
 )
 
-type OrganizationDBRow struct {
-	OrganizationID  string    `json:"organization_id"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	Name            string    `json:"name"`
-	SessionRemember int       `json:"session_remember"`
-	SessionTimeout  int       `json:"session_timeout"`
-	FullCount       int       `json:"full_count"`
-}
-
-func UnmarshalOrganizationListFromDB(pgresult interface{}) (organizations []*Organization, err error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var rows []OrganizationDBRow
-	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, err
-	}
-
-	for _, row := range rows {
-		org, err := unmarshalOrganizationDBRow(row)
-		if err != nil {
-			return nil, err
-		}
-		organizations = append(organizations, org)
-	}
-
-	return organizations, nil
-}
-
-func UnmarshalOrganizationFromDB(pgresult interface{}) (*Organization, error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var row OrganizationDBRow
-	if err := json.Unmarshal(data, &row); err != nil {
-		return nil, err
-	}
-
-	return unmarshalOrganizationDBRow(row)
-}
-
-func unmarshalOrganizationDBRow(row OrganizationDBRow) (*Organization, error) {
+func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, error) {
 	org := Organization{
-		ID: row.OrganizationID,
+		ID: result.OrganizationID,
 		Timestamps: Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
+			CreatedAt: result.CreatedAt.Local(),
+			UpdatedAt: result.UpdatedAt.Local(),
 		},
-		Name:            row.Name,
-		SessionRemember: row.SessionRemember,
-		SessionTimeout:  row.SessionTimeout,
+		Name:            result.Name,
+		SessionRemember: result.SessionRemember,
+		SessionTimeout:  result.SessionTimeout,
 	}
 
 	return &org, nil

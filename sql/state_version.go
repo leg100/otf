@@ -11,21 +11,21 @@ import (
 )
 
 var (
-	_ otf.StateVersionStore = (*StateVersionService)(nil)
+	_ otf.StateVersionStore = (*StateVersionDB)(nil)
 )
 
-type StateVersionService struct {
+type StateVersionDB struct {
 	*pgxpool.Pool
 }
 
-func NewStateVersionDB(conn *pgxpool.Pool) *StateVersionService {
-	return &StateVersionService{
+func NewStateVersionDB(conn *pgxpool.Pool) *StateVersionDB {
+	return &StateVersionDB{
 		Pool: conn,
 	}
 }
 
 // Create persists a StateVersion to the DB.
-func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) error {
+func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	ctx := context.Background()
 
 	tx, err := s.Pool.Begin(ctx)
@@ -38,7 +38,7 @@ func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) er
 
 	result, err := q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 		ID:          sv.ID,
-		Serial:      int32(sv.Serial),
+		Serial:      int(sv.Serial),
 		State:       sv.State,
 		WorkspaceID: workspaceID,
 	})
@@ -68,7 +68,7 @@ func (s StateVersionService) Create(workspaceID string, sv *otf.StateVersion) er
 	return tx.Commit(ctx)
 }
 
-func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	if opts.Workspace == nil {
 		return nil, fmt.Errorf("missing required option: workspace")
 	}
@@ -100,9 +100,13 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, err
 	}
 
-	items, err := otf.UnmarshalStateVersionListFromDB(rows)
-	if err != nil {
-		return nil, err
+	var items []*otf.StateVersion
+	for _, r := range rows {
+		sv, err := otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, sv)
 	}
 
 	return &otf.StateVersionList{
@@ -111,28 +115,29 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 	}, nil
 }
 
-func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
+func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	ctx := context.Background()
 	q := pggen.NewQuerier(s.Pool)
 
-	var result interface{}
-	var err error
-
 	if opts.ID != nil {
-		result, err = q.FindStateVersionByID(ctx, *opts.ID)
+		result, err := q.FindStateVersionByID(ctx, *opts.ID)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
 	} else if opts.WorkspaceID != nil {
-		result, err = q.FindStateVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		result, err := q.FindStateVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
 	} else {
 		return nil, fmt.Errorf("no state version spec provided")
 	}
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	return otf.UnmarshalStateVersionFromDB(result)
 }
 
 // Delete deletes a state version from the DB
-func (s StateVersionService) Delete(id string) error {
+func (s StateVersionDB) Delete(id string) error {
 	ctx := context.Background()
 	q := pggen.NewQuerier(s.Pool)
 

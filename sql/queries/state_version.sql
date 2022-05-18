@@ -5,25 +5,20 @@ INSERT INTO state_versions (
     updated_at,
     serial,
     state,
-    workspace_id
+    workspace_id,
+    vcs_commit_sha,
+    vcs_commit_url
 ) VALUES (
     pggen.arg('id'),
     current_timestamp,
     current_timestamp,
     pggen.arg('serial'),
     pggen.arg('state'),
-    pggen.arg('workspace_id')
+    pggen.arg('workspace_id'),
+    '',
+    ''
 )
 RETURNING created_at, updated_at
-;
-
--- name: UpdateStateVersionRunIDByID :one
-UPDATE state_versions
-SET
-    run_id = pggen.arg('run_id'),
-    updated_at = current_timestamp
-WHERE state_version_id = pggen.arg('state_version_id')
-RETURNING updated_at
 ;
 
 -- name: FindStateVersionsByWorkspaceName :many

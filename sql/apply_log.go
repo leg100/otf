@@ -47,8 +47,8 @@ func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetC
 
 	chunk, err := q.FindApplyLogChunks(ctx, pggen.FindApplyLogChunksParams{
 		ApplyID: applyID,
-		Offset:  int32(opts.Offset) + 1,
-		Limit:   int32(opts.Limit),
+		Offset:  opts.Offset + 1,
+		Limit:   opts.Limit,
 	})
 	if err != nil {
 		return otf.Chunk{}, err

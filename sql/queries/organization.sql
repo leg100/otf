@@ -37,7 +37,7 @@ INSERT INTO organizations (
     pggen.arg('SessionRemember'),
     pggen.arg('SessionTimeout')
 )
-RETURNING *;
+RETURNING created_at;
 
 -- UpdateOrganizationNameByName updates an organization with a new name,
 -- identifying the organization with its existing name, and returns the

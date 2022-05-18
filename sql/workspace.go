@@ -72,20 +72,27 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 
 	q := pggen.NewQuerier(tx)
 
-	var result interface{}
+	var ws *otf.Workspace
 	if spec.ID != nil {
-		result, err = q.FindWorkspaceByIDForUpdate(ctx, *spec.ID)
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, *spec.ID)
+		if err != nil {
+			return nil, err
+		}
+		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		if err != nil {
+			return nil, err
+		}
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err = q.FindWorkspaceByNameForUpdate(ctx, *spec.Name, *spec.OrganizationName)
+		result, err := q.FindWorkspaceByNameForUpdate(ctx, *spec.Name, *spec.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		return nil, fmt.Errorf("invalid spec")
-	}
-	if err != nil {
-		return nil, err
-	}
-	ws, err := otf.UnmarshalWorkspaceFromDB(result)
-	if err != nil {
-		return nil, err
 	}
 
 	updated, err := fn(ws)
@@ -142,13 +149,17 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 		return nil, err
 	}
 
-	workspaces, err := otf.UnmarshalWorkspaceListFromDB(rows)
-	if err != nil {
-		return nil, err
+	var items []*otf.Workspace
+	for _, r := range rows {
+		ws, err := otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, ws)
 	}
 
 	return &otf.WorkspaceList{
-		Items:      workspaces,
+		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
@@ -162,13 +173,13 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalWorkspaceFromDB(result)
+		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := q.FindWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalWorkspaceFromDB(result)
+		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else {
 		return nil, fmt.Errorf("no workspace spec provided")
 	}

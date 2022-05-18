@@ -156,29 +156,29 @@ type FindWorkspacesParams struct {
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                *string        `json:"workspace_id"`
+	WorkspaceID                string         `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           *bool          `json:"allow_destroy_plan"`
-	AutoApply                  *bool          `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool          `json:"can_queue_destroy_plan"`
-	Description                *string        `json:"description"`
-	Environment                *string        `json:"environment"`
-	ExecutionMode              *string        `json:"execution_mode"`
-	FileTriggersEnabled        *bool          `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool          `json:"global_remote_state"`
-	Locked                     *bool          `json:"locked"`
-	MigrationEnvironment       *string        `json:"migration_environment"`
-	Name                       *string        `json:"name"`
-	QueueAllRuns               *bool          `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool          `json:"speculative_enabled"`
-	SourceName                 *string        `json:"source_name"`
-	SourceUrl                  *string        `json:"source_url"`
-	StructuredRunOutputEnabled *bool          `json:"structured_run_output_enabled"`
-	TerraformVersion           *string        `json:"terraform_version"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	Locked                     bool           `json:"locked"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceUrl                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           *string        `json:"working_directory"`
-	OrganizationID             *string        `json:"organization_id"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
 	Organization               *Organizations `json:"organization"`
 }
 
@@ -278,14 +278,14 @@ WHERE workspaces.name = $1
 AND organizations.name = $2;`
 
 // FindWorkspaceIDByName implements Querier.FindWorkspaceIDByName.
-func (q *DBQuerier) FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (*string, error) {
+func (q *DBQuerier) FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceIDByName")
 	row := q.conn.QueryRow(ctx, findWorkspaceIDByNameSQL, name, organizationName)
 	var item string
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("query FindWorkspaceIDByName: %w", err)
+		return item, fmt.Errorf("query FindWorkspaceIDByName: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 // FindWorkspaceIDByNameBatch implements Querier.FindWorkspaceIDByNameBatch.
@@ -294,13 +294,13 @@ func (q *DBQuerier) FindWorkspaceIDByNameBatch(batch genericBatch, name string, 
 }
 
 // FindWorkspaceIDByNameScan implements Querier.FindWorkspaceIDByNameScan.
-func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (*string, error) {
+func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (string, error) {
 	row := results.QueryRow()
 	var item string
 	if err := row.Scan(&item); err != nil {
-		return &item, fmt.Errorf("scan FindWorkspaceIDByNameBatch row: %w", err)
+		return item, fmt.Errorf("scan FindWorkspaceIDByNameBatch row: %w", err)
 	}
-	return &item, nil
+	return item, nil
 }
 
 const findWorkspaceByNameSQL = `SELECT workspaces.*, (organizations.*)::"organizations" AS organization
@@ -310,29 +310,29 @@ WHERE workspaces.name = $1
 AND organizations.name = $2;`
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                *string        `json:"workspace_id"`
+	WorkspaceID                string         `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           *bool          `json:"allow_destroy_plan"`
-	AutoApply                  *bool          `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool          `json:"can_queue_destroy_plan"`
-	Description                *string        `json:"description"`
-	Environment                *string        `json:"environment"`
-	ExecutionMode              *string        `json:"execution_mode"`
-	FileTriggersEnabled        *bool          `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool          `json:"global_remote_state"`
-	Locked                     *bool          `json:"locked"`
-	MigrationEnvironment       *string        `json:"migration_environment"`
-	Name                       *string        `json:"name"`
-	QueueAllRuns               *bool          `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool          `json:"speculative_enabled"`
-	SourceName                 *string        `json:"source_name"`
-	SourceUrl                  *string        `json:"source_url"`
-	StructuredRunOutputEnabled *bool          `json:"structured_run_output_enabled"`
-	TerraformVersion           *string        `json:"terraform_version"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	Locked                     bool           `json:"locked"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceUrl                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           *string        `json:"working_directory"`
-	OrganizationID             *string        `json:"organization_id"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
 	Organization               *Organizations `json:"organization"`
 }
 
@@ -378,29 +378,29 @@ AND organizations.name = $2
 FOR UPDATE;`
 
 type FindWorkspaceByNameForUpdateRow struct {
-	WorkspaceID                *string        `json:"workspace_id"`
+	WorkspaceID                string         `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           *bool          `json:"allow_destroy_plan"`
-	AutoApply                  *bool          `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool          `json:"can_queue_destroy_plan"`
-	Description                *string        `json:"description"`
-	Environment                *string        `json:"environment"`
-	ExecutionMode              *string        `json:"execution_mode"`
-	FileTriggersEnabled        *bool          `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool          `json:"global_remote_state"`
-	Locked                     *bool          `json:"locked"`
-	MigrationEnvironment       *string        `json:"migration_environment"`
-	Name                       *string        `json:"name"`
-	QueueAllRuns               *bool          `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool          `json:"speculative_enabled"`
-	SourceName                 *string        `json:"source_name"`
-	SourceUrl                  *string        `json:"source_url"`
-	StructuredRunOutputEnabled *bool          `json:"structured_run_output_enabled"`
-	TerraformVersion           *string        `json:"terraform_version"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	Locked                     bool           `json:"locked"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceUrl                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           *string        `json:"working_directory"`
-	OrganizationID             *string        `json:"organization_id"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
 	Organization               *Organizations `json:"organization"`
 }
 
@@ -444,29 +444,29 @@ JOIN organizations USING (organization_id)
 WHERE workspaces.workspace_id = $1;`
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                *string        `json:"workspace_id"`
+	WorkspaceID                string         `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           *bool          `json:"allow_destroy_plan"`
-	AutoApply                  *bool          `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool          `json:"can_queue_destroy_plan"`
-	Description                *string        `json:"description"`
-	Environment                *string        `json:"environment"`
-	ExecutionMode              *string        `json:"execution_mode"`
-	FileTriggersEnabled        *bool          `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool          `json:"global_remote_state"`
-	Locked                     *bool          `json:"locked"`
-	MigrationEnvironment       *string        `json:"migration_environment"`
-	Name                       *string        `json:"name"`
-	QueueAllRuns               *bool          `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool          `json:"speculative_enabled"`
-	SourceName                 *string        `json:"source_name"`
-	SourceUrl                  *string        `json:"source_url"`
-	StructuredRunOutputEnabled *bool          `json:"structured_run_output_enabled"`
-	TerraformVersion           *string        `json:"terraform_version"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	Locked                     bool           `json:"locked"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceUrl                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           *string        `json:"working_directory"`
-	OrganizationID             *string        `json:"organization_id"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
 	Organization               *Organizations `json:"organization"`
 }
 
@@ -511,29 +511,29 @@ WHERE workspaces.workspace_id = $1
 FOR UPDATE;`
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                *string        `json:"workspace_id"`
+	WorkspaceID                string         `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           *bool          `json:"allow_destroy_plan"`
-	AutoApply                  *bool          `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool          `json:"can_queue_destroy_plan"`
-	Description                *string        `json:"description"`
-	Environment                *string        `json:"environment"`
-	ExecutionMode              *string        `json:"execution_mode"`
-	FileTriggersEnabled        *bool          `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool          `json:"global_remote_state"`
-	Locked                     *bool          `json:"locked"`
-	MigrationEnvironment       *string        `json:"migration_environment"`
-	Name                       *string        `json:"name"`
-	QueueAllRuns               *bool          `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool          `json:"speculative_enabled"`
-	SourceName                 *string        `json:"source_name"`
-	SourceUrl                  *string        `json:"source_url"`
-	StructuredRunOutputEnabled *bool          `json:"structured_run_output_enabled"`
-	TerraformVersion           *string        `json:"terraform_version"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	Locked                     bool           `json:"locked"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceUrl                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           *string        `json:"working_directory"`
-	OrganizationID             *string        `json:"organization_id"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
 	Organization               *Organizations `json:"organization"`
 }
 

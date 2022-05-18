@@ -66,7 +66,15 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 		return nil, err
 	}
 
-	return otf.UnmarshalUserListFromDB(result)
+	var items []*otf.User
+	for _, r := range result {
+		user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, user)
+	}
+	return items, nil
 }
 
 // Get retrieves a user from the DB, along with its sessions.
@@ -78,31 +86,31 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserFromDB(result)
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.Username != nil {
 		result, err := q.FindUserByUsername(ctx, *spec.Username)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserFromDB(result)
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationToken != nil {
 		result, err := q.FindUserByAuthenticationToken(ctx, *spec.AuthenticationToken)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserFromDB(result)
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationTokenID != nil {
 		result, err := q.FindUserByAuthenticationTokenID(ctx, *spec.AuthenticationTokenID)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserFromDB(result)
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.SessionToken != nil {
 		result, err := q.FindUserBySessionToken(ctx, *spec.SessionToken)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserFromDB(result)
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

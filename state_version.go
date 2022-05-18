@@ -23,9 +23,6 @@ type StateVersion struct {
 	// State is the state file itself.
 	State []byte
 
-	// Run associated with this state version. Optional.
-	Run *Run
-
 	// State version has many outputs
 	Outputs []*StateVersionOutput `db:"state_version_outputs"`
 }
@@ -62,9 +59,6 @@ type StateVersionGetOptions struct {
 
 	// Get current state version belonging to workspace with this ID
 	WorkspaceID *string
-
-	// State toggles retrieving the actual state file too.
-	State bool
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -119,7 +113,6 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 		ID:         NewID("sv"),
 		Timestamps: NewTimestamps(),
 		Serial:     *opts.Serial,
-		Run:        opts.Run,
 	}
 
 	var err error

@@ -165,12 +165,12 @@ type Querier interface {
 
 	// InsertOrganization inserts an organization and returns the entire row.
 	// 
-	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (InsertOrganizationRow, error)
+	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (time.Time, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
 	// later by the batch.
 	InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams)
 	// InsertOrganizationScan scans the result of an executed InsertOrganizationBatch query.
-	InsertOrganizationScan(results pgx.BatchResults) (InsertOrganizationRow, error)
+	InsertOrganizationScan(results pgx.BatchResults) (time.Time, error)
 
 	// UpdateOrganizationNameByName updates an organization with a new name,
 	// identifying the organization with its existing name, and returns the
@@ -183,17 +183,17 @@ type Querier interface {
 	// UpdateOrganizationNameByNameScan scans the result of an executed UpdateOrganizationNameByNameBatch query.
 	UpdateOrganizationNameByNameScan(results pgx.BatchResults) (UpdateOrganizationNameByNameRow, error)
 
-	UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int32, name string) (UpdateOrganizationSessionRememberByNameRow, error)
+	UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int, name string) (UpdateOrganizationSessionRememberByNameRow, error)
 	// UpdateOrganizationSessionRememberByNameBatch enqueues a UpdateOrganizationSessionRememberByName query into batch to be executed
 	// later by the batch.
-	UpdateOrganizationSessionRememberByNameBatch(batch genericBatch, sessionRemember int32, name string)
+	UpdateOrganizationSessionRememberByNameBatch(batch genericBatch, sessionRemember int, name string)
 	// UpdateOrganizationSessionRememberByNameScan scans the result of an executed UpdateOrganizationSessionRememberByNameBatch query.
 	UpdateOrganizationSessionRememberByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionRememberByNameRow, error)
 
-	UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int32, name string) (UpdateOrganizationSessionTimeoutByNameRow, error)
+	UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int, name string) (UpdateOrganizationSessionTimeoutByNameRow, error)
 	// UpdateOrganizationSessionTimeoutByNameBatch enqueues a UpdateOrganizationSessionTimeoutByName query into batch to be executed
 	// later by the batch.
-	UpdateOrganizationSessionTimeoutByNameBatch(batch genericBatch, sessionTimeout int32, name string)
+	UpdateOrganizationSessionTimeoutByNameBatch(batch genericBatch, sessionTimeout int, name string)
 	// UpdateOrganizationSessionTimeoutByNameScan scans the result of an executed UpdateOrganizationSessionTimeoutByNameBatch query.
 	UpdateOrganizationSessionTimeoutByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionTimeoutByNameRow, error)
 
@@ -437,13 +437,6 @@ type Querier interface {
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
 	InsertStateVersionScan(results pgx.BatchResults) (InsertStateVersionRow, error)
 
-	UpdateStateVersionRunIDByID(ctx context.Context, runID string, stateVersionID string) (time.Time, error)
-	// UpdateStateVersionRunIDByIDBatch enqueues a UpdateStateVersionRunIDByID query into batch to be executed
-	// later by the batch.
-	UpdateStateVersionRunIDByIDBatch(batch genericBatch, runID string, stateVersionID string)
-	// UpdateStateVersionRunIDByIDScan scans the result of an executed UpdateStateVersionRunIDByIDBatch query.
-	UpdateStateVersionRunIDByIDScan(results pgx.BatchResults) (time.Time, error)
-
 	FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error)
 	// FindStateVersionsByWorkspaceNameBatch enqueues a FindStateVersionsByWorkspaceName query into batch to be executed
 	// later by the batch.
@@ -595,12 +588,12 @@ type Querier interface {
 	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
 	CountWorkspacesScan(results pgx.BatchResults) (*int, error)
 
-	FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (*string, error)
+	FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (string, error)
 	// FindWorkspaceIDByNameBatch enqueues a FindWorkspaceIDByName query into batch to be executed
 	// later by the batch.
 	FindWorkspaceIDByNameBatch(batch genericBatch, name string, organizationName string)
 	// FindWorkspaceIDByNameScan scans the result of an executed FindWorkspaceIDByNameBatch query.
-	FindWorkspaceIDByNameScan(results pgx.BatchResults) (*string, error)
+	FindWorkspaceIDByNameScan(results pgx.BatchResults) (string, error)
 
 	// FindWorkspaceByName finds a workspace by name and organization name.
 	// 
@@ -907,9 +900,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateStateVersionRunIDByIDSQL, updateStateVersionRunIDByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateStateVersionRunIDByID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findStateVersionsByWorkspaceNameSQL, findStateVersionsByWorkspaceNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindStateVersionsByWorkspaceName': %w", err)
 	}
@@ -1002,120 +992,120 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 
 // ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
 type ApplyStatusTimestamps struct {
-	RunID     *string   `json:"run_id"`
-	Status    *string   `json:"status"`
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 // ConfigurationVersionStatusTimestamps represents the Postgres composite type "configuration_version_status_timestamps".
 type ConfigurationVersionStatusTimestamps struct {
-	ConfigurationVersionID *string   `json:"configuration_version_id"`
-	Status                 *string   `json:"status"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
+	Status                 string    `json:"status"`
 	Timestamp              time.Time `json:"timestamp"`
 }
 
 // ConfigurationVersions represents the Postgres composite type "configuration_versions".
 type ConfigurationVersions struct {
-	ConfigurationVersionID *string   `json:"configuration_version_id"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
-	AutoQueueRuns          *bool     `json:"auto_queue_runs"`
-	Source                 *string   `json:"source"`
-	Speculative            *bool     `json:"speculative"`
-	Status                 *string   `json:"status"`
+	AutoQueueRuns          bool      `json:"auto_queue_runs"`
+	Source                 string    `json:"source"`
+	Speculative            bool      `json:"speculative"`
+	Status                 string    `json:"status"`
 	Config                 []byte    `json:"config"`
-	WorkspaceID            *string   `json:"workspace_id"`
+	WorkspaceID            string    `json:"workspace_id"`
 }
 
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
-	OrganizationID  *string   `json:"organization_id"`
+	OrganizationID  string    `json:"organization_id"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	Name            *string   `json:"name"`
-	SessionRemember *int32    `json:"session_remember"`
-	SessionTimeout  *int32    `json:"session_timeout"`
+	Name            string    `json:"name"`
+	SessionRemember int       `json:"session_remember"`
+	SessionTimeout  int       `json:"session_timeout"`
 }
 
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
 type PlanStatusTimestamps struct {
-	RunID     *string   `json:"run_id"`
-	Status    *string   `json:"status"`
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 // ResourceReport represents the Postgres composite type "resource_report".
 type ResourceReport struct {
-	Additions    *int32 `json:"additions"`
-	Changes      *int32 `json:"changes"`
-	Destructions *int32 `json:"destructions"`
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
 }
 
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
 type RunStatusTimestamps struct {
-	RunID     *string   `json:"run_id"`
-	Status    *string   `json:"status"`
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
-	Token     *string   `json:"token"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Address   *string   `json:"address"`
+	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
-	UserID    *string   `json:"user_id"`
+	UserID    string    `json:"user_id"`
 }
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
-	StateVersionOutputID *string   `json:"state_version_output_id"`
+	StateVersionOutputID string    `json:"state_version_output_id"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
-	Name                 *string   `json:"name"`
-	Sensitive            *bool     `json:"sensitive"`
-	Type                 *string   `json:"type"`
-	Value                *string   `json:"value"`
-	StateVersionID       *string   `json:"state_version_id"`
+	Name                 string    `json:"name"`
+	Sensitive            bool      `json:"sensitive"`
+	Type                 string    `json:"type"`
+	Value                string    `json:"value"`
+	StateVersionID       string    `json:"state_version_id"`
 }
 
 // Tokens represents the Postgres composite type "tokens".
 type Tokens struct {
-	TokenID     *string   `json:"token_id"`
-	Token       *string   `json:"token"`
+	TokenID     string    `json:"token_id"`
+	Token       string    `json:"token"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	Description *string   `json:"description"`
-	UserID      *string   `json:"user_id"`
+	Description string    `json:"description"`
+	UserID      string    `json:"user_id"`
 }
 
 // Workspaces represents the Postgres composite type "workspaces".
 type Workspaces struct {
-	WorkspaceID                *string   `json:"workspace_id"`
+	WorkspaceID                string    `json:"workspace_id"`
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           *bool     `json:"allow_destroy_plan"`
-	AutoApply                  *bool     `json:"auto_apply"`
-	CanQueueDestroyPlan        *bool     `json:"can_queue_destroy_plan"`
-	Description                *string   `json:"description"`
-	Environment                *string   `json:"environment"`
-	ExecutionMode              *string   `json:"execution_mode"`
-	FileTriggersEnabled        *bool     `json:"file_triggers_enabled"`
-	GlobalRemoteState          *bool     `json:"global_remote_state"`
-	Locked                     *bool     `json:"locked"`
-	MigrationEnvironment       *string   `json:"migration_environment"`
-	Name                       *string   `json:"name"`
-	QueueAllRuns               *bool     `json:"queue_all_runs"`
-	SpeculativeEnabled         *bool     `json:"speculative_enabled"`
-	SourceName                 *string   `json:"source_name"`
-	SourceUrl                  *string   `json:"source_url"`
-	StructuredRunOutputEnabled *bool     `json:"structured_run_output_enabled"`
-	TerraformVersion           *string   `json:"terraform_version"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	Locked                     bool      `json:"locked"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceUrl                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           *string   `json:"working_directory"`
-	OrganizationID             *string   `json:"organization_id"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.

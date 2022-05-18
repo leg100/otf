@@ -1,56 +1,24 @@
 package otf
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/leg100/otf/sql/pggen"
 )
 
 type StateVersionDBRow struct {
-	StateVersionID      string                    `json:"state_version_id"`
-	CreatedAt           time.Time                 `json:"created_at"`
-	UpdatedAt           time.Time                 `json:"updated_at"`
-	Serial              int32                     `json:"serial"`
-	VcsCommitSHA        string                    `json:"vcs_commit_sha"`
-	VcsCommitURL        string                    `json:"vcs_commit_url"`
-	State               []byte                    `json:"state"`
-	RunID               *string                   `json:"run_id"`
-	StateVersionOutputs []StateVersionOutputDBRow `json:"state_version_outputs"`
+	StateVersionID      string                      `json:"state_version_id"`
+	CreatedAt           time.Time                   `json:"created_at"`
+	UpdatedAt           time.Time                   `json:"updated_at"`
+	Serial              int                         `json:"serial"`
+	VcsCommitSha        string                      `json:"vcs_commit_sha"`
+	VcsCommitUrl        string                      `json:"vcs_commit_url"`
+	State               []byte                      `json:"state"`
+	WorkspaceID         string                      `json:"workspace_id"`
+	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
-func UnmarshalStateVersionListFromDB(pgresult interface{}) (stateVersions []*StateVersion, err error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var rows []StateVersionDBRow
-	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, err
-	}
-
-	for _, row := range rows {
-		sv, err := unmarshalStateVersionDBRow(row)
-		if err != nil {
-			return nil, err
-		}
-		stateVersions = append(stateVersions, sv)
-	}
-
-	return stateVersions, nil
-}
-
-func UnmarshalStateVersionFromDB(pgresult interface{}) (*StateVersion, error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var row StateVersionDBRow
-	if err := json.Unmarshal(data, &row); err != nil {
-		return nil, err
-	}
-	return unmarshalStateVersionDBRow(row)
-}
-
-func unmarshalStateVersionDBRow(row StateVersionDBRow) (*StateVersion, error) {
+func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
 		ID: row.StateVersionID,
 		Timestamps: Timestamps{
@@ -61,14 +29,12 @@ func unmarshalStateVersionDBRow(row StateVersionDBRow) (*StateVersion, error) {
 		State:  row.State,
 	}
 
-	if row.RunID != nil {
-		sv.Run = &Run{ID: *row.RunID}
-	}
-
-	var err error
-	sv.Outputs, err = UnmarshalStateVersionOutputListFromDB(row.StateVersionOutputs)
-	if err != nil {
-		return nil, err
+	for _, r := range row.StateVersionOutputs {
+		out, err := UnmarshalStateVersionOutputDBType(r)
+		if err != nil {
+			return nil, err
+		}
+		sv.Outputs = append(sv.Outputs, out)
 	}
 
 	return &sv, nil

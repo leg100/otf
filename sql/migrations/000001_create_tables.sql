@@ -43,9 +43,9 @@ CREATE TABLE IF NOT EXISTS users (
     username                TEXT        NOT NULL,
     created_at              TIMESTAMPTZ NOT NULL,
     updated_at              TIMESTAMPTZ NOT NULL,
-    current_organization    TEXT,
-                            UNIQUE (username),
-                            PRIMARY KEY (user_id)
+    current_organization    TEXT        NOT NULL,
+                            PRIMARY KEY (user_id),
+                            UNIQUE (username)
 );
 
 CREATE TABLE IF NOT EXISTS organization_memberships (
@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS tokens (
     updated_at      TIMESTAMPTZ NOT NULL,
     description     TEXT        NOT NULL,
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                    UNIQUE (token),
-                    PRIMARY KEY (token_id)
+                    PRIMARY KEY (token_id),
+                    UNIQUE (token)
 );
 
 CREATE TABLE IF NOT EXISTS configuration_versions (
@@ -215,10 +215,9 @@ CREATE TABLE IF NOT EXISTS state_versions (
     created_at       TIMESTAMPTZ NOT NULL,
     updated_at       TIMESTAMPTZ NOT NULL,
     serial           INTEGER     NOT NULL,
-    vcs_commit_sha   TEXT,
-    vcs_commit_url   TEXT,
+    vcs_commit_sha   TEXT        NOT NULL,
+    vcs_commit_url   TEXT        NOT NULL,
     state            BYTEA       NOT NULL,
-    run_id           TEXT REFERENCES runs,
     workspace_id     TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
                      PRIMARY KEY (state_version_id)
 );

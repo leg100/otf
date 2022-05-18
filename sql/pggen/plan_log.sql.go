@@ -19,7 +19,7 @@ RETURNING *;`
 
 type InsertPlanLogChunkRow struct {
 	PlanID  string `json:"plan_id"`
-	ChunkID int32  `json:"chunk_id"`
+	ChunkID int    `json:"chunk_id"`
 	Chunk   []byte `json:"chunk"`
 }
 
@@ -61,8 +61,8 @@ GROUP BY plan_id
 ;`
 
 type FindPlanLogChunksParams struct {
-	Offset int32
-	Limit  int32
+	Offset int
+	Limit  int
 	PlanID string
 }
 

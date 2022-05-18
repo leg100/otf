@@ -19,7 +19,7 @@ RETURNING *;`
 
 type InsertApplyLogChunkRow struct {
 	ApplyID string `json:"apply_id"`
-	ChunkID int32  `json:"chunk_id"`
+	ChunkID int    `json:"chunk_id"`
 	Chunk   []byte `json:"chunk"`
 }
 
@@ -61,8 +61,8 @@ GROUP BY apply_id
 ;`
 
 type FindApplyLogChunksParams struct {
-	Offset  int32
-	Limit   int32
+	Offset  int
+	Limit   int
 	ApplyID string
 }
 

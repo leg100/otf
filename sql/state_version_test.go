@@ -24,7 +24,7 @@ func TestStateVersion_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	want := createTestStateVersion(t, db, ws, appendOutput("out1", "string", "val1", false))
+	sv := createTestStateVersion(t, db, ws, appendOutput("out1", "string", "val1", false))
 
 	tests := []struct {
 		name string
@@ -33,9 +33,11 @@ func TestStateVersion_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			opts: otf.StateVersionGetOptions{ID: otf.String(want.ID)},
+			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID)},
 			want: func(t *testing.T, got *otf.StateVersion, err error) {
-				assert.Equal(t, want, got)
+				if assert.NoError(t, err) {
+					assert.Equal(t, sv, got)
+				}
 			},
 		},
 		{
@@ -49,7 +51,9 @@ func TestStateVersion_Get(t *testing.T) {
 			name: "by workspace",
 			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
 			want: func(t *testing.T, got *otf.StateVersion, err error) {
-				assert.Equal(t, want, got)
+				if assert.NoError(t, err) {
+					assert.Equal(t, sv, got)
+				}
 			},
 		},
 		{

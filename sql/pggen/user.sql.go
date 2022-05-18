@@ -14,12 +14,14 @@ const insertUserSQL = `INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username
+    username,
+    current_organization
 ) VALUES (
     $1,
     current_timestamp,
     current_timestamp,
-    $2
+    $2,
+    ''
 )
 RETURNING created_at, updated_at;`
 
@@ -66,11 +68,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUsersRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -161,11 +163,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByIDRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -234,11 +236,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByUsernameRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -307,11 +309,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUserBySessionTokenRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -380,11 +382,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -453,11 +455,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenIDRow struct {
-	UserID              *string         `json:"user_id"`
-	Username            *string         `json:"username"`
+	UserID              string          `json:"user_id"`
+	Username            string          `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization *string         `json:"current_organization"`
+	CurrentOrganization string          `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -525,7 +527,7 @@ type UpdateUserCurrentOrganizationRow struct {
 	Username            string    `json:"username"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
-	CurrentOrganization *string   `json:"current_organization"`
+	CurrentOrganization string    `json:"current_organization"`
 }
 
 // UpdateUserCurrentOrganization implements Querier.UpdateUserCurrentOrganization.

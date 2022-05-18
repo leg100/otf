@@ -149,13 +149,13 @@ type FindConfigurationVersionsByWorkspaceIDParams struct {
 }
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {
-	ConfigurationVersionID               *string                                `json:"configuration_version_id"`
+	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	UpdatedAt                            time.Time                              `json:"updated_at"`
-	AutoQueueRuns                        *bool                                  `json:"auto_queue_runs"`
-	Source                               *string                                `json:"source"`
-	Speculative                          *bool                                  `json:"speculative"`
-	Status                               *string                                `json:"status"`
+	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
+	Source                               string                                 `json:"source"`
+	Speculative                          bool                                   `json:"speculative"`
+	Status                               string                                 `json:"status"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
@@ -275,13 +275,13 @@ JOIN workspaces USING (workspace_id)
 WHERE configuration_version_id = $1;`
 
 type FindConfigurationVersionByIDRow struct {
-	ConfigurationVersionID               *string                                `json:"configuration_version_id"`
+	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	UpdatedAt                            time.Time                              `json:"updated_at"`
-	AutoQueueRuns                        *bool                                  `json:"auto_queue_runs"`
-	Source                               *string                                `json:"source"`
-	Speculative                          *bool                                  `json:"speculative"`
-	Status                               *string                                `json:"status"`
+	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
+	Source                               string                                 `json:"source"`
+	Speculative                          bool                                   `json:"speculative"`
+	Status                               string                                 `json:"status"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
@@ -349,13 +349,13 @@ WHERE workspace_id = $1
 ORDER BY configuration_versions.created_at DESC;`
 
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
-	ConfigurationVersionID               *string                                `json:"configuration_version_id"`
+	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	UpdatedAt                            time.Time                              `json:"updated_at"`
-	AutoQueueRuns                        *bool                                  `json:"auto_queue_runs"`
-	Source                               *string                                `json:"source"`
-	Speculative                          *bool                                  `json:"speculative"`
-	Status                               *string                                `json:"status"`
+	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
+	Source                               string                                 `json:"source"`
+	Speculative                          bool                                   `json:"speculative"`
+	Status                               string                                 `json:"status"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
@@ -423,13 +423,13 @@ WHERE configuration_version_id = $1
 FOR UPDATE;`
 
 type FindConfigurationVersionByIDForUpdateRow struct {
-	ConfigurationVersionID               *string                                `json:"configuration_version_id"`
+	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	UpdatedAt                            time.Time                              `json:"updated_at"`
-	AutoQueueRuns                        *bool                                  `json:"auto_queue_runs"`
-	Source                               *string                                `json:"source"`
-	Speculative                          *bool                                  `json:"speculative"`
-	Status                               *string                                `json:"status"`
+	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
+	Source                               string                                 `json:"source"`
+	Speculative                          bool                                   `json:"speculative"`
+	Status                               string                                 `json:"status"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }

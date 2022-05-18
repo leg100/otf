@@ -52,7 +52,7 @@ type InsertRunParams struct {
 	PlanID                 string
 	ApplyID                string
 	IsDestroy              bool
-	PositionInQueue        int32
+	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
 	Status                 string
@@ -192,18 +192,18 @@ type FindRunsParams struct {
 }
 
 type FindRunsRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -395,18 +395,18 @@ WHERE runs.run_id = $1
 ;`
 
 type FindRunByIDRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -544,18 +544,18 @@ WHERE runs.plan_id = $1
 ;`
 
 type FindRunByPlanIDRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -693,18 +693,18 @@ WHERE runs.apply_id = $1
 ;`
 
 type FindRunByApplyIDRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -843,18 +843,18 @@ FOR UPDATE
 ;`
 
 type FindRunByIDForUpdateRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -993,18 +993,18 @@ FOR UPDATE
 ;`
 
 type FindRunByPlanIDForUpdateRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -1143,18 +1143,18 @@ FOR UPDATE
 ;`
 
 type FindRunByApplyIDForUpdateRow struct {
-	RunID                 *string                 `json:"run_id"`
-	PlanID                *string                 `json:"plan_id"`
-	ApplyID               *string                 `json:"apply_id"`
+	RunID                 string                  `json:"run_id"`
+	PlanID                string                  `json:"plan_id"`
+	ApplyID               string                  `json:"apply_id"`
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
-	IsDestroy             *bool                   `json:"is_destroy"`
-	PositionInQueue       *int32                  `json:"position_in_queue"`
-	Refresh               *bool                   `json:"refresh"`
-	RefreshOnly           *bool                   `json:"refresh_only"`
-	Status                *string                 `json:"status"`
-	PlanStatus            *string                 `json:"plan_status"`
-	ApplyStatus           *string                 `json:"apply_status"`
+	IsDestroy             bool                    `json:"is_destroy"`
+	PositionInQueue       int                     `json:"position_in_queue"`
+	Refresh               bool                    `json:"refresh"`
+	RefreshOnly           bool                    `json:"refresh_only"`
+	Status                string                  `json:"status"`
+	PlanStatus            string                  `json:"plan_status"`
+	ApplyStatus           string                  `json:"apply_status"`
 	ReplaceAddrs          []string                `json:"replace_addrs"`
 	TargetAddrs           []string                `json:"target_addrs"`
 	PlannedChanges        *ResourceReport         `json:"planned_changes"`
@@ -1288,9 +1288,9 @@ WHERE run_id = $4
 ;`
 
 type UpdateRunPlannedChangesByRunIDParams struct {
-	Additions    int32
-	Changes      int32
-	Destructions int32
+	Additions    int
+	Changes      int
+	Destructions int
 	ID           string
 }
 
@@ -1324,9 +1324,9 @@ WHERE apply_id = $4
 ;`
 
 type UpdateRunAppliedChangesByApplyIDParams struct {
-	Additions    int32
-	Changes      int32
-	Destructions int32
+	Additions    int
+	Changes      int
+	Destructions int
 	ID           string
 }
 

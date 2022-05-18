@@ -1,109 +1,119 @@
 package otf
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/leg100/otf/sql/pggen"
 )
 
-type RunDBRow struct {
-	RunID                 string                    `json:"run_id"`
-	PlanID                string                    `json:"plan_id"`
-	ApplyID               string                    `json:"apply_id"`
-	CreatedAt             time.Time                 `json:"created_at"`
-	UpdatedAt             time.Time                 `json:"updated_at"`
-	IsDestroy             bool                      `json:"is_destroy"`
-	PositionInQueue       int                       `json:"position_in_queue"`
-	Refresh               bool                      `json:"refresh"`
-	RefreshOnly           bool                      `json:"refresh_only"`
-	Status                RunStatus                 `json:"status"`
-	PlanStatus            PlanStatus                `json:"plan_status"`
-	ApplyStatus           ApplyStatus               `json:"apply_status"`
-	ReplaceAddrs          []string                  `json:"replace_addrs"`
-	TargetAddrs           []string                  `json:"target_addrs"`
-	PlannedChanges        *ResourceReport           `json:"planned_changes"`
-	AppliedChanges        *ResourceReport           `json:"applied_changes"`
-	ConfigurationVersion  ConfigurationVersionDBRow `json:"configuration_version"`
-	Workspace             WorkspaceDBRow            `json:"workspace"`
-	RunStatusTimestamps   []RunStatusTimestamp      `json:"run_status_timestamps"`
-	PlanStatusTimestamps  []PlanStatusTimestamp     `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps []ApplyStatusTimestamp    `json:"apply_status_timestamps"`
+type RunDBResult struct {
+	RunID                 string                        `json:"run_id"`
+	PlanID                string                        `json:"plan_id"`
+	ApplyID               string                        `json:"apply_id"`
+	CreatedAt             time.Time                     `json:"created_at"`
+	UpdatedAt             time.Time                     `json:"updated_at"`
+	IsDestroy             bool                          `json:"is_destroy"`
+	PositionInQueue       int                           `json:"position_in_queue"`
+	Refresh               bool                          `json:"refresh"`
+	RefreshOnly           bool                          `json:"refresh_only"`
+	Status                string                        `json:"status"`
+	PlanStatus            string                        `json:"plan_status"`
+	ApplyStatus           string                        `json:"apply_status"`
+	ReplaceAddrs          []string                      `json:"replace_addrs"`
+	TargetAddrs           []string                      `json:"target_addrs"`
+	PlannedChanges        *pggen.ResourceReport         `json:"planned_changes"`
+	AppliedChanges        *pggen.ResourceReport         `json:"applied_changes"`
+	ConfigurationVersion  *pggen.ConfigurationVersions  `json:"configuration_version"`
+	Workspace             *pggen.Workspaces             `json:"workspace"`
+	RunStatusTimestamps   []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
+	PlanStatusTimestamps  []pggen.PlanStatusTimestamps  `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
 
-func UnmarshalRunListFromDB(pgresult interface{}) (runs []*Run, err error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var rows []RunDBRow
-	if err := json.Unmarshal(data, &rows); err != nil {
-		return nil, err
-	}
-
-	for _, row := range rows {
-		run, err := unmarshalRunDBRow(row)
-		if err != nil {
-			return nil, err
-		}
-		runs = append(runs, run)
-	}
-
-	return runs, nil
-}
-
-func UnmarshalRunFromDB(pgresult interface{}) (*Run, error) {
-	data, err := json.Marshal(pgresult)
-	if err != nil {
-		return nil, err
-	}
-	var row RunDBRow
-	if err := json.Unmarshal(data, &row); err != nil {
-		return nil, err
-	}
-
-	return unmarshalRunDBRow(row)
-}
-
-func unmarshalRunDBRow(row RunDBRow) (*Run, error) {
+func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
-		ID: row.RunID,
+		ID: result.RunID,
 		Timestamps: Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
+			CreatedAt: result.CreatedAt,
+			UpdatedAt: result.UpdatedAt,
 		},
-		IsDestroy:        row.IsDestroy,
-		PositionInQueue:  row.PositionInQueue,
-		Refresh:          row.Refresh,
-		RefreshOnly:      row.RefreshOnly,
-		Status:           row.Status,
-		StatusTimestamps: row.RunStatusTimestamps,
-		ReplaceAddrs:     row.ReplaceAddrs,
-		TargetAddrs:      row.TargetAddrs,
+		IsDestroy:        result.IsDestroy,
+		PositionInQueue:  result.PositionInQueue,
+		Refresh:          result.Refresh,
+		RefreshOnly:      result.RefreshOnly,
+		Status:           RunStatus(result.Status),
+		StatusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
+		ReplaceAddrs:     result.ReplaceAddrs,
+		TargetAddrs:      result.TargetAddrs,
 		Plan: &Plan{
-			ID:               row.PlanID,
-			Status:           row.PlanStatus,
-			ResourceReport:   row.PlannedChanges,
-			StatusTimestamps: row.PlanStatusTimestamps,
-			RunID:            row.RunID,
+			ID:               result.PlanID,
+			Status:           PlanStatus(result.PlanStatus),
+			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
+			StatusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
+			RunID:            result.RunID,
 		},
 		Apply: &Apply{
-			ID:               row.ApplyID,
-			Status:           row.ApplyStatus,
-			ResourceReport:   row.AppliedChanges,
-			StatusTimestamps: row.ApplyStatusTimestamps,
-			RunID:            row.RunID,
+			ID:               result.ApplyID,
+			Status:           ApplyStatus(result.ApplyStatus),
+			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
+			StatusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+			RunID:            result.RunID,
 		},
 	}
 
-	var err error
-	run.Workspace, err = UnmarshalWorkspaceFromDB(row.Workspace)
+	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
 	if err != nil {
 		return nil, err
 	}
+	run.Workspace = workspace
 
-	run.ConfigurationVersion, err = UnmarshalConfigurationVersionFromDB(row.ConfigurationVersion)
+	cv, err := unmarshalConfigurationVersionDBType(*result.ConfigurationVersion)
 	if err != nil {
 		return nil, err
 	}
+	run.ConfigurationVersion = cv
 
 	return &run, nil
+}
+
+func unmarshalResourceReportDBType(typ *pggen.ResourceReport) *ResourceReport {
+	if typ == nil {
+		return nil
+	}
+
+	return &ResourceReport{
+		Additions:    typ.Additions,
+		Changes:      typ.Changes,
+		Destructions: typ.Destructions,
+	}
+}
+
+func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
+	for _, ty := range typs {
+		timestamps = append(timestamps, RunStatusTimestamp{
+			Status:    RunStatus(ty.Status),
+			Timestamp: ty.Timestamp.Local(),
+		})
+	}
+	return timestamps
+}
+
+func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (timestamps []PlanStatusTimestamp) {
+	for _, ty := range typs {
+		timestamps = append(timestamps, PlanStatusTimestamp{
+			Status:    PlanStatus(ty.Status),
+			Timestamp: ty.Timestamp.Local(),
+		})
+	}
+	return timestamps
+}
+
+func unmarshalApplyStatusTimestampDBTypes(typs []pggen.ApplyStatusTimestamps) (timestamps []ApplyStatusTimestamp) {
+	for _, ty := range typs {
+		timestamps = append(timestamps, ApplyStatusTimestamp{
+			Status:    ApplyStatus(ty.Status),
+			Timestamp: ty.Timestamp.Local(),
+		})
+	}
+	return timestamps
 }

@@ -1,11 +1,9 @@
 package sql
 
 import (
-	"context"
 	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,8 +14,27 @@ func TestRun_Create(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	err := db.RunStore().Create(newTestRun(ws, cv))
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
+}
+
+func TestRun_Timestamps(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
+	require.NoError(t, err)
+
+	got, err := db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
+	require.NoError(t, err)
+
+	assert.Equal(t, run.CreatedAt, got.CreatedAt)
+	assert.Equal(t, run.CreatedAt.UTC(), got.CreatedAt.UTC())
+	assert.True(t, run.CreatedAt.Equal(got.CreatedAt))
 }
 
 func TestRun_UpdateStatus(t *testing.T) {
@@ -141,16 +158,6 @@ func TestRun_List(t *testing.T) {
 			},
 		},
 		{
-			name: "by statuses, without specifying workspace",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
-			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 3, len(l.Items))
-				assert.Contains(t, l.Items, run1)
-				assert.Contains(t, l.Items, run2)
-				assert.Contains(t, l.Items, run3)
-			},
-		},
-		{
 			name: "by statuses - no match",
 			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
@@ -189,26 +196,4 @@ func TestRun_CreatePlanReport(t *testing.T) {
 
 	assert.NotNil(t, run.Plan.ResourceReport)
 	assert.Equal(t, &report, run.Plan.ResourceReport)
-}
-
-func TestRun_Unmarshal(t *testing.T) {
-	testdb := newTestDB(t)
-	org := createTestOrganization(t, testdb)
-	ws := createTestWorkspace(t, testdb, org)
-	cv := createTestConfigurationVersion(t, testdb, ws)
-	run := createTestRun(t, testdb, ws, cv)
-
-	conn := testdb.(db).Pool
-	q := pggen.NewQuerier(conn)
-	row, err := q.FindRunByID(context.Background(), run.ID)
-	require.NoError(t, err)
-
-	got, err := otf.UnmarshalRunFromDB(row)
-	require.NoError(t, err)
-
-	assert.Equal(t, run.ID, got.ID)
-	assert.Equal(t, run.StatusTimestamps, got.StatusTimestamps)
-	assert.Equal(t, run.Workspace, got.Workspace)
-	assert.Equal(t, run.Workspace.Organization, got.Workspace.Organization)
-	assert.Equal(t, run, got)
 }

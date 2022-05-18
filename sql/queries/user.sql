@@ -3,12 +3,14 @@ INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username
+    username,
+    current_organization
 ) VALUES (
     pggen.arg('ID'),
     current_timestamp,
     current_timestamp,
-    pggen.arg('Username')
+    pggen.arg('Username'),
+    ''
 )
 RETURNING created_at, updated_at;
 

@@ -36,7 +36,7 @@ type InsertTokenParams struct {
 
 type InsertTokenRow struct {
 	TokenID     string    `json:"token_id"`
-	Token       *string   `json:"token"`
+	Token       string    `json:"token"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Description string    `json:"description"`

@@ -82,23 +82,37 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	q := pggen.NewQuerier(tx)
 
 	// select ...for update
-	var result interface{}
+	var run *otf.Run
 	switch {
 	case opts.ID != nil:
-		result, err = q.FindRunByIDForUpdate(ctx, *opts.ID)
+		result, err := q.FindRunByIDForUpdate(ctx, *opts.ID)
+		if err != nil {
+			return nil, err
+		}
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		if err != nil {
+			return nil, err
+		}
 	case opts.PlanID != nil:
-		result, err = q.FindRunByPlanIDForUpdate(ctx, *opts.PlanID)
+		result, err := q.FindRunByPlanIDForUpdate(ctx, *opts.PlanID)
+		if err != nil {
+			return nil, err
+		}
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		if err != nil {
+			return nil, err
+		}
 	case opts.ApplyID != nil:
-		result, err = q.FindRunByApplyIDForUpdate(ctx, *opts.ApplyID)
+		result, err := q.FindRunByApplyIDForUpdate(ctx, *opts.ApplyID)
+		if err != nil {
+			return nil, err
+		}
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("invalid run get spec")
-	}
-	if err != nil {
-		return nil, err
-	}
-	run, err := otf.UnmarshalRunFromDB(result)
-	if err != nil {
-		return nil, err
 	}
 
 	// Make copies of statuses before update
@@ -155,9 +169,9 @@ func (db RunDB) CreatePlanReport(runID string, report otf.ResourceReport) error 
 
 	result, err := q.UpdateRunPlannedChangesByRunID(ctx, pggen.UpdateRunPlannedChangesByRunIDParams{
 		ID:           runID,
-		Additions:    int32(report.Additions),
-		Changes:      int32(report.Changes),
-		Destructions: int32(report.Destructions),
+		Additions:    report.Additions,
+		Changes:      report.Changes,
+		Destructions: report.Destructions,
 	})
 	if err != nil {
 		return err
@@ -175,9 +189,9 @@ func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) er
 
 	result, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
 		ID:           applyID,
-		Additions:    int32(summary.Additions),
-		Changes:      int32(summary.Changes),
-		Destructions: int32(summary.Destructions),
+		Additions:    summary.Additions,
+		Changes:      summary.Changes,
+		Destructions: summary.Destructions,
 	})
 	if err != nil {
 		return err
@@ -200,7 +214,7 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		if err != nil {
 			return nil, err
 		}
-		workspaceID = *wid
+		workspaceID = wid
 	} else if opts.WorkspaceID != nil {
 		workspaceID = *opts.WorkspaceID
 	} else {
@@ -235,13 +249,17 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 		return nil, err
 	}
 
-	runs, err := otf.UnmarshalRunListFromDB(rows)
-	if err != nil {
-		return nil, err
+	var items []*otf.Run
+	for _, r := range rows {
+		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, run)
 	}
 
 	return &otf.RunList{
-		Items:      runs,
+		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
@@ -256,19 +274,19 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalRunFromDB(result)
+		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 	} else if opts.PlanID != nil {
 		result, err := q.FindRunByPlanID(ctx, *opts.PlanID)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalRunFromDB(result)
+		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 	} else if opts.ApplyID != nil {
 		result, err := q.FindRunByApplyID(ctx, *opts.ApplyID)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalRunFromDB(result)
+		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 	} else {
 		return nil, fmt.Errorf("no ID specified")
 	}

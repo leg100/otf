@@ -73,3 +73,5 @@ require (
 )
 
 //replace github.com/leg100/go-tfe => ../go-tfe
+
+replace github.com/jackc/pgtype => ../pgtype
