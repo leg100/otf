@@ -127,17 +127,17 @@ func ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion) *Configurat
 		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID),
 	}
 
-	for k, v := range cv.StatusTimestamps {
+	for _, ts := range cv.StatusTimestamps {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &CVStatusTimestamps{}
 		}
-		switch otf.ConfigurationStatus(k) {
+		switch ts.Status {
 		case otf.ConfigurationPending:
-			obj.StatusTimestamps.QueuedAt = &v
+			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.ConfigurationErrored:
-			obj.StatusTimestamps.FinishedAt = &v
+			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.ConfigurationUploaded:
-			obj.StatusTimestamps.StartedAt = &v
+			obj.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 

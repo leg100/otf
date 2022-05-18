@@ -163,8 +163,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add org name from path to opts
-	organizationName := vars["org"]
-	opts.OrganizationName = &organizationName
+	opts.OrganizationName = vars["org"]
 
 	obj, err := s.WorkspaceService().List(r.Context(), opts)
 	if err != nil {

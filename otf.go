@@ -6,11 +6,12 @@ package otf
 import (
 	crypto "crypto/rand"
 	"encoding/base64"
+	"math"
 	"math/rand"
 	"regexp"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgtype"
 )
 
 const (
@@ -55,7 +56,6 @@ type Application interface {
 
 // DB provides access to oTF database
 type DB interface {
-	Handle() *sqlx.DB
 	Close() error
 
 	OrganizationStore() OrganizationStore
@@ -66,6 +66,8 @@ type DB interface {
 	PlanLogStore() PlanLogStore
 	ApplyLogStore() ApplyLogStore
 	UserStore() UserStore
+	SessionStore() SessionStore
+	TokenStore() TokenStore
 }
 
 // Updateable is an obj that records when it was updated.
@@ -104,12 +106,51 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
-// Resources summaries updates to a workspace's resources, either proposed as
-// part of a plan, or made as a result of an apply.
-type Resources struct {
-	ResourceAdditions    int `db:"resource_additions"`
-	ResourceChanges      int `db:"resource_changes"`
-	ResourceDestructions int `db:"resource_destructions"`
+var _ pgtype.BinaryDecoder = (*ResourceReport)(nil)
+
+// ResourceReport reports a summary of additions, changes, and deletions of
+// resources in a plan or an apply.
+type ResourceReport struct {
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
+}
+
+func (t *ResourceReport) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
+	r := pgtype.Record{
+		Fields: []pgtype.Value{&pgtype.Int4{}, &pgtype.Int4{}, &pgtype.Int4{}},
+	}
+
+	if err := r.DecodeBinary(ci, src); err != nil {
+		return err
+	}
+
+	// NULL -> nil
+	if r.Status != pgtype.Present {
+		t = nil
+		return nil
+	}
+
+	a := r.Fields[0].(*pgtype.Int4)
+	b := r.Fields[1].(*pgtype.Int4)
+	c := r.Fields[2].(*pgtype.Int4)
+
+	// type compatibility is checked by AssignTo
+	// only lossless assignments will succeed
+	if err := a.AssignTo(&t.Additions); err != nil {
+		return err
+	}
+
+	// AssignTo also deals with null value handling
+	if err := b.AssignTo(&t.Changes); err != nil {
+		return err
+	}
+
+	// AssignTo also deals with null value handling
+	if err := c.AssignTo(&t.Destructions); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Pagination is used to return the pagination details of an API request.
@@ -132,23 +173,24 @@ type ListOptions struct {
 }
 
 // GetOffset calculates the offset for use in SQL queries.
-func (o *ListOptions) GetOffset() uint64 {
+func (o *ListOptions) GetOffset() int {
 	if o.PageNumber == 0 {
 		return 0
 	}
 
-	return uint64((o.PageNumber - 1) * o.PageSize)
+	return (o.PageNumber - 1) * o.PageSize
 }
 
 // GetLimit calculates the limit for use in SQL queries.
-func (o *ListOptions) GetLimit() uint64 {
+func (o *ListOptions) GetLimit() int {
+	// TODO: remove MaxPageSize - this is too complicated
 	if o.PageSize == 0 {
-		return DefaultPageSize
+		return math.MaxInt
 	} else if o.PageSize > MaxPageSize {
 		return MaxPageSize
 	}
 
-	return uint64(o.PageSize)
+	return o.PageSize
 }
 
 // validString checks if the given input is present and non-empty.
@@ -169,8 +211,8 @@ func validSemanticVersion(v string) bool {
 }
 
 type Timestamps struct {
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func (m *Timestamps) SetUpdatedAt(t time.Time) {

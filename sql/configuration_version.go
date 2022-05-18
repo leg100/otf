@@ -1,179 +1,172 @@
 package sql
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
 	_ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
-
-	configurationVersionColumns = []string{
-		"configuration_version_id",
-		"created_at",
-		"updated_at",
-		"auto_queue_runs",
-		"source",
-		"speculative",
-		"status",
-		"status_timestamps",
-	}
-
-	insertConfigurationVersionSQL = fmt.Sprintf("INSERT INTO configuration_versions (%s, workspace_id) VALUES (%s, :workspaces.workspace_id)",
-		strings.Join(configurationVersionColumns, ", "),
-		strings.Join(otf.PrefixSlice(configurationVersionColumns, ":"), ", "))
 )
 
 type ConfigurationVersionDB struct {
-	*sqlx.DB
+	*pgxpool.Pool
 }
 
-func NewConfigurationVersionDB(db *sqlx.DB) *ConfigurationVersionDB {
+func NewConfigurationVersionDB(conn *pgxpool.Pool) *ConfigurationVersionDB {
 	return &ConfigurationVersionDB{
-		DB: db,
+		Pool: conn,
 	}
 }
 
 func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
-	sql, args, err := db.BindNamed(insertConfigurationVersionSQL, cv)
-	if err != nil {
-		return nil, err
-	}
-	_, err = db.Exec(sql, args...)
-	if err != nil {
-		return nil, err
-	}
+	ctx := context.Background()
 
-	return cv, nil
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	q := pggen.NewQuerier(tx)
+
+	result, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+		ID:            cv.ID,
+		AutoQueueRuns: cv.AutoQueueRuns,
+		Source:        string(cv.Source),
+		Speculative:   cv.Speculative,
+		Status:        string(cv.Status),
+		WorkspaceID:   cv.Workspace.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	cv.CreatedAt = result.CreatedAt
+	cv.UpdatedAt = result.UpdatedAt
+
+	// Insert timestamp for current status
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID, string(cv.Status))
+	if err != nil {
+		return nil, err
+	}
+	cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
+		Status:    otf.ConfigurationStatus(ts.Status),
+		Timestamp: ts.Timestamp,
+	})
+
+	return cv, tx.Commit(ctx)
 }
 
-// Update persists an updated ConfigurationVersion to the DB. The existing run
-// is fetched from the DB, the supplied func is invoked on the run, and the
-// updated run is persisted back to the DB. The returned ConfigurationVersion
-// includes any changes, including a new UpdatedAt value.
-func (db ConfigurationVersionDB) Update(id string, fn func(*otf.ConfigurationVersion) error) (*otf.ConfigurationVersion, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
-
-	cv, err := getConfigurationVersion(tx, otf.ConfigurationVersionGetOptions{ID: &id})
+func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer tx.Rollback(ctx)
 
-	// Make a copy for comparison with the updated obj
-	before, err := copystructure.Copy(cv)
+	q := pggen.NewQuerier(tx)
+
+	// select ...for update
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, id)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	// Update obj using client-supplied fn
-	if err := fn(cv); err != nil {
-		return nil, err
-	}
-
-	updated, err := update(db.Mapper, tx, "configuration_versions", "configuration_version_id", before.(*otf.ConfigurationVersion), cv)
+	cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if updated {
-		return cv, tx.Commit()
+	if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
+		return err
 	}
 
-	return cv, tx.Commit()
+	return tx.Commit(ctx)
 }
 
 func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	selectBuilder := psql.Select().
-		From("configuration_versions").
-		Join("workspaces USING (workspace_id)").
-		Where("workspaces.workspace_id = ?", workspaceID)
+	q := pggen.NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
+	ctx := context.Background()
 
-	var count int
-	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
-		return nil, fmt.Errorf("counting total rows: %w", err)
+	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
+		WorkspaceID: workspaceID,
+		Limit:       opts.GetLimit(),
+		Offset:      opts.GetOffset(),
+	})
+	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, workspaceID)
+
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindConfigurationVersionsByWorkspaceIDScan(results)
+	if err != nil {
+		return nil, err
 	}
-
-	selectBuilder = selectBuilder.
-		Columns(asColumnList("configuration_versions", false, configurationVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
-
-	sql, args, err := selectBuilder.ToSql()
+	count, err := q.CountConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
 
 	var items []*otf.ConfigurationVersion
-	if err := db.Select(&items, sql, args...); err != nil {
-		return nil, err
+	for _, r := range rows {
+		cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, cv)
 	}
 
 	return &otf.ConfigurationVersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	return getConfigurationVersion(db.DB, opts)
+	ctx := context.Background()
+	q := pggen.NewQuerier(db.Pool)
+
+	if opts.ID != nil {
+		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
+		if err != nil {
+			return nil, err
+		}
+		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+	} else if opts.WorkspaceID != nil {
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+	} else {
+		return nil, fmt.Errorf("no configuration version spec provided")
+	}
+}
+
+func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
+	q := pggen.NewQuerier(db.Pool)
+
+	return q.DownloadConfigurationVersion(ctx, id)
 }
 
 // Delete deletes a configuration version from the DB
 func (db ConfigurationVersionDB) Delete(id string) error {
-	tx := db.MustBegin()
-	defer tx.Rollback()
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
 
-	cv, err := getConfigurationVersion(tx, otf.ConfigurationVersionGetOptions{ID: otf.String(id)})
+	result, err := q.DeleteConfigurationVersionByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM configuration_versions WHERE id = $1", cv.ID)
-	if err != nil {
-		return fmt.Errorf("unable to delete configuration_version: %w", err)
+	if result.RowsAffected() == 0 {
+		return otf.ErrResourceNotFound
 	}
 
-	return tx.Commit()
-}
-
-func getConfigurationVersion(getter Getter, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	columns := configurationVersionColumns
-
-	if opts.Config {
-		columns = append(columns, "config")
-	}
-
-	selectBuilder := psql.Select(asColumnList("configuration_versions", false, columns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Join("workspaces USING (workspace_id)").
-		From("configuration_versions")
-
-	switch {
-	case opts.ID != nil:
-		// Get config version by ID
-		selectBuilder = selectBuilder.Where("configuration_versions.configuration_version_id = ?", *opts.ID)
-	case opts.WorkspaceID != nil:
-		// Get latest config version for given workspace
-		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
-	default:
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	var cv otf.ConfigurationVersion
-	if err := getter.Get(&cv, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
-	}
-
-	return &cv, nil
+	return nil
 }

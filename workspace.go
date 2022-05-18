@@ -21,7 +21,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `db:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
+	ID string `json:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -43,12 +43,12 @@ type Workspace struct {
 	SourceName                 string
 	SourceURL                  string `db:"source_url"`
 	TerraformVersion           string
-	TriggerPrefixes            CSV
+	TriggerPrefixes            []string
 	VCSRepo                    *VCSRepo
 	WorkingDirectory           string
 
 	// Workspace belongs to an organization
-	Organization *Organization `db:"organizations"`
+	Organization *Organization `json:"organization"`
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -267,12 +267,12 @@ type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, fn func(*Workspace) error) (*Workspace, error)
+	Update(spec WorkspaceSpec, ws func(ws *Workspace) (bool, error)) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 
-// WorkspaceSpec is used for identifying an individual workspace. Either ID
-// *or* both Name and OrganizationName must be specfiied.
+// WorkspaceSpec is used for identifying an individual workspace. Either ID *or*
+// both Name and OrganizationName must be specfiied.
 type WorkspaceSpec struct {
 	// Specify workspace using its ID
 	ID *string `db:"workspace_id"`
@@ -282,17 +282,27 @@ type WorkspaceSpec struct {
 	OrganizationName *string `schema:"organization_name"`
 }
 
+func (spec WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
+	if spec.ID != nil {
+		keysAndValues = append(keysAndValues, "id", *spec.ID)
+	}
+	if spec.Name != nil && spec.OrganizationName != nil {
+		keysAndValues = append(keysAndValues, "name", *spec.Name, "organization", *spec.OrganizationName)
+	}
+	return keysAndValues
+}
+
 // WorkspaceListOptions are options for paginating and filtering a list of
 // Workspaces
 type WorkspaceListOptions struct {
 	// Pagination
 	ListOptions
 
-	// Optionally filter workspaces with name matching prefix
-	Prefix *string `schema:"search[name],omitempty"`
+	// Filter workspaces with name matching prefix.
+	Prefix string `schema:"search[name],omitempty"`
 
-	// OrganizationName filters workspaces by organization name
-	OrganizationName *string `schema:"organization_name,omitempty"`
+	// OrganizationName filters workspaces by organization name. Required.
+	OrganizationName string `schema:"organization_name,omitempty"`
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
@@ -439,55 +449,6 @@ func (o WorkspaceUpdateOptions) Valid() error {
 	return nil
 }
 
-func UpdateWorkspace(ws *Workspace, opts WorkspaceUpdateOptions) (*Workspace, error) {
-	if opts.Name != nil {
-		ws.Name = *opts.Name
-	}
-
-	if opts.AllowDestroyPlan != nil {
-		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
-	}
-	if opts.AutoApply != nil {
-		ws.AutoApply = *opts.AutoApply
-	}
-	if opts.Description != nil {
-		ws.Description = *opts.Description
-	}
-	if opts.ExecutionMode != nil {
-		ws.ExecutionMode = *opts.ExecutionMode
-	}
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
-	if opts.Operations != nil {
-		if *opts.Operations {
-			ws.ExecutionMode = "remote"
-		} else {
-			ws.ExecutionMode = "local"
-		}
-	}
-	if opts.QueueAllRuns != nil {
-		ws.QueueAllRuns = *opts.QueueAllRuns
-	}
-	if opts.SpeculativeEnabled != nil {
-		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
-	}
-	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
-	}
-	if opts.TerraformVersion != nil {
-		ws.TerraformVersion = *opts.TerraformVersion
-	}
-	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
-	}
-	if opts.WorkingDirectory != nil {
-		ws.WorkingDirectory = *opts.WorkingDirectory
-	}
-
-	return ws, nil
-}
-
 // ToggleLock toggles the workspace lock.
 func (ws *Workspace) ToggleLock(lock bool) error {
 	if lock && ws.Locked {
@@ -500,6 +461,67 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	ws.Locked = lock
 
 	return nil
+}
+
+func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) (updated bool, err error) {
+	if opts.Name != nil {
+		ws.Name = *opts.Name
+		updated = true
+	}
+	if opts.AllowDestroyPlan != nil {
+		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+		updated = true
+	}
+	if opts.AutoApply != nil {
+		ws.AutoApply = *opts.AutoApply
+		updated = true
+	}
+	if opts.Description != nil {
+		ws.Description = *opts.Description
+		updated = true
+	}
+	if opts.ExecutionMode != nil {
+		ws.ExecutionMode = *opts.ExecutionMode
+		updated = true
+	}
+	if opts.FileTriggersEnabled != nil {
+		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+		updated = true
+	}
+	if opts.Operations != nil {
+		if *opts.Operations {
+			ws.ExecutionMode = "remote"
+		} else {
+			ws.ExecutionMode = "local"
+		}
+		updated = true
+	}
+	if opts.QueueAllRuns != nil {
+		ws.QueueAllRuns = *opts.QueueAllRuns
+		updated = true
+	}
+	if opts.SpeculativeEnabled != nil {
+		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+		updated = true
+	}
+	if opts.StructuredRunOutputEnabled != nil {
+		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+		updated = true
+	}
+	if opts.TerraformVersion != nil {
+		ws.TerraformVersion = *opts.TerraformVersion
+		updated = true
+	}
+	if opts.TriggerPrefixes != nil {
+		ws.TriggerPrefixes = opts.TriggerPrefixes
+		updated = true
+	}
+	if opts.WorkingDirectory != nil {
+		ws.WorkingDirectory = *opts.WorkingDirectory
+		updated = true
+	}
+
+	return updated, nil
 }
 
 func (spec *WorkspaceSpec) String() string {

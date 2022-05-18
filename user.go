@@ -63,7 +63,7 @@ func (u *User) String() string {
 }
 
 // TransferSession transfers a session from the receiver to another user.
-func (u *User) TransferSession(session *Session, to *User) {
+func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
 	// Update session's user reference
 	session.UserID = to.ID
 
@@ -75,8 +75,15 @@ func (u *User) TransferSession(session *Session, to *User) {
 		}
 	}
 
+	// Update in persistence store
+	if err := store.TransferSession(ctx, session.Token, to.ID); err != nil {
+		return err
+	}
+
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
+
+	return nil
 }
 
 // UserService provides methods to interact with user accounts and their
@@ -88,9 +95,6 @@ type UserService interface {
 	// EnsureCreated retrieves a user; if they don't exist they'll be created.
 	EnsureCreated(ctx context.Context, username string) (*User, error)
 
-	// Update updates the user. The username identifies the user to update.
-	Update(ctx context.Context, username string, updated *User) error
-
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 
@@ -100,8 +104,17 @@ type UserService interface {
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 
-	// UpdateSession persists any updates to the user's session data
-	UpdateSession(ctx context.Context, user *User, session *Session) error
+	// Transfer session from one user to another
+	TransferSession(ctx context.Context, from, to *User, session *Session) error
+
+	// PopFlash pops a flash message for the session identified by token.
+	PopFlash(ctx context.Context, token string) (*Flash, error)
+
+	// SetFlash sets a flash message for the session identified by token.
+	SetFlash(ctx context.Context, token string, flash *Flash) error
+
+	// SetCurrentOrganization sets the user's currently active organization
+	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
 
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
@@ -110,40 +123,43 @@ type UserService interface {
 	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
 
 	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, id string) error
+	DeleteToken(ctx context.Context, user *User, tokenID string) error
+
+	// SyncOrganizationMemberships synchronises a user's organization
+	// memberships, adding and removing them accordingly.
+	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
 }
 
-// UserStore is a persistence store for user accounts and their associated
-// sessions.
-type UserStore interface {
-	Create(ctx context.Context, user *User) error
+// SyncOrganizationMemberships synchronises a user's organization
+// memberships, taking an authoritative list of memberships and ensuring its
+// memberships match, adding and removing memberships accordingly.
+func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
+	// Iterate thru authoritative and if not in user's membership, add to db
+	for _, auth := range authoritative {
+		if !inOrganizationList(auth.ID, u.Organizations) {
+			if err := store.AddOrganizationMembership(ctx, u.ID, auth.ID); err != nil {
+				return err
+			}
+		}
+	}
 
-	// Update updates the user account in the persistence store.
-	Update(ctx context.Context, spec UserSpec, updated *User) error
+	// Iterate thru existing and if not in authoritative list, remove from db
+	for _, existing := range u.Organizations {
+		if !inOrganizationList(existing.ID, authoritative) {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID, existing.ID); err != nil {
+				return err
+			}
+		}
+	}
 
-	Get(ctx context.Context, spec UserSpec) (*User, error)
+	// ...and update receiver too.
+	u.Organizations = authoritative
 
-	List(ctx context.Context) ([]*User, error)
-
-	Delete(ctx context.Context, spec UserSpec) error
-
-	// CreateSession persists a new session to the store.
-	CreateSession(ctx context.Context, session *Session) error
-
-	// UpdateSession persists any updates to a user's session
-	UpdateSession(ctx context.Context, token string, updated *Session) error
-
-	// DeleteSession deletes a session
-	DeleteSession(ctx context.Context, token string) error
-
-	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, token *Token) error
-
-	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, id string) error
+	return nil
 }
 
 type UserSpec struct {
+	UserID                *string
 	Username              *string
 	SessionToken          *string
 	AuthenticationTokenID *string
@@ -182,4 +198,13 @@ func NewUser(username string) *User {
 	}
 
 	return &user
+}
+
+func inOrganizationList(orgID string, orgs []*Organization) bool {
+	for _, org := range orgs {
+		if org.ID == orgID {
+			return true
+		}
+	}
+	return false
 }

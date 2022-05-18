@@ -71,11 +71,7 @@ func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Work
 
 // List all the workspaces within an organization.
 func (s *workspaces) List(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	if !otf.ValidStringID(options.OrganizationName) {
-		return nil, otf.ErrInvalidOrg
-	}
-
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
 	req, err := s.client.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err

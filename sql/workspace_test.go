@@ -48,9 +48,9 @@ func TestWorkspace_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
 
-			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) error {
+			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) (bool, error) {
 				ws.Description = "updated description"
-				return nil
+				return true, nil
 			})
 			require.NoError(t, err)
 
@@ -58,6 +58,8 @@ func TestWorkspace_Update(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "updated description", got.Description)
+
+			assert.True(t, got.UpdatedAt.After(got.CreatedAt))
 		})
 	}
 }
@@ -103,15 +105,8 @@ func TestWorkspace_List(t *testing.T) {
 		want func(*testing.T, *otf.WorkspaceList)
 	}{
 		{
-			name: "default",
-			opts: otf.WorkspaceListOptions{},
-			want: func(t *testing.T, l *otf.WorkspaceList) {
-				assert.Contains(t, l.Items, ws1, ws2)
-			},
-		},
-		{
 			name: "filter by org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, ws1)
@@ -120,7 +115,7 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String(ws1.Name[:5])},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, Prefix: ws1.Name[:5]},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 1, len(l.Items))
 				assert.Equal(t, ws1, l.Items[0])
@@ -128,16 +123,25 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by non-existent org",
-			opts: otf.WorkspaceListOptions{OrganizationName: otf.String("non-existent")},
+			opts: otf.WorkspaceListOptions{OrganizationName: "non-existent"},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
 		{
 			name: "filter by non-existent prefix",
-			opts: otf.WorkspaceListOptions{Prefix: otf.String("xyz")},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, Prefix: "xyz"},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name: "stray pagination",
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name, ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				// zero results but count should ignore pagination
+				assert.Equal(t, 0, len(l.Items))
+				assert.Equal(t, 2, l.TotalCount)
 			},
 		},
 	}
@@ -183,7 +187,7 @@ func TestWorkspace_Delete(t *testing.T) {
 			err := db.WorkspaceStore().Delete(tt.spec(ws))
 			require.NoError(t, err)
 
-			results, err := db.WorkspaceStore().List(otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name)})
+			results, err := db.WorkspaceStore().List(otf.WorkspaceListOptions{OrganizationName: org.Name})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(results.Items))

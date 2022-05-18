@@ -82,16 +82,18 @@ func NewEnvironment(
 // Execute executes a run (or anything with a Do(env)) and regardless of whether
 // it fails, it'll close the environment logs.
 func (e *Environment) Execute(run *otf.Run, job otf.Job) (err error) {
+	var errors *multierror.Error
+
 	if err := job.Do(run, e); err != nil {
-		err = multierror.Append(fmt.Errorf("executing run: %w", err))
+		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
 	}
 
 	// Mark the logs as fully uploaded
 	if err := e.out.Close(); err != nil {
-		err = multierror.Append(fmt.Errorf("closing logs: %w", err))
+		errors = multierror.Append(errors, fmt.Errorf("closing logs: %w", err))
 	}
 
-	return err
+	return errors.ErrorOrNil()
 }
 
 func (e *Environment) GetConfigurationVersionService() otf.ConfigurationVersionService {
@@ -139,9 +141,11 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	e.proc = cmd.Process
 
 	if err := cmd.Run(); err != nil {
-		e.Error(err, "running CLI step", "stderr", stderr.String())
+		e.Error(err, "executing command", "stderr", stderr.String(), "path", e.path)
 		return err
 	}
+
+	e.V(2).Info("executed command", "name", name, "args", args, "path", e.path)
 
 	return nil
 }

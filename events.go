@@ -11,6 +11,7 @@ const (
 	EventRunApplied            EventType = "run_applied"
 	EventRunPlanned            EventType = "run_planned"
 	EventRunPlannedAndFinished EventType = "run_planned_and_finished"
+	EventRunErrored            EventType = "run_errored"
 	EventPlanQueued            EventType = "plan_queued"
 	EventApplyQueued           EventType = "apply_queued"
 	EventError                 EventType = "error"

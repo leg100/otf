@@ -48,6 +48,7 @@ func TestOrganization_Get(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, org.Name, got.Name)
+	assert.Equal(t, org.ID, got.ID)
 }
 
 func TestOrganization_List(t *testing.T) {
@@ -65,20 +66,26 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 	_ = createTestOrganization(t, db)
 	_ = createTestOrganization(t, db)
 
-	orgs, err := db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
-	require.NoError(t, err)
+	t.Run("page one, two items per page", func(t *testing.T) {
+		orgs, err := db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 2}})
+		require.NoError(t, err)
 
-	assert.Equal(t, 2, len(orgs.Items))
+		assert.Equal(t, 2, len(orgs.Items))
+	})
 
-	orgs, err = db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
-	require.NoError(t, err)
+	t.Run("page one, one item per page", func(t *testing.T) {
+		orgs, err := db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}})
+		require.NoError(t, err)
 
-	assert.Equal(t, 1, len(orgs.Items))
+		assert.Equal(t, 1, len(orgs.Items))
+	})
 
-	orgs, err = db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
-	require.NoError(t, err)
+	t.Run("page two, one item per page", func(t *testing.T) {
+		orgs, err := db.OrganizationStore().List(otf.OrganizationListOptions{ListOptions: otf.ListOptions{PageNumber: 2, PageSize: 1}})
+		require.NoError(t, err)
 
-	assert.Equal(t, 1, len(orgs.Items))
+		assert.Equal(t, 1, len(orgs.Items))
+	})
 }
 
 func TestOrganization_Delete(t *testing.T) {

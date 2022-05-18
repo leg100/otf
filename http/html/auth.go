@@ -72,7 +72,8 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Transfer session from anonymous to named user.
-	if err = app.sessions.TransferSession(ctx, user); err != nil {
+	anon := app.sessions.GetUserFromContext(ctx)
+	if err := app.UserService().TransferSession(ctx, anon.User, user, anon.Session); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -99,7 +100,7 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 // request then no action is taken.
 func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := app.sessions.getUserFromContext(r.Context())
+		user := app.sessions.GetUserFromContext(r.Context())
 
 		current, ok := mux.Vars(r)["organization_name"]
 		if !ok {
@@ -109,7 +110,7 @@ func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 
 		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
 			user.CurrentOrganization = &current
-			if err := app.UserService().Update(r.Context(), user.Username, user.User); err != nil {
+			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID, current); err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -143,7 +144,7 @@ func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.getUserFromContext(r.Context())
+	user := app.sessions.GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -153,7 +154,7 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.getUserFromContext(r.Context())
+	user := app.sessions.GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -171,7 +172,7 @@ func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.getUserFromContext(r.Context())
+	user := app.sessions.GetUserFromContext(r.Context())
 
 	var opts otf.TokenCreateOptions
 	if err := decodeAll(r, &opts); err != nil {
@@ -191,7 +192,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.getUserFromContext(r.Context())
+	user := app.sessions.GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -201,13 +202,15 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.sessions.GetUserFromContext(r.Context())
+
 	id := r.FormValue("id")
 	if id == "" {
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := app.UserService().DeleteToken(r.Context(), id); err != nil {
+	if err := app.UserService().DeleteToken(r.Context(), user.User, id); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -249,7 +252,7 @@ func synchroniseOrganizations(
 	user *otf.User,
 	githubOrganization ...*github.Organization) error {
 
-	user.Organizations = []*otf.Organization{}
+	var orgs []*otf.Organization
 
 	for _, githubOrganization := range githubOrganization {
 		org, err := organizationService.EnsureCreated(ctx, otf.OrganizationCreateOptions{
@@ -258,10 +261,11 @@ func synchroniseOrganizations(
 		if err != nil {
 			return err
 		}
-		user.Organizations = append(user.Organizations, org)
+		orgs = append(orgs, org)
 	}
 
-	if err := userService.Update(ctx, user.Username, user); err != nil {
+	_, err := userService.SyncOrganizationMemberships(ctx, user, orgs)
+	if err != nil {
 		return err
 	}
 

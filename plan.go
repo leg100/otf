@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -29,22 +28,24 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string `db:"plan_id"`
+	ID string `json:"plan_id"`
 
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
-	// Resources is a summary of planned resource changes
-	Resources
+	// Resources is a report of planned resource changes
+	*ResourceReport
 
 	// Status is the current status
-	Status PlanStatus
+	Status PlanStatus `json:"plan_status"`
 
 	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps TimestampMap
+	StatusTimestamps []PlanStatusTimestamp `json:"plan_status_timestamps"`
 
 	// RunID is the ID of the Run the Plan belongs to.
-	RunID string
+	RunID string `json:"run_id"`
+}
+
+type PlanStatusTimestamp struct {
+	Status    PlanStatus
+	Timestamp time.Time
 }
 
 func (p *Plan) GetID() string     { return p.ID }
@@ -63,16 +64,19 @@ type PlanLogStore interface {
 
 func newPlan(runID string) *Plan {
 	return &Plan{
-		ID:               NewID("plan"),
-		Timestamps:       NewTimestamps(),
-		StatusTimestamps: make(TimestampMap),
-		RunID:            runID,
+		ID:    NewID("plan"),
+		RunID: runID,
+		// new plans always start off in pending state
+		Status: PlanPending,
 	}
 }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
-	if p.ResourceAdditions > 0 || p.ResourceChanges > 0 || p.ResourceDestructions > 0 {
+	if p.ResourceReport == nil {
+		return false
+	}
+	if p.Additions > 0 || p.Changes > 0 || p.Destructions > 0 {
 		return true
 	}
 	return false
@@ -103,20 +107,6 @@ func (p *Plan) Do(run *Run, env Environment) error {
 	return nil
 }
 
-// CalculateTotals produces a summary of planned changes using the provided plan
-// file (in json format) and updates the object with the summary.
-func (p *Plan) CalculateTotals(planJSON []byte) error {
-	planFile := PlanFile{}
-	if err := json.Unmarshal(planJSON, &planFile); err != nil {
-		return err
-	}
-
-	// Parse plan output
-	p.Resources = planFile.Changes()
-
-	return nil
-}
-
 // Start updates the plan to reflect its plan having started
 func (p *Plan) Start(run *Run) error {
 	if run.Status != RunPlanQueued {
@@ -130,27 +120,29 @@ func (p *Plan) Start(run *Run) error {
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish(run *Run) (*Event, error) {
+func (p *Plan) Finish(run *Run, opts JobFinishOptions) (*Event, error) {
+	if opts.Errored {
+		if err := run.UpdateStatus(RunErrored); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: run, Type: EventRunErrored}, nil
+	}
 	if !p.HasChanges() || run.IsSpeculative() {
-		run.UpdateStatus(RunPlannedAndFinished)
+		if err := run.UpdateStatus(RunPlannedAndFinished); err != nil {
+			return nil, err
+		}
 		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
 	}
 
-	run.UpdateStatus(RunPlanned)
-
-	if run.Workspace.AutoApply {
-		run.UpdateStatus(RunApplyQueued)
-		return &Event{Type: EventApplyQueued, Payload: run}, nil
+	if !run.Workspace.AutoApply {
+		if err := run.UpdateStatus(RunPlanned); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: run, Type: EventRunPlanned}, nil
 	}
 
-	return &Event{Payload: run, Type: EventRunPlanned}, nil
-}
-
-func (p *Plan) UpdateStatus(status PlanStatus) {
-	p.Status = status
-	p.setTimestamp(status)
-}
-
-func (p *Plan) setTimestamp(status PlanStatus) {
-	p.StatusTimestamps[string(status)] = time.Now()
+	if err := run.UpdateStatus(RunApplyQueued); err != nil {
+		return nil, err
+	}
+	return &Event{Type: EventApplyQueued, Payload: run}, nil
 }

@@ -25,6 +25,8 @@ func NewOrganizationService(db otf.OrganizationStore, logger logr.Logger, es otf
 }
 
 func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	// TODO: check whether org already exists first
+
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, err
@@ -74,9 +76,17 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	return s.db.Update(name, func(org *otf.Organization) error {
-		return otf.UpdateOrganization(org, opts)
+	org, err := s.db.Update(name, func(org *otf.Organization) error {
+		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
+	if err != nil {
+		s.Error(err, "updating organization", "name", name)
+		return nil, err
+	}
+
+	s.V(2).Info("updated organization", "name", name, "id", org.ID)
+
+	return org, nil
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {

@@ -37,10 +37,10 @@ type ApplyStatusTimestamps struct {
 func (a *Apply) ToDomain() *otf.Apply {
 	return &otf.Apply{
 		ID: a.ID,
-		Resources: otf.Resources{
-			ResourceAdditions:    a.ResourceAdditions,
-			ResourceChanges:      a.ResourceChanges,
-			ResourceDestructions: a.ResourceDestructions,
+		ResourceReport: &otf.ResourceReport{
+			Additions:    a.ResourceAdditions,
+			Changes:      a.ResourceChanges,
+			Destructions: a.ResourceDestructions,
 		},
 		Status: a.Status,
 	}
@@ -112,29 +112,31 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
-		ID:                   a.ID,
-		LogReadURL:           httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		ResourceAdditions:    a.ResourceAdditions,
-		ResourceChanges:      a.ResourceChanges,
-		ResourceDestructions: a.ResourceDestructions,
-		Status:               a.Status,
+		ID:         a.ID,
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
+		Status:     a.Status,
+	}
+	if a.ResourceReport != nil {
+		obj.ResourceAdditions = a.Additions
+		obj.ResourceChanges = a.Changes
+		obj.ResourceDestructions = a.Destructions
 	}
 
-	for k, v := range a.StatusTimestamps {
+	for _, ts := range a.StatusTimestamps {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &ApplyStatusTimestamps{}
 		}
-		switch otf.ApplyStatus(k) {
+		switch ts.Status {
 		case otf.ApplyCanceled:
-			obj.StatusTimestamps.CanceledAt = &v
+			obj.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.ApplyErrored:
-			obj.StatusTimestamps.ErroredAt = &v
+			obj.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.ApplyFinished:
-			obj.StatusTimestamps.FinishedAt = &v
+			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.ApplyQueued:
-			obj.StatusTimestamps.QueuedAt = &v
+			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.ApplyRunning:
-			obj.StatusTimestamps.StartedAt = &v
+			obj.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 

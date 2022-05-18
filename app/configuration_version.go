@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -77,12 +78,13 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.Configu
 
 // Upload a configuration version tarball
 func (s ConfigurationVersionService) Upload(id string, config []byte) error {
-	_, err := s.db.Update(id, func(cv *otf.ConfigurationVersion) error {
-		cv.Config = config
-		cv.Status = otf.ConfigurationUploaded
-
-		return nil
+	err := s.db.Upload(context.Background(), id, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+		return cv.Upload(context.Background(), config, uploader)
 	})
+	if err != nil {
+		s.Error(err, "uploading configuration version")
+		return err
+	}
 
 	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), config); err != nil {
 		return fmt.Errorf("caching configuration version tarball: %w", err)
@@ -101,14 +103,14 @@ func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
 		return config, nil
 	}
 
-	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id, Config: true})
+	config, err := s.db.GetConfig(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), cv.Config); err != nil {
+	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), config); err != nil {
 		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
 
-	return cv.Config, nil
+	return config, nil
 }

@@ -58,12 +58,14 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 		return err
 	}
 
+	s.V(2).Info("written plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
+
 	return nil
 }
 
 // Start marks a plan as having started
-func (s PlanService) Start(ctx context.Context, id string, opts otf.JobStartOptions) (*otf.Run, error) {
-	run, err := s.db.Update(otf.RunGetOptions{PlanID: otf.String(id)}, func(run *otf.Run) error {
+func (s PlanService) Start(ctx context.Context, planID string, opts otf.JobStartOptions) (*otf.Run, error) {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Plan.Start(run)
 	})
 	if err != nil {
@@ -78,22 +80,19 @@ func (s PlanService) Start(ctx context.Context, id string, opts otf.JobStartOpti
 
 // Finish marks a plan as having finished.  An event is emitted to notify any
 // subscribers of the new state.
-func (s PlanService) Finish(ctx context.Context, id string, opts otf.JobFinishOptions) (*otf.Run, error) {
+func (s PlanService) Finish(ctx context.Context, planID string, opts otf.JobFinishOptions) (*otf.Run, error) {
 	var event *otf.Event
 
-	run, err := s.db.Update(otf.RunGetOptions{PlanID: otf.String(id)}, func(run *otf.Run) (err error) {
-		event, err = run.Plan.Finish(run)
-		if err != nil {
-			return err
-		}
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
+		event, err = run.Plan.Finish(run, opts)
 		return err
 	})
 	if err != nil {
-		s.Error(err, "finishing plan", "id", id)
+		s.Error(err, "finishing plan", "id", planID)
 		return nil, err
 	}
 
-	s.V(0).Info("finished plan", "id", id)
+	s.V(0).Info("finished plan", "id", planID)
 
 	s.Publish(*event)
 

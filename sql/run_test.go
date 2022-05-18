@@ -14,40 +14,67 @@ func TestRun_Create(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	run, err := db.RunStore().Create(newTestRun(ws, cv))
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
-
-	// Ensure primary keys populated
-	assert.NotEmpty(t, run.ID)
-	assert.NotEmpty(t, run.Plan.ID)
-	assert.NotEmpty(t, run.Apply.ID)
-
-	// Ensure foreign keys populated
-	assert.NotEmpty(t, run.Plan.RunID)
-	assert.NotEmpty(t, run.Apply.RunID)
-	assert.NotEmpty(t, run.Workspace.ID)
-	assert.NotEmpty(t, run.ConfigurationVersion.ID)
 }
 
-func TestRun_Update(t *testing.T) {
+func TestRun_Timestamps(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
-	run := createTestRun(t, db, ws, cv)
 
-	_, err := db.RunStore().Update(otf.RunGetOptions{ID: &run.ID}, func(run *otf.Run) error {
-		run.Status = otf.RunPlanQueued
-		run.Plan.Status = otf.PlanQueued
-		return nil
-	})
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
 
-	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID)})
+	got, err := db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
 	require.NoError(t, err)
 
-	assert.Equal(t, otf.RunPlanQueued, got.Status)
-	assert.Equal(t, otf.PlanQueued, got.Plan.Status)
+	assert.Equal(t, run.CreatedAt, got.CreatedAt)
+	assert.Equal(t, run.CreatedAt.UTC(), got.CreatedAt.UTC())
+	assert.True(t, run.CreatedAt.Equal(got.CreatedAt))
+}
+
+func TestRun_UpdateStatus(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+
+	tests := []struct {
+		name   string
+		update func(run *otf.Run) error
+		want   func(*testing.T, *otf.Run)
+	}{
+		{
+			name: "enqueue plan",
+			update: func(run *otf.Run) error {
+				run.Status = otf.RunPlanQueued
+				return nil
+			},
+			want: func(t *testing.T, got *otf.Run) {
+				assert.Equal(t, otf.RunPlanQueued, got.Status)
+				assert.True(t, got.UpdatedAt.After(got.CreatedAt))
+
+				timestamp, found := got.FindRunStatusTimestamp(otf.RunPlanQueued)
+				assert.True(t, found)
+				assert.True(t, timestamp.After(got.CreatedAt))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := createTestRun(t, db, ws, cv)
+
+			got, err := db.RunStore().UpdateStatus(otf.RunGetOptions{ID: &run.ID}, tt.update)
+			require.NoError(t, err)
+
+			tt.want(t, got)
+		})
+	}
 }
 
 func TestRun_Get(t *testing.T) {
@@ -55,86 +82,118 @@ func TestRun_Get(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
-	run := createTestRun(t, db, ws, cv)
 
-	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID)})
-	require.NoError(t, err)
+	want := createTestRun(t, db, ws, cv)
 
-	// Assertion won't succeed unless transitive relations are nil (resources
-	// retrieved from the DB only possess immediate relations).
-	run.Workspace.Organization = nil
-	run.ConfigurationVersion.Workspace = nil
-	assert.Equal(t, run, got)
+	tests := []struct {
+		name string
+		opts otf.RunGetOptions
+	}{
+		{
+			name: "by id",
+			opts: otf.RunGetOptions{ID: &want.ID},
+		},
+		{
+			name: "by plan id",
+			opts: otf.RunGetOptions{PlanID: &want.Plan.ID},
+		},
+		{
+			name: "by apply id",
+			opts: otf.RunGetOptions{ApplyID: &want.Apply.ID},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.RunStore().Get(tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, want, got)
+		})
+	}
 }
 
 func TestRun_List(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
 
-	ws1 := createTestWorkspace(t, db, org)
-	cv1 := createTestConfigurationVersion(t, db, ws1)
-	run1 := createTestRun(t, db, ws1, cv1)
-
-	ws2 := createTestWorkspace(t, db, org)
-	cv2 := createTestConfigurationVersion(t, db, ws2)
-	run2 := createTestRun(t, db, ws2, cv2)
+	run1 := createTestRun(t, db, ws, cv)
+	run2 := createTestRun(t, db, ws, cv)
+	run3 := createTestRun(t, db, ws, cv)
 
 	tests := []struct {
 		name string
 		opts otf.RunListOptions
-		want func(*testing.T, *otf.RunList, ...*otf.Run)
+		want func(*testing.T, *otf.RunList)
 	}{
 		{
-			name: "default",
-			opts: otf.RunListOptions{},
-			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				for _, c := range created {
-					// Assertion won't succeed unless transitive relations are
-					// nil (resources retrieved from the DB only possess
-					// immediate relations).
-					c.Workspace.Organization = nil
-					c.ConfigurationVersion.Workspace = nil
-
-					assert.Contains(t, l.Items, c)
-				}
+			name: "by workspace id",
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
 			},
 		},
 		{
-			name: "filter by workspace ID",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID)},
-			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				assert.Equal(t, 1, len(l.Items))
+			name: "by workspace name and organization",
+			opts: otf.RunListOptions{WorkspaceName: &ws.Name, OrganizationName: &org.Name},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
 			},
 		},
 		{
-			name: "filter by organization and workspace name",
-			opts: otf.RunListOptions{OrganizationName: &org.Name, WorkspaceName: &ws1.Name},
-			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				assert.Equal(t, 1, len(l.Items))
+			name: "by statuses",
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPending}},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 3, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+				assert.Contains(t, l.Items, run3)
 			},
 		},
 		{
-			name: "filter by status - hit",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID), Statuses: []otf.RunStatus{otf.RunPending}},
-			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
-				assert.Equal(t, 1, len(l.Items))
-			},
-		},
-		{
-			name: "filter by status - miss",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID), Statuses: []otf.RunStatus{otf.RunApplied}},
-			want: func(t *testing.T, l *otf.RunList, created ...*otf.Run) {
+			name: "by statuses - no match",
+			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPlanned}},
+			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.RunStore().List(tt.opts)
+			got, err := db.RunStore().List(tt.opts)
 			require.NoError(t, err)
 
-			tt.want(t, results, run1, run2)
+			tt.want(t, got)
 		})
 	}
+}
+
+func TestRun_CreatePlanReport(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+
+	report := otf.ResourceReport{
+		Additions:    5,
+		Changes:      2,
+		Destructions: 99,
+	}
+
+	err := db.RunStore().CreatePlanReport(run.ID, report)
+	require.NoError(t, err)
+
+	run, err = db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
+	require.NoError(t, err)
+
+	assert.NotNil(t, run.Plan.ResourceReport)
+	assert.Equal(t, &report, run.Plan.ResourceReport)
 }

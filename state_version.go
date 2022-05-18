@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -21,14 +20,8 @@ type StateVersion struct {
 	VCSCommitSHA string
 	VCSCommitURL string
 
-	// State is state file itself. Note: not always populated.
+	// State is the state file itself.
 	State []byte
-
-	// State version belongs to a workspace
-	Workspace *Workspace `db:"workspaces"`
-
-	// Run that created this state version. Optional.
-	// Run     *Run
 
 	// State version has many outputs
 	Outputs []*StateVersionOutput `db:"state_version_outputs"`
@@ -52,8 +45,9 @@ type StateVersionService interface {
 }
 
 type StateVersionStore interface {
-	Create(sv *StateVersion) (*StateVersion, error)
+	Create(workspaceID string, sv *StateVersion) error
 	Get(opts StateVersionGetOptions) (*StateVersion, error)
+	GetState(id string) ([]byte, error)
 	List(opts StateVersionListOptions) (*StateVersionList, error)
 	Delete(id string) error
 }
@@ -66,9 +60,6 @@ type StateVersionGetOptions struct {
 
 	// Get current state version belonging to workspace with this ID
 	WorkspaceID *string
-
-	// State toggles retrieving the actual state file too.
-	State bool
 }
 
 // StateVersionListOptions represents the options for listing state versions.
@@ -107,23 +98,25 @@ type StateVersionCreateOptions struct {
 	Run *Run `jsonapi:"relation,run,omitempty"`
 }
 
-type StateVersionFactory struct {
-	WorkspaceService WorkspaceService
+type StateVersionFactory struct{}
+
+// Valid validates state version create options
+func (opts *StateVersionCreateOptions) Valid() error {
+	return nil
 }
 
-func (f *StateVersionFactory) NewStateVersion(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error) {
+func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
+	if err := opts.Valid(); err != nil {
+		return nil, fmt.Errorf("invalid create options: %w", err)
+	}
+
 	sv := StateVersion{
 		ID:         NewID("sv"),
 		Timestamps: NewTimestamps(),
 		Serial:     *opts.Serial,
 	}
 
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
-	if err != nil {
-		return nil, err
-	}
-	sv.Workspace = ws
-
+	var err error
 	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err

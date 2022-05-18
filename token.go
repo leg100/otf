@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// Token is a user session
+// Token is a user authentication token.
 type Token struct {
 	ID string `db:"token_id"`
 

@@ -1,8 +1,6 @@
 package otf
 
 import (
-	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -44,50 +42,31 @@ type SessionData struct {
 
 	// Web app flash message
 	Flash *Flash
-
-	// Current organization
-	Organization *string
 }
 
-func (sd *SessionData) SetFlash(t FlashType, msg ...interface{}) {
-	sd.Flash = &Flash{
-		Type:    t,
-		Message: fmt.Sprint(msg...),
-	}
-}
+const (
+	FlashSuccessType FlashType = "success"
+	FlashErrorType   FlashType = "error"
+)
 
-func (sd *SessionData) PopFlash() *Flash {
-	ret := sd.Flash
-	sd.Flash = nil
-	return ret
-}
+type FlashType string
 
 type Flash struct {
 	Type    FlashType
 	Message string
 }
 
-// Value : struct -> db
-func (f *Flash) Value() (driver.Value, error) {
-	if f == nil {
-		return nil, nil
-	}
-	return json.Marshal(f)
+func FlashSuccess(msg ...interface{}) *Flash {
+	return flash(FlashSuccessType, msg...)
 }
 
-// Scan : db -> struct
-func (f *Flash) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("type assertion to []byte failed")
-	}
-
-	return json.Unmarshal(b, &f)
+func FlashError(msg ...interface{}) *Flash {
+	return flash(FlashErrorType, msg...)
 }
 
-type FlashType string
-
-const (
-	FlashSuccessType FlashType = "success"
-	FlashErrorType   FlashType = "error"
-)
+func flash(t FlashType, msg ...interface{}) *Flash {
+	return &Flash{
+		Type:    t,
+		Message: fmt.Sprint(msg...),
+	}
+}

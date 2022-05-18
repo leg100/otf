@@ -22,7 +22,7 @@ go-tfe-tests: build
 
 .PHONY: e2e
 e2e: build
-	./hack/harness.bash go test ./e2e -failfast
+	./hack/harness.bash go test ./e2e -failfast -timeout 30s
 
 .PHONY: unit
 unit:
@@ -52,7 +52,7 @@ install-latest-release:
 # Run staticcheck metalinter recursively against code
 .PHONY: lint
 lint:
-	staticcheck ./...
+	staticcheck . ./agent ./app ./cmd/... ./http/... ./inmem ./sql
 
 # Run go fmt against code
 .PHONY: fmt
@@ -74,3 +74,19 @@ image: build
 push: image
 	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
 	docker push $(IMAGE_TARGET)
+
+# Generate sql code
+.PHONY: sql
+sql:
+	../pggen/dist/pggen-linux-amd64 gen go \
+		--postgres-connection "dbname=otf" \
+		--query-glob 'sql/queries/*.sql' \
+		--output-dir sql/pggen \
+		--go-type 'text=string' \
+		--go-type 'int4=int' \
+		--go-type 'bool=bool' \
+		--go-type 'timestamptz=time.Time' \
+		--go-type 'bytea=[]byte' \
+		--acronym url \
+		--acronym sha
+	go fmt ./sql

@@ -55,8 +55,10 @@ var (
 // RunStatus represents a run state.
 type RunStatus string
 
+func (r RunStatus) String() string { return string(r) }
+
 type Run struct {
-	ID string `db:"run_id" jsonapi:"primary,runs"`
+	ID string `db:"run_id" jsonapi:"primary,runs" json:"run_id"`
 
 	Timestamps
 
@@ -66,26 +68,20 @@ type Run struct {
 	Refresh          bool
 	RefreshOnly      bool
 	Status           RunStatus
-	StatusTimestamps TimestampMap
-	ReplaceAddrs     CSV
-	TargetAddrs      CSV
+	StatusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
+	ReplaceAddrs     []string
+	TargetAddrs      []string
 
 	// Relations
-	Plan                 *Plan                 `db:"plans"`
-	Apply                *Apply                `db:"applies"`
-	Workspace            *Workspace            `db:"workspaces"`
-	ConfigurationVersion *ConfigurationVersion `db:"configuration_versions"`
+	Plan                 *Plan
+	Apply                *Apply
+	Workspace            *Workspace            `json:"workspace"`
+	ConfigurationVersion *ConfigurationVersion `json:"configuration_version"`
 }
 
 type RunStatusTimestamp struct {
-	Status    RunStatus
-	Timestamp time.Time
-}
-
-// RunFactory is a factory for constructing Run objects.
-type RunFactory struct {
-	ConfigurationVersionService ConfigurationVersionService
-	WorkspaceService            WorkspaceService
+	Status    RunStatus `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // RunService implementations allow interactions with runs
@@ -93,13 +89,19 @@ type RunService interface {
 	// Create a new run with the given options.
 	Create(ctx context.Context, opts RunCreateOptions) (*Run, error)
 
+	// Get retrieves a run with the given ID.
 	Get(ctx context.Context, id string) (*Run, error)
+
+	// List lists runs according to the given options.
 	List(ctx context.Context, opts RunListOptions) (*RunList, error)
+
+	// Delete deletes a run with the given ID.
 	Delete(ctx context.Context, id string) error
 
-	// Apply a run by its ID.
+	// Apply a run with the given ID.
 	Apply(ctx context.Context, id string, opts RunApplyOptions) error
 
+	// Discard discards a run with the given ID.
 	Discard(ctx context.Context, id string, opts RunDiscardOptions) error
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
@@ -193,15 +195,31 @@ type RunPermissions struct {
 
 // RunStore implementations persist Run objects.
 type RunStore interface {
-	Create(run *Run) (*Run, error)
+	Create(run *Run) error
 	Get(opts RunGetOptions) (*Run, error)
 	SetPlanFile(id string, file []byte, format PlanFormat) error
 	GetPlanFile(id string, format PlanFormat) ([]byte, error)
 	List(opts RunListOptions) (*RunList, error)
-	// TODO: add support for a special error type that tells update to skip
-	// updates - useful when fn checks current fields and decides not to update
-	Update(opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	// UpdateStatus updates the run's status, providing a func with which to
+	// perform updates in a transaction.
+	UpdateStatus(opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	CreatePlanReport(planID string, report ResourceReport) error
+	CreateApplyReport(applyID string, report ResourceReport) error
 	Delete(id string) error
+}
+
+type RunStatusUpdates struct {
+	RunStatus   RunStatus
+	PlanStatus  *PlanStatus
+	ApplyStatus *ApplyStatus
+}
+
+// RunStatusUpdater persists updates to run statuses and returns timestamps of
+// when they were persisted.
+type RunStatusUpdater interface {
+	UpdateRunStatus(ctx context.Context, status RunStatus) (*Run, error)
+	UpdatePlanStatus(ctx context.Context, status PlanStatus) (*Plan, error)
+	UpdateApplyStatus(ctx context.Context, status ApplyStatus) (*Apply, error)
 }
 
 // RunList represents a list of runs.
@@ -292,9 +310,13 @@ func (r *Run) Cancel() error {
 }
 
 func (r *Run) ForceCancelAvailableAt() time.Time {
-	canceledAt, ok := r.StatusTimestamps[string(RunCanceled)]
-	if !ok {
+	if r.Status != RunCanceled {
 		return time.Time{}
+	}
+
+	canceledAt, found := r.FindRunStatusTimestamp(r.Status)
+	if !found {
+		panic("no corresponding timestamp found for canceled status")
 	}
 
 	// Run can be forcefully cancelled after a cool-off period of ten seconds
@@ -308,9 +330,7 @@ func (r *Run) ForceCancel() error {
 		return ErrRunForceCancelNotAllowed
 	}
 
-	r.setTimestamp(RunForceCanceled)
-
-	return nil
+	return r.UpdateStatus(RunForceCanceled)
 }
 
 // IsCancelable determines whether run can be cancelled.
@@ -378,48 +398,56 @@ func (r *Run) IsSpeculative() bool {
 	return r.ConfigurationVersion.Speculative
 }
 
+func (r *Run) ApplyRun() error {
+	return r.UpdateStatus(RunApplyQueued)
+}
+
+func (r *Run) EnqueuePlan() error {
+	return r.UpdateStatus(RunPlanQueued)
+}
+
 // UpdateStatus updates the status of the run as well as its plan and apply
-func (r *Run) UpdateStatus(status RunStatus) {
+func (r *Run) UpdateStatus(status RunStatus) error {
+	var err error
 	switch status {
 	case RunPending:
-		r.Plan.UpdateStatus(PlanPending)
+		r.Plan.Status = PlanPending
 	case RunPlanQueued:
-		r.Plan.UpdateStatus(PlanQueued)
+		r.Plan.Status = PlanQueued
 	case RunPlanning:
-		r.Plan.UpdateStatus(PlanRunning)
+		r.Plan.Status = PlanRunning
 	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.UpdateStatus(PlanFinished)
+		r.Plan.Status = PlanFinished
 	case RunApplyQueued:
-		r.Apply.UpdateStatus(ApplyQueued)
+		r.Apply.Status = ApplyQueued
 	case RunApplying:
-		r.Apply.UpdateStatus(ApplyRunning)
+		r.Apply.Status = ApplyRunning
 	case RunApplied:
-		r.Apply.UpdateStatus(ApplyFinished)
+		r.Apply.Status = ApplyFinished
 	case RunErrored:
 		switch r.Status {
 		case RunPlanning:
-			r.Plan.UpdateStatus(PlanErrored)
+			r.Plan.Status = PlanErrored
 		case RunApplying:
-			r.Apply.UpdateStatus(ApplyErrored)
+			r.Apply.Status = ApplyErrored
 		}
 	case RunCanceled:
 		switch r.Status {
 		case RunPlanQueued, RunPlanning:
-			r.Plan.UpdateStatus(PlanCanceled)
+			r.Plan.Status = PlanCanceled
 		case RunApplyQueued, RunApplying:
-			r.Apply.UpdateStatus(ApplyCanceled)
+			r.Apply.Status = ApplyCanceled
 		}
+	}
+	if err != nil {
+		return err
 	}
 
 	r.Status = status
-	r.setTimestamp(status)
 
-	// TODO: determine when ApplyUnreachable is applicable and set
-	// accordingly
-}
+	// TODO: determine when ApplyUnreachable is applicable and set accordingly
 
-func (r *Run) setTimestamp(status RunStatus) {
-	r.StatusTimestamps[string(status)] = time.Now()
+	return nil
 }
 
 // Do invokes the necessary steps before a plan or apply can proceed.
@@ -518,7 +546,7 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 	return os.WriteFile(filepath.Join(env.GetPath(), PlanFilename), plan, 0644)
 }
 
-// uploadState reads, parses, and uploads state
+// uploadState reads, parses, and uploads terraform state
 func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	stateFile, err := os.ReadFile(filepath.Join(env.GetPath(), LocalStateFilename))
 	if err != nil {
@@ -535,6 +563,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,
 		Serial:  Int64(state.Serial),
+		Run:     r,
 	})
 	if err != nil {
 		return err
@@ -543,57 +572,11 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-// NewRun constructs a run object.
-func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
-	if opts.Workspace == nil {
-		return nil, errors.New("workspace is required")
+func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
+	for _, rst := range r.StatusTimestamps {
+		if rst.Status == status {
+			return rst.Timestamp, true
+		}
 	}
-
-	id := NewID("run")
-	run := Run{
-		ID:               id,
-		Timestamps:       NewTimestamps(),
-		Refresh:          DefaultRefresh,
-		ReplaceAddrs:     opts.ReplaceAddrs,
-		TargetAddrs:      opts.TargetAddrs,
-		StatusTimestamps: make(TimestampMap),
-		Plan:             newPlan(id),
-		Apply:            newApply(id),
-	}
-
-	run.UpdateStatus(RunPending)
-
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &opts.Workspace.ID})
-	if err != nil {
-		return nil, err
-	}
-	run.Workspace = ws
-
-	cv, err := f.getConfigurationVersion(opts)
-	if err != nil {
-		return nil, err
-	}
-	run.ConfigurationVersion = cv
-
-	if opts.IsDestroy != nil {
-		run.IsDestroy = *opts.IsDestroy
-	}
-
-	if opts.Message != nil {
-		run.Message = *opts.Message
-	}
-
-	if opts.Refresh != nil {
-		run.Refresh = *opts.Refresh
-	}
-
-	return &run, nil
-}
-
-func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
-	// Unless CV ID provided, get workspace's latest CV
-	if opts.ConfigurationVersion != nil {
-		return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID)
-	}
-	return f.ConfigurationVersionService.GetLatest(opts.Workspace.ID)
+	return time.Time{}, false
 }

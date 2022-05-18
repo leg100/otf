@@ -33,22 +33,24 @@ type ApplyLogStore interface {
 
 // Apply represents a terraform apply
 type Apply struct {
-	ID string `db:"apply_id"`
+	ID string `json:"apply_id"`
 
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
-	// Resources is a summary of applied resource changes
-	Resources
+	// ResourcesReport is a report of applied resource changes
+	*ResourceReport
 
 	// Status is the current status
-	Status ApplyStatus
+	Status ApplyStatus `json:"apply_status"`
 
 	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps TimestampMap
+	StatusTimestamps []ApplyStatusTimestamp `json:"apply_status_timestamps"`
 
 	// RunID is the ID of the Run the Apply belongs to.
-	RunID string
+	RunID string `json:"run_id"`
+}
+
+type ApplyStatusTimestamp struct {
+	Status    ApplyStatus
+	Timestamp time.Time
 }
 
 func (a *Apply) GetID() string     { return a.ID }
@@ -57,10 +59,9 @@ func (a *Apply) String() string    { return a.ID }
 
 func newApply(runID string) *Apply {
 	return &Apply{
-		ID:               NewID("apply"),
-		Timestamps:       NewTimestamps(),
-		StatusTimestamps: make(TimestampMap),
-		RunID:            runID,
+		ID:     NewID("apply"),
+		RunID:  runID,
+		Status: ApplyPending,
 	}
 }
 
@@ -98,17 +99,6 @@ func (a *Apply) Start(run *Run) error {
 
 // Finish updates the run to reflect its apply having finished. An event is
 // returned reflecting the run's new status.
-func (a *Apply) Finish(run *Run) (*Event, error) {
-	run.UpdateStatus(RunApplied)
-
-	return &Event{Payload: run, Type: EventRunApplied}, nil
-}
-
-func (a *Apply) UpdateStatus(status ApplyStatus) {
-	a.Status = status
-	a.setTimestamp(status)
-}
-
-func (a *Apply) setTimestamp(status ApplyStatus) {
-	a.StatusTimestamps[string(status)] = time.Now()
+func (a *Apply) Finish(run *Run) error {
+	return run.UpdateStatus(RunApplied)
 }

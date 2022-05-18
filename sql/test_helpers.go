@@ -11,7 +11,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/jackc/pgx/v4"
 )
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
@@ -29,14 +32,6 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 
 	require.Equal(t, "postgres", u.Scheme)
 
-	// We set both postgres and test fixtures to use TZ so that we can test for
-	// timestamp equality between the two. (A go time.Time may use "Local"
-	// whereas postgres may set "Europe/London", which would fail an equality
-	// test).
-	q := u.Query()
-	q.Add("TimeZone", "UTC")
-	u.RawQuery = q.Encode()
-
 	interval := DefaultSessionCleanupInterval
 	if len(sessionCleanupIntervalOverride) > 0 {
 		interval = sessionCleanupIntervalOverride[0]
@@ -53,49 +48,47 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	return db
 }
 
-// newTestTimestamps constructs timestamps suitable for unit tests interfacing with
-// postgres; tests may want to test for equality with timestamps retrieved from
-// postgres, and so the timestamps must be of a certain precision and timezone.
-func newTestTimestamps() otf.Timestamps {
-	now := time.Now().Round(time.Millisecond).UTC()
-	return otf.Timestamps{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
 func newTestOrganization() *otf.Organization {
 	return &otf.Organization{
-		ID:         otf.NewID("org"),
-		Timestamps: newTestTimestamps(),
-		Name:       uuid.NewString(),
+		ID:   otf.NewID("org"),
+		Name: uuid.NewString(),
 	}
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return &otf.Workspace{
 		ID:           otf.NewID("ws"),
-		Timestamps:   newTestTimestamps(),
 		Name:         uuid.NewString(),
 		Organization: org,
 	}
 }
 
+func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
+	cp, _ := copystructure.Copy(ws)
+	shallowWorkspace := cp.(*otf.Workspace)
+	shallowWorkspace.Organization = &otf.Organization{ID: shallowWorkspace.Organization.ID}
+	return shallowWorkspace
+}
+
+func newShallowNestedConfigurationVersion(cv *otf.ConfigurationVersion) *otf.ConfigurationVersion {
+	cp, _ := copystructure.Copy(cv)
+	shallowConfigurationVersion := cp.(*otf.ConfigurationVersion)
+	shallowConfigurationVersion.StatusTimestamps = nil
+	return shallowConfigurationVersion
+}
+
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
-		ID:               otf.NewID("cv"),
-		Timestamps:       newTestTimestamps(),
-		Status:           otf.ConfigurationPending,
-		StatusTimestamps: make(otf.TimestampMap),
-		Workspace:        ws,
+		ID:        otf.NewID("cv"),
+		Status:    otf.ConfigurationPending,
+		Workspace: newShallowNestedWorkspace(ws),
 	}
 }
 
-func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
+func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {
 	sv := &otf.StateVersion{
-		ID:         otf.NewID("sv"),
-		Timestamps: newTestTimestamps(),
-		Workspace:  ws,
+		ID:    otf.NewID("sv"),
+		State: []byte("stuff"),
 	}
 	for _, o := range opts {
 		o(sv)
@@ -105,19 +98,12 @@ func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *
 
 func newTestUser() *otf.User {
 	return &otf.User{
-		ID:         otf.NewID("user"),
-		Timestamps: newTestTimestamps(),
-		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
+		ID:       otf.NewID("user"),
+		Username: fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
 	}
 }
 
 type newTestSessionOption func(*otf.Session)
-
-func withFlash(flash *otf.Flash) newTestSessionOption {
-	return func(session *otf.Session) {
-		session.SessionData.Flash = flash
-	}
-}
 
 func overrideExpiry(expiry time.Time) newTestSessionOption {
 	return func(session *otf.Session) {
@@ -135,19 +121,18 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 		o(session)
 	}
 
-	session.Timestamps = newTestTimestamps()
-
 	return session
 }
 
 func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
 	return func(sv *otf.StateVersion) error {
 		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
-			ID:        otf.NewID("wsout"),
-			Name:      name,
-			Type:      outputType,
-			Value:     value,
-			Sensitive: sensitive,
+			ID:             otf.NewID("wsout"),
+			Name:           name,
+			Type:           outputType,
+			Value:          value,
+			Sensitive:      sensitive,
+			StateVersionID: sv.ID,
 		})
 		return nil
 	}
@@ -155,26 +140,25 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	id := otf.NewID("run")
-	return &otf.Run{
-		ID:               id,
-		Timestamps:       newTestTimestamps(),
-		Status:           otf.RunPending,
-		StatusTimestamps: make(otf.TimestampMap),
+	run := &otf.Run{
+		ID:     id,
+		Status: otf.RunPending,
 		Plan: &otf.Plan{
-			ID:               otf.NewID("plan"),
-			Timestamps:       newTestTimestamps(),
-			StatusTimestamps: make(otf.TimestampMap),
-			RunID:            id,
+			ID:     otf.NewID("plan"),
+			RunID:  id,
+			Status: otf.PlanPending,
 		},
 		Apply: &otf.Apply{
-			ID:               otf.NewID("apply"),
-			Timestamps:       newTestTimestamps(),
-			StatusTimestamps: make(otf.TimestampMap),
-			RunID:            id,
+			ID:     otf.NewID("apply"),
+			RunID:  id,
+			Status: otf.ApplyPending,
 		},
-		Workspace:            ws,
-		ConfigurationVersion: cv,
+		Workspace:            newShallowNestedWorkspace(ws),
+		ConfigurationVersion: newShallowNestedConfigurationVersion(cv),
 	}
+	run.ConfigurationVersion.Workspace = &otf.Workspace{ID: run.Workspace.ID}
+
+	return run
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
@@ -211,7 +195,8 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) 
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv, err := db.StateVersionStore().Create(newTestStateVersion(ws, opts...))
+	sv := newTestStateVersion(opts...)
+	err := db.StateVersionStore().Create(ws.ID, sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -222,7 +207,9 @@ func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	run, err := db.RunStore().Create(newTestRun(ws, cv))
+	cv.StatusTimestamps = nil
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -259,27 +246,29 @@ func createTestUser(t *testing.T, db otf.DB, opts ...createTestUserOpt) *otf.Use
 
 func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
 	session := newTestSession(t, userID, opts...)
+	ctx := context.Background()
 
-	err := db.UserStore().CreateSession(context.Background(), session)
+	err := db.SessionStore().CreateSession(ctx, session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.UserStore().DeleteSession(context.Background(), session.Token)
-		require.NoError(t, err)
+		db.SessionStore().DeleteSession(ctx, session.Token)
 	})
 
 	return session
 }
 
 func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
+	ctx := context.Background()
+
 	token, err := otf.NewToken(userID, description)
 	require.NoError(t, err)
 
-	err = db.UserStore().CreateToken(context.Background(), token)
+	err = db.TokenStore().CreateToken(ctx, token)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().DeleteToken(context.Background(), token.Token)
+		db.TokenStore().DeleteToken(ctx, token.Token)
 	})
 
 	return token

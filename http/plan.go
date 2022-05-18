@@ -45,10 +45,10 @@ type PlanFileOptions struct {
 func (p *Plan) ToDomain() *otf.Plan {
 	return &otf.Plan{
 		ID: p.ID,
-		Resources: otf.Resources{
-			ResourceAdditions:    p.ResourceAdditions,
-			ResourceChanges:      p.ResourceChanges,
-			ResourceDestructions: p.ResourceDestructions,
+		ResourceReport: &otf.ResourceReport{
+			Additions:    p.ResourceAdditions,
+			Changes:      p.ResourceChanges,
+			Destructions: p.ResourceDestructions,
 		},
 		Status: p.Status,
 	}
@@ -136,30 +136,32 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 	result := &Plan{
-		ID:                   p.ID,
-		HasChanges:           p.HasChanges(),
-		LogReadURL:           httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
-		ResourceAdditions:    p.ResourceAdditions,
-		ResourceChanges:      p.ResourceChanges,
-		ResourceDestructions: p.ResourceDestructions,
-		Status:               p.Status,
+		ID:         p.ID,
+		HasChanges: p.HasChanges(),
+		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
+		Status:     p.Status,
+	}
+	if p.ResourceReport != nil {
+		result.ResourceAdditions = p.Additions
+		result.ResourceChanges = p.Changes
+		result.ResourceDestructions = p.Destructions
 	}
 
-	for k, v := range p.StatusTimestamps {
+	for _, ts := range p.StatusTimestamps {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &PlanStatusTimestamps{}
 		}
-		switch otf.PlanStatus(k) {
+		switch ts.Status {
 		case otf.PlanCanceled:
-			result.StatusTimestamps.CanceledAt = &v
+			result.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.PlanErrored:
-			result.StatusTimestamps.ErroredAt = &v
+			result.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.PlanFinished:
-			result.StatusTimestamps.FinishedAt = &v
+			result.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.PlanQueued:
-			result.StatusTimestamps.QueuedAt = &v
+			result.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.PlanRunning:
-			result.StatusTimestamps.StartedAt = &v
+			result.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 

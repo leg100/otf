@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 )
 
 const (
@@ -43,14 +45,15 @@ type ConfigurationVersion struct {
 	Source           ConfigurationSource
 	Speculative      bool
 	Status           ConfigurationStatus
-	StatusTimestamps TimestampMap
-
-	// Config is a tarball of the uploaded configuration. Note: this is not
-	// necessarily populated.
-	Config []byte
+	StatusTimestamps []ConfigurationVersionStatusTimestamp
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace `db:"workspaces"`
+}
+
+type ConfigurationVersionStatusTimestamp struct {
+	Status    ConfigurationStatus
+	Timestamp time.Time
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
@@ -75,16 +78,43 @@ type ConfigurationVersionService interface {
 	Get(id string) (*ConfigurationVersion, error)
 	GetLatest(workspaceID string) (*ConfigurationVersion, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Upload(id string, payload []byte) error
+
+	// Upload handles verification and upload of the config tarball, updating
+	// the config version upon success or failure.
+	Upload(id string, config []byte) error
+
+	// Download retrieves the config tarball for the given config version ID.
 	Download(id string) ([]byte, error)
 }
 
 type ConfigurationVersionStore interface {
+	// Creates a config version.
 	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
+
+	// Get retrieves a config version.
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
+
+	// GetConfig retrieves the config tarball for the given config version ID.
+	GetConfig(ctx context.Context, id string) ([]byte, error)
+
+	// List lists config versions for the given workspace.
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Update(id string, fn func(*ConfigurationVersion) error) (*ConfigurationVersion, error)
+
+	// Delete deletes the config version from the store
 	Delete(id string) error
+
+	// Upload uploads a config tarball for the given config version ID
+	Upload(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
+}
+
+// ConfigUploader uploads a config
+type ConfigUploader interface {
+	// Upload uploads the config tarball and returns a status indicating success
+	// or failure.
+	Upload(ctx context.Context, config []byte) (ConfigurationStatus, error)
+
+	// SetErrored sets the config version status to 'errored' in the store.
+	SetErrored(ctx context.Context) error
 }
 
 // ConfigurationVersionGetOptions are options for retrieving a single config
@@ -95,9 +125,6 @@ type ConfigurationVersionGetOptions struct {
 
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
-
-	// Config toggles whether to retrieve the tarball of config files too.
-	Config bool
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a
@@ -107,12 +134,6 @@ type ConfigurationVersionListOptions struct {
 	Include *string `schema:"include"`
 
 	ListOptions
-
-	// Filter by run statuses (with an implicit OR condition)
-	Statuses []ConfigurationStatus
-
-	// Filter by workspace ID
-	WorkspaceID *string
 }
 
 // ConfigurationVersionFactory creates ConfigurationVersion objects
@@ -122,6 +143,24 @@ type ConfigurationVersionFactory struct {
 
 func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
 func (cv *ConfigurationVersion) String() string { return cv.ID }
+
+// Upload saves the config to the db and updates status accordingly.
+func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
+	if cv.Status != ConfigurationPending {
+		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.Status)
+	}
+
+	// check config untars successfully and set errored status if not
+
+	// upload config and set status depending on success
+	var err error
+	cv.Status, err = uploader.Upload(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // NewConfigurationVersion creates a ConfigurationVersion object from scratch
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {

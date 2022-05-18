@@ -1,0 +1,7 @@
+select ...for update
+
+fn: update run status -> time
+fn: update plan status -> time
+fn: update apply status -> time
+
+note: the above must be in one tx

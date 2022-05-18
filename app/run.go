@@ -53,8 +53,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	_, err = s.db.Create(run)
-	if err != nil {
+	if err = s.db.Create(run); err != nil {
 		s.Error(err, "creating run", "id", run.ID)
 		return nil, err
 	}
@@ -93,10 +92,8 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.UpdateStatus(otf.RunApplyQueued)
-
-		return nil
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+		return run.ApplyRun()
 	})
 	if err != nil {
 		s.Error(err, "applying run", "id", id)
@@ -111,7 +108,7 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 }
 
 func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -129,32 +126,28 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
+	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		if err := run.ForceCancel(); err != nil {
-			return err
-		}
+	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+		return run.ForceCancel()
 
 		// TODO: send KILL signal to running terraform process
 
-		// TODO: unlock workspace
-
-		return nil
+		// TODO: unlock workspace - could do this by publishing event and having
+		// workspace scheduler subscribe to event
 	})
 
 	return err
 }
 
 func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
-	run, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-		run.UpdateStatus(otf.RunPlanQueued)
-		return nil
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+		return run.EnqueuePlan()
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", id)
@@ -208,27 +201,33 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then its parsed for a summary of planned changes and the Plan object is
 // updated accordingly.
-func (s RunService) UploadPlanFile(ctx context.Context, id string, plan []byte, format otf.PlanFormat) error {
-	if err := s.db.SetPlanFile(id, plan, format); err != nil {
-		s.Error(err, "uploading plan file", "id", id, "format", format)
+func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
+	if err := s.db.SetPlanFile(runID, plan, format); err != nil {
+		s.Error(err, "uploading plan file", "id", runID, "format", format)
 		return err
 	}
 
+	s.V(0).Info("uploaded plan file", "id", runID, "format", format)
+
 	if format == otf.PlanFormatJSON {
-		_, err := s.db.Update(otf.RunGetOptions{ID: otf.String(id)}, func(run *otf.Run) error {
-			return run.Plan.CalculateTotals(plan)
-		})
+		report, err := otf.CompilePlanReport(plan)
 		if err != nil {
-			s.Error(err, "calculating summary of planned changes", "id", id)
+			s.Error(err, "compiling planned changes report", "id", runID)
 			return err
 		}
+		if err := s.db.CreatePlanReport(runID, report); err != nil {
+			s.Error(err, "saving planned changes report", "id", runID)
+			return err
+		}
+		s.V(1).Info("created planned changes report", "id", runID,
+			"adds", report.Additions,
+			"changes", report.Changes,
+			"destructions", report.Destructions)
 	}
 
-	if err := s.cache.Set(format.CacheKey(id), plan); err != nil {
+	if err := s.cache.Set(format.CacheKey(runID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
-
-	s.V(0).Info("uploaded plan file", "id", id, "format", format)
 
 	return nil
 }
