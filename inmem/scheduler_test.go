@@ -41,7 +41,8 @@ func TestNewScheduler_PopulateQueues(t *testing.T) {
 		name       string
 		runs       []*otf.Run
 		workspaces []*otf.Workspace
-		want       map[string]*otf.WorkspaceQueue
+		// wanted map of workspace IDs to length of queues
+		want map[string]int
 	}{
 		{
 			name: "nothing",
@@ -53,11 +54,8 @@ func TestNewScheduler_PopulateQueues(t *testing.T) {
 			workspaces: []*otf.Workspace{
 				&testWorkspace,
 			},
-			want: map[string]*otf.WorkspaceQueue{
-				"ws-123": &otf.WorkspaceQueue{
-					Active:  &testActiveRun,
-					Pending: []*otf.Run{&testPendingRun},
-				},
+			want: map[string]int{
+				"ws-123": 2,
 			},
 		},
 	}
@@ -70,10 +68,9 @@ func TestNewScheduler_PopulateQueues(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, scheduler)
 
-			for wid, q := range tt.want {
-				if assert.Contains(t, scheduler.Queues, wid) {
-					assert.Equal(t, q.Active, scheduler.Queues[wid].(*otf.WorkspaceQueue).Active)
-					assert.Equal(t, q.Pending, scheduler.Queues[wid].(*otf.WorkspaceQueue).Pending)
+			for workspaceID, qlen := range tt.want {
+				if assert.Contains(t, scheduler.Queues, workspaceID) {
+					assert.Equal(t, qlen, scheduler.Queues[workspaceID].Len())
 				}
 			}
 		})
@@ -130,33 +127,4 @@ func TestScheduler_AddRun(t *testing.T) {
 	})
 
 	assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*fakeQueue).Runs))
-}
-
-func TestScheduler_RemoveRun(t *testing.T) {
-	scheduler := &Scheduler{
-		Logger: logr.Discard(),
-		Queues: map[string]otf.Queue{
-			"ws-123": &fakeQueue{
-				Runs: []*otf.Run{
-					{
-						ID: "run-123",
-					},
-				},
-			},
-		},
-	}
-	require.NotNil(t, scheduler)
-
-	scheduler.handleEvent(otf.Event{
-		Type: otf.EventRunCompleted,
-		Payload: &otf.Run{
-			ID: "run-123",
-			Workspace: &otf.Workspace{
-				ID:           "ws-123",
-				Organization: &otf.Organization{ID: "org-123"},
-			},
-		},
-	})
-
-	assert.Equal(t, 0, len(scheduler.Queues["ws-123"].(*fakeQueue).Runs))
 }

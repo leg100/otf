@@ -2,7 +2,6 @@ package inmem
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -31,39 +30,35 @@ type Scheduler struct {
 	logr.Logger
 }
 
-// NewScheduler constructs scheduler queues and populates them with existing
-// runs.
+// NewScheduler constructs workspaces queues and seeds them with existing runs.
 func NewScheduler(ws otf.WorkspaceService, rs otf.RunService, es otf.EventService, logger logr.Logger) (*Scheduler, error) {
-	queues := make(map[string]otf.Queue)
-
-	// Get workspaces
 	workspaces, err := ws.List(context.Background(), otf.WorkspaceListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("listing workspaces: %s", err)
+		return nil, err
 	}
-
+	queues := make(map[string]otf.Queue, len(workspaces.Items))
 	for _, ws := range workspaces.Items {
-		// Get runs
-		active, err := getActiveRun(ws.ID, rs)
+		queues[ws.ID] = &otf.WorkspaceQueue{}
+		opts := otf.RunListOptions{
+			WorkspaceID: &ws.ID,
+			Statuses:    otf.IncompleteRunStatuses,
+		}
+		incomplete, err := rs.List(context.Background(), opts)
 		if err != nil {
 			return nil, err
 		}
-
-		pending, err := getPendingRuns(ws.ID, rs)
-		if err != nil {
-			return nil, err
+		for _, run := range incomplete.Items {
+			if startable := queues[ws.ID].Update(run); startable != nil {
+				rs.EnqueuePlan(context.Background(), startable.ID)
+			}
 		}
-
-		queues[ws.ID] = &otf.WorkspaceQueue{PlanEnqueuer: rs, Active: active, Pending: pending}
 	}
-
 	s := &Scheduler{
 		Queues:       queues,
 		RunService:   rs,
 		EventService: es,
 		Logger:       logger,
 	}
-
 	return s, nil
 }
 
@@ -73,9 +68,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	defer sub.Close()
-
 	for {
 		select {
 		case event, ok := <-sub.C():
@@ -95,69 +88,15 @@ func (s *Scheduler) handleEvent(ev otf.Event) {
 	case *otf.Workspace:
 		switch ev.Type {
 		case otf.EventWorkspaceCreated:
-			s.Queues[obj.ID] = &otf.WorkspaceQueue{PlanEnqueuer: s.RunService}
+			s.Queues[obj.ID] = &otf.WorkspaceQueue{}
 		case otf.EventWorkspaceDeleted:
 			delete(s.Queues, obj.ID)
 		}
-	case *otf.Run:
+	ase *otf.Run:
 		queue := s.Queues[obj.Workspace.ID]
-
-		switch ev.Type {
-		case otf.EventRunCreated:
-			if err := queue.Add(obj); err != nil {
-				s.Error(err, "unable to enqueue run", "run", obj.ID)
-			}
-		case otf.EventRunCompleted:
-			if err := queue.Remove(obj); err != nil {
-				s.Error(err, "unable to dequeue run", "run", obj.ID)
-			}
+		queue.Update(obj)
+		if startable := queue.Startable(); startable != nil {
+			s.EnqueuePlan(context.Background(), startable.ID)
 		}
 	}
-}
-
-// getActiveRun retrieves the active (non-speculative) run for the workspace
-func getActiveRun(workspaceID string, rl RunLister) (*otf.Run, error) {
-	opts := otf.RunListOptions{
-		WorkspaceID: &workspaceID,
-		Statuses:    otf.ActiveRunStatuses,
-	}
-	active, err := rl.List(context.Background(), opts)
-	if err != nil {
-		return nil, err
-	}
-
-	nonSpeculative := filterNonSpeculativeRuns(active.Items)
-	switch len(nonSpeculative) {
-	case 0:
-		return nil, nil
-	case 1:
-		return nonSpeculative[0], nil
-	default:
-		return nil, fmt.Errorf("more than one active non-speculative run found")
-	}
-
-}
-
-// filterNonSpeculativeRuns filters out speculative runs
-func filterNonSpeculativeRuns(runs []*otf.Run) (nonSpeculative []*otf.Run) {
-	for _, r := range runs {
-		if !r.IsSpeculative() {
-			nonSpeculative = append(nonSpeculative, r)
-		}
-	}
-	return nonSpeculative
-}
-
-// getPendingRuns retrieves pending runs for a workspace
-func getPendingRuns(workspaceID string, rl RunLister) ([]*otf.Run, error) {
-	opts := otf.RunListOptions{
-		WorkspaceID: &workspaceID,
-		Statuses:    []otf.RunStatus{otf.RunPending},
-	}
-	pending, err := rl.List(context.Background(), opts)
-	if err != nil {
-		return nil, err
-	}
-
-	return pending.Items, nil
 }

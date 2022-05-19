@@ -50,6 +50,16 @@ var (
 		RunPlanned,
 		RunPlanning,
 	}
+
+	IncompleteRunStatuses = append(ActiveRunStatuses, RunPending)
+
+	CompletedRunStatuses = []RunStatus{
+		RunApplied,
+		RunErrored,
+		RunDiscarded,
+		RunCanceled,
+		RunForceCanceled,
+	}
 )
 
 // RunStatus represents a run state.
@@ -579,4 +589,13 @@ func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
+}
+
+func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
+	for _, s := range statuses {
+		if s == status {
+			return true
+		}
+	}
+	return false
 }

@@ -92,6 +92,7 @@ JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
 WHERE runs.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND runs.status LIKE ANY(pggen.arg('statuses'))
+ORDER BY runs.created_at ASC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 

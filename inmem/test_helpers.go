@@ -84,7 +84,7 @@ func (s *fakeRunService) List(_ context.Context, opts otf.RunListOptions) (*otf.
 			continue
 		}
 		// if statuses are specified then run must match one of them.
-		if len(opts.Statuses) > 0 && !containsRunStatus(opts.Statuses, r.Status) {
+		if len(opts.Statuses) > 0 && !otf.ContainsRunStatus(opts.Statuses, r.Status) {
 			continue
 		}
 		items = append(items, r)
@@ -100,25 +100,11 @@ type fakeQueue struct {
 	Runs []*otf.Run
 }
 
-func (q *fakeQueue) Add(run *otf.Run) error {
+func (q *fakeQueue) Update(run *otf.Run) *otf.Run {
 	q.Runs = append(q.Runs, run)
 	return nil
 }
 
-func (q *fakeQueue) Remove(run *otf.Run) error {
-	for idx, r := range q.Runs {
-		if run.ID == r.ID {
-			q.Runs = append(q.Runs[:idx], q.Runs[idx+1:]...)
-		}
-	}
-	return nil
-}
-
-func containsRunStatus(statuses []otf.RunStatus, status otf.RunStatus) bool {
-	for _, s := range statuses {
-		if s == status {
-			return true
-		}
-	}
-	return false
+func (q *fakeQueue) Len() int {
+	return len(q.Runs)
 }
