@@ -60,3 +60,65 @@ func (s *testChunkStore) PutChunk(ctx context.Context, id string, chunk otf.Chun
 
 	return nil
 }
+
+type fakeWorkspaceService struct {
+	workspaces []*otf.Workspace
+	otf.WorkspaceService
+}
+
+func (s *fakeWorkspaceService) List(_ context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+	return &otf.WorkspaceList{
+		Items: s.workspaces,
+	}, nil
+}
+
+type fakeRunService struct {
+	runs []*otf.Run
+	otf.RunService
+}
+
+func (s *fakeRunService) List(_ context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+	var items []*otf.Run
+	for _, r := range s.runs {
+		if *opts.WorkspaceID != r.Workspace.ID {
+			continue
+		}
+		// if statuses are specified then run must match one of them.
+		if len(opts.Statuses) > 0 && !containsRunStatus(opts.Statuses, r.Status) {
+			continue
+		}
+		items = append(items, r)
+	}
+	return &otf.RunList{
+		Items: items,
+	}, nil
+}
+
+var _ otf.Queue = (*fakeQueue)(nil)
+
+type fakeQueue struct {
+	Runs []*otf.Run
+}
+
+func (q *fakeQueue) Add(run *otf.Run) error {
+	q.Runs = append(q.Runs, run)
+	return nil
+}
+
+func (q *fakeQueue) Remove(run *otf.Run) error {
+	for idx, r := range q.Runs {
+		if run.ID == r.ID {
+			q.Runs = append(q.Runs[:idx], q.Runs[idx+1:]...)
+		}
+	}
+	return nil
+}
+
+func containsRunStatus(statuses []otf.RunStatus, status otf.RunStatus) bool {
+	for _, s := range statuses {
+		if s == status {
+			return true
+		}
+	}
+	return false
+}

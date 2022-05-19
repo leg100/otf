@@ -5,75 +5,78 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewScheduler(t *testing.T) {
-	scheduler, err := NewScheduler(
-		&mock.WorkspaceService{
-			ListWorkspaceFn: func(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-				return &otf.WorkspaceList{
-					Items: []*otf.Workspace{
-						{
-							ID: "ws-123",
-						},
-					},
-				}, nil
-			},
-		},
-		&mock.RunService{
-			// Mock results depending on whether active or pending runs are
-			// requested.
-			ListFn: func(opts otf.RunListOptions) (*otf.RunList, error) {
-				for _, status := range opts.Statuses {
-					switch status {
-					case otf.RunPlanning:
-						return &otf.RunList{
-							Items: []*otf.Run{
-								{
-									ID:                   "run-active",
-									ConfigurationVersion: &otf.ConfigurationVersion{},
-									Status:               otf.RunPlanning,
-								},
-								{
-									ID:                   "run-speculative",
-									ConfigurationVersion: &otf.ConfigurationVersion{Speculative: true},
-									Status:               otf.RunPlanning,
-								},
-							},
-						}, nil
-					case otf.RunPending:
-						return &otf.RunList{
-							Items: []*otf.Run{
-								{
-									ID:                   "run-pending",
-									ConfigurationVersion: &otf.ConfigurationVersion{},
-									Status:               otf.RunPending,
-								},
-							},
-						}, nil
-					}
-				}
-				return nil, nil
-			},
-		},
-		nil,
-		logr.Discard(),
-	)
-	require.NoError(t, err)
-	require.NotNil(t, scheduler)
+var (
+	testActiveRun = otf.Run{
+		ID:                   "run-active",
+		ConfigurationVersion: &otf.ConfigurationVersion{},
+		Status:               otf.RunPlanning,
+		Workspace:            &otf.Workspace{ID: "ws-123"},
+	}
 
-	// Expecting
-	// queues=map[ws-123]Queue{active:run-active,pending:[run-pending]}
-	if assert.Contains(t, scheduler.Queues, "ws-123") {
-		if assert.NotNil(t, scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Active) {
-			assert.Equal(t, "run-active", scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Active.ID)
-		}
-		if assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Pending)) {
-			assert.Equal(t, "run-pending", scheduler.Queues["ws-123"].(*otf.WorkspaceQueue).Pending[0].ID)
-		}
+	testSpeculativeRun = otf.Run{
+		ID:                   "run-speculative",
+		ConfigurationVersion: &otf.ConfigurationVersion{Speculative: true},
+		Status:               otf.RunPlanning,
+		Workspace:            &otf.Workspace{ID: "ws-123"},
+	}
+
+	testPendingRun = otf.Run{
+		ID:                   "run-pending",
+		ConfigurationVersion: &otf.ConfigurationVersion{},
+		Status:               otf.RunPending,
+		Workspace:            &otf.Workspace{ID: "ws-123"},
+	}
+
+	testWorkspace = otf.Workspace{
+		ID: "ws-123",
+	}
+)
+
+func TestNewScheduler_PopulateQueues(t *testing.T) {
+	tests := []struct {
+		name       string
+		runs       []*otf.Run
+		workspaces []*otf.Workspace
+		want       map[string]*otf.WorkspaceQueue
+	}{
+		{
+			name: "nothing",
+			runs: []*otf.Run{
+				&testActiveRun,
+				&testSpeculativeRun,
+				&testPendingRun,
+			},
+			workspaces: []*otf.Workspace{
+				&testWorkspace,
+			},
+			want: map[string]*otf.WorkspaceQueue{
+				"ws-123": &otf.WorkspaceQueue{
+					Active:  &testActiveRun,
+					Pending: []*otf.Run{&testPendingRun},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scheduler, err := NewScheduler(
+				&fakeWorkspaceService{workspaces: tt.workspaces},
+				&fakeRunService{runs: tt.runs},
+				nil, logr.Discard())
+			require.NoError(t, err)
+			require.NotNil(t, scheduler)
+
+			for wid, q := range tt.want {
+				if assert.Contains(t, scheduler.Queues, wid) {
+					assert.Equal(t, q.Active, scheduler.Queues[wid].(*otf.WorkspaceQueue).Active)
+					assert.Equal(t, q.Pending, scheduler.Queues[wid].(*otf.WorkspaceQueue).Pending)
+				}
+			}
+		})
 	}
 }
 
@@ -95,7 +98,7 @@ func TestScheduler_RemoveWorkspace(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
 		Queues: map[string]otf.Queue{
-			"ws-123": &mock.Queue{},
+			"ws-123": &fakeQueue{},
 		},
 	}
 
@@ -111,7 +114,7 @@ func TestScheduler_AddRun(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
 		Queues: map[string]otf.Queue{
-			"ws-123": &mock.Queue{},
+			"ws-123": &fakeQueue{},
 		},
 	}
 
@@ -126,14 +129,14 @@ func TestScheduler_AddRun(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*mock.Queue).Runs))
+	assert.Equal(t, 1, len(scheduler.Queues["ws-123"].(*fakeQueue).Runs))
 }
 
 func TestScheduler_RemoveRun(t *testing.T) {
 	scheduler := &Scheduler{
 		Logger: logr.Discard(),
 		Queues: map[string]otf.Queue{
-			"ws-123": &mock.Queue{
+			"ws-123": &fakeQueue{
 				Runs: []*otf.Run{
 					{
 						ID: "run-123",
@@ -155,5 +158,5 @@ func TestScheduler_RemoveRun(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, 0, len(scheduler.Queues["ws-123"].(*mock.Queue).Runs))
+	assert.Equal(t, 0, len(scheduler.Queues["ws-123"].(*fakeQueue).Runs))
 }
