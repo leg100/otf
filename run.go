@@ -77,6 +77,9 @@ type Run struct {
 	Apply                *Apply
 	Workspace            *Workspace            `json:"workspace"`
 	ConfigurationVersion *ConfigurationVersion `json:"configuration_version"`
+
+	// Job is the current job the run is performing
+	Job
 }
 
 type RunStatusTimestamp struct {

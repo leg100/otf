@@ -92,7 +92,7 @@ func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Ch
 }
 
 // Start marks a apply as having started
-func (s ApplyService) Start(ctx context.Context, applyID string, opts otf.JobStartOptions) (*otf.Run, error) {
+func (s ApplyService) Claim(ctx context.Context, applyID string, opts otf.JobClaimOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) error {
 		return run.Apply.Start(run)
 	})

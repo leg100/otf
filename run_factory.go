@@ -25,9 +25,9 @@ func (f *RunFactory) NewRun(opts RunCreateOptions) (*Run, error) {
 		TargetAddrs:  opts.TargetAddrs,
 		// run always starts in pending state
 		Status: RunPending,
-		Plan:   newPlan(id),
-		Apply:  newApply(id),
 	}
+	run.Plan = newPlan(&run)
+	run.Apply = newApply(&run)
 
 	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &opts.Workspace.ID})
 	if err != nil {

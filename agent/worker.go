@@ -48,7 +48,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	run, err = js.Start(context.Background(), job.GetID(), otf.JobStartOptions{AgentID: DefaultID})
+	err := js.Claim(context.Background(), job.GetID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -63,7 +63,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	var finishOptions otf.JobFinishOptions
 
-	if err := env.Execute(run, job); err != nil {
+	if err := env.Execute(job); err != nil {
 		log.Error(err, "executing job")
 		finishOptions.Errored = true
 	}

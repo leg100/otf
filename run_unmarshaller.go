@@ -50,16 +50,18 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 			Status:           PlanStatus(result.PlanStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
 			StatusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
-			RunID:            result.RunID,
 		},
 		Apply: &Apply{
 			ID:               result.ApplyID,
 			Status:           ApplyStatus(result.ApplyStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
 			StatusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
-			RunID:            result.RunID,
 		},
 	}
+	run.Plan.run = &run
+	run.Apply.run = &run
+
+	// Choose job
 
 	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
 	if err != nil {

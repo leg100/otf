@@ -64,7 +64,7 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 }
 
 // Start marks a plan as having started
-func (s PlanService) Start(ctx context.Context, planID string, opts otf.JobStartOptions) (*otf.Run, error) {
+func (s PlanService) Start(ctx context.Context, planID string, opts otf.JobClaimOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Plan.Start(run)
 	})

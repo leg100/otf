@@ -11,7 +11,7 @@ var _ otf.PlanService = (*PlanService)(nil)
 type PlanService struct {
 	GetFn         func(id string) (*otf.Plan, error)
 	GetPlanJSONFn func(id string) ([]byte, error)
-	StartFn       func(ctx context.Context, id string, opts otf.JobStartOptions) (*otf.Run, error)
+	StartFn       func(ctx context.Context, id string, opts otf.JobClaimOptions) (*otf.Run, error)
 	FinishFn      func(ctx context.Context, id string, opts otf.JobFinishOptions) (*otf.Run, error)
 	GetChunkFn    func(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error)
 	PutChunkFn    func(ctx context.Context, id string, chunk otf.Chunk) error
@@ -19,7 +19,7 @@ type PlanService struct {
 
 func (s PlanService) Get(id string) (*otf.Plan, error)      { return s.GetFn(id) }
 func (s PlanService) GetPlanJSON(id string) ([]byte, error) { return s.GetPlanJSONFn(id) }
-func (s PlanService) Start(ctx context.Context, id string, opts otf.JobStartOptions) (*otf.Run, error) {
+func (s PlanService) Start(ctx context.Context, id string, opts otf.JobClaimOptions) (*otf.Run, error) {
 	return s.StartFn(ctx, id, opts)
 }
 func (s PlanService) Finish(ctx context.Context, id string, opts otf.JobFinishOptions) (*otf.Run, error) {

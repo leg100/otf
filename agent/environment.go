@@ -81,10 +81,10 @@ func NewEnvironment(
 
 // Execute executes a run (or anything with a Do(env)) and regardless of whether
 // it fails, it'll close the environment logs.
-func (e *Environment) Execute(run *otf.Run, job otf.Job) (err error) {
+func (e *Environment) Execute(job otf.Job) (err error) {
 	var errors *multierror.Error
 
-	if err := job.Do(run, e); err != nil {
+	if err := job.Do(e); err != nil {
 		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
 	}
 

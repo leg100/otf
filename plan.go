@@ -39,8 +39,8 @@ type Plan struct {
 	// StatusTimestamps records timestamps of status transitions
 	StatusTimestamps []PlanStatusTimestamp `json:"plan_status_timestamps"`
 
-	// RunID is the ID of the Run the Plan belongs to.
-	RunID string `json:"run_id"`
+	// run is the parent run
+	run *Run
 }
 
 type PlanStatusTimestamp struct {
@@ -62,10 +62,10 @@ type PlanLogStore interface {
 	ChunkStore
 }
 
-func newPlan(runID string) *Plan {
+func newPlan(run *Run) *Plan {
 	return &Plan{
-		ID:    NewID("plan"),
-		RunID: runID,
+		ID:  NewID("plan"),
+		run: run,
 		// new plans always start off in pending state
 		Status: PlanPending,
 	}
@@ -83,8 +83,8 @@ func (p *Plan) HasChanges() bool {
 }
 
 // Do performs a terraform plan
-func (p *Plan) Do(run *Run, env Environment) error {
-	if err := run.Do(env); err != nil {
+func (p *Plan) Do(env Environment) error {
+	if err := p.run.Do(env); err != nil {
 		return err
 	}
 
@@ -96,11 +96,11 @@ func (p *Plan) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunFunc(run.uploadPlan); err != nil {
+	if err := env.RunFunc(p.run.uploadPlan); err != nil {
 		return err
 	}
 
-	if err := env.RunFunc(run.uploadJSONPlan); err != nil {
+	if err := env.RunFunc(p.run.uploadJSONPlan); err != nil {
 		return err
 	}
 
@@ -109,6 +109,10 @@ func (p *Plan) Do(run *Run, env Environment) error {
 
 // Start updates the plan to reflect its plan having started
 func (p *Plan) Start(run *Run) error {
+	if run.Status == RunPlanning {
+		return ErrJobAlreadyClaimed
+	}
+
 	if run.Status != RunPlanQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
 	}
@@ -120,29 +124,29 @@ func (p *Plan) Start(run *Run) error {
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish(run *Run, opts JobFinishOptions) (*Event, error) {
+func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 	if opts.Errored {
-		if err := run.UpdateStatus(RunErrored); err != nil {
+		if err := p.run.UpdateStatus(RunErrored); err != nil {
 			return nil, err
 		}
-		return &Event{Payload: run, Type: EventRunErrored}, nil
+		return &Event{Payload: p.run, Type: EventRunErrored}, nil
 	}
-	if !p.HasChanges() || run.IsSpeculative() {
-		if err := run.UpdateStatus(RunPlannedAndFinished); err != nil {
+	if !p.HasChanges() || p.run.IsSpeculative() {
+		if err := p.run.UpdateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err
 		}
-		return &Event{Payload: run, Type: EventRunPlannedAndFinished}, nil
-	}
-
-	if !run.Workspace.AutoApply {
-		if err := run.UpdateStatus(RunPlanned); err != nil {
-			return nil, err
-		}
-		return &Event{Payload: run, Type: EventRunPlanned}, nil
+		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
 	}
 
-	if err := run.UpdateStatus(RunApplyQueued); err != nil {
+	if !p.run.Workspace.AutoApply {
+		if err := p.run.UpdateStatus(RunPlanned); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: p.run, Type: EventRunPlanned}, nil
+	}
+
+	if err := p.run.UpdateStatus(RunApplyQueued); err != nil {
 		return nil, err
 	}
-	return &Event{Type: EventApplyQueued, Payload: run}, nil
+	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
 }
