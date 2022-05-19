@@ -74,6 +74,7 @@ func newShallowNestedConfigurationVersion(cv *otf.ConfigurationVersion) *otf.Con
 	cp, _ := copystructure.Copy(cv)
 	shallowConfigurationVersion := cp.(*otf.ConfigurationVersion)
 	shallowConfigurationVersion.StatusTimestamps = nil
+	shallowConfigurationVersion.Workspace = &otf.Workspace{ID: cv.Workspace.ID}
 	return shallowConfigurationVersion
 }
 
@@ -139,26 +140,10 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	id := otf.NewID("run")
-	run := &otf.Run{
-		ID:     id,
-		Status: otf.RunPending,
-		Plan: &otf.Plan{
-			ID:     otf.NewID("plan"),
-			RunID:  id,
-			Status: otf.PlanPending,
-		},
-		Apply: &otf.Apply{
-			ID:     otf.NewID("apply"),
-			RunID:  id,
-			Status: otf.ApplyPending,
-		},
-		Workspace:            newShallowNestedWorkspace(ws),
-		ConfigurationVersion: newShallowNestedConfigurationVersion(cv),
-	}
-	run.ConfigurationVersion.Workspace = &otf.Workspace{ID: run.Workspace.ID}
+	ws = newShallowNestedWorkspace(ws)
+	cv = newShallowNestedConfigurationVersion(cv)
 
-	return run
+	return otf.NewRunFromDefaults(cv, ws)
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {

@@ -311,19 +311,19 @@ type Querier interface {
 	// FindRunByIDScan scans the result of an executed FindRunByIDBatch query.
 	FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error)
 
-	FindRunByPlanID(ctx context.Context, planID string) (FindRunByPlanIDRow, error)
-	// FindRunByPlanIDBatch enqueues a FindRunByPlanID query into batch to be executed
+	FindRunIDByPlanID(ctx context.Context, planID string) (string, error)
+	// FindRunIDByPlanIDBatch enqueues a FindRunIDByPlanID query into batch to be executed
 	// later by the batch.
-	FindRunByPlanIDBatch(batch genericBatch, planID string)
-	// FindRunByPlanIDScan scans the result of an executed FindRunByPlanIDBatch query.
-	FindRunByPlanIDScan(results pgx.BatchResults) (FindRunByPlanIDRow, error)
+	FindRunIDByPlanIDBatch(batch genericBatch, planID string)
+	// FindRunIDByPlanIDScan scans the result of an executed FindRunIDByPlanIDBatch query.
+	FindRunIDByPlanIDScan(results pgx.BatchResults) (string, error)
 
-	FindRunByApplyID(ctx context.Context, applyID string) (FindRunByApplyIDRow, error)
-	// FindRunByApplyIDBatch enqueues a FindRunByApplyID query into batch to be executed
+	FindRunIDByApplyID(ctx context.Context, applyID string) (string, error)
+	// FindRunIDByApplyIDBatch enqueues a FindRunIDByApplyID query into batch to be executed
 	// later by the batch.
-	FindRunByApplyIDBatch(batch genericBatch, applyID string)
-	// FindRunByApplyIDScan scans the result of an executed FindRunByApplyIDBatch query.
-	FindRunByApplyIDScan(results pgx.BatchResults) (FindRunByApplyIDRow, error)
+	FindRunIDByApplyIDBatch(batch genericBatch, applyID string)
+	// FindRunIDByApplyIDScan scans the result of an executed FindRunIDByApplyIDBatch query.
+	FindRunIDByApplyIDScan(results pgx.BatchResults) (string, error)
 
 	FindRunByIDForUpdate(ctx context.Context, runID string) (FindRunByIDForUpdateRow, error)
 	// FindRunByIDForUpdateBatch enqueues a FindRunByIDForUpdate query into batch to be executed
@@ -331,20 +331,6 @@ type Querier interface {
 	FindRunByIDForUpdateBatch(batch genericBatch, runID string)
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
-
-	FindRunByPlanIDForUpdate(ctx context.Context, planID string) (FindRunByPlanIDForUpdateRow, error)
-	// FindRunByPlanIDForUpdateBatch enqueues a FindRunByPlanIDForUpdate query into batch to be executed
-	// later by the batch.
-	FindRunByPlanIDForUpdateBatch(batch genericBatch, planID string)
-	// FindRunByPlanIDForUpdateScan scans the result of an executed FindRunByPlanIDForUpdateBatch query.
-	FindRunByPlanIDForUpdateScan(results pgx.BatchResults) (FindRunByPlanIDForUpdateRow, error)
-
-	FindRunByApplyIDForUpdate(ctx context.Context, applyID string) (FindRunByApplyIDForUpdateRow, error)
-	// FindRunByApplyIDForUpdateBatch enqueues a FindRunByApplyIDForUpdate query into batch to be executed
-	// later by the batch.
-	FindRunByApplyIDForUpdateBatch(batch genericBatch, applyID string)
-	// FindRunByApplyIDForUpdateScan scans the result of an executed FindRunByApplyIDForUpdateBatch query.
-	FindRunByApplyIDForUpdateScan(results pgx.BatchResults) (FindRunByApplyIDForUpdateRow, error)
 
 	UpdateRunStatus(ctx context.Context, status string, id string) (time.Time, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
@@ -853,20 +839,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findRunByIDSQL, findRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRunByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findRunByPlanIDSQL, findRunByPlanIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByPlanID': %w", err)
+	if _, err := p.Prepare(ctx, findRunIDByPlanIDSQL, findRunIDByPlanIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunIDByPlanID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findRunByApplyIDSQL, findRunByApplyIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByApplyID': %w", err)
+	if _, err := p.Prepare(ctx, findRunIDByApplyIDSQL, findRunIDByApplyIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunIDByApplyID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findRunByIDForUpdateSQL, findRunByIDForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRunByIDForUpdate': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunByPlanIDForUpdateSQL, findRunByPlanIDForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByPlanIDForUpdate': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunByApplyIDForUpdateSQL, findRunByApplyIDForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunByApplyIDForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)

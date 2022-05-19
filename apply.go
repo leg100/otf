@@ -57,6 +57,10 @@ func (a *Apply) GetID() string     { return a.ID }
 func (a *Apply) GetStatus() string { return string(a.Status) }
 func (a *Apply) String() string    { return a.ID }
 
+func (a *Apply) GetService(app Application) JobService {
+	return app.ApplyService()
+}
+
 func newApply(run *Run) *Apply {
 	return &Apply{
 		ID:     NewID("apply"),
@@ -67,7 +71,7 @@ func newApply(run *Run) *Apply {
 
 // Do performs a terraform apply
 func (a *Apply) Do(env Environment) error {
-	if err := a.run.Do(env); err != nil {
+	if err := a.run.setupEnv(env); err != nil {
 		return err
 	}
 

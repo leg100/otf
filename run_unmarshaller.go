@@ -60,8 +60,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	}
 	run.Plan.run = &run
 	run.Apply.run = &run
-
-	// Choose job
+	run.setJob()
 
 	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
 	if err != nil {

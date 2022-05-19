@@ -82,9 +82,13 @@ func (p *Plan) HasChanges() bool {
 	return false
 }
 
+func (p *Plan) GetService(app Application) JobService {
+	return app.PlanService()
+}
+
 // Do performs a terraform plan
 func (p *Plan) Do(env Environment) error {
-	if err := p.run.Do(env); err != nil {
+	if err := p.run.setupEnv(env); err != nil {
 		return err
 	}
 

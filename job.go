@@ -16,20 +16,18 @@ type Job interface {
 	Do(Environment) error
 	// GetID gets the ID of the Job
 	GetID() string
-	// GetStatus gets the status of the Job
-	GetStatus() string
+	// GetService gets the appropriate service for interacting with the job
+	GetService(Application) JobService
 }
 
 type JobService interface {
-	// List retrieves pending jobs
-	List(ctx context.Context) ([]Job, error)
 	// Claim claims a job entitling the caller to do the job.
 	// ErrJobAlreadyClaimed is returned if job is already claimed.
-	Claim(ctx context.Context, id string, opts JobClaimOptions) error
+	Claim(ctx context.Context, id string, opts JobClaimOptions) (Job, error)
 	// Finish is called by an agent when it finishes a job.
-	Finish(ctx context.Context, id string, opts JobFinishOptions) (*Run, error)
-	// ChunkStore handles reading and writing chunks of logs for jobs
-	ChunkStore
+	Finish(ctx context.Context, id string, opts JobFinishOptions) (Job, error)
+	// PutChunk uploads a chunk of logs from the job.
+	PutChunk(ctx context.Context, id string, chunk Chunk) error
 }
 
 type JobClaimOptions struct {
