@@ -58,7 +58,7 @@ type RunStatus string
 func (r RunStatus) String() string { return string(r) }
 
 type Run struct {
-	ID string `db:"run_id" jsonapi:"primary,runs" json:"run_id"`
+	ID string `jsonapi:"primary,runs" json:"run_id"`
 
 	Timestamps
 

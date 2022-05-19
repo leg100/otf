@@ -41,7 +41,7 @@ type Workspace struct {
 	SpeculativeEnabled         bool
 	StructuredRunOutputEnabled bool
 	SourceName                 string
-	SourceURL                  string `db:"source_url"`
+	SourceURL                  string
 	TerraformVersion           string
 	TriggerPrefixes            []string
 	VCSRepo                    *VCSRepo
@@ -275,7 +275,7 @@ type WorkspaceStore interface {
 // both Name and OrganizationName must be specfiied.
 type WorkspaceSpec struct {
 	// Specify workspace using its ID
-	ID *string `db:"workspace_id"`
+	ID *string
 
 	// Specify workspace using its name and organization
 	Name             *string `schema:"workspace_name"`
@@ -344,7 +344,6 @@ func (ws *Workspace) String() string { return ws.ID }
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		ID:                  NewID("ws"),
-		Timestamps:          NewTimestamps(),
 		Name:                *opts.Name,
 		AllowDestroyPlan:    DefaultAllowDestroyPlan,
 		ExecutionMode:       DefaultExecutionMode,

@@ -19,7 +19,7 @@ const (
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
-	ID string `db:"user_id" jsonapi:"primary,users"`
+	ID string `jsonapi:"primary,users"`
 
 	// Username is the SSO-provided username
 	Username string
@@ -192,9 +192,8 @@ func (spec *UserSpec) KeyValue() []interface{} {
 
 func NewUser(username string) *User {
 	user := User{
-		ID:         NewID("user"),
-		Timestamps: NewTimestamps(),
-		Username:   username,
+		ID:       NewID("user"),
+		Username: username,
 	}
 
 	return &user

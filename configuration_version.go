@@ -37,7 +37,7 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID string `db:"configuration_version_id" jsonapi:"primary,configuration-versions"`
+	ID string `jsonapi:"primary,configuration-versions"`
 
 	Timestamps
 
@@ -48,7 +48,7 @@ type ConfigurationVersion struct {
 	StatusTimestamps []ConfigurationVersionStatusTimestamp
 
 	// Configuration Version belongs to a Workspace
-	Workspace *Workspace `db:"workspaces"`
+	Workspace *Workspace
 }
 
 type ConfigurationVersionStatusTimestamp struct {
@@ -166,7 +166,6 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		ID:            NewID("cv"),
-		Timestamps:    NewTimestamps(),
 		AutoQueueRuns: DefaultAutoQueueRuns,
 		Status:        ConfigurationPending,
 		Source:        DefaultConfigurationSource,
