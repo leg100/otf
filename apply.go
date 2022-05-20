@@ -112,7 +112,7 @@ func (a *Apply) Finish() error {
 	return a.run.UpdateStatus(RunApplied)
 }
 
-func (r *Apply) StatusTimestamps() []ApplyStatusTimestamp { return r.statusTimestamps }
+func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }
 
 func (a *Apply) AddStatusTimestamp(status ApplyStatus, timestamp time.Time) {
 	a.statusTimestamps = append(a.statusTimestamps, ApplyStatusTimestamp{
