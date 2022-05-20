@@ -81,38 +81,19 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	q := pggen.NewQuerier(tx)
 
+	// Get run ID first
+	runID, err := getRunID(ctx, q, opts)
+	if err != nil {
+		return nil, err
+	}
 	// select ...for update
-	var run *otf.Run
-	switch {
-	case opts.ID != nil:
-		result, err := q.FindRunByIDForUpdate(ctx, *opts.ID)
-		if err != nil {
-			return nil, err
-		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-		if err != nil {
-			return nil, err
-		}
-	case opts.PlanID != nil:
-		result, err := q.FindRunByPlanIDForUpdate(ctx, *opts.PlanID)
-		if err != nil {
-			return nil, err
-		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-		if err != nil {
-			return nil, err
-		}
-	case opts.ApplyID != nil:
-		result, err := q.FindRunByApplyIDForUpdate(ctx, *opts.ApplyID)
-		if err != nil {
-			return nil, err
-		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("invalid run get spec")
+	result, err := q.FindRunByIDForUpdate(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+	if err != nil {
+		return nil, err
 	}
 
 	// Make copies of statuses before update
@@ -264,32 +245,21 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	}, nil
 }
 
-// Get retrieves a Run domain obj
+// Get retrieves a run using the get options
 func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
-
-	if opts.ID != nil {
-		result, err := q.FindRunByID(ctx, *opts.ID)
-		if err != nil {
-			return nil, err
-		}
-		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-	} else if opts.PlanID != nil {
-		result, err := q.FindRunByPlanID(ctx, *opts.PlanID)
-		if err != nil {
-			return nil, err
-		}
-		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-	} else if opts.ApplyID != nil {
-		result, err := q.FindRunByApplyID(ctx, *opts.ApplyID)
-		if err != nil {
-			return nil, err
-		}
-		return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-	} else {
-		return nil, fmt.Errorf("no ID specified")
+	// Get run ID first
+	runID, err := getRunID(ctx, q, opts)
+	if err != nil {
+		return nil, err
 	}
+	// ...now get full run
+	result, err := q.FindRunByID(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 }
 
 // SetPlanFile writes a plan file to the db
@@ -339,6 +309,18 @@ func (db RunDB) Delete(id string) error {
 	}
 
 	return nil
+}
+
+func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (string, error) {
+	if opts.PlanID != nil {
+		return q.FindRunIDByPlanID(ctx, *opts.PlanID)
+	} else if opts.ApplyID != nil {
+		return q.FindRunIDByApplyID(ctx, *opts.ApplyID)
+	} else if opts.ID != nil {
+		return *opts.ID, nil
+	} else {
+		return "", fmt.Errorf("no ID specified")
+	}
 }
 
 func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {

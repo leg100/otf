@@ -50,9 +50,7 @@ type Environment struct {
 
 func NewEnvironment(
 	logger logr.Logger,
-	rs otf.RunService,
-	cvs otf.ConfigurationVersionService,
-	svs otf.StateVersionService,
+	app otf.Application,
 	js otf.JobService,
 	job otf.Job,
 	environmentVariables []string) (*Environment, error) {
@@ -70,21 +68,21 @@ func NewEnvironment(
 
 	return &Environment{
 		Logger:                      logger,
-		RunService:                  rs,
-		ConfigurationVersionService: cvs,
-		StateVersionService:         svs,
+		RunService:                  app.RunService(),
+		ConfigurationVersionService: app.ConfigurationVersionService(),
+		StateVersionService:         app.StateVersionService(),
 		out:                         out,
 		path:                        path,
 		environmentVariables:        environmentVariables,
 	}, nil
 }
 
-// Execute executes a run (or anything with a Do(env)) and regardless of whether
-// it fails, it'll close the environment logs.
-func (e *Environment) Execute(run *otf.Run, job otf.Job) (err error) {
+// Execute executes a job and regardless of whether it fails, it'll close the
+// environment logs.
+func (e *Environment) Execute(job otf.Job) (err error) {
 	var errors *multierror.Error
 
-	if err := job.Do(run, e); err != nil {
+	if err := job.Do(e); err != nil {
 		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
 	}
 

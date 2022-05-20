@@ -25,6 +25,7 @@ type ApplyService interface {
 	Get(id string) (*Apply, error)
 
 	JobService
+	ChunkStore
 }
 
 type ApplyLogStore interface {
@@ -44,8 +45,8 @@ type Apply struct {
 	// StatusTimestamps records timestamps of status transitions
 	StatusTimestamps []ApplyStatusTimestamp `json:"apply_status_timestamps"`
 
-	// RunID is the ID of the Run the Apply belongs to.
-	RunID string `json:"run_id"`
+	// run is the parent run
+	run *Run
 }
 
 type ApplyStatusTimestamp struct {
@@ -57,21 +58,25 @@ func (a *Apply) GetID() string     { return a.ID }
 func (a *Apply) GetStatus() string { return string(a.Status) }
 func (a *Apply) String() string    { return a.ID }
 
-func newApply(runID string) *Apply {
+func (a *Apply) GetService(app Application) JobService {
+	return app.ApplyService()
+}
+
+func newApply(run *Run) *Apply {
 	return &Apply{
 		ID:     NewID("apply"),
-		RunID:  runID,
+		run:    run,
 		Status: ApplyPending,
 	}
 }
 
 // Do performs a terraform apply
-func (a *Apply) Do(run *Run, env Environment) error {
-	if err := run.Do(env); err != nil {
+func (a *Apply) Do(env Environment) error {
+	if err := a.run.setupEnv(env); err != nil {
 		return err
 	}
 
-	if err := env.RunFunc(run.downloadPlanFile); err != nil {
+	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
 		return err
 	}
 
@@ -79,7 +84,7 @@ func (a *Apply) Do(run *Run, env Environment) error {
 		return err
 	}
 
-	if err := env.RunFunc(run.uploadState); err != nil {
+	if err := env.RunFunc(a.run.uploadState); err != nil {
 		return err
 	}
 
@@ -87,18 +92,22 @@ func (a *Apply) Do(run *Run, env Environment) error {
 }
 
 // Start updates the run to reflect its apply having started
-func (a *Apply) Start(run *Run) error {
-	if run.Status != RunApplyQueued {
-		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
+func (a *Apply) Start() error {
+	if a.run.Status == RunApplying {
+		return ErrJobAlreadyClaimed
 	}
 
-	run.UpdateStatus(RunApplying)
+	if a.run.Status != RunApplyQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status)
+	}
+
+	a.run.UpdateStatus(RunApplying)
 
 	return nil
 }
 
 // Finish updates the run to reflect its apply having finished. An event is
 // returned reflecting the run's new status.
-func (a *Apply) Finish(run *Run) error {
-	return run.UpdateStatus(RunApplied)
+func (a *Apply) Finish() error {
+	return a.run.UpdateStatus(RunApplied)
 }

@@ -2,36 +2,35 @@ package otf
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
-type ErrJobAlreadyStarted error
+var (
+	ErrJobAlreadyClaimed = errors.New("job already claimed")
+)
 
-// Job is either a Run's Plan or Apply.
+// Job is a piece of work to do.
 type Job interface {
 	// Do does the piece of work in an execution environment
-	Do(*Run, Environment) error
-
+	Do(Environment) error
 	// GetID gets the ID of the Job
 	GetID() string
-
-	// GetStatus gets the status of the Job
-	GetStatus() string
+	// GetService gets the appropriate service for interacting with the job
+	GetService(Application) JobService
 }
 
 type JobService interface {
-	// Start is called by an agent when it starts a job. ErrJobAlreadyStarted
-	// should be returned if another agent has already started it.
-	Start(ctx context.Context, id string, opts JobStartOptions) (*Run, error)
-
+	// Claim claims a job entitling the caller to do the job.
+	// ErrJobAlreadyClaimed is returned if job is already claimed.
+	Claim(ctx context.Context, id string, opts JobClaimOptions) (Job, error)
 	// Finish is called by an agent when it finishes a job.
-	Finish(ctx context.Context, id string, opts JobFinishOptions) (*Run, error)
-
-	// ChunkStore handles putting and getting chunks of logs
-	ChunkStore
+	Finish(ctx context.Context, id string, opts JobFinishOptions) (Job, error)
+	// PutChunk uploads a chunk of logs from the job.
+	PutChunk(ctx context.Context, id string, chunk Chunk) error
 }
 
-type JobStartOptions struct {
+type JobClaimOptions struct {
 	AgentID string
 }
 

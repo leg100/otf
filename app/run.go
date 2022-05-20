@@ -47,7 +47,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 		return nil, err
 	}
 
-	run, err := s.NewRun(opts)
+	run, err := s.New(opts)
 	if err != nil {
 		s.Error(err, "constructing new run")
 		return nil, err

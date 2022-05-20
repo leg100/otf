@@ -45,11 +45,7 @@ func NewAgent(logger logr.Logger, app otf.Application, sub Subscriber) (*Agent, 
 
 	supervisor := NewSupervisor(
 		spooler,
-		app.ConfigurationVersionService(),
-		app.StateVersionService(),
-		app.RunService(),
-		app.PlanService(),
-		app.ApplyService(),
+		app,
 		logger, DefaultConcurrency)
 
 	return &Agent{

@@ -87,6 +87,9 @@ type Run struct {
 	Apply                *Apply
 	Workspace            *Workspace            `json:"workspace"`
 	ConfigurationVersion *ConfigurationVersion `json:"configuration_version"`
+
+	// Job is the current job the run is performing
+	Job
 }
 
 type RunStatusTimestamp struct {
@@ -285,7 +288,6 @@ type RunListOptions struct {
 	WorkspaceName    *string `schema:"workspace_name"`
 }
 
-func (r *Run) GetID() string  { return r.ID }
 func (r *Run) String() string { return r.ID }
 
 func (o RunCreateOptions) Valid() error {
@@ -420,7 +422,6 @@ func (r *Run) EnqueuePlan() error {
 
 // UpdateStatus updates the status of the run as well as its plan and apply
 func (r *Run) UpdateStatus(status RunStatus) error {
-	var err error
 	switch status {
 	case RunPending:
 		r.Plan.Status = PlanPending
@@ -451,19 +452,19 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 			r.Apply.Status = ApplyCanceled
 		}
 	}
-	if err != nil {
-		return err
-	}
 
 	r.Status = status
+
+	// set job reflecting new status
+	r.setJob()
 
 	// TODO: determine when ApplyUnreachable is applicable and set accordingly
 
 	return nil
 }
 
-// Do invokes the necessary steps before a plan or apply can proceed.
-func (r *Run) Do(env Environment) error {
+// setupEnv invokes the necessary steps before a plan or apply can proceed.
+func (r *Run) setupEnv(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
 	}
@@ -593,6 +594,17 @@ func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// Set appropriate job for run
+func (r *Run) setJob() {
+	switch r.Status {
+	case RunPlanQueued, RunPlanning:
+		r.Job = r.Plan
+	case RunApplyQueued, RunApplying:
+		r.Job = r.Apply
+	default:
+		r.Job = &noOp{}
+	}
+}
 func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 	for _, s := range statuses {
 		if s == status {
