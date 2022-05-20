@@ -42,8 +42,8 @@ func (db RunDB) Create(run *otf.Run) error {
 		Refresh:                run.Refresh,
 		RefreshOnly:            run.RefreshOnly,
 		Status:                 string(run.Status()),
-		PlanStatus:             string(run.Plan.Status),
-		ApplyStatus:            string(run.Apply.Status),
+		PlanStatus:             string(run.Plan.Status()),
+		ApplyStatus:            string(run.Apply.Status()),
 		ReplaceAddrs:           run.ReplaceAddrs,
 		TargetAddrs:            run.TargetAddrs,
 		ConfigurationVersionID: run.ConfigurationVersion.ID,
@@ -98,8 +98,8 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	// Make copies of statuses before update
 	runStatus := run.Status()
-	planStatus := run.Plan.Status
-	applyStatus := run.Apply.Status
+	planStatus := run.Plan.Status()
+	applyStatus := run.Apply.Status()
 
 	if err := fn(run); err != nil {
 		return nil, err
@@ -117,9 +117,9 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 		}
 	}
 
-	if run.Plan.Status != planStatus {
+	if run.Plan.Status() != planStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status), run.Plan.ID)
+		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -129,9 +129,9 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 		}
 	}
 
-	if run.Apply.Status != applyStatus {
+	if run.Apply.Status() != applyStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status), run.Apply.ID)
+		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -328,37 +328,27 @@ func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.
 	if err != nil {
 		return err
 	}
-	run.StatusTimestamps = append(run.StatusTimestamps, otf.RunStatusTimestamp{
-		Status:    otf.RunStatus(ts.Status),
-		Timestamp: ts.Timestamp,
-	})
+	run.AddStatusTimestamp(otf.RunStatus(ts.Status), ts.Timestamp)
 
 	return nil
 }
 
 func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID, string(run.Plan.Status))
+	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID, string(run.Plan.Status()))
 	if err != nil {
 		return err
 	}
-	run.Plan.StatusTimestamps = append(run.Plan.StatusTimestamps, otf.PlanStatusTimestamp{
-		Status:    otf.PlanStatus(ts.Status),
-		Timestamp: ts.Timestamp,
-	})
+	run.Plan.AddStatusTimestamp(otf.PlanStatus(ts.Status), ts.Timestamp)
 
 	return nil
 }
 
 func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID, string(run.Apply.Status))
+	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID, string(run.Apply.Status()))
 	if err != nil {
 		return err
 	}
-	run.Apply.StatusTimestamps = append(run.Apply.StatusTimestamps, otf.ApplyStatusTimestamp{
-		Status:    otf.ApplyStatus(ts.Status),
-		Timestamp: ts.Timestamp,
-	})
-
+	run.Apply.AddStatusTimestamp(otf.ApplyStatus(ts.Status), ts.Timestamp)
 	return nil
 }
 

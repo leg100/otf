@@ -33,19 +33,6 @@ type ApplyStatusTimestamps struct {
 	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
 
-// ToDomain converts http organization obj to a domain organization obj.
-func (a *Apply) ToDomain() *otf.Apply {
-	return &otf.Apply{
-		ID: a.ID,
-		ResourceReport: &otf.ResourceReport{
-			Additions:    a.ResourceAdditions,
-			Changes:      a.ResourceChanges,
-			Destructions: a.ResourceDestructions,
-		},
-		Status: a.Status,
-	}
-}
-
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -114,7 +101,7 @@ func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 	obj := &Apply{
 		ID:         a.ID,
 		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		Status:     a.Status,
+		Status:     a.Status(),
 	}
 	if a.ResourceReport != nil {
 		obj.ResourceAdditions = a.Additions
@@ -122,7 +109,7 @@ func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
 		obj.ResourceDestructions = a.Destructions
 	}
 
-	for _, ts := range a.StatusTimestamps {
+	for _, ts := range a.StatusTimestamps() {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &ApplyStatusTimestamps{}
 		}

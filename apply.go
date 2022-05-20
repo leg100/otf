@@ -40,10 +40,10 @@ type Apply struct {
 	*ResourceReport
 
 	// Status is the current status
-	Status ApplyStatus `json:"apply_status"`
+	status ApplyStatus `json:"apply_status"`
 
 	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps []ApplyStatusTimestamp `json:"apply_status_timestamps"`
+	statusTimestamps []ApplyStatusTimestamp `json:"apply_status_timestamps"`
 
 	// run is the parent run
 	run *Run
@@ -54,9 +54,9 @@ type ApplyStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-func (a *Apply) GetID() string     { return a.ID }
-func (a *Apply) GetStatus() string { return string(a.Status) }
-func (a *Apply) String() string    { return a.ID }
+func (a *Apply) GetID() string       { return a.ID }
+func (a *Apply) String() string      { return a.ID }
+func (a *Apply) Status() ApplyStatus { return a.status }
 
 func (a *Apply) GetService(app Application) JobService {
 	return app.ApplyService()
@@ -66,7 +66,7 @@ func newApply(run *Run) *Apply {
 	return &Apply{
 		ID:     NewID("apply"),
 		run:    run,
-		Status: ApplyPending,
+		status: ApplyPending,
 	}
 }
 
@@ -110,4 +110,13 @@ func (a *Apply) Start() error {
 // returned reflecting the run's new status.
 func (a *Apply) Finish() error {
 	return a.run.UpdateStatus(RunApplied)
+}
+
+func (r *Apply) StatusTimestamps() []ApplyStatusTimestamp { return r.statusTimestamps }
+
+func (a *Apply) AddStatusTimestamp(status ApplyStatus, timestamp time.Time) {
+	a.statusTimestamps = append(a.statusTimestamps, ApplyStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
 }

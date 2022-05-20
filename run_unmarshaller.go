@@ -42,20 +42,20 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		Refresh:          result.Refresh,
 		RefreshOnly:      result.RefreshOnly,
 		status:           RunStatus(result.Status),
-		StatusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
+		statusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		ReplaceAddrs:     result.ReplaceAddrs,
 		TargetAddrs:      result.TargetAddrs,
 		Plan: &Plan{
 			ID:               result.PlanID,
-			Status:           PlanStatus(result.PlanStatus),
+			status:           PlanStatus(result.PlanStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
-			StatusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
+			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 		},
 		Apply: &Apply{
 			ID:               result.ApplyID,
-			Status:           ApplyStatus(result.ApplyStatus),
+			status:           ApplyStatus(result.ApplyStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
-			StatusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 		},
 	}
 	run.Plan.run = &run

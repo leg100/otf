@@ -305,7 +305,7 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 		},
 	}
 
-	for _, rst := range r.StatusTimestamps {
+	for _, rst := range r.StatusTimestamps() {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &RunStatusTimestamps{}
 		}

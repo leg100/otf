@@ -53,8 +53,8 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 			r.UpdateStatus(tt.toStatus)
 
-			assert.Equal(t, tt.wantPlanStatus, r.Plan.Status)
-			assert.Equal(t, tt.wantApplyStatus, r.Apply.Status)
+			assert.Equal(t, tt.wantPlanStatus, r.Plan.status)
+			assert.Equal(t, tt.wantApplyStatus, r.Apply.status)
 		})
 	}
 }
@@ -62,7 +62,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 func TestRun_ForceCancelAvailableAt(t *testing.T) {
 	run := &Run{
 		status: RunCanceled,
-		StatusTimestamps: []RunStatusTimestamp{
+		statusTimestamps: []RunStatusTimestamp{
 			{
 				Status:    RunCanceled,
 				Timestamp: time.Now(),

@@ -78,7 +78,7 @@ type Run struct {
 	Refresh          bool
 	RefreshOnly      bool
 	status           RunStatus
-	StatusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
+	statusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
 	ReplaceAddrs     []string
 	TargetAddrs      []string
 
@@ -420,32 +420,32 @@ func (r *Run) EnqueuePlan() error {
 func (r *Run) UpdateStatus(status RunStatus) error {
 	switch status {
 	case RunPending:
-		r.Plan.Status = PlanPending
+		r.Plan.status = PlanPending
 	case RunPlanQueued:
-		r.Plan.Status = PlanQueued
+		r.Plan.status = PlanQueued
 	case RunPlanning:
-		r.Plan.Status = PlanRunning
+		r.Plan.status = PlanRunning
 	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.Status = PlanFinished
+		r.Plan.status = PlanFinished
 	case RunApplyQueued:
-		r.Apply.Status = ApplyQueued
+		r.Apply.status = ApplyQueued
 	case RunApplying:
-		r.Apply.Status = ApplyRunning
+		r.Apply.status = ApplyRunning
 	case RunApplied:
-		r.Apply.Status = ApplyFinished
+		r.Apply.status = ApplyFinished
 	case RunErrored:
 		switch r.Status() {
 		case RunPlanning:
-			r.Plan.Status = PlanErrored
+			r.Plan.status = PlanErrored
 		case RunApplying:
-			r.Apply.Status = ApplyErrored
+			r.Apply.status = ApplyErrored
 		}
 	case RunCanceled:
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
-			r.Plan.Status = PlanCanceled
+			r.Plan.status = PlanCanceled
 		case RunApplyQueued, RunApplying:
-			r.Apply.Status = ApplyCanceled
+			r.Apply.status = ApplyCanceled
 		}
 	}
 
@@ -581,12 +581,18 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-func (r *Run) Status() RunStatus {
-	return r.status
+func (r *Run) Status() RunStatus                      { return r.status }
+func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
+
+func (r *Run) AddStatusTimestamp(status RunStatus, timestamp time.Time) {
+	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
 }
 
 func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
-	for _, rst := range r.StatusTimestamps {
+	for _, rst := range r.statusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, true
 		}

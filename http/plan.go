@@ -41,19 +41,6 @@ type PlanFileOptions struct {
 	Format otf.PlanFormat `schema:"format"`
 }
 
-// ToDomain converts http organization obj to a domain organization obj.
-func (p *Plan) ToDomain() *otf.Plan {
-	return &otf.Plan{
-		ID: p.ID,
-		ResourceReport: &otf.ResourceReport{
-			Additions:    p.ResourceAdditions,
-			Changes:      p.ResourceChanges,
-			Destructions: p.ResourceDestructions,
-		},
-		Status: p.Status,
-	}
-}
-
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -139,7 +126,7 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 		ID:         p.ID,
 		HasChanges: p.HasChanges(),
 		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
-		Status:     p.Status,
+		Status:     p.Status(),
 	}
 	if p.ResourceReport != nil {
 		result.ResourceAdditions = p.Additions
@@ -147,7 +134,7 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 		result.ResourceDestructions = p.Destructions
 	}
 
-	for _, ts := range p.StatusTimestamps {
+	for _, ts := range p.StatusTimestamps() {
 		if result.StatusTimestamps == nil {
 			result.StatusTimestamps = &PlanStatusTimestamps{}
 		}

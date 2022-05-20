@@ -34,10 +34,10 @@ type Plan struct {
 	*ResourceReport
 
 	// Status is the current status
-	Status PlanStatus `json:"plan_status"`
+	status PlanStatus `json:"plan_status"`
 
-	// StatusTimestamps records timestamps of status transitions
-	StatusTimestamps []PlanStatusTimestamp `json:"plan_status_timestamps"`
+	// statusTimestamps records timestamps of status transitions
+	statusTimestamps []PlanStatusTimestamp `json:"plan_status_timestamps"`
 
 	// run is the parent run
 	run *Run
@@ -48,9 +48,9 @@ type PlanStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-func (p *Plan) GetID() string     { return p.ID }
-func (p *Plan) GetStatus() string { return string(p.Status) }
-func (p *Plan) String() string    { return p.ID }
+func (p *Plan) GetID() string      { return p.ID }
+func (p *Plan) String() string     { return p.ID }
+func (p *Plan) Status() PlanStatus { return p.status }
 
 type PlanService interface {
 	Get(id string) (*Plan, error)
@@ -68,7 +68,7 @@ func newPlan(run *Run) *Plan {
 		ID:  NewID("plan"),
 		run: run,
 		// new plans always start off in pending state
-		Status: PlanPending,
+		status: PlanPending,
 	}
 }
 
@@ -154,4 +154,13 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 		return nil, err
 	}
 	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
+}
+
+func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
+
+func (p *Plan) AddStatusTimestamp(status PlanStatus, timestamp time.Time) {
+	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
 }
