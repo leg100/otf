@@ -24,7 +24,8 @@ type WorkspaceScheduler struct {
 	queues map[string][]*Run
 }
 
-// NewScheduler seeds workspaces queues and starts any pending speculative runs
+// NewWorkspaceScheduler seeds workspaces queues and starts any pending
+// speculative runs
 func NewWorkspaceScheduler(ctx context.Context, ws WorkspaceService, rs RunService, es EventService, logger logr.Logger) (*WorkspaceScheduler, error) {
 	workspaces, err := ws.List(ctx, WorkspaceListOptions{})
 	if err != nil {
@@ -108,7 +109,6 @@ func (s *WorkspaceScheduler) refresh(ctx context.Context, updated *Run) {
 			s.RunService.Start(ctx, s.queues[wid][0].ID)
 		}
 	}
-	return
 }
 
 // position retrieves run position in workspace queue
