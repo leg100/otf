@@ -145,16 +145,16 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 	return err
 }
 
-func (s RunService) EnqueuePlan(ctx context.Context, id string) error {
+func (s RunService) Start(ctx context.Context, id string) error {
 	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
-		s.Error(err, "enqueuing plan", "id", id)
+		s.Error(err, "started run", "id", id)
 		return err
 	}
 
-	s.V(0).Info("enqueued plan", "id", id)
+	s.V(0).Info("started run", "id", id)
 
 	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 

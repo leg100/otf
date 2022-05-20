@@ -99,13 +99,14 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	scheduler, err := inmem.NewScheduler(app.WorkspaceService(), app.RunService(), app.EventService(), logger)
+	scheduler, err := otf.NewWorkspaceScheduler(ctx, app.WorkspaceService(), app.RunService(), app.EventService(), logger)
+	if err != nil {
+		return fmt.Errorf("unable to initialise scheduler: %w", err)
+	}
+	go scheduler.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to start scheduler: %w", err)
 	}
-
-	// Run scheduler in background TODO: error not handled
-	go scheduler.Start(ctx)
 
 	// Run agent in background
 	agent, err := agent.NewAgent(logger, app, app.EventService())

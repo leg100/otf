@@ -50,6 +50,16 @@ var (
 		RunPlanned,
 		RunPlanning,
 	}
+
+	IncompleteRunStatuses = append(ActiveRunStatuses, RunPending)
+
+	CompletedRunStatuses = []RunStatus{
+		RunApplied,
+		RunErrored,
+		RunDiscarded,
+		RunCanceled,
+		RunForceCanceled,
+	}
 )
 
 // RunStatus represents a run state.
@@ -108,9 +118,11 @@ type RunService interface {
 	Discard(ctx context.Context, id string, opts RunDiscardOptions) error
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
-	EnqueuePlan(ctx context.Context, id string) error
-
+	// Start a run.
+	Start(ctx context.Context, id string) error
+	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
+	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 }
 
@@ -593,4 +605,12 @@ func (r *Run) setJob() {
 	default:
 		r.Job = &noOp{}
 	}
+}
+func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
+	for _, s := range statuses {
+		if s == status {
+			return true
+		}
+	}
+	return false
 }

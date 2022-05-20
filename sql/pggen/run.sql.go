@@ -181,6 +181,7 @@ JOIN workspaces USING(workspace_id)
 JOIN organizations USING(organization_id)
 WHERE runs.workspace_id LIKE ANY($1)
 AND runs.status LIKE ANY($2)
+ORDER BY runs.created_at ASC
 LIMIT $3 OFFSET $4
 ;`
 
