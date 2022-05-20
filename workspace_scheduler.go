@@ -96,6 +96,8 @@ func (s *WorkspaceScheduler) refresh(ctx context.Context, updated *Run) {
 	if pos := s.position(updated); pos >= 0 {
 		if updated.IsDone() {
 			s.remove(wid, pos)
+		} else {
+			s.queues[wid][pos] = updated
 		}
 	} else {
 		// add to queue

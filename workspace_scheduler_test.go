@@ -31,6 +31,13 @@ var (
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
+	testPendingNowActiveRun = Run{
+		ID:                   "run-pending",
+		ConfigurationVersion: &ConfigurationVersion{},
+		Status:               RunPlanning,
+		Workspace:            &Workspace{ID: "ws-123"},
+	}
+
 	testDoneRun = Run{
 		ID:                   "run-done",
 		ConfigurationVersion: &ConfigurationVersion{},
@@ -149,6 +156,12 @@ func TestWorkspaceScheduler_Refresh(t *testing.T) {
 			updated:     &testPendingSpeculativeRun,
 			wantQueues:  map[string][]*Run{"ws-123": {&testActiveRun}},
 			wantStarted: &testPendingSpeculativeRun,
+		},
+		{
+			name:       "update pending run to active",
+			existing:   map[string][]*Run{"ws-123": {&testPendingRun}},
+			updated:    &testPendingNowActiveRun,
+			wantQueues: map[string][]*Run{"ws-123": {&testPendingNowActiveRun}},
 		},
 	}
 
