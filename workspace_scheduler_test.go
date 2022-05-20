@@ -13,35 +13,35 @@ var (
 	testActiveRun = Run{
 		ID:                   "run-active",
 		ConfigurationVersion: &ConfigurationVersion{},
-		Status:               RunPlanning,
+		status:               RunPlanning,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
 	testPendingSpeculativeRun = Run{
 		ID:                   "run-pending-speculative",
 		ConfigurationVersion: &ConfigurationVersion{Speculative: true},
-		Status:               RunPending,
+		status:               RunPending,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
 	testPendingRun = Run{
 		ID:                   "run-pending",
 		ConfigurationVersion: &ConfigurationVersion{},
-		Status:               RunPending,
+		status:               RunPending,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
 	testPendingNowActiveRun = Run{
 		ID:                   "run-pending",
 		ConfigurationVersion: &ConfigurationVersion{},
-		Status:               RunPlanning,
+		status:               RunPlanning,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
 	testDoneRun = Run{
 		ID:                   "run-done",
 		ConfigurationVersion: &ConfigurationVersion{},
-		Status:               RunApplied,
+		status:               RunApplied,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 

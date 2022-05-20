@@ -24,7 +24,7 @@ func (s *fakeRunService) List(_ context.Context, opts RunListOptions) (*RunList,
 			continue
 		}
 		// if statuses are specified then run must match one of them.
-		if len(opts.Statuses) > 0 && !ContainsRunStatus(opts.Statuses, r.Status) {
+		if len(opts.Statuses) > 0 && !ContainsRunStatus(opts.Statuses, r.Status()) {
 			continue
 		}
 		items = append(items, r)

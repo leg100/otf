@@ -74,39 +74,6 @@ type RunActions struct {
 	IsForceCancelable bool `json:"is-force-cancelable"`
 }
 
-// ToDomain converts http run obj to a domain run obj.
-func (r *Run) ToDomain() *otf.Run {
-	domain := otf.Run{
-		ID:              r.ID,
-		IsDestroy:       r.IsDestroy,
-		Message:         r.Message,
-		PositionInQueue: r.PositionInQueue,
-		Refresh:         r.Refresh,
-		RefreshOnly:     r.RefreshOnly,
-		ReplaceAddrs:    r.ReplaceAddrs,
-		Status:          r.Status,
-		TargetAddrs:     r.TargetAddrs,
-	}
-
-	if r.Apply != nil {
-		domain.Apply = r.Apply.ToDomain()
-	}
-
-	if r.ConfigurationVersion != nil {
-		domain.ConfigurationVersion = r.ConfigurationVersion.ToDomain()
-	}
-
-	if r.Plan != nil {
-		domain.Plan = r.Plan.ToDomain()
-	}
-
-	if r.Workspace != nil {
-		domain.Workspace = r.Workspace.ToDomain()
-	}
-
-	return &domain
-}
-
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	opts := otf.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
@@ -322,7 +289,7 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 		RefreshOnly:     r.RefreshOnly,
 		ReplaceAddrs:    r.ReplaceAddrs,
 		Source:          otf.DefaultConfigurationSource,
-		Status:          r.Status,
+		Status:          r.Status(),
 		TargetAddrs:     r.TargetAddrs,
 
 		// Relations

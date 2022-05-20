@@ -87,7 +87,7 @@ func (s *WorkspaceScheduler) Start(ctx context.Context) error {
 // refresh queues in response to an updated run and start eligible pending run
 func (s *WorkspaceScheduler) refresh(ctx context.Context, updated *Run) {
 	if updated.IsSpeculative() {
-		if updated.Status == RunPending {
+		if updated.Status() == RunPending {
 			s.RunService.Start(ctx, updated.ID)
 		}
 		// speculative runs are never enqueued
@@ -105,7 +105,7 @@ func (s *WorkspaceScheduler) refresh(ctx context.Context, updated *Run) {
 		s.queues[wid] = append(s.queues[wid], updated)
 	}
 	if len(s.queues[wid]) > 0 {
-		if s.queues[wid][0].Status == RunPending {
+		if s.queues[wid][0].Status() == RunPending {
 			s.RunService.Start(ctx, s.queues[wid][0].ID)
 		}
 	}

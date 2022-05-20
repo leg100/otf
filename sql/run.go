@@ -41,7 +41,7 @@ func (db RunDB) Create(run *otf.Run) error {
 		IsDestroy:              run.IsDestroy,
 		Refresh:                run.Refresh,
 		RefreshOnly:            run.RefreshOnly,
-		Status:                 string(run.Status),
+		Status:                 string(run.Status()),
 		PlanStatus:             string(run.Plan.Status),
 		ApplyStatus:            string(run.Apply.Status),
 		ReplaceAddrs:           run.ReplaceAddrs,
@@ -97,7 +97,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	}
 
 	// Make copies of statuses before update
-	runStatus := run.Status
+	runStatus := run.Status()
 	planStatus := run.Plan.Status
 	applyStatus := run.Apply.Status
 
@@ -105,9 +105,9 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 		return nil, err
 	}
 
-	if run.Status != runStatus {
+	if run.Status() != runStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status), run.ID)
+		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (
 }
 
 func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status))
+	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status()))
 	if err != nil {
 		return err
 	}

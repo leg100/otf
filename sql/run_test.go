@@ -51,11 +51,10 @@ func TestRun_UpdateStatus(t *testing.T) {
 		{
 			name: "enqueue plan",
 			update: func(run *otf.Run) error {
-				run.Status = otf.RunPlanQueued
-				return nil
+				return run.EnqueuePlan()
 			},
 			want: func(t *testing.T, got *otf.Run) {
-				assert.Equal(t, otf.RunPlanQueued, got.Status)
+				assert.Equal(t, otf.RunPlanQueued, got.Status())
 				assert.True(t, got.UpdatedAt.After(got.CreatedAt))
 
 				timestamp, found := got.FindRunStatusTimestamp(otf.RunPlanQueued)

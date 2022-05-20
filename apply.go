@@ -93,12 +93,12 @@ func (a *Apply) Do(env Environment) error {
 
 // Start updates the run to reflect its apply having started
 func (a *Apply) Start() error {
-	if a.run.Status == RunApplying {
+	if a.run.Status() == RunApplying {
 		return ErrJobAlreadyClaimed
 	}
 
-	if a.run.Status != RunApplyQueued {
-		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status)
+	if a.run.Status() != RunApplyQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status())
 	}
 
 	a.run.UpdateStatus(RunApplying)

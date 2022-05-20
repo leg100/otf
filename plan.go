@@ -114,12 +114,12 @@ func (p *Plan) Do(env Environment) error {
 
 // Start updates the plan to reflect its plan having started
 func (p *Plan) Start(run *Run) error {
-	if run.Status == RunPlanning {
+	if run.Status() == RunPlanning {
 		return ErrJobAlreadyClaimed
 	}
 
-	if run.Status != RunPlanQueued {
-		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status)
+	if run.Status() != RunPlanQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status())
 	}
 
 	run.UpdateStatus(RunPlanning)

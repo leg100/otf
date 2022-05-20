@@ -41,7 +41,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		PositionInQueue:  result.PositionInQueue,
 		Refresh:          result.Refresh,
 		RefreshOnly:      result.RefreshOnly,
-		Status:           RunStatus(result.Status),
+		status:           RunStatus(result.Status),
 		StatusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		ReplaceAddrs:     result.ReplaceAddrs,
 		TargetAddrs:      result.TargetAddrs,

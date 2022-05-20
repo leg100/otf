@@ -77,7 +77,7 @@ type Run struct {
 	PositionInQueue  int
 	Refresh          bool
 	RefreshOnly      bool
-	Status           RunStatus
+	status           RunStatus
 	StatusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
 	ReplaceAddrs     []string
 	TargetAddrs      []string
@@ -297,10 +297,6 @@ func (o RunCreateOptions) Valid() error {
 	return nil
 }
 
-func (r *Run) GetStatus() string {
-	return string(r.Status)
-}
-
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.IsDiscardable() {
@@ -324,11 +320,11 @@ func (r *Run) Cancel() error {
 }
 
 func (r *Run) ForceCancelAvailableAt() time.Time {
-	if r.Status != RunCanceled {
+	if r.status != RunCanceled {
 		return time.Time{}
 	}
 
-	canceledAt, found := r.FindRunStatusTimestamp(r.Status)
+	canceledAt, found := r.FindRunStatusTimestamp(r.status)
 	if !found {
 		panic("no corresponding timestamp found for canceled status")
 	}
@@ -349,7 +345,7 @@ func (r *Run) ForceCancel() error {
 
 // IsCancelable determines whether run can be cancelled.
 func (r *Run) IsCancelable() bool {
-	switch r.Status {
+	switch r.Status() {
 	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
 	default:
@@ -359,7 +355,7 @@ func (r *Run) IsCancelable() bool {
 
 // IsConfirmable determines whether run can be confirmed.
 func (r *Run) IsConfirmable() bool {
-	switch r.Status {
+	switch r.Status() {
 	case RunPlanned:
 		return true
 	default:
@@ -369,7 +365,7 @@ func (r *Run) IsConfirmable() bool {
 
 // IsDiscardable determines whether run can be discarded.
 func (r *Run) IsDiscardable() bool {
-	switch r.Status {
+	switch r.Status() {
 	case RunPending, RunPlanned:
 		return true
 	default:
@@ -391,7 +387,7 @@ func (r *Run) IsForceCancelable() bool {
 // IsActive determines whether run is currently the active run on a workspace,
 // i.e. it is neither finished nor pending
 func (r *Run) IsActive() bool {
-	if r.IsDone() || r.Status == RunPending {
+	if r.IsDone() || r.Status() == RunPending {
 		return false
 	}
 	return true
@@ -400,7 +396,7 @@ func (r *Run) IsActive() bool {
 // IsDone determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
 func (r *Run) IsDone() bool {
-	switch r.Status {
+	switch r.Status() {
 	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
 		return true
 	default:
@@ -438,14 +434,14 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 	case RunApplied:
 		r.Apply.Status = ApplyFinished
 	case RunErrored:
-		switch r.Status {
+		switch r.Status() {
 		case RunPlanning:
 			r.Plan.Status = PlanErrored
 		case RunApplying:
 			r.Apply.Status = ApplyErrored
 		}
 	case RunCanceled:
-		switch r.Status {
+		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
 			r.Plan.Status = PlanCanceled
 		case RunApplyQueued, RunApplying:
@@ -453,7 +449,7 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 		}
 	}
 
-	r.Status = status
+	r.status = status
 
 	// set job reflecting new status
 	r.setJob()
@@ -585,6 +581,10 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
+func (r *Run) Status() RunStatus {
+	return r.status
+}
+
 func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
 	for _, rst := range r.StatusTimestamps {
 		if rst.Status == status {
@@ -596,7 +596,7 @@ func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
 
 // Set appropriate job for run
 func (r *Run) setJob() {
-	switch r.Status {
+	switch r.Status() {
 	case RunPlanQueued, RunPlanning:
 		r.Job = r.Plan
 	case RunApplyQueued, RunApplying:

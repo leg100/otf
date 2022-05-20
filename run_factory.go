@@ -58,10 +58,23 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run := Run{
 		ID:      NewID("run"),
 		Refresh: DefaultRefresh,
-		Status:  RunPending,
+		status:  RunPending,
 	}
 	run.ConfigurationVersion = cv
 	run.Workspace = ws
+	run.Plan = newPlan(&run)
+	run.Apply = newApply(&run)
+	run.setJob()
+	return &run
+}
+
+// NewTestRun creates a new run expressly for testing purposes
+func NewTestRun(id string) *Run {
+	run := Run{
+		ID:      id,
+		Refresh: DefaultRefresh,
+		status:  RunPending,
+	}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
 	run.setJob()

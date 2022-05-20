@@ -17,5 +17,5 @@ func (u *fakeUpdater) UpdatePlanStatus(ctx context.Context, status PlanStatus) (
 }
 
 func (u *fakeUpdater) UpdateRunStatus(ctx context.Context, status RunStatus) (*Run, error) {
-	return &Run{Status: status}, nil
+	return &Run{status: status}, nil
 }
