@@ -56,6 +56,7 @@ type PlanService interface {
 	Get(id string) (*Plan, error)
 
 	JobService
+	ChunkStore
 }
 
 type PlanLogStore interface {

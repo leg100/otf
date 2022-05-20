@@ -288,7 +288,6 @@ type RunListOptions struct {
 	WorkspaceName    *string `schema:"workspace_name"`
 }
 
-func (r *Run) GetID() string  { return r.ID }
 func (r *Run) String() string { return r.ID }
 
 func (o RunCreateOptions) Valid() error {

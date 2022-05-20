@@ -25,6 +25,7 @@ type ApplyService interface {
 	Get(id string) (*Apply, error)
 
 	JobService
+	ChunkStore
 }
 
 type ApplyLogStore interface {
