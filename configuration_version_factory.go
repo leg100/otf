@@ -1,0 +1,56 @@
+package otf
+
+import (
+	"context"
+
+	"github.com/mitchellh/copystructure"
+)
+
+// ConfigurationVersionFactory creates ConfigurationVersion objects
+type ConfigurationVersionFactory struct {
+	WorkspaceService WorkspaceService
+}
+
+// NewConfigurationVersion creates a ConfigurationVersion object from scratch
+func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+	cv := ConfigurationVersion{
+		ID:            NewID("cv"),
+		autoQueueRuns: DefaultAutoQueueRuns,
+		status:        ConfigurationPending,
+		source:        DefaultConfigurationSource,
+	}
+
+	if opts.AutoQueueRuns != nil {
+		cv.autoQueueRuns = *opts.AutoQueueRuns
+	}
+
+	if opts.Speculative != nil {
+		cv.speculative = *opts.Speculative
+	}
+
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
+	if err != nil {
+		return nil, err
+	}
+	cv.Workspace = ws
+
+	return &cv, nil
+}
+
+// NewConfigurationVersionFromDefaults creates a new run with defaults.
+func NewConfigurationVersionFromDefaults(ws *Workspace) *ConfigurationVersion {
+	cv := ConfigurationVersion{
+		ID:     NewID("cv"),
+		status: ConfigurationPending,
+	}
+	cv.Workspace = ws
+	return &cv
+}
+
+func NewShallowNestedConfigurationVersion(cv *ConfigurationVersion) *ConfigurationVersion {
+	cp, _ := copystructure.Copy(cv)
+	shallowConfigurationVersion := cp.(*ConfigurationVersion)
+	shallowConfigurationVersion.statusTimestamps = nil
+	shallowConfigurationVersion.Workspace = &Workspace{ID: cv.Workspace.ID}
+	return shallowConfigurationVersion
+}

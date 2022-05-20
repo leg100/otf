@@ -25,11 +25,11 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 			CreatedAt: result.CreatedAt,
 			UpdatedAt: result.UpdatedAt,
 		},
-		AutoQueueRuns:    result.AutoQueueRuns,
-		Speculative:      result.Speculative,
-		Source:           ConfigurationSource(result.Source),
-		Status:           ConfigurationStatus(result.Status),
-		StatusTimestamps: unmarshalConfigurationVersionStatusTimestampDBTypes(result.ConfigurationVersionStatusTimestamps),
+		autoQueueRuns:    result.AutoQueueRuns,
+		speculative:      result.Speculative,
+		source:           ConfigurationSource(result.Source),
+		status:           ConfigurationStatus(result.Status),
+		statusTimestamps: unmarshalConfigurationVersionStatusTimestampDBTypes(result.ConfigurationVersionStatusTimestamps),
 	}
 
 	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
@@ -48,10 +48,10 @@ func unmarshalConfigurationVersionDBType(typ pggen.ConfigurationVersions) (*Conf
 			CreatedAt: typ.CreatedAt.Local(),
 			UpdatedAt: typ.UpdatedAt.Local(),
 		},
-		AutoQueueRuns: typ.AutoQueueRuns,
-		Speculative:   typ.Speculative,
-		Source:        ConfigurationSource(typ.Source),
-		Status:        ConfigurationStatus(typ.Status),
+		autoQueueRuns: typ.AutoQueueRuns,
+		speculative:   typ.Speculative,
+		source:        ConfigurationSource(typ.Source),
+		status:        ConfigurationStatus(typ.Status),
 		Workspace:     &Workspace{ID: typ.WorkspaceID},
 	}
 

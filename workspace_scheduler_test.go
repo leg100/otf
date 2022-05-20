@@ -19,7 +19,7 @@ var (
 
 	testPendingSpeculativeRun = Run{
 		ID:                   "run-pending-speculative",
-		ConfigurationVersion: &ConfigurationVersion{Speculative: true},
+		ConfigurationVersion: &ConfigurationVersion{speculative: true},
 		status:               RunPending,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}

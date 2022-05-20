@@ -405,7 +405,7 @@ func (r *Run) IsDone() bool {
 }
 
 func (r *Run) IsSpeculative() bool {
-	return r.ConfigurationVersion.Speculative
+	return r.ConfigurationVersion.Speculative()
 }
 
 func (r *Run) ApplyRun() error {

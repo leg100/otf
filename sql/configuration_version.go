@@ -37,10 +37,10 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 
 	result, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 		ID:            cv.ID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Source:        string(cv.Source),
-		Speculative:   cv.Speculative,
-		Status:        string(cv.Status),
+		AutoQueueRuns: cv.AutoQueueRuns(),
+		Source:        string(cv.Source()),
+		Speculative:   cv.Speculative(),
+		Status:        string(cv.Status()),
 		WorkspaceID:   cv.Workspace.ID,
 	})
 	if err != nil {
@@ -50,14 +50,11 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	cv.UpdatedAt = result.UpdatedAt
 
 	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID, string(cv.Status))
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID, string(cv.Status()))
 	if err != nil {
 		return nil, err
 	}
-	cv.StatusTimestamps = append(cv.StatusTimestamps, otf.ConfigurationVersionStatusTimestamp{
-		Status:    otf.ConfigurationStatus(ts.Status),
-		Timestamp: ts.Timestamp,
-	})
+	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status), ts.Timestamp)
 
 	return cv, tx.Commit(ctx)
 }

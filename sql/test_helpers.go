@@ -56,11 +56,7 @@ func newTestOrganization() *otf.Organization {
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
-	return &otf.Workspace{
-		ID:           otf.NewID("ws"),
-		Name:         uuid.NewString(),
-		Organization: org,
-	}
+	return otf.NewTestWorkspace(org)
 }
 
 func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
@@ -70,20 +66,8 @@ func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
 	return shallowWorkspace
 }
 
-func newShallowNestedConfigurationVersion(cv *otf.ConfigurationVersion) *otf.ConfigurationVersion {
-	cp, _ := copystructure.Copy(cv)
-	shallowConfigurationVersion := cp.(*otf.ConfigurationVersion)
-	shallowConfigurationVersion.StatusTimestamps = nil
-	shallowConfigurationVersion.Workspace = &otf.Workspace{ID: cv.Workspace.ID}
-	return shallowConfigurationVersion
-}
-
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return &otf.ConfigurationVersion{
-		ID:        otf.NewID("cv"),
-		Status:    otf.ConfigurationPending,
-		Workspace: newShallowNestedWorkspace(ws),
-	}
+	return otf.NewConfigurationVersionFromDefaults(otf.NewShallowNestedWorkspace(ws))
 }
 
 func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {

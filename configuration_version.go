@@ -41,11 +41,11 @@ type ConfigurationVersion struct {
 
 	Timestamps
 
-	AutoQueueRuns    bool
-	Source           ConfigurationSource
-	Speculative      bool
-	Status           ConfigurationStatus
-	StatusTimestamps []ConfigurationVersionStatusTimestamp
+	autoQueueRuns    bool
+	source           ConfigurationSource
+	speculative      bool
+	status           ConfigurationStatus
+	statusTimestamps []ConfigurationVersionStatusTimestamp
 
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
@@ -136,54 +136,37 @@ type ConfigurationVersionListOptions struct {
 	ListOptions
 }
 
-// ConfigurationVersionFactory creates ConfigurationVersion objects
-type ConfigurationVersionFactory struct {
-	WorkspaceService WorkspaceService
+func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
+func (cv *ConfigurationVersion) GetID() string               { return cv.ID }
+func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
+func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
+func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
+func (cv *ConfigurationVersion) String() string              { return cv.ID }
+func (cv *ConfigurationVersion) ConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamp {
+	return cv.statusTimestamps
 }
 
-func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
-func (cv *ConfigurationVersion) String() string { return cv.ID }
+func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
+	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
+}
 
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
-	if cv.Status != ConfigurationPending {
-		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.Status)
+	if cv.status != ConfigurationPending {
+		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
 	}
 
 	// check config untars successfully and set errored status if not
 
 	// upload config and set status depending on success
-	var err error
-	cv.Status, err = uploader.Upload(ctx, config)
+	status, err := uploader.Upload(ctx, config)
 	if err != nil {
 		return err
 	}
+	cv.status = status
 
 	return nil
-}
-
-// NewConfigurationVersion creates a ConfigurationVersion object from scratch
-func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
-	cv := ConfigurationVersion{
-		ID:            NewID("cv"),
-		AutoQueueRuns: DefaultAutoQueueRuns,
-		Status:        ConfigurationPending,
-		Source:        DefaultConfigurationSource,
-	}
-
-	if opts.AutoQueueRuns != nil {
-		cv.AutoQueueRuns = *opts.AutoQueueRuns
-	}
-
-	if opts.Speculative != nil {
-		cv.Speculative = *opts.Speculative
-	}
-
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
-	if err != nil {
-		return nil, err
-	}
-	cv.Workspace = ws
-
-	return &cv, nil
 }
