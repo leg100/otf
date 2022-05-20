@@ -30,9 +30,9 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 
 	createdAt, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              org.ID,
-		Name:            org.Name,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
+		Name:            org.Name(),
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
 	})
 	if err != nil {
 		return nil, databaseError(err)
@@ -70,22 +70,22 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 		return nil, err
 	}
 
-	if org.Name != result.Name {
-		result, err := q.UpdateOrganizationNameByName(ctx, org.Name, name)
+	if org.Name() != result.Name {
+		result, err := q.UpdateOrganizationNameByName(ctx, org.Name(), name)
 		if err != nil {
 			return nil, err
 		}
 		org.UpdatedAt = result.UpdatedAt
 	}
-	if org.SessionRemember != result.SessionRemember {
-		result, err := q.UpdateOrganizationSessionRememberByName(ctx, org.SessionRemember, org.Name)
+	if org.SessionRemember() != result.SessionRemember {
+		result, err := q.UpdateOrganizationSessionRememberByName(ctx, org.SessionRemember(), org.Name())
 		if err != nil {
 			return nil, err
 		}
 		org.UpdatedAt = result.UpdatedAt
 	}
-	if org.SessionTimeout != result.SessionTimeout {
-		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, org.SessionTimeout, org.Name)
+	if org.SessionTimeout() != result.SessionTimeout {
+		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, org.SessionTimeout(), org.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -138,16 +138,7 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 		return nil, databaseError(err)
 	}
 
-	return &otf.Organization{
-		ID:   r.OrganizationID,
-		Name: r.Name,
-		Timestamps: otf.Timestamps{
-			CreatedAt: r.CreatedAt,
-			UpdatedAt: r.UpdatedAt,
-		},
-		SessionRemember: int(r.SessionRemember),
-		SessionTimeout:  int(r.SessionTimeout),
-	}, nil
+	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
 }
 
 func (db OrganizationDB) Delete(name string) error {

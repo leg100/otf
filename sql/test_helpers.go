@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/require"
@@ -49,10 +48,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 }
 
 func newTestOrganization() *otf.Organization {
-	return &otf.Organization{
-		ID:   otf.NewID("org"),
-		Name: uuid.NewString(),
-	}
+	return otf.NewTestOrganization()
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
@@ -125,7 +121,7 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	ws = newShallowNestedWorkspace(ws)
-	cv = newShallowNestedConfigurationVersion(cv)
+	cv.ShallowNest()
 
 	return otf.NewRunFromDefaults(cv, ws)
 }
@@ -135,7 +131,7 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(org.Name)
+		db.OrganizationStore().Delete(org.Name())
 	})
 
 	return org
@@ -176,7 +172,6 @@ func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	cv.StatusTimestamps = nil
 	run := newTestRun(ws, cv)
 	err := db.RunStore().Create(run)
 	require.NoError(t, err)

@@ -25,9 +25,7 @@ type FakeOrganizationsClient struct {
 }
 
 func (f *FakeOrganizationsClient) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	return &otf.Organization{
-		Name: *opts.Name,
-	}, nil
+	return otf.NewTestOrganization(), nil
 }
 
 type FakeWorkspacesClient struct {

@@ -1,6 +1,9 @@
 package otf
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"github.com/mitchellh/copystructure"
+)
 
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
@@ -76,4 +79,11 @@ func NewTestWorkspace(org *Organization) *Workspace {
 		Organization: org,
 	}
 	return &ws
+}
+
+func NewShallowNestedWorkspace(ws *Workspace) *Workspace {
+	cp, _ := copystructure.Copy(ws)
+	shallowWorkspace := cp.(*Workspace)
+	shallowWorkspace.Organization = &Organization{ID: ws.Organization.ID}
+	return shallowWorkspace
 }

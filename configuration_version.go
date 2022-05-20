@@ -142,7 +142,7 @@ func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source 
 func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
 func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
 func (cv *ConfigurationVersion) String() string              { return cv.ID }
-func (cv *ConfigurationVersion) ConfigurationVersionStatusTimestamps() []ConfigurationVersionStatusTimestamp {
+func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
 
@@ -151,6 +151,11 @@ func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, t
 		Status:    status,
 		Timestamp: timestamp,
 	})
+}
+
+func (cv *ConfigurationVersion) ShallowNest() {
+	cv.statusTimestamps = nil
+	cv.Workspace = &Workspace{ID: cv.Workspace.ID}
 }
 
 // Upload saves the config to the db and updates status accordingly.

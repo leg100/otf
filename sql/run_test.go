@@ -138,7 +138,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by workspace name and organization",
-			opts: otf.RunListOptions{WorkspaceName: &ws.Name, OrganizationName: &org.Name},
+			opts: otf.RunListOptions{WorkspaceName: &ws.Name, OrganizationName: otf.String(org.Name())},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 3, len(l.Items))
 				assert.Contains(t, l.Items, run1)

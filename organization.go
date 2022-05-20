@@ -2,16 +2,13 @@ package otf
 
 import (
 	"context"
+
+	"github.com/leg100/otf/http/jsonapi"
 )
 
 var (
-	DefaultSessionTimeout          = 20160
-	DefaultSessionExpiration       = 20160
-	DefaultOrganizationPermissions = OrganizationPermissions{
-		CanCreateWorkspace: true,
-		CanUpdate:          true,
-		CanDestroy:         true,
-	}
+	DefaultSessionTimeout    = 20160
+	DefaultSessionExpiration = 20160
 )
 
 // Organization represents a Terraform Enterprise organization.
@@ -20,22 +17,9 @@ type Organization struct {
 
 	Timestamps
 
-	Name            string `json:"name"`
-	SessionRemember int    `json:"session_remember"`
-	SessionTimeout  int    `json:"session_timeout"`
-}
-
-// OrganizationPermissions represents the organization permissions.
-type OrganizationPermissions struct {
-	CanCreateTeam               bool `json:"can-create-team"`
-	CanCreateWorkspace          bool `json:"can-create-workspace"`
-	CanCreateWorkspaceMigration bool `json:"can-create-workspace-migration"`
-	CanDestroy                  bool `json:"can-destroy"`
-	CanTraverse                 bool `json:"can-traverse"`
-	CanUpdate                   bool `json:"can-update"`
-	CanUpdateAPIToken           bool `json:"can-update-api-token"`
-	CanUpdateOAuth              bool `json:"can-update-oauth"`
-	CanUpdateSentinel           bool `json:"can-update-sentinel"`
+	name            string `json:"name"`
+	sessionRemember int    `json:"session_remember"`
+	sessionTimeout  int    `json:"session_timeout"`
 }
 
 // OrganizationCreateOptions represents the options for creating an
@@ -104,8 +88,34 @@ type OrganizationStore interface {
 	Delete(name string) error
 }
 
-func (org *Organization) GetID() string  { return org.ID }
-func (org *Organization) String() string { return org.ID }
+func (org *Organization) GetID() string        { return org.ID }
+func (org *Organization) String() string       { return org.ID }
+func (org *Organization) Name() string         { return org.name }
+func (org *Organization) SessionRemember() int { return org.sessionRemember }
+func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
+
+// ToJSONAPI returns a JSON-API representation
+func (org *Organization) ToJSONAPI() *jsonapi.Organization {
+	return &jsonapi.Organization{
+		Name:            org.Name(),
+		CreatedAt:       org.CreatedAt,
+		ExternalID:      org.ID,
+		Permissions:     &DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
+	}
+}
+
+// ToJSONAPI returns a JSON-API representation
+func (ol *OrganizationList) ToJSONAPI() *jsonapi.OrganizationList {
+	jol := &OrganizationList{
+		Pagination: ol.Pagination,
+	}
+	for _, item := range ol.Items {
+		jol.Items = append(jol.Items, item.ToJSONAPI())
+	}
+	return jol
+}
 
 func (o OrganizationCreateOptions) Valid() error {
 	if !validString(o.Name) {
@@ -119,18 +129,18 @@ func (o OrganizationCreateOptions) Valid() error {
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
-		Name:            *opts.Name,
+		name:            *opts.Name,
 		ID:              NewID("org"),
-		SessionTimeout:  DefaultSessionTimeout,
-		SessionRemember: DefaultSessionExpiration,
+		sessionTimeout:  DefaultSessionTimeout,
+		sessionRemember: DefaultSessionExpiration,
 	}
 
 	if opts.SessionTimeout != nil {
-		org.SessionTimeout = *opts.SessionTimeout
+		org.sessionTimeout = *opts.SessionTimeout
 	}
 
 	if opts.SessionRemember != nil {
-		org.SessionRemember = *opts.SessionRemember
+		org.sessionRemember = *opts.SessionRemember
 	}
 
 	return &org, nil
@@ -138,15 +148,15 @@ func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 
 func UpdateOrganizationFromOpts(org *Organization, opts OrganizationUpdateOptions) error {
 	if opts.Name != nil {
-		org.Name = *opts.Name
+		org.name = *opts.Name
 	}
 
 	if opts.SessionTimeout != nil {
-		org.SessionTimeout = *opts.SessionTimeout
+		org.sessionTimeout = *opts.SessionTimeout
 	}
 
 	if opts.SessionRemember != nil {
-		org.SessionRemember = *opts.SessionRemember
+		org.sessionRemember = *opts.SessionRemember
 	}
 
 	return nil

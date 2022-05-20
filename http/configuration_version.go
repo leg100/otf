@@ -35,17 +35,6 @@ type CVStatusTimestamps struct {
 	StartedAt  *time.Time `json:"started-at,omitempty"`
 }
 
-// ToDomain converts http config version obj to a domain config version obj.
-func (cv *ConfigurationVersion) ToDomain() *otf.ConfigurationVersion {
-	return &otf.ConfigurationVersion{
-		ID:            cv.ID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Source:        cv.Source,
-		Speculative:   cv.Speculative,
-		Status:        cv.Status,
-	}
-}
-
 // ConfigurationVersionList represents a list of configuration versions.
 type ConfigurationVersionList struct {
 	*otf.Pagination
@@ -120,14 +109,14 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 func ConfigurationVersionJSONAPIObject(cv *otf.ConfigurationVersion) *ConfigurationVersion {
 	obj := &ConfigurationVersion{
 		ID:            cv.ID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Speculative:   cv.Speculative,
-		Source:        cv.Source,
-		Status:        cv.Status,
+		AutoQueueRuns: cv.AutoQueueRuns(),
+		Speculative:   cv.Speculative(),
+		Source:        cv.Source(),
+		Status:        cv.Status(),
 		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID),
 	}
 
-	for _, ts := range cv.StatusTimestamps {
+	for _, ts := range cv.StatusTimestamps() {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &CVStatusTimestamps{}
 		}

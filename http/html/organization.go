@@ -90,7 +90,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "created organization: ", organization.Name)
+	c.sessions.FlashSuccess(r, "created organization: ", organization.Name())
 
 	http.Redirect(w, r, c.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
 }
@@ -144,7 +144,7 @@ func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) 
 
 	// Explicitly specify route variable for organization name because the user
 	// might have updated it.
-	http.Redirect(w, r, c.route("editOrganization", "organization_name", organization.Name), http.StatusFound)
+	http.Redirect(w, r, c.route("editOrganization", "organization_name", organization.Name()), http.StatusFound)
 }
 
 func (c *OrganizationController) Delete(w http.ResponseWriter, r *http.Request) {
