@@ -77,6 +77,7 @@ type Run struct {
 	PositionInQueue  int
 	Refresh          bool
 	RefreshOnly      bool
+	speculative      bool
 	status           RunStatus
 	statusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
 	ReplaceAddrs     []string
@@ -254,6 +255,10 @@ type RunGetOptions struct {
 
 	// Get run via plan ID
 	PlanID *string
+
+	// A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
 func (o *RunGetOptions) String() string {
@@ -405,7 +410,7 @@ func (r *Run) IsDone() bool {
 }
 
 func (r *Run) IsSpeculative() bool {
-	return r.ConfigurationVersion.Speculative
+	return r.speculative
 }
 
 func (r *Run) ApplyRun() error {

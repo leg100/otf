@@ -173,7 +173,7 @@ func TestWorkspace_Delete(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(ws.Organization.Name)}
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name)}
 			},
 		},
 	}

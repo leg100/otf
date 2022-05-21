@@ -78,7 +78,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		if err != nil {
 			return nil, err
 		}
-		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		ws, err = otf.UnmarshalWorkspaceDBType(pggen.Workspaces(result))
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +87,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		if err != nil {
 			return nil, err
 		}
-		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		ws, err = otf.UnmarshalWorkspaceDBType(pggen.Workspaces(result))
 		if err != nil {
 			return nil, err
 		}
@@ -130,10 +130,11 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	ctx := context.Background()
 
 	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationName: opts.OrganizationName,
-		Prefix:           opts.Prefix,
-		Limit:            opts.GetLimit(),
-		Offset:           opts.GetOffset(),
+		OrganizationName:    opts.OrganizationName,
+		Prefix:              opts.Prefix,
+		Limit:               opts.GetLimit(),
+		Offset:              opts.GetOffset(),
+		IncludeOrganization: includeOrganization(opts.Include),
 	})
 	q.CountWorkspacesBatch(batch, opts.Prefix, opts.OrganizationName)
 
@@ -169,13 +170,17 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	q := pggen.NewQuerier(db.Pool)
 
 	if spec.ID != nil {
-		result, err := q.FindWorkspaceByID(ctx, *spec.ID)
+		result, err := q.FindWorkspaceByID(ctx, includeOrganization(spec.Include), *spec.ID)
 		if err != nil {
 			return nil, err
 		}
 		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := q.FindWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
+		result, err := q.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
+			Name:                *spec.Name,
+			OrganizationName:    *spec.OrganizationName,
+			IncludeOrganization: includeOrganization(spec.Include),
+		})
 		if err != nil {
 			return nil, err
 		}

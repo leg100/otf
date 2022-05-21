@@ -60,8 +60,8 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 		Refresh: DefaultRefresh,
 		status:  RunPending,
 	}
-	run.ConfigurationVersion = cv
-	run.Workspace = ws
+	run.ConfigurationVersion = &ConfigurationVersion{ID: cv.ID}
+	run.Workspace = &Workspace{ID: ws.ID}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
 	run.setJob()

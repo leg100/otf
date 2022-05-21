@@ -66,8 +66,11 @@ SELECT
     runs.target_addrs,
     runs.planned_changes,
     runs.applied_changes,
-    (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    configuration_versions.speculative,
+    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
+    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -121,8 +124,11 @@ SELECT
     runs.target_addrs,
     runs.planned_changes,
     runs.applied_changes,
-    (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    configuration_versions.speculative,
+    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
+    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -177,8 +183,11 @@ SELECT
     runs.target_addrs,
     runs.planned_changes,
     runs.applied_changes,
-    (configuration_versions.*)::"configuration_versions" AS configuration_version,
-    (workspaces.*)::"workspaces" AS workspace,
+    runs.configuration_version_id,
+    runs.workspace_id,
+    configuration_versions.speculative,
+    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
+    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst

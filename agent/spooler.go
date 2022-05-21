@@ -110,7 +110,7 @@ func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Run:
-		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status)
+		s.Info("run event received", "run", obj.ID, "type", ev.Type, "status", obj.Status())
 
 		switch ev.Type {
 		case otf.EventPlanQueued, otf.EventApplyQueued:

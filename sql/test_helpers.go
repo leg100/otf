@@ -59,7 +59,7 @@ func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return &otf.Workspace{
 		ID:           otf.NewID("ws"),
 		Name:         uuid.NewString(),
-		Organization: org,
+		Organization: &otf.Organization{ID: org.ID},
 	}
 }
 
@@ -82,7 +82,7 @@ func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
 		ID:        otf.NewID("cv"),
 		Status:    otf.ConfigurationPending,
-		Workspace: newShallowNestedWorkspace(ws),
+		Workspace: &otf.Workspace{ID: ws.ID},
 	}
 }
 
@@ -140,9 +140,6 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	ws = newShallowNestedWorkspace(ws)
-	cv = newShallowNestedConfigurationVersion(cv)
-
 	return otf.NewRunFromDefaults(cv, ws)
 }
 
@@ -192,7 +189,6 @@ func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	cv.StatusTimestamps = nil
 	run := newTestRun(ws, cv)
 	err := db.RunStore().Create(run)
 	require.NoError(t, err)

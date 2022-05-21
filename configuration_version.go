@@ -125,6 +125,9 @@ type ConfigurationVersionGetOptions struct {
 
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
+
+	// A list of relations to include
+	Include *string `schema:"include"`
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a

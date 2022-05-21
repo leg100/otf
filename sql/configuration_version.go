@@ -72,7 +72,7 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 	q := pggen.NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, id)
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, false, id)
 	if err != nil {
 		return err
 	}
@@ -132,13 +132,13 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 	q := pggen.NewQuerier(db.Pool)
 
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, *opts.ID)
+		result, err := q.FindConfigurationVersionByID(ctx, includeWorkspace(opts.Include), *opts.ID)
 		if err != nil {
 			return nil, err
 		}
 		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, includeWorkspace(opts.Include), *opts.WorkspaceID)
 		if err != nil {
 			return nil, err
 		}

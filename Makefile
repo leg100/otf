@@ -22,7 +22,7 @@ go-tfe-tests: build
 
 .PHONY: e2e
 e2e: build
-	./hack/harness.bash go test ./e2e -failfast -timeout 30s
+	./hack/harness.bash go test -v ./e2e -failfast -timeout 30s
 
 .PHONY: unit
 unit:
@@ -89,4 +89,4 @@ sql:
 		--go-type 'bytea=[]byte' \
 		--acronym url \
 		--acronym sha
-	go fmt ./sql
+	go fmt ./sql/pggen
