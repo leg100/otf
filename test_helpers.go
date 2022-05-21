@@ -1,14 +1,17 @@
 package otf
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 var _ RunService = (*fakeRunService)(nil)
 
 type fakeRunService struct {
-	// mapping of run id to run
+	// database of existing runs
 	db []*Run
-	// list of ids of started runs
-	started []string
+	// list of started runs
+	started []*Run
 	// prevent compiler error
 	RunService
 }
@@ -34,9 +37,15 @@ func (s *fakeRunService) List(_ context.Context, opts RunListOptions) (*RunList,
 	}, nil
 }
 
-func (s *fakeRunService) Start(_ context.Context, id string) error {
-	s.started = append(s.started, id)
-	return nil
+func (s *fakeRunService) Start(_ context.Context, id string) (*Run, error) {
+	for _, r := range s.db {
+		if r.ID == id {
+			s.started = append(s.started, r)
+			r.status = RunPlanQueued
+			return r, nil
+		}
+	}
+	return nil, fmt.Errorf("no run to start!")
 }
 
 type fakeWorkspaceService struct {

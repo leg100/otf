@@ -119,7 +119,7 @@ type RunService interface {
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
 	// Start a run.
-	Start(ctx context.Context, id string) error
+	Start(ctx context.Context, id string) (*Run, error)
 	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.

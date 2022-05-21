@@ -34,7 +34,7 @@ var (
 	testPendingNowActiveRun = Run{
 		ID:                   "run-pending",
 		ConfigurationVersion: &ConfigurationVersion{},
-		status:               RunPlanning,
+		status:               RunPlanQueued,
 		Workspace:            &Workspace{ID: "ws-123"},
 	}
 
@@ -73,7 +73,7 @@ func TestWorkspaceScheduler_New(t *testing.T) {
 			name:        "start pending run",
 			workspaces:  []*Workspace{&testWorkspace},
 			runs:        []*Run{&testPendingRun},
-			wantQueues:  map[string][]*Run{"ws-123": {&testPendingRun}},
+			wantQueues:  map[string][]*Run{"ws-123": {&testPendingNowActiveRun}},
 			wantStarted: []*Run{&testPendingRun},
 		},
 		{
@@ -118,9 +118,7 @@ func TestWorkspaceScheduler_New(t *testing.T) {
 				rs, nil, logr.Discard())
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantQueues, scheduler.queues)
-			for _, want := range tt.wantStarted {
-				assert.Contains(t, rs.started, want.ID)
-			}
+			assert.Equal(t, tt.wantStarted, rs.started)
 		})
 	}
 }

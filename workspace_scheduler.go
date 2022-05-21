@@ -35,7 +35,7 @@ func NewWorkspaceScheduler(ctx context.Context, ws WorkspaceService, rs RunServi
 		queues:       make(map[string][]*Run, len(workspaces.Items)),
 		RunService:   rs,
 		EventService: es,
-		Logger:       logger,
+		Logger:       logger.WithValues("component", "workspace_scheduler"),
 	}
 	for _, ws := range workspaces.Items {
 		s.queues[ws.ID] = []*Run{}
@@ -106,7 +106,12 @@ func (s *WorkspaceScheduler) refresh(ctx context.Context, updated *Run) {
 	}
 	if len(s.queues[wid]) > 0 {
 		if s.queues[wid][0].Status() == RunPending {
-			s.RunService.Start(ctx, s.queues[wid][0].ID)
+			started, err := s.RunService.Start(ctx, s.queues[wid][0].ID)
+			if err != nil {
+				s.Error(err, "starting run")
+			} else {
+				s.queues[wid][0] = started
+			}
 		}
 	}
 }
