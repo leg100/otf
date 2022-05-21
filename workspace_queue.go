@@ -36,7 +36,7 @@ func (q workspaceQueue) startRun(ctx context.Context, rs RunService) (workspaceQ
 }
 
 // indexRunSlice retrieves the index of a run within a slice of runs, returning
-// -1 if run is not found.
+// -1 if not found.
 func indexRunSlice(runs []*Run, run *Run) int {
 	for i, r := range runs {
 		if r.ID == run.ID {

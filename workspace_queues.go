@@ -60,9 +60,17 @@ func (s *workspaceQueueManager) Start() error {
 					delete(s.queues, obj.ID)
 				}
 			case *Run:
-				// update workspace queue
+				if obj.IsSpeculative() {
+					// speculative runs are never queued
+					continue
+				}
+				// update workspace queue and start run
 				s.update(obj.Workspace.ID, func(q workspaceQueue) workspaceQueue {
-					return q.update(obj)
+					q, err = q.update(obj).startRun(s.ctx, s.RunService)
+					if err != nil {
+						s.Error(err, "starting run")
+					}
+					return q
 				})
 			}
 		}
