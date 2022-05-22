@@ -68,12 +68,36 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	return &run
 }
 
+type TestRunOption func(*Run)
+
+func TestRunStatus(status RunStatus) TestRunOption {
+	return func(r *Run) {
+		r.status = status
+	}
+}
+
+func TestRunWorkspaceID(id string) TestRunOption {
+	return func(r *Run) {
+		r.Workspace = &Workspace{ID: id}
+	}
+}
+
+func TestRunSpeculative() TestRunOption {
+	return func(r *Run) {
+		r.ConfigurationVersion.Speculative = true
+	}
+}
+
 // NewTestRun creates a new run expressly for testing purposes
-func NewTestRun(id string) *Run {
+func NewTestRun(id string, opts ...TestRunOption) *Run {
 	run := Run{
-		ID:      id,
-		Refresh: DefaultRefresh,
-		status:  RunPending,
+		ID:                   id,
+		Refresh:              DefaultRefresh,
+		status:               RunPending,
+		ConfigurationVersion: &ConfigurationVersion{},
+	}
+	for _, o := range opts {
+		o(&run)
 	}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)

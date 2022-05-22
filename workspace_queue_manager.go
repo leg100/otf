@@ -27,6 +27,7 @@ func NewWorkspaceQueueManager(ctx context.Context, app Application, logger logr.
 		EventService: app.EventService(),
 		Logger:       logger.WithValues("component", "workspace_queue_manager"),
 		ctx:          ctx,
+		queues:       make(map[string]workspaceQueue),
 	}
 	if err := s.seed(); err != nil {
 		return nil, err
@@ -52,15 +53,18 @@ func (s *workspaceQueueManager) Start() error {
 			switch obj := event.Payload.(type) {
 			case *Workspace:
 				switch event.Type {
-				case EventWorkspaceCreated:
-					// create workspace queue
-					s.queues[obj.ID] = workspaceQueue{}
 				case EventWorkspaceDeleted:
-					// delete workspace queue
+					// garbage collect queue
 					delete(s.queues, obj.ID)
 				}
+				// skip EventWorkspaceCreated because the mgr creates workspace
+				// queue on-demand when a run event comes in.
 			case *Run:
 				if obj.IsSpeculative() {
+					_, err := s.RunService.Start(s.ctx, obj.ID)
+					if err != nil {
+						s.Error(err, "starting speculative run")
+					}
 					// speculative runs are never queued
 					continue
 				}
@@ -85,6 +89,45 @@ func (s *workspaceQueueManager) seed() error {
 	}
 	for _, run := range runs.Items {
 		if run.IsSpeculative() {
+			if run.Status() == RunPending {
+				_, err := s.RunService.Start(s.ctx, run.ID)
+				if err != nil {
+					s.Error(err, "starting speculative run")
+				}
+			}
+			// speculative runs are never queued
+			continue
+		}
+		s.update(run.Workspace.ID, func(q workspaceQueue) workspaceQueue {
+			return append(q, run)
+		})
+	}
+	for workspaceID := range s.queues {
+		s.update(workspaceID, func(q workspaceQueue) workspaceQueue {
+			q, err := q.startRun(s.ctx, s.RunService)
+			if err != nil {
+				s.Error(err, "starting run")
+			}
+			return q
+		})
+	}
+	return nil
+}
+
+// seed populates workspace queues and starts runs at the front of queues.
+func (s *workspaceQueueManager) refresh() error {
+	runs, err := s.List(s.ctx, RunListOptions{Statuses: IncompleteRunStatuses})
+	if err != nil {
+		return err
+	}
+	for _, run := range runs.Items {
+		if run.IsSpeculative() {
+			if run.Status() == RunPending {
+				_, err := s.RunService.Start(s.ctx, run.ID)
+				if err != nil {
+					s.Error(err, "starting speculative run")
+				}
+			}
 			// speculative runs are never queued
 			continue
 		}
