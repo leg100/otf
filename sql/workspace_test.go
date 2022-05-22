@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -39,7 +40,7 @@ func TestWorkspace_Update(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name())}
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(org.Name())}
 			},
 		},
 	}
@@ -49,7 +50,9 @@ func TestWorkspace_Update(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
 
 			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) (bool, error) {
-				ws.Description = "updated description"
+				ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
+					Description: otf.String("updated description"),
+				})
 				return true, nil
 			})
 			require.NoError(t, err)
@@ -79,7 +82,7 @@ func TestWorkspace_Get(t *testing.T) {
 		},
 		{
 			name: "by name",
-			spec: otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(org.Name())},
+			spec: otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(org.Name())},
 		},
 	}
 
@@ -115,7 +118,7 @@ func TestWorkspace_List(t *testing.T) {
 		},
 		{
 			name: "filter by prefix",
-			opts: otf.WorkspaceListOptions{OrganizationName: org.Name(), Prefix: ws1.Name[:5]},
+			opts: otf.WorkspaceListOptions{OrganizationName: org.Name(), Prefix: ws1.Name()[:5]},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				assert.Equal(t, 1, len(l.Items))
 				assert.Equal(t, ws1, l.Items[0])
@@ -173,7 +176,7 @@ func TestWorkspace_Delete(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{Name: otf.String(ws.Name), OrganizationName: otf.String(ws.Organization.Name())}
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(ws.Organization.Name())}
 			},
 		},
 	}

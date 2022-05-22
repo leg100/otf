@@ -36,7 +36,7 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 	if err != nil {
 		return nil, err
 	}
-	cv.Workspace = workspace
+	cv.Workspace = &Workspace{ID: ws.ID}
 
 	return &cv, nil
 }

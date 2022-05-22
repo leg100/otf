@@ -8,65 +8,65 @@ import (
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		ID:                  NewID("ws"),
-		Name:                *opts.Name,
-		AllowDestroyPlan:    DefaultAllowDestroyPlan,
-		ExecutionMode:       DefaultExecutionMode,
-		FileTriggersEnabled: DefaultFileTriggersEnabled,
-		GlobalRemoteState:   true, // Only global remote state is supported
-		TerraformVersion:    DefaultTerraformVersion,
-		SpeculativeEnabled:  true,
+		name:                *opts.Name,
+		allowDestroyPlan:    DefaultAllowDestroyPlan,
+		executionMode:       DefaultExecutionMode,
+		fileTriggersEnabled: DefaultFileTriggersEnabled,
+		globalRemoteState:   true, // Only global remote state is supported
+		terraformVersion:    DefaultTerraformVersion,
+		speculativeEnabled:  true,
 		Organization:        org,
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
 	if opts.ExecutionMode != nil {
-		ws.ExecutionMode = *opts.ExecutionMode
+		ws.executionMode = *opts.ExecutionMode
 	}
 	// Operations is deprecated in favour of ExecutionMode.
 	if opts.Operations != nil {
 		if *opts.Operations {
-			ws.ExecutionMode = "remote"
+			ws.executionMode = "remote"
 		} else {
-			ws.ExecutionMode = "local"
+			ws.executionMode = "local"
 		}
 	}
 
 	if opts.AllowDestroyPlan != nil {
-		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+		ws.allowDestroyPlan = *opts.AllowDestroyPlan
 	}
 	if opts.AutoApply != nil {
-		ws.AutoApply = *opts.AutoApply
+		ws.autoApply = *opts.AutoApply
 	}
 	if opts.Description != nil {
-		ws.Description = *opts.Description
+		ws.description = *opts.Description
 	}
 	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+		ws.fileTriggersEnabled = *opts.FileTriggersEnabled
 	}
 	if opts.QueueAllRuns != nil {
-		ws.QueueAllRuns = *opts.QueueAllRuns
+		ws.queueAllRuns = *opts.QueueAllRuns
 	}
 	if opts.SourceName != nil {
-		ws.SourceName = *opts.SourceName
+		ws.sourceName = *opts.SourceName
 	}
 	if opts.SourceURL != nil {
-		ws.SourceURL = *opts.SourceURL
+		ws.sourceURL = *opts.SourceURL
 	}
 	if opts.SpeculativeEnabled != nil {
-		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+		ws.speculativeEnabled = *opts.SpeculativeEnabled
 	}
 	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+		ws.structuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
-		ws.TerraformVersion = *opts.TerraformVersion
+		ws.terraformVersion = *opts.TerraformVersion
 	}
 	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
+		ws.triggerPrefixes = opts.TriggerPrefixes
 	}
 	if opts.WorkingDirectory != nil {
-		ws.WorkingDirectory = *opts.WorkingDirectory
+		ws.workingDirectory = *opts.WorkingDirectory
 	}
 
 	return &ws
@@ -75,7 +75,7 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 func NewTestWorkspace(org *Organization) *Workspace {
 	ws := Workspace{
 		ID:           NewID("ws"),
-		Name:         uuid.NewString(),
+		name:         uuid.NewString(),
 		Organization: org,
 	}
 	return &ws

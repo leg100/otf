@@ -213,8 +213,8 @@ func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
 		CreatedAt:              r.CreatedAt,
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
 		HasChanges:             r.Plan.HasChanges(),
-		IsDestroy:              r.IsDestroy,
-		Message:                r.Message,
+		IsDestroy:              r.IsDestroy(),
+		Message:                r.Message(),
 		Permissions: &dto.RunPermissions{
 			CanForceCancel:  true,
 			CanApply:        true,
@@ -223,12 +223,12 @@ func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
 			CanForceExecute: true,
 		},
 		PositionInQueue: 0,
-		Refresh:         r.Refresh,
-		RefreshOnly:     r.RefreshOnly,
-		ReplaceAddrs:    r.ReplaceAddrs,
+		Refresh:         r.Refresh(),
+		RefreshOnly:     r.RefreshOnly(),
+		ReplaceAddrs:    r.ReplaceAddrs(),
 		Source:          otf.DefaultConfigurationSource,
 		Status:          string(r.Status()),
-		TargetAddrs:     r.TargetAddrs,
+		TargetAddrs:     r.TargetAddrs(),
 
 		// Relations
 		Apply:                ApplyDTO(req, r.Apply),

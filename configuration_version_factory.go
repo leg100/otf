@@ -32,7 +32,7 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 	if err != nil {
 		return nil, err
 	}
-	cv.Workspace = ws
+	cv.Workspace = &Workspace{ID: ws.ID}
 
 	return &cv, nil
 }
@@ -43,7 +43,7 @@ func NewConfigurationVersionFromDefaults(ws *Workspace) *ConfigurationVersion {
 		ID:     NewID("cv"),
 		status: ConfigurationPending,
 	}
-	cv.Workspace = ws
+	cv.Workspace = &Workspace{ID: ws.ID}
 	return &cv
 }
 

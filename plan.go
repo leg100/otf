@@ -143,7 +143,7 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
 	}
 
-	if !p.run.Workspace.AutoApply {
+	if !p.run.Workspace.autoApply {
 		if err := p.run.UpdateStatus(RunPlanned); err != nil {
 			return nil, err
 		}
