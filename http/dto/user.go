@@ -1,4 +1,4 @@
-package http
+package dto
 
 // User represents a Terraform Enterprise user.
 type User struct {

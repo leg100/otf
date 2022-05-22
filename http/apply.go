@@ -5,33 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
-
-// Apply represents a Terraform Enterprise apply.
-type Apply struct {
-	ID                   string                 `jsonapi:"primary,applies"`
-	LogReadURL           string                 `jsonapi:"attr,log-read-url"`
-	ResourceAdditions    int                    `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int                    `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int                    `jsonapi:"attr,resource-destructions"`
-	Status               otf.ApplyStatus        `jsonapi:"attr,status"`
-	StatusTimestamps     *ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
-}
-
-// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
-type ApplyStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
-}
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -42,7 +21,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, ApplyJSONAPIObject(r, obj))
+	WriteResponse(w, r, ApplyDTO(r, obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
@@ -95,37 +74,36 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
-// JSON-API object
-func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
-	obj := &Apply{
+// ApplyDTO converts an apply into a DTO
+func ApplyDTO(req *http.Request, a *otf.Apply) *dto.Apply {
+	o := &dto.Apply{
 		ID:         a.ID,
 		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		Status:     a.Status(),
+		Status:     string(a.Status()),
 	}
 	if a.ResourceReport != nil {
-		obj.ResourceAdditions = a.Additions
-		obj.ResourceChanges = a.Changes
-		obj.ResourceDestructions = a.Destructions
+		o.ResourceAdditions = a.Additions
+		o.ResourceChanges = a.Changes
+		o.ResourceDestructions = a.Destructions
 	}
 
 	for _, ts := range a.StatusTimestamps() {
-		if obj.StatusTimestamps == nil {
-			obj.StatusTimestamps = &ApplyStatusTimestamps{}
+		if o.StatusTimestamps == nil {
+			o.StatusTimestamps = &dto.ApplyStatusTimestamps{}
 		}
 		switch ts.Status {
 		case otf.ApplyCanceled:
-			obj.StatusTimestamps.CanceledAt = &ts.Timestamp
+			o.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.ApplyErrored:
-			obj.StatusTimestamps.ErroredAt = &ts.Timestamp
+			o.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.ApplyFinished:
-			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
+			o.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.ApplyQueued:
-			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
+			o.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.ApplyRunning:
-			obj.StatusTimestamps.StartedAt = &ts.Timestamp
+			o.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 
-	return obj
+	return o
 }

@@ -1,4 +1,4 @@
-package http
+package dto
 
 type StateVersionOutput struct {
 	ID        string `jsonapi:"primary,state-version-outputs"`

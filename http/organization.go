@@ -7,7 +7,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
+
+type JSONAPIConvertible interface {
+	JSONAPI() interface{}
+}
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := otf.OrganizationCreateOptions{}
@@ -28,7 +33,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, OrganizationDTO(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +45,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +62,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationListJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationListDTO(obj))
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +80,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -101,15 +106,26 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, r, obj)
 }
 
-// OrganizationListJSONAPIObject converts a OrganizationList to a struct that
-// can be marshalled into a JSON-API object
-func OrganizationListJSONAPIObject(ol *otf.OrganizationList) *OrganizationList {
-	obj := &OrganizationList{
-		Pagination: ol.Pagination,
+// OrganizationDTO converts an org into a DTO
+func OrganizationDTO(org *otf.Organization) *dto.Organization {
+	return &dto.Organization{
+		Name:            org.Name,
+		CreatedAt:       org.CreatedAt,
+		ExternalID:      org.ID,
+		Permissions:     &dto.DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember,
+		SessionTimeout:  org.SessionTimeout,
+	}
+}
+
+// OrganizationListDTO converts an org list into a DTO
+func OrganizationListDTO(ol *otf.OrganizationList) *dto.OrganizationList {
+	pagination := dto.Pagination(*ol.Pagination)
+	jol := &dto.OrganizationList{
+		Pagination: &pagination,
 	}
 	for _, item := range ol.Items {
-		obj.Items = append(obj.Items, OrganizationJSONAPIObject(item))
+		jol.Items = append(jol.Items, OrganizationDTO(item))
 	}
-
-	return obj
+	return jol
 }

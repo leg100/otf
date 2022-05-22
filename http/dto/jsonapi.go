@@ -1,4 +1,4 @@
-package jsonapi
+package dto
 
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {

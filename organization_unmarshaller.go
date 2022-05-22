@@ -1,7 +1,7 @@
 package otf
 
 import (
-	"github.com/leg100/otf/http/jsonapi"
+	"github.com/leg100/otf/http/dto"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -20,11 +20,11 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 	return &org, nil
 }
 
-func UmarshalOrganizationJSONAPI(model *jsonapi.Organization) *Organization {
+func UnmarshalOrganizationJSONAPI(model *dto.Organization) *Organization {
 	return &Organization{
 		ID:              model.ExternalID,
-		name:            model.Name,
-		sessionRemember: model.SessionRemember,
-		sessionTimeout:  model.SessionTimeout,
+		Name:            model.Name,
+		SessionRemember: model.SessionRemember,
+		SessionTimeout:  model.SessionTimeout,
 	}
 }
