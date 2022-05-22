@@ -31,11 +31,6 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 	run := NewRunFromDefaults(cv, ws)
 	run.ReplaceAddrs = opts.ReplaceAddrs
 	run.TargetAddrs = opts.TargetAddrs
-
-	if cv.Speculative {
-		// immediately enqueue plans for speculative runs
-		run.status = RunPlanQueued
-	}
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
 	}
@@ -65,6 +60,10 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 		status:  RunPending,
 	}
 	run.ConfigurationVersion = cv
+	if cv.Speculative {
+		// immediately enqueue plans for speculative runs
+		run.status = RunPlanQueued
+	}
 	run.Workspace = ws
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
