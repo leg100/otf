@@ -32,6 +32,10 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 	run.ReplaceAddrs = opts.ReplaceAddrs
 	run.TargetAddrs = opts.TargetAddrs
 
+	if cv.Speculative {
+		// immediately enqueue plans for speculative runs
+		run.status = RunPlanQueued
+	}
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
 	}

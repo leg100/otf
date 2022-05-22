@@ -61,6 +61,9 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 	s.V(1).Info("created run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
+	if run.IsSpeculative() {
+		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
+	}
 
 	return run, nil
 }

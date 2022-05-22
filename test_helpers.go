@@ -45,16 +45,5 @@ func (s *fakeRunService) Start(_ context.Context, id string) (*Run, error) {
 			return r, nil
 		}
 	}
-	return nil, fmt.Errorf("no run to start!")
-}
-
-type fakeWorkspaceService struct {
-	workspaces []*Workspace
-	WorkspaceService
-}
-
-func (s *fakeWorkspaceService) List(_ context.Context, opts WorkspaceListOptions) (*WorkspaceList, error) {
-	return &WorkspaceList{
-		Items: s.workspaces,
-	}, nil
+	return nil, fmt.Errorf("no run to start")
 }

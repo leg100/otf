@@ -6,6 +6,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
+const (
+	// SchedulerSubscriptionID is the ID the scheduler uses to identify itself
+	// when subscribing to the events service
+	SchedulerSubscriptionID = "scheduler"
+)
+
 // workspaceQueueManager manages workspace queues of runs
 type workspaceQueueManager struct {
 	// RunService retrieves and updates runs
@@ -21,6 +27,7 @@ type workspaceQueueManager struct {
 }
 
 // NewWorkspaceQueueManager constructs and populates workspace queues with runs
+// before starting any eligible runs.
 func NewWorkspaceQueueManager(ctx context.Context, app Application, logger logr.Logger) (*workspaceQueueManager, error) {
 	s := &workspaceQueueManager{
 		RunService:   app.RunService(),
@@ -30,6 +37,9 @@ func NewWorkspaceQueueManager(ctx context.Context, app Application, logger logr.
 		queues:       make(map[string]workspaceQueue),
 	}
 	if err := s.seed(); err != nil {
+		return nil, err
+	}
+	if err := s.startRuns(); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -57,31 +67,16 @@ func (s *workspaceQueueManager) Start() error {
 					// garbage collect queue
 					delete(s.queues, obj.ID)
 				}
-				// skip EventWorkspaceCreated because the mgr creates workspace
-				// queue on-demand when a run event comes in.
+				// ignore EventWorkspaceCreated because the mgr creates
+				// workspace queue on-demand when a run event comes in.
 			case *Run:
-				if obj.IsSpeculative() {
-					_, err := s.RunService.Start(s.ctx, obj.ID)
-					if err != nil {
-						s.Error(err, "starting speculative run")
-					}
-					// speculative runs are never queued
-					continue
-				}
-				// update workspace queue and start run
-				s.update(obj.Workspace.ID, func(q workspaceQueue) workspaceQueue {
-					q, err = q.update(obj).startRun(s.ctx, s.RunService)
-					if err != nil {
-						s.Error(err, "starting run")
-					}
-					return q
-				})
+				s.refresh(obj)
 			}
 		}
 	}
 }
 
-// seed populates workspace queues and starts runs at the front of queues.
+// seed populates workspace queues
 func (s *workspaceQueueManager) seed() error {
 	runs, err := s.List(s.ctx, RunListOptions{Statuses: IncompleteRunStatuses})
 	if err != nil {
@@ -89,70 +84,55 @@ func (s *workspaceQueueManager) seed() error {
 	}
 	for _, run := range runs.Items {
 		if run.IsSpeculative() {
-			if run.Status() == RunPending {
-				_, err := s.RunService.Start(s.ctx, run.ID)
-				if err != nil {
-					s.Error(err, "starting speculative run")
-				}
-			}
 			// speculative runs are never queued
 			continue
 		}
-		s.update(run.Workspace.ID, func(q workspaceQueue) workspaceQueue {
-			return append(q, run)
-		})
-	}
-	for workspaceID := range s.queues {
-		s.update(workspaceID, func(q workspaceQueue) workspaceQueue {
-			q, err := q.startRun(s.ctx, s.RunService)
-			if err != nil {
-				s.Error(err, "starting run")
-			}
-			return q
+		s.update(run.Workspace.ID, func(q workspaceQueue) (workspaceQueue, error) {
+			q = append(q, run)
+			return q, nil
 		})
 	}
 	return nil
 }
 
-// seed populates workspace queues and starts runs at the front of queues.
-func (s *workspaceQueueManager) refresh() error {
-	runs, err := s.List(s.ctx, RunListOptions{Statuses: IncompleteRunStatuses})
-	if err != nil {
-		return err
-	}
-	for _, run := range runs.Items {
-		if run.IsSpeculative() {
-			if run.Status() == RunPending {
-				_, err := s.RunService.Start(s.ctx, run.ID)
-				if err != nil {
-					s.Error(err, "starting speculative run")
-				}
-			}
-			// speculative runs are never queued
-			continue
-		}
-		s.update(run.Workspace.ID, func(q workspaceQueue) workspaceQueue {
-			return append(q, run)
-		})
-	}
+// startRuns inspects the front of each workspace queue and starts eligible runs
+func (s *workspaceQueueManager) startRuns() error {
 	for workspaceID := range s.queues {
-		s.update(workspaceID, func(q workspaceQueue) workspaceQueue {
-			q, err := q.startRun(s.ctx, s.RunService)
-			if err != nil {
-				s.Error(err, "starting run")
-			}
-			return q
+		err := s.update(workspaceID, func(q workspaceQueue) (workspaceQueue, error) {
+			return q.startRun(s.ctx, s.RunService)
 		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// update map of queues in-place, updating the queue for the specified workspace
-// using the supplied fn. The workspace queue is created if it doesn't exist.
-func (s *workspaceQueueManager) update(workspaceID string, fn func(workspaceQueue) workspaceQueue) {
+// refresh takes an updated run and refreshes its workspace queue, starting an
+// eligible run if there is one.
+func (s *workspaceQueueManager) refresh(run *Run) error {
+	if run.IsSpeculative() {
+		// speculative runs are never queued
+		return nil
+	}
+	// update workspace queue and start eligible run if there is one
+	err := s.update(run.Workspace.ID, func(q workspaceQueue) (workspaceQueue, error) {
+		return q.update(run).startRun(s.ctx, s.RunService)
+	})
+	return err
+}
+
+// update map of queues in-place, updating the workspace queue using the
+// supplied fn. The workspace queue is created if it doesn't exist.
+func (s *workspaceQueueManager) update(workspaceID string, fn func(workspaceQueue) (workspaceQueue, error)) error {
 	q, ok := s.queues[workspaceID]
 	if !ok {
 		q = workspaceQueue{}
 	}
-	s.queues[workspaceID] = fn(q)
+	q, err := fn(q)
+	if err != nil {
+		return err
+	}
+	s.queues[workspaceID] = q
+	return nil
 }
