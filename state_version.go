@@ -137,7 +137,3 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 
 	return &sv, nil
 }
-
-func (sv *StateVersion) DownloadURL() string {
-	return fmt.Sprintf("/state-versions/%s/download", sv.ID)
-}

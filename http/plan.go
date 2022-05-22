@@ -5,34 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
-
-// Plan represents a Terraform Enterprise plan.
-type Plan struct {
-	ID                   string                `jsonapi:"primary,plans"`
-	HasChanges           bool                  `jsonapi:"attr,has-changes"`
-	LogReadURL           string                `jsonapi:"attr,log-read-url"`
-	ResourceAdditions    int                   `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int                   `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int                   `jsonapi:"attr,resource-destructions"`
-	Status               otf.PlanStatus        `jsonapi:"attr,status"`
-	StatusTimestamps     *PlanStatusTimestamps `jsonapi:"attr,status-timestamps"`
-}
-
-// PlanStatusTimestamps holds the timestamps for individual plan statuses.
-type PlanStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
-}
 
 // PlanFileOptions represents the options for retrieving the plan file for a
 // run.
@@ -50,7 +28,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, PlanJSONAPIObject(r, obj))
+	WriteResponse(w, r, PlanDTO(r, obj))
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
@@ -119,14 +97,14 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PlanJSONAPIObject converts a Plan to a struct that can be
+// PlanDTO converts a Plan to a struct that can be
 // marshalled into a JSON-API object
-func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
-	result := &Plan{
+func PlanDTO(r *http.Request, p *otf.Plan) *dto.Plan {
+	result := &dto.Plan{
 		ID:         p.ID,
 		HasChanges: p.HasChanges(),
 		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
-		Status:     p.Status(),
+		Status:     string(p.Status()),
 	}
 	if p.ResourceReport != nil {
 		result.ResourceAdditions = p.Additions
@@ -136,7 +114,7 @@ func PlanJSONAPIObject(r *http.Request, p *otf.Plan) *Plan {
 
 	for _, ts := range p.StatusTimestamps() {
 		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &PlanStatusTimestamps{}
+			result.StatusTimestamps = &dto.PlanStatusTimestamps{}
 		}
 		switch ts.Status {
 		case otf.PlanCanceled:

@@ -199,15 +199,6 @@ type RunDiscardOptions struct {
 	Comment *string `jsonapi:"attr,comment,omitempty"`
 }
 
-// RunPermissions represents the run permissions.
-type RunPermissions struct {
-	CanApply        bool `json:"can-apply"`
-	CanCancel       bool `json:"can-cancel"`
-	CanDiscard      bool `json:"can-discard"`
-	CanForceCancel  bool `json:"can-force-cancel"`
-	CanForceExecute bool `json:"can-force-execute"`
-}
-
 // RunStore implementations persist Run objects.
 type RunStore interface {
 	Create(run *Run) error
