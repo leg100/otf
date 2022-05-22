@@ -35,17 +35,6 @@ type CVStatusTimestamps struct {
 	StartedAt  *time.Time `json:"started-at,omitempty"`
 }
 
-// ToDomain converts http config version obj to a domain config version obj.
-func (cv *ConfigurationVersion) ToDomain() *otf.ConfigurationVersion {
-	return &otf.ConfigurationVersion{
-		ID:            cv.ID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Source:        cv.Source,
-		Speculative:   cv.Speculative,
-		Status:        cv.Status,
-	}
-}
-
 // ConfigurationVersionList represents a list of configuration versions.
 type ConfigurationVersionList struct {
 	*otf.Pagination

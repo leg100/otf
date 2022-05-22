@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	models "github.com/leg100/otf/http/jsonapi"
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -46,8 +47,8 @@ type Workspace struct {
 	RunsCount                  int                       `jsonapi:"attr,workspace-kpis-runs-count"`
 
 	// Relations
-	CurrentRun   *Run          `jsonapi:"relation,current-run"`
-	Organization *Organization `jsonapi:"relation,organization"`
+	CurrentRun   *Run                 `jsonapi:"relation,current-run"`
+	Organization *models.Organization `jsonapi:"relation,organization"`
 }
 
 // WorkspaceList represents a list of workspaces.

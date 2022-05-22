@@ -3,43 +3,11 @@ package http
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 )
-
-// Organization represents a Terraform Enterprise organization.
-type Organization struct {
-	Name                  string                       `jsonapi:"primary,organizations"`
-	CostEstimationEnabled bool                         `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt             time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	ExternalID            string                       `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID  string                       `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions           *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled           bool                         `jsonapi:"attr,saml-enabled"`
-	SessionRemember       int                          `jsonapi:"attr,session-remember"`
-	SessionTimeout        int                          `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt        time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant   bool                         `jsonapi:"attr,two-factor-conformant"`
-}
-
-// OrganizationList represents a list of organizations.
-type OrganizationList struct {
-	*otf.Pagination
-	Items []*Organization
-}
-
-// ToDomain converts http organization obj to a domain organization obj.
-func (o *Organization) ToDomain() *otf.Organization {
-	return &otf.Organization{
-		ID:              o.ExternalID,
-		Name:            o.Name,
-		SessionRemember: o.SessionRemember,
-		SessionTimeout:  o.SessionTimeout,
-	}
-}
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := otf.OrganizationCreateOptions{}
@@ -133,28 +101,13 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, r, obj)
 }
 
-// OrganizationJSONAPIObject converts a Organization to a struct
-// that can be marshalled into a JSON-API object
-func OrganizationJSONAPIObject(org *otf.Organization) *Organization {
-	obj := &Organization{
-		Name:            org.Name,
-		CreatedAt:       org.CreatedAt,
-		ExternalID:      org.ID,
-		Permissions:     &otf.DefaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
-	}
-
-	return obj
-}
-
-// OrganizationListJSONAPIObject converts a OrganizationList to
-// a struct that can be marshalled into a JSON-API object
-func OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
+// OrganizationListJSONAPIObject converts a OrganizationList to a struct that
+// can be marshalled into a JSON-API object
+func OrganizationListJSONAPIObject(ol *otf.OrganizationList) *OrganizationList {
 	obj := &OrganizationList{
-		Pagination: cvl.Pagination,
+		Pagination: ol.Pagination,
 	}
-	for _, item := range cvl.Items {
+	for _, item := range ol.Items {
 		obj.Items = append(obj.Items, OrganizationJSONAPIObject(item))
 	}
 
