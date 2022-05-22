@@ -3,6 +3,7 @@ package otf
 import (
 	"time"
 
+	"github.com/leg100/otf/http/dto"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -100,4 +101,48 @@ func unmarshalWorkspaceDBType(typ *pggen.Workspaces) (*Workspace, error) {
 	}
 
 	return &ws, nil
+}
+
+func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
+	domain := Workspace{
+		ID:                         w.ID,
+		AllowDestroyPlan:           w.AllowDestroyPlan,
+		AutoApply:                  w.AutoApply,
+		CanQueueDestroyPlan:        w.CanQueueDestroyPlan,
+		Description:                w.Description,
+		Environment:                w.Environment,
+		ExecutionMode:              w.ExecutionMode,
+		FileTriggersEnabled:        w.FileTriggersEnabled,
+		GlobalRemoteState:          w.GlobalRemoteState,
+		Locked:                     w.Locked,
+		MigrationEnvironment:       w.MigrationEnvironment,
+		Name:                       w.Name,
+		QueueAllRuns:               w.QueueAllRuns,
+		SpeculativeEnabled:         w.SpeculativeEnabled,
+		SourceName:                 w.SourceName,
+		SourceURL:                  w.SourceURL,
+		StructuredRunOutputEnabled: w.StructuredRunOutputEnabled,
+		TerraformVersion:           w.TerraformVersion,
+		VCSRepo:                    w.VCSRepo,
+		WorkingDirectory:           w.WorkingDirectory,
+		TriggerPrefixes:            w.TriggerPrefixes,
+	}
+
+	if w.Organization != nil {
+		domain.Organization = UnmarshalOrganizationJSONAPI(w.Organization)
+	}
+
+	return &domain
+}
+
+func UnmarshalWorkspaceListJSONAPI(json *dto.WorkspaceList) *WorkspaceList {
+	pagination := Pagination(*json.Pagination)
+	wl := WorkspaceList{
+		Pagination: &pagination,
+	}
+	for _, i := range json.Items {
+		wl.Items = append(wl.Items, UnmarshalWorkspaceJSONAPI(i))
+	}
+
+	return &wl
 }

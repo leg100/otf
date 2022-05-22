@@ -5,13 +5,8 @@ import (
 )
 
 var (
-	DefaultSessionTimeout          = 20160
-	DefaultSessionExpiration       = 20160
-	DefaultOrganizationPermissions = OrganizationPermissions{
-		CanCreateWorkspace: true,
-		CanUpdate:          true,
-		CanDestroy:         true,
-	}
+	DefaultSessionTimeout    = 20160
+	DefaultSessionExpiration = 20160
 )
 
 // Organization represents a Terraform Enterprise organization.
@@ -23,19 +18,6 @@ type Organization struct {
 	Name            string `json:"name"`
 	SessionRemember int    `json:"session_remember"`
 	SessionTimeout  int    `json:"session_timeout"`
-}
-
-// OrganizationPermissions represents the organization permissions.
-type OrganizationPermissions struct {
-	CanCreateTeam               bool `json:"can-create-team"`
-	CanCreateWorkspace          bool `json:"can-create-workspace"`
-	CanCreateWorkspaceMigration bool `json:"can-create-workspace-migration"`
-	CanDestroy                  bool `json:"can-destroy"`
-	CanTraverse                 bool `json:"can-traverse"`
-	CanUpdate                   bool `json:"can-update"`
-	CanUpdateAPIToken           bool `json:"can-update-api-token"`
-	CanUpdateOAuth              bool `json:"can-update-oauth"`
-	CanUpdateSentinel           bool `json:"can-update-sentinel"`
 }
 
 // OrganizationCreateOptions represents the options for creating an

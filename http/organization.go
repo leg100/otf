@@ -3,42 +3,15 @@ package http
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
 
-// Organization represents a Terraform Enterprise organization.
-type Organization struct {
-	Name                  string                       `jsonapi:"primary,organizations"`
-	CostEstimationEnabled bool                         `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt             time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	ExternalID            string                       `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID  string                       `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions           *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled           bool                         `jsonapi:"attr,saml-enabled"`
-	SessionRemember       int                          `jsonapi:"attr,session-remember"`
-	SessionTimeout        int                          `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt        time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant   bool                         `jsonapi:"attr,two-factor-conformant"`
-}
-
-// OrganizationList represents a list of organizations.
-type OrganizationList struct {
-	*otf.Pagination
-	Items []*Organization
-}
-
-// ToDomain converts http organization obj to a domain organization obj.
-func (o *Organization) ToDomain() *otf.Organization {
-	return &otf.Organization{
-		ID:              o.ExternalID,
-		Name:            o.Name,
-		SessionRemember: o.SessionRemember,
-		SessionTimeout:  o.SessionTimeout,
-	}
+type JSONAPIConvertible interface {
+	JSONAPI() interface{}
 }
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +33,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, OrganizationDTO(obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +45,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +62,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationListJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationListDTO(obj))
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +80,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	WriteResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -133,30 +106,26 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	WriteResponse(w, r, obj)
 }
 
-// OrganizationJSONAPIObject converts a Organization to a struct
-// that can be marshalled into a JSON-API object
-func OrganizationJSONAPIObject(org *otf.Organization) *Organization {
-	obj := &Organization{
+// OrganizationDTO converts an org into a DTO
+func OrganizationDTO(org *otf.Organization) *dto.Organization {
+	return &dto.Organization{
 		Name:            org.Name,
 		CreatedAt:       org.CreatedAt,
 		ExternalID:      org.ID,
-		Permissions:     &otf.DefaultOrganizationPermissions,
+		Permissions:     &dto.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember,
 		SessionTimeout:  org.SessionTimeout,
 	}
-
-	return obj
 }
 
-// OrganizationListJSONAPIObject converts a OrganizationList to
-// a struct that can be marshalled into a JSON-API object
-func OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
-	obj := &OrganizationList{
-		Pagination: cvl.Pagination,
+// OrganizationListDTO converts an org list into a DTO
+func OrganizationListDTO(ol *otf.OrganizationList) *dto.OrganizationList {
+	pagination := dto.Pagination(*ol.Pagination)
+	jol := &dto.OrganizationList{
+		Pagination: &pagination,
 	}
-	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, OrganizationJSONAPIObject(item))
+	for _, item := range ol.Items {
+		jol.Items = append(jol.Items, OrganizationDTO(item))
 	}
-
-	return obj
+	return jol
 }
