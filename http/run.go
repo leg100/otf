@@ -5,74 +5,12 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
-
-// Run represents a Terraform Enterprise run.
-type Run struct {
-	ID                     string               `jsonapi:"primary,runs"`
-	Actions                *RunActions          `jsonapi:"attr,actions"`
-	CreatedAt              time.Time            `jsonapi:"attr,created-at,iso8601"`
-	ForceCancelAvailableAt time.Time            `jsonapi:"attr,force-cancel-available-at,iso8601"`
-	HasChanges             bool                 `jsonapi:"attr,has-changes"`
-	IsDestroy              bool                 `jsonapi:"attr,is-destroy"`
-	Message                string               `jsonapi:"attr,message"`
-	Permissions            *otf.RunPermissions  `jsonapi:"attr,permissions"`
-	PositionInQueue        int                  `jsonapi:"attr,position-in-queue"`
-	Refresh                bool                 `jsonapi:"attr,refresh"`
-	RefreshOnly            bool                 `jsonapi:"attr,refresh-only"`
-	ReplaceAddrs           []string             `jsonapi:"attr,replace-addrs,omitempty"`
-	Source                 string               `jsonapi:"attr,source"`
-	Status                 otf.RunStatus        `jsonapi:"attr,status"`
-	StatusTimestamps       *RunStatusTimestamps `jsonapi:"attr,status-timestamps"`
-	TargetAddrs            []string             `jsonapi:"attr,target-addrs,omitempty"`
-
-	// Relations
-	Apply                *Apply                `jsonapi:"relation,apply"`
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
-	CreatedBy            *User                 `jsonapi:"relation,created-by"`
-	Plan                 *Plan                 `jsonapi:"relation,plan"`
-	Workspace            *Workspace            `jsonapi:"relation,workspace"`
-}
-
-// RunStatusTimestamps holds the timestamps for individual run statuses.
-type RunStatusTimestamps struct {
-	AppliedAt            *time.Time `json:"applied-at,omitempty"`
-	ApplyQueuedAt        *time.Time `json:"apply-queued-at,omitempty"`
-	ApplyingAt           *time.Time `json:"applying-at,omitempty"`
-	CanceledAt           *time.Time `json:"canceled-at,omitempty"`
-	ConfirmedAt          *time.Time `json:"confirmed-at,omitempty"`
-	CostEstimatedAt      *time.Time `json:"cost-estimated-at,omitempty"`
-	CostEstimatingAt     *time.Time `json:"cost-estimating-at,omitempty"`
-	DiscardedAt          *time.Time `json:"discarded-at,omitempty"`
-	ErroredAt            *time.Time `json:"errored-at,omitempty"`
-	ForceCanceledAt      *time.Time `json:"force-canceled-at,omitempty"`
-	PlanQueueableAt      *time.Time `json:"plan-queueable-at,omitempty"`
-	PlanQueuedAt         *time.Time `json:"plan-queued-at,omitempty"`
-	PlannedAndFinishedAt *time.Time `json:"planned-and-finished-at,omitempty"`
-	PlannedAt            *time.Time `json:"planned-at,omitempty"`
-	PlanningAt           *time.Time `json:"planning-at,omitempty"`
-	PolicyCheckedAt      *time.Time `json:"policy-checked-at,omitempty"`
-	PolicySoftFailedAt   *time.Time `json:"policy-soft-failed-at,omitempty"`
-}
-
-// RunList represents a list of runs.
-type RunList struct {
-	*otf.Pagination
-	Items []*Run
-}
-
-// RunActions represents the run actions.
-type RunActions struct {
-	IsCancelable      bool `json:"is-cancelable"`
-	IsConfirmable     bool `json:"is-confirmable"`
-	IsDiscardable     bool `json:"is-discardable"`
-	IsForceCancelable bool `json:"is-force-cancelable"`
-}
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	opts := otf.RunCreateOptions{}
@@ -87,7 +25,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, RunJSONAPIObject(r, obj), WithCode(http.StatusCreated))
+	WriteResponse(w, r, RunDTO(r, obj), WithCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +37,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, RunJSONAPIObject(r, obj))
+	WriteResponse(w, r, RunDTO(r, obj))
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +58,7 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, r, RunListJSONAPIObject(r, obj))
+	WriteResponse(w, r, RunListDTO(r, obj))
 }
 
 func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
@@ -261,12 +199,12 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.Ru
 	}
 }
 
-// RunJSONAPIObject converts a Run to a struct
+// RunDTO converts a Run to a struct
 // that can be marshalled into a JSON-API object
-func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
-	result := &Run{
+func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
+	result := &dto.Run{
 		ID: r.ID,
-		Actions: &RunActions{
+		Actions: &dto.RunActions{
 			IsCancelable:      r.IsCancelable(),
 			IsConfirmable:     r.IsConfirmable(),
 			IsForceCancelable: r.IsForceCancelable(),
@@ -277,7 +215,7 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 		HasChanges:             r.Plan.HasChanges(),
 		IsDestroy:              r.IsDestroy,
 		Message:                r.Message,
-		Permissions: &otf.RunPermissions{
+		Permissions: &dto.RunPermissions{
 			CanForceCancel:  true,
 			CanApply:        true,
 			CanCancel:       true,
@@ -289,17 +227,17 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 		RefreshOnly:     r.RefreshOnly,
 		ReplaceAddrs:    r.ReplaceAddrs,
 		Source:          otf.DefaultConfigurationSource,
-		Status:          r.Status(),
+		Status:          string(r.Status()),
 		TargetAddrs:     r.TargetAddrs,
 
 		// Relations
-		Apply:                ApplyJSONAPIObject(req, r.Apply),
-		ConfigurationVersion: ConfigurationVersionJSONAPIObject(r.ConfigurationVersion),
-		Plan:                 PlanJSONAPIObject(req, r.Plan),
-		Workspace:            WorkspaceJSONAPIObject(r.Workspace),
+		Apply:                ApplyDTO(req, r.Apply),
+		ConfigurationVersion: ConfigurationVersionDTO(r.ConfigurationVersion),
+		Plan:                 PlanDTO(req, r.Plan),
+		Workspace:            WorkspaceDTO(r.Workspace),
 
 		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &User{
+		CreatedBy: &dto.User{
 			ID:       otf.DefaultUserID,
 			Username: otf.DefaultUsername,
 		},
@@ -307,7 +245,7 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 
 	for _, rst := range r.StatusTimestamps() {
 		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &RunStatusTimestamps{}
+			result.StatusTimestamps = &dto.RunStatusTimestamps{}
 		}
 		switch rst.Status {
 		case otf.RunPending:
@@ -340,14 +278,15 @@ func RunJSONAPIObject(req *http.Request, r *otf.Run) *Run {
 	return result
 }
 
-// RunListJSONAPIObject converts a RunList to
+// RunListDTO converts a RunList to
 // a struct that can be marshalled into a JSON-API object
-func RunListJSONAPIObject(req *http.Request, cvl *otf.RunList) *RunList {
-	obj := &RunList{
-		Pagination: cvl.Pagination,
+func RunListDTO(req *http.Request, l *otf.RunList) *dto.RunList {
+	pagination := dto.Pagination(*l.Pagination)
+	obj := &dto.RunList{
+		Pagination: &pagination,
 	}
-	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, RunJSONAPIObject(req, item))
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, RunDTO(req, item))
 	}
 
 	return obj

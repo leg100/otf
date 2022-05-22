@@ -61,6 +61,9 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 	s.V(1).Info("created run", "id", run.ID)
 
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
+	if run.IsSpeculative() {
+		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
+	}
 
 	return run, nil
 }
@@ -145,20 +148,20 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 	return err
 }
 
-func (s RunService) Start(ctx context.Context, id string) error {
+func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
 		s.Error(err, "started run", "id", id)
-		return err
+		return nil, err
 	}
 
 	s.V(0).Info("started run", "id", id)
 
 	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 
-	return err
+	return run, err
 }
 
 // GetPlanFile returns the plan file for the run.

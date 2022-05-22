@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -44,7 +46,7 @@ type Workspace struct {
 	SourceURL                  string
 	TerraformVersion           string
 	TriggerPrefixes            []string
-	VCSRepo                    *VCSRepo
+	VCSRepo                    *dto.VCSRepo
 	WorkingDirectory           string
 
 	// Workspace belongs to an organization
@@ -310,36 +312,6 @@ type WorkspaceListOptions struct {
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
-}
-
-// VCSRepo contains the configuration of a VCS integration.
-type VCSRepo struct {
-	Branch            string `json:"branch"`
-	DisplayIdentifier string `json:"display-identifier"`
-	Identifier        string `json:"identifier"`
-	IngressSubmodules bool   `json:"ingress-submodules"`
-	OAuthTokenID      string `json:"oauth-token-id"`
-	RepositoryHTTPURL string `json:"repository-http-url"`
-	ServiceProvider   string `json:"service-provider"`
-}
-
-// WorkspaceActions represents the workspace actions.
-type WorkspaceActions struct {
-	IsDestroyable bool `json:"is-destroyable"`
-}
-
-// WorkspacePermissions represents the workspace permissions.
-type WorkspacePermissions struct {
-	CanDestroy        bool `json:"can-destroy"`
-	CanForceUnlock    bool `json:"can-force-unlock"`
-	CanLock           bool `json:"can-lock"`
-	CanQueueApply     bool `json:"can-queue-apply"`
-	CanQueueDestroy   bool `json:"can-queue-destroy"`
-	CanQueueRun       bool `json:"can-queue-run"`
-	CanReadSettings   bool `json:"can-read-settings"`
-	CanUnlock         bool `json:"can-unlock"`
-	CanUpdate         bool `json:"can-update"`
-	CanUpdateVariable bool `json:"can-update-variable"`
 }
 
 func (ws *Workspace) GetID() string  { return ws.ID }

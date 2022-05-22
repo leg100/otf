@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
 
 // Compile-time proof of interface implementation.
@@ -28,11 +29,11 @@ func (s *organizations) Create(ctx context.Context, options otf.OrganizationCrea
 		return nil, err
 	}
 
-	org := &Organization{}
+	org := &dto.Organization{}
 	err = s.client.do(ctx, req, org)
 	if err != nil {
 		return nil, err
 	}
 
-	return org.ToDomain(), nil
+	return otf.UnmarshalOrganizationJSONAPI(org), nil
 }

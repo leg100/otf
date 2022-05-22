@@ -1,33 +1,14 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
-
-// StateVersion represents a Terraform Enterprise state version.
-type StateVersion struct {
-	ID           string    `jsonapi:"primary,state-versions"`
-	CreatedAt    time.Time `jsonapi:"attr,created-at,iso8601"`
-	DownloadURL  string    `jsonapi:"attr,hosted-state-download-url"`
-	Serial       int64     `jsonapi:"attr,serial"`
-	VCSCommitSHA string    `jsonapi:"attr,vcs-commit-sha"`
-	VCSCommitURL string    `jsonapi:"attr,vcs-commit-url"`
-
-	// Relations
-	Run     *Run                  `jsonapi:"relation,run"`
-	Outputs []*StateVersionOutput `jsonapi:"relation,outputs"`
-}
-
-// StateVersionList represents a list of state versions.
-type StateVersionList struct {
-	*otf.Pagination
-	Items []*StateVersion
-}
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 	var opts otf.StateVersionListOptions
@@ -101,11 +82,11 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 
 // StateVersionJSONAPIObject converts a StateVersion to a struct that can be
 // marshalled into a JSON-API object
-func StateVersionJSONAPIObject(r *otf.StateVersion) *StateVersion {
-	obj := &StateVersion{
+func StateVersionJSONAPIObject(r *otf.StateVersion) *dto.StateVersion {
+	obj := &dto.StateVersion{
 		ID:          r.ID,
 		CreatedAt:   r.CreatedAt,
-		DownloadURL: r.DownloadURL(),
+		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID),
 		Serial:      r.Serial,
 		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs),
 	}
@@ -115,11 +96,12 @@ func StateVersionJSONAPIObject(r *otf.StateVersion) *StateVersion {
 
 // StateVersionListJSONAPIObject converts a StateVersionList to
 // a struct that can be marshalled into a JSON-API object
-func StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *StateVersionList {
-	obj := &StateVersionList{
-		Pagination: cvl.Pagination,
+func StateVersionListJSONAPIObject(l *otf.StateVersionList) *dto.StateVersionList {
+	pagination := dto.Pagination(*l.Pagination)
+	obj := &dto.StateVersionList{
+		Pagination: &pagination,
 	}
-	for _, item := range cvl.Items {
+	for _, item := range l.Items {
 		obj.Items = append(obj.Items, StateVersionJSONAPIObject(item))
 	}
 
@@ -128,8 +110,8 @@ func StateVersionListJSONAPIObject(cvl *otf.StateVersionList) *StateVersionList 
 
 // StateVersionOutputJSONAPIObject converts a StateVersionOutput to a struct that can be marshalled into a
 // JSON-API object
-func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *StateVersionOutput {
-	obj := &StateVersionOutput{
+func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *dto.StateVersionOutput {
+	obj := &dto.StateVersionOutput{
 		ID:        svo.ID,
 		Name:      svo.Name,
 		Sensitive: svo.Sensitive,
@@ -142,8 +124,8 @@ func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *StateVersionO
 
 // StateVersionOutputListJSONAPIObject converts a StateVersionOutputList to
 // a struct that can be marshalled into a JSON-API object
-func StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*StateVersionOutput {
-	var obj []*StateVersionOutput
+func StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*dto.StateVersionOutput {
+	var obj []*dto.StateVersionOutput
 	for _, item := range svol {
 		obj = append(obj, StateVersionOutputJSONAPIObject(item))
 	}

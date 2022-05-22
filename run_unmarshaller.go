@@ -6,6 +6,9 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+// TODO: rename these objects from *DBResult to *DBRecord or just *Record
+
+// RunDBResult is the database record for a run
 type RunDBResult struct {
 	RunID                  string                        `json:"run_id"`
 	PlanID                 string                        `json:"plan_id"`

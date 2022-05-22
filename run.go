@@ -120,7 +120,7 @@ type RunService interface {
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
 	// Start a run.
-	Start(ctx context.Context, id string) error
+	Start(ctx context.Context, id string) (*Run, error)
 	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
@@ -198,15 +198,6 @@ type RunForceCancelOptions struct {
 type RunDiscardOptions struct {
 	// An optional explanation for why the run was discarded.
 	Comment *string `jsonapi:"attr,comment,omitempty"`
-}
-
-// RunPermissions represents the run permissions.
-type RunPermissions struct {
-	CanApply        bool `json:"can-apply"`
-	CanCancel       bool `json:"can-cancel"`
-	CanDiscard      bool `json:"can-discard"`
-	CanForceCancel  bool `json:"can-force-cancel"`
-	CanForceExecute bool `json:"can-force-execute"`
 }
 
 // RunStore implementations persist Run objects.
