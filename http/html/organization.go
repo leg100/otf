@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 )
 
 type OrganizationController struct {
@@ -39,7 +40,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
 
 	// populate options struct from query and route paramters
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -74,7 +75,7 @@ func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
 
 func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationCreateOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -129,7 +130,7 @@ func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {
 
 func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationUpdateOptions
-	if err := decodeForm(r, &opts); err != nil {
+	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

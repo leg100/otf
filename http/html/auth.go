@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 )
 
 type GithubClient interface {
@@ -175,7 +176,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 	user := app.sessions.GetUserFromContext(r.Context())
 
 	var opts otf.TokenCreateOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

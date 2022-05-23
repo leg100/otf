@@ -19,11 +19,9 @@ type AnsiStripper struct {
 // input stream.
 func NewAnsiStripper(input io.Reader) *AnsiStripper {
 	output, pipe := io.Pipe()
-
 	// Strip ansi color codes, line-by-line
 	go func() {
 		defer pipe.Close()
-
 		scanner := bufio.NewScanner(input)
 		for scanner.Scan() {
 			stripped := stripansi.Strip(scanner.Text())
@@ -33,6 +31,5 @@ func NewAnsiStripper(input io.Reader) *AnsiStripper {
 			pipe.Write([]byte("error encountered whilst stripping ansi codes: " + err.Error()))
 		}
 	}()
-
 	return &AnsiStripper{Reader: output}
 }

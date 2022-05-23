@@ -33,7 +33,7 @@ func TestSanitizeHostname(t *testing.T) {
 	}
 }
 
-func TestClientSanitizeAddress(t *testing.T) {
+func TestSanitizeAddress(t *testing.T) {
 	tests := []struct {
 		name    string
 		address string

@@ -8,6 +8,7 @@ import (
 	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 )
 
 type RunController struct {
@@ -36,17 +37,19 @@ func (c *RunController) addRoutes(router *mux.Router) {
 
 func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunListOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
+	if err := decode.Form(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	runs, err := c.RunService.List(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	tdata := c.newTemplateData(r, struct {
 		List    *otf.RunList
 		Options otf.RunListOptions
@@ -54,7 +57,6 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 		List:    runs,
 		Options: opts,
 	})
-
 	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -76,17 +78,19 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 
 func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunCreateOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Route(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
+	if err := decode.Form(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	created, err := c.RunService.Create(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID()), http.StatusFound)
 }
 

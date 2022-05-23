@@ -8,38 +8,33 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.ApplyService().Get(vars["id"])
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, ApplyDTO(r, obj))
+	writeResponse(w, r, ApplyDTO(r, obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	var opts otf.GetChunkOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	chunk, err := s.ApplyService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
 	if _, err := w.Write(chunk.Marshal()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,28 +43,23 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	var opts otf.PutChunkOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	chunk := otf.Chunk{
 		Data:  buf.Bytes(),
 		Start: opts.Start,
 		End:   opts.End,
 	}
-
 	if err := s.ApplyService().PutChunk(r.Context(), vars["id"], chunk); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 }
@@ -86,7 +76,6 @@ func ApplyDTO(req *http.Request, a *otf.Apply) *dto.Apply {
 		o.ResourceChanges = a.Changes
 		o.ResourceDestructions = a.Destructions
 	}
-
 	for _, ts := range a.StatusTimestamps() {
 		if o.StatusTimestamps == nil {
 			o.StatusTimestamps = &dto.ApplyStatusTimestamps{}
@@ -104,6 +93,5 @@ func ApplyDTO(req *http.Request, a *otf.Apply) *dto.Apply {
 			o.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-
 	return o
 }

@@ -7,99 +7,84 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 )
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := otf.OrganizationCreateOptions{}
-
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	if err := opts.Valid(); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.OrganizationService().Create(r.Context(), opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationDTO(obj), WithCode(http.StatusCreated))
+	writeResponse(w, r, OrganizationDTO(obj), withCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.OrganizationService().Get(context.Background(), vars["name"])
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationDTO(obj))
+	writeResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.OrganizationService().List(context.Background(), opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationListDTO(obj))
+	writeResponse(w, r, OrganizationListDTO(obj))
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
 	opts := otf.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.OrganizationService().Update(context.Background(), name, &opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationDTO(obj))
+	writeResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
 	if err := s.OrganizationService().Delete(context.Background(), name); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
 	obj, err := s.OrganizationService().GetEntitlements(context.Background(), name)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, obj)
+	writeResponse(w, r, obj)
 }
 
 // OrganizationDTO converts an org into a DTO

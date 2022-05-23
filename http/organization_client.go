@@ -13,7 +13,6 @@ var _ otf.OrganizationService = (*organizations)(nil)
 // organizations implements OrganizationService.
 type organizations struct {
 	client *client
-
 	// TODO: implement all of otf.OrganizationService's methods
 	otf.OrganizationService
 }
@@ -23,17 +22,14 @@ func (s *organizations) Create(ctx context.Context, options otf.OrganizationCrea
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
-
 	req, err := s.client.newRequest("POST", "organizations", &options)
 	if err != nil {
 		return nil, err
 	}
-
 	org := &dto.Organization{}
 	err = s.client.do(ctx, req, org)
 	if err != nil {
 		return nil, err
 	}
-
 	return otf.UnmarshalOrganizationJSONAPI(org), nil
 }

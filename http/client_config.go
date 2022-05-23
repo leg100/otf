@@ -33,22 +33,16 @@ type RetryLogHook func(attemptNum int, resp *http.Response)
 type Config struct {
 	// The address of the Terraform Enterprise API.
 	Address string
-
 	// The base path on which the API is served.
 	BasePath string
-
 	// API token used to access the Terraform Enterprise API.
 	Token string
-
 	// Headers that will be added to every request.
 	Headers http.Header
-
 	// A custom HTTP client to use.
 	HTTPClient *http.Client
-
 	// RetryLogHook is invoked each time a request is retried.
 	RetryLogHook RetryLogHook
-
 	// Options for overriding config
 	options []ConfigOption
 }
@@ -66,15 +60,12 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 		HTTPClient: cleanhttp.DefaultPooledClient(),
 		options:    opts,
 	}
-
 	// Set the default address if none is given.
 	if config.Address == "" {
 		config.Address = DefaultAddress
 	}
-
 	// Set the default user agent.
 	config.Headers.Set("User-Agent", userAgent)
-
 	return config, nil
 }
 
@@ -84,29 +75,24 @@ func (config *Config) NewClient() (Client, error) {
 	for _, o := range config.options {
 		o(config)
 	}
-
 	var err error
 	config.Address, err = SanitizeAddress(config.Address)
 	if err != nil {
 		return nil, err
 	}
-
 	// Parse the address to make sure its a valid URL.
 	baseURL, err := url.Parse(config.Address)
 	if err != nil {
 		return nil, fmt.Errorf("invalid address: %v", err)
 	}
-
 	baseURL.Path = config.BasePath
 	if !strings.HasSuffix(baseURL.Path, "/") {
 		baseURL.Path += "/"
 	}
-
 	// This value must be provided by the user.
 	if config.Token == "" {
 		return nil, fmt.Errorf("missing API token")
 	}
-
 	// Create the client.
 	client := &client{
 		baseURL:      baseURL,
@@ -114,7 +100,6 @@ func (config *Config) NewClient() (Client, error) {
 		headers:      config.Headers,
 		retryLogHook: config.RetryLogHook,
 	}
-
 	client.http = &retryablehttp.Client{
 		Backoff:      client.retryHTTPBackoff,
 		CheckRetry:   client.retryHTTPCheck,
@@ -124,19 +109,15 @@ func (config *Config) NewClient() (Client, error) {
 		RetryWaitMax: 400 * time.Millisecond,
 		RetryMax:     30,
 	}
-
 	meta, err := client.getRawAPIMetadata()
 	if err != nil {
 		return nil, err
 	}
-
 	// Configure the rate limiter.
 	client.configureLimiter(meta.RateLimit)
-
-	// Save the API version so we can return it from the RemoteAPIVersion
-	// method later.
+	// Save the API version so we can return it from the RemoteAPIVersion method
+	// later.
 	client.remoteAPIVersion = meta.APIVersion
-
 	client.ConfigurationVersionService = &configurationVersions{client: client}
 	client.EventService = &events{client: client}
 	client.OrganizationService = &organizations{client: client}
@@ -144,7 +125,6 @@ func (config *Config) NewClient() (Client, error) {
 	//&stateVersionOutputs{client: client}
 	client.StateVersionService = &stateVersions{client: client}
 	client.WorkspaceService = &workspaces{client: client}
-
 	return client, nil
 }
 
@@ -153,7 +133,6 @@ type rawAPIMetadata struct {
 	// TFP-API-Version response header, or an empty string if that header
 	// field was not included in the response.
 	APIVersion string
-
 	// RateLimit is the raw API version string reported by the server in the
 	// X-RateLimit-Limit response header, or an empty string if that header
 	// field was not included in the response.

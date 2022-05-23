@@ -12,7 +12,6 @@ import (
 // events implements otf.EventService.
 type events struct {
 	client *client
-
 	otf.EventService
 }
 
@@ -27,29 +26,23 @@ func (e *events) Subscribe(id string) (otf.Subscription, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ch := make(chan otf.Event)
-
 	go func() {
 		defer c.Close()
-
 		for {
 			_, msg, err := c.ReadMessage()
 			if err != nil {
 				ch <- otf.Event{Type: otf.EventError, Payload: fmt.Sprintf("websocket read error: %s\n", err.Error())}
 				return
 			}
-
 			var ev otf.Event
 			if err := json.Unmarshal(msg, &ev); err != nil {
 				ch <- otf.Event{Type: otf.EventError, Payload: fmt.Sprintf("websocket decode error: %s\n", err.Error())}
 				return
 			}
-
 			ch <- ev
 		}
 	}()
-
 	return &subscription{conn: c, ch: ch}, nil
 }
 
