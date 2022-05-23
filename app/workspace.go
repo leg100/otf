@@ -40,11 +40,11 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 	_, err = s.db.Create(ws)
 	if err != nil {
-		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name)
+		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name)
 		return nil, err
 	}
 
-	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name)
+	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name)
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
@@ -99,13 +99,13 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	}
 
 	if err := s.db.Delete(spec); err != nil {
-		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name)
+		s.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name)
 		return err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
-	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name)
+	s.V(0).Info("deleted workspace", "id", ws.ID(), "name", ws.Name)
 
 	return nil
 }

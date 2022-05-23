@@ -35,9 +35,9 @@ func (db RunDB) Create(run *otf.Run) error {
 	q := pggen.NewQuerier(tx)
 
 	result, err := q.InsertRun(ctx, pggen.InsertRunParams{
-		ID:                     run.ID,
-		PlanID:                 run.Plan.ID,
-		ApplyID:                run.Apply.ID,
+		ID:                     run.ID(),
+		PlanID:                 run.Plan.ID(),
+		ApplyID:                run.Apply.ID(),
 		IsDestroy:              run.IsDestroy(),
 		Refresh:                run.Refresh(),
 		RefreshOnly:            run.RefreshOnly(),
@@ -46,8 +46,8 @@ func (db RunDB) Create(run *otf.Run) error {
 		ApplyStatus:            string(run.Apply.Status()),
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
-		ConfigurationVersionID: run.ConfigurationVersion.ID,
-		WorkspaceID:            run.Workspace.ID,
+		ConfigurationVersionID: run.ConfigurationVersion.ID(),
+		WorkspaceID:            run.Workspace.ID(),
 	})
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Status() != runStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID)
+		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Plan.Status() != planStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID)
+		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +133,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Apply.Status() != applyStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID)
+		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -332,7 +332,7 @@ func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (
 }
 
 func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID, string(run.Status()))
+	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID(), string(run.Status()))
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.
 }
 
 func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID, string(run.Plan.Status()))
+	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID(), string(run.Plan.Status()))
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf
 }
 
 func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID, string(run.Apply.Status()))
+	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID(), string(run.Apply.Status()))
 	if err != nil {
 		return err
 	}

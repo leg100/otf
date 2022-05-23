@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -19,7 +20,7 @@ const (
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
-	ID string `jsonapi:"primary,users"`
+	id string `jsonapi:"primary,users"`
 
 	// Username is the SSO-provided username
 	Username string
@@ -42,7 +43,7 @@ type User struct {
 
 // AttachNewSession creates and attaches a new session to the user.
 func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
-	session, err := NewSession(u.ID, data)
+	session, err := NewSession(u.ID(), data)
 	if err != nil {
 		return nil, err
 	}
@@ -58,14 +59,13 @@ func (u *User) IsAuthenticated() bool {
 	return u.Username != AnonymousUsername
 }
 
-func (u *User) String() string {
-	return u.Username
-}
+func (u *User) ID() string     { return u.id }
+func (u *User) String() string { return u.Username }
 
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
 	// Update session's user reference
-	session.UserID = to.ID
+	session.UserID = to.ID()
 
 	// Remove session from receiver
 	for i, s := range u.Sessions {
@@ -76,7 +76,7 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 	}
 
 	// Update in persistence store
-	if err := store.TransferSession(ctx, session.Token, to.ID); err != nil {
+	if err := store.TransferSession(ctx, session.Token, to.ID()); err != nil {
 		return err
 	}
 
@@ -136,8 +136,8 @@ type UserService interface {
 func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
 	// Iterate thru authoritative and if not in user's membership, add to db
 	for _, auth := range authoritative {
-		if !inOrganizationList(auth.ID, u.Organizations) {
-			if err := store.AddOrganizationMembership(ctx, u.ID, auth.ID); err != nil {
+		if !inOrganizationList(auth.ID(), u.Organizations) {
+			if err := store.AddOrganizationMembership(ctx, u.ID(), auth.ID()); err != nil {
 				return err
 			}
 		}
@@ -145,8 +145,8 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 
 	// Iterate thru existing and if not in authoritative list, remove from db
 	for _, existing := range u.Organizations {
-		if !inOrganizationList(existing.ID, authoritative) {
-			if err := store.RemoveOrganizationMembership(ctx, u.ID, existing.ID); err != nil {
+		if !inOrganizationList(existing.ID(), authoritative) {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID(), existing.ID()); err != nil {
 				return err
 			}
 		}
@@ -192,16 +192,35 @@ func (spec *UserSpec) KeyValue() []interface{} {
 
 func NewUser(username string) *User {
 	user := User{
-		ID:       NewID("user"),
+		id:       NewID("user"),
 		Username: username,
 	}
 
 	return &user
 }
 
+type NewTestUserOption func(*User)
+
+func NewTestUser(opts ...NewTestUserOption) *User {
+	u := User{
+		id:       NewID("user"),
+		Username: fmt.Sprintf("mr-%s", GenerateRandomString(6)),
+	}
+	for _, o := range opts {
+		o(&u)
+	}
+	return &u
+}
+
+func WithOrganizationMemberships(memberships ...*Organization) NewTestUserOption {
+	return func(user *User) {
+		user.Organizations = memberships
+	}
+}
+
 func inOrganizationList(orgID string, orgs []*Organization) bool {
 	for _, org := range orgs {
-		if org.ID == orgID {
+		if org.ID() == orgID {
 			return true
 		}
 	}

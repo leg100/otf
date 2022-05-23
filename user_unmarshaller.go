@@ -19,7 +19,7 @@ type UserDBResult struct {
 
 func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 	user := User{
-		ID:       row.UserID,
+		id:       row.UserID,
 		Username: row.Username,
 		Timestamps: Timestamps{
 			CreatedAt: row.CreatedAt,

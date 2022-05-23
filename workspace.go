@@ -23,7 +23,7 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	ID string `json:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
+	id string `json:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -314,6 +314,8 @@ type WorkspaceListOptions struct {
 	Include *string `schema:"include"`
 }
 
+func (ws *Workspace) ID() string                       { return ws.id }
+func (ws *Workspace) String() string                   { return ws.id }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
@@ -333,8 +335,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
-func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID }
-func (ws *Workspace) String() string                   { return ws.ID }
+func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
 
 func (o WorkspaceCreateOptions) Valid() error {
 	if !validString(o.Name) {

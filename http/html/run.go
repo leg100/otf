@@ -87,7 +87,7 @@ func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID()), http.StatusFound)
 }
 
 func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +97,7 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chunk, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	chunk, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID(), otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

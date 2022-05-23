@@ -54,11 +54,11 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 	}
 
 	if err = s.db.Create(run); err != nil {
-		s.Error(err, "creating run", "id", run.ID)
+		s.Error(err, "creating run", "id", run.ID())
 		return nil, err
 	}
 
-	s.V(1).Info("created run", "id", run.ID)
+	s.V(1).Info("created run", "id", run.ID())
 
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 	if run.IsSpeculative() {
@@ -76,7 +76,7 @@ func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved run", "id", run.ID)
+	s.V(2).Info("retrieved run", "id", run.ID())
 
 	return run, nil
 }
@@ -176,7 +176,7 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 			s.Error(err, "retrieving run for plan file", "id", spec.String())
 			return nil, err
 		}
-		id = run.ID
+		id = run.ID()
 	} else {
 		id = *spec.ID
 	}

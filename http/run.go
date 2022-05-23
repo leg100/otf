@@ -203,7 +203,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.Ru
 // that can be marshalled into a JSON-API object
 func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
 	result := &dto.Run{
-		ID: r.ID,
+		ID: r.ID(),
 		Actions: &dto.RunActions{
 			IsCancelable:      r.IsCancelable(),
 			IsConfirmable:     r.IsConfirmable(),

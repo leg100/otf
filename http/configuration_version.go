@@ -78,12 +78,12 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 // ConfigurationVersionDTO converts a cv into a DTO
 func ConfigurationVersionDTO(cv *otf.ConfigurationVersion) *dto.ConfigurationVersion {
 	obj := &dto.ConfigurationVersion{
-		ID:            cv.ID,
+		ID:            cv.ID(),
 		AutoQueueRuns: cv.AutoQueueRuns(),
 		Speculative:   cv.Speculative(),
 		Source:        string(cv.Source()),
 		Status:        string(cv.Status()),
-		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID),
+		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID()),
 	}
 
 	for _, ts := range cv.StatusTimestamps() {

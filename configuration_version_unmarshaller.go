@@ -21,7 +21,7 @@ type ConfigurationVersionDBResult struct {
 
 func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID: result.ConfigurationVersionID,
+		id: result.ConfigurationVersionID,
 		Timestamps: Timestamps{
 			CreatedAt: result.CreatedAt,
 			UpdatedAt: result.UpdatedAt,
@@ -40,7 +40,7 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 		}
 		cv.Workspace = workspace
 	} else {
-		cv.Workspace = &Workspace{ID: result.WorkspaceID}
+		cv.Workspace = &Workspace{id: result.WorkspaceID}
 	}
 
 	return &cv, nil
@@ -48,7 +48,7 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 
 func unmarshalConfigurationVersionDBType(typ pggen.ConfigurationVersions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		ID: typ.ConfigurationVersionID,
+		id: typ.ConfigurationVersionID,
 		Timestamps: Timestamps{
 			CreatedAt: typ.CreatedAt.Local(),
 			UpdatedAt: typ.UpdatedAt.Local(),
@@ -57,7 +57,7 @@ func unmarshalConfigurationVersionDBType(typ pggen.ConfigurationVersions) (*Conf
 		speculative:   typ.Speculative,
 		source:        ConfigurationSource(typ.Source),
 		status:        ConfigurationStatus(typ.Status),
-		Workspace:     &Workspace{ID: typ.WorkspaceID},
+		Workspace:     &Workspace{id: typ.WorkspaceID},
 	}
 
 	return &cv, nil

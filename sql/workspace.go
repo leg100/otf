@@ -30,7 +30,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	result, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-		ID:                         ws.ID,
+		ID:                         ws.ID(),
 		Name:                       ws.Name(),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
@@ -50,7 +50,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		QueueAllRuns:               ws.QueueAllRuns(),
 		AutoApply:                  ws.AutoApply(),
 		WorkingDirectory:           ws.WorkingDirectory(),
-		OrganizationID:             ws.Organization.ID,
+		OrganizationID:             ws.Organization.ID(),
 	})
 	if err != nil {
 		return nil, databaseError(err)
@@ -115,7 +115,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		TerraformVersion:           ws.TerraformVersion(),
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
-		ID:                         ws.ID,
+		ID:                         ws.ID(),
 	})
 	if err != nil {
 		return nil, err

@@ -73,7 +73,7 @@ func (s PlanService) Claim(ctx context.Context, planID string, opts otf.JobClaim
 		return nil, err
 	}
 
-	s.V(0).Info("started plan", "id", run.ID)
+	s.V(0).Info("started plan", "id", run.ID())
 
 	return run, nil
 }

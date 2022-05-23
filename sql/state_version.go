@@ -37,7 +37,7 @@ func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	q := pggen.NewQuerier(tx)
 
 	result, err := q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-		ID:          sv.ID,
+		ID:          sv.ID(),
 		Serial:      int(sv.Serial),
 		State:       sv.State,
 		WorkspaceID: workspaceID,
@@ -51,12 +51,12 @@ func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs {
 		result, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
-			ID:             svo.ID,
+			ID:             svo.ID(),
 			Name:           svo.Name,
 			Sensitive:      svo.Sensitive,
 			Type:           svo.Type,
 			Value:          svo.Value,
-			StateVersionID: sv.ID,
+			StateVersionID: sv.ID(),
 		})
 		if err != nil {
 			return err

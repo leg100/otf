@@ -25,7 +25,7 @@ func (q workspaceQueue) update(run *Run) workspaceQueue {
 // start run at the front of the queue if not already started.
 func (q workspaceQueue) startRun(ctx context.Context, rs RunService) (workspaceQueue, error) {
 	if len(q) > 0 && q[0].Status() == RunPending {
-		run, err := rs.Start(ctx, q[0].ID)
+		run, err := rs.Start(ctx, q[0].ID())
 		if err != nil {
 			return q, err
 		}
@@ -39,7 +39,7 @@ func (q workspaceQueue) startRun(ctx context.Context, rs RunService) (workspaceQ
 // -1 if not found.
 func indexRunSlice(runs []*Run, run *Run) int {
 	for i, r := range runs {
-		if r.ID == run.ID {
+		if r.ID() == run.ID() {
 			return i
 		}
 	}

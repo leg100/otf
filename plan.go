@@ -28,7 +28,7 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	ID string `json:"plan_id"`
+	id string `json:"plan_id"`
 
 	// Resources is a report of planned resource changes
 	*ResourceReport
@@ -48,8 +48,8 @@ type PlanStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-func (p *Plan) GetID() string      { return p.ID }
-func (p *Plan) String() string     { return p.ID }
+func (p *Plan) ID() string         { return p.id }
+func (p *Plan) String() string     { return p.id }
 func (p *Plan) Status() PlanStatus { return p.status }
 
 type PlanService interface {
@@ -65,7 +65,7 @@ type PlanLogStore interface {
 
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		ID:  NewID("plan"),
+		id:  NewID("plan"),
 		run: run,
 		// new plans always start off in pending state
 		status: PlanPending,

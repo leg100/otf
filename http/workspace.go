@@ -215,7 +215,7 @@ func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 	obj := &dto.Workspace{
-		ID: ws.ID,
+		ID: ws.ID(),
 		Actions: &dto.WorkspaceActions{
 			IsDestroyable: false,
 		},

@@ -12,7 +12,7 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	ID string
+	id string
 
 	Timestamps
 
@@ -27,8 +27,8 @@ type StateVersion struct {
 	Outputs []*StateVersionOutput
 }
 
-func (sv *StateVersion) GetID() string  { return sv.ID }
-func (sv *StateVersion) String() string { return sv.ID }
+func (sv *StateVersion) ID() string     { return sv.id }
+func (sv *StateVersion) String() string { return sv.id }
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
@@ -111,7 +111,7 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	}
 
 	sv := StateVersion{
-		ID:     NewID("sv"),
+		id:     NewID("sv"),
 		Serial: *opts.Serial,
 	}
 
@@ -128,7 +128,7 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 
 	for k, v := range state.Outputs {
 		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			ID:    NewID("wsout"),
+			id:    NewID("wsout"),
 			Name:  k,
 			Type:  v.Type,
 			Value: v.Value,
@@ -136,4 +136,30 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	}
 
 	return &sv, nil
+}
+
+type NewTestStateVersionOption func(*StateVersion)
+
+func NewTestStateVersion(opts ...NewTestStateVersionOption) *StateVersion {
+	sv := StateVersion{
+		id:    NewID("sv"),
+		State: []byte("stuff"),
+	}
+	for _, o := range opts {
+		o(&sv)
+	}
+	return &sv
+}
+
+func AppendOutput(name, outputType, value string, sensitive bool) NewTestStateVersionOption {
+	return func(sv *StateVersion) {
+		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
+			id:             NewID("wsout"),
+			Name:           name,
+			Type:           outputType,
+			Value:          value,
+			Sensitive:      sensitive,
+			StateVersionID: sv.ID(),
+		})
+	}
 }
