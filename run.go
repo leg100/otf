@@ -128,53 +128,17 @@ type RunService interface {
 	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
 }
 
-// RunCreateOptions represents the options for creating a new run.
+// RunCreateOptions represents the options for creating a new run. See
+// dto.RunCreateOptions for further detail.
 type RunCreateOptions struct {
-	// Type is a public field utilized by JSON:API to set the resource type via
-	// the field tag.  It is not a user-defined value and does not need to be
-	// set.  https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,runs"`
-
-	// Specifies if this plan is a destroy plan, which will destroy all
-	// provisioned resources.
-	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
-
-	// Refresh determines if the run should
-	// update the state prior to checking for differences
-	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
-
-	// RefreshOnly determines whether the run should ignore config changes
-	// and refresh the state only
-	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
-
-	// Specifies the message to be associated with this run.
-	Message *string `jsonapi:"attr,message,omitempty"`
-
-	// Specifies the configuration version to use for this run. If the
-	// configuration version object is omitted, the run will be created using the
-	// workspace's latest configuration version.
-	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
-
-	// Specifies the workspace where the run will be executed.
-	Workspace *Workspace `jsonapi:"relation,workspace"`
-
-	// If non-empty, requests that Terraform should create a plan including
-	// actions only for the given objects (specified using resource address
-	// syntax) and the objects they depend on.
-	//
-	// This capability is provided for exceptional circumstances only, such as
-	// recovering from mistakes or working around existing Terraform
-	// limitations. Terraform will generally mention the -target command line
-	// option in its error messages describing situations where setting this
-	// argument may be appropriate. This argument should not be used as part
-	// of routine workflow and Terraform will emit warnings reminding about
-	// this whenever this property is set.
-	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
-
-	// If non-empty, requests that Terraform create a plan that replaces
-	// (destroys and then re-creates) the objects specified by the given
-	// resource addresses.
-	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+	IsDestroy              *bool
+	Refresh                *bool
+	RefreshOnly            *bool
+	Message                *string
+	ConfigurationVersionID *string
+	WorkspaceID            string
+	TargetAddrs            []string
+	ReplaceAddrs           []string
 }
 
 // RunApplyOptions represents the options for applying a run.
@@ -216,20 +180,6 @@ type RunStore interface {
 	Delete(id string) error
 }
 
-type RunStatusUpdates struct {
-	RunStatus   RunStatus
-	PlanStatus  *PlanStatus
-	ApplyStatus *ApplyStatus
-}
-
-// RunStatusUpdater persists updates to run statuses and returns timestamps of
-// when they were persisted.
-type RunStatusUpdater interface {
-	UpdateRunStatus(ctx context.Context, status RunStatus) (*Run, error)
-	UpdatePlanStatus(ctx context.Context, status PlanStatus) (*Plan, error)
-	UpdateApplyStatus(ctx context.Context, status ApplyStatus) (*Apply, error)
-}
-
 // RunList represents a list of runs.
 type RunList struct {
 	*Pagination
@@ -241,13 +191,10 @@ type RunList struct {
 type RunGetOptions struct {
 	// ID of run to retrieve
 	ID *string
-
 	// Get run via apply ID
 	ApplyID *string
-
 	// Get run via plan ID
 	PlanID *string
-
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `schema:"include"`
@@ -283,13 +230,6 @@ type RunListOptions struct {
 	// WorkspaceID.
 	OrganizationName *string `schema:"organization_name"`
 	WorkspaceName    *string `schema:"workspace_name"`
-}
-
-func (o RunCreateOptions) Valid() error {
-	if o.Workspace == nil {
-		return errors.New("workspace is required")
-	}
-	return nil
 }
 
 // Discard updates the state of a run to reflect it having been discarded.

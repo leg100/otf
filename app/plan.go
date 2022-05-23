@@ -69,7 +69,7 @@ func (s PlanService) Claim(ctx context.Context, planID string, opts otf.JobClaim
 		return run.Plan.Start(run)
 	})
 	if err != nil {
-		s.Error(err, "starting plan")
+		s.Error(err, "starting plan", "plan_id", planID)
 		return nil, err
 	}
 

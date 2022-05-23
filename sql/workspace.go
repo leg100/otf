@@ -36,7 +36,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
 		Environment:                ws.Environment(),
 		Description:                ws.Description(),
-		ExecutionMode:              ws.ExecutionMode(),
+		ExecutionMode:              string(ws.ExecutionMode()),
 		FileTriggersEnabled:        ws.FileTriggersEnabled(),
 		GlobalRemoteState:          ws.GlobalRemoteState(),
 		Locked:                     ws.Locked(),
@@ -106,7 +106,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 	ws.UpdatedAt, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		Description:                ws.Description(),
-		ExecutionMode:              ws.ExecutionMode(),
+		ExecutionMode:              string(ws.ExecutionMode()),
 		Locked:                     ws.Locked(),
 		Name:                       ws.Name(),
 		QueueAllRuns:               ws.QueueAllRuns(),

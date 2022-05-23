@@ -55,6 +55,7 @@ type ApplyStatusTimestamp struct {
 }
 
 func (a *Apply) ID() string          { return a.id }
+func (a *Apply) JobID() string       { return a.id }
 func (a *Apply) String() string      { return a.id }
 func (a *Apply) Status() ApplyStatus { return a.status }
 

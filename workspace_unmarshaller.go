@@ -127,7 +127,6 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		sourceURL:                  w.SourceURL,
 		structuredRunOutputEnabled: w.StructuredRunOutputEnabled,
 		terraformVersion:           w.TerraformVersion,
-		VCSRepo:                    w.VCSRepo,
 		workingDirectory:           w.WorkingDirectory,
 		triggerPrefixes:            w.TriggerPrefixes,
 	}

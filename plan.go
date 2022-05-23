@@ -49,6 +49,7 @@ type PlanStatusTimestamp struct {
 }
 
 func (p *Plan) ID() string         { return p.id }
+func (p *Plan) JobID() string      { return p.id }
 func (p *Plan) String() string     { return p.id }
 func (p *Plan) Status() PlanStatus { return p.status }
 

@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"errors"
 )
 
 // RunFactory is a factory for constructing Run objects.
@@ -14,11 +13,7 @@ type RunFactory struct {
 // New constructs a new run at the beginning of its lifecycle using the provided
 // options.
 func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
-	if opts.Workspace == nil {
-		return nil, errors.New("workspace is required")
-	}
-
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: String(opts.Workspace.ID())})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: String(opts.WorkspaceID)})
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +40,11 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 }
 
 func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
-	if opts.ConfigurationVersion == nil {
+	if opts.ConfigurationVersionID == nil {
 		// CV ID not provided, get workspace's latest CV
-		return f.ConfigurationVersionService.GetLatest(opts.Workspace.ID())
+		return f.ConfigurationVersionService.GetLatest(opts.WorkspaceID)
 	}
-	return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID())
+	return f.ConfigurationVersionService.Get(*opts.ConfigurationVersionID)
 }
 
 // NewRunFromDefaults creates a new run with defaults.

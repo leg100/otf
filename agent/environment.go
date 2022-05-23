@@ -61,7 +61,7 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         job.ID(),
+		ID:         job.JobID(),
 		JobService: js,
 		Logger:     logger,
 	}

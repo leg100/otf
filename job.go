@@ -15,7 +15,7 @@ type Job interface {
 	// Do does the piece of work in an execution environment
 	Do(Environment) error
 	// GetID gets the ID of the Job
-	ID() string
+	JobID() string
 	// GetService gets the appropriate service for interacting with the job
 	GetService(Application) JobService
 }

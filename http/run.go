@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -13,18 +14,32 @@ import (
 )
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
-	opts := otf.RunCreateOptions{}
+	opts := dto.RunCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	obj, err := s.RunService().Create(r.Context(), opts)
+	if opts.Workspace == nil {
+		WriteError(w, http.StatusUnprocessableEntity, fmt.Errorf("missing workspace"))
+	}
+	var configurationVersionID *string
+	if opts.ConfigurationVersion != nil {
+		configurationVersionID = &opts.ConfigurationVersion.ID
+	}
+	obj, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
+		IsDestroy:              opts.IsDestroy,
+		Refresh:                opts.Refresh,
+		RefreshOnly:            opts.RefreshOnly,
+		Message:                opts.Message,
+		ConfigurationVersionID: configurationVersionID,
+		WorkspaceID:            opts.Workspace.ID,
+		TargetAddrs:            opts.TargetAddrs,
+		ReplaceAddrs:           opts.ReplaceAddrs,
+	})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
 	}
-
 	WriteResponse(w, r, RunDTO(r, obj), WithCode(http.StatusCreated))
 }
 

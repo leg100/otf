@@ -7,7 +7,7 @@ import (
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		id:                  NewID("ws"),
-		name:                *opts.Name,
+		name:                opts.Name,
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
 		executionMode:       DefaultExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,
@@ -22,15 +22,6 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	if opts.ExecutionMode != nil {
 		ws.executionMode = *opts.ExecutionMode
 	}
-	// Operations is deprecated in favour of ExecutionMode.
-	if opts.Operations != nil {
-		if *opts.Operations {
-			ws.executionMode = "remote"
-		} else {
-			ws.executionMode = "local"
-		}
-	}
-
 	if opts.AllowDestroyPlan != nil {
 		ws.allowDestroyPlan = *opts.AllowDestroyPlan
 	}

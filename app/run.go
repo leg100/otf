@@ -42,11 +42,6 @@ func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
-	if err := opts.Valid(); err != nil {
-		s.Error(err, "creating invalid run")
-		return nil, err
-	}
-
 	run, err := s.New(opts)
 	if err != nil {
 		s.Error(err, "constructing new run")
