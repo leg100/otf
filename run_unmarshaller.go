@@ -29,6 +29,7 @@ type RunDBResult struct {
 	ConfigurationVersionID string                        `json:"configuration_version_id"`
 	WorkspaceID            string                        `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
+	AutoApply              bool                          `json:"auto_apply"`
 	ConfigurationVersion   *pggen.ConfigurationVersions  `json:"configuration_version"`
 	Workspace              *pggen.Workspaces             `json:"workspace"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
@@ -51,6 +52,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		statusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		ReplaceAddrs:     result.ReplaceAddrs,
 		TargetAddrs:      result.TargetAddrs,
+		autoApply:        result.AutoApply,
 		speculative:      result.Speculative,
 		Plan: &Plan{
 			ID:               result.PlanID,

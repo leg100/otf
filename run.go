@@ -77,6 +77,7 @@ type Run struct {
 	PositionInQueue  int
 	Refresh          bool
 	RefreshOnly      bool
+	autoApply        bool
 	speculative      bool
 	status           RunStatus
 	statusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`

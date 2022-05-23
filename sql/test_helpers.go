@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -61,21 +60,6 @@ func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 		Name:         uuid.NewString(),
 		Organization: &otf.Organization{ID: org.ID},
 	}
-}
-
-func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
-	cp, _ := copystructure.Copy(ws)
-	shallowWorkspace := cp.(*otf.Workspace)
-	shallowWorkspace.Organization = &otf.Organization{ID: shallowWorkspace.Organization.ID}
-	return shallowWorkspace
-}
-
-func newShallowNestedConfigurationVersion(cv *otf.ConfigurationVersion) *otf.ConfigurationVersion {
-	cp, _ := copystructure.Copy(cv)
-	shallowConfigurationVersion := cp.(*otf.ConfigurationVersion)
-	shallowConfigurationVersion.StatusTimestamps = nil
-	shallowConfigurationVersion.Workspace = &otf.Workspace{ID: cv.Workspace.ID}
-	return shallowConfigurationVersion
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
