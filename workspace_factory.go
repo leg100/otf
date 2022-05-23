@@ -76,7 +76,7 @@ func NewTestWorkspace(org *Organization) *Workspace {
 	ws := Workspace{
 		ID:           NewID("ws"),
 		name:         uuid.NewString(),
-		Organization: org,
+		Organization: &Organization{ID: org.ID},
 	}
 	return &ws
 }

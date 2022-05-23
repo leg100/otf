@@ -14,6 +14,7 @@ type ConfigurationVersionDBResult struct {
 	Source                               string                                       `json:"source"`
 	Speculative                          bool                                         `json:"speculative"`
 	Status                               string                                       `json:"status"`
+	WorkspaceID                          string                                       `json:"workspace_id"`
 	Workspace                            *pggen.Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
@@ -32,11 +33,15 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 		statusTimestamps: unmarshalConfigurationVersionStatusTimestampDBTypes(result.ConfigurationVersionStatusTimestamps),
 	}
 
-	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
-	if err != nil {
-		return nil, err
+	if result.Workspace != nil {
+		workspace, err := UnmarshalWorkspaceDBType(*result.Workspace)
+		if err != nil {
+			return nil, err
+		}
+		cv.Workspace = workspace
+	} else {
+		cv.Workspace = &Workspace{ID: result.WorkspaceID}
 	}
-	cv.Workspace = &Workspace{ID: ws.ID}
 
 	return &cv, nil
 }

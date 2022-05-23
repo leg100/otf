@@ -282,6 +282,10 @@ type WorkspaceSpec struct {
 	// Specify workspace using its name and organization
 	Name             *string `schema:"workspace_name"`
 	OrganizationName *string `schema:"organization_name"`
+
+	// A list of relations to include. See available resources
+	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
 func (spec WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
@@ -330,6 +334,7 @@ func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns 
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID }
+func (ws *Workspace) String() string                   { return ws.ID }
 
 func (o WorkspaceCreateOptions) Valid() error {
 	if !validString(o.Name) {

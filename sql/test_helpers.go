@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -55,15 +54,8 @@ func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return otf.NewTestWorkspace(org)
 }
 
-func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
-	cp, _ := copystructure.Copy(ws)
-	shallowWorkspace := cp.(*otf.Workspace)
-	shallowWorkspace.Organization = &otf.Organization{ID: shallowWorkspace.Organization.ID}
-	return shallowWorkspace
-}
-
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return otf.NewConfigurationVersionFromDefaults(otf.NewShallowNestedWorkspace(ws))
+	return otf.NewConfigurationVersionFromDefaults(ws)
 }
 
 func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {
@@ -120,9 +112,6 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	ws = newShallowNestedWorkspace(ws)
-	cv.ShallowNest()
-
 	return otf.NewRunFromDefaults(cv, ws)
 }
 

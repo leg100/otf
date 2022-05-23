@@ -87,7 +87,9 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 		return nil, err
 	}
 	// select ...for update
-	result, err := q.FindRunByIDForUpdate(ctx, runID)
+	result, err := q.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
+		RunID: runID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -212,10 +214,12 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	}
 
 	q.FindRunsBatch(batch, pggen.FindRunsParams{
-		WorkspaceIds: []string{workspaceID},
-		Statuses:     statuses,
-		Limit:        opts.GetLimit(),
-		Offset:       opts.GetOffset(),
+		WorkspaceIds:                []string{workspaceID},
+		Statuses:                    statuses,
+		Limit:                       opts.GetLimit(),
+		Offset:                      opts.GetOffset(),
+		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
+		IncludeWorkspace:            includeWorkspace(opts.Include),
 	})
 	q.CountRunsBatch(batch, []string{workspaceID}, statuses)
 	results := db.Pool.SendBatch(ctx, batch)
@@ -255,7 +259,11 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 		return nil, err
 	}
 	// ...now get full run
-	result, err := q.FindRunByID(ctx, runID)
+	result, err := q.FindRunByID(ctx, pggen.FindRunByIDParams{
+		RunID:                       runID,
+		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
+		IncludeWorkspace:            includeWorkspace(opts.Include),
+	})
 	if err != nil {
 		return nil, err
 	}

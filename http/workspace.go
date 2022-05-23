@@ -31,10 +31,16 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpec{
-		Name:             otf.String(vars["name"]),
-		OrganizationName: otf.String(vars["org"]),
+
+	// Unmarshal query into spec
+	var spec otf.WorkspaceSpec
+	if err := DecodeQuery(&spec, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
+	// Set spec fields from route params
+	spec.Name = otf.String(vars["name"])
+	spec.OrganizationName = otf.String(vars["org"])
 
 	obj, err := s.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
@@ -47,9 +53,14 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	spec := otf.WorkspaceSpec{
-		ID: otf.String(vars["id"]),
+	// Unmarshal query into spec
+	var spec otf.WorkspaceSpec
+	if err := DecodeQuery(&spec, r.URL.Query()); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
 	}
+	// Set spec fields from route params
+	spec.ID = otf.String(vars["id"])
 
 	obj, err := s.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
@@ -208,18 +219,18 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		Actions: &dto.WorkspaceActions{
 			IsDestroyable: false,
 		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan,
-		AutoApply:            ws.AutoApply,
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan,
+		AllowDestroyPlan:     ws.AllowDestroyPlan(),
+		AutoApply:            ws.AutoApply(),
+		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
 		CreatedAt:            ws.CreatedAt,
-		Description:          ws.Description,
-		Environment:          ws.Environment,
-		ExecutionMode:        ws.ExecutionMode,
-		FileTriggersEnabled:  ws.FileTriggersEnabled,
-		GlobalRemoteState:    ws.GlobalRemoteState,
-		Locked:               ws.Locked,
-		MigrationEnvironment: ws.MigrationEnvironment,
-		Name:                 ws.Name,
+		Description:          ws.Description(),
+		Environment:          ws.Environment(),
+		ExecutionMode:        ws.ExecutionMode(),
+		FileTriggersEnabled:  ws.FileTriggersEnabled(),
+		GlobalRemoteState:    ws.GlobalRemoteState(),
+		Locked:               ws.Locked(),
+		MigrationEnvironment: ws.MigrationEnvironment(),
+		Name:                 ws.Name(),
 		Permissions: &dto.WorkspacePermissions{
 			CanDestroy:        true,
 			CanForceUnlock:    true,
@@ -232,19 +243,19 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 			CanUpdate:         true,
 			CanUpdateVariable: true,
 		},
-		QueueAllRuns:               ws.QueueAllRuns,
-		SpeculativeEnabled:         ws.SpeculativeEnabled,
-		SourceName:                 ws.SourceName,
-		SourceURL:                  ws.SourceURL,
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled,
-		TerraformVersion:           ws.TerraformVersion,
-		TriggerPrefixes:            ws.TriggerPrefixes,
+		QueueAllRuns:               ws.QueueAllRuns(),
+		SpeculativeEnabled:         ws.SpeculativeEnabled(),
+		SourceName:                 ws.SourceName(),
+		SourceURL:                  ws.SourceURL(),
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+		TerraformVersion:           ws.TerraformVersion(),
+		TriggerPrefixes:            ws.TriggerPrefixes(),
 		VCSRepo:                    ws.VCSRepo,
-		WorkingDirectory:           ws.WorkingDirectory,
+		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt,
 	}
 
-	if ws.ExecutionMode == "remote" {
+	if ws.ExecutionMode() == "remote" {
 		// Operations is deprecated but clients and go-tfe tests still use it
 		obj.Operations = true
 	}

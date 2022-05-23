@@ -5,6 +5,7 @@ package sql
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgconn"
 	"github.com/leg100/otf"
@@ -35,4 +36,28 @@ func noRowsInResultError(err error) bool {
 			return true
 		}
 	}
+}
+
+func includeRelation(includes *string, relation string) bool {
+	if includes != nil {
+		includes := strings.Split(*includes, ",")
+		for _, inc := range includes {
+			if inc == relation {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func includeOrganization(includes *string) bool {
+	return includeRelation(includes, "organization")
+}
+
+func includeWorkspace(includes *string) bool {
+	return includeRelation(includes, "workspace")
+}
+
+func includeConfigurationVersion(includes *string) bool {
+	return includeRelation(includes, "configuration_version")
 }

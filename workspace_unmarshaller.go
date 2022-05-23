@@ -62,16 +62,20 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		workingDirectory:           row.WorkingDirectory,
 	}
 
-	org, err := UnmarshalOrganizationDBResult(*row.Organization)
-	if err != nil {
-		return nil, err
+	if row.Organization != nil {
+		org, err := UnmarshalOrganizationDBResult(*row.Organization)
+		if err != nil {
+			return nil, err
+		}
+		ws.Organization = org
+	} else {
+		ws.Organization = &Organization{ID: row.OrganizationID}
 	}
-	ws.Organization = org
 
 	return &ws, nil
 }
 
-func unmarshalWorkspaceDBType(typ *pggen.Workspaces) (*Workspace, error) {
+func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 	ws := Workspace{
 		ID: typ.WorkspaceID,
 		Timestamps: Timestamps{

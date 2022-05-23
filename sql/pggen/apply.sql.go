@@ -47,7 +47,7 @@ type Querier interface {
 
 	// InsertConfigurationVersion inserts a configuration version and
 	// returns the entire row.
-	// 
+	//
 	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error)
 	// InsertConfigurationVersionBatch enqueues a InsertConfigurationVersion query into batch to be executed
 	// later by the batch.
@@ -64,7 +64,7 @@ type Querier interface {
 
 	// FindConfigurationVersions finds configuration_versions for a given workspace.
 	// Results are paginated with limit and offset, and total count is returned.
-	// 
+	//
 	FindConfigurationVersionsByWorkspaceID(ctx context.Context, params FindConfigurationVersionsByWorkspaceIDParams) ([]FindConfigurationVersionsByWorkspaceIDRow, error)
 	// FindConfigurationVersionsByWorkspaceIDBatch enqueues a FindConfigurationVersionsByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -80,31 +80,31 @@ type Querier interface {
 	CountConfigurationVersionsByWorkspaceIDScan(results pgx.BatchResults) (*int, error)
 
 	// FindConfigurationVersionByID finds a configuration_version by its id.
-	// 
-	FindConfigurationVersionByID(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDRow, error)
+	//
+	FindConfigurationVersionByID(ctx context.Context, includeWorkspace bool, configurationVersionID string) (FindConfigurationVersionByIDRow, error)
 	// FindConfigurationVersionByIDBatch enqueues a FindConfigurationVersionByID query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionByIDBatch(batch genericBatch, configurationVersionID string)
+	FindConfigurationVersionByIDBatch(batch genericBatch, includeWorkspace bool, configurationVersionID string)
 	// FindConfigurationVersionByIDScan scans the result of an executed FindConfigurationVersionByIDBatch query.
 	FindConfigurationVersionByIDScan(results pgx.BatchResults) (FindConfigurationVersionByIDRow, error)
 
-	FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, workspaceID string) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
+	FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, includeWorkspace bool, workspaceID string) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
 	// FindConfigurationVersionLatestByWorkspaceIDBatch enqueues a FindConfigurationVersionLatestByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID string)
+	FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, includeWorkspace bool, workspaceID string)
 	// FindConfigurationVersionLatestByWorkspaceIDScan scans the result of an executed FindConfigurationVersionLatestByWorkspaceIDBatch query.
 	FindConfigurationVersionLatestByWorkspaceIDScan(results pgx.BatchResults) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
 
-	FindConfigurationVersionByIDForUpdate(ctx context.Context, configurationVersionID string) (FindConfigurationVersionByIDForUpdateRow, error)
+	FindConfigurationVersionByIDForUpdate(ctx context.Context, includeWorkspace bool, configurationVersionID string) (FindConfigurationVersionByIDForUpdateRow, error)
 	// FindConfigurationVersionByIDForUpdateBatch enqueues a FindConfigurationVersionByIDForUpdate query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, configurationVersionID string)
+	FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, includeWorkspace bool, configurationVersionID string)
 	// FindConfigurationVersionByIDForUpdateScan scans the result of an executed FindConfigurationVersionByIDForUpdateBatch query.
 	FindConfigurationVersionByIDForUpdateScan(results pgx.BatchResults) (FindConfigurationVersionByIDForUpdateRow, error)
 
 	// DownloadConfigurationVersion gets a configuration_version config
 	// tarball.
-	// 
+	//
 	DownloadConfigurationVersion(ctx context.Context, configurationVersionID string) ([]byte, error)
 	// DownloadConfigurationVersionBatch enqueues a DownloadConfigurationVersion query into batch to be executed
 	// later by the batch.
@@ -134,7 +134,7 @@ type Querier interface {
 	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// FindOrganizationByName finds an organization by name.
-	// 
+	//
 	FindOrganizationByName(ctx context.Context, name string) (FindOrganizationByNameRow, error)
 	// FindOrganizationByNameBatch enqueues a FindOrganizationByName query into batch to be executed
 	// later by the batch.
@@ -164,7 +164,7 @@ type Querier interface {
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
 	// InsertOrganization inserts an organization and returns the entire row.
-	// 
+	//
 	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (time.Time, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
 	// later by the batch.
@@ -175,7 +175,7 @@ type Querier interface {
 	// UpdateOrganizationNameByName updates an organization with a new name,
 	// identifying the organization with its existing name, and returns the
 	// updated row.
-	// 
+	//
 	UpdateOrganizationNameByName(ctx context.Context, newName string, name string) (UpdateOrganizationNameByNameRow, error)
 	// UpdateOrganizationNameByNameBatch enqueues a UpdateOrganizationNameByName query into batch to be executed
 	// later by the batch.
@@ -198,7 +198,7 @@ type Querier interface {
 	UpdateOrganizationSessionTimeoutByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionTimeoutByNameRow, error)
 
 	// DeleteOrganization deletes an organization by id.
-	// 
+	//
 	DeleteOrganization(ctx context.Context, name string) (pgconn.CommandTag, error)
 	// DeleteOrganizationBatch enqueues a DeleteOrganization query into batch to be executed
 	// later by the batch.
@@ -304,10 +304,10 @@ type Querier interface {
 	// CountRunsScan scans the result of an executed CountRunsBatch query.
 	CountRunsScan(results pgx.BatchResults) (*int, error)
 
-	FindRunByID(ctx context.Context, runID string) (FindRunByIDRow, error)
+	FindRunByID(ctx context.Context, params FindRunByIDParams) (FindRunByIDRow, error)
 	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
 	// later by the batch.
-	FindRunByIDBatch(batch genericBatch, runID string)
+	FindRunByIDBatch(batch genericBatch, params FindRunByIDParams)
 	// FindRunByIDScan scans the result of an executed FindRunByIDBatch query.
 	FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error)
 
@@ -325,10 +325,10 @@ type Querier interface {
 	// FindRunIDByApplyIDScan scans the result of an executed FindRunIDByApplyIDBatch query.
 	FindRunIDByApplyIDScan(results pgx.BatchResults) (string, error)
 
-	FindRunByIDForUpdate(ctx context.Context, runID string) (FindRunByIDForUpdateRow, error)
+	FindRunByIDForUpdate(ctx context.Context, params FindRunByIDForUpdateParams) (FindRunByIDForUpdateRow, error)
 	// FindRunByIDForUpdateBatch enqueues a FindRunByIDForUpdate query into batch to be executed
 	// later by the batch.
-	FindRunByIDForUpdateBatch(batch genericBatch, runID string)
+	FindRunByIDForUpdateBatch(batch genericBatch, params FindRunByIDForUpdateParams)
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
@@ -466,7 +466,7 @@ type Querier interface {
 	DeleteStateVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// InsertStateVersionOutput inserts a state_version_output and returns the entire row.
-	// 
+	//
 	InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (InsertStateVersionOutputRow, error)
 	// InsertStateVersionOutputBatch enqueues a InsertStateVersionOutput query into batch to be executed
 	// later by the batch.
@@ -559,7 +559,7 @@ type Querier interface {
 	DeleteUserByUsernameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// InsertWorkspace inserts a workspace and returns the entire row.
-	// 
+	//
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
 	// later by the batch.
@@ -589,11 +589,11 @@ type Querier interface {
 	FindWorkspaceIDByNameScan(results pgx.BatchResults) (string, error)
 
 	// FindWorkspaceByName finds a workspace by name and organization name.
-	// 
-	FindWorkspaceByName(ctx context.Context, name string, organizationName string) (FindWorkspaceByNameRow, error)
+	//
+	FindWorkspaceByName(ctx context.Context, params FindWorkspaceByNameParams) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
 	// later by the batch.
-	FindWorkspaceByNameBatch(batch genericBatch, name string, organizationName string)
+	FindWorkspaceByNameBatch(batch genericBatch, params FindWorkspaceByNameParams)
 	// FindWorkspaceByNameScan scans the result of an executed FindWorkspaceByNameBatch query.
 	FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorkspaceByNameRow, error)
 
@@ -605,11 +605,11 @@ type Querier interface {
 	FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error)
 
 	// FindWorkspaceByID finds a workspace by id.
-	// 
-	FindWorkspaceByID(ctx context.Context, id string) (FindWorkspaceByIDRow, error)
+	//
+	FindWorkspaceByID(ctx context.Context, includeOrganization bool, id string) (FindWorkspaceByIDRow, error)
 	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
 	// later by the batch.
-	FindWorkspaceByIDBatch(batch genericBatch, id string)
+	FindWorkspaceByIDBatch(batch genericBatch, includeOrganization bool, id string)
 	// FindWorkspaceByIDScan scans the result of an executed FindWorkspaceByIDBatch query.
 	FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspaceByIDRow, error)
 
@@ -629,7 +629,7 @@ type Querier interface {
 
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
-	// 
+	//
 	DeleteWorkspaceByID(ctx context.Context, workspaceID string) (pgconn.CommandTag, error)
 	// DeleteWorkspaceByIDBatch enqueues a DeleteWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -638,7 +638,7 @@ type Querier interface {
 	DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// DeleteWorkspaceByName deletes a workspace by name and organization name.
-	// 
+	//
 	DeleteWorkspaceByName(ctx context.Context, name string, organizationName string) (pgconn.CommandTag, error)
 	// DeleteWorkspaceByNameBatch enqueues a DeleteWorkspaceByName query into batch to be executed
 	// later by the batch.

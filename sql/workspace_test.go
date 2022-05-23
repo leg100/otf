@@ -60,7 +60,7 @@ func TestWorkspace_Update(t *testing.T) {
 			got, err := db.WorkspaceStore().Get(tt.spec(ws))
 			require.NoError(t, err)
 
-			assert.Equal(t, "updated description", got.Description)
+			assert.Equal(t, "updated description", got.Description())
 
 			assert.True(t, got.UpdatedAt.After(got.CreatedAt))
 		})
@@ -176,7 +176,7 @@ func TestWorkspace_Delete(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(ws.Organization.Name())}
+				return otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(org.Name())}
 			},
 		},
 	}
