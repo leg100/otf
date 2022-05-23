@@ -26,7 +26,6 @@ require (
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/mattn/go-isatty v0.0.14
-	github.com/mitchellh/copystructure v1.2.0
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/rs/zerolog v1.23.0
 	github.com/spf13/cobra v1.1.3
@@ -57,6 +56,7 @@ require (
 	github.com/jackc/puddle v1.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

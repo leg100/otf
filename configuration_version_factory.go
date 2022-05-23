@@ -2,8 +2,6 @@ package otf
 
 import (
 	"context"
-
-	"github.com/mitchellh/copystructure"
 )
 
 // ConfigurationVersionFactory creates ConfigurationVersion objects
@@ -45,12 +43,4 @@ func NewConfigurationVersionFromDefaults(ws *Workspace) *ConfigurationVersion {
 	}
 	cv.Workspace = &Workspace{ID: ws.ID}
 	return &cv
-}
-
-func NewShallowNestedConfigurationVersion(cv *ConfigurationVersion) *ConfigurationVersion {
-	cp, _ := copystructure.Copy(cv)
-	shallowConfigurationVersion := cp.(*ConfigurationVersion)
-	shallowConfigurationVersion.statusTimestamps = nil
-	shallowConfigurationVersion.Workspace = &Workspace{ID: cv.Workspace.ID}
-	return shallowConfigurationVersion
 }

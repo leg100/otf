@@ -2,7 +2,6 @@ package otf
 
 import (
 	"github.com/google/uuid"
-	"github.com/mitchellh/copystructure"
 )
 
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
@@ -15,7 +14,7 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 		globalRemoteState:   true, // Only global remote state is supported
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
-		Organization:        org,
+		Organization:        &Organization{ID: org.ID},
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
@@ -79,11 +78,4 @@ func NewTestWorkspace(org *Organization) *Workspace {
 		Organization: &Organization{ID: org.ID},
 	}
 	return &ws
-}
-
-func NewShallowNestedWorkspace(ws *Workspace) *Workspace {
-	cp, _ := copystructure.Copy(ws)
-	shallowWorkspace := cp.(*Workspace)
-	shallowWorkspace.Organization = &Organization{ID: ws.Organization.ID}
-	return shallowWorkspace
 }
