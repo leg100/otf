@@ -6,7 +6,7 @@ import (
 
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
-		ID:                  NewID("ws"),
+		id:                  NewID("ws"),
 		name:                *opts.Name,
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
 		executionMode:       DefaultExecutionMode,
@@ -14,7 +14,7 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 		globalRemoteState:   true, // Only global remote state is supported
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
-		Organization:        &Organization{ID: org.ID},
+		Organization:        &Organization{id: org.ID()},
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
@@ -73,9 +73,9 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 
 func NewTestWorkspace(org *Organization) *Workspace {
 	ws := Workspace{
-		ID:           NewID("ws"),
+		id:           NewID("ws"),
 		name:         uuid.NewString(),
-		Organization: &Organization{ID: org.ID},
+		Organization: &Organization{id: org.ID()},
 	}
 	return &ws
 }

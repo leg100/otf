@@ -101,7 +101,7 @@ func (s ApplyService) Claim(ctx context.Context, applyID string, opts otf.JobCla
 		return nil, err
 	}
 
-	s.V(0).Info("started apply", "id", run.ID)
+	s.V(0).Info("started apply", "id", run.ID())
 
 	return run, nil
 }

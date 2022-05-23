@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"os"
 	"testing"
@@ -16,8 +15,6 @@ import (
 )
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
-
-type newTestStateVersionOption func(*otf.StateVersion) error
 
 func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) otf.DB {
 	urlStr := os.Getenv(TestDatabaseURL)
@@ -58,24 +55,6 @@ func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return otf.NewConfigurationVersionFromDefaults(ws)
 }
 
-func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv := &otf.StateVersion{
-		ID:    otf.NewID("sv"),
-		State: []byte("stuff"),
-	}
-	for _, o := range opts {
-		o(sv)
-	}
-	return sv
-}
-
-func newTestUser() *otf.User {
-	return &otf.User{
-		ID:       otf.NewID("user"),
-		Username: fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
-	}
-}
-
 type newTestSessionOption func(*otf.Session)
 
 func overrideExpiry(expiry time.Time) newTestSessionOption {
@@ -95,20 +74,6 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 	}
 
 	return session
-}
-
-func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
-	return func(sv *otf.StateVersion) error {
-		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
-			ID:             otf.NewID("wsout"),
-			Name:           name,
-			Type:           outputType,
-			Value:          value,
-			Sensitive:      sensitive,
-			StateVersionID: sv.ID,
-		})
-		return nil
-	}
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
@@ -131,7 +96,7 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID)})
+		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 
 	return ws
@@ -142,19 +107,19 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) 
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.ConfigurationVersionStore().Delete(cv.ID)
+		db.ConfigurationVersionStore().Delete(cv.ID())
 	})
 
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv := newTestStateVersion(opts...)
-	err := db.StateVersionStore().Create(ws.ID, sv)
+func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...otf.NewTestStateVersionOption) *otf.StateVersion {
+	sv := otf.NewTestStateVersion(opts...)
+	err := db.StateVersionStore().Create(ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.StateVersionStore().Delete(sv.ID)
+		db.StateVersionStore().Delete(sv.ID())
 	})
 
 	return sv
@@ -166,26 +131,14 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.RunStore().Delete(run.ID)
+		db.RunStore().Delete(run.ID())
 	})
 
 	return run
 }
 
-type createTestUserOpt func(*otf.User)
-
-func withOrganizationMemberships(memberships ...*otf.Organization) createTestUserOpt {
-	return func(user *otf.User) {
-		user.Organizations = memberships
-	}
-}
-
-func createTestUser(t *testing.T, db otf.DB, opts ...createTestUserOpt) *otf.User {
-	user := newTestUser()
-
-	for _, o := range opts {
-		o(user)
-	}
+func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf.User {
+	user := otf.NewTestUser(opts...)
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)

@@ -29,7 +29,7 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 	ctx := context.Background()
 
 	createdAt, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-		ID:              org.ID,
+		ID:              org.ID(),
 		Name:            org.Name(),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),

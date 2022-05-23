@@ -68,7 +68,7 @@ func (s *Supervisor) Start(ctx context.Context) {
 		select {
 		case run := <-s.GetCancelation():
 			// TODO: support force cancelations too.
-			s.Cancel(run.GetID(), false)
+			s.Cancel(run.ID(), false)
 		case <-ctx.Done():
 			return
 		}

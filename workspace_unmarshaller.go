@@ -36,7 +36,7 @@ type WorkspaceDBResult struct {
 
 func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	ws := Workspace{
-		ID: row.WorkspaceID,
+		id: row.WorkspaceID,
 		Timestamps: Timestamps{
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
@@ -69,7 +69,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		}
 		ws.Organization = org
 	} else {
-		ws.Organization = &Organization{ID: row.OrganizationID}
+		ws.Organization = &Organization{id: row.OrganizationID}
 	}
 
 	return &ws, nil
@@ -77,7 +77,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 
 func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 	ws := Workspace{
-		ID: typ.WorkspaceID,
+		id: typ.WorkspaceID,
 		Timestamps: Timestamps{
 			CreatedAt: typ.CreatedAt.Local(),
 			UpdatedAt: typ.UpdatedAt.Local(),
@@ -101,7 +101,7 @@ func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 		terraformVersion:           typ.TerraformVersion,
 		triggerPrefixes:            typ.TriggerPrefixes,
 		workingDirectory:           typ.WorkingDirectory,
-		Organization:               &Organization{ID: typ.OrganizationID},
+		Organization:               &Organization{id: typ.OrganizationID},
 	}
 
 	return &ws, nil
@@ -109,7 +109,7 @@ func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 
 func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 	domain := Workspace{
-		ID:                         w.ID,
+		id:                         w.ID,
 		allowDestroyPlan:           w.AllowDestroyPlan,
 		autoApply:                  w.AutoApply,
 		canQueueDestroyPlan:        w.CanQueueDestroyPlan,

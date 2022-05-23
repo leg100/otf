@@ -39,7 +39,7 @@ type RunDBResult struct {
 
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
-		ID: result.RunID,
+		id: result.RunID,
 		Timestamps: Timestamps{
 			CreatedAt: result.CreatedAt,
 			UpdatedAt: result.UpdatedAt,
@@ -55,13 +55,13 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		autoApply:        result.AutoApply,
 		speculative:      result.Speculative,
 		Plan: &Plan{
-			ID:               result.PlanID,
+			id:               result.PlanID,
 			status:           PlanStatus(result.PlanStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
 			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 		},
 		Apply: &Apply{
-			ID:               result.ApplyID,
+			id:               result.ApplyID,
 			status:           ApplyStatus(result.ApplyStatus),
 			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
 			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
@@ -78,7 +78,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		}
 		run.Workspace = workspace
 	} else {
-		run.Workspace = &Workspace{ID: result.WorkspaceID}
+		run.Workspace = &Workspace{id: result.WorkspaceID}
 	}
 
 	if result.ConfigurationVersion != nil {
@@ -88,7 +88,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		}
 		run.ConfigurationVersion = cv
 	} else {
-		run.ConfigurationVersion = &ConfigurationVersion{ID: result.ConfigurationVersionID}
+		run.ConfigurationVersion = &ConfigurationVersion{id: result.ConfigurationVersionID}
 	}
 
 	return &run, nil

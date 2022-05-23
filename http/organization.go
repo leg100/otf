@@ -107,7 +107,7 @@ func OrganizationDTO(org *otf.Organization) *dto.Organization {
 	return &dto.Organization{
 		Name:            org.Name(),
 		CreatedAt:       org.CreatedAt,
-		ExternalID:      org.ID,
+		ExternalID:      org.ID(),
 		Permissions:     &dto.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),

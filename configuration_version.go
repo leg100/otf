@@ -37,7 +37,7 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	ID string `jsonapi:"primary,configuration-versions"`
+	id string `jsonapi:"primary,configuration-versions"`
 
 	Timestamps
 
@@ -139,12 +139,12 @@ type ConfigurationVersionListOptions struct {
 	ListOptions
 }
 
+func (cv *ConfigurationVersion) ID() string                  { return cv.id }
+func (cv *ConfigurationVersion) String() string              { return cv.id }
 func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
-func (cv *ConfigurationVersion) GetID() string               { return cv.ID }
 func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
 func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
 func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
-func (cv *ConfigurationVersion) String() string              { return cv.ID }
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
@@ -158,7 +158,7 @@ func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, t
 
 func (cv *ConfigurationVersion) ShallowNest() {
 	cv.statusTimestamps = nil
-	cv.Workspace = &Workspace{ID: cv.Workspace.ID}
+	cv.Workspace = &Workspace{id: cv.Workspace.ID()}
 }
 
 // Upload saves the config to the db and updates status accordingly.

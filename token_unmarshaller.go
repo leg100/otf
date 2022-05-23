@@ -4,7 +4,7 @@ import "github.com/leg100/otf/sql/pggen"
 
 func unmarshalTokenDBType(typ pggen.Tokens) (*Token, error) {
 	token := Token{
-		ID: typ.UserID,
+		id: typ.UserID,
 		Timestamps: Timestamps{
 			CreatedAt: typ.CreatedAt,
 			UpdatedAt: typ.UpdatedAt,

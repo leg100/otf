@@ -27,7 +27,7 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 	q := pggen.NewQuerier(db.Pool)
 
 	result, err := q.InsertToken(ctx, pggen.InsertTokenParams{
-		TokenID:     token.ID,
+		TokenID:     token.ID(),
 		Token:       token.Token,
 		Description: token.Description,
 		UserID:      token.UserID,

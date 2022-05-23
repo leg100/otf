@@ -29,7 +29,7 @@ func TestRun_Timestamps(t *testing.T) {
 	err := db.RunStore().Create(run)
 	require.NoError(t, err)
 
-	got, err := db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
+	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
 	assert.Equal(t, run.CreatedAt, got.CreatedAt)
@@ -68,7 +68,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			run := createTestRun(t, db, ws, cv)
 
-			got, err := db.RunStore().UpdateStatus(otf.RunGetOptions{ID: &run.ID}, tt.update)
+			got, err := db.RunStore().UpdateStatus(otf.RunGetOptions{ID: otf.String(run.ID())}, tt.update)
 			require.NoError(t, err)
 
 			tt.want(t, got)
@@ -90,15 +90,15 @@ func TestRun_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			opts: otf.RunGetOptions{ID: &want.ID},
+			opts: otf.RunGetOptions{ID: otf.String(want.ID())},
 		},
 		{
 			name: "by plan id",
-			opts: otf.RunGetOptions{PlanID: &want.Plan.ID},
+			opts: otf.RunGetOptions{PlanID: otf.String(want.Plan.ID())},
 		},
 		{
 			name: "by apply id",
-			opts: otf.RunGetOptions{ApplyID: &want.Apply.ID},
+			opts: otf.RunGetOptions{ApplyID: otf.String(want.Apply.ID())},
 		},
 	}
 	for _, tt := range tests {
@@ -128,7 +128,7 @@ func TestRun_List(t *testing.T) {
 	}{
 		{
 			name: "by workspace id",
-			opts: otf.RunListOptions{WorkspaceID: &ws.ID},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID())},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 3, len(l.Items))
 				assert.Contains(t, l.Items, run1)
@@ -148,7 +148,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses",
-			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPending}},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID()), Statuses: []otf.RunStatus{otf.RunPending}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 3, len(l.Items))
 				assert.Contains(t, l.Items, run1)
@@ -158,7 +158,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses - no match",
-			opts: otf.RunListOptions{WorkspaceID: &ws.ID, Statuses: []otf.RunStatus{otf.RunPlanned}},
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID()), Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},
@@ -187,10 +187,10 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.RunStore().CreatePlanReport(run.ID, report)
+	err := db.RunStore().CreatePlanReport(run.ID(), report)
 	require.NoError(t, err)
 
-	run, err = db.RunStore().Get(otf.RunGetOptions{ID: &run.ID})
+	run, err = db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan.ResourceReport)

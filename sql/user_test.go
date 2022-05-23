@@ -11,7 +11,7 @@ import (
 
 func TestUser_Create(t *testing.T) {
 	db := newTestDB(t)
-	user := newTestUser()
+	user := otf.NewTestUser()
 
 	defer db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
 
@@ -25,7 +25,7 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 	org := createTestOrganization(t, db)
 	user := createTestUser(t, db)
 
-	err := db.UserStore().AddOrganizationMembership(context.Background(), user.ID, org.ID)
+	err := db.UserStore().AddOrganizationMembership(context.Background(), user.ID(), org.ID())
 	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
@@ -38,9 +38,9 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	db := newTestDB(t)
 
 	org := createTestOrganization(t, db)
-	user := createTestUser(t, db, withOrganizationMemberships(org))
+	user := createTestUser(t, db, otf.WithOrganizationMemberships(org))
 
-	err := db.UserStore().RemoveOrganizationMembership(context.Background(), user.ID, org.ID)
+	err := db.UserStore().RemoveOrganizationMembership(context.Background(), user.ID(), org.ID())
 	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
@@ -57,7 +57,7 @@ func TestUser_Update_CurrentOrganization(t *testing.T) {
 	// set current org
 	user.CurrentOrganization = otf.String("enron")
 
-	err := db.UserStore().SetCurrentOrganization(context.Background(), user.ID, *user.CurrentOrganization)
+	err := db.UserStore().SetCurrentOrganization(context.Background(), user.ID(), *user.CurrentOrganization)
 	require.NoError(t, err)
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
@@ -69,8 +69,8 @@ func TestUser_Update_CurrentOrganization(t *testing.T) {
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := createTestSession(t, db, user.ID)
-	token := createTestToken(t, db, user.ID, "testing")
+	session := createTestSession(t, db, user.ID())
+	token := createTestToken(t, db, user.ID(), "testing")
 
 	tests := []struct {
 		name string
@@ -86,7 +86,7 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			name: "auth token ID",
-			spec: otf.UserSpec{AuthenticationTokenID: &token.ID},
+			spec: otf.UserSpec{AuthenticationTokenID: otf.String(token.ID())},
 		},
 		{
 			name: "auth token",
@@ -98,7 +98,7 @@ func TestUser_Get(t *testing.T) {
 			got, err := db.UserStore().Get(context.Background(), tt.spec)
 			require.NoError(t, err)
 
-			assert.Equal(t, got.ID, user.ID)
+			assert.Equal(t, got.ID(), user.ID())
 		})
 	}
 
@@ -107,8 +107,8 @@ func TestUser_Get(t *testing.T) {
 func TestUser_Get_WithSessions(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	_ = createTestSession(t, db, user.ID)
-	_ = createTestSession(t, db, user.ID)
+	_ = createTestSession(t, db, user.ID())
+	_ = createTestSession(t, db, user.ID())
 
 	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
 	require.NoError(t, err)

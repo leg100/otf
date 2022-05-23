@@ -13,10 +13,12 @@ func TestStateVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	out1 := appendOutput("out1", "string", "val1", false)
-	out2 := appendOutput("out2", "string", "val2", false)
+	sv := otf.NewTestStateVersion(
+		otf.AppendOutput("out1", "string", "val1", false),
+		otf.AppendOutput("out2", "string", "val2", false),
+	)
 
-	err := db.StateVersionStore().Create(ws.ID, newTestStateVersion(out1, out2))
+	err := db.StateVersionStore().Create(ws.ID(), sv)
 	require.NoError(t, err)
 }
 
@@ -24,7 +26,7 @@ func TestStateVersion_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	sv := createTestStateVersion(t, db, ws, appendOutput("out1", "string", "val1", false))
+	sv := createTestStateVersion(t, db, ws, otf.AppendOutput("out1", "string", "val1", false))
 
 	tests := []struct {
 		name string
@@ -33,7 +35,7 @@ func TestStateVersion_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID)},
+			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID())},
 			want: func(t *testing.T, got *otf.StateVersion, err error) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, sv, got)
@@ -49,7 +51,7 @@ func TestStateVersion_Get(t *testing.T) {
 		},
 		{
 			name: "by workspace",
-			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
+			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
 			want: func(t *testing.T, got *otf.StateVersion, err error) {
 				if assert.NoError(t, err) {
 					assert.Equal(t, sv, got)

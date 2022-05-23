@@ -84,9 +84,9 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func StateVersionJSONAPIObject(r *otf.StateVersion) *dto.StateVersion {
 	obj := &dto.StateVersion{
-		ID:          r.ID,
+		ID:          r.ID(),
 		CreatedAt:   r.CreatedAt,
-		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID),
+		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID()),
 		Serial:      r.Serial,
 		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs),
 	}
@@ -112,7 +112,7 @@ func StateVersionListJSONAPIObject(l *otf.StateVersionList) *dto.StateVersionLis
 // JSON-API object
 func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *dto.StateVersionOutput {
 	obj := &dto.StateVersionOutput{
-		ID:        svo.ID,
+		ID:        svo.ID(),
 		Name:      svo.Name,
 		Sensitive: svo.Sensitive,
 		Type:      svo.Type,

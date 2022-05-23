@@ -34,7 +34,7 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 
 	q := pggen.NewQuerier(tx)
 
-	result, err := q.InsertUser(ctx, user.ID, user.Username)
+	result, err := q.InsertUser(ctx, user.ID(), user.Username)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	user.UpdatedAt = result.UpdatedAt
 
 	for _, org := range user.Organizations {
-		_, err = q.InsertOrganizationMembership(ctx, user.ID, org.ID)
+		_, err = q.InsertOrganizationMembership(ctx, user.ID(), org.ID())
 		if err != nil {
 			return err
 		}

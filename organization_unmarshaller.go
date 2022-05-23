@@ -7,7 +7,7 @@ import (
 
 func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, error) {
 	org := Organization{
-		ID: result.OrganizationID,
+		id: result.OrganizationID,
 		Timestamps: Timestamps{
 			CreatedAt: result.CreatedAt.Local(),
 			UpdatedAt: result.UpdatedAt.Local(),
@@ -22,7 +22,7 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 
 func UnmarshalOrganizationJSONAPI(model *dto.Organization) *Organization {
 	return &Organization{
-		ID:              model.ExternalID,
+		id:              model.ExternalID,
 		name:            model.Name,
 		sessionRemember: model.SessionRemember,
 		sessionTimeout:  model.SessionTimeout,

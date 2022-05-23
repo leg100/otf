@@ -27,7 +27,7 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	js := job.GetService(w.App)
 
-	log := w.Logger.WithValues("job", job.GetID())
+	log := w.Logger.WithValues("job", job.ID())
 
 	env, err := NewEnvironment(
 		log,
@@ -42,7 +42,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = js.Claim(context.Background(), job.GetID(), otf.JobClaimOptions{AgentID: DefaultID})
+	job, err = js.Claim(context.Background(), job.ID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -50,8 +50,8 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(job.GetID(), env)
-	defer w.CheckOut(job.GetID())
+	w.CheckIn(job.ID(), env)
+	defer w.CheckOut(job.ID())
 
 	log.Info("executing job")
 
@@ -63,7 +63,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = js.Finish(context.Background(), job.GetID(), finishOptions)
+	_, err = js.Finish(context.Background(), job.ID(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing job")
 	}

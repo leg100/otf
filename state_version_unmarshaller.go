@@ -20,7 +20,7 @@ type StateVersionDBRow struct {
 
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
-		ID: row.StateVersionID,
+		id: row.StateVersionID,
 		Timestamps: Timestamps{
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,

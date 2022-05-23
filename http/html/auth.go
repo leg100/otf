@@ -110,7 +110,7 @@ func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 
 		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
 			user.CurrentOrganization = &current
-			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID, current); err != nil {
+			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID(), current); err != nil {
 				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

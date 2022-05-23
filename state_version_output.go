@@ -1,7 +1,7 @@
 package otf
 
 type StateVersionOutput struct {
-	ID string
+	id string
 
 	Timestamps
 
@@ -16,4 +16,5 @@ type StateVersionOutput struct {
 
 type StateVersionOutputList []*StateVersionOutput
 
-func (svo *StateVersionOutput) String() string { return svo.ID }
+func (svo *StateVersionOutput) ID() string     { return svo.id }
+func (svo *StateVersionOutput) String() string { return svo.id }

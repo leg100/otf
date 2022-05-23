@@ -9,7 +9,7 @@ var _ Job = (*noOp)(nil)
 type noOp struct{}
 
 func (*noOp) Do(Environment) error              { return nil }
-func (*noOp) GetID() string                     { return "no-op" }
+func (*noOp) ID() string                        { return "no-op" }
 func (*noOp) GetService(Application) JobService { return &noOpService{} }
 
 type noOpService struct{}

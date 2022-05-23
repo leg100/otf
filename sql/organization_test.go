@@ -48,7 +48,7 @@ func TestOrganization_Get(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, org.Name(), got.Name())
-	assert.Equal(t, org.ID, got.ID)
+	assert.Equal(t, org.ID(), got.ID())
 }
 
 func TestOrganization_List(t *testing.T) {

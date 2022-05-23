@@ -68,7 +68,7 @@ type RunStatus string
 func (r RunStatus) String() string { return string(r) }
 
 type Run struct {
-	ID string `jsonapi:"primary,runs" json:"run_id"`
+	id string `jsonapi:"primary,runs" json:"run_id"`
 
 	Timestamps
 
@@ -285,8 +285,6 @@ type RunListOptions struct {
 	WorkspaceName    *string `schema:"workspace_name"`
 }
 
-func (r *Run) String() string { return r.ID }
-
 func (o RunCreateOptions) Valid() error {
 	if o.Workspace == nil {
 		return errors.New("workspace is required")
@@ -456,6 +454,8 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 	return nil
 }
 
+func (r *Run) ID() string                             { return r.id }
+func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
 func (r *Run) Message() string                        { return r.message }
 func (r *Run) Refresh() bool                          { return r.refresh }
@@ -507,7 +507,7 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.GetConfigurationVersionService().Download(r.ConfigurationVersion.ID)
+	cv, err := env.GetConfigurationVersionService().Download(r.ConfigurationVersion.ID())
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -523,14 +523,14 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.GetStateVersionService().Current(r.Workspace.ID)
+	state, err := env.GetStateVersionService().Current(r.Workspace.ID())
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
 
-	statefile, err := env.GetStateVersionService().Download(state.ID)
+	statefile, err := env.GetStateVersionService().Download(state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
@@ -548,7 +548,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, file, PlanFormatBinary); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID(), file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -561,7 +561,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID, jsonFile, PlanFormatJSON); err != nil {
+	if err := env.GetRunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
@@ -569,7 +569,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.GetRunService().GetPlanFile(ctx, RunGetOptions{ID: &r.ID}, PlanFormatBinary)
+	plan, err := env.GetRunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -589,7 +589,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	_, err = env.GetStateVersionService().Create(r.Workspace.ID, StateVersionCreateOptions{
+	_, err = env.GetStateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,

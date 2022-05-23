@@ -65,7 +65,7 @@ func (s *workspaceQueueManager) Start() error {
 				switch event.Type {
 				case EventWorkspaceDeleted:
 					// garbage collect queue
-					delete(s.queues, obj.ID)
+					delete(s.queues, obj.ID())
 				}
 				// ignore EventWorkspaceCreated because the mgr creates
 				// workspace queue on-demand when a run event comes in.
@@ -87,7 +87,7 @@ func (s *workspaceQueueManager) seed() error {
 			// speculative runs are never queued
 			continue
 		}
-		s.update(run.Workspace.ID, func(q workspaceQueue) (workspaceQueue, error) {
+		s.update(run.Workspace.ID(), func(q workspaceQueue) (workspaceQueue, error) {
 			q = append(q, run)
 			return q, nil
 		})
@@ -116,7 +116,7 @@ func (s *workspaceQueueManager) refresh(run *Run) error {
 		return nil
 	}
 	// update workspace queue and start eligible run if there is one
-	err := s.update(run.Workspace.ID, func(q workspaceQueue) (workspaceQueue, error) {
+	err := s.update(run.Workspace.ID(), func(q workspaceQueue) (workspaceQueue, error) {
 		return q.update(run).startRun(s.ctx, s.RunService)
 	})
 	return err
