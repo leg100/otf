@@ -59,25 +59,25 @@ func TestWorkspaceQueueManager_Refresh(t *testing.T) {
 			name:     "enqueue pending to empty queue",
 			run:      ws1pending1,
 			existing: map[string]workspaceQueue{},
-			want:     map[string]workspaceQueue{"ws1": workspaceQueue{ws1pending1}},
+			want:     map[string]workspaceQueue{"ws1": {ws1pending1}},
 		},
 		{
 			name:     "enqueue pending to non-empty queue",
 			run:      ws1pending1,
-			existing: map[string]workspaceQueue{"ws1": workspaceQueue{ws1planQueued1}},
-			want:     map[string]workspaceQueue{"ws1": workspaceQueue{ws1planQueued1, ws1pending1}},
+			existing: map[string]workspaceQueue{"ws1": {ws1planQueued1}},
+			want:     map[string]workspaceQueue{"ws1": {ws1planQueued1, ws1pending1}},
 		},
 		{
 			name:     "dont enqueue speculative",
 			run:      ws1speculative1,
-			existing: map[string]workspaceQueue{"ws1": workspaceQueue{}},
-			want:     map[string]workspaceQueue{"ws1": workspaceQueue{}},
+			existing: map[string]workspaceQueue{"ws1": {}},
+			want:     map[string]workspaceQueue{"ws1": {}},
 		},
 		{
 			name:     "remove done",
 			run:      ws1done1,
-			existing: map[string]workspaceQueue{"ws1": workspaceQueue{ws1done1, ws1pending1}},
-			want:     map[string]workspaceQueue{"ws1": workspaceQueue{ws1pending1}},
+			existing: map[string]workspaceQueue{"ws1": {ws1done1, ws1pending1}},
+			want:     map[string]workspaceQueue{"ws1": {ws1pending1}},
 		},
 	}
 

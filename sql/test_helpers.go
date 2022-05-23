@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -59,30 +58,15 @@ func newTestWorkspace(org *otf.Organization) *otf.Workspace {
 	return &otf.Workspace{
 		ID:           otf.NewID("ws"),
 		Name:         uuid.NewString(),
-		Organization: org,
+		Organization: &otf.Organization{ID: org.ID},
 	}
-}
-
-func newShallowNestedWorkspace(ws *otf.Workspace) *otf.Workspace {
-	cp, _ := copystructure.Copy(ws)
-	shallowWorkspace := cp.(*otf.Workspace)
-	shallowWorkspace.Organization = &otf.Organization{ID: shallowWorkspace.Organization.ID}
-	return shallowWorkspace
-}
-
-func newShallowNestedConfigurationVersion(cv *otf.ConfigurationVersion) *otf.ConfigurationVersion {
-	cp, _ := copystructure.Copy(cv)
-	shallowConfigurationVersion := cp.(*otf.ConfigurationVersion)
-	shallowConfigurationVersion.StatusTimestamps = nil
-	shallowConfigurationVersion.Workspace = &otf.Workspace{ID: cv.Workspace.ID}
-	return shallowConfigurationVersion
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
 	return &otf.ConfigurationVersion{
 		ID:        otf.NewID("cv"),
 		Status:    otf.ConfigurationPending,
-		Workspace: newShallowNestedWorkspace(ws),
+		Workspace: &otf.Workspace{ID: ws.ID},
 	}
 }
 
@@ -140,9 +124,6 @@ func appendOutput(name, outputType, value string, sensitive bool) newTestStateVe
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	ws = newShallowNestedWorkspace(ws)
-	cv = newShallowNestedConfigurationVersion(cv)
-
 	return otf.NewRunFromDefaults(cv, ws)
 }
 
@@ -192,7 +173,6 @@ func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	cv.StatusTimestamps = nil
 	run := newTestRun(ws, cv)
 	err := db.RunStore().Create(run)
 	require.NoError(t, err)

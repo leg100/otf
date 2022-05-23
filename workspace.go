@@ -282,6 +282,10 @@ type WorkspaceSpec struct {
 	// Specify workspace using its name and organization
 	Name             *string `schema:"workspace_name"`
 	OrganizationName *string `schema:"organization_name"`
+
+	// A list of relations to include. See available resources
+	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
 func (spec WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
@@ -323,7 +327,7 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 		GlobalRemoteState:   true, // Only global remote state is supported
 		TerraformVersion:    DefaultTerraformVersion,
 		SpeculativeEnabled:  true,
-		Organization:        org,
+		Organization:        &Organization{ID: org.ID},
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this

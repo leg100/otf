@@ -10,27 +10,31 @@ import (
 
 // RunDBResult is the database record for a run
 type RunDBResult struct {
-	RunID                 string                        `json:"run_id"`
-	PlanID                string                        `json:"plan_id"`
-	ApplyID               string                        `json:"apply_id"`
-	CreatedAt             time.Time                     `json:"created_at"`
-	UpdatedAt             time.Time                     `json:"updated_at"`
-	IsDestroy             bool                          `json:"is_destroy"`
-	PositionInQueue       int                           `json:"position_in_queue"`
-	Refresh               bool                          `json:"refresh"`
-	RefreshOnly           bool                          `json:"refresh_only"`
-	Status                string                        `json:"status"`
-	PlanStatus            string                        `json:"plan_status"`
-	ApplyStatus           string                        `json:"apply_status"`
-	ReplaceAddrs          []string                      `json:"replace_addrs"`
-	TargetAddrs           []string                      `json:"target_addrs"`
-	PlannedChanges        *pggen.ResourceReport         `json:"planned_changes"`
-	AppliedChanges        *pggen.ResourceReport         `json:"applied_changes"`
-	ConfigurationVersion  *pggen.ConfigurationVersions  `json:"configuration_version"`
-	Workspace             *pggen.Workspaces             `json:"workspace"`
-	RunStatusTimestamps   []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps  []pggen.PlanStatusTimestamps  `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
+	RunID                  string                        `json:"run_id"`
+	PlanID                 string                        `json:"plan_id"`
+	ApplyID                string                        `json:"apply_id"`
+	CreatedAt              time.Time                     `json:"created_at"`
+	UpdatedAt              time.Time                     `json:"updated_at"`
+	IsDestroy              bool                          `json:"is_destroy"`
+	PositionInQueue        int                           `json:"position_in_queue"`
+	Refresh                bool                          `json:"refresh"`
+	RefreshOnly            bool                          `json:"refresh_only"`
+	Status                 string                        `json:"status"`
+	PlanStatus             string                        `json:"plan_status"`
+	ApplyStatus            string                        `json:"apply_status"`
+	ReplaceAddrs           []string                      `json:"replace_addrs"`
+	TargetAddrs            []string                      `json:"target_addrs"`
+	PlannedChanges         *pggen.ResourceReport         `json:"planned_changes"`
+	AppliedChanges         *pggen.ResourceReport         `json:"applied_changes"`
+	ConfigurationVersionID string                        `json:"configuration_version_id"`
+	WorkspaceID            string                        `json:"workspace_id"`
+	Speculative            bool                          `json:"speculative"`
+	AutoApply              bool                          `json:"auto_apply"`
+	ConfigurationVersion   *pggen.ConfigurationVersions  `json:"configuration_version"`
+	Workspace              *pggen.Workspaces             `json:"workspace"`
+	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
+	PlanStatusTimestamps   []pggen.PlanStatusTimestamps  `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps  []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
 
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
@@ -48,6 +52,8 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		statusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		ReplaceAddrs:     result.ReplaceAddrs,
 		TargetAddrs:      result.TargetAddrs,
+		autoApply:        result.AutoApply,
+		speculative:      result.Speculative,
 		Plan: &Plan{
 			ID:               result.PlanID,
 			status:           PlanStatus(result.PlanStatus),
@@ -65,17 +71,25 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run.Apply.run = &run
 	run.setJob()
 
-	workspace, err := unmarshalWorkspaceDBType(result.Workspace)
-	if err != nil {
-		return nil, err
+	if result.Workspace != nil {
+		workspace, err := UnmarshalWorkspaceDBType(*result.Workspace)
+		if err != nil {
+			return nil, err
+		}
+		run.Workspace = workspace
+	} else {
+		run.Workspace = &Workspace{ID: result.WorkspaceID}
 	}
-	run.Workspace = workspace
 
-	cv, err := unmarshalConfigurationVersionDBType(*result.ConfigurationVersion)
-	if err != nil {
-		return nil, err
+	if result.ConfigurationVersion != nil {
+		cv, err := unmarshalConfigurationVersionDBType(*result.ConfigurationVersion)
+		if err != nil {
+			return nil, err
+		}
+		run.ConfigurationVersion = cv
+	} else {
+		run.ConfigurationVersion = &ConfigurationVersion{ID: result.ConfigurationVersionID}
 	}
-	run.ConfigurationVersion = cv
 
 	return &run, nil
 }

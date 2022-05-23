@@ -59,15 +59,17 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 		Refresh: DefaultRefresh,
 		status:  RunPending,
 	}
-	run.ConfigurationVersion = cv
-	if cv.Speculative {
-		// immediately enqueue plans for speculative runs
-		run.status = RunPlanQueued
-	}
-	run.Workspace = ws
+	run.ConfigurationVersion = &ConfigurationVersion{ID: cv.ID}
+	run.Workspace = &Workspace{ID: ws.ID}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
+	run.autoApply = ws.AutoApply
+	run.speculative = cv.Speculative
 	run.setJob()
+	if run.IsSpeculative() {
+		// immediately enqueue plans for speculative runs
+		run.UpdateStatus(RunPlanQueued)
+	}
 	return &run
 }
 
@@ -87,7 +89,7 @@ func TestRunWorkspaceID(id string) TestRunOption {
 
 func TestRunSpeculative() TestRunOption {
 	return func(r *Run) {
-		r.ConfigurationVersion.Speculative = true
+		r.speculative = true
 	}
 }
 
