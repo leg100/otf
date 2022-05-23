@@ -65,6 +65,7 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run.Apply = newApply(&run)
 	run.autoApply = ws.AutoApply
 	run.speculative = cv.Speculative
+	run.setJob()
 	if run.IsSpeculative() {
 		// immediately enqueue plans for speculative runs
 		run.UpdateStatus(RunPlanQueued)
