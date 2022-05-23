@@ -28,29 +28,29 @@ type Workspace struct {
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
 
-	AllowDestroyPlan           bool
-	AutoApply                  bool
-	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
-	FileTriggersEnabled        bool
-	GlobalRemoteState          bool
-	Locked                     bool
-	MigrationEnvironment       string
-	Name                       string `schema:"workspace_name"`
-	QueueAllRuns               bool
-	SpeculativeEnabled         bool
-	StructuredRunOutputEnabled bool
-	SourceName                 string
-	SourceURL                  string
-	TerraformVersion           string
-	TriggerPrefixes            []string
-	VCSRepo                    *dto.VCSRepo
-	WorkingDirectory           string
+	allowDestroyPlan           bool
+	autoApply                  bool
+	canQueueDestroyPlan        bool
+	description                string
+	environment                string
+	executionMode              string
+	fileTriggersEnabled        bool
+	globalRemoteState          bool
+	locked                     bool
+	migrationEnvironment       string
+	name                       string `schema:"workspace_name"`
+	queueAllRuns               bool
+	speculativeEnabled         bool
+	structuredRunOutputEnabled bool
+	sourceName                 string
+	sourceURL                  string
+	terraformVersion           string
+	triggerPrefixes            []string
+	workingDirectory           string
 
 	// Workspace belongs to an organization
 	Organization *Organization `json:"organization"`
+	VCSRepo      *dto.VCSRepo
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -314,75 +314,27 @@ type WorkspaceListOptions struct {
 	Include *string `schema:"include"`
 }
 
-func (ws *Workspace) GetID() string  { return ws.ID }
-func (ws *Workspace) String() string { return ws.ID }
-
-func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
-	ws := Workspace{
-		ID:                  NewID("ws"),
-		Name:                *opts.Name,
-		AllowDestroyPlan:    DefaultAllowDestroyPlan,
-		ExecutionMode:       DefaultExecutionMode,
-		FileTriggersEnabled: DefaultFileTriggersEnabled,
-		GlobalRemoteState:   true, // Only global remote state is supported
-		TerraformVersion:    DefaultTerraformVersion,
-		SpeculativeEnabled:  true,
-		Organization:        &Organization{ID: org.ID},
-	}
-
-	// TODO: ExecutionMode and Operations are mututally exclusive options, this
-	// should be enforced.
-	if opts.ExecutionMode != nil {
-		ws.ExecutionMode = *opts.ExecutionMode
-	}
-	// Operations is deprecated in favour of ExecutionMode.
-	if opts.Operations != nil {
-		if *opts.Operations {
-			ws.ExecutionMode = "remote"
-		} else {
-			ws.ExecutionMode = "local"
-		}
-	}
-
-	if opts.AllowDestroyPlan != nil {
-		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
-	}
-	if opts.AutoApply != nil {
-		ws.AutoApply = *opts.AutoApply
-	}
-	if opts.Description != nil {
-		ws.Description = *opts.Description
-	}
-	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
-	}
-	if opts.QueueAllRuns != nil {
-		ws.QueueAllRuns = *opts.QueueAllRuns
-	}
-	if opts.SourceName != nil {
-		ws.SourceName = *opts.SourceName
-	}
-	if opts.SourceURL != nil {
-		ws.SourceURL = *opts.SourceURL
-	}
-	if opts.SpeculativeEnabled != nil {
-		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
-	}
-	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
-	}
-	if opts.TerraformVersion != nil {
-		ws.TerraformVersion = *opts.TerraformVersion
-	}
-	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
-	}
-	if opts.WorkingDirectory != nil {
-		ws.WorkingDirectory = *opts.WorkingDirectory
-	}
-
-	return &ws
-}
+func (ws *Workspace) Name() string                     { return ws.name }
+func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
+func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
+func (ws *Workspace) Environment() string              { return ws.environment }
+func (ws *Workspace) Description() string              { return ws.description }
+func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
+func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
+func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
+func (ws *Workspace) Locked() bool                     { return ws.locked }
+func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
+func (ws *Workspace) SourceName() string               { return ws.sourceName }
+func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
+func (ws *Workspace) SpeculativeEnabled() bool         { return ws.speculativeEnabled }
+func (ws *Workspace) StructuredRunOutputEnabled() bool { return ws.structuredRunOutputEnabled }
+func (ws *Workspace) TerraformVersion() string         { return ws.terraformVersion }
+func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
+func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
+func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
+func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
+func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID }
+func (ws *Workspace) String() string                   { return ws.ID }
 
 func (o WorkspaceCreateOptions) Valid() error {
 	if !validString(o.Name) {
@@ -426,73 +378,73 @@ func (o WorkspaceUpdateOptions) Valid() error {
 
 // ToggleLock toggles the workspace lock.
 func (ws *Workspace) ToggleLock(lock bool) error {
-	if lock && ws.Locked {
+	if lock && ws.locked {
 		return ErrWorkspaceAlreadyLocked
 	}
-	if !lock && !ws.Locked {
+	if !lock && !ws.locked {
 		return ErrWorkspaceAlreadyUnlocked
 	}
 
-	ws.Locked = lock
+	ws.locked = lock
 
 	return nil
 }
 
 func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) (updated bool, err error) {
 	if opts.Name != nil {
-		ws.Name = *opts.Name
+		ws.name = *opts.Name
 		updated = true
 	}
 	if opts.AllowDestroyPlan != nil {
-		ws.AllowDestroyPlan = *opts.AllowDestroyPlan
+		ws.allowDestroyPlan = *opts.AllowDestroyPlan
 		updated = true
 	}
 	if opts.AutoApply != nil {
-		ws.AutoApply = *opts.AutoApply
+		ws.autoApply = *opts.AutoApply
 		updated = true
 	}
 	if opts.Description != nil {
-		ws.Description = *opts.Description
+		ws.description = *opts.Description
 		updated = true
 	}
 	if opts.ExecutionMode != nil {
-		ws.ExecutionMode = *opts.ExecutionMode
+		ws.executionMode = *opts.ExecutionMode
 		updated = true
 	}
 	if opts.FileTriggersEnabled != nil {
-		ws.FileTriggersEnabled = *opts.FileTriggersEnabled
+		ws.fileTriggersEnabled = *opts.FileTriggersEnabled
 		updated = true
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
-			ws.ExecutionMode = "remote"
+			ws.executionMode = "remote"
 		} else {
-			ws.ExecutionMode = "local"
+			ws.executionMode = "local"
 		}
 		updated = true
 	}
 	if opts.QueueAllRuns != nil {
-		ws.QueueAllRuns = *opts.QueueAllRuns
+		ws.queueAllRuns = *opts.QueueAllRuns
 		updated = true
 	}
 	if opts.SpeculativeEnabled != nil {
-		ws.SpeculativeEnabled = *opts.SpeculativeEnabled
+		ws.speculativeEnabled = *opts.SpeculativeEnabled
 		updated = true
 	}
 	if opts.StructuredRunOutputEnabled != nil {
-		ws.StructuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
+		ws.structuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 		updated = true
 	}
 	if opts.TerraformVersion != nil {
-		ws.TerraformVersion = *opts.TerraformVersion
+		ws.terraformVersion = *opts.TerraformVersion
 		updated = true
 	}
 	if opts.TriggerPrefixes != nil {
-		ws.TriggerPrefixes = opts.TriggerPrefixes
+		ws.triggerPrefixes = opts.TriggerPrefixes
 		updated = true
 	}
 	if opts.WorkingDirectory != nil {
-		ws.WorkingDirectory = *opts.WorkingDirectory
+		ws.workingDirectory = *opts.WorkingDirectory
 		updated = true
 	}
 

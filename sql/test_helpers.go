@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 
@@ -48,26 +47,15 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 }
 
 func newTestOrganization() *otf.Organization {
-	return &otf.Organization{
-		ID:   otf.NewID("org"),
-		Name: uuid.NewString(),
-	}
+	return otf.NewTestOrganization()
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
-	return &otf.Workspace{
-		ID:           otf.NewID("ws"),
-		Name:         uuid.NewString(),
-		Organization: &otf.Organization{ID: org.ID},
-	}
+	return otf.NewTestWorkspace(org)
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return &otf.ConfigurationVersion{
-		ID:        otf.NewID("cv"),
-		Status:    otf.ConfigurationPending,
-		Workspace: &otf.Workspace{ID: ws.ID},
-	}
+	return otf.NewConfigurationVersionFromDefaults(ws)
 }
 
 func newTestStateVersion(opts ...newTestStateVersionOption) *otf.StateVersion {
@@ -132,7 +120,7 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(org.Name)
+		db.OrganizationStore().Delete(org.Name())
 	})
 
 	return org

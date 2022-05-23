@@ -35,7 +35,7 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Successfully locked workspace %s\n", ws.Name)
+			fmt.Printf("Successfully locked workspace %s\n", ws.Name())
 
 			return nil
 		},

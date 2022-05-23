@@ -28,7 +28,7 @@ func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Successfully created organization %s\n", org.Name)
+			fmt.Printf("Successfully created organization %s\n", org.Name())
 
 			return nil
 		},

@@ -28,7 +28,7 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 			}
 
 			for _, ws := range list.Items {
-				fmt.Println(ws.Name)
+				fmt.Println(ws.Name())
 			}
 
 			return nil

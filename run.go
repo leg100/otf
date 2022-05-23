@@ -72,17 +72,17 @@ type Run struct {
 
 	Timestamps
 
-	IsDestroy        bool
-	Message          string
-	PositionInQueue  int
-	Refresh          bool
-	RefreshOnly      bool
+	isDestroy        bool
+	message          string
+	positionInQueue  int
+	refresh          bool
+	refreshOnly      bool
 	autoApply        bool
 	speculative      bool
 	status           RunStatus
 	statusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
-	ReplaceAddrs     []string
-	TargetAddrs      []string
+	replaceAddrs     []string
+	targetAddrs      []string
 
 	// Relations
 	Plan                 *Plan
@@ -456,6 +456,31 @@ func (r *Run) UpdateStatus(status RunStatus) error {
 	return nil
 }
 
+func (r *Run) IsDestroy() bool                        { return r.isDestroy }
+func (r *Run) Message() string                        { return r.message }
+func (r *Run) Refresh() bool                          { return r.refresh }
+func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
+func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
+func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
+func (r *Run) Status() RunStatus                      { return r.status }
+func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
+
+func (r *Run) AddStatusTimestamp(status RunStatus, timestamp time.Time) {
+	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
+}
+
+func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
+	for _, rst := range r.statusTimestamps {
+		if rst.Status == status {
+			return rst.Timestamp, true
+		}
+	}
+	return time.Time{}, false
+}
+
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) setupEnv(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
@@ -576,25 +601,6 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	}
 
 	return nil
-}
-
-func (r *Run) Status() RunStatus                      { return r.status }
-func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
-
-func (r *Run) AddStatusTimestamp(status RunStatus, timestamp time.Time) {
-	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
-		Status:    status,
-		Timestamp: timestamp,
-	})
-}
-
-func (r *Run) FindRunStatusTimestamp(status RunStatus) (time.Time, bool) {
-	for _, rst := range r.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, true
-		}
-	}
-	return time.Time{}, false
 }
 
 // Set appropriate job for run

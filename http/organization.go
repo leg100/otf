@@ -10,10 +10,6 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
-type JSONAPIConvertible interface {
-	JSONAPI() interface{}
-}
-
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	opts := otf.OrganizationCreateOptions{}
 
@@ -109,12 +105,12 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 // OrganizationDTO converts an org into a DTO
 func OrganizationDTO(org *otf.Organization) *dto.Organization {
 	return &dto.Organization{
-		Name:            org.Name,
+		Name:            org.Name(),
 		CreatedAt:       org.CreatedAt,
 		ExternalID:      org.ID,
 		Permissions:     &dto.DefaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
 	}
 }
 

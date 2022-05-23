@@ -86,7 +86,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "created workspace: ", workspace.Name)
+	c.sessions.FlashSuccess(r, "created workspace: ", workspace.Name())
 	http.Redirect(w, r, c.relative(r, "getWorkspace", "workspace_name", *opts.Name), http.StatusFound)
 }
 
@@ -158,7 +158,7 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 	c.sessions.FlashSuccess(r, "updated workspace")
 
 	// Explicitly specify route variables because user may have updated them.
-	http.Redirect(w, r, c.relative(r, "editWorkspace", "workspace_name", workspace.Name), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "editWorkspace", "workspace_name", workspace.Name()), http.StatusFound)
 }
 
 func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {

@@ -29,16 +29,16 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 	}
 
 	run := NewRunFromDefaults(cv, ws)
-	run.ReplaceAddrs = opts.ReplaceAddrs
-	run.TargetAddrs = opts.TargetAddrs
+	run.replaceAddrs = opts.ReplaceAddrs
+	run.targetAddrs = opts.TargetAddrs
 	if opts.IsDestroy != nil {
-		run.IsDestroy = *opts.IsDestroy
+		run.isDestroy = *opts.IsDestroy
 	}
 	if opts.Message != nil {
-		run.Message = *opts.Message
+		run.message = *opts.Message
 	}
 	if opts.Refresh != nil {
-		run.Refresh = *opts.Refresh
+		run.refresh = *opts.Refresh
 	}
 
 	return run, nil
@@ -56,15 +56,15 @@ func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*Configurat
 func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run := Run{
 		ID:      NewID("run"),
-		Refresh: DefaultRefresh,
+		refresh: DefaultRefresh,
 		status:  RunPending,
 	}
 	run.ConfigurationVersion = &ConfigurationVersion{ID: cv.ID}
 	run.Workspace = &Workspace{ID: ws.ID}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
-	run.autoApply = ws.AutoApply
-	run.speculative = cv.Speculative
+	run.autoApply = ws.AutoApply()
+	run.speculative = cv.Speculative()
 	run.setJob()
 	if run.IsSpeculative() {
 		// immediately enqueue plans for speculative runs
@@ -97,7 +97,7 @@ func TestRunSpeculative() TestRunOption {
 func NewTestRun(id string, opts ...TestRunOption) *Run {
 	run := Run{
 		ID:                   id,
-		Refresh:              DefaultRefresh,
+		refresh:              DefaultRefresh,
 		status:               RunPending,
 		ConfigurationVersion: &ConfigurationVersion{},
 	}

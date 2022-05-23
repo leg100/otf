@@ -33,7 +33,7 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	got, err := db.ConfigurationVersionStore().Get(otf.ConfigurationVersionGetOptions{ID: &cv.ID})
 	require.NoError(t, err)
 
-	assert.Equal(t, otf.ConfigurationUploaded, got.Status)
+	assert.Equal(t, otf.ConfigurationUploaded, got.Status())
 }
 
 func TestConfigurationVersion_Get(t *testing.T) {

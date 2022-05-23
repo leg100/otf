@@ -79,14 +79,14 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 func ConfigurationVersionDTO(cv *otf.ConfigurationVersion) *dto.ConfigurationVersion {
 	obj := &dto.ConfigurationVersion{
 		ID:            cv.ID,
-		AutoQueueRuns: cv.AutoQueueRuns,
-		Speculative:   cv.Speculative,
-		Source:        string(cv.Source),
-		Status:        string(cv.Status),
+		AutoQueueRuns: cv.AutoQueueRuns(),
+		Speculative:   cv.Speculative(),
+		Source:        string(cv.Source()),
+		Status:        string(cv.Status()),
 		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID),
 	}
 
-	for _, ts := range cv.StatusTimestamps {
+	for _, ts := range cv.StatusTimestamps() {
 		if obj.StatusTimestamps == nil {
 			obj.StatusTimestamps = &dto.CVStatusTimestamps{}
 		}

@@ -12,9 +12,9 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 			CreatedAt: result.CreatedAt.Local(),
 			UpdatedAt: result.UpdatedAt.Local(),
 		},
-		Name:            result.Name,
-		SessionRemember: result.SessionRemember,
-		SessionTimeout:  result.SessionTimeout,
+		name:            result.Name,
+		sessionRemember: result.SessionRemember,
+		sessionTimeout:  result.SessionTimeout,
 	}
 
 	return &org, nil
@@ -23,8 +23,8 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 func UnmarshalOrganizationJSONAPI(model *dto.Organization) *Organization {
 	return &Organization{
 		ID:              model.ExternalID,
-		Name:            model.Name,
-		SessionRemember: model.SessionRemember,
-		SessionTimeout:  model.SessionTimeout,
+		name:            model.Name,
+		sessionRemember: model.SessionRemember,
+		sessionTimeout:  model.SessionTimeout,
 	}
 }
