@@ -34,7 +34,7 @@ func TestWorkspace_Update(t *testing.T) {
 		{
 			name: "by id",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{ID: otf.String(ws.ID)}
+				return otf.WorkspaceSpec{ID: otf.String(ws.ID())}
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestWorkspace_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			spec: otf.WorkspaceSpec{ID: otf.String(ws.ID)},
+			spec: otf.WorkspaceSpec{ID: otf.String(ws.ID())},
 		},
 		{
 			name: "by name",
@@ -170,7 +170,7 @@ func TestWorkspace_Delete(t *testing.T) {
 		{
 			name: "by id",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return otf.WorkspaceSpec{ID: otf.String(ws.ID)}
+				return otf.WorkspaceSpec{ID: otf.String(ws.ID())}
 			},
 		},
 		{
@@ -196,13 +196,13 @@ func TestWorkspace_Delete(t *testing.T) {
 			assert.Equal(t, 0, len(results.Items))
 
 			// Test ON CASCADE DELETE functionality for runs
-			rl, err := db.RunStore().List(otf.RunListOptions{WorkspaceID: otf.String(ws.ID)})
+			rl, err := db.RunStore().List(otf.RunListOptions{WorkspaceID: otf.String(ws.ID())})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(rl.Items))
 
 			// Test ON CASCADE DELETE functionality for config versions
-			cvl, err := db.ConfigurationVersionStore().List(ws.ID, otf.ConfigurationVersionListOptions{})
+			cvl, err := db.ConfigurationVersionStore().List(ws.ID(), otf.ConfigurationVersionListOptions{})
 			require.NoError(t, err)
 
 			assert.Equal(t, 0, len(cvl.Items))

@@ -31,7 +31,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 		return nil, err
 	}
 
-	org, err := s.os.Get(ctx, opts.Organization)
+	org, err := s.os.Get(ctx, opts.OrganizationName)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +40,11 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 	_, err = s.db.Create(ws)
 	if err != nil {
-		s.Error(err, "creating workspace", "id", ws.ID, "name", ws.Name)
+		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name())
 		return nil, err
 	}
 
-	s.V(0).Info("created workspace", "id", ws.ID, "name", ws.Name)
+	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name())
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
@@ -53,7 +53,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	if err := opts.Valid(); err != nil {
-		s.Error(err, "updating workspace: invalid spec")
+		s.Error(err, "updating workspace")
 		return nil, err
 	}
 
@@ -76,7 +76,7 @@ func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOption
 
 func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if err := spec.Valid(); err != nil {
-		s.Error(err, "retrieving workspace: invalid spec")
+		s.Error(err, "retrieving workspace")
 		return nil, err
 	}
 
@@ -99,13 +99,13 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	}
 
 	if err := s.db.Delete(spec); err != nil {
-		s.Error(err, "deleting workspace", "id", ws.ID, "name", ws.Name)
+		s.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name())
 		return err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
-	s.V(0).Info("deleted workspace", "id", ws.ID, "name", ws.Name)
+	s.V(0).Info("deleted workspace", "id", ws.ID(), "name", ws.Name())
 
 	return nil
 }

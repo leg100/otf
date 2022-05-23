@@ -13,7 +13,7 @@ import (
 func TestSession_CreateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := newTestSession(t, user.ID)
+	session := newTestSession(t, user.ID())
 
 	defer db.SessionStore().DeleteSession(context.Background(), session.Token)
 
@@ -24,7 +24,7 @@ func TestSession_CreateSession(t *testing.T) {
 func TestSession_Flash(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := createTestSession(t, db, user.ID)
+	session := createTestSession(t, db, user.ID())
 
 	flash := &otf.Flash{
 		Type:    otf.FlashSuccessType,
@@ -51,8 +51,8 @@ func TestSession_SessionCleanup(t *testing.T) {
 	db := newTestDB(t, 100*time.Millisecond)
 	user := createTestUser(t, db)
 
-	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now()))
-	_ = createTestSession(t, db, user.ID, overrideExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), overrideExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), overrideExpiry(time.Now()))
 
 	time.Sleep(300 * time.Millisecond)
 

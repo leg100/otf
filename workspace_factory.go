@@ -6,15 +6,15 @@ import (
 
 func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
-		ID:                  NewID("ws"),
-		name:                *opts.Name,
+		id:                  NewID("ws"),
+		name:                opts.Name,
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
 		executionMode:       DefaultExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,
 		globalRemoteState:   true, // Only global remote state is supported
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
-		Organization:        &Organization{ID: org.ID},
+		Organization:        &Organization{id: org.ID()},
 	}
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
@@ -22,15 +22,6 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	if opts.ExecutionMode != nil {
 		ws.executionMode = *opts.ExecutionMode
 	}
-	// Operations is deprecated in favour of ExecutionMode.
-	if opts.Operations != nil {
-		if *opts.Operations {
-			ws.executionMode = "remote"
-		} else {
-			ws.executionMode = "local"
-		}
-	}
-
 	if opts.AllowDestroyPlan != nil {
 		ws.allowDestroyPlan = *opts.AllowDestroyPlan
 	}
@@ -73,9 +64,9 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 
 func NewTestWorkspace(org *Organization) *Workspace {
 	ws := Workspace{
-		ID:           NewID("ws"),
+		id:           NewID("ws"),
 		name:         uuid.NewString(),
-		Organization: &Organization{ID: org.ID},
+		Organization: &Organization{id: org.ID()},
 	}
 	return &ws
 }

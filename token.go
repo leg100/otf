@@ -6,7 +6,7 @@ import (
 
 // Token is a user authentication token.
 type Token struct {
-	ID string
+	id string
 
 	Token string
 
@@ -18,6 +18,8 @@ type Token struct {
 	UserID string
 }
 
+func (t *Token) ID() string { return t.id }
+
 func NewToken(uid, description string) (*Token, error) {
 	token, err := GenerateToken()
 	if err != nil {
@@ -25,7 +27,7 @@ func NewToken(uid, description string) (*Token, error) {
 	}
 
 	session := Token{
-		ID:          NewID("ut"),
+		id:          NewID("ut"),
 		Token:       token,
 		Description: description,
 		UserID:      uid,

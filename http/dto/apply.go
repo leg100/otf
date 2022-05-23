@@ -24,7 +24,3 @@ type ApplyStatusTimestamps struct {
 	QueuedAt        *time.Time `json:"queued-at,omitempty"`
 	StartedAt       *time.Time `json:"started-at,omitempty"`
 }
-
-func (a *Apply) JSONAPI() interface{} {
-	return a
-}

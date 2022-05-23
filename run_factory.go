@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"errors"
 )
 
 // RunFactory is a factory for constructing Run objects.
@@ -14,11 +13,7 @@ type RunFactory struct {
 // New constructs a new run at the beginning of its lifecycle using the provided
 // options.
 func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
-	if opts.Workspace == nil {
-		return nil, errors.New("workspace is required")
-	}
-
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &opts.Workspace.ID})
+	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: String(opts.WorkspaceID)})
 	if err != nil {
 		return nil, err
 	}
@@ -45,22 +40,22 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 }
 
 func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
-	if opts.ConfigurationVersion == nil {
+	if opts.ConfigurationVersionID == nil {
 		// CV ID not provided, get workspace's latest CV
-		return f.ConfigurationVersionService.GetLatest(opts.Workspace.ID)
+		return f.ConfigurationVersionService.GetLatest(opts.WorkspaceID)
 	}
-	return f.ConfigurationVersionService.Get(opts.ConfigurationVersion.ID)
+	return f.ConfigurationVersionService.Get(*opts.ConfigurationVersionID)
 }
 
 // NewRunFromDefaults creates a new run with defaults.
 func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run := Run{
-		ID:      NewID("run"),
+		id:      NewID("run"),
 		refresh: DefaultRefresh,
 		status:  RunPending,
 	}
-	run.ConfigurationVersion = &ConfigurationVersion{ID: cv.ID}
-	run.Workspace = &Workspace{ID: ws.ID}
+	run.ConfigurationVersion = &ConfigurationVersion{id: cv.ID()}
+	run.Workspace = &Workspace{id: ws.ID()}
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
 	run.autoApply = ws.AutoApply()
@@ -83,7 +78,7 @@ func TestRunStatus(status RunStatus) TestRunOption {
 
 func TestRunWorkspaceID(id string) TestRunOption {
 	return func(r *Run) {
-		r.Workspace = &Workspace{ID: id}
+		r.Workspace = &Workspace{id: id}
 	}
 }
 
@@ -96,7 +91,7 @@ func TestRunSpeculative() TestRunOption {
 // NewTestRun creates a new run expressly for testing purposes
 func NewTestRun(id string, opts ...TestRunOption) *Run {
 	run := Run{
-		ID:                   id,
+		id:                   id,
 		refresh:              DefaultRefresh,
 		status:               RunPending,
 		ConfigurationVersion: &ConfigurationVersion{},

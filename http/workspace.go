@@ -12,15 +12,37 @@ import (
 func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.WorkspaceCreateOptions{
+	opts := dto.WorkspaceCreateOptions{
 		Organization: vars["org"],
 	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
+	if err := opts.Validate(); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
-	obj, err := s.WorkspaceService().Create(r.Context(), opts)
+	obj, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
+		AllowDestroyPlan:           opts.AllowDestroyPlan,
+		AutoApply:                  opts.AutoApply,
+		Description:                opts.Description,
+		ExecutionMode:              opts.ExecutionMode,
+		FileTriggersEnabled:        opts.FileTriggersEnabled,
+		GlobalRemoteState:          opts.GlobalRemoteState,
+		MigrationEnvironment:       opts.MigrationEnvironment,
+		Name:                       *opts.Name,
+		OrganizationName:           vars["org"],
+		QueueAllRuns:               opts.QueueAllRuns,
+		SpeculativeEnabled:         opts.SpeculativeEnabled,
+		SourceName:                 opts.SourceName,
+		SourceURL:                  opts.SourceURL,
+		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
+		TerraformVersion:           opts.TerraformVersion,
+		TriggerPrefixes:            opts.TriggerPrefixes,
+		WorkingDirectory:           opts.WorkingDirectory,
+	})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -96,18 +118,34 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.WorkspaceUpdateOptions{}
+	opts := dto.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
+	if err := opts.Validate(); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	spec := otf.WorkspaceSpec{
 		Name:             otf.String(vars["name"]),
 		OrganizationName: otf.String(vars["org"]),
 	}
-
-	obj, err := s.WorkspaceService().Update(r.Context(), spec, opts)
+	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
+		AllowDestroyPlan:           opts.AllowDestroyPlan,
+		AutoApply:                  opts.AutoApply,
+		Description:                opts.Description,
+		ExecutionMode:              opts.ExecutionMode,
+		FileTriggersEnabled:        opts.FileTriggersEnabled,
+		GlobalRemoteState:          opts.GlobalRemoteState,
+		Name:                       opts.Name,
+		QueueAllRuns:               opts.QueueAllRuns,
+		SpeculativeEnabled:         opts.SpeculativeEnabled,
+		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
+		TerraformVersion:           opts.TerraformVersion,
+		TriggerPrefixes:            opts.TriggerPrefixes,
+		WorkingDirectory:           opts.WorkingDirectory,
+	})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -119,17 +157,33 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	opts := otf.WorkspaceUpdateOptions{}
+	opts := dto.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		WriteError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
+	if err := opts.Validate(); err != nil {
+		WriteError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 	spec := otf.WorkspaceSpec{
 		ID: otf.String(vars["id"]),
 	}
-
-	obj, err := s.WorkspaceService().Update(r.Context(), spec, opts)
+	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
+		AllowDestroyPlan:           opts.AllowDestroyPlan,
+		AutoApply:                  opts.AutoApply,
+		Description:                opts.Description,
+		ExecutionMode:              opts.ExecutionMode,
+		FileTriggersEnabled:        opts.FileTriggersEnabled,
+		GlobalRemoteState:          opts.GlobalRemoteState,
+		Name:                       opts.Name,
+		QueueAllRuns:               opts.QueueAllRuns,
+		SpeculativeEnabled:         opts.SpeculativeEnabled,
+		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
+		TerraformVersion:           opts.TerraformVersion,
+		TriggerPrefixes:            opts.TriggerPrefixes,
+		WorkingDirectory:           opts.WorkingDirectory,
+	})
 	if err != nil {
 		WriteError(w, http.StatusNotFound, err)
 		return
@@ -215,7 +269,7 @@ func (s *Server) DeleteWorkspaceByID(w http.ResponseWriter, r *http.Request) {
 // JSON-API object
 func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 	obj := &dto.Workspace{
-		ID: ws.ID,
+		ID: ws.ID(),
 		Actions: &dto.WorkspaceActions{
 			IsDestroyable: false,
 		},
@@ -231,6 +285,8 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		Locked:               ws.Locked(),
 		MigrationEnvironment: ws.MigrationEnvironment(),
 		Name:                 ws.Name(),
+		// Operations is deprecated but clients and go-tfe tests still use it
+		Operations: ws.ExecutionMode() == "remote",
 		Permissions: &dto.WorkspacePermissions{
 			CanDestroy:        true,
 			CanForceUnlock:    true,
@@ -250,14 +306,8 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
 		TerraformVersion:           ws.TerraformVersion(),
 		TriggerPrefixes:            ws.TriggerPrefixes(),
-		VCSRepo:                    ws.VCSRepo,
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt,
-	}
-
-	if ws.ExecutionMode() == "remote" {
-		// Operations is deprecated but clients and go-tfe tests still use it
-		obj.Operations = true
 	}
 
 	if ws.Organization != nil {

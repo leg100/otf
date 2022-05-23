@@ -12,7 +12,7 @@ import (
 
 // TestSpooler_New tests the spooler constructor
 func TestSpooler_New(t *testing.T) {
-	want := &otf.Run{ID: "run-123"}
+	want := otf.NewTestRun("run-123")
 
 	spooler, err := NewSpooler(
 		&testRunLister{runs: []*otf.Run{want}},
@@ -47,7 +47,7 @@ func TestSpooler_Start(t *testing.T) {
 // TestSpooler_GetRun tests retrieving a job from the spooler with a
 // pre-populated queue
 func TestSpooler_GetRun(t *testing.T) {
-	want := &otf.Run{ID: "run-123"}
+	want := otf.NewTestRun("run-123")
 
 	spooler := &SpoolerDaemon{queue: make(chan *otf.Run, 1)}
 	spooler.queue <- want
@@ -58,7 +58,7 @@ func TestSpooler_GetRun(t *testing.T) {
 // TestSpooler_GetRunFromEvent tests retrieving a job from the spooler after an
 // event is received
 func TestSpooler_GetRunFromEvent(t *testing.T) {
-	want := &otf.Run{ID: "run-123"}
+	want := otf.NewTestRun("run-123")
 
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
@@ -79,7 +79,7 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 // TestSpooler_GetRunFromCancelation tests retrieving a job from the spooler
 // after a cancelation is received
 func TestSpooler_GetRunFromCancelation(t *testing.T) {
-	want := &otf.Run{ID: "run-123"}
+	want := otf.NewTestRun("run-123")
 
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 

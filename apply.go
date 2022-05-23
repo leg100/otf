@@ -34,7 +34,7 @@ type ApplyLogStore interface {
 
 // Apply represents a terraform apply
 type Apply struct {
-	ID string `json:"apply_id"`
+	id string `json:"apply_id"`
 
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
@@ -54,8 +54,9 @@ type ApplyStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-func (a *Apply) GetID() string       { return a.ID }
-func (a *Apply) String() string      { return a.ID }
+func (a *Apply) ID() string          { return a.id }
+func (a *Apply) JobID() string       { return a.id }
+func (a *Apply) String() string      { return a.id }
 func (a *Apply) Status() ApplyStatus { return a.status }
 
 func (a *Apply) GetService(app Application) JobService {
@@ -64,7 +65,7 @@ func (a *Apply) GetService(app Application) JobService {
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		ID:     NewID("apply"),
+		id:     NewID("apply"),
 		run:    run,
 		status: ApplyPending,
 	}

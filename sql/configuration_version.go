@@ -36,12 +36,12 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	q := pggen.NewQuerier(tx)
 
 	result, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-		ID:            cv.ID,
+		ID:            cv.ID(),
 		AutoQueueRuns: cv.AutoQueueRuns(),
 		Source:        string(cv.Source()),
 		Speculative:   cv.Speculative(),
 		Status:        string(cv.Status()),
-		WorkspaceID:   cv.Workspace.ID,
+		WorkspaceID:   cv.Workspace.ID(),
 	})
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	cv.UpdatedAt = result.UpdatedAt
 
 	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID, string(cv.Status()))
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID(), string(cv.Status()))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 		return err
 	}
 
-	if err := fn(cv, newConfigUploader(tx, cv.ID)); err != nil {
+	if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
 		return err
 	}
 

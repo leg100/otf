@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 func NewTestOrganization() *Organization {
 	ws := Organization{
-		ID:   NewID("ws"),
+		id:   NewID("ws"),
 		name: uuid.NewString(),
 	}
 	return &ws

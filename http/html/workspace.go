@@ -77,7 +77,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := c.WorkspaceService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.sessions.FlashError(r, "workspace already exists: ", *opts.Name)
+		c.sessions.FlashError(r, "workspace already exists: ", opts.Name)
 		http.Redirect(w, r, c.relative(r, "newWorkspace"), http.StatusFound)
 		return
 	}
@@ -87,7 +87,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.sessions.FlashSuccess(r, "created workspace: ", workspace.Name())
-	http.Redirect(w, r, c.relative(r, "getWorkspace", "workspace_name", *opts.Name), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "getWorkspace", "workspace_name", opts.Name), http.StatusFound)
 }
 
 func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {

@@ -33,35 +33,25 @@ type FakeWorkspacesClient struct {
 }
 
 func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return &otf.Workspace{
-		ID: "ws-123",
-	}, nil
+	return otf.NewTestWorkspace(otf.NewTestOrganization()), nil
 }
 
 func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items: []*otf.Workspace{
-			{
-				ID: "ws-123",
-			},
+			otf.NewTestWorkspace(otf.NewTestOrganization()),
 		},
 	}, nil
 }
 
 func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	return &otf.Workspace{
-		ID: "ws-123",
-	}, nil
+	return otf.NewTestWorkspace(otf.NewTestOrganization()), nil
 }
 
 func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return &otf.Workspace{
-		ID: "ws-123",
-	}, nil
+	return otf.NewTestWorkspace(otf.NewTestOrganization()), nil
 }
 
 func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return &otf.Workspace{
-		ID: "ws-123",
-	}, nil
+	return otf.NewTestWorkspace(otf.NewTestOrganization()), nil
 }

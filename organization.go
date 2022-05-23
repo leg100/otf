@@ -11,7 +11,7 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	ID string `json:"organization_id"`
+	id string `json:"organization_id"`
 
 	Timestamps
 
@@ -86,8 +86,8 @@ type OrganizationStore interface {
 	Delete(name string) error
 }
 
-func (org *Organization) GetID() string        { return org.ID }
-func (org *Organization) String() string       { return org.ID }
+func (org *Organization) ID() string           { return org.id }
+func (org *Organization) String() string       { return org.id }
 func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
@@ -105,7 +105,7 @@ func (o OrganizationCreateOptions) Valid() error {
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
 	org := Organization{
 		name:            *opts.Name,
-		ID:              NewID("org"),
+		id:              NewID("org"),
 		sessionTimeout:  DefaultSessionTimeout,
 		sessionRemember: DefaultSessionExpiration,
 	}

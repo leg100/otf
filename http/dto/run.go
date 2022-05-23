@@ -74,3 +74,52 @@ type RunPermissions struct {
 	CanForceCancel  bool `json:"can-force-cancel"`
 	CanForceExecute bool `json:"can-force-execute"`
 }
+
+// RunCreateOptions represents the options for creating a new run.
+type RunCreateOptions struct {
+	// Type is a public field utilized by JSON:API to set the resource type via
+	// the field tag.  It is not a user-defined value and does not need to be
+	// set.  https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,runs"`
+
+	// Specifies if this plan is a destroy plan, which will destroy all
+	// provisioned resources.
+	IsDestroy *bool `jsonapi:"attr,is-destroy,omitempty"`
+
+	// Refresh determines if the run should
+	// update the state prior to checking for differences
+	Refresh *bool `jsonapi:"attr,refresh,omitempty"`
+
+	// RefreshOnly determines whether the run should ignore config changes
+	// and refresh the state only
+	RefreshOnly *bool `jsonapi:"attr,refresh-only,omitempty"`
+
+	// Specifies the message to be associated with this run.
+	Message *string `jsonapi:"attr,message,omitempty"`
+
+	// Specifies the configuration version to use for this run. If the
+	// configuration version object is omitted, the run will be created using the
+	// workspace's latest configuration version.
+	ConfigurationVersion *ConfigurationVersion `jsonapi:"relation,configuration-version"`
+
+	// Specifies the workspace where the run will be executed.
+	Workspace *Workspace `jsonapi:"relation,workspace"`
+
+	// If non-empty, requests that Terraform should create a plan including
+	// actions only for the given objects (specified using resource address
+	// syntax) and the objects they depend on.
+	//
+	// This capability is provided for exceptional circumstances only, such as
+	// recovering from mistakes or working around existing Terraform
+	// limitations. Terraform will generally mention the -target command line
+	// option in its error messages describing situations where setting this
+	// argument may be appropriate. This argument should not be used as part
+	// of routine workflow and Terraform will emit warnings reminding about
+	// this whenever this property is set.
+	TargetAddrs []string `jsonapi:"attr,target-addrs,omitempty"`
+
+	// If non-empty, requests that Terraform create a plan that replaces
+	// (destroys and then re-creates) the objects specified by the given
+	// resource addresses.
+	ReplaceAddrs []string `jsonapi:"attr,replace-addrs,omitempty"`
+}

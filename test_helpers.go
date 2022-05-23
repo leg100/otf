@@ -23,7 +23,7 @@ func newFakeRunService(runs ...*Run) *fakeRunService {
 func (s *fakeRunService) List(_ context.Context, opts RunListOptions) (*RunList, error) {
 	var items []*Run
 	for _, r := range s.db {
-		if opts.WorkspaceID != nil && *opts.WorkspaceID != r.Workspace.ID {
+		if opts.WorkspaceID != nil && *opts.WorkspaceID != r.Workspace.ID() {
 			continue
 		}
 		// if statuses are specified then run must match one of them.
@@ -39,7 +39,7 @@ func (s *fakeRunService) List(_ context.Context, opts RunListOptions) (*RunList,
 
 func (s *fakeRunService) Start(_ context.Context, id string) (*Run, error) {
 	for _, r := range s.db {
-		if r.ID == id {
+		if r.ID() == id {
 			s.started = append(s.started, r)
 			r.status = RunPlanQueued
 			return r, nil

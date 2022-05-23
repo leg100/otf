@@ -77,8 +77,8 @@ func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 // ApplyDTO converts an apply into a DTO
 func ApplyDTO(req *http.Request, a *otf.Apply) *dto.Apply {
 	o := &dto.Apply{
-		ID:         a.ID,
-		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
+		ID:         a.ID(),
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID())),
 		Status:     string(a.Status()),
 	}
 	if a.ResourceReport != nil {

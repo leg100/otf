@@ -34,13 +34,13 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 
 	_, err = s.db.Create(org)
 	if err != nil {
-		s.Error(err, "creating organization", "id", org.ID)
+		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name)
+	s.V(0).Info("created organization", "id", org.ID(), "name", org.Name())
 
 	return org, nil
 }
@@ -66,7 +66,7 @@ func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organiz
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved organization", "name", name, "id", org.ID)
+	s.V(2).Info("retrieved organization", "name", name, "id", org.ID())
 
 	return org, nil
 }
@@ -84,7 +84,7 @@ func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.
 		return nil, err
 	}
 
-	s.V(2).Info("updated organization", "name", name, "id", org.ID)
+	s.V(2).Info("updated organization", "name", name, "id", org.ID())
 
 	return org, nil
 }
@@ -99,5 +99,5 @@ func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (
 		return nil, err
 	}
 
-	return otf.DefaultEntitlements(org.ID), nil
+	return otf.DefaultEntitlements(org.ID()), nil
 }

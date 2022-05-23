@@ -101,9 +101,9 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 // marshalled into a JSON-API object
 func PlanDTO(r *http.Request, p *otf.Plan) *dto.Plan {
 	result := &dto.Plan{
-		ID:         p.ID,
+		ID:         p.ID(),
 		HasChanges: p.HasChanges(),
-		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID)),
+		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
 		Status:     string(p.Status()),
 	}
 	if p.ResourceReport != nil {
