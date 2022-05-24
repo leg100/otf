@@ -21,21 +21,9 @@ var (
 	ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")
 )
 
-// ConfigurationStatus represents a configuration version status.
-type ConfigurationStatus string
-
-// ConfigurationVersionList represents a list of configuration versions.
-type ConfigurationVersionList struct {
-	*Pagination
-	Items []*ConfigurationVersion
-}
-
-// ConfigurationSource represents a source of a configuration version.
-type ConfigurationSource string
-
 // ConfigurationVersion is a representation of an uploaded or ingressed
-// Terraform configuration in  A workspace must have at least one
-// configuration version before any runs may be queued on it.
+// Terraform configuration in  A workspace must have at least one configuration
+// version before any runs may be queued on it.
 type ConfigurationVersion struct {
 	id string
 
@@ -50,6 +38,53 @@ type ConfigurationVersion struct {
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
 }
+
+func (cv *ConfigurationVersion) ID() string                  { return cv.id }
+func (cv *ConfigurationVersion) String() string              { return cv.id }
+func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
+func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
+func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
+func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
+func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
+	return cv.statusTimestamps
+}
+
+func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
+	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
+}
+
+// Upload saves the config to the db and updates status accordingly.
+func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
+	if cv.status != ConfigurationPending {
+		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
+	}
+
+	// check config untars successfully and set errored status if not
+
+	// upload config and set status depending on success
+	status, err := uploader.Upload(ctx, config)
+	if err != nil {
+		return err
+	}
+	cv.status = status
+
+	return nil
+}
+
+// ConfigurationStatus represents a configuration version status.
+type ConfigurationStatus string
+
+// ConfigurationVersionList represents a list of configuration versions.
+type ConfigurationVersionList struct {
+	*Pagination
+	Items []*ConfigurationVersion
+}
+
+// ConfigurationSource represents a source of a configuration version.
+type ConfigurationSource string
 
 type ConfigurationVersionStatusTimestamp struct {
 	Status    ConfigurationStatus
@@ -128,44 +163,4 @@ type ConfigurationVersionListOptions struct {
 	Include *string `schema:"include"`
 
 	ListOptions
-}
-
-func (cv *ConfigurationVersion) ID() string                  { return cv.id }
-func (cv *ConfigurationVersion) String() string              { return cv.id }
-func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
-func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
-func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
-func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
-func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
-	return cv.statusTimestamps
-}
-
-func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
-	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
-		Status:    status,
-		Timestamp: timestamp,
-	})
-}
-
-func (cv *ConfigurationVersion) ShallowNest() {
-	cv.statusTimestamps = nil
-	cv.Workspace = &Workspace{id: cv.Workspace.ID()}
-}
-
-// Upload saves the config to the db and updates status accordingly.
-func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
-	if cv.status != ConfigurationPending {
-		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
-	}
-
-	// check config untars successfully and set errored status if not
-
-	// upload config and set status depending on success
-	status, err := uploader.Upload(ctx, config)
-	if err != nil {
-		return err
-	}
-	cv.status = status
-
-	return nil
 }

@@ -20,6 +20,12 @@ type Organization struct {
 	sessionTimeout  int
 }
 
+func (org *Organization) ID() string           { return org.id }
+func (org *Organization) String() string       { return org.id }
+func (org *Organization) Name() string         { return org.name }
+func (org *Organization) SessionRemember() int { return org.sessionRemember }
+func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
+
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
 	*Pagination
@@ -57,20 +63,6 @@ type OrganizationCreateOptions struct {
 	SessionTimeout  *int
 }
 
-// OrganizationUpdateOptions represents the options for updating an
-// organization. See dto.OrganizationUpdateOptions for more details.
-type OrganizationUpdateOptions struct {
-	Name            *string
-	SessionRemember *int
-	SessionTimeout  *int
-}
-
-func (org *Organization) ID() string           { return org.id }
-func (org *Organization) String() string       { return org.id }
-func (org *Organization) Name() string         { return org.name }
-func (org *Organization) SessionRemember() int { return org.sessionRemember }
-func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
-
 func (opts *OrganizationCreateOptions) Validate() error {
 	if !validString(opts.Name) {
 		return ErrRequiredName
@@ -79,6 +71,14 @@ func (opts *OrganizationCreateOptions) Validate() error {
 		return ErrInvalidName
 	}
 	return nil
+}
+
+// OrganizationUpdateOptions represents the options for updating an
+// organization. See dto.OrganizationUpdateOptions for more details.
+type OrganizationUpdateOptions struct {
+	Name            *string
+	SessionRemember *int
+	SessionTimeout  *int
 }
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {

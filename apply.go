@@ -17,21 +17,6 @@ const (
 	ApplyUnreachable ApplyStatus = "unreachable"
 )
 
-// ApplyStatus represents an apply state.
-type ApplyStatus string
-
-// ApplyService allows interaction with Applies
-type ApplyService interface {
-	Get(id string) (*Apply, error)
-
-	JobService
-	ChunkStore
-}
-
-type ApplyLogStore interface {
-	ChunkStore
-}
-
 // Apply represents a terraform apply
 type Apply struct {
 	id string
@@ -45,11 +30,6 @@ type Apply struct {
 	run *Run
 }
 
-type ApplyStatusTimestamp struct {
-	Status    ApplyStatus
-	Timestamp time.Time
-}
-
 func (a *Apply) ID() string          { return a.id }
 func (a *Apply) JobID() string       { return a.id }
 func (a *Apply) String() string      { return a.id }
@@ -57,14 +37,6 @@ func (a *Apply) Status() ApplyStatus { return a.status }
 
 func (a *Apply) GetService(app Application) JobService {
 	return app.ApplyService()
-}
-
-func newApply(run *Run) *Apply {
-	return &Apply{
-		id:     NewID("apply"),
-		run:    run,
-		status: ApplyPending,
-	}
 }
 
 // Do performs a terraform apply
@@ -110,4 +82,32 @@ func (a *Apply) updateStatus(status ApplyStatus) {
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
+}
+
+// ApplyStatus represents an apply state.
+type ApplyStatus string
+
+// ApplyService allows interaction with Applies
+type ApplyService interface {
+	Get(id string) (*Apply, error)
+
+	JobService
+	ChunkStore
+}
+
+type ApplyLogStore interface {
+	ChunkStore
+}
+
+type ApplyStatusTimestamp struct {
+	Status    ApplyStatus
+	Timestamp time.Time
+}
+
+func newApply(run *Run) *Apply {
+	return &Apply{
+		id:     NewID("apply"),
+		run:    run,
+		status: ApplyPending,
+	}
 }

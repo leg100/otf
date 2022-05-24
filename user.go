@@ -3,18 +3,14 @@ package otf
 import (
 	"context"
 	"fmt"
-	"time"
 )
 
 const (
+	AnonymousUsername = "anonymous"
 	// Session data keys
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
 	FlashSessionKey    = "flash"
-
-	DefaultSessionExpiry = 24 * time.Hour
-
-	AnonymousUsername string = "anonymous"
 )
 
 // User represents an oTF user account.
@@ -61,6 +57,34 @@ func (u *User) IsAuthenticated() bool {
 
 func (u *User) ID() string     { return u.id }
 func (u *User) String() string { return u.Username }
+
+// SyncOrganizationMemberships synchronises a user's organization memberships,
+// taking an authoritative list of memberships and ensuring its memberships
+// match, adding and removing memberships accordingly.
+func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
+	// Iterate thru authoritative and if not in user's membership, add to db
+	for _, auth := range authoritative {
+		if !inOrganizationList(auth.ID(), u.Organizations) {
+			if err := store.AddOrganizationMembership(ctx, u.ID(), auth.ID()); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Iterate thru existing and if not in authoritative list, remove from db
+	for _, existing := range u.Organizations {
+		if !inOrganizationList(existing.ID(), authoritative) {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID(), existing.ID()); err != nil {
+				return err
+			}
+		}
+	}
+
+	// ...and update receiver too.
+	u.Organizations = authoritative
+
+	return nil
+}
 
 // TransferSession transfers a session from the receiver to another user.
 func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
@@ -128,34 +152,6 @@ type UserService interface {
 	// SyncOrganizationMemberships synchronises a user's organization
 	// memberships, adding and removing them accordingly.
 	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
-}
-
-// SyncOrganizationMemberships synchronises a user's organization
-// memberships, taking an authoritative list of memberships and ensuring its
-// memberships match, adding and removing memberships accordingly.
-func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
-	// Iterate thru authoritative and if not in user's membership, add to db
-	for _, auth := range authoritative {
-		if !inOrganizationList(auth.ID(), u.Organizations) {
-			if err := store.AddOrganizationMembership(ctx, u.ID(), auth.ID()); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Iterate thru existing and if not in authoritative list, remove from db
-	for _, existing := range u.Organizations {
-		if !inOrganizationList(existing.ID(), authoritative) {
-			if err := store.RemoveOrganizationMembership(ctx, u.ID(), existing.ID()); err != nil {
-				return err
-			}
-		}
-	}
-
-	// ...and update receiver too.
-	u.Organizations = authoritative
-
-	return nil
 }
 
 type UserSpec struct {

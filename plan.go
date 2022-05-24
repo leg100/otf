@@ -22,9 +22,6 @@ const (
 	PlanUnreachable PlanStatus = "unreachable"
 )
 
-// PlanStatus represents a plan state.
-type PlanStatus string
-
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	id string
@@ -38,35 +35,10 @@ type Plan struct {
 	run *Run
 }
 
-type PlanStatusTimestamp struct {
-	Status    PlanStatus
-	Timestamp time.Time
-}
-
 func (p *Plan) ID() string         { return p.id }
 func (p *Plan) JobID() string      { return p.id }
 func (p *Plan) String() string     { return p.id }
 func (p *Plan) Status() PlanStatus { return p.status }
-
-type PlanService interface {
-	Get(id string) (*Plan, error)
-
-	JobService
-	ChunkStore
-}
-
-type PlanLogStore interface {
-	ChunkStore
-}
-
-func newPlan(run *Run) *Plan {
-	return &Plan{
-		id:  NewID("plan"),
-		run: run,
-		// new plans always start off in pending state
-		status: PlanPending,
-	}
-}
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -150,4 +122,32 @@ func (p *Plan) updateStatus(status PlanStatus) {
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
+}
+
+// PlanStatus represents a plan state.
+type PlanStatus string
+
+type PlanService interface {
+	Get(id string) (*Plan, error)
+
+	JobService
+	ChunkStore
+}
+
+type PlanLogStore interface {
+	ChunkStore
+}
+
+type PlanStatusTimestamp struct {
+	Status    PlanStatus
+	Timestamp time.Time
+}
+
+func newPlan(run *Run) *Plan {
+	return &Plan{
+		id:  NewID("plan"),
+		run: run,
+		// new plans always start off in pending state
+		status: PlanPending,
+	}
 }
