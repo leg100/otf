@@ -17,19 +17,19 @@ import (
 // calling SendBatch on pgx.Conn, pgxpool.Pool, or pgx.Tx, use the Scan methods
 // to parse the results.
 type Querier interface {
-	InsertApplyStatusTimestamp(ctx context.Context, id string, status string) (InsertApplyStatusTimestampRow, error)
+	InsertApplyStatusTimestamp(ctx context.Context, params InsertApplyStatusTimestampParams) (pgconn.CommandTag, error)
 	// InsertApplyStatusTimestampBatch enqueues a InsertApplyStatusTimestamp query into batch to be executed
 	// later by the batch.
-	InsertApplyStatusTimestampBatch(batch genericBatch, id string, status string)
+	InsertApplyStatusTimestampBatch(batch genericBatch, params InsertApplyStatusTimestampParams)
 	// InsertApplyStatusTimestampScan scans the result of an executed InsertApplyStatusTimestampBatch query.
-	InsertApplyStatusTimestampScan(results pgx.BatchResults) (InsertApplyStatusTimestampRow, error)
+	InsertApplyStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error)
+	UpdateApplyStatus(ctx context.Context, status string, id string) (string, error)
 	// UpdateApplyStatusBatch enqueues a UpdateApplyStatus query into batch to be executed
 	// later by the batch.
 	UpdateApplyStatusBatch(batch genericBatch, status string, id string)
 	// UpdateApplyStatusScan scans the result of an executed UpdateApplyStatusBatch query.
-	UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error)
+	UpdateApplyStatusScan(results pgx.BatchResults) (string, error)
 
 	InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
@@ -220,19 +220,19 @@ type Querier interface {
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertPlanStatusTimestamp(ctx context.Context, id string, status string) (InsertPlanStatusTimestampRow, error)
+	InsertPlanStatusTimestamp(ctx context.Context, params InsertPlanStatusTimestampParams) (pgconn.CommandTag, error)
 	// InsertPlanStatusTimestampBatch enqueues a InsertPlanStatusTimestamp query into batch to be executed
 	// later by the batch.
-	InsertPlanStatusTimestampBatch(batch genericBatch, id string, status string)
+	InsertPlanStatusTimestampBatch(batch genericBatch, params InsertPlanStatusTimestampParams)
 	// InsertPlanStatusTimestampScan scans the result of an executed InsertPlanStatusTimestampBatch query.
-	InsertPlanStatusTimestampScan(results pgx.BatchResults) (InsertPlanStatusTimestampRow, error)
+	InsertPlanStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error)
+	UpdatePlanStatus(ctx context.Context, status string, id string) (string, error)
 	// UpdatePlanStatusBatch enqueues a UpdatePlanStatus query into batch to be executed
 	// later by the batch.
 	UpdatePlanStatusBatch(batch genericBatch, status string, id string)
 	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
-	UpdatePlanStatusScan(results pgx.BatchResults) (time.Time, error)
+	UpdatePlanStatusScan(results pgx.BatchResults) (string, error)
 
 	GetPlanBinByRunID(ctx context.Context, runID string) ([]byte, error)
 	// GetPlanBinByRunIDBatch enqueues a GetPlanBinByRunID query into batch to be executed
@@ -276,19 +276,19 @@ type Querier interface {
 	// FindPlanLogChunksScan scans the result of an executed FindPlanLogChunksBatch query.
 	FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
-	InsertRun(ctx context.Context, params InsertRunParams) (InsertRunRow, error)
+	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
 	// later by the batch.
 	InsertRunBatch(batch genericBatch, params InsertRunParams)
 	// InsertRunScan scans the result of an executed InsertRunBatch query.
-	InsertRunScan(results pgx.BatchResults) (InsertRunRow, error)
+	InsertRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertRunStatusTimestamp(ctx context.Context, id string, status string) (InsertRunStatusTimestampRow, error)
+	InsertRunStatusTimestamp(ctx context.Context, params InsertRunStatusTimestampParams) (pgconn.CommandTag, error)
 	// InsertRunStatusTimestampBatch enqueues a InsertRunStatusTimestamp query into batch to be executed
 	// later by the batch.
-	InsertRunStatusTimestampBatch(batch genericBatch, id string, status string)
+	InsertRunStatusTimestampBatch(batch genericBatch, params InsertRunStatusTimestampParams)
 	// InsertRunStatusTimestampScan scans the result of an executed InsertRunStatusTimestampBatch query.
-	InsertRunStatusTimestampScan(results pgx.BatchResults) (InsertRunStatusTimestampRow, error)
+	InsertRunStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindRuns(ctx context.Context, params FindRunsParams) ([]FindRunsRow, error)
 	// FindRunsBatch enqueues a FindRuns query into batch to be executed
@@ -332,12 +332,12 @@ type Querier interface {
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
-	UpdateRunStatus(ctx context.Context, status string, id string) (time.Time, error)
+	UpdateRunStatus(ctx context.Context, status string, id string) (string, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
 	// later by the batch.
 	UpdateRunStatusBatch(batch genericBatch, status string, id string)
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
-	UpdateRunStatusScan(results pgx.BatchResults) (time.Time, error)
+	UpdateRunStatusScan(results pgx.BatchResults) (string, error)
 
 	UpdateRunPlannedChangesByRunID(ctx context.Context, params UpdateRunPlannedChangesByRunIDParams) (pgconn.CommandTag, error)
 	// UpdateRunPlannedChangesByRunIDBatch enqueues a UpdateRunPlannedChangesByRunID query into batch to be executed
@@ -1401,55 +1401,51 @@ const insertApplyStatusTimestampSQL = `INSERT INTO apply_status_timestamps (
 ) VALUES (
     $1,
     $2,
-    current_timestamp
-)
-RETURNING *;`
+    $3
+);`
 
-type InsertApplyStatusTimestampRow struct {
-	RunID     string    `json:"run_id"`
-	Status    string    `json:"status"`
-	Timestamp time.Time `json:"timestamp"`
+type InsertApplyStatusTimestampParams struct {
+	ID        string
+	Status    string
+	Timestamp time.Time
 }
 
 // InsertApplyStatusTimestamp implements Querier.InsertApplyStatusTimestamp.
-func (q *DBQuerier) InsertApplyStatusTimestamp(ctx context.Context, id string, status string) (InsertApplyStatusTimestampRow, error) {
+func (q *DBQuerier) InsertApplyStatusTimestamp(ctx context.Context, params InsertApplyStatusTimestampParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyStatusTimestamp")
-	row := q.conn.QueryRow(ctx, insertApplyStatusTimestampSQL, id, status)
-	var item InsertApplyStatusTimestampRow
-	if err := row.Scan(&item.RunID, &item.Status, &item.Timestamp); err != nil {
-		return item, fmt.Errorf("query InsertApplyStatusTimestamp: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertApplyStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertApplyStatusTimestamp: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertApplyStatusTimestampBatch implements Querier.InsertApplyStatusTimestampBatch.
-func (q *DBQuerier) InsertApplyStatusTimestampBatch(batch genericBatch, id string, status string) {
-	batch.Queue(insertApplyStatusTimestampSQL, id, status)
+func (q *DBQuerier) InsertApplyStatusTimestampBatch(batch genericBatch, params InsertApplyStatusTimestampParams) {
+	batch.Queue(insertApplyStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
 }
 
 // InsertApplyStatusTimestampScan implements Querier.InsertApplyStatusTimestampScan.
-func (q *DBQuerier) InsertApplyStatusTimestampScan(results pgx.BatchResults) (InsertApplyStatusTimestampRow, error) {
-	row := results.QueryRow()
-	var item InsertApplyStatusTimestampRow
-	if err := row.Scan(&item.RunID, &item.Status, &item.Timestamp); err != nil {
-		return item, fmt.Errorf("scan InsertApplyStatusTimestampBatch row: %w", err)
+func (q *DBQuerier) InsertApplyStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertApplyStatusTimestampBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const updateApplyStatusSQL = `UPDATE runs
 SET
-    apply_status = $1,
-    updated_at = current_timestamp
+    apply_status = $1
 WHERE apply_id = $2
-RETURNING updated_at
+RETURNING apply_id
 ;`
 
 // UpdateApplyStatus implements Querier.UpdateApplyStatus.
-func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (time.Time, error) {
+func (q *DBQuerier) UpdateApplyStatus(ctx context.Context, status string, id string) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyStatus")
 	row := q.conn.QueryRow(ctx, updateApplyStatusSQL, status, id)
-	var item time.Time
+	var item string
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateApplyStatus: %w", err)
 	}
@@ -1462,9 +1458,9 @@ func (q *DBQuerier) UpdateApplyStatusBatch(batch genericBatch, status string, id
 }
 
 // UpdateApplyStatusScan implements Querier.UpdateApplyStatusScan.
-func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (time.Time, error) {
+func (q *DBQuerier) UpdateApplyStatusScan(results pgx.BatchResults) (string, error) {
 	row := results.QueryRow()
-	var item time.Time
+	var item string
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateApplyStatusBatch row: %w", err)
 	}

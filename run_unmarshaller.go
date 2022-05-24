@@ -14,7 +14,6 @@ type RunDBResult struct {
 	PlanID                 string                        `json:"plan_id"`
 	ApplyID                string                        `json:"apply_id"`
 	CreatedAt              time.Time                     `json:"created_at"`
-	UpdatedAt              time.Time                     `json:"updated_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
 	PositionInQueue        int                           `json:"position_in_queue"`
 	Refresh                bool                          `json:"refresh"`
@@ -39,11 +38,8 @@ type RunDBResult struct {
 
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
-		id: result.RunID,
-		Timestamps: Timestamps{
-			CreatedAt: result.CreatedAt,
-			UpdatedAt: result.UpdatedAt,
-		},
+		id:               result.RunID,
+		createdAt:        result.CreatedAt,
 		isDestroy:        result.IsDestroy,
 		positionInQueue:  result.PositionInQueue,
 		refresh:          result.Refresh,

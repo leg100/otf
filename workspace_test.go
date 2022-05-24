@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestRun_UpdateStatus tests that UpdateStatus correctly updates the status of
+// TestRun_UpdateStatus tests that updateStatus correctly updates the status of
 // the run's plan and apply (there is little point to testing the status of the
 // run itself because there is no conditional logic to this assignment).
 func TestWorkspaceSpec_Valid(t *testing.T) {

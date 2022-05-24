@@ -25,17 +25,15 @@ func NewRunDB(db *pgxpool.Pool) *RunDB {
 // Create persists a Run to the DB.
 func (db RunDB) Create(run *otf.Run) error {
 	ctx := context.Background()
-
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-
 	q := pggen.NewQuerier(tx)
-
-	result, err := q.InsertRun(ctx, pggen.InsertRunParams{
+	_, err = q.InsertRun(ctx, pggen.InsertRunParams{
 		ID:                     run.ID(),
+		CreatedAt:              run.CreatedAt(),
 		PlanID:                 run.Plan.ID(),
 		ApplyID:                run.Apply.ID(),
 		IsDestroy:              run.IsDestroy(),
@@ -52,21 +50,15 @@ func (db RunDB) Create(run *otf.Run) error {
 	if err != nil {
 		return err
 	}
-	run.CreatedAt = result.CreatedAt
-	run.UpdatedAt = result.UpdatedAt
-
 	if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
-		return err
+		return fmt.Errorf("inserting run status timestamp: %w", err)
 	}
-
 	if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
-		return err
+		return fmt.Errorf("inserting plan status timestamp: %w", err)
 	}
-
 	if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
-		return err
+		return fmt.Errorf("inserting apply status timestamp: %w", err)
 	}
-
 	return tx.Commit(ctx)
 }
 
@@ -109,7 +101,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Status() != runStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID())
+		_, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +113,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Plan.Status() != planStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID())
+		_, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +125,7 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Apply.Status() != applyStatus {
 		var err error
-		run.UpdatedAt, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID())
+		_, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID())
 		if err != nil {
 			return nil, err
 		}
@@ -332,32 +324,42 @@ func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (
 }
 
 func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertRunStatusTimestamp(ctx, run.ID(), string(run.Status()))
+	ts, err := run.StatusTimestamp(run.Status())
 	if err != nil {
 		return err
 	}
-	run.AddStatusTimestamp(otf.RunStatus(ts.Status), ts.Timestamp)
-
-	return nil
+	_, err = q.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Status()),
+		Timestamp: ts,
+	})
+	return err
 }
 
 func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertPlanStatusTimestamp(ctx, run.ID(), string(run.Plan.Status()))
+	ts, err := run.PlanStatusTimestamp(run.Plan.Status())
 	if err != nil {
 		return err
 	}
-	run.Plan.AddStatusTimestamp(otf.PlanStatus(ts.Status), ts.Timestamp)
-
-	return nil
+	_, err = q.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Plan.Status()),
+		Timestamp: ts,
+	})
+	return err
 }
 
 func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := q.InsertApplyStatusTimestamp(ctx, run.ID(), string(run.Apply.Status()))
+	ts, err := run.ApplyStatusTimestamp(run.Apply.Status())
 	if err != nil {
 		return err
 	}
-	run.Apply.AddStatusTimestamp(otf.ApplyStatus(ts.Status), ts.Timestamp)
-	return nil
+	_, err = q.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Apply.Status()),
+		Timestamp: ts,
+	})
+	return err
 }
 
 func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {

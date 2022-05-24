@@ -1,10 +1,9 @@
--- name: InsertRun :one
+-- name: InsertRun :exec
 INSERT INTO runs (
     run_id,
     plan_id,
     apply_id,
     created_at,
-    updated_at,
     is_destroy,
     position_in_queue,
     refresh,
@@ -20,8 +19,7 @@ INSERT INTO runs (
     pggen.arg('ID'),
     pggen.arg('PlanID'),
     pggen.arg('ApplyID'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
     pggen.arg('IsDestroy'),
     pggen.arg('PositionInQueue'),
     pggen.arg('Refresh'),
@@ -33,10 +31,9 @@ INSERT INTO runs (
     pggen.arg('TargetAddrs'),
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
-)
-RETURNING created_at, updated_at;
+);
 
--- name: InsertRunStatusTimestamp :one
+-- name: InsertRunStatusTimestamp :exec
 INSERT INTO run_status_timestamps (
     run_id,
     status,
@@ -44,9 +41,8 @@ INSERT INTO run_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    current_timestamp
-)
-RETURNING *;
+    pggen.arg('Timestamp')
+);
 
 -- name: FindRuns :many
 SELECT
@@ -54,7 +50,6 @@ SELECT
     runs.plan_id,
     runs.apply_id,
     runs.created_at,
-    runs.updated_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -113,7 +108,6 @@ SELECT
     runs.plan_id,
     runs.apply_id,
     runs.created_at,
-    runs.updated_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -173,7 +167,6 @@ SELECT
     runs.plan_id,
     runs.apply_id,
     runs.created_at,
-    runs.updated_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -219,10 +212,9 @@ FOR UPDATE
 -- name: UpdateRunStatus :one
 UPDATE runs
 SET
-    status = pggen.arg('status'),
-    updated_at = current_timestamp
+    status = pggen.arg('status')
 WHERE run_id = pggen.arg('id')
-RETURNING updated_at
+RETURNING run_id
 ;
 
 -- name: UpdateRunPlannedChangesByRunID :exec

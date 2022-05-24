@@ -1,4 +1,4 @@
--- name: InsertApplyStatusTimestamp :one
+-- name: InsertApplyStatusTimestamp :exec
 INSERT INTO apply_status_timestamps (
     run_id,
     status,
@@ -6,15 +6,13 @@ INSERT INTO apply_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    current_timestamp
-)
-RETURNING *;
+    pggen.arg('Timestamp')
+);
 
 -- name: UpdateApplyStatus :one
 UPDATE runs
 SET
-    apply_status = pggen.arg('status'),
-    updated_at = current_timestamp
+    apply_status = pggen.arg('status')
 WHERE apply_id = pggen.arg('id')
-RETURNING updated_at
+RETURNING apply_id
 ;

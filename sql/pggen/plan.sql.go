@@ -17,55 +17,51 @@ const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
 ) VALUES (
     $1,
     $2,
-    current_timestamp
-)
-RETURNING *;`
+    $3
+);`
 
-type InsertPlanStatusTimestampRow struct {
-	RunID     string    `json:"run_id"`
-	Status    string    `json:"status"`
-	Timestamp time.Time `json:"timestamp"`
+type InsertPlanStatusTimestampParams struct {
+	ID        string
+	Status    string
+	Timestamp time.Time
 }
 
 // InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.
-func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, id string, status string) (InsertPlanStatusTimestampRow, error) {
+func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, params InsertPlanStatusTimestampParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanStatusTimestamp")
-	row := q.conn.QueryRow(ctx, insertPlanStatusTimestampSQL, id, status)
-	var item InsertPlanStatusTimestampRow
-	if err := row.Scan(&item.RunID, &item.Status, &item.Timestamp); err != nil {
-		return item, fmt.Errorf("query InsertPlanStatusTimestamp: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertPlanStatusTimestamp: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertPlanStatusTimestampBatch implements Querier.InsertPlanStatusTimestampBatch.
-func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, id string, status string) {
-	batch.Queue(insertPlanStatusTimestampSQL, id, status)
+func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, params InsertPlanStatusTimestampParams) {
+	batch.Queue(insertPlanStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
 }
 
 // InsertPlanStatusTimestampScan implements Querier.InsertPlanStatusTimestampScan.
-func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (InsertPlanStatusTimestampRow, error) {
-	row := results.QueryRow()
-	var item InsertPlanStatusTimestampRow
-	if err := row.Scan(&item.RunID, &item.Status, &item.Timestamp); err != nil {
-		return item, fmt.Errorf("scan InsertPlanStatusTimestampBatch row: %w", err)
+func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertPlanStatusTimestampBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const updatePlanStatusSQL = `UPDATE runs
 SET
-    plan_status = $1,
-    updated_at = current_timestamp
+    plan_status = $1
 WHERE plan_id = $2
-RETURNING updated_at
+RETURNING plan_id
 ;`
 
 // UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (time.Time, error) {
+func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
-	var item time.Time
+	var item string
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdatePlanStatus: %w", err)
 	}
@@ -78,9 +74,9 @@ func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id 
 }
 
 // UpdatePlanStatusScan implements Querier.UpdatePlanStatusScan.
-func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (time.Time, error) {
+func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (string, error) {
 	row := results.QueryRow()
-	var item time.Time
+	var item string
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdatePlanStatusBatch row: %w", err)
 	}

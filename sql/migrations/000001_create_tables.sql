@@ -154,7 +154,6 @@ CREATE TABLE IF NOT EXISTS runs (
     plan_id                         TEXT            NOT NULL,
     apply_id                        TEXT            NOT NULL,
     created_at                      TIMESTAMPTZ     NOT NULL,
-    updated_at                      TIMESTAMPTZ     NOT NULL,
     is_destroy                      BOOLEAN         NOT NULL,
     position_in_queue               INTEGER         NOT NULL,
     refresh                         BOOLEAN         NOT NULL,

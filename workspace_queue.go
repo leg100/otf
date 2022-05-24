@@ -8,7 +8,7 @@ type workspaceQueue []*Run
 // update queue with a run
 func (q workspaceQueue) update(run *Run) workspaceQueue {
 	if i := indexRunSlice(q, run); i >= 0 {
-		if run.IsDone() {
+		if run.Done() {
 			// remove run from queue
 			q = append(q[:i], q[i+1:]...)
 		} else {

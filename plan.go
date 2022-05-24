@@ -10,7 +10,6 @@ const (
 	PlanFilename        = "plan.out"
 	JSONPlanFilename    = "plan.out.json"
 	ApplyOutputFilename = "apply.out"
-
 	//List all available plan statuses.
 	PlanCanceled    PlanStatus = "canceled"
 	PlanCreated     PlanStatus = "created"
@@ -29,16 +28,12 @@ type PlanStatus string
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	id string
-
 	// Resources is a report of planned resource changes
 	*ResourceReport
-
 	// Status is the current status
 	status PlanStatus
-
 	// statusTimestamps records timestamps of status transitions
 	statusTimestamps []PlanStatusTimestamp
-
 	// run is the parent run
 	run *Run
 }
@@ -93,23 +88,18 @@ func (p *Plan) Do(env Environment) error {
 	if err := p.run.setupEnv(env); err != nil {
 		return err
 	}
-
 	if err := env.RunCLI("terraform", "plan", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
 		return err
 	}
-
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
-
 	if err := env.RunFunc(p.run.uploadPlan); err != nil {
 		return err
 	}
-
 	if err := env.RunFunc(p.run.uploadJSONPlan); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -118,13 +108,10 @@ func (p *Plan) Start(run *Run) error {
 	if run.Status() == RunPlanning {
 		return ErrJobAlreadyClaimed
 	}
-
 	if run.Status() != RunPlanQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", run.Status())
 	}
-
-	run.UpdateStatus(RunPlanning)
-
+	run.updateStatus(RunPlanning)
 	return nil
 }
 
@@ -132,26 +119,24 @@ func (p *Plan) Start(run *Run) error {
 // returned reflecting the run's new status.
 func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 	if opts.Errored {
-		if err := p.run.UpdateStatus(RunErrored); err != nil {
+		if err := p.run.updateStatus(RunErrored); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunErrored}, nil
 	}
-	if !p.HasChanges() || p.run.IsSpeculative() {
-		if err := p.run.UpdateStatus(RunPlannedAndFinished); err != nil {
+	if !p.HasChanges() || p.run.Speculative() {
+		if err := p.run.updateStatus(RunPlannedAndFinished); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
 	}
-
 	if !p.run.autoApply {
-		if err := p.run.UpdateStatus(RunPlanned); err != nil {
+		if err := p.run.updateStatus(RunPlanned); err != nil {
 			return nil, err
 		}
 		return &Event{Payload: p.run, Type: EventRunPlanned}, nil
 	}
-
-	if err := p.run.UpdateStatus(RunApplyQueued); err != nil {
+	if err := p.run.updateStatus(RunApplyQueued); err != nil {
 		return nil, err
 	}
 	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
@@ -159,9 +144,10 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
 
-func (p *Plan) AddStatusTimestamp(status PlanStatus, timestamp time.Time) {
+func (p *Plan) updateStatus(status PlanStatus) {
+	p.status = status
 	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
 		Status:    status,
-		Timestamp: timestamp,
+		Timestamp: CurrentTimestamp(),
 	})
 }

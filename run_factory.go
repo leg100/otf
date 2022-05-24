@@ -50,9 +50,9 @@ func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*Configurat
 // NewRunFromDefaults creates a new run with defaults.
 func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run := Run{
-		id:      NewID("run"),
-		refresh: DefaultRefresh,
-		status:  RunPending,
+		id:        NewID("run"),
+		createdAt: CurrentTimestamp(),
+		refresh:   DefaultRefresh,
 	}
 	run.ConfigurationVersion = &ConfigurationVersion{id: cv.ID()}
 	run.Workspace = &Workspace{id: ws.ID()}
@@ -61,9 +61,10 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
 	run.setJob()
-	if run.IsSpeculative() {
+	run.updateStatus(RunPending)
+	if run.Speculative() {
 		// immediately enqueue plans for speculative runs
-		run.UpdateStatus(RunPlanQueued)
+		run.updateStatus(RunPlanQueued)
 	}
 	return &run
 }

@@ -1,4 +1,4 @@
--- name: InsertPlanStatusTimestamp :one
+-- name: InsertPlanStatusTimestamp :exec
 INSERT INTO plan_status_timestamps (
     run_id,
     status,
@@ -6,17 +6,15 @@ INSERT INTO plan_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    current_timestamp
-)
-RETURNING *;
+    pggen.arg('Timestamp')
+);
 
 -- name: UpdatePlanStatus :one
 UPDATE runs
 SET
-    plan_status = pggen.arg('status'),
-    updated_at = current_timestamp
+    plan_status = pggen.arg('status')
 WHERE plan_id = pggen.arg('id')
-RETURNING updated_at
+RETURNING plan_id
 ;
 
 -- name: GetPlanBinByRunID :one

@@ -2,7 +2,6 @@ package otf
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +50,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 				Apply:  &Apply{},
 			}
 
-			r.UpdateStatus(tt.toStatus)
+			r.updateStatus(tt.toStatus)
 
 			assert.Equal(t, tt.wantPlanStatus, r.Plan.status)
 			assert.Equal(t, tt.wantApplyStatus, r.Apply.status)
@@ -65,7 +64,7 @@ func TestRun_ForceCancelAvailableAt(t *testing.T) {
 		statusTimestamps: []RunStatusTimestamp{
 			{
 				Status:    RunCanceled,
-				Timestamp: time.Now(),
+				Timestamp: CurrentTimestamp(),
 			},
 		},
 		Plan:  &Plan{},
@@ -81,7 +80,7 @@ func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
 		Apply: &Apply{},
 	}
 
-	run.UpdateStatus(RunPending)
+	run.updateStatus(RunPending)
 
 	assert.Zero(t, run.ForceCancelAvailableAt())
 }

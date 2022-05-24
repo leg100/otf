@@ -78,12 +78,12 @@ func (s *workspaceQueueManager) Start() error {
 
 // seed populates workspace queues
 func (s *workspaceQueueManager) seed() error {
-	runs, err := s.List(s.ctx, RunListOptions{Statuses: IncompleteRunStatuses})
+	runs, err := s.List(s.ctx, RunListOptions{Statuses: IncompleteRun})
 	if err != nil {
 		return err
 	}
 	for _, run := range runs.Items {
-		if run.IsSpeculative() {
+		if run.Speculative() {
 			// speculative runs are never queued
 			continue
 		}
@@ -111,7 +111,7 @@ func (s *workspaceQueueManager) startRuns() error {
 // refresh takes an updated run and refreshes its workspace queue, starting an
 // eligible run if there is one.
 func (s *workspaceQueueManager) refresh(run *Run) error {
-	if run.IsSpeculative() {
+	if run.Speculative() {
 		// speculative runs are never queued
 		return nil
 	}

@@ -72,10 +72,12 @@ func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
 func UInt(i uint) *uint         { return &i }
 
-// TimeNow is a convenience func to return the pointer of the current time
-func TimeNow() *time.Time {
-	t := time.Now()
-	return &t
+// CurrentTimestamp is *the* way to get a current timestamps in oTF and
+// time.Now() should be avoided. We want timestamps to be rounded to nearest
+// millisecond so that they can be persisted/serialised and not lose precision
+// thereby making comparisons and testing easier.
+func CurrentTimestamp() time.Time {
+	return time.Now().Round(time.Millisecond)
 }
 
 // NewID constructs resource IDs, which are composed of the resource type and a

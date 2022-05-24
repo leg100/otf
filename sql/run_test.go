@@ -32,9 +32,9 @@ func TestRun_Timestamps(t *testing.T) {
 	got, err := db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
-	assert.Equal(t, run.CreatedAt, got.CreatedAt)
-	assert.Equal(t, run.CreatedAt.UTC(), got.CreatedAt.UTC())
-	assert.True(t, run.CreatedAt.Equal(got.CreatedAt))
+	assert.Equal(t, run.CreatedAt(), got.CreatedAt())
+	assert.Equal(t, run.CreatedAt().UTC(), got.CreatedAt().UTC())
+	assert.True(t, run.CreatedAt().Equal(got.CreatedAt()))
 }
 
 func TestRun_UpdateStatus(t *testing.T) {
@@ -55,11 +55,9 @@ func TestRun_UpdateStatus(t *testing.T) {
 			},
 			want: func(t *testing.T, got *otf.Run) {
 				assert.Equal(t, otf.RunPlanQueued, got.Status())
-				assert.True(t, got.UpdatedAt.After(got.CreatedAt))
-
-				timestamp, found := got.FindRunStatusTimestamp(otf.RunPlanQueued)
-				assert.True(t, found)
-				assert.True(t, timestamp.After(got.CreatedAt))
+				timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
+				assert.NoError(t, err)
+				assert.True(t, timestamp.After(got.CreatedAt()))
 			},
 		},
 	}
