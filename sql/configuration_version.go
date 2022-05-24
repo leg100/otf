@@ -35,8 +35,9 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 
 	q := pggen.NewQuerier(tx)
 
-	result, err := q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 		ID:            cv.ID(),
+		CreatedAt:     cv.CreatedAt(),
 		AutoQueueRuns: cv.AutoQueueRuns(),
 		Source:        string(cv.Source()),
 		Speculative:   cv.Speculative(),
@@ -46,8 +47,6 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 	if err != nil {
 		return nil, err
 	}
-	cv.CreatedAt = result.CreatedAt
-	cv.UpdatedAt = result.UpdatedAt
 
 	// Insert timestamp for current status
 	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID(), string(cv.Status()))

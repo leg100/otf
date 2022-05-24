@@ -5,14 +5,12 @@ package pggen
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
     state_version_output_id,
-    created_at,
-    updated_at,
     name,
     sensitive,
     type,
@@ -20,15 +18,12 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
     state_version_id
 ) VALUES (
     $1,
-    current_timestamp,
-    current_timestamp,
     $2,
     $3,
     $4,
     $5,
     $6
-)
-RETURNING *;`
+);`
 
 type InsertStateVersionOutputParams struct {
 	ID             string
@@ -39,26 +34,14 @@ type InsertStateVersionOutputParams struct {
 	StateVersionID string
 }
 
-type InsertStateVersionOutputRow struct {
-	StateVersionOutputID string    `json:"state_version_output_id"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
-	Name                 string    `json:"name"`
-	Sensitive            bool      `json:"sensitive"`
-	Type                 string    `json:"type"`
-	Value                string    `json:"value"`
-	StateVersionID       string    `json:"state_version_id"`
-}
-
 // InsertStateVersionOutput implements Querier.InsertStateVersionOutput.
-func (q *DBQuerier) InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (InsertStateVersionOutputRow, error) {
+func (q *DBQuerier) InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertStateVersionOutput")
-	row := q.conn.QueryRow(ctx, insertStateVersionOutputSQL, params.ID, params.Name, params.Sensitive, params.Type, params.Value, params.StateVersionID)
-	var item InsertStateVersionOutputRow
-	if err := row.Scan(&item.StateVersionOutputID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Sensitive, &item.Type, &item.Value, &item.StateVersionID); err != nil {
-		return item, fmt.Errorf("query InsertStateVersionOutput: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertStateVersionOutputSQL, params.ID, params.Name, params.Sensitive, params.Type, params.Value, params.StateVersionID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertStateVersionOutput: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertStateVersionOutputBatch implements Querier.InsertStateVersionOutputBatch.
@@ -67,11 +50,10 @@ func (q *DBQuerier) InsertStateVersionOutputBatch(batch genericBatch, params Ins
 }
 
 // InsertStateVersionOutputScan implements Querier.InsertStateVersionOutputScan.
-func (q *DBQuerier) InsertStateVersionOutputScan(results pgx.BatchResults) (InsertStateVersionOutputRow, error) {
-	row := results.QueryRow()
-	var item InsertStateVersionOutputRow
-	if err := row.Scan(&item.StateVersionOutputID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Sensitive, &item.Type, &item.Value, &item.StateVersionID); err != nil {
-		return item, fmt.Errorf("scan InsertStateVersionOutputBatch row: %w", err)
+func (q *DBQuerier) InsertStateVersionOutputScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertStateVersionOutputBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }

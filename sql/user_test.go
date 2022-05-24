@@ -90,7 +90,7 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			name: "auth token",
-			spec: otf.UserSpec{AuthenticationToken: &token.Token},
+			spec: otf.UserSpec{AuthenticationToken: otf.String(token.Token())},
 		},
 	}
 	for _, tt := range tests {

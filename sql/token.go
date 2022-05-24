@@ -26,17 +26,15 @@ func NewTokenDB(conn *pgxpool.Pool) *TokenDB {
 func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 	q := pggen.NewQuerier(db.Pool)
 
-	result, err := q.InsertToken(ctx, pggen.InsertTokenParams{
+	_, err := q.InsertToken(ctx, pggen.InsertTokenParams{
 		TokenID:     token.ID(),
-		Token:       token.Token,
-		Description: token.Description,
-		UserID:      token.UserID,
+		Token:       token.Token(),
+		Description: token.Description(),
+		UserID:      token.UserID(),
 	})
 	if err != nil {
 		return err
 	}
-	token.CreatedAt = result.CreatedAt
-	token.UpdatedAt = result.UpdatedAt
 
 	return nil
 }

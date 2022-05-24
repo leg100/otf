@@ -13,7 +13,6 @@ import (
 const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     configuration_version_id,
     created_at,
-    updated_at,
     auto_queue_runs,
     source,
     speculative,
@@ -21,18 +20,17 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
     workspace_id
 ) VALUES (
     $1,
-    current_timestamp,
-    current_timestamp,
     $2,
     $3,
     $4,
     $5,
-    $6
-)
-RETURNING *;`
+    $6,
+    $7
+);`
 
 type InsertConfigurationVersionParams struct {
 	ID            string
+	CreatedAt     time.Time
 	AutoQueueRuns bool
 	Source        string
 	Speculative   bool
@@ -40,42 +38,28 @@ type InsertConfigurationVersionParams struct {
 	WorkspaceID   string
 }
 
-type InsertConfigurationVersionRow struct {
-	ConfigurationVersionID string    `json:"configuration_version_id"`
-	CreatedAt              time.Time `json:"created_at"`
-	UpdatedAt              time.Time `json:"updated_at"`
-	AutoQueueRuns          bool      `json:"auto_queue_runs"`
-	Source                 string    `json:"source"`
-	Speculative            bool      `json:"speculative"`
-	Status                 string    `json:"status"`
-	Config                 []byte    `json:"config"`
-	WorkspaceID            string    `json:"workspace_id"`
-}
-
 // InsertConfigurationVersion implements Querier.InsertConfigurationVersion.
-func (q *DBQuerier) InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error) {
+func (q *DBQuerier) InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersion")
-	row := q.conn.QueryRow(ctx, insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.WorkspaceID)
-	var item InsertConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("query InsertConfigurationVersion: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertConfigurationVersionSQL, params.ID, params.CreatedAt, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.WorkspaceID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertConfigurationVersion: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertConfigurationVersionBatch implements Querier.InsertConfigurationVersionBatch.
 func (q *DBQuerier) InsertConfigurationVersionBatch(batch genericBatch, params InsertConfigurationVersionParams) {
-	batch.Queue(insertConfigurationVersionSQL, params.ID, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.WorkspaceID)
+	batch.Queue(insertConfigurationVersionSQL, params.ID, params.CreatedAt, params.AutoQueueRuns, params.Source, params.Speculative, params.Status, params.WorkspaceID)
 }
 
 // InsertConfigurationVersionScan implements Querier.InsertConfigurationVersionScan.
-func (q *DBQuerier) InsertConfigurationVersionScan(results pgx.BatchResults) (InsertConfigurationVersionRow, error) {
-	row := results.QueryRow()
-	var item InsertConfigurationVersionRow
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.Config, &item.WorkspaceID); err != nil {
-		return item, fmt.Errorf("scan InsertConfigurationVersionBatch row: %w", err)
+func (q *DBQuerier) InsertConfigurationVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertConfigurationVersionBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_version_status_timestamps (
@@ -124,7 +108,6 @@ func (q *DBQuerier) InsertConfigurationVersionStatusTimestampScan(results pgx.Ba
 const findConfigurationVersionsByWorkspaceIDSQL = `SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -153,7 +136,6 @@ type FindConfigurationVersionsByWorkspaceIDParams struct {
 type FindConfigurationVersionsByWorkspaceIDRow struct {
 	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
-	UpdatedAt                            time.Time                              `json:"updated_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               string                                 `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -176,7 +158,7 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceID(ctx context.Context, 
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceID row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -210,7 +192,7 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceIDScan(results pgx.Batch
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceIDBatch row: %w", err)
 		}
 		if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -261,7 +243,6 @@ func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDScan(results pgx.Batc
 const findConfigurationVersionByIDSQL = `SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -281,7 +262,6 @@ WHERE configuration_version_id = $2;`
 type FindConfigurationVersionByIDRow struct {
 	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
-	UpdatedAt                            time.Time                              `json:"updated_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               string                                 `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -298,7 +278,7 @@ func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, includeWor
 	var item FindConfigurationVersionByIDRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionByID: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -321,7 +301,7 @@ func (q *DBQuerier) FindConfigurationVersionByIDScan(results pgx.BatchResults) (
 	var item FindConfigurationVersionByIDRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionByIDBatch row: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -336,7 +316,6 @@ func (q *DBQuerier) FindConfigurationVersionByIDScan(results pgx.BatchResults) (
 const findConfigurationVersionLatestByWorkspaceIDSQL = `SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -357,7 +336,6 @@ ORDER BY configuration_versions.created_at DESC;`
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
-	UpdatedAt                            time.Time                              `json:"updated_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               string                                 `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -374,7 +352,7 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Cont
 	var item FindConfigurationVersionLatestByWorkspaceIDRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionLatestByWorkspaceID: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -397,7 +375,7 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceIDScan(results pgx.
 	var item FindConfigurationVersionLatestByWorkspaceIDRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionLatestByWorkspaceIDBatch row: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -412,7 +390,6 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceIDScan(results pgx.
 const findConfigurationVersionByIDForUpdateSQL = `SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -433,7 +410,6 @@ FOR UPDATE;`
 type FindConfigurationVersionByIDForUpdateRow struct {
 	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
-	UpdatedAt                            time.Time                              `json:"updated_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               string                                 `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -450,7 +426,7 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, i
 	var item FindConfigurationVersionByIDForUpdateRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionByIDForUpdate: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -473,7 +449,7 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdateScan(results pgx.BatchR
 	var item FindConfigurationVersionByIDForUpdateRow
 	workspaceRow := q.types.newWorkspaces()
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.UpdatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, workspaceRow, configurationVersionStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionByIDForUpdateBatch row: %w", err)
 	}
 	if err := workspaceRow.AssignTo(&item.Workspace); err != nil {
@@ -517,8 +493,7 @@ func (q *DBQuerier) DownloadConfigurationVersionScan(results pgx.BatchResults) (
 
 const updateConfigurationVersionErroredByIDSQL = `UPDATE configuration_versions
 SET
-    status = 'errored',
-    updated_at = current_timestamp
+    status = 'errored'
 WHERE configuration_version_id = $1;`
 
 // UpdateConfigurationVersionErroredByID implements Querier.UpdateConfigurationVersionErroredByID.
@@ -548,8 +523,7 @@ func (q *DBQuerier) UpdateConfigurationVersionErroredByIDScan(results pgx.BatchR
 const updateConfigurationVersionConfigByIDSQL = `UPDATE configuration_versions
 SET
     config = $1,
-    status = 'uploaded',
-    updated_at = current_timestamp
+    status = 'uploaded'
 WHERE configuration_version_id = $2;`
 
 // UpdateConfigurationVersionConfigByID implements Querier.UpdateConfigurationVersionConfigByID.

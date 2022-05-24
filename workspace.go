@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 const (
@@ -21,9 +22,9 @@ var (
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	id string
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
+	id                         string
+	createdAt                  time.Time
+	updatedAt                  time.Time
 	allowDestroyPlan           bool
 	autoApply                  bool
 	canQueueDestroyPlan        bool
@@ -48,6 +49,8 @@ type Workspace struct {
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
+func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
+func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
 func (ws *Workspace) String() string                   { return ws.id }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
@@ -82,30 +85,33 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	return nil
 }
 
-func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) (updated bool, err error) {
+// TODO: validate options
+//
+// UpdateWithOptions updates the workspace with the given options.
+func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) error {
 	if opts.Name != nil {
 		ws.name = *opts.Name
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.allowDestroyPlan = *opts.AllowDestroyPlan
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.AutoApply != nil {
 		ws.autoApply = *opts.AutoApply
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.Description != nil {
 		ws.description = *opts.Description
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.ExecutionMode != nil {
 		ws.executionMode = *opts.ExecutionMode
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.fileTriggersEnabled = *opts.FileTriggersEnabled
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -113,34 +119,34 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		} else {
 			ws.executionMode = "local"
 		}
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.QueueAllRuns != nil {
 		ws.queueAllRuns = *opts.QueueAllRuns
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.speculativeEnabled = *opts.SpeculativeEnabled
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.structuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.TerraformVersion != nil {
 		ws.terraformVersion = *opts.TerraformVersion
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.TriggerPrefixes != nil {
 		ws.triggerPrefixes = opts.TriggerPrefixes
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.WorkingDirectory != nil {
 		ws.workingDirectory = *opts.WorkingDirectory
-		updated = true
+		ws.updatedAt = CurrentTimestamp()
 	}
 
-	return updated, nil
+	return nil
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.
@@ -218,7 +224,7 @@ type WorkspaceStore interface {
 	Create(ws *Workspace) (*Workspace, error)
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, ws func(ws *Workspace) (bool, error)) (*Workspace, error)
+	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 

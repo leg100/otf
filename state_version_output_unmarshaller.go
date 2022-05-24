@@ -4,12 +4,8 @@ import "github.com/leg100/otf/sql/pggen"
 
 func UnmarshalStateVersionOutputDBType(typ pggen.StateVersionOutputs) (*StateVersionOutput, error) {
 	out := StateVersionOutput{
-		id:        typ.StateVersionOutputID,
-		Sensitive: typ.Sensitive,
-		Timestamps: Timestamps{
-			CreatedAt: typ.CreatedAt.Local(),
-			UpdatedAt: typ.UpdatedAt.Local(),
-		},
+		id:             typ.StateVersionOutputID,
+		Sensitive:      typ.Sensitive,
 		Type:           typ.Type,
 		Value:          typ.Value,
 		Name:           typ.Name,

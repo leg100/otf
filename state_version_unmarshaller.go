@@ -9,7 +9,6 @@ import (
 type StateVersionDBRow struct {
 	StateVersionID      string                      `json:"state_version_id"`
 	CreatedAt           time.Time                   `json:"created_at"`
-	UpdatedAt           time.Time                   `json:"updated_at"`
 	Serial              int                         `json:"serial"`
 	VcsCommitSHA        string                      `json:"vcs_commit_sha"`
 	VcsCommitURL        string                      `json:"vcs_commit_url"`
@@ -20,13 +19,10 @@ type StateVersionDBRow struct {
 
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
-		id: row.StateVersionID,
-		Timestamps: Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-		},
-		Serial: int64(row.Serial),
-		State:  row.State,
+		id:        row.StateVersionID,
+		createdAt: row.CreatedAt,
+		Serial:    int64(row.Serial),
+		State:     row.State,
 	}
 
 	for _, r := range row.StateVersionOutputs {

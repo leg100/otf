@@ -17,8 +17,7 @@ type Session struct {
 	Token  string
 	Expiry time.Time
 	SessionData
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
+	createdAt time.Time
 	// Session belongs to a user
 	UserID string
 }
@@ -29,6 +28,7 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
 	session := Session{
+		createdAt:   CurrentTimestamp(),
 		Token:       token,
 		SessionData: *data,
 		Expiry:      time.Now().Add(DefaultSessionExpiry),
@@ -36,6 +36,8 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 	}
 	return &session, nil
 }
+
+func (s *Session) CreatedAt() time.Time { return s.createdAt }
 
 // SessionData is various session data serialised to the session store as JSON.
 type SessionData struct {

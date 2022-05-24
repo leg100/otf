@@ -28,9 +28,10 @@ func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
 func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
-
-	result, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         ws.ID(),
+		CreatedAt:                  ws.CreatedAt(),
+		UpdatedAt:                  ws.UpdatedAt(),
 		Name:                       ws.Name(),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
@@ -55,13 +56,10 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	ws.CreatedAt = result.CreatedAt
-	ws.UpdatedAt = result.UpdatedAt
-
 	return ws, nil
 }
 
-func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bool, error)) (*otf.Workspace, error) {
+func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	tx, err := db.Pool.Begin(ctx)
@@ -95,15 +93,18 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		return nil, fmt.Errorf("invalid spec")
 	}
 
-	updated, err := fn(ws)
-	if err != nil {
+	lastUpdated := ws.UpdatedAt()
+	if err := fn(ws); err != nil {
 		return nil, err
 	}
-	if !updated {
+	if ws.UpdatedAt() == lastUpdated {
+		// no updates
 		return ws, nil
 	}
 
-	ws.UpdatedAt, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
+	_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
+		ID:                         ws.ID(),
+		UpdatedAt:                  ws.UpdatedAt(),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		Description:                ws.Description(),
 		ExecutionMode:              string(ws.ExecutionMode()),
@@ -115,7 +116,6 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) (bo
 		TerraformVersion:           ws.TerraformVersion(),
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
-		ID:                         ws.ID(),
 	})
 	if err != nil {
 		return nil, err

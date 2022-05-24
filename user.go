@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 const (
@@ -16,23 +17,16 @@ const (
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
-	id string
-
-	// Username is the SSO-provided username
-	Username string
-
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
+	id        string
+	createdAt time.Time
+	updatedAt time.Time
+	Username  string
 	// Name of the current Organization the user is using on the web app.
 	CurrentOrganization *string
-
 	// A user has many sessions
 	Sessions []*Session
-
 	// A user has many tokens
 	Tokens []*Token
-
 	// A user belongs to many organizations
 	Organizations []*Organization
 }
@@ -43,9 +37,7 @@ func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	u.Sessions = append(u.Sessions, session)
-
 	return session, nil
 }
 
@@ -70,7 +62,6 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 			}
 		}
 	}
-
 	// Iterate thru existing and if not in authoritative list, remove from db
 	for _, existing := range u.Organizations {
 		if !inOrganizationList(existing.ID(), authoritative) {
@@ -79,10 +70,8 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 			}
 		}
 	}
-
 	// ...and update receiver too.
 	u.Organizations = authoritative
-
 	return nil
 }
 
@@ -90,7 +79,6 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
 	// Update session's user reference
 	session.UserID = to.ID()
-
 	// Remove session from receiver
 	for i, s := range u.Sessions {
 		if s.Token != session.Token {
@@ -98,15 +86,12 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 			break
 		}
 	}
-
 	// Update in persistence store
 	if err := store.TransferSession(ctx, session.Token, to.ID()); err != nil {
 		return err
 	}
-
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
-
 	return nil
 }
 
@@ -115,40 +100,28 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 type UserService interface {
 	// Create creates a user with the given username.
 	Create(ctx context.Context, username string) (*User, error)
-
 	// EnsureCreated retrieves a user; if they don't exist they'll be created.
 	EnsureCreated(ctx context.Context, username string) (*User, error)
-
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpec) (*User, error)
-
 	// Get retrieves the anonymous user.
 	GetAnonymous(ctx context.Context) (*User, error)
-
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-
 	// Transfer session from one user to another
 	TransferSession(ctx context.Context, from, to *User, session *Session) error
-
 	// PopFlash pops a flash message for the session identified by token.
 	PopFlash(ctx context.Context, token string) (*Flash, error)
-
 	// SetFlash sets a flash message for the session identified by token.
 	SetFlash(ctx context.Context, token string, flash *Flash) error
-
 	// SetCurrentOrganization sets the user's currently active organization
 	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
-
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
-
 	// CreateToken creates a user token.
 	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
-
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, user *User, tokenID string) error
-
 	// SyncOrganizationMemberships synchronises a user's organization
 	// memberships, adding and removing them accordingly.
 	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
@@ -191,7 +164,6 @@ func NewUser(username string) *User {
 		id:       NewID("user"),
 		Username: username,
 	}
-
 	return &user
 }
 

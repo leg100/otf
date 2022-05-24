@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 )
 
 var (
@@ -12,8 +13,8 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	id string
-	Timestamps
+	id           string
+	createdAt    time.Time
 	Serial       int64
 	VCSCommitSHA string
 	VCSCommitURL string
@@ -23,8 +24,9 @@ type StateVersion struct {
 	Outputs []*StateVersionOutput
 }
 
-func (sv *StateVersion) ID() string     { return sv.id }
-func (sv *StateVersion) String() string { return sv.id }
+func (sv *StateVersion) ID() string           { return sv.id }
+func (sv *StateVersion) CreatedAt() time.Time { return sv.createdAt }
+func (sv *StateVersion) String() string       { return sv.id }
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {

@@ -19,9 +19,7 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');
 SELECT count(*)
 FROM organizations;
 
--- InsertOrganization inserts an organization and returns the entire row.
---
--- name: InsertOrganization :one
+-- name: InsertOrganization :exec
 INSERT INTO organizations (
     organization_id,
     created_at,
@@ -31,13 +29,12 @@ INSERT INTO organizations (
     session_timeout
 ) VALUES (
     pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
+    pggen.arg('UpdatedAt'),
     pggen.arg('Name'),
     pggen.arg('SessionRemember'),
     pggen.arg('SessionTimeout')
-)
-RETURNING created_at;
+);
 
 -- UpdateOrganizationNameByName updates an organization with a new name,
 -- identifying the organization with its existing name, and returns the
@@ -47,7 +44,7 @@ RETURNING created_at;
 UPDATE organizations
 SET
     name = pggen.arg('new_name'),
-    updated_at = current_timestamp
+    updated_at = pggen.arg('updated_at')
 WHERE name = pggen.arg('name')
 RETURNING *;
 
@@ -55,7 +52,7 @@ RETURNING *;
 UPDATE organizations
 SET
     session_remember = pggen.arg('session_remember'),
-    updated_at = current_timestamp
+    updated_at = pggen.arg('updated_at')
 WHERE name = pggen.arg('name')
 RETURNING *;
 
@@ -63,7 +60,7 @@ RETURNING *;
 UPDATE organizations
 SET
     session_timeout = pggen.arg('session_timeout'),
-    updated_at = current_timestamp
+    updated_at = pggen.arg('updated_at')
 WHERE name = pggen.arg('name')
 RETURNING *;
 

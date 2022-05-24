@@ -25,10 +25,8 @@ var (
 // Terraform configuration in  A workspace must have at least one configuration
 // version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	id string
-
-	Timestamps
-
+	id               string
+	createdAt        time.Time
 	autoQueueRuns    bool
 	source           ConfigurationSource
 	speculative      bool
@@ -40,6 +38,7 @@ type ConfigurationVersion struct {
 }
 
 func (cv *ConfigurationVersion) ID() string                  { return cv.id }
+func (cv *ConfigurationVersion) CreatedAt() time.Time        { return cv.createdAt }
 func (cv *ConfigurationVersion) String() string              { return cv.id }
 func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
 func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }

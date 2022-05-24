@@ -3,19 +3,24 @@ package otf
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // Token is a user authentication token.
 type Token struct {
-	id    string
-	Token string
-	Timestamps
-	Description string
+	id          string
+	createdAt   time.Time
+	token       string
+	description string
 	// Token belongs to a user
-	UserID string
+	userID string
 }
 
-func (t *Token) ID() string { return t.id }
+func (t *Token) ID() string           { return t.id }
+func (t *Token) Token() string        { return t.token }
+func (t *Token) CreatedAt() time.Time { return t.createdAt }
+func (t *Token) Description() string  { return t.description }
+func (t *Token) UserID() string       { return t.userID }
 
 // TokenStore is a persistence store for user authentication tokens.
 type TokenStore interface {
@@ -32,9 +37,10 @@ func NewToken(uid, description string) (*Token, error) {
 	}
 	session := Token{
 		id:          NewID("ut"),
-		Token:       token,
-		Description: description,
-		UserID:      uid,
+		createdAt:   CurrentTimestamp(),
+		token:       token,
+		description: description,
+		userID:      uid,
 	}
 	return &session, nil
 }

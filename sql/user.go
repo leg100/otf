@@ -31,23 +31,17 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 		return err
 	}
 	defer tx.Rollback(ctx)
-
 	q := pggen.NewQuerier(tx)
-
-	result, err := q.InsertUser(ctx, user.ID(), user.Username)
+	_, err = q.InsertUser(ctx, user.ID(), user.Username)
 	if err != nil {
 		return err
 	}
-	user.CreatedAt = result.CreatedAt
-	user.UpdatedAt = result.UpdatedAt
-
 	for _, org := range user.Organizations {
 		_, err = q.InsertOrganizationMembership(ctx, user.ID(), org.ID())
 		if err != nil {
 			return err
 		}
 	}
-
 	return tx.Commit(ctx)
 }
 

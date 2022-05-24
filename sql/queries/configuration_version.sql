@@ -1,11 +1,7 @@
--- InsertConfigurationVersion inserts a configuration version and
--- returns the entire row.
---
--- name: InsertConfigurationVersion :one
+-- name: InsertConfigurationVersion :exec
 INSERT INTO configuration_versions (
     configuration_version_id,
     created_at,
-    updated_at,
     auto_queue_runs,
     source,
     speculative,
@@ -13,15 +9,13 @@ INSERT INTO configuration_versions (
     workspace_id
 ) VALUES (
     pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
     pggen.arg('AutoQueueRuns'),
     pggen.arg('Source'),
     pggen.arg('Speculative'),
     pggen.arg('Status'),
     pggen.arg('WorkspaceID')
-)
-RETURNING *;
+);
 
 -- name: InsertConfigurationVersionStatusTimestamp :one
 INSERT INTO configuration_version_status_timestamps (
@@ -42,7 +36,6 @@ RETURNING *;
 SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -73,7 +66,6 @@ WHERE configuration_versions.workspace_id = pggen.arg('workspace_id')
 SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -94,7 +86,6 @@ WHERE configuration_version_id = pggen.arg('configuration_version_id');
 SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -116,7 +107,6 @@ ORDER BY configuration_versions.created_at DESC;
 SELECT
     configuration_versions.configuration_version_id,
     configuration_versions.created_at,
-    configuration_versions.updated_at,
     configuration_versions.auto_queue_runs,
     configuration_versions.source,
     configuration_versions.speculative,
@@ -145,16 +135,14 @@ WHERE configuration_version_id = pggen.arg('configuration_version_id');
 -- name: UpdateConfigurationVersionErroredByID :exec
 UPDATE configuration_versions
 SET
-    status = 'errored',
-    updated_at = current_timestamp
+    status = 'errored'
 WHERE configuration_version_id = pggen.arg('id');
 
 -- name: UpdateConfigurationVersionConfigByID :exec
 UPDATE configuration_versions
 SET
     config = pggen.arg('config'),
-    status = 'uploaded',
-    updated_at = current_timestamp
+    status = 'uploaded'
 WHERE configuration_version_id = pggen.arg('id');
 
 -- name: DeleteConfigurationVersionByID :exec

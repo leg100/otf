@@ -9,7 +9,6 @@ import (
 type ConfigurationVersionDBResult struct {
 	ConfigurationVersionID               string                                       `json:"configuration_version_id"`
 	CreatedAt                            time.Time                                    `json:"created_at"`
-	UpdatedAt                            time.Time                                    `json:"updated_at"`
 	AutoQueueRuns                        bool                                         `json:"auto_queue_runs"`
 	Source                               string                                       `json:"source"`
 	Speculative                          bool                                         `json:"speculative"`
@@ -21,11 +20,8 @@ type ConfigurationVersionDBResult struct {
 
 func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		id: result.ConfigurationVersionID,
-		Timestamps: Timestamps{
-			CreatedAt: result.CreatedAt,
-			UpdatedAt: result.UpdatedAt,
-		},
+		id:               result.ConfigurationVersionID,
+		createdAt:        result.CreatedAt,
 		autoQueueRuns:    result.AutoQueueRuns,
 		speculative:      result.Speculative,
 		source:           ConfigurationSource(result.Source),
@@ -48,11 +44,8 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 
 func unmarshalConfigurationVersionDBType(typ pggen.ConfigurationVersions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
-		id: typ.ConfigurationVersionID,
-		Timestamps: Timestamps{
-			CreatedAt: typ.CreatedAt.Local(),
-			UpdatedAt: typ.UpdatedAt.Local(),
-		},
+		id:            typ.ConfigurationVersionID,
+		createdAt:     typ.CreatedAt.Local(),
 		autoQueueRuns: typ.AutoQueueRuns,
 		speculative:   typ.Speculative,
 		source:        ConfigurationSource(typ.Source),

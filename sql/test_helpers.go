@@ -174,7 +174,7 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.TokenStore().DeleteToken(ctx, token.Token)
+		db.TokenStore().DeleteToken(ctx, token.Token())
 	})
 
 	return token

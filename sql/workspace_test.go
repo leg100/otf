@@ -48,21 +48,15 @@ func TestWorkspace_Update(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
-
-			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) (bool, error) {
-				ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
+			_, err := db.WorkspaceStore().Update(tt.spec(ws), func(ws *otf.Workspace) error {
+				return ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
 					Description: otf.String("updated description"),
 				})
-				return true, nil
 			})
 			require.NoError(t, err)
-
 			got, err := db.WorkspaceStore().Get(tt.spec(ws))
 			require.NoError(t, err)
-
 			assert.Equal(t, "updated description", got.Description())
-
-			assert.True(t, got.UpdatedAt.After(got.CreatedAt))
 		})
 	}
 }

@@ -1,6 +1,4 @@
--- InsertWorkspace inserts a workspace and returns the entire row.
---
--- name: InsertWorkspace :one
+-- name: InsertWorkspace :exec
 INSERT INTO workspaces (
     workspace_id,
     created_at,
@@ -27,8 +25,8 @@ INSERT INTO workspaces (
     organization_id
 ) VALUES (
     pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
+    pggen.arg('UpdatedAt'),
     pggen.arg('AllowDestroyPlan'),
     pggen.arg('AutoApply'),
     pggen.arg('CanQueueDestroyPlan'),
@@ -49,8 +47,7 @@ INSERT INTO workspaces (
     pggen.arg('TriggerPrefixes'),
     pggen.arg('WorkingDirectory'),
     pggen.arg('OrganizationID')
-)
-RETURNING *;
+);
 
 -- name: FindWorkspaces :many
 SELECT
@@ -129,9 +126,9 @@ SET
     terraform_version = pggen.arg('terraform_version'),
     trigger_prefixes = pggen.arg('trigger_prefixes'),
     working_directory = pggen.arg('working_directory'),
-    updated_at = current_timestamp
+    updated_at = pggen.arg('updated_at')
 WHERE workspace_id = pggen.arg('id')
-RETURNING updated_at;
+RETURNING workspace_id;
 
 -- DeleteOrganization deletes an organization by id.
 -- DeleteWorkspaceByID deletes a workspace by id.

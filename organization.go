@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"time"
 )
 
 var (
@@ -11,16 +12,17 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	id string
-
-	Timestamps
-
+	id              string
+	createdAt       time.Time
+	updatedAt       time.Time
 	name            string
 	sessionRemember int
 	sessionTimeout  int
 }
 
 func (org *Organization) ID() string           { return org.id }
+func (org *Organization) CreatedAt() time.Time { return org.createdAt }
+func (org *Organization) UpdatedAt() time.Time { return org.updatedAt }
 func (org *Organization) String() string       { return org.id }
 func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
