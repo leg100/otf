@@ -20,7 +20,7 @@ const (
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
-	id string `jsonapi:"primary,users"`
+	id string
 
 	// Username is the SSO-provided username
 	Username string

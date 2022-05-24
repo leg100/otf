@@ -6,7 +6,6 @@ package otf
 import (
 	crypto "crypto/rand"
 	"encoding/base64"
-	"math"
 	"math/rand"
 	"regexp"
 	"time"
@@ -104,46 +103,6 @@ type ResourceReport struct {
 	Additions    int `json:"additions"`
 	Changes      int `json:"changes"`
 	Destructions int `json:"destructions"`
-}
-
-// Pagination is used to return the pagination details of an API request.
-type Pagination struct {
-	CurrentPage  int `json:"current-page"`
-	PreviousPage int `json:"prev-page"`
-	NextPage     int `json:"next-page"`
-	TotalPages   int `json:"total-pages"`
-	TotalCount   int `json:"total-count"`
-}
-
-// ListOptions is used to specify pagination options when making API requests.
-// Pagination allows breaking up large result sets into chunks, or "pages".
-type ListOptions struct {
-	// The page number to request. The results vary based on the PageSize.
-	PageNumber int `schema:"page[number],omitempty"`
-
-	// The number of elements returned in a single page.
-	PageSize int `schema:"page[size],omitempty"`
-}
-
-// GetOffset calculates the offset for use in SQL queries.
-func (o *ListOptions) GetOffset() int {
-	if o.PageNumber == 0 {
-		return 0
-	}
-
-	return (o.PageNumber - 1) * o.PageSize
-}
-
-// GetLimit calculates the limit for use in SQL queries.
-func (o *ListOptions) GetLimit() int {
-	// TODO: remove MaxPageSize - this is too complicated
-	if o.PageSize == 0 {
-		return math.MaxInt
-	} else if o.PageSize > MaxPageSize {
-		return MaxPageSize
-	}
-
-	return o.PageSize
 }
 
 // validString checks if the given input is present and non-empty.

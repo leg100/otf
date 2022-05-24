@@ -45,3 +45,40 @@ type OrganizationPermissions struct {
 	CanUpdateOAuth              bool `json:"can-update-oauth"`
 	CanUpdateSentinel           bool `json:"can-update-sentinel"`
 }
+
+// OrganizationCreateOptions represents the options for creating an
+// organization.
+type OrganizationCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// Name of the organization.
+	Name *string `jsonapi:"attr,name"`
+
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+}
+
+// OrganizationUpdateOptions represents the options for updating an
+// organization.
+type OrganizationUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,organizations"`
+
+	// New name for the organization.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// Session expiration (minutes).
+	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
+
+	// Session timeout after inactivity (minutes).
+	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+}

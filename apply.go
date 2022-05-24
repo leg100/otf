@@ -34,16 +34,16 @@ type ApplyLogStore interface {
 
 // Apply represents a terraform apply
 type Apply struct {
-	id string `json:"apply_id"`
+	id string
 
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
 
 	// Status is the current status
-	status ApplyStatus `json:"apply_status"`
+	status ApplyStatus
 
 	// StatusTimestamps records timestamps of status transitions
-	statusTimestamps []ApplyStatusTimestamp `json:"apply_status_timestamps"`
+	statusTimestamps []ApplyStatusTimestamp
 
 	// run is the parent run
 	run *Run

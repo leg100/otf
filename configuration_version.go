@@ -37,7 +37,7 @@ type ConfigurationSource string
 // Terraform configuration in  A workspace must have at least one
 // configuration version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	id string `jsonapi:"primary,configuration-versions"`
+	id string
 
 	Timestamps
 
@@ -57,20 +57,11 @@ type ConfigurationVersionStatusTimestamp struct {
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
-// configuration version.
+// configuration version. See dto.ConfigurationVersionCreateOptions for more
+// details.
 type ConfigurationVersionCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,configuration-versions"`
-
-	// When true, runs are queued automatically when the configuration version
-	// is uploaded.
-	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
-
-	// When true, this configuration version can only be used for planning.
-	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
+	AutoQueueRuns *bool
+	Speculative   *bool
 }
 
 type ConfigurationVersionService interface {

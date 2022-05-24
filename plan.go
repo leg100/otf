@@ -28,16 +28,16 @@ type PlanStatus string
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	id string `json:"plan_id"`
+	id string
 
 	// Resources is a report of planned resource changes
 	*ResourceReport
 
 	// Status is the current status
-	status PlanStatus `json:"plan_status"`
+	status PlanStatus
 
 	// statusTimestamps records timestamps of status transitions
-	statusTimestamps []PlanStatusTimestamp `json:"plan_status_timestamps"`
+	statusTimestamps []PlanStatusTimestamp
 
 	// run is the parent run
 	run *Run

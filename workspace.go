@@ -25,7 +25,7 @@ type ExecutionMode string
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
-	id string `json:"workspace_id" jsonapi:"primary,workspaces" schema:"workspace_id"`
+	id string
 
 	// Timestamps records timestamps of lifecycle transitions
 	Timestamps
@@ -40,7 +40,7 @@ type Workspace struct {
 	globalRemoteState          bool
 	locked                     bool
 	migrationEnvironment       string
-	name                       string `schema:"workspace_name"`
+	name                       string
 	queueAllRuns               bool
 	speculativeEnabled         bool
 	structuredRunOutputEnabled bool
@@ -51,7 +51,7 @@ type Workspace struct {
 	workingDirectory           string
 
 	// Workspace belongs to an organization
-	Organization *Organization `json:"organization"`
+	Organization *Organization
 }
 
 // WorkspaceCreateOptions represents the options for creating a new workspace.

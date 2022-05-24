@@ -19,10 +19,14 @@ type organizations struct {
 
 // Create a new organization with the given options.
 func (s *organizations) Create(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	if err := options.Valid(); err != nil {
+	if err := options.Validate(); err != nil {
 		return nil, err
 	}
-	req, err := s.client.newRequest("POST", "organizations", &options)
+	req, err := s.client.newRequest("POST", "organizations", &dto.OrganizationCreateOptions{
+		Name:            options.Name,
+		SessionRemember: options.SessionRemember,
+		SessionTimeout:  options.SessionTimeout,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -15,12 +15,15 @@ import (
 
 func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	opts := otf.ConfigurationVersionCreateOptions{}
+	opts := dto.ConfigurationVersionCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.ConfigurationVersionService().Create(vars["workspace_id"], opts)
+	obj, err := s.ConfigurationVersionService().Create(vars["workspace_id"], otf.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: opts.AutoQueueRuns,
+		Speculative:   opts.Speculative,
+	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

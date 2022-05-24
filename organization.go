@@ -11,50 +11,13 @@ var (
 
 // Organization represents a Terraform Enterprise organization.
 type Organization struct {
-	id string `json:"organization_id"`
+	id string
 
 	Timestamps
 
-	name            string `json:"name"`
-	sessionRemember int    `json:"session_remember"`
-	sessionTimeout  int    `json:"session_timeout"`
-}
-
-// OrganizationCreateOptions represents the options for creating an
-// organization.
-type OrganizationCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,organizations"`
-
-	// Name of the organization.
-	Name *string `jsonapi:"attr,name"`
-
-	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
-
-	// Session timeout after inactivity (minutes).
-	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
-}
-
-// OrganizationUpdateOptions represents the options for updating an
-// organization.
-type OrganizationUpdateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,organizations"`
-
-	// New name for the organization.
-	Name *string `jsonapi:"attr,name,omitempty"`
-
-	// Session expiration (minutes).
-	SessionRemember *int `jsonapi:"attr,session-remember,omitempty"`
-
-	// Session timeout after inactivity (minutes).
-	SessionTimeout *int `jsonapi:"attr,session-timeout,omitempty"`
+	name            string
+	sessionRemember int
+	sessionTimeout  int
 }
 
 // OrganizationList represents a list of Organizations.
@@ -86,38 +49,54 @@ type OrganizationStore interface {
 	Delete(name string) error
 }
 
+// OrganizationCreateOptions represents the options for creating an
+// organization. See dto.OrganizationCreateOptions for more details.
+type OrganizationCreateOptions struct {
+	Name            *string
+	SessionRemember *int
+	SessionTimeout  *int
+}
+
+// OrganizationUpdateOptions represents the options for updating an
+// organization. See dto.OrganizationUpdateOptions for more details.
+type OrganizationUpdateOptions struct {
+	Name            *string
+	SessionRemember *int
+	SessionTimeout  *int
+}
+
 func (org *Organization) ID() string           { return org.id }
 func (org *Organization) String() string       { return org.id }
 func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
 
-func (o OrganizationCreateOptions) Valid() error {
-	if !validString(o.Name) {
+func (opts *OrganizationCreateOptions) Validate() error {
+	if !validString(opts.Name) {
 		return ErrRequiredName
 	}
-	if !ValidStringID(o.Name) {
+	if !ValidStringID(opts.Name) {
 		return ErrInvalidName
 	}
 	return nil
 }
 
 func NewOrganization(opts OrganizationCreateOptions) (*Organization, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
 	org := Organization{
 		name:            *opts.Name,
 		id:              NewID("org"),
 		sessionTimeout:  DefaultSessionTimeout,
 		sessionRemember: DefaultSessionExpiration,
 	}
-
 	if opts.SessionTimeout != nil {
 		org.sessionTimeout = *opts.SessionTimeout
 	}
-
 	if opts.SessionRemember != nil {
 		org.sessionRemember = *opts.SessionRemember
 	}
-
 	return &org, nil
 }
 
@@ -125,14 +104,11 @@ func UpdateOrganizationFromOpts(org *Organization, opts OrganizationUpdateOption
 	if opts.Name != nil {
 		org.name = *opts.Name
 	}
-
 	if opts.SessionTimeout != nil {
 		org.sessionTimeout = *opts.SessionTimeout
 	}
-
 	if opts.SessionRemember != nil {
 		org.sessionRemember = *opts.SessionRemember
 	}
-
 	return nil
 }

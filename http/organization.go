@@ -12,16 +12,16 @@ import (
 )
 
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	opts := otf.OrganizationCreateOptions{}
+	opts := dto.OrganizationCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := opts.Valid(); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	obj, err := s.OrganizationService().Create(r.Context(), opts)
+	obj, err := s.OrganizationService().Create(r.Context(), otf.OrganizationCreateOptions{
+		Name:            opts.Name,
+		SessionRemember: opts.SessionRemember,
+		SessionTimeout:  opts.SessionTimeout,
+	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -55,12 +55,16 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	opts := otf.OrganizationUpdateOptions{}
+	opts := dto.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().Update(context.Background(), name, &opts)
+	obj, err := s.OrganizationService().Update(context.Background(), name, &otf.OrganizationUpdateOptions{
+		Name:            opts.Name,
+		SessionRemember: opts.SessionRemember,
+		SessionTimeout:  opts.SessionTimeout,
+	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -79,12 +83,13 @@ func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	obj, err := s.OrganizationService().GetEntitlements(context.Background(), name)
+	entitlements, err := s.OrganizationService().GetEntitlements(context.Background(), name)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, obj)
+	converted := dto.Entitlements(*entitlements)
+	writeResponse(w, r, &converted)
 }
 
 // OrganizationDTO converts an org into a DTO

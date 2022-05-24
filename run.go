@@ -68,7 +68,7 @@ type RunStatus string
 func (r RunStatus) String() string { return string(r) }
 
 type Run struct {
-	id string `jsonapi:"primary,runs" json:"run_id"`
+	id string
 
 	Timestamps
 
@@ -80,23 +80,23 @@ type Run struct {
 	autoApply        bool
 	speculative      bool
 	status           RunStatus
-	statusTimestamps []RunStatusTimestamp `json:"run_status_timestamps"`
+	statusTimestamps []RunStatusTimestamp
 	replaceAddrs     []string
 	targetAddrs      []string
 
 	// Relations
 	Plan                 *Plan
 	Apply                *Apply
-	Workspace            *Workspace            `json:"workspace"`
-	ConfigurationVersion *ConfigurationVersion `json:"configuration_version"`
+	Workspace            *Workspace
+	ConfigurationVersion *ConfigurationVersion
 
 	// Job is the current job the run is performing
 	Job
 }
 
 type RunStatusTimestamp struct {
-	Status    RunStatus `json:"status"`
-	Timestamp time.Time `json:"timestamp"`
+	Status    RunStatus
+	Timestamp time.Time
 }
 
 // RunService implementations allow interactions with runs
