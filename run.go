@@ -428,7 +428,7 @@ func (r *Run) setupEnv(env Environment) error {
 	}
 
 	err := env.RunFunc(func(ctx context.Context, env Environment) error {
-		return deleteBackendConfigFromDirectory(ctx, env.GetPath())
+		return deleteBackendConfigFromDirectory(ctx, env.Path())
 	})
 	if err != nil {
 		return err
@@ -447,13 +447,13 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.GetConfigurationVersionService().Download(r.ConfigurationVersion.ID())
+	cv, err := env.ConfigurationVersionService().Download(r.ConfigurationVersion.ID())
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
 
 	// Decompress and untar config
-	if err := Unpack(bytes.NewBuffer(cv), env.GetPath()); err != nil {
+	if err := Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
 		return fmt.Errorf("unable to unpack config: %w", err)
 	}
 
@@ -463,19 +463,19 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.GetStateVersionService().Current(r.Workspace.ID())
+	state, err := env.StateVersionService().Current(r.Workspace.ID())
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
 
-	statefile, err := env.GetStateVersionService().Download(state.ID())
+	statefile, err := env.StateVersionService().Download(state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(env.GetPath(), LocalStateFilename), statefile, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 
@@ -483,12 +483,12 @@ func (r *Run) downloadState(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
-	file, err := os.ReadFile(filepath.Join(env.GetPath(), PlanFilename))
+	file, err := os.ReadFile(filepath.Join(env.Path(), PlanFilename))
 	if err != nil {
 		return err
 	}
 
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID(), file, PlanFormatBinary); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.ID(), file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -496,12 +496,12 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.GetPath(), JSONPlanFilename))
+	jsonFile, err := os.ReadFile(filepath.Join(env.Path(), JSONPlanFilename))
 	if err != nil {
 		return err
 	}
 
-	if err := env.GetRunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 
@@ -509,17 +509,17 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.GetRunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
+	plan, err := env.RunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(env.GetPath(), PlanFilename), plan, 0644)
+	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0644)
 }
 
 // uploadState reads, parses, and uploads terraform state
 func (r *Run) uploadState(ctx context.Context, env Environment) error {
-	stateFile, err := os.ReadFile(filepath.Join(env.GetPath(), LocalStateFilename))
+	stateFile, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
@@ -529,7 +529,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	_, err = env.GetStateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
+	_, err = env.StateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
 		Lineage: &state.Lineage,

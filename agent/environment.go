@@ -24,9 +24,9 @@ var _ otf.Environment = (*Environment)(nil)
 type Environment struct {
 	otf.JobService
 
-	RunService                  otf.RunService
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
+	runService                  otf.RunService
+	configurationVersionService otf.ConfigurationVersionService
+	stateVersionService         otf.StateVersionService
 
 	logr.Logger
 
@@ -68,9 +68,9 @@ func NewEnvironment(
 
 	return &Environment{
 		Logger:                      logger,
-		RunService:                  app.RunService(),
-		ConfigurationVersionService: app.ConfigurationVersionService(),
-		StateVersionService:         app.StateVersionService(),
+		runService:                  app.RunService(),
+		configurationVersionService: app.ConfigurationVersionService(),
+		stateVersionService:         app.StateVersionService(),
 		out:                         out,
 		path:                        path,
 		environmentVariables:        environmentVariables,
@@ -94,19 +94,19 @@ func (e *Environment) Execute(job otf.Job) (err error) {
 	return errors.ErrorOrNil()
 }
 
-func (e *Environment) GetConfigurationVersionService() otf.ConfigurationVersionService {
-	return e.ConfigurationVersionService
+func (e *Environment) ConfigurationVersionService() otf.ConfigurationVersionService {
+	return e.configurationVersionService
 }
 
-func (e *Environment) GetStateVersionService() otf.StateVersionService {
-	return e.StateVersionService
+func (e *Environment) StateVersionService() otf.StateVersionService {
+	return e.stateVersionService
 }
 
-func (e *Environment) GetRunService() otf.RunService {
-	return e.RunService
+func (e *Environment) RunService() otf.RunService {
+	return e.runService
 }
 
-func (e *Environment) GetPath() string {
+func (e *Environment) Path() string {
 	return e.path
 }
 

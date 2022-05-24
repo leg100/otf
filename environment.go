@@ -7,10 +7,10 @@ import "context"
 // Invoking commands and functions via the environment means the environment can
 // handle canceling them if necessary.
 type Environment interface {
-	GetPath() string
-	GetConfigurationVersionService() ConfigurationVersionService
-	GetStateVersionService() StateVersionService
-	GetRunService() RunService
+	Path() string
+	ConfigurationVersionService() ConfigurationVersionService
+	StateVersionService() StateVersionService
+	RunService() RunService
 	RunCLI(name string, args ...string) error
 	RunFunc(fn EnvironmentFunc) error
 }
