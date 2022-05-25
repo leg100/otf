@@ -1,4 +1,4 @@
--- name: InsertUser :one
+-- name: InsertUser :exec
 INSERT INTO users (
     user_id,
     created_at,
@@ -7,12 +7,11 @@ INSERT INTO users (
     current_organization
 ) VALUES (
     pggen.arg('ID'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
+    pggen.arg('UpdatedAt'),
     pggen.arg('Username'),
     ''
-)
-RETURNING created_at, updated_at;
+);
 
 -- name: FindUsers :many
 SELECT u.*,
@@ -95,9 +94,9 @@ GROUP BY u.user_id
 UPDATE users
 SET
     current_organization = pggen.arg('current_organization'),
-    updated_at = current_timestamp
+    updated_at = pggen.arg('updated_at')
 WHERE user_id = pggen.arg('id')
-RETURNING *;
+RETURNING user_id;
 
 -- name: DeleteUserByID :exec
 DELETE

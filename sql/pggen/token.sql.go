@@ -14,59 +14,46 @@ const insertTokenSQL = `INSERT INTO tokens (
     token_id,
     token,
     created_at,
-    updated_at,
     description,
     user_id
 ) VALUES (
     $1,
     $2,
-    current_timestamp,
-    current_timestamp,
     $3,
-    $4
-)
-RETURNING *;`
+    $4,
+    $5
+);`
 
 type InsertTokenParams struct {
 	TokenID     string
 	Token       string
+	CreatedAt   time.Time
 	Description string
 	UserID      string
 }
 
-type InsertTokenRow struct {
-	TokenID     string    `json:"token_id"`
-	Token       string    `json:"token"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Description string    `json:"description"`
-	UserID      string    `json:"user_id"`
-}
-
 // InsertToken implements Querier.InsertToken.
-func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (InsertTokenRow, error) {
+func (q *DBQuerier) InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertToken")
-	row := q.conn.QueryRow(ctx, insertTokenSQL, params.TokenID, params.Token, params.Description, params.UserID)
-	var item InsertTokenRow
-	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.UpdatedAt, &item.Description, &item.UserID); err != nil {
-		return item, fmt.Errorf("query InsertToken: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.UserID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertToken: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertTokenBatch implements Querier.InsertTokenBatch.
 func (q *DBQuerier) InsertTokenBatch(batch genericBatch, params InsertTokenParams) {
-	batch.Queue(insertTokenSQL, params.TokenID, params.Token, params.Description, params.UserID)
+	batch.Queue(insertTokenSQL, params.TokenID, params.Token, params.CreatedAt, params.Description, params.UserID)
 }
 
 // InsertTokenScan implements Querier.InsertTokenScan.
-func (q *DBQuerier) InsertTokenScan(results pgx.BatchResults) (InsertTokenRow, error) {
-	row := results.QueryRow()
-	var item InsertTokenRow
-	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.UpdatedAt, &item.Description, &item.UserID); err != nil {
-		return item, fmt.Errorf("scan InsertTokenBatch row: %w", err)
+func (q *DBQuerier) InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertTokenBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const deleteTokenByIDSQL = `DELETE

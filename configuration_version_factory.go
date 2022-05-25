@@ -13,6 +13,7 @@ type ConfigurationVersionFactory struct {
 func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		id:            NewID("cv"),
+		createdAt:     CurrentTimestamp(),
 		autoQueueRuns: DefaultAutoQueueRuns,
 		status:        ConfigurationPending,
 		source:        DefaultConfigurationSource,
@@ -38,8 +39,9 @@ func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string
 // NewConfigurationVersionFromDefaults creates a new run with defaults.
 func NewConfigurationVersionFromDefaults(ws *Workspace) *ConfigurationVersion {
 	cv := ConfigurationVersion{
-		id:     NewID("cv"),
-		status: ConfigurationPending,
+		id:        NewID("cv"),
+		createdAt: CurrentTimestamp(),
+		status:    ConfigurationPending,
 	}
 	cv.Workspace = &Workspace{id: ws.ID()}
 	return &cv

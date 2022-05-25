@@ -27,9 +27,10 @@ func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
-
-	createdAt, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              org.ID(),
+		CreatedAt:       org.CreatedAt(),
+		UpdatedAt:       org.UpdatedAt(),
 		Name:            org.Name(),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
@@ -37,9 +38,6 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	org.CreatedAt = createdAt
-	org.UpdatedAt = createdAt
-
 	return org, nil
 }
 
@@ -48,15 +46,12 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 // org is persisted back to the DB.
 func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	ctx := context.Background()
-
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-
 	q := pggen.NewQuerier(tx)
-
 	result, err := q.FindOrganizationByNameForUpdate(ctx, name)
 	if err != nil {
 		return nil, err
@@ -65,31 +60,40 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	if err != nil {
 		return nil, err
 	}
-
 	if err := fn(org); err != nil {
 		return nil, err
 	}
-
 	if org.Name() != result.Name {
-		result, err := q.UpdateOrganizationNameByName(ctx, org.Name(), name)
+		_, err := q.UpdateOrganizationNameByName(ctx, pggen.UpdateOrganizationNameByNameParams{
+			Name:      result.Name,
+			NewName:   org.Name(),
+			UpdatedAt: org.UpdatedAt(),
+		})
 		if err != nil {
 			return nil, err
 		}
-		org.UpdatedAt = result.UpdatedAt
 	}
 	if org.SessionRemember() != result.SessionRemember {
-		result, err := q.UpdateOrganizationSessionRememberByName(ctx, org.SessionRemember(), org.Name())
+		_, err := q.UpdateOrganizationSessionRememberByName(ctx, pggen.UpdateOrganizationSessionRememberByNameParams{
+			Name:            org.Name(),
+			SessionRemember: org.SessionRemember(),
+			UpdatedAt:       org.UpdatedAt(),
+		})
+
 		if err != nil {
 			return nil, err
 		}
-		org.UpdatedAt = result.UpdatedAt
 	}
 	if org.SessionTimeout() != result.SessionTimeout {
-		result, err := q.UpdateOrganizationSessionTimeoutByName(ctx, org.SessionTimeout(), org.Name())
+		_, err := q.UpdateOrganizationSessionTimeoutByName(ctx, pggen.UpdateOrganizationSessionTimeoutByNameParams{
+			Name:           org.Name(),
+			SessionTimeout: org.SessionTimeout(),
+			UpdatedAt:      org.UpdatedAt(),
+		})
+
 		if err != nil {
 			return nil, err
 		}
-		org.UpdatedAt = result.UpdatedAt
 	}
 
 	return org, tx.Commit(ctx)
@@ -132,12 +136,10 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
-
 	r, err := q.FindOrganizationByName(ctx, name)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-
 	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
 }
 

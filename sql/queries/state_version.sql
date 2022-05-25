@@ -1,8 +1,7 @@
--- name: InsertStateVersion :one
+-- name: InsertStateVersion :exec
 INSERT INTO state_versions (
     state_version_id,
     created_at,
-    updated_at,
     serial,
     state,
     workspace_id,
@@ -10,16 +9,13 @@ INSERT INTO state_versions (
     vcs_commit_url
 ) VALUES (
     pggen.arg('id'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('created_at'),
     pggen.arg('serial'),
     pggen.arg('state'),
     pggen.arg('workspace_id'),
     '',
     ''
-)
-RETURNING created_at, updated_at
-;
+);
 
 -- name: FindStateVersionsByWorkspaceName :many
 SELECT

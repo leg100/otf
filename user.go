@@ -7,36 +7,26 @@ import (
 )
 
 const (
+	AnonymousUsername = "anonymous"
 	// Session data keys
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
 	FlashSessionKey    = "flash"
-
-	DefaultSessionExpiry = 24 * time.Hour
-
-	AnonymousUsername string = "anonymous"
 )
 
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
-	id string
-
-	// Username is the SSO-provided username
-	Username string
-
-	// Timestamps records timestamps of lifecycle transitions
-	Timestamps
-
+	id        string
+	createdAt time.Time
+	updatedAt time.Time
+	username  string
 	// Name of the current Organization the user is using on the web app.
 	CurrentOrganization *string
-
 	// A user has many sessions
 	Sessions []*Session
-
 	// A user has many tokens
 	Tokens []*Token
-
 	// A user belongs to many organizations
 	Organizations []*Organization
 }
@@ -47,92 +37,25 @@ func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	u.Sessions = append(u.Sessions, session)
-
 	return session, nil
 }
 
 // IsAuthenticated determines if the user is authenticated, i.e. not an
 // anonymous user.
 func (u *User) IsAuthenticated() bool {
-	return u.Username != AnonymousUsername
+	return u.Username() != AnonymousUsername
 }
 
-func (u *User) ID() string     { return u.id }
-func (u *User) String() string { return u.Username }
+func (u *User) ID() string           { return u.id }
+func (u *User) Username() string     { return u.username }
+func (u *User) CreatedAt() time.Time { return u.createdAt }
+func (u *User) UpdatedAt() time.Time { return u.updatedAt }
+func (u *User) String() string       { return u.username }
 
-// TransferSession transfers a session from the receiver to another user.
-func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
-	// Update session's user reference
-	session.UserID = to.ID()
-
-	// Remove session from receiver
-	for i, s := range u.Sessions {
-		if s.Token != session.Token {
-			u.Sessions = append(u.Sessions[0:i], u.Sessions[i+1:len(u.Sessions)]...)
-			break
-		}
-	}
-
-	// Update in persistence store
-	if err := store.TransferSession(ctx, session.Token, to.ID()); err != nil {
-		return err
-	}
-
-	// Add session to destination user
-	to.Sessions = append(to.Sessions, session)
-
-	return nil
-}
-
-// UserService provides methods to interact with user accounts and their
-// sessions.
-type UserService interface {
-	// Create creates a user with the given username.
-	Create(ctx context.Context, username string) (*User, error)
-
-	// EnsureCreated retrieves a user; if they don't exist they'll be created.
-	EnsureCreated(ctx context.Context, username string) (*User, error)
-
-	// Get retrieves a user according to the spec.
-	Get(ctx context.Context, spec UserSpec) (*User, error)
-
-	// Get retrieves the anonymous user.
-	GetAnonymous(ctx context.Context) (*User, error)
-
-	// CreateSession creates a user session.
-	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-
-	// Transfer session from one user to another
-	TransferSession(ctx context.Context, from, to *User, session *Session) error
-
-	// PopFlash pops a flash message for the session identified by token.
-	PopFlash(ctx context.Context, token string) (*Flash, error)
-
-	// SetFlash sets a flash message for the session identified by token.
-	SetFlash(ctx context.Context, token string, flash *Flash) error
-
-	// SetCurrentOrganization sets the user's currently active organization
-	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
-
-	// DeleteSession deletes the session with the given token
-	DeleteSession(ctx context.Context, token string) error
-
-	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
-
-	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, user *User, tokenID string) error
-
-	// SyncOrganizationMemberships synchronises a user's organization
-	// memberships, adding and removing them accordingly.
-	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
-}
-
-// SyncOrganizationMemberships synchronises a user's organization
-// memberships, taking an authoritative list of memberships and ensuring its
-// memberships match, adding and removing memberships accordingly.
+// SyncOrganizationMemberships synchronises a user's organization memberships,
+// taking an authoritative list of memberships and ensuring its memberships
+// match, adding and removing memberships accordingly.
 func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
 	// Iterate thru authoritative and if not in user's membership, add to db
 	for _, auth := range authoritative {
@@ -142,7 +65,6 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 			}
 		}
 	}
-
 	// Iterate thru existing and if not in authoritative list, remove from db
 	for _, existing := range u.Organizations {
 		if !inOrganizationList(existing.ID(), authoritative) {
@@ -151,11 +73,61 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 			}
 		}
 	}
-
 	// ...and update receiver too.
 	u.Organizations = authoritative
-
 	return nil
+}
+
+// TransferSession transfers a session from the receiver to another user.
+func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
+	// Update session's user reference
+	session.UserID = to.ID()
+	// Remove session from receiver
+	for i, s := range u.Sessions {
+		if s.Token != session.Token {
+			u.Sessions = append(u.Sessions[0:i], u.Sessions[i+1:len(u.Sessions)]...)
+			break
+		}
+	}
+	// Update in persistence store
+	if err := store.TransferSession(ctx, session.Token, to.ID()); err != nil {
+		return err
+	}
+	// Add session to destination user
+	to.Sessions = append(to.Sessions, session)
+	return nil
+}
+
+// UserService provides methods to interact with user accounts and their
+// sessions.
+type UserService interface {
+	// Create creates a user with the given username.
+	Create(ctx context.Context, username string) (*User, error)
+	// EnsureCreated retrieves a user; if they don't exist they'll be created.
+	EnsureCreated(ctx context.Context, username string) (*User, error)
+	// Get retrieves a user according to the spec.
+	Get(ctx context.Context, spec UserSpec) (*User, error)
+	// Get retrieves the anonymous user.
+	GetAnonymous(ctx context.Context) (*User, error)
+	// CreateSession creates a user session.
+	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
+	// Transfer session from one user to another
+	TransferSession(ctx context.Context, from, to *User, session *Session) error
+	// PopFlash pops a flash message for the session identified by token.
+	PopFlash(ctx context.Context, token string) (*Flash, error)
+	// SetFlash sets a flash message for the session identified by token.
+	SetFlash(ctx context.Context, token string, flash *Flash) error
+	// SetCurrentOrganization sets the user's currently active organization
+	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
+	// DeleteSession deletes the session with the given token
+	DeleteSession(ctx context.Context, token string) error
+	// CreateToken creates a user token.
+	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
+	// DeleteToken deletes a user token.
+	DeleteToken(ctx context.Context, user *User, tokenID string) error
+	// SyncOrganizationMemberships synchronises a user's organization
+	// memberships, adding and removing them accordingly.
+	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
 }
 
 type UserSpec struct {
@@ -192,10 +164,11 @@ func (spec *UserSpec) KeyValue() []interface{} {
 
 func NewUser(username string) *User {
 	user := User{
-		id:       NewID("user"),
-		Username: username,
+		id:        NewID("user"),
+		username:  username,
+		createdAt: CurrentTimestamp(),
+		updatedAt: CurrentTimestamp(),
 	}
-
 	return &user
 }
 
@@ -203,8 +176,10 @@ type NewTestUserOption func(*User)
 
 func NewTestUser(opts ...NewTestUserOption) *User {
 	u := User{
-		id:       NewID("user"),
-		Username: fmt.Sprintf("mr-%s", GenerateRandomString(6)),
+		id:        NewID("user"),
+		username:  fmt.Sprintf("mr-%s", GenerateRandomString(6)),
+		createdAt: CurrentTimestamp(),
+		updatedAt: CurrentTimestamp(),
 	}
 	for _, o := range opts {
 		o(&u)

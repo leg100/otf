@@ -60,7 +60,6 @@ func TestConfigurationVersion_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.ConfigurationVersionStore().Get(tt.opts)
 			require.NoError(t, err)
-
 			assert.Equal(t, cv, got)
 		})
 	}

@@ -1,57 +1,52 @@
--- name: InsertSession :one
+-- name: InsertSession :exec
 INSERT INTO sessions (
     token,
     created_at,
-    updated_at,
     flash,
     address,
     expiry,
     user_id
 ) VALUES (
     pggen.arg('Token'),
-    current_timestamp,
-    current_timestamp,
+    pggen.arg('CreatedAt'),
     pggen.arg('Flash'),
     pggen.arg('Address'),
     pggen.arg('Expiry'),
     pggen.arg('UserID')
-)
-RETURNING *;
+);
 
 -- name: FindSessionFlashByToken :one
 SELECT flash
 FROM sessions
 WHERE token = pggen.arg('token');
 
--- name: UpdateSessionFlashByToken :exec
+-- name: UpdateSessionFlashByToken :one
 UPDATE sessions
 SET
     flash = pggen.arg('flash')
-WHERE token = pggen.arg('token');
+WHERE token = pggen.arg('token')
+RETURNING token;
 
 -- name: UpdateSessionUserID :one
 UPDATE sessions
 SET
-    user_id = pggen.arg('user_id'),
-    updated_at = current_timestamp
+    user_id = pggen.arg('user_id')
 WHERE token = pggen.arg('token')
-RETURNING *;
+RETURNING token;
 
 -- name: UpdateSessionExpiry :one
 UPDATE sessions
 SET
-    expiry = pggen.arg('expiry'),
-    updated_at = current_timestamp
+    expiry = pggen.arg('expiry')
 WHERE token = pggen.arg('token')
-RETURNING *;
+RETURNING token;
 
 -- name: UpdateSessionFlash :one
 UPDATE sessions
 SET
-    flash = pggen.arg('flash'),
-    updated_at = current_timestamp
+    flash = pggen.arg('flash')
 WHERE token = pggen.arg('token')
-RETURNING *;
+RETURNING token;
 
 -- name: DeleteSessionByToken :exec
 DELETE

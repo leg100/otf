@@ -124,11 +124,6 @@ func validSemanticVersion(v string) bool {
 	return reSemanticVersion.MatchString(v)
 }
 
-type Timestamps struct {
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 func GetMapKeys(m map[string]interface{}) []string {
 	keys := make([]string, len(m))
 	for k := range m {

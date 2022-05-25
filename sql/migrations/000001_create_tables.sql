@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS organization_memberships (
 CREATE TABLE IF NOT EXISTS sessions (
     token           TEXT,
     created_at      TIMESTAMPTZ NOT NULL,
-    updated_at      TIMESTAMPTZ NOT NULL,
     address         TEXT        NOT NULL,
     flash           BYTEA,
     expiry          TIMESTAMPTZ NOT NULL,
@@ -68,7 +67,6 @@ CREATE TABLE IF NOT EXISTS tokens (
     token_id        TEXT,
     token           TEXT,
     created_at      TIMESTAMPTZ NOT NULL,
-    updated_at      TIMESTAMPTZ NOT NULL,
     description     TEXT        NOT NULL,
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (token_id),
@@ -78,7 +76,6 @@ CREATE TABLE IF NOT EXISTS tokens (
 CREATE TABLE IF NOT EXISTS configuration_versions (
     configuration_version_id     TEXT,
     created_at                   TIMESTAMPTZ NOT NULL,
-    updated_at                   TIMESTAMPTZ NOT NULL,
     auto_queue_runs              BOOLEAN     NOT NULL,
     source                       TEXT        NOT NULL,
     speculative                  BOOLEAN     NOT NULL,
@@ -212,7 +209,6 @@ CREATE TABLE IF NOT EXISTS apply_logs (
 CREATE TABLE IF NOT EXISTS state_versions (
     state_version_id TEXT,
     created_at       TIMESTAMPTZ NOT NULL,
-    updated_at       TIMESTAMPTZ NOT NULL,
     serial           INTEGER     NOT NULL,
     vcs_commit_sha   TEXT        NOT NULL,
     vcs_commit_url   TEXT        NOT NULL,
@@ -223,8 +219,6 @@ CREATE TABLE IF NOT EXISTS state_versions (
 
 CREATE TABLE IF NOT EXISTS state_version_outputs (
     state_version_output_id TEXT,
-    created_at              TIMESTAMPTZ NOT NULL,
-    updated_at              TIMESTAMPTZ NOT NULL,
     name                    TEXT        NOT NULL,
     sensitive               BOOLEAN     NOT NULL,
     type                    TEXT        NOT NULL,

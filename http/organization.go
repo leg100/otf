@@ -96,7 +96,7 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 func OrganizationDTO(org *otf.Organization) *dto.Organization {
 	return &dto.Organization{
 		Name:            org.Name(),
-		CreatedAt:       org.CreatedAt,
+		CreatedAt:       org.CreatedAt(),
 		ExternalID:      org.ID(),
 		Permissions:     &dto.DefaultOrganizationPermissions,
 		SessionRemember: org.SessionRemember(),

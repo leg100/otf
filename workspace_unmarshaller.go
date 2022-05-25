@@ -36,11 +36,9 @@ type WorkspaceDBResult struct {
 
 func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	ws := Workspace{
-		id: row.WorkspaceID,
-		Timestamps: Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-		},
+		id:                         row.WorkspaceID,
+		createdAt:                  row.CreatedAt,
+		updatedAt:                  row.UpdatedAt,
 		allowDestroyPlan:           row.AllowDestroyPlan,
 		autoApply:                  row.AutoApply,
 		canQueueDestroyPlan:        row.CanQueueDestroyPlan,
@@ -77,11 +75,9 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 
 func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 	ws := Workspace{
-		id: typ.WorkspaceID,
-		Timestamps: Timestamps{
-			CreatedAt: typ.CreatedAt.Local(),
-			UpdatedAt: typ.UpdatedAt.Local(),
-		},
+		id:                         typ.WorkspaceID,
+		createdAt:                  typ.CreatedAt.Local(),
+		updatedAt:                  typ.UpdatedAt.Local(),
 		allowDestroyPlan:           typ.AllowDestroyPlan,
 		autoApply:                  typ.AutoApply,
 		canQueueDestroyPlan:        typ.CanQueueDestroyPlan,
@@ -113,6 +109,8 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		allowDestroyPlan:           w.AllowDestroyPlan,
 		autoApply:                  w.AutoApply,
 		canQueueDestroyPlan:        w.CanQueueDestroyPlan,
+		createdAt:                  w.CreatedAt,
+		updatedAt:                  w.UpdatedAt,
 		description:                w.Description,
 		environment:                w.Environment,
 		executionMode:              w.ExecutionMode,

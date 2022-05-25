@@ -19,12 +19,10 @@ type UserDBResult struct {
 
 func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 	user := User{
-		id:       row.UserID,
-		Username: row.Username,
-		Timestamps: Timestamps{
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-		},
+		id:        row.UserID,
+		createdAt: row.CreatedAt,
+		updatedAt: row.UpdatedAt,
+		username:  row.Username,
 	}
 	if row.CurrentOrganization != "" {
 		user.CurrentOrganization = &row.CurrentOrganization

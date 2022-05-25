@@ -33,62 +33,45 @@ func NewSessionDB(conn *pgxpool.Pool, cleanupInterval time.Duration) *SessionDB 
 // CreateSession inserts the session, associating it with the user.
 func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) error {
 	q := pggen.NewQuerier(db.Pool)
-
-	result, err := q.InsertSession(ctx, pggen.InsertSessionParams{
-		Token:   session.Token,
-		Address: session.Address,
-		Expiry:  session.Expiry,
-		UserID:  session.UserID,
+	_, err := q.InsertSession(ctx, pggen.InsertSessionParams{
+		Token:     session.Token,
+		Address:   session.Address,
+		Expiry:    session.Expiry,
+		UserID:    session.UserID,
+		CreatedAt: session.CreatedAt(),
 	})
-	if err != nil {
-		return err
-	}
-	session.CreatedAt = result.CreatedAt
-	session.UpdatedAt = result.UpdatedAt
-
 	return err
 }
 
 func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
 	q := pggen.NewQuerier(db.Pool)
-
 	data, err := json.Marshal(flash)
 	if err != nil {
 		return err
 	}
-
 	_, err = q.UpdateSessionFlashByToken(ctx, data, token)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
 	q := pggen.NewQuerier(db.Pool)
-
 	data, err := q.FindSessionFlashByToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
-
 	// No flash found
 	if data == nil {
 		return nil, nil
 	}
-
 	// Set flash in DB to NULL
 	if _, err := q.UpdateSessionFlashByToken(ctx, nil, token); err != nil {
 		return nil, err
 	}
-
 	// Marshal bytes into flash obj
 	var flash otf.Flash
 	if err := json.Unmarshal(data, &flash); err != nil {
 		return nil, err
 	}
-
 	return &flash, nil
 }
 

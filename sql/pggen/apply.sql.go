@@ -45,15 +45,12 @@ type Querier interface {
 	// FindApplyLogChunksScan scans the result of an executed FindApplyLogChunksBatch query.
 	FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
-	// InsertConfigurationVersion inserts a configuration version and
-	// returns the entire row.
-	//
-	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (InsertConfigurationVersionRow, error)
+	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (pgconn.CommandTag, error)
 	// InsertConfigurationVersionBatch enqueues a InsertConfigurationVersion query into batch to be executed
 	// later by the batch.
 	InsertConfigurationVersionBatch(batch genericBatch, params InsertConfigurationVersionParams)
 	// InsertConfigurationVersionScan scans the result of an executed InsertConfigurationVersionBatch query.
-	InsertConfigurationVersionScan(results pgx.BatchResults) (InsertConfigurationVersionRow, error)
+	InsertConfigurationVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertConfigurationVersionStatusTimestamp(ctx context.Context, id string, status string) (InsertConfigurationVersionStatusTimestampRow, error)
 	// InsertConfigurationVersionStatusTimestampBatch enqueues a InsertConfigurationVersionStatusTimestamp query into batch to be executed
@@ -163,37 +160,35 @@ type Querier interface {
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
-	// InsertOrganization inserts an organization and returns the entire row.
-	//
-	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (time.Time, error)
+	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
 	// later by the batch.
 	InsertOrganizationBatch(batch genericBatch, params InsertOrganizationParams)
 	// InsertOrganizationScan scans the result of an executed InsertOrganizationBatch query.
-	InsertOrganizationScan(results pgx.BatchResults) (time.Time, error)
+	InsertOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// UpdateOrganizationNameByName updates an organization with a new name,
 	// identifying the organization with its existing name, and returns the
 	// updated row.
 	//
-	UpdateOrganizationNameByName(ctx context.Context, newName string, name string) (UpdateOrganizationNameByNameRow, error)
+	UpdateOrganizationNameByName(ctx context.Context, params UpdateOrganizationNameByNameParams) (UpdateOrganizationNameByNameRow, error)
 	// UpdateOrganizationNameByNameBatch enqueues a UpdateOrganizationNameByName query into batch to be executed
 	// later by the batch.
-	UpdateOrganizationNameByNameBatch(batch genericBatch, newName string, name string)
+	UpdateOrganizationNameByNameBatch(batch genericBatch, params UpdateOrganizationNameByNameParams)
 	// UpdateOrganizationNameByNameScan scans the result of an executed UpdateOrganizationNameByNameBatch query.
 	UpdateOrganizationNameByNameScan(results pgx.BatchResults) (UpdateOrganizationNameByNameRow, error)
 
-	UpdateOrganizationSessionRememberByName(ctx context.Context, sessionRemember int, name string) (UpdateOrganizationSessionRememberByNameRow, error)
+	UpdateOrganizationSessionRememberByName(ctx context.Context, params UpdateOrganizationSessionRememberByNameParams) (UpdateOrganizationSessionRememberByNameRow, error)
 	// UpdateOrganizationSessionRememberByNameBatch enqueues a UpdateOrganizationSessionRememberByName query into batch to be executed
 	// later by the batch.
-	UpdateOrganizationSessionRememberByNameBatch(batch genericBatch, sessionRemember int, name string)
+	UpdateOrganizationSessionRememberByNameBatch(batch genericBatch, params UpdateOrganizationSessionRememberByNameParams)
 	// UpdateOrganizationSessionRememberByNameScan scans the result of an executed UpdateOrganizationSessionRememberByNameBatch query.
 	UpdateOrganizationSessionRememberByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionRememberByNameRow, error)
 
-	UpdateOrganizationSessionTimeoutByName(ctx context.Context, sessionTimeout int, name string) (UpdateOrganizationSessionTimeoutByNameRow, error)
+	UpdateOrganizationSessionTimeoutByName(ctx context.Context, params UpdateOrganizationSessionTimeoutByNameParams) (UpdateOrganizationSessionTimeoutByNameRow, error)
 	// UpdateOrganizationSessionTimeoutByNameBatch enqueues a UpdateOrganizationSessionTimeoutByName query into batch to be executed
 	// later by the batch.
-	UpdateOrganizationSessionTimeoutByNameBatch(batch genericBatch, sessionTimeout int, name string)
+	UpdateOrganizationSessionTimeoutByNameBatch(batch genericBatch, params UpdateOrganizationSessionTimeoutByNameParams)
 	// UpdateOrganizationSessionTimeoutByNameScan scans the result of an executed UpdateOrganizationSessionTimeoutByNameBatch query.
 	UpdateOrganizationSessionTimeoutByNameScan(results pgx.BatchResults) (UpdateOrganizationSessionTimeoutByNameRow, error)
 
@@ -360,12 +355,12 @@ type Querier interface {
 	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
 	DeleteRunByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertSession(ctx context.Context, params InsertSessionParams) (InsertSessionRow, error)
+	InsertSession(ctx context.Context, params InsertSessionParams) (pgconn.CommandTag, error)
 	// InsertSessionBatch enqueues a InsertSession query into batch to be executed
 	// later by the batch.
 	InsertSessionBatch(batch genericBatch, params InsertSessionParams)
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
-	InsertSessionScan(results pgx.BatchResults) (InsertSessionRow, error)
+	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindSessionFlashByToken(ctx context.Context, token string) ([]byte, error)
 	// FindSessionFlashByTokenBatch enqueues a FindSessionFlashByToken query into batch to be executed
@@ -374,33 +369,33 @@ type Querier interface {
 	// FindSessionFlashByTokenScan scans the result of an executed FindSessionFlashByTokenBatch query.
 	FindSessionFlashByTokenScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdateSessionFlashByToken(ctx context.Context, flash []byte, token string) (pgconn.CommandTag, error)
+	UpdateSessionFlashByToken(ctx context.Context, flash []byte, token string) (string, error)
 	// UpdateSessionFlashByTokenBatch enqueues a UpdateSessionFlashByToken query into batch to be executed
 	// later by the batch.
 	UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token string)
 	// UpdateSessionFlashByTokenScan scans the result of an executed UpdateSessionFlashByTokenBatch query.
-	UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateSessionFlashByTokenScan(results pgx.BatchResults) (string, error)
 
-	UpdateSessionUserID(ctx context.Context, userID string, token string) (UpdateSessionUserIDRow, error)
+	UpdateSessionUserID(ctx context.Context, userID string, token string) (string, error)
 	// UpdateSessionUserIDBatch enqueues a UpdateSessionUserID query into batch to be executed
 	// later by the batch.
 	UpdateSessionUserIDBatch(batch genericBatch, userID string, token string)
 	// UpdateSessionUserIDScan scans the result of an executed UpdateSessionUserIDBatch query.
-	UpdateSessionUserIDScan(results pgx.BatchResults) (UpdateSessionUserIDRow, error)
+	UpdateSessionUserIDScan(results pgx.BatchResults) (string, error)
 
-	UpdateSessionExpiry(ctx context.Context, expiry time.Time, token string) (UpdateSessionExpiryRow, error)
+	UpdateSessionExpiry(ctx context.Context, expiry time.Time, token string) (string, error)
 	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
 	// later by the batch.
 	UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token string)
 	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
-	UpdateSessionExpiryScan(results pgx.BatchResults) (UpdateSessionExpiryRow, error)
+	UpdateSessionExpiryScan(results pgx.BatchResults) (string, error)
 
-	UpdateSessionFlash(ctx context.Context, flash []byte, token string) (UpdateSessionFlashRow, error)
+	UpdateSessionFlash(ctx context.Context, flash []byte, token string) (string, error)
 	// UpdateSessionFlashBatch enqueues a UpdateSessionFlash query into batch to be executed
 	// later by the batch.
 	UpdateSessionFlashBatch(batch genericBatch, flash []byte, token string)
 	// UpdateSessionFlashScan scans the result of an executed UpdateSessionFlashBatch query.
-	UpdateSessionFlashScan(results pgx.BatchResults) (UpdateSessionFlashRow, error)
+	UpdateSessionFlashScan(results pgx.BatchResults) (string, error)
 
 	DeleteSessionByToken(ctx context.Context, token string) (pgconn.CommandTag, error)
 	// DeleteSessionByTokenBatch enqueues a DeleteSessionByToken query into batch to be executed
@@ -416,12 +411,12 @@ type Querier interface {
 	// DeleteSessionsExpiredScan scans the result of an executed DeleteSessionsExpiredBatch query.
 	DeleteSessionsExpiredScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (InsertStateVersionRow, error)
+	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (pgconn.CommandTag, error)
 	// InsertStateVersionBatch enqueues a InsertStateVersion query into batch to be executed
 	// later by the batch.
 	InsertStateVersionBatch(batch genericBatch, params InsertStateVersionParams)
 	// InsertStateVersionScan scans the result of an executed InsertStateVersionBatch query.
-	InsertStateVersionScan(results pgx.BatchResults) (InsertStateVersionRow, error)
+	InsertStateVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindStateVersionsByWorkspaceName(ctx context.Context, params FindStateVersionsByWorkspaceNameParams) ([]FindStateVersionsByWorkspaceNameRow, error)
 	// FindStateVersionsByWorkspaceNameBatch enqueues a FindStateVersionsByWorkspaceName query into batch to be executed
@@ -465,21 +460,19 @@ type Querier interface {
 	// DeleteStateVersionByIDScan scans the result of an executed DeleteStateVersionByIDBatch query.
 	DeleteStateVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	// InsertStateVersionOutput inserts a state_version_output and returns the entire row.
-	//
-	InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (InsertStateVersionOutputRow, error)
+	InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (pgconn.CommandTag, error)
 	// InsertStateVersionOutputBatch enqueues a InsertStateVersionOutput query into batch to be executed
 	// later by the batch.
 	InsertStateVersionOutputBatch(batch genericBatch, params InsertStateVersionOutputParams)
 	// InsertStateVersionOutputScan scans the result of an executed InsertStateVersionOutputBatch query.
-	InsertStateVersionOutputScan(results pgx.BatchResults) (InsertStateVersionOutputRow, error)
+	InsertStateVersionOutputScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertToken(ctx context.Context, params InsertTokenParams) (InsertTokenRow, error)
+	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
 	// later by the batch.
 	InsertTokenBatch(batch genericBatch, params InsertTokenParams)
 	// InsertTokenScan scans the result of an executed InsertTokenBatch query.
-	InsertTokenScan(results pgx.BatchResults) (InsertTokenRow, error)
+	InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	DeleteTokenByID(ctx context.Context, tokenID string) (pgconn.CommandTag, error)
 	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
@@ -488,12 +481,12 @@ type Querier interface {
 	// DeleteTokenByIDScan scans the result of an executed DeleteTokenByIDBatch query.
 	DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertUser(ctx context.Context, id string, username string) (InsertUserRow, error)
+	InsertUser(ctx context.Context, params InsertUserParams) (pgconn.CommandTag, error)
 	// InsertUserBatch enqueues a InsertUser query into batch to be executed
 	// later by the batch.
-	InsertUserBatch(batch genericBatch, id string, username string)
+	InsertUserBatch(batch genericBatch, params InsertUserParams)
 	// InsertUserScan scans the result of an executed InsertUserBatch query.
-	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
+	InsertUserScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindUsers(ctx context.Context) ([]FindUsersRow, error)
 	// FindUsersBatch enqueues a FindUsers query into batch to be executed
@@ -537,12 +530,12 @@ type Querier interface {
 	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
 	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
-	UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error)
+	UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (string, error)
 	// UpdateUserCurrentOrganizationBatch enqueues a UpdateUserCurrentOrganization query into batch to be executed
 	// later by the batch.
-	UpdateUserCurrentOrganizationBatch(batch genericBatch, currentOrganization string, id string)
+	UpdateUserCurrentOrganizationBatch(batch genericBatch, params UpdateUserCurrentOrganizationParams)
 	// UpdateUserCurrentOrganizationScan scans the result of an executed UpdateUserCurrentOrganizationBatch query.
-	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (UpdateUserCurrentOrganizationRow, error)
+	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (string, error)
 
 	DeleteUserByID(ctx context.Context, userID string) (pgconn.CommandTag, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
@@ -558,14 +551,12 @@ type Querier interface {
 	// DeleteUserByUsernameScan scans the result of an executed DeleteUserByUsernameBatch query.
 	DeleteUserByUsernameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	// InsertWorkspace inserts a workspace and returns the entire row.
-	//
-	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (InsertWorkspaceRow, error)
+	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
 	// later by the batch.
 	InsertWorkspaceBatch(batch genericBatch, params InsertWorkspaceParams)
 	// InsertWorkspaceScan scans the result of an executed InsertWorkspaceBatch query.
-	InsertWorkspaceScan(results pgx.BatchResults) (InsertWorkspaceRow, error)
+	InsertWorkspaceScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindWorkspaces(ctx context.Context, params FindWorkspacesParams) ([]FindWorkspacesRow, error)
 	// FindWorkspacesBatch enqueues a FindWorkspaces query into batch to be executed
@@ -620,12 +611,12 @@ type Querier interface {
 	// FindWorkspaceByIDForUpdateScan scans the result of an executed FindWorkspaceByIDForUpdateBatch query.
 	FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (FindWorkspaceByIDForUpdateRow, error)
 
-	UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (time.Time, error)
+	UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (string, error)
 	// UpdateWorkspaceByIDBatch enqueues a UpdateWorkspaceByID query into batch to be executed
 	// later by the batch.
 	UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams)
 	// UpdateWorkspaceByIDScan scans the result of an executed UpdateWorkspaceByIDBatch query.
-	UpdateWorkspaceByIDScan(results pgx.BatchResults) (time.Time, error)
+	UpdateWorkspaceByIDScan(results pgx.BatchResults) (string, error)
 
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
@@ -998,7 +989,6 @@ type ConfigurationVersionStatusTimestamps struct {
 type ConfigurationVersions struct {
 	ConfigurationVersionID string    `json:"configuration_version_id"`
 	CreatedAt              time.Time `json:"created_at"`
-	UpdatedAt              time.Time `json:"updated_at"`
 	AutoQueueRuns          bool      `json:"auto_queue_runs"`
 	Source                 string    `json:"source"`
 	Speculative            bool      `json:"speculative"`
@@ -1042,7 +1032,6 @@ type RunStatusTimestamps struct {
 type Sessions struct {
 	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 	Address   string    `json:"address"`
 	Flash     []byte    `json:"flash"`
 	Expiry    time.Time `json:"expiry"`
@@ -1051,14 +1040,12 @@ type Sessions struct {
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
-	StateVersionOutputID string    `json:"state_version_output_id"`
-	CreatedAt            time.Time `json:"created_at"`
-	UpdatedAt            time.Time `json:"updated_at"`
-	Name                 string    `json:"name"`
-	Sensitive            bool      `json:"sensitive"`
-	Type                 string    `json:"type"`
-	Value                string    `json:"value"`
-	StateVersionID       string    `json:"state_version_id"`
+	StateVersionOutputID string `json:"state_version_output_id"`
+	Name                 string `json:"name"`
+	Sensitive            bool   `json:"sensitive"`
+	Type                 string `json:"type"`
+	Value                string `json:"value"`
+	StateVersionID       string `json:"state_version_id"`
 }
 
 // Tokens represents the Postgres composite type "tokens".
@@ -1066,7 +1053,6 @@ type Tokens struct {
 	TokenID     string    `json:"token_id"`
 	Token       string    `json:"token"`
 	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
 	Description string    `json:"description"`
 	UserID      string    `json:"user_id"`
 }
@@ -1213,7 +1199,6 @@ func (tr *typeResolver) newConfigurationVersions() pgtype.ValueTranscoder {
 		"configuration_versions",
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"auto_queue_runs", "bool", &pgtype.Bool{}},
 		compositeField{"source", "text", &pgtype.Text{}},
 		compositeField{"speculative", "bool", &pgtype.Bool{}},
@@ -1277,7 +1262,6 @@ func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
 		"sessions",
 		compositeField{"token", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"address", "text", &pgtype.Text{}},
 		compositeField{"flash", "bytea", &pgtype.Bytea{}},
 		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
@@ -1291,8 +1275,6 @@ func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"state_version_outputs",
 		compositeField{"state_version_output_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"sensitive", "bool", &pgtype.Bool{}},
 		compositeField{"type", "text", &pgtype.Text{}},
@@ -1309,7 +1291,6 @@ func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
 		compositeField{"token_id", "text", &pgtype.Text{}},
 		compositeField{"token", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"description", "text", &pgtype.Text{}},
 		compositeField{"user_id", "text", &pgtype.Text{}},
 	)

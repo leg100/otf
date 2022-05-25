@@ -31,30 +31,33 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 		return err
 	}
 	defer tx.Rollback(ctx)
-
 	q := pggen.NewQuerier(tx)
-
-	result, err := q.InsertUser(ctx, user.ID(), user.Username)
+	_, err = q.InsertUser(ctx, pggen.InsertUserParams{
+		ID:        user.ID(),
+		Username:  user.Username(),
+		CreatedAt: user.CreatedAt(),
+		UpdatedAt: user.UpdatedAt(),
+	})
 	if err != nil {
 		return err
 	}
-	user.CreatedAt = result.CreatedAt
-	user.UpdatedAt = result.UpdatedAt
-
 	for _, org := range user.Organizations {
 		_, err = q.InsertOrganizationMembership(ctx, user.ID(), org.ID())
 		if err != nil {
 			return err
 		}
 	}
-
 	return tx.Commit(ctx)
 }
 
 func (db UserDB) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
 	q := pggen.NewQuerier(db.Pool)
 
-	_, err := q.UpdateUserCurrentOrganization(ctx, orgName, userID)
+	_, err := q.UpdateUserCurrentOrganization(ctx, pggen.UpdateUserCurrentOrganizationParams{
+		ID:                  userID,
+		CurrentOrganization: orgName,
+		UpdatedAt:           otf.CurrentTimestamp(),
+	})
 	return err
 }
 
