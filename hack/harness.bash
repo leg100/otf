@@ -13,7 +13,6 @@ export PATH=$PWD/_build:$PATH
 export OTF_SSL=true
 export OTF_CERT_FILE=./e2e/fixtures/cert.crt
 export OTF_KEY_FILE=./e2e/fixtures/key.pem
-export OTF_DB_PATH=$(mktemp)
 
 # Track whether this script started otfd
 started=0
@@ -41,7 +40,7 @@ trap print_logs ERR
 
 # Start otfd if not already running
 if ! pgrep otfd; then
-    nohup otfd > otfd.log &
+    nohup otfd --log-level trace --log-color true > otfd.log &
     started=1
 fi
 

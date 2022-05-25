@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -23,13 +24,16 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	updated, err := db.ConfigurationVersionStore().Update(cv.ID, func(cv *otf.ConfigurationVersion) error {
-		cv.Status = otf.ConfigurationUploaded
-		return nil
+	err := db.ConfigurationVersionStore().Upload(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+		_, err := uploader.Upload(context.Background(), nil)
+		return err
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, otf.ConfigurationUploaded, updated.Status)
+	got, err := db.ConfigurationVersionStore().Get(otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())})
+	require.NoError(t, err)
+
+	assert.Equal(t, otf.ConfigurationUploaded, got.Status())
 }
 
 func TestConfigurationVersion_Get(t *testing.T) {
@@ -44,11 +48,11 @@ func TestConfigurationVersion_Get(t *testing.T) {
 	}{
 		{
 			name: "by id",
-			opts: otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID)},
+			opts: otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())},
 		},
 		{
 			name: "by workspace",
-			opts: otf.ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
+			opts: otf.ConfigurationVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
 		},
 	}
 
@@ -56,11 +60,6 @@ func TestConfigurationVersion_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.ConfigurationVersionStore().Get(tt.opts)
 			require.NoError(t, err)
-
-			// Assertion won't succeed unless both have a workspace with a nil
-			// org.
-			cv.Workspace.Organization = nil
-
 			assert.Equal(t, cv, got)
 		})
 	}
@@ -77,37 +76,54 @@ func TestConfigurationVersion_List(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
-		want        func(*testing.T, *otf.ConfigurationVersionList, ...*otf.ConfigurationVersion)
+		opts        otf.ConfigurationVersionListOptions
+		want        func(*testing.T, *otf.ConfigurationVersionList)
 	}{
 		{
-			name:        "filter by workspace",
-			workspaceID: ws.ID,
-			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
-				assert.Equal(t, 2, len(l.Items))
-				for _, cv := range created {
-					// Assertion won't succeed unless both have a workspace with
-					// a nil org.
-					cv.Workspace.Organization = nil
-
-					assert.Contains(t, l.Items, cv)
-				}
+			name:        "no pagination",
+			workspaceID: ws.ID(),
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+				assert.Equal(t, 2, len(got.Items))
+				assert.Equal(t, 2, got.TotalCount)
+				assert.Contains(t, got.Items, cv1)
+				assert.Contains(t, got.Items, cv2)
 			},
 		},
 		{
-			name:        "filter by non-existent workspace",
+			name:        "pagination",
+			workspaceID: ws.ID(),
+			opts:        otf.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+				assert.Equal(t, 1, len(got.Items))
+				assert.Equal(t, 2, got.TotalCount)
+			},
+		},
+		{
+			name:        "stray pagination",
+			workspaceID: ws.ID(),
+			opts:        otf.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+				// Zero items but total count should ignore pagination
+				assert.Equal(t, 0, len(got.Items))
+				assert.Equal(t, 2, got.TotalCount)
+			},
+		},
+		{
+			name:        "query non-existent workspace",
 			workspaceID: "ws-non-existent",
-			want: func(t *testing.T, l *otf.ConfigurationVersionList, created ...*otf.ConfigurationVersion) {
-				assert.Empty(t, l.Items)
+			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
+				assert.Empty(t, got.Items)
+				assert.Equal(t, 0, got.TotalCount)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.ConfigurationVersionStore().List(tt.workspaceID, otf.ConfigurationVersionListOptions{})
+			results, err := db.ConfigurationVersionStore().List(tt.workspaceID, tt.opts)
 			require.NoError(t, err)
 
-			tt.want(t, results, cv1, cv2)
+			tt.want(t, results)
 		})
 	}
 }

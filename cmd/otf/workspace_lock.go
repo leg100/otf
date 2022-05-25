@@ -30,12 +30,12 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			_, err = client.Workspaces().Lock(cmd.Context(), otf.WorkspaceSpec{ID: &ws.ID}, otf.WorkspaceLockOptions{})
+			_, err = client.Workspaces().Lock(cmd.Context(), otf.WorkspaceSpec{ID: otf.String(ws.ID())}, otf.WorkspaceLockOptions{})
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Successfully locked workspace %s\n", ws.Name)
+			fmt.Printf("Successfully locked workspace %s\n", ws.Name())
 
 			return nil
 		},

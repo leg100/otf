@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 	httputil "github.com/leg100/otf/http/util"
 	"golang.org/x/oauth2"
 )
@@ -57,7 +58,7 @@ func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
 	cookieState := cookie.Value
 
 	var resp oauthResponse
-	if err := decodeQuery(r, &resp); err != nil {
+	if err := decode.Query(&resp, r.URL.Query()); err != nil {
 		return nil, err
 	}
 

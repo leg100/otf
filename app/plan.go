@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -40,79 +39,60 @@ func (s PlanService) Get(id string) (*otf.Plan, error) {
 	return run.Plan, nil
 }
 
-// GetPlanJSON returns the JSON formatted plan file for the plan.
-func (s PlanService) GetPlanJSON(id string) ([]byte, error) {
-	if plan, err := s.cache.Get(otf.JSONPlanCacheKey(id)); err == nil {
-		return plan, nil
-	}
-
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.cache.Set(otf.JSONPlanCacheKey(id), run.Plan.PlanJSON); err != nil {
-		return nil, fmt.Errorf("caching plan: %w", err)
-	}
-
-	return run.Plan.PlanJSON, nil
-}
-
 // GetChunk reads a chunk of logs for a terraform plan.
-func (s PlanService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) ([]byte, error) {
+func (s PlanService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.logs.GetChunk(ctx, id, opts)
 	if err != nil {
 		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
-		return nil, err
+		return otf.Chunk{}, err
 	}
 
 	return logs, nil
 }
 
 // PutChunk writes a chunk of logs for a terraform plan.
-func (s PlanService) PutChunk(ctx context.Context, id string, chunk []byte, opts otf.PutChunkOptions) error {
-	err := s.logs.PutChunk(ctx, id, chunk, opts)
+func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) error {
+	err := s.logs.PutChunk(ctx, id, chunk)
 	if err != nil {
-		s.Error(err, "writing plan logs", "id", id, "start", opts.Start, "end", opts.End)
+		s.Error(err, "writing plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
+
+	s.V(2).Info("written plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
 
 	return nil
 }
 
-// Start marks a plan as having started
-func (s PlanService) Start(ctx context.Context, id string, opts otf.JobStartOptions) (*otf.Run, error) {
-	run, err := s.db.Update(otf.RunGetOptions{PlanID: otf.String(id)}, func(run *otf.Run) error {
+// Claim implements Job
+func (s PlanService) Claim(ctx context.Context, planID string, opts otf.JobClaimOptions) (otf.Job, error) {
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Plan.Start(run)
 	})
 	if err != nil {
-		s.Error(err, "starting plan")
+		s.Error(err, "starting plan", "plan_id", planID)
 		return nil, err
 	}
 
-	s.V(0).Info("started plan", "id", run.ID)
+	s.V(0).Info("started plan", "id", run.ID())
 
 	return run, nil
 }
 
 // Finish marks a plan as having finished.  An event is emitted to notify any
 // subscribers of the new state.
-func (s PlanService) Finish(ctx context.Context, id string, opts otf.JobFinishOptions) (*otf.Run, error) {
+func (s PlanService) Finish(ctx context.Context, planID string, opts otf.JobFinishOptions) (otf.Job, error) {
 	var event *otf.Event
 
-	run, err := s.db.Update(otf.RunGetOptions{PlanID: otf.String(id)}, func(run *otf.Run) (err error) {
-		event, err = run.Plan.Finish(run)
-		if err != nil {
-			return err
-		}
+	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
+		event, err = run.Plan.Finish(opts)
 		return err
 	})
 	if err != nil {
-		s.Error(err, "finishing plan", "id", id)
+		s.Error(err, "finishing plan", "id", planID)
 		return nil, err
 	}
 
-	s.V(0).Info("finished plan", "id", id)
+	s.V(0).Info("finished plan", "id", planID)
 
 	s.Publish(*event)
 

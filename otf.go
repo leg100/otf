@@ -9,8 +9,6 @@ import (
 	"math/rand"
 	"regexp"
 	"time"
-
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -55,7 +53,6 @@ type Application interface {
 
 // DB provides access to oTF database
 type DB interface {
-	Handle() *sqlx.DB
 	Close() error
 
 	OrganizationStore() OrganizationStore
@@ -66,12 +63,8 @@ type DB interface {
 	PlanLogStore() PlanLogStore
 	ApplyLogStore() ApplyLogStore
 	UserStore() UserStore
-}
-
-// Updateable is an obj that records when it was updated.
-type Updateable interface {
-	GetID() string
-	SetUpdatedAt(time.Time)
+	SessionStore() SessionStore
+	TokenStore() TokenStore
 }
 
 func String(str string) *string { return &str }
@@ -79,10 +72,12 @@ func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
 func UInt(i uint) *uint         { return &i }
 
-// TimeNow is a convenience func to return the pointer of the current time
-func TimeNow() *time.Time {
-	t := time.Now()
-	return &t
+// CurrentTimestamp is *the* way to get a current timestamps in oTF and
+// time.Now() should be avoided. We want timestamps to be rounded to nearest
+// millisecond so that they can be persisted/serialised and not lose precision
+// thereby making comparisons and testing easier.
+func CurrentTimestamp() time.Time {
+	return time.Now().Round(time.Millisecond)
 }
 
 // NewID constructs resource IDs, which are composed of the resource type and a
@@ -104,51 +99,12 @@ func GenerateRandomString(size int) string {
 	return string(buf)
 }
 
-// Resources summaries updates to a workspace's resources, either proposed as
-// part of a plan, or made as a result of an apply.
-type Resources struct {
-	ResourceAdditions    int `db:"resource_additions"`
-	ResourceChanges      int `db:"resource_changes"`
-	ResourceDestructions int `db:"resource_destructions"`
-}
-
-// Pagination is used to return the pagination details of an API request.
-type Pagination struct {
-	CurrentPage  int `json:"current-page"`
-	PreviousPage int `json:"prev-page"`
-	NextPage     int `json:"next-page"`
-	TotalPages   int `json:"total-pages"`
-	TotalCount   int `json:"total-count"`
-}
-
-// ListOptions is used to specify pagination options when making API requests.
-// Pagination allows breaking up large result sets into chunks, or "pages".
-type ListOptions struct {
-	// The page number to request. The results vary based on the PageSize.
-	PageNumber int `schema:"page[number],omitempty"`
-
-	// The number of elements returned in a single page.
-	PageSize int `schema:"page[size],omitempty"`
-}
-
-// GetOffset calculates the offset for use in SQL queries.
-func (o *ListOptions) GetOffset() uint64 {
-	if o.PageNumber == 0 {
-		return 0
-	}
-
-	return uint64((o.PageNumber - 1) * o.PageSize)
-}
-
-// GetLimit calculates the limit for use in SQL queries.
-func (o *ListOptions) GetLimit() uint64 {
-	if o.PageSize == 0 {
-		return DefaultPageSize
-	} else if o.PageSize > MaxPageSize {
-		return MaxPageSize
-	}
-
-	return uint64(o.PageSize)
+// ResourceReport reports a summary of additions, changes, and deletions of
+// resources in a plan or an apply.
+type ResourceReport struct {
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
 }
 
 // validString checks if the given input is present and non-empty.
@@ -166,23 +122,6 @@ func ValidStringID(v *string) bool {
 // valid semantic version (major.minor.patch).
 func validSemanticVersion(v string) bool {
 	return reSemanticVersion.MatchString(v)
-}
-
-type Timestamps struct {
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-}
-
-func (m *Timestamps) SetUpdatedAt(t time.Time) {
-	m.UpdatedAt = t
-}
-
-func NewTimestamps() Timestamps {
-	now := time.Now()
-	return Timestamps{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
 }
 
 func GetMapKeys(m map[string]interface{}) []string {

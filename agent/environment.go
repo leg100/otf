@@ -24,9 +24,9 @@ var _ otf.Environment = (*Environment)(nil)
 type Environment struct {
 	otf.JobService
 
-	RunService                  otf.RunService
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
+	runService                  otf.RunService
+	configurationVersionService otf.ConfigurationVersionService
+	stateVersionService         otf.StateVersionService
 
 	logr.Logger
 
@@ -50,9 +50,7 @@ type Environment struct {
 
 func NewEnvironment(
 	logger logr.Logger,
-	rs otf.RunService,
-	cvs otf.ConfigurationVersionService,
-	svs otf.StateVersionService,
+	app otf.Application,
 	js otf.JobService,
 	job otf.Job,
 	environmentVariables []string) (*Environment, error) {
@@ -63,50 +61,52 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         job.GetID(),
+		ID:         job.JobID(),
 		JobService: js,
 		Logger:     logger,
 	}
 
 	return &Environment{
 		Logger:                      logger,
-		RunService:                  rs,
-		ConfigurationVersionService: cvs,
-		StateVersionService:         svs,
+		runService:                  app.RunService(),
+		configurationVersionService: app.ConfigurationVersionService(),
+		stateVersionService:         app.StateVersionService(),
 		out:                         out,
 		path:                        path,
 		environmentVariables:        environmentVariables,
 	}, nil
 }
 
-// Execute executes a run (or anything with a Do(env)) and regardless of whether
-// it fails, it'll close the environment logs.
-func (e *Environment) Execute(run *otf.Run, job otf.Job) (err error) {
-	if err := job.Do(run, e); err != nil {
-		err = multierror.Append(fmt.Errorf("executing run: %w", err))
+// Execute executes a job and regardless of whether it fails, it'll close the
+// environment logs.
+func (e *Environment) Execute(job otf.Job) (err error) {
+	var errors *multierror.Error
+
+	if err := job.Do(e); err != nil {
+		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
 	}
 
 	// Mark the logs as fully uploaded
 	if err := e.out.Close(); err != nil {
-		err = multierror.Append(fmt.Errorf("closing logs: %w", err))
+		errors = multierror.Append(errors, fmt.Errorf("closing logs: %w", err))
 	}
 
-	return err
+	return errors.ErrorOrNil()
 }
 
-func (e *Environment) GetConfigurationVersionService() otf.ConfigurationVersionService {
-	return e.ConfigurationVersionService
+func (e *Environment) ConfigurationVersionService() otf.ConfigurationVersionService {
+	return e.configurationVersionService
 }
 
-func (e *Environment) GetStateVersionService() otf.StateVersionService {
-	return e.StateVersionService
+func (e *Environment) StateVersionService() otf.StateVersionService {
+	return e.stateVersionService
 }
 
-func (e *Environment) GetRunService() otf.RunService {
-	return e.RunService
+func (e *Environment) RunService() otf.RunService {
+	return e.runService
 }
 
-func (e *Environment) GetPath() string {
+func (e *Environment) Path() string {
 	return e.path
 }
 
@@ -139,9 +139,11 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	e.proc = cmd.Process
 
 	if err := cmd.Run(); err != nil {
-		e.Error(err, "running CLI step", "stderr", stderr.String())
+		e.Error(err, "executing command", "stderr", stderr.String(), "path", e.path)
 		return err
 	}
+
+	e.V(2).Info("executed command", "name", name, "args", args, "path", e.path)
 
 	return nil
 }

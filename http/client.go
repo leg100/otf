@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
@@ -411,4 +412,55 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 	pagination.Set(reflect.ValueOf(p))
 
 	return nil
+}
+
+// checkResponseCode can be used to check the status code of an HTTP request.
+func checkResponseCode(r *http.Response) error {
+	if r.StatusCode >= 200 && r.StatusCode <= 299 {
+		return nil
+	}
+	switch r.StatusCode {
+	case 401:
+		return otf.ErrUnauthorized
+	case 404:
+		return otf.ErrResourceNotFound
+	case 409:
+		switch {
+		case strings.HasSuffix(r.Request.URL.Path, "actions/lock"):
+			return otf.ErrWorkspaceLocked
+		case strings.HasSuffix(r.Request.URL.Path, "actions/unlock"):
+			return otf.ErrWorkspaceNotLocked
+		case strings.HasSuffix(r.Request.URL.Path, "actions/force-unlock"):
+			return otf.ErrWorkspaceNotLocked
+		}
+	}
+	// Decode the error payload.
+	errPayload := &jsonapi.ErrorsPayload{}
+	err := json.NewDecoder(r.Body).Decode(errPayload)
+	if err != nil || len(errPayload.Errors) == 0 {
+		return fmt.Errorf(r.Status)
+	}
+	// Parse and format the errors.
+	var errs []string
+	for _, e := range errPayload.Errors {
+		if e.Detail == "" {
+			errs = append(errs, e.Title)
+		} else {
+			errs = append(errs, fmt.Sprintf("%s\n\n%s", e.Title, e.Detail))
+		}
+	}
+	return fmt.Errorf(strings.Join(errs, "\n"))
+}
+
+func parsePagination(body io.Reader) (*otf.Pagination, error) {
+	var raw struct {
+		Meta struct {
+			Pagination otf.Pagination `jsonapi:"pagination"`
+		} `jsonapi:"meta"`
+	}
+	// JSON decode the raw response.
+	if err := json.NewDecoder(body).Decode(&raw); err != nil {
+		return &otf.Pagination{}, err
+	}
+	return &raw.Meta.Pagination, nil
 }

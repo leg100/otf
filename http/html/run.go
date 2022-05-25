@@ -8,6 +8,7 @@ import (
 	term2html "github.com/buildkite/terminal-to-html"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
 )
 
 type RunController struct {
@@ -40,7 +41,11 @@ func (c *RunController) addRoutes(router *mux.Router) {
 func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 	// get runs
 	var opts otf.RunListOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -67,7 +72,6 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 		Options:   opts,
 		Workspace: workspace,
 	})
-
 	if err := c.renderTemplate("run_list.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -89,18 +93,20 @@ func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
 
 func (c *RunController) Create(w http.ResponseWriter, r *http.Request) {
 	var opts otf.RunCreateOptions
-	if err := decodeAll(r, &opts); err != nil {
+	if err := decode.Route(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
+	if err := decode.Form(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	created, err := c.RunService.Create(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "getRun", "run_id", created.ID()), http.StatusFound)
 }
 
 func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
@@ -110,17 +116,14 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	chunk, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID(), otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// strip STX and ETX
-	logs = logs[1 : len(logs)-1]
-
 	// convert to string
-	logStr := string(logs)
+	logStr := string(chunk.Data)
 
 	// trim leading and trailing white space
 	logStr = strings.TrimSpace(logStr)
@@ -151,33 +154,30 @@ func (c *RunController) GetPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID, otf.GetChunkOptions{})
+	chunk, err := c.PlanService.GetChunk(r.Context(), run.Plan.ID(), otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// strip STX and ETX
-	logs = logs[1 : len(logs)-1]
-
 	// convert to string
-	logStr := string(logs)
+	logs := string(chunk.Data)
 
 	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
+	logs = strings.TrimSpace(logs)
 
 	// convert ANSI escape sequences to HTML
-	logStr = string(term2html.Render([]byte(logStr)))
+	logs = string(term2html.Render([]byte(logs)))
 
 	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
+	logs = strings.TrimSpace(logs)
 
 	tdata := c.newTemplateData(r, struct {
 		Run  *otf.Run
 		Logs template.HTML
 	}{
 		Run:  run,
-		Logs: template.HTML(logStr),
+		Logs: template.HTML(logs),
 	})
 
 	if err := c.renderTemplate("plan_get.tmpl", w, tdata); err != nil {
@@ -192,33 +192,30 @@ func (c *RunController) GetApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := c.ApplyService.GetChunk(r.Context(), run.Apply.ID, otf.GetChunkOptions{})
+	chunk, err := c.ApplyService.GetChunk(r.Context(), run.Apply.ID(), otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// strip STX and ETX
-	logs = logs[1 : len(logs)-1]
-
 	// convert to string
-	logStr := string(logs)
+	logs := string(chunk.Data)
 
 	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
+	logs = strings.TrimSpace(logs)
 
 	// convert ANSI escape sequences to HTML
-	logStr = string(term2html.Render([]byte(logStr)))
+	logs = string(term2html.Render([]byte(logs)))
 
 	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
+	logs = strings.TrimSpace(logs)
 
 	tdata := c.newTemplateData(r, struct {
 		Run  *otf.Run
 		Logs template.HTML
 	}{
 		Run:  run,
-		Logs: template.HTML(logStr),
+		Logs: template.HTML(logs),
 	})
 
 	if err := c.renderTemplate("apply_get.tmpl", w, tdata); err != nil {

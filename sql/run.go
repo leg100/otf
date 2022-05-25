@@ -1,286 +1,370 @@
 package sql
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
-	sq "github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
+	"github.com/leg100/otf/sql/pggen"
 )
 
-var (
-	_ otf.RunStore = (*RunDB)(nil)
-
-	runColumns = []string{
-		"run_id",
-		"created_at",
-		"updated_at",
-		"is_destroy",
-		"position_in_queue",
-		"refresh",
-		"refresh_only",
-		"status",
-		"status_timestamps",
-		"replace_addrs",
-		"target_addrs",
-	}
-
-	planColumns = []string{
-		"plan_id",
-		"created_at",
-		"updated_at",
-		"resource_additions",
-		"resource_changes",
-		"resource_destructions",
-		"status",
-		"status_timestamps",
-		"plan_file",
-		"plan_json",
-		"run_id",
-	}
-
-	applyColumns = []string{
-		"apply_id",
-		"created_at",
-		"updated_at",
-		"resource_additions",
-		"resource_changes",
-		"resource_destructions",
-		"status",
-		"status_timestamps",
-		"run_id",
-	}
-
-	insertRunSQL = fmt.Sprintf("INSERT INTO runs (%s, workspace_id, configuration_version_id) VALUES (%s, :workspaces.workspace_id, :configuration_versions.configuration_version_id)",
-		strings.Join(runColumns, ", "),
-		strings.Join(otf.PrefixSlice(runColumns, ":"), ", "))
-
-	insertPlanSQL = fmt.Sprintf("INSERT INTO plans (%s) VALUES (%s)",
-		strings.Join(planColumns, ", "),
-		strings.Join(otf.PrefixSlice(planColumns, ":"), ", "))
-
-	insertApplySQL = fmt.Sprintf("INSERT INTO applies (%s) VALUES (%s)",
-		strings.Join(applyColumns, ", "),
-		strings.Join(otf.PrefixSlice(applyColumns, ":"), ", "))
-)
+var _ otf.RunStore = (*RunDB)(nil)
 
 type RunDB struct {
-	*sqlx.DB
+	*pgxpool.Pool
 }
 
-func NewRunDB(db *sqlx.DB) *RunDB {
+func NewRunDB(db *pgxpool.Pool) *RunDB {
 	return &RunDB{
-		DB: db,
+		Pool: db,
 	}
 }
 
 // Create persists a Run to the DB.
-func (db RunDB) Create(run *otf.Run) (*otf.Run, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
-
-	// Insert run
-	sql, args, err := tx.BindNamed(insertRunSQL, run)
+func (db RunDB) Create(run *otf.Run) error {
+	ctx := context.Background()
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	_, err = tx.Exec(sql, args...)
+	defer tx.Rollback(ctx)
+	q := pggen.NewQuerier(tx)
+	_, err = q.InsertRun(ctx, pggen.InsertRunParams{
+		ID:                     run.ID(),
+		CreatedAt:              run.CreatedAt(),
+		PlanID:                 run.Plan.ID(),
+		ApplyID:                run.Apply.ID(),
+		IsDestroy:              run.IsDestroy(),
+		Refresh:                run.Refresh(),
+		RefreshOnly:            run.RefreshOnly(),
+		Status:                 string(run.Status()),
+		PlanStatus:             string(run.Plan.Status()),
+		ApplyStatus:            string(run.Apply.Status()),
+		ReplaceAddrs:           run.ReplaceAddrs(),
+		TargetAddrs:            run.TargetAddrs(),
+		ConfigurationVersionID: run.ConfigurationVersion.ID(),
+		WorkspaceID:            run.Workspace.ID(),
+	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	// Insert plan
-	sql, args, err = tx.BindNamed(insertPlanSQL, run.Plan)
-	if err != nil {
-		return nil, err
+	if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
+		return fmt.Errorf("inserting run status timestamp: %w", err)
 	}
-	_, err = tx.Exec(sql, args...)
-	if err != nil {
-		return nil, err
+	if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
+		return fmt.Errorf("inserting plan status timestamp: %w", err)
 	}
-
-	// Insert apply
-	sql, args, err = tx.BindNamed(insertApplySQL, run.Apply)
-	if err != nil {
-		return nil, err
+	if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
+		return fmt.Errorf("inserting apply status timestamp: %w", err)
 	}
-	_, err = tx.Exec(sql, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	return run, tx.Commit()
+	return tx.Commit(ctx)
 }
 
-// Update persists an updated Run to the DB. The existing run is fetched from
-// the DB, the supplied func is invoked on the run, and the updated run is
-// persisted back to the DB. The returned Run includes any changes, including a
-// new UpdatedAt value.
-func (db RunDB) Update(opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
+func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
+	ctx := context.Background()
 
-	run, err := getRun(tx, opts)
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	q := pggen.NewQuerier(tx)
+
+	// Get run ID first
+	runID, err := getRunID(ctx, q, opts)
+	if err != nil {
+		return nil, err
+	}
+	// select ...for update
+	result, err := q.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
+		RunID: runID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 	if err != nil {
 		return nil, err
 	}
 
-	// Make a copy for comparison with the updated obj
-	before, err := copystructure.Copy(run)
-	if err != nil {
-		return nil, err
-	}
+	// Make copies of statuses before update
+	runStatus := run.Status()
+	planStatus := run.Plan.Status()
+	applyStatus := run.Apply.Status()
 
-	// Update obj using client-supplied fn
 	if err := fn(run); err != nil {
 		return nil, err
 	}
 
-	runUpdated, err := update(db.Mapper, tx, "runs", "run_id", before.(*otf.Run), run)
+	if run.Status() != runStatus {
+		var err error
+		_, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
+			return nil, err
+		}
+	}
+
+	if run.Plan.Status() != planStatus {
+		var err error
+		_, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
+			return nil, err
+		}
+	}
+
+	if run.Apply.Status() != applyStatus {
+		var err error
+		_, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
+			return nil, err
+		}
+	}
+
+	return run, tx.Commit(ctx)
+}
+
+func (db RunDB) CreatePlanReport(runID string, report otf.ResourceReport) error {
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+
+	result, err := q.UpdateRunPlannedChangesByRunID(ctx, pggen.UpdateRunPlannedChangesByRunIDParams{
+		ID:           runID,
+		Additions:    report.Additions,
+		Changes:      report.Changes,
+		Destructions: report.Destructions,
+	})
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return otf.ErrResourceNotFound
 	}
 
-	planUpdated, err := update(db.Mapper, tx, "plans", "plan_id", before.(*otf.Run).Plan, run.Plan)
+	return err
+}
+
+func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) error {
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+
+	result, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
+		ID:           applyID,
+		Additions:    summary.Additions,
+		Changes:      summary.Changes,
+		Destructions: summary.Destructions,
+	})
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return otf.ErrResourceNotFound
 	}
 
-	applyUpdated, err := update(db.Mapper, tx, "applies", "apply_id", before.(*otf.Run).Apply, run.Apply)
-	if err != nil {
-		return nil, err
-	}
-
-	if runUpdated || planUpdated || applyUpdated {
-		return run, tx.Commit()
-	}
-
-	return run, nil
+	return err
 }
 
 func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
-	selectBuilder := psql.Select().
-		From("runs").
-		Join("plans USING (run_id)").
-		Join("applies USING (run_id)").
-		Join("configuration_versions USING (configuration_version_id)").
-		Join("workspaces ON workspaces.workspace_id = runs.workspace_id")
+	q := pggen.NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
+	ctx := context.Background()
 
-	// Optionally filter by workspace ID
-	if opts.WorkspaceID != nil {
-		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
-	}
-
-	// Optionally filter by organization and workspace name
+	var workspaceID string
 	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-		selectBuilder = selectBuilder.
-			Where("workspaces.name = ?", *opts.WorkspaceName).
-			Join("organizations USING (organization_id)")
+		wid, err := q.FindWorkspaceIDByName(ctx, *opts.WorkspaceName, *opts.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		workspaceID = wid
+	} else if opts.WorkspaceID != nil {
+		workspaceID = *opts.WorkspaceID
+	} else {
+		// Match any workspace ID
+		workspaceID = "%"
 	}
 
-	// Optionally filter by statuses
+	var statuses []string
 	if len(opts.Statuses) > 0 {
-		selectBuilder = selectBuilder.Where(sq.Eq{"runs.status": opts.Statuses})
+		statuses = convertStatusSliceToStringSlice(opts.Statuses)
+	} else {
+		// Match any status
+		statuses = []string{"%"}
 	}
 
-	var count int
-	if err := selectBuilder.Columns("count(1)").RunWith(db).QueryRow().Scan(&count); err != nil {
-		return nil, fmt.Errorf("counting total rows: %w", err)
+	q.FindRunsBatch(batch, pggen.FindRunsParams{
+		WorkspaceIds:                []string{workspaceID},
+		Statuses:                    statuses,
+		Limit:                       opts.GetLimit(),
+		Offset:                      opts.GetOffset(),
+		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
+		IncludeWorkspace:            includeWorkspace(opts.Include),
+	})
+	q.CountRunsBatch(batch, []string{workspaceID}, statuses)
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindRunsScan(results)
+	if err != nil {
+		return nil, err
 	}
-
-	selectBuilder = selectBuilder.
-		Columns(asColumnList("runs", false, runColumns...)).
-		Columns(asColumnList("plans", true, planColumns...)).
-		Columns(asColumnList("applies", true, applyColumns...)).
-		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset()).
-		OrderBy("runs.updated_at DESC")
-
-	sql, args, err := selectBuilder.ToSql()
+	count, err := q.CountRunsScan(results)
 	if err != nil {
 		return nil, err
 	}
 
 	var items []*otf.Run
-	if err := db.Select(&items, sql, args...); err != nil {
-		return nil, fmt.Errorf("unable to scan runs from DB: %w", err)
+	for _, r := range rows {
+		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, run)
 	}
 
 	return &otf.RunList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-// Get retrieves a Run domain obj
+// Get retrieves a run using the get options
 func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
-	return getRun(db.DB, opts)
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+	// Get run ID first
+	runID, err := getRunID(ctx, q, opts)
+	if err != nil {
+		return nil, err
+	}
+	// ...now get full run
+	result, err := q.FindRunByID(ctx, pggen.FindRunByIDParams{
+		RunID:                       runID,
+		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
+		IncludeWorkspace:            includeWorkspace(opts.Include),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+}
+
+// SetPlanFile writes a plan file to the db
+func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error {
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+
+	switch format {
+	case otf.PlanFormatBinary:
+		_, err := q.PutPlanBinByRunID(ctx, file, id)
+		return err
+	case otf.PlanFormatJSON:
+		_, err := q.PutPlanJSONByRunID(ctx, file, id)
+		return err
+	default:
+		return fmt.Errorf("unknown plan format: %s", string(format))
+	}
+}
+
+// GetPlanFile retrieves a plan file for the run
+func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+
+	switch format {
+	case otf.PlanFormatBinary:
+		return q.GetPlanBinByRunID(ctx, id)
+	case otf.PlanFormatJSON:
+		return q.GetPlanJSONByRunID(ctx, id)
+	default:
+		return nil, fmt.Errorf("unknown plan format: %s", string(format))
+	}
 }
 
 // Delete deletes a run from the DB
 func (db RunDB) Delete(id string) error {
-	tx := db.MustBegin()
-	defer tx.Rollback()
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
 
-	run, err := getRun(tx, otf.RunGetOptions{ID: otf.String(id)})
+	result, err := q.DeleteRunByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM runs WHERE run_id = $1", run.ID)
-	if err != nil {
-		return fmt.Errorf("unable to delete run: %w", err)
+	if result.RowsAffected() == 0 {
+		return otf.ErrResourceNotFound
 	}
 
-	return tx.Commit()
+	return nil
 }
 
-func getRun(db Getter, opts otf.RunGetOptions) (*otf.Run, error) {
-	planColumns := planColumns
-
-	if opts.IncludePlanFile {
-		planColumns = append(planColumns, "plan_file")
+func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (string, error) {
+	if opts.PlanID != nil {
+		return q.FindRunIDByPlanID(ctx, *opts.PlanID)
+	} else if opts.ApplyID != nil {
+		return q.FindRunIDByApplyID(ctx, *opts.ApplyID)
+	} else if opts.ID != nil {
+		return *opts.ID, nil
+	} else {
+		return "", fmt.Errorf("no ID specified")
 	}
+}
 
-	if opts.IncludePlanJSON {
-		planColumns = append(planColumns, "plan_json")
-	}
-
-	selectBuilder := psql.Select(asColumnList("runs", false, runColumns...)).
-		Columns(asColumnList("plans", true, planColumns...)).
-		Columns(asColumnList("applies", true, applyColumns...)).
-		Columns(asColumnList("configuration_versions", true, configurationVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		From("runs").
-		Join("plans USING (run_id)").
-		Join("applies USING (run_id)").
-		Join("configuration_versions USING (configuration_version_id)").
-		Join("workspaces ON workspaces.workspace_id = runs.workspace_id")
-
-	switch {
-	case opts.ID != nil:
-		selectBuilder = selectBuilder.Where("runs.run_id = ?", *opts.ID)
-	case opts.PlanID != nil:
-		selectBuilder = selectBuilder.Where("plans.plan_id = ?", *opts.PlanID)
-	case opts.ApplyID != nil:
-		selectBuilder = selectBuilder.Where("applies.apply_id = ?", *opts.ApplyID)
-	default:
-		return nil, otf.ErrInvalidRunGetOptions
-	}
-
-	sql, args, err := selectBuilder.ToSql()
+func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
+	ts, err := run.StatusTimestamp(run.Status())
 	if err != nil {
-		return nil, fmt.Errorf("generating sql: %w", err)
+		return err
 	}
+	_, err = q.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Status()),
+		Timestamp: ts,
+	})
+	return err
+}
 
-	var run otf.Run
-	if err := db.Get(&run, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
+func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
+	ts, err := run.PlanStatusTimestamp(run.Plan.Status())
+	if err != nil {
+		return err
 	}
+	_, err = q.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Plan.Status()),
+		Timestamp: ts,
+	})
+	return err
+}
 
-	return &run, nil
+func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
+	ts, err := run.ApplyStatusTimestamp(run.Apply.Status())
+	if err != nil {
+		return err
+	}
+	_, err = q.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
+		ID:        run.ID(),
+		Status:    string(run.Apply.Status()),
+		Timestamp: ts,
+	})
+	return err
+}
+
+func convertStatusSliceToStringSlice(statuses []otf.RunStatus) (s []string) {
+	for _, status := range statuses {
+		s = append(s, string(status))
+	}
+	return
 }

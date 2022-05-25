@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 )
 
 const (
@@ -19,6 +21,58 @@ var (
 	ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")
 )
 
+// ConfigurationVersion is a representation of an uploaded or ingressed
+// Terraform configuration in  A workspace must have at least one configuration
+// version before any runs may be queued on it.
+type ConfigurationVersion struct {
+	id               string
+	createdAt        time.Time
+	autoQueueRuns    bool
+	source           ConfigurationSource
+	speculative      bool
+	status           ConfigurationStatus
+	statusTimestamps []ConfigurationVersionStatusTimestamp
+
+	// Configuration Version belongs to a Workspace
+	Workspace *Workspace
+}
+
+func (cv *ConfigurationVersion) ID() string                  { return cv.id }
+func (cv *ConfigurationVersion) CreatedAt() time.Time        { return cv.createdAt }
+func (cv *ConfigurationVersion) String() string              { return cv.id }
+func (cv *ConfigurationVersion) AutoQueueRuns() bool         { return cv.autoQueueRuns }
+func (cv *ConfigurationVersion) Source() ConfigurationSource { return cv.source }
+func (cv *ConfigurationVersion) Speculative() bool           { return cv.speculative }
+func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status }
+func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
+	return cv.statusTimestamps
+}
+
+func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
+	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
+		Status:    status,
+		Timestamp: timestamp,
+	})
+}
+
+// Upload saves the config to the db and updates status accordingly.
+func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
+	if cv.status != ConfigurationPending {
+		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
+	}
+
+	// check config untars successfully and set errored status if not
+
+	// upload config and set status depending on success
+	status, err := uploader.Upload(ctx, config)
+	if err != nil {
+		return err
+	}
+	cv.status = status
+
+	return nil
+}
+
 // ConfigurationStatus represents a configuration version status.
 type ConfigurationStatus string
 
@@ -31,43 +85,17 @@ type ConfigurationVersionList struct {
 // ConfigurationSource represents a source of a configuration version.
 type ConfigurationSource string
 
-// ConfigurationVersion is a representation of an uploaded or ingressed
-// Terraform configuration in  A workspace must have at least one
-// configuration version before any runs may be queued on it.
-type ConfigurationVersion struct {
-	ID string `db:"configuration_version_id" jsonapi:"primary,configuration-versions"`
-
-	Timestamps
-
-	AutoQueueRuns    bool
-	Source           ConfigurationSource
-	Speculative      bool
-	Status           ConfigurationStatus
-	StatusTimestamps TimestampMap
-
-	// Config is a tarball of the uploaded configuration. Note: this is not
-	// necessarily populated.
-	Config []byte
-
-	// Configuration Version belongs to a Workspace
-	Workspace *Workspace `db:"workspaces"`
+type ConfigurationVersionStatusTimestamp struct {
+	Status    ConfigurationStatus
+	Timestamp time.Time
 }
 
 // ConfigurationVersionCreateOptions represents the options for creating a
-// configuration version.
+// configuration version. See dto.ConfigurationVersionCreateOptions for more
+// details.
 type ConfigurationVersionCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,configuration-versions"`
-
-	// When true, runs are queued automatically when the configuration version
-	// is uploaded.
-	AutoQueueRuns *bool `jsonapi:"attr,auto-queue-runs,omitempty"`
-
-	// When true, this configuration version can only be used for planning.
-	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
+	AutoQueueRuns *bool
+	Speculative   *bool
 }
 
 type ConfigurationVersionService interface {
@@ -75,16 +103,43 @@ type ConfigurationVersionService interface {
 	Get(id string) (*ConfigurationVersion, error)
 	GetLatest(workspaceID string) (*ConfigurationVersion, error)
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Upload(id string, payload []byte) error
+
+	// Upload handles verification and upload of the config tarball, updating
+	// the config version upon success or failure.
+	Upload(id string, config []byte) error
+
+	// Download retrieves the config tarball for the given config version ID.
 	Download(id string) ([]byte, error)
 }
 
 type ConfigurationVersionStore interface {
+	// Creates a config version.
 	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
+
+	// Get retrieves a config version.
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
+
+	// GetConfig retrieves the config tarball for the given config version ID.
+	GetConfig(ctx context.Context, id string) ([]byte, error)
+
+	// List lists config versions for the given workspace.
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-	Update(id string, fn func(*ConfigurationVersion) error) (*ConfigurationVersion, error)
+
+	// Delete deletes the config version from the store
 	Delete(id string) error
+
+	// Upload uploads a config tarball for the given config version ID
+	Upload(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
+}
+
+// ConfigUploader uploads a config
+type ConfigUploader interface {
+	// Upload uploads the config tarball and returns a status indicating success
+	// or failure.
+	Upload(ctx context.Context, config []byte) (ConfigurationStatus, error)
+
+	// SetErrored sets the config version status to 'errored' in the store.
+	SetErrored(ctx context.Context) error
 }
 
 // ConfigurationVersionGetOptions are options for retrieving a single config
@@ -96,8 +151,8 @@ type ConfigurationVersionGetOptions struct {
 	// Get latest config version for this workspace ID
 	WorkspaceID *string
 
-	// Config toggles whether to retrieve the tarball of config files too.
-	Config bool
+	// A list of relations to include
+	Include *string `schema:"include"`
 }
 
 // ConfigurationVersionListOptions are options for paginating and filtering a
@@ -107,51 +162,4 @@ type ConfigurationVersionListOptions struct {
 	Include *string `schema:"include"`
 
 	ListOptions
-
-	// Filter by run statuses (with an implicit OR condition)
-	Statuses []ConfigurationStatus
-
-	// Filter by workspace ID
-	WorkspaceID *string
-}
-
-// ConfigurationVersionFactory creates ConfigurationVersion objects
-func (cv *ConfigurationVersion) GetID() string  { return cv.ID }
-func (cv *ConfigurationVersion) String() string { return cv.ID }
-
-type ConfigurationVersionFactory struct {
-	WorkspaceService WorkspaceService
-}
-
-// NewConfigurationVersion creates a ConfigurationVersion object from scratch.
-// Optionally creates and returns a new Run object if opts.AutoQueueRuns is set
-// to true, or is omitted.
-func (f *ConfigurationVersionFactory) NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, *Run, error) {
-	cv := ConfigurationVersion{
-		ID:            NewID("cv"),
-		Timestamps:    NewTimestamps(),
-		AutoQueueRuns: DefaultAutoQueueRuns,
-		Status:        ConfigurationPending,
-		Source:        DefaultConfigurationSource,
-	}
-
-	if opts.AutoQueueRuns != nil {
-		cv.AutoQueueRuns = *opts.AutoQueueRuns
-	}
-
-	if opts.Speculative != nil {
-		cv.Speculative = *opts.Speculative
-	}
-
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: &workspaceID})
-	if err != nil {
-		return nil, nil, err
-	}
-	cv.Workspace = ws
-
-	if cv.AutoQueueRuns {
-		return &cv, newRun(RunCreateOptions{}, ws, &cv), nil
-	}
-
-	return &cv, nil, nil
 }

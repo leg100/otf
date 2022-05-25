@@ -13,10 +13,12 @@ func TestStateVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	out1 := appendOutput("out1", "string", "val1", false)
-	out2 := appendOutput("out2", "string", "val2", false)
+	sv := otf.NewTestStateVersion(t,
+		otf.StateOutput{"out1", "string", "val1", false},
+		otf.StateOutput{"out2", "string", "val2", false},
+	)
 
-	_, err := db.StateVersionStore().Create(newTestStateVersion(ws, out1, out2))
+	err := db.StateVersionStore().Create(ws.ID(), sv)
 	require.NoError(t, err)
 }
 
@@ -25,34 +27,52 @@ func TestStateVersion_Get(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	sv := createTestStateVersion(t, db, ws,
-		appendOutput("out1", "string", "val1", false),
-		appendOutput("out2", "string", "val2", false),
+		otf.StateOutput{"out1", "string", "val1", false},
 	)
 
 	tests := []struct {
 		name string
 		opts otf.StateVersionGetOptions
+		want func(t *testing.T, got *otf.StateVersion, err error)
 	}{
 		{
 			name: "by id",
-			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID)},
+			opts: otf.StateVersionGetOptions{ID: otf.String(sv.ID())},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				if assert.NoError(t, err) {
+					assert.Equal(t, sv, got)
+				}
+			},
+		},
+		{
+			name: "by id - missing",
+			opts: otf.StateVersionGetOptions{ID: otf.String("sv-does-not-exist")},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, otf.ErrResourceNotFound, err)
+			},
 		},
 		{
 			name: "by workspace",
-			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID)},
+			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String(ws.ID())},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				if assert.NoError(t, err) {
+					assert.Equal(t, sv, got)
+				}
+			},
+		},
+		{
+			name: "by workspace - missing",
+			opts: otf.StateVersionGetOptions{WorkspaceID: otf.String("ws-does-not-exist")},
+			want: func(t *testing.T, got *otf.StateVersion, err error) {
+				assert.Equal(t, otf.ErrResourceNotFound, err)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.StateVersionStore().Get(tt.opts)
-			require.NoError(t, err)
-
-			// Assertion won't succeed unless both have a workspace with a nil
-			// org.
-			sv.Workspace.Organization = nil
-
-			assert.Equal(t, sv, got)
+			tt.want(t, got, err)
 		})
 	}
 }
@@ -71,14 +91,10 @@ func TestStateVersion_List(t *testing.T) {
 	}{
 		{
 			name: "filter by workspace",
-			opts: otf.StateVersionListOptions{Workspace: otf.String(ws.Name), Organization: otf.String(org.Name)},
+			opts: otf.StateVersionListOptions{Workspace: otf.String(ws.Name()), Organization: otf.String(org.Name())},
 			want: func(t *testing.T, l *otf.StateVersionList, created ...*otf.StateVersion) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, c := range created {
-					// Assertion won't succeed unless both have a workspace with
-					// a nil org.
-					c.Workspace.Organization = nil
-
 					assert.Contains(t, l.Items, c)
 				}
 			},

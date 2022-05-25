@@ -5,76 +5,37 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
 
-// Apply represents a Terraform Enterprise apply.
-type Apply struct {
-	ID                   string                 `jsonapi:"primary,applies"`
-	LogReadURL           string                 `jsonapi:"attr,log-read-url"`
-	ResourceAdditions    int                    `jsonapi:"attr,resource-additions"`
-	ResourceChanges      int                    `jsonapi:"attr,resource-changes"`
-	ResourceDestructions int                    `jsonapi:"attr,resource-destructions"`
-	Status               otf.ApplyStatus        `jsonapi:"attr,status"`
-	StatusTimestamps     *ApplyStatusTimestamps `jsonapi:"attr,status-timestamps"`
-}
-
-// ApplyStatusTimestamps holds the timestamps for individual apply statuses.
-type ApplyStatusTimestamps struct {
-	CanceledAt      *time.Time `json:"canceled-at,omitempty"`
-	ErroredAt       *time.Time `json:"errored-at,omitempty"`
-	FinishedAt      *time.Time `json:"finished-at,omitempty"`
-	ForceCanceledAt *time.Time `json:"force-canceled-at,omitempty"`
-	QueuedAt        *time.Time `json:"queued-at,omitempty"`
-	StartedAt       *time.Time `json:"started-at,omitempty"`
-}
-
-// ToDomain converts http organization obj to a domain organization obj.
-func (a *Apply) ToDomain() *otf.Apply {
-	return &otf.Apply{
-		ID: a.ID,
-		Resources: otf.Resources{
-			ResourceAdditions:    a.ResourceAdditions,
-			ResourceChanges:      a.ResourceChanges,
-			ResourceDestructions: a.ResourceDestructions,
-		},
-		Status: a.Status,
-	}
-}
-
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.ApplyService().Get(vars["id"])
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, ApplyJSONAPIObject(r, obj))
+	writeResponse(w, r, ApplyDTO(r, obj))
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	var opts otf.GetChunkOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	logs, err := s.ApplyService().GetChunk(r.Context(), vars["id"], opts)
+	chunk, err := s.ApplyService().GetChunk(r.Context(), vars["id"], opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	if _, err := w.Write(logs); err != nil {
+	if _, err := w.Write(chunk.Marshal()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -82,55 +43,55 @@ func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	var opts otf.PutChunkOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	if err := s.ApplyService().PutChunk(r.Context(), vars["id"], buf.Bytes(), opts); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+	chunk := otf.Chunk{
+		Data:  buf.Bytes(),
+		Start: opts.Start,
+		End:   opts.End,
+	}
+	if err := s.ApplyService().PutChunk(r.Context(), vars["id"], chunk); err != nil {
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 }
 
-// ApplyJSONAPIObject converts a Apply to a struct that can be marshalled into a
-// JSON-API object
-func ApplyJSONAPIObject(req *http.Request, a *otf.Apply) *Apply {
-	obj := &Apply{
-		ID:                   a.ID,
-		LogReadURL:           httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID)),
-		ResourceAdditions:    a.ResourceAdditions,
-		ResourceChanges:      a.ResourceChanges,
-		ResourceDestructions: a.ResourceDestructions,
-		Status:               a.Status,
+// ApplyDTO converts an apply into a DTO
+func ApplyDTO(req *http.Request, a *otf.Apply) *dto.Apply {
+	o := &dto.Apply{
+		ID:         a.ID(),
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetApplyLogsRoute), a.ID())),
+		Status:     string(a.Status()),
 	}
-
-	for k, v := range a.StatusTimestamps {
-		if obj.StatusTimestamps == nil {
-			obj.StatusTimestamps = &ApplyStatusTimestamps{}
+	if a.ResourceReport != nil {
+		o.ResourceAdditions = a.Additions
+		o.ResourceChanges = a.Changes
+		o.ResourceDestructions = a.Destructions
+	}
+	for _, ts := range a.StatusTimestamps() {
+		if o.StatusTimestamps == nil {
+			o.StatusTimestamps = &dto.ApplyStatusTimestamps{}
 		}
-		switch otf.ApplyStatus(k) {
+		switch ts.Status {
 		case otf.ApplyCanceled:
-			obj.StatusTimestamps.CanceledAt = &v
+			o.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case otf.ApplyErrored:
-			obj.StatusTimestamps.ErroredAt = &v
+			o.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case otf.ApplyFinished:
-			obj.StatusTimestamps.FinishedAt = &v
+			o.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case otf.ApplyQueued:
-			obj.StatusTimestamps.QueuedAt = &v
+			o.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case otf.ApplyRunning:
-			obj.StatusTimestamps.StartedAt = &v
+			o.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-
-	return obj
+	return o
 }

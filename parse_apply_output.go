@@ -10,28 +10,28 @@ var (
 	applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.$`)
 )
 
-func ParseApplyOutput(output string) (Resources, error) {
+func ParseApplyOutput(output string) (ResourceReport, error) {
 	matches := applyChangesRegex.FindStringSubmatch(output)
 	if matches == nil {
-		return Resources{}, fmt.Errorf("regexes unexpectedly did not match apply output")
+		return ResourceReport{}, fmt.Errorf("regexes unexpectedly did not match apply output")
 	}
 
 	adds, err := strconv.ParseInt(matches[1], 10, 0)
 	if err != nil {
-		return Resources{}, err
+		return ResourceReport{}, err
 	}
 	changes, err := strconv.ParseInt(matches[2], 10, 0)
 	if err != nil {
-		return Resources{}, err
+		return ResourceReport{}, err
 	}
 	deletions, err := strconv.ParseInt(matches[3], 10, 0)
 	if err != nil {
-		return Resources{}, err
+		return ResourceReport{}, err
 	}
 
-	return Resources{
-		ResourceAdditions:    int(adds),
-		ResourceChanges:      int(changes),
-		ResourceDestructions: int(deletions),
+	return ResourceReport{
+		Additions:    int(adds),
+		Changes:      int(changes),
+		Destructions: int(deletions),
 	}, nil
 }

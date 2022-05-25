@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
 )
 
 // Compile-time proof of interface implementation.
@@ -22,26 +23,26 @@ type workspaces struct {
 
 // Create is used to create a new workspace.
 func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&options.Organization) {
+	if !otf.ValidStringID(&options.OrganizationName) {
 		return nil, otf.ErrInvalidOrg
 	}
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.Organization))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err
 	}
 
-	w := &Workspace{}
+	w := &dto.Workspace{}
 	err = s.client.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.ToDomain(), nil
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // Retrieve a workspace either by its ID, or by organization and workspace name.
@@ -56,7 +57,7 @@ func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Work
 		return nil, err
 	}
 
-	w := &Workspace{}
+	w := &dto.Workspace{}
 	err = s.client.do(ctx, req, w)
 	if err != nil {
 		return nil, err
@@ -66,28 +67,24 @@ func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Work
 	w.ApplyDurationAverage *= time.Millisecond
 	w.PlanDurationAverage *= time.Millisecond
 
-	return w.ToDomain(), nil
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // List all the workspaces within an organization.
 func (s *workspaces) List(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	if !otf.ValidStringID(options.OrganizationName) {
-		return nil, otf.ErrInvalidOrg
-	}
-
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
 	req, err := s.client.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err
 	}
 
-	wl := &WorkspaceList{}
+	wl := &dto.WorkspaceList{}
 	err = s.client.do(ctx, req, wl)
 	if err != nil {
 		return nil, err
 	}
 
-	return wl.ToDomain(), nil
+	return otf.UnmarshalWorkspaceListJSONAPI(wl), nil
 }
 
 // Update settings of an existing workspace.
@@ -102,13 +99,13 @@ func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpec, options
 		return nil, err
 	}
 
-	w := &Workspace{}
+	w := &dto.Workspace{}
 	err = s.client.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.ToDomain(), nil
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // Delete a workspace by its name.
@@ -138,13 +135,13 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, options o
 		return nil, err
 	}
 
-	w := &Workspace{}
+	w := &dto.Workspace{}
 	err = s.client.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.ToDomain(), nil
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // Unlock a workspace by its ID.
@@ -159,13 +156,13 @@ func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.W
 		return nil, err
 	}
 
-	w := &Workspace{}
+	w := &dto.Workspace{}
 	err = s.client.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.ToDomain(), nil
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
 // getWorkspacePath generates a URL path for a workspace according to whether

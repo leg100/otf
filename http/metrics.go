@@ -8,10 +8,9 @@ import (
 func (s *Server) CacheStats(w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(s.CacheService.Stats())
 	if err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	w.Header().Set("Content-type", jsonApplication)
 	w.Write(payload)
 }

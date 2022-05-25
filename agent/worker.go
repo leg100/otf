@@ -15,29 +15,23 @@ type Worker struct {
 func (w *Worker) Start(ctx context.Context) {
 	for {
 		select {
-		case run := <-w.GetRun():
-			w.handle(ctx, run)
+		case job := <-w.GetRun():
+			w.handle(ctx, job)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-// handle actually executes the Run job
-func (w *Worker) handle(ctx context.Context, run *otf.Run) {
-	job, js, err := w.GetJob(run)
-	if err != nil {
-		w.Error(err, "getting job for run", "id", run.GetID())
-		return
-	}
+// handle executes the incoming job
+func (w *Worker) handle(ctx context.Context, job otf.Job) {
+	js := job.GetService(w.App)
 
-	log := w.Logger.WithValues("job", job.GetID())
+	log := w.Logger.WithValues("job", job.JobID())
 
 	env, err := NewEnvironment(
 		log,
-		w.RunService,
-		w.ConfigurationVersionService,
-		w.StateVersionService,
+		w.App,
 		js,
 		job,
 		w.environmentVariables,
@@ -48,7 +42,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	run, err = js.Start(context.Background(), job.GetID(), otf.JobStartOptions{AgentID: DefaultID})
+	job, err = js.Claim(context.Background(), job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -56,20 +50,20 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(job.GetID(), env)
-	defer w.CheckOut(job.GetID())
+	w.CheckIn(job.JobID(), env)
+	defer w.CheckOut(job.JobID())
 
-	log.Info("executing job", "status", job.GetStatus())
+	log.Info("executing job")
 
 	var finishOptions otf.JobFinishOptions
 
-	if err := env.Execute(run, job); err != nil {
+	if err := env.Execute(job); err != nil {
 		log.Error(err, "executing job")
 		finishOptions.Errored = true
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = js.Finish(context.Background(), job.GetID(), finishOptions)
+	_, err = js.Finish(context.Background(), job.JobID(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing job")
 	}

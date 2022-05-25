@@ -5,17 +5,45 @@ import (
 	"fmt"
 )
 
-type testChunkStore struct {
-	store map[string][]byte
+var _ RunService = (*fakeRunService)(nil)
 
-	ChunkStore
+type fakeRunService struct {
+	// database of existing runs
+	db []*Run
+	// list of started runs
+	started []*Run
+	// prevent compiler error
+	RunService
 }
 
-func (s *testChunkStore) GetChunk(ctx context.Context, id string, opts GetChunkOptions) ([]byte, error) {
-	data, ok := s.store[id]
-	if !ok {
-		return nil, fmt.Errorf("no object found with id: %s", id)
-	}
+func newFakeRunService(runs ...*Run) *fakeRunService {
+	return &fakeRunService{db: runs}
+}
 
-	return GetChunk(data, opts)
+func (s *fakeRunService) List(_ context.Context, opts RunListOptions) (*RunList, error) {
+	var items []*Run
+	for _, r := range s.db {
+		if opts.WorkspaceID != nil && *opts.WorkspaceID != r.Workspace.ID() {
+			continue
+		}
+		// if statuses are specified then run must match one of them.
+		if len(opts.Statuses) > 0 && !ContainsRunStatus(opts.Statuses, r.Status()) {
+			continue
+		}
+		items = append(items, r)
+	}
+	return &RunList{
+		Items: items,
+	}, nil
+}
+
+func (s *fakeRunService) Start(_ context.Context, id string) (*Run, error) {
+	for _, r := range s.db {
+		if r.ID() == id {
+			s.started = append(s.started, r)
+			r.status = RunPlanQueued
+			return r, nil
+		}
+	}
+	return nil, fmt.Errorf("no run to start")
 }

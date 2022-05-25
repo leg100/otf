@@ -28,10 +28,9 @@ type WellKnown struct {
 func (s *Server) WellKnown(w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(paths)
 	if err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	w.Header().Set("Content-type", jsonApplication)
 	w.Write(payload)
 }

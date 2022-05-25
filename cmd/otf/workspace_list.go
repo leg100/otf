@@ -28,14 +28,14 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 			}
 
 			for _, ws := range list.Items {
-				fmt.Println(ws.Name)
+				fmt.Println(ws.Name())
 			}
 
 			return nil
 		},
 	}
 
-	opts.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	cmd.Flags().StringVar(&opts.OrganizationName, "organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

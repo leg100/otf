@@ -20,9 +20,7 @@ var (
 
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
-	RunService                  otf.RunService
-	ConfigurationVersionService otf.ConfigurationVersionService
-	StateVersionService         otf.StateVersionService
+	App otf.Application
 
 	otf.JobSelector
 
@@ -41,20 +39,14 @@ type Supervisor struct {
 }
 
 // NewSupervisor is the constructor for Supervisor
-func NewSupervisor(spooler Spooler, cvs otf.ConfigurationVersionService, svs otf.StateVersionService, rs otf.RunService, ps otf.PlanService, as otf.ApplyService, logger logr.Logger, concurrency int) *Supervisor {
+func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, concurrency int) *Supervisor {
 	s := &Supervisor{
-		Spooler:             spooler,
-		RunService:          rs,
-		StateVersionService: svs,
-		JobSelector: otf.JobSelector{
-			PlanService:  ps,
-			ApplyService: as,
-		},
-		ConfigurationVersionService: cvs,
-		Logger:                      logger,
-		AgentID:                     DefaultID,
-		concurrency:                 concurrency,
-		Terminator:                  NewTerminator(),
+		Spooler:     spooler,
+		App:         app,
+		Logger:      logger,
+		AgentID:     DefaultID,
+		concurrency: concurrency,
+		Terminator:  NewTerminator(),
 	}
 
 	if err := os.MkdirAll(PluginCacheDir, 0755); err != nil {
@@ -76,7 +68,7 @@ func (s *Supervisor) Start(ctx context.Context) {
 		select {
 		case run := <-s.GetCancelation():
 			// TODO: support force cancelations too.
-			s.Cancel(run.GetID(), false)
+			s.Cancel(run.ID(), false)
 		case <-ctx.Done():
 			return
 		}

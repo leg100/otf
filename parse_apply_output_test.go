@@ -10,10 +10,10 @@ import (
 )
 
 func TestParseApplyOutputChanges(t *testing.T) {
-	want := Resources{
-		ResourceAdditions:    1,
-		ResourceChanges:      0,
-		ResourceDestructions: 0,
+	want := ResourceReport{
+		Additions:    1,
+		Changes:      0,
+		Destructions: 0,
 	}
 
 	output, err := os.ReadFile("testdata/apply.txt")
@@ -25,10 +25,10 @@ func TestParseApplyOutputChanges(t *testing.T) {
 }
 
 func TestParseApplyOutputNoChanges(t *testing.T) {
-	want := Resources{
-		ResourceAdditions:    0,
-		ResourceChanges:      0,
-		ResourceDestructions: 0,
+	want := ResourceReport{
+		Additions:    0,
+		Changes:      0,
+		Destructions: 0,
 	}
 
 	output, err := ioutil.ReadFile("testdata/apply_no_changes.txt")

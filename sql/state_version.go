@@ -1,85 +1,71 @@
 package sql
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
-	_ otf.StateVersionStore = (*StateVersionService)(nil)
-
-	stateVersionColumns = []string{
-		"state_version_id",
-		"created_at",
-		"updated_at",
-		"serial",
-	}
-
-	stateVersionOutputColumns = []string{
-		"state_version_output_id",
-		"created_at",
-		"updated_at",
-		"name",
-		"sensitive",
-		"type",
-		"value",
-		"state_version_id",
-	}
-
-	insertStateVersionSQL = fmt.Sprintf("INSERT INTO state_versions (%s, state, workspace_id) VALUES (%s, :state, :workspaces.workspace_id)",
-		strings.Join(stateVersionColumns, ", "),
-		strings.Join(otf.PrefixSlice(stateVersionColumns, ":"), ", "))
-
-	insertStateVersionOutputSQL = fmt.Sprintf("INSERT INTO state_version_outputs (%s) VALUES (%s)",
-		strings.Join(stateVersionOutputColumns, ", "),
-		strings.Join(otf.PrefixSlice(stateVersionOutputColumns, ":"), ", "))
+	_ otf.StateVersionStore = (*StateVersionDB)(nil)
 )
 
-type StateVersionService struct {
-	*sqlx.DB
+type StateVersionDB struct {
+	*pgxpool.Pool
 }
 
-func NewStateVersionDB(db *sqlx.DB) *StateVersionService {
-	return &StateVersionService{
-		DB: db,
+func NewStateVersionDB(conn *pgxpool.Pool) *StateVersionDB {
+	return &StateVersionDB{
+		Pool: conn,
 	}
 }
 
 // Create persists a StateVersion to the DB.
-func (s StateVersionService) Create(sv *otf.StateVersion) (*otf.StateVersion, error) {
-	tx := s.MustBegin()
-	defer tx.Rollback()
+func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
+	ctx := context.Background()
 
-	// Insert state_version
-	sql, args, err := tx.BindNamed(insertStateVersionSQL, sv)
+	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	_, err = tx.Exec(sql, args...)
+	defer tx.Rollback(ctx)
+
+	q := pggen.NewQuerier(tx)
+
+	_, err = q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
+		ID:          sv.ID(),
+		CreatedAt:   sv.CreatedAt(),
+		Serial:      int(sv.Serial()),
+		State:       sv.State(),
+		WorkspaceID: workspaceID,
+	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Insert state_version_outputs
-	for _, svo := range sv.Outputs {
-		svo.StateVersionID = sv.ID
-		sql, args, err := tx.BindNamed(insertStateVersionOutputSQL, svo)
+	for _, svo := range sv.Outputs() {
+		_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
+			ID:             svo.ID(),
+			Name:           svo.Name,
+			Sensitive:      svo.Sensitive,
+			Type:           svo.Type,
+			Value:          svo.Value,
+			StateVersionID: sv.ID(),
+		})
 		if err != nil {
-			return nil, err
-		}
-		_, err = tx.Exec(sql, args...)
-		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return sv, tx.Commit()
+	return tx.Commit(ctx)
 }
 
-func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	if opts.Workspace == nil {
 		return nil, fmt.Errorf("missing required option: workspace")
 	}
@@ -87,119 +73,85 @@ func (s StateVersionService) List(opts otf.StateVersionListOptions) (*otf.StateV
 		return nil, fmt.Errorf("missing required option: organization")
 	}
 
-	selectBuilder := psql.Select().From("state_versions").
-		Join("workspaces USING (workspace_id)").
-		Join("organizations USING (organization_id)").
-		Where("workspaces.name = ?", *opts.Workspace).
-		Where("organizations.name = ?", *opts.Organization)
+	q := pggen.NewQuerier(s.Pool)
+	batch := &pgx.Batch{}
+	ctx := context.Background()
 
-	var count int
-	if err := selectBuilder.Columns("count(*)").RunWith(s).QueryRow().Scan(&count); err != nil {
-		return nil, fmt.Errorf("counting total rows: %w", err)
+	q.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
+		WorkspaceName:    *opts.Workspace,
+		OrganizationName: *opts.Organization,
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
+	})
+	q.CountStateVersionsByWorkspaceNameBatch(batch, *opts.Workspace, *opts.Organization)
+
+	results := s.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindStateVersionsByWorkspaceNameScan(results)
+	if err != nil {
+		return nil, err
 	}
-
-	selectBuilder = selectBuilder.
-		Columns(asColumnList("state_versions", false, stateVersionColumns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
-
-	sql, args, err := selectBuilder.ToSql()
+	count, err := q.CountStateVersionsByWorkspaceNameScan(results)
 	if err != nil {
 		return nil, err
 	}
 
 	var items []*otf.StateVersion
-	if err := s.Select(&items, sql, args...); err != nil {
-		return nil, err
+	for _, r := range rows {
+		sv, err := otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, sv)
 	}
 
 	return &otf.StateVersionList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
-func (s StateVersionService) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	return getStateVersion(s.DB, opts)
+func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
+	ctx := context.Background()
+	q := pggen.NewQuerier(s.Pool)
+
+	if opts.ID != nil {
+		result, err := q.FindStateVersionByID(ctx, *opts.ID)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
+	} else if opts.WorkspaceID != nil {
+		result, err := q.FindStateVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
+	} else {
+		return nil, fmt.Errorf("no state version spec provided")
+	}
+}
+
+func (s StateVersionDB) GetState(id string) ([]byte, error) {
+	ctx := context.Background()
+	q := pggen.NewQuerier(s.Pool)
+
+	return q.FindStateVersionStateByID(ctx, id)
 }
 
 // Delete deletes a state version from the DB
-func (s StateVersionService) Delete(id string) error {
-	tx := s.MustBegin()
-	defer tx.Rollback()
+func (s StateVersionDB) Delete(id string) error {
+	ctx := context.Background()
+	q := pggen.NewQuerier(s.Pool)
 
-	sv, err := getStateVersion(tx, otf.StateVersionGetOptions{ID: otf.String(id)})
+	result, err := q.DeleteStateVersionByID(ctx, id)
 	if err != nil {
 		return err
 	}
-
-	_, err = tx.Exec("DELETE FROM state_versions WHERE id = $1", sv.ID)
-	if err != nil {
-		return fmt.Errorf("unable to delete state_version: %w", err)
+	if result.RowsAffected() == 0 {
+		return otf.ErrResourceNotFound
 	}
-
-	return tx.Commit()
-}
-
-func getStateVersion(getter Getter, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	columns := stateVersionColumns
-
-	if opts.State {
-		columns = append(columns, "state")
-	}
-
-	selectBuilder := psql.Select(asColumnList("state_versions", false, columns...)).
-		Columns(asColumnList("workspaces", true, workspaceColumns...)).
-		From("state_versions").
-		Join("workspaces USING (workspace_id)")
-
-	switch {
-	case opts.ID != nil:
-		// Get state version by ID
-		selectBuilder = selectBuilder.Where("state_versions.state_version_id = ?", *opts.ID)
-	case opts.WorkspaceID != nil:
-		// Get latest state version for given workspace
-		selectBuilder = selectBuilder.Where("workspaces.workspace_id = ?", *opts.WorkspaceID)
-		selectBuilder = selectBuilder.OrderBy("state_versions.serial DESC, state_versions.created_at DESC")
-	default:
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	sv := otf.StateVersion{}
-	if err := getter.Get(&sv, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
-	}
-
-	if err := attachOutputs(getter, &sv); err != nil {
-		return nil, err
-	}
-
-	return &sv, nil
-}
-
-func attachOutputs(getter Getter, sv *otf.StateVersion) error {
-	selectBuilder := psql.Select("*").
-		From("state_version_outputs").
-		Where("state_version_id = ? ", sv.ID)
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return err
-	}
-
-	outputs := []*otf.StateVersionOutput{}
-	if err := getter.Select(&outputs, sql, args...); err != nil {
-		return err
-	}
-
-	// Attach
-	sv.Outputs = outputs
 
 	return nil
 }

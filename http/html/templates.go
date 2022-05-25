@@ -125,7 +125,7 @@ func (td *templateData) PopFlash() (*otf.Flash, error) {
 }
 
 func (td *templateData) CurrentUser() *ActiveUser {
-	return td.sessions.getUserFromContext(td.request.Context())
+	return td.sessions.GetUserFromContext(td.request.Context())
 }
 
 func (td *templateData) CurrentPath() string {

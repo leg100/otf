@@ -1,156 +1,160 @@
 package sql
 
 import (
-	"fmt"
-	"strings"
+	"context"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
-	"github.com/mitchellh/copystructure"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 var (
 	_ otf.OrganizationStore = (*OrganizationDB)(nil)
-
-	organizationColumns = []string{
-		"organization_id",
-		"created_at",
-		"updated_at",
-		"name",
-		"session_remember",
-		"session_timeout",
-	}
-
-	insertOrganizationSQL = fmt.Sprintf("INSERT INTO organizations (%s) VALUES (%s)",
-		strings.Join(organizationColumns, ", "),
-		strings.Join(otf.PrefixSlice(organizationColumns, ":"), ", "))
 )
 
 type OrganizationDB struct {
-	*sqlx.DB
+	*pgxpool.Pool
 }
 
-func NewOrganizationDB(db *sqlx.DB) *OrganizationDB {
+func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 	return &OrganizationDB{
-		DB: db,
+		Pool: conn,
 	}
 }
 
 // Create persists a Organization to the DB.
-func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
-	if _, err := getOrganization(db.DB, org.Name); err == nil {
-		return nil, otf.ErrResourcesAlreadyExists
-	}
-
-	sql, args, err := db.BindNamed(insertOrganizationSQL, org)
+func (db OrganizationDB) Create(org *otf.Organization) error {
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+		ID:              org.ID(),
+		CreatedAt:       org.CreatedAt(),
+		UpdatedAt:       org.UpdatedAt(),
+		Name:            org.Name(),
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
+	})
 	if err != nil {
-		return nil, err
+		return databaseError(err)
 	}
-	_, err = db.Exec(sql, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	return org, nil
+	return nil
 }
 
 // Update persists an updated Organization to the DB. The existing org is
 // fetched from the DB, the supplied func is invoked on the org, and the updated
 // org is persisted back to the DB.
 func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	tx := db.MustBegin()
-	defer tx.Rollback()
-
-	org, err := getOrganization(tx, name)
+	ctx := context.Background()
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Make a copy for comparison with the updated obj
-	before, err := copystructure.Copy(org)
+	defer tx.Rollback(ctx)
+	q := pggen.NewQuerier(tx)
+	result, err := q.FindOrganizationByNameForUpdate(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-
-	// Update obj using client-supplied fn
+	org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
+	if err != nil {
+		return nil, err
+	}
 	if err := fn(org); err != nil {
 		return nil, err
 	}
+	if org.Name() != result.Name {
+		_, err := q.UpdateOrganizationNameByName(ctx, pggen.UpdateOrganizationNameByNameParams{
+			Name:      result.Name,
+			NewName:   org.Name(),
+			UpdatedAt: org.UpdatedAt(),
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if org.SessionRemember() != result.SessionRemember {
+		_, err := q.UpdateOrganizationSessionRememberByName(ctx, pggen.UpdateOrganizationSessionRememberByNameParams{
+			Name:            org.Name(),
+			SessionRemember: org.SessionRemember(),
+			UpdatedAt:       org.UpdatedAt(),
+		})
 
-	updated, err := update(db.Mapper, tx, "organizations", "organization_id", before.(*otf.Organization), org)
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+	}
+	if org.SessionTimeout() != result.SessionTimeout {
+		_, err := q.UpdateOrganizationSessionTimeoutByName(ctx, pggen.UpdateOrganizationSessionTimeoutByNameParams{
+			Name:           org.Name(),
+			SessionTimeout: org.SessionTimeout(),
+			UpdatedAt:      org.UpdatedAt(),
+		})
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if updated {
-		return org, tx.Commit()
-	}
-
-	return org, nil
+	return org, tx.Commit(ctx)
 }
 
 func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	selectBuilder := psql.Select().From("organizations")
+	q := pggen.NewQuerier(db.Pool)
+	batch := &pgx.Batch{}
+	ctx := context.Background()
 
-	var count int
-	if err := selectBuilder.Columns("count(*)").RunWith(db).QueryRow().Scan(&count); err != nil {
-		return nil, fmt.Errorf("counting total rows: %w", err)
+	q.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
+	q.CountOrganizationsBatch(batch)
+	results := db.Pool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := q.FindOrganizationsScan(results)
+	if err != nil {
+		return nil, err
 	}
-
-	selectBuilder = selectBuilder.
-		Columns(organizationColumns...).
-		Limit(opts.GetLimit()).
-		Offset(opts.GetOffset())
-
-	sql, _, err := selectBuilder.ToSql()
+	count, err := q.CountOrganizationsScan(results)
 	if err != nil {
 		return nil, err
 	}
 
 	var items []*otf.Organization
-	if err := db.Select(&items, sql); err != nil {
-		return nil, err
+	for _, r := range rows {
+		org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, org)
 	}
 
 	return &otf.OrganizationList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, count),
+		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
 }
 
 func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
-	return getOrganization(db.DB, name)
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+	r, err := q.FindOrganizationByName(ctx, name)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
 }
 
 func (db OrganizationDB) Delete(name string) error {
-	result, err := db.Exec("DELETE FROM organizations WHERE name = $1", name)
+	q := pggen.NewQuerier(db.Pool)
+	ctx := context.Background()
+
+	result, err := q.DeleteOrganization(ctx, name)
 	if err != nil {
 		return err
 	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 0 {
+
+	if result.RowsAffected() == 0 {
 		return otf.ErrResourceNotFound
 	}
+
 	return nil
-}
-
-func getOrganization(getter Getter, name string) (*otf.Organization, error) {
-	selectBuilder := psql.Select(organizationColumns...).
-		From("organizations").
-		Where("name = ?", name)
-
-	sql, args, err := selectBuilder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	var org otf.Organization
-	if err := getter.Get(&org, sql, args...); err != nil {
-		return nil, databaseError(err, sql)
-	}
-
-	return &org, nil
 }

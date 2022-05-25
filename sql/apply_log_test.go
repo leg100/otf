@@ -16,7 +16,7 @@ func TestApplyLog_PutChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID, []byte("chunk1"), otf.PutChunkOptions{Start: true})
+	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
 	require.NoError(t, err)
 }
 
@@ -27,48 +27,55 @@ func TestApplyLog_GetChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID, []byte("chunk1"), otf.PutChunkOptions{Start: true})
+	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("hello"), Start: true})
 	require.NoError(t, err)
 
-	err = db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID, []byte("chunk2"), otf.PutChunkOptions{})
-	require.NoError(t, err)
-
-	err = db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID, []byte("chunk3"), otf.PutChunkOptions{End: true})
+	err = db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte(" world"), End: true})
 	require.NoError(t, err)
 
 	tests := []struct {
 		name string
 		opts otf.GetChunkOptions
-		want string
+		want otf.Chunk
 	}{
 		{
 			name: "all chunks",
-			opts: otf.GetChunkOptions{},
-			want: "\x02chunk1chunk2chunk3\x03",
+			want: otf.Chunk{
+				Data:  []byte("hello world"),
+				Start: true,
+				End:   true,
+			},
 		},
 		{
 			name: "first chunk",
-			opts: otf.GetChunkOptions{Limit: 9},
-			want: "\x02chunk1ch",
+			opts: otf.GetChunkOptions{Limit: 4},
+			want: otf.Chunk{
+				Data:  []byte("hel"),
+				Start: true,
+			},
 		},
 		{
 			name: "intermediate chunk",
-			opts: otf.GetChunkOptions{Offset: 10, Limit: 9},
-			want: "nk2chunk3",
+			opts: otf.GetChunkOptions{Offset: 4, Limit: 3},
+			want: otf.Chunk{
+				Data: []byte("lo "),
+			},
 		},
 		{
 			name: "last chunk",
-			opts: otf.GetChunkOptions{Offset: 15},
-			want: "unk3\x03",
+			opts: otf.GetChunkOptions{Offset: 7},
+			want: otf.Chunk{
+				Data: []byte("world"),
+				End:  true,
+			},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ApplyLogStore().GetChunk(context.Background(), run.Apply.ID, tt.opts)
+			got, err := db.ApplyLogStore().GetChunk(context.Background(), run.Apply.ID(), tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, string(got))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

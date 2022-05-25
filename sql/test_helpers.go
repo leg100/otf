@@ -2,21 +2,19 @@ package sql
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/jackc/pgx/v4"
 )
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
-
-type newTestStateVersionOption func(*otf.StateVersion) error
 
 func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) otf.DB {
 	urlStr := os.Getenv(TestDatabaseURL)
@@ -28,14 +26,6 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	require.NoError(t, err)
 
 	require.Equal(t, "postgres", u.Scheme)
-
-	// We set both postgres and test fixtures to use TZ so that we can test for
-	// timestamp equality between the two. (A go time.Time may use "Local"
-	// whereas postgres may set "Europe/London", which would fail an equality
-	// test).
-	q := u.Query()
-	q.Add("TimeZone", "UTC")
-	u.RawQuery = q.Encode()
 
 	interval := DefaultSessionCleanupInterval
 	if len(sessionCleanupIntervalOverride) > 0 {
@@ -53,71 +43,19 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	return db
 }
 
-// newTestTimestamps constructs timestamps suitable for unit tests interfacing with
-// postgres; tests may want to test for equality with timestamps retrieved from
-// postgres, and so the timestamps must be of a certain precision and timezone.
-func newTestTimestamps() otf.Timestamps {
-	now := time.Now().Round(time.Millisecond).UTC()
-	return otf.Timestamps{
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-}
-
 func newTestOrganization() *otf.Organization {
-	return &otf.Organization{
-		ID:         otf.NewID("org"),
-		Timestamps: newTestTimestamps(),
-		Name:       uuid.NewString(),
-	}
+	return otf.NewTestOrganization()
 }
 
 func newTestWorkspace(org *otf.Organization) *otf.Workspace {
-	return &otf.Workspace{
-		ID:           otf.NewID("ws"),
-		Timestamps:   newTestTimestamps(),
-		Name:         uuid.NewString(),
-		Organization: org,
-	}
+	return otf.NewTestWorkspace(org)
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return &otf.ConfigurationVersion{
-		ID:               otf.NewID("cv"),
-		Timestamps:       newTestTimestamps(),
-		Status:           otf.ConfigurationPending,
-		StatusTimestamps: make(otf.TimestampMap),
-		Workspace:        ws,
-	}
-}
-
-func newTestStateVersion(ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv := &otf.StateVersion{
-		ID:         otf.NewID("sv"),
-		Timestamps: newTestTimestamps(),
-		Workspace:  ws,
-	}
-	for _, o := range opts {
-		o(sv)
-	}
-	return sv
-}
-
-func newTestUser() *otf.User {
-	return &otf.User{
-		ID:         otf.NewID("user"),
-		Timestamps: newTestTimestamps(),
-		Username:   fmt.Sprintf("mr-%s", otf.GenerateRandomString(6)),
-	}
+	return otf.NewConfigurationVersionFromDefaults(ws)
 }
 
 type newTestSessionOption func(*otf.Session)
-
-func withFlash(flash *otf.Flash) newTestSessionOption {
-	return func(session *otf.Session) {
-		session.SessionData.Flash = flash
-	}
-}
 
 func overrideExpiry(expiry time.Time) newTestSessionOption {
 	return func(session *otf.Session) {
@@ -135,58 +73,21 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 		o(session)
 	}
 
-	session.Timestamps = newTestTimestamps()
-
 	return session
 }
 
-func appendOutput(name, outputType, value string, sensitive bool) newTestStateVersionOption {
-	return func(sv *otf.StateVersion) error {
-		sv.Outputs = append(sv.Outputs, &otf.StateVersionOutput{
-			ID:        otf.NewID("wsout"),
-			Name:      name,
-			Type:      outputType,
-			Value:     value,
-			Sensitive: sensitive,
-		})
-		return nil
-	}
-}
-
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	id := otf.NewID("run")
-	return &otf.Run{
-		ID:               id,
-		Timestamps:       newTestTimestamps(),
-		Status:           otf.RunPending,
-		StatusTimestamps: make(otf.TimestampMap),
-		Plan: &otf.Plan{
-			ID:               otf.NewID("plan"),
-			Timestamps:       newTestTimestamps(),
-			StatusTimestamps: make(otf.TimestampMap),
-			RunID:            id,
-			PlanFile:         []byte{},
-			PlanJSON:         []byte{},
-		},
-		Apply: &otf.Apply{
-			ID:               otf.NewID("apply"),
-			Timestamps:       newTestTimestamps(),
-			StatusTimestamps: make(otf.TimestampMap),
-			RunID:            id,
-		},
-		Workspace:            ws,
-		ConfigurationVersion: cv,
-	}
+	return otf.NewRunFromDefaults(cv, ws)
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org, err := db.OrganizationStore().Create(newTestOrganization())
+	org := newTestOrganization()
+	err := db.OrganizationStore().Create(org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(org.Name)
+		db.OrganizationStore().Delete(org.Name())
 	})
-
 	return org
 }
 
@@ -195,9 +96,8 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID)})
+		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
-
 	return ws
 }
 
@@ -206,83 +106,69 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) 
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.ConfigurationVersionStore().Delete(cv.ID)
+		db.ConfigurationVersionStore().Delete(cv.ID())
 	})
-
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...newTestStateVersionOption) *otf.StateVersion {
-	sv, err := db.StateVersionStore().Create(newTestStateVersion(ws, opts...))
+func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
+	sv := otf.NewTestStateVersion(t, outputs...)
+	err := db.StateVersionStore().Create(ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.StateVersionStore().Delete(sv.ID)
+		db.StateVersionStore().Delete(sv.ID())
 	})
-
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	run, err := db.RunStore().Create(newTestRun(ws, cv))
+	run := newTestRun(ws, cv)
+	err := db.RunStore().Create(run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.RunStore().Delete(run.ID)
+		db.RunStore().Delete(run.ID())
 	})
-
 	return run
 }
 
-type createTestUserOpt func(*otf.User)
-
-func withOrganizationMemberships(memberships ...*otf.Organization) createTestUserOpt {
-	return func(user *otf.User) {
-		user.Organizations = memberships
-	}
-}
-
-func createTestUser(t *testing.T, db otf.DB, opts ...createTestUserOpt) *otf.User {
-	user := newTestUser()
-
-	for _, o := range opts {
-		o(user)
-	}
+func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf.User {
+	user := otf.NewTestUser(opts...)
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
+		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	})
-
 	return user
 }
 
 func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
 	session := newTestSession(t, userID, opts...)
+	ctx := context.Background()
 
-	err := db.UserStore().CreateSession(context.Background(), session)
+	err := db.SessionStore().CreateSession(ctx, session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := db.UserStore().DeleteSession(context.Background(), session.Token)
-		require.NoError(t, err)
+		db.SessionStore().DeleteSession(ctx, session.Token)
 	})
-
 	return session
 }
 
 func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.Token {
+	ctx := context.Background()
+
 	token, err := otf.NewToken(userID, description)
 	require.NoError(t, err)
 
-	err = db.UserStore().CreateToken(context.Background(), token)
+	err = db.TokenStore().CreateToken(ctx, token)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().DeleteToken(context.Background(), token.Token)
+		db.TokenStore().DeleteToken(ctx, token.Token())
 	})
-
 	return token
 }

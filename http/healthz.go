@@ -22,10 +22,9 @@ type Healthz struct {
 func GetHealthz(w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(currentHealthz)
 	if err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	w.Header().Set("Content-type", jsonApplication)
 	w.Write(payload)
 }

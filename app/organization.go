@@ -25,20 +25,21 @@ func NewOrganizationService(db otf.OrganizationStore, logger logr.Logger, es otf
 }
 
 func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	// TODO: check whether org already exists first
+
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = s.db.Create(org)
-	if err != nil {
-		s.Error(err, "creating organization", "id", org.ID)
+	if err := s.db.Create(org); err != nil {
+		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
 
 	s.es.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	s.V(0).Info("created organization", "id", org.ID, "name", org.Name)
+	s.V(0).Info("created organization", "id", org.ID(), "name", org.Name())
 
 	return org, nil
 }
@@ -64,7 +65,7 @@ func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organiz
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved organization", "name", name, "id", org.ID)
+	s.V(2).Info("retrieved organization", "name", name, "id", org.ID())
 
 	return org, nil
 }
@@ -74,9 +75,17 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	return s.db.Update(name, func(org *otf.Organization) error {
-		return otf.UpdateOrganization(org, opts)
+	org, err := s.db.Update(name, func(org *otf.Organization) error {
+		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
+	if err != nil {
+		s.Error(err, "updating organization", "name", name)
+		return nil, err
+	}
+
+	s.V(2).Info("updated organization", "name", name, "id", org.ID())
+
+	return org, nil
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {
@@ -89,5 +98,5 @@ func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (
 		return nil, err
 	}
 
-	return otf.DefaultEntitlements(org.ID), nil
+	return otf.DefaultEntitlements(org.ID()), nil
 }

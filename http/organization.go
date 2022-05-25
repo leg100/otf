@@ -3,160 +3,115 @@ package http
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/dto"
 )
 
-// Organization represents a Terraform Enterprise organization.
-type Organization struct {
-	Name                  string                       `jsonapi:"primary,organizations"`
-	CostEstimationEnabled bool                         `jsonapi:"attr,cost-estimation-enabled"`
-	CreatedAt             time.Time                    `jsonapi:"attr,created-at,iso8601"`
-	ExternalID            string                       `jsonapi:"attr,external-id"`
-	OwnersTeamSAMLRoleID  string                       `jsonapi:"attr,owners-team-saml-role-id"`
-	Permissions           *otf.OrganizationPermissions `jsonapi:"attr,permissions"`
-	SAMLEnabled           bool                         `jsonapi:"attr,saml-enabled"`
-	SessionRemember       int                          `jsonapi:"attr,session-remember"`
-	SessionTimeout        int                          `jsonapi:"attr,session-timeout"`
-	TrialExpiresAt        time.Time                    `jsonapi:"attr,trial-expires-at,iso8601"`
-	TwoFactorConformant   bool                         `jsonapi:"attr,two-factor-conformant"`
-}
-
-// OrganizationList represents a list of organizations.
-type OrganizationList struct {
-	*otf.Pagination
-	Items []*Organization
-}
-
-// ToDomain converts http organization obj to a domain organization obj.
-func (o *Organization) ToDomain() *otf.Organization {
-	return &otf.Organization{
-		ID:              o.ExternalID,
-		Name:            o.Name,
-		SessionRemember: o.SessionRemember,
-		SessionTimeout:  o.SessionTimeout,
-	}
-}
-
 func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
-	opts := otf.OrganizationCreateOptions{}
-
+	opts := dto.OrganizationCreateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	if err := opts.Valid(); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	obj, err := s.OrganizationService().Create(r.Context(), opts)
+	obj, err := s.OrganizationService().Create(r.Context(), otf.OrganizationCreateOptions{
+		Name:            opts.Name,
+		SessionRemember: opts.SessionRemember,
+		SessionTimeout:  opts.SessionTimeout,
+	})
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj), WithCode(http.StatusCreated))
+	writeResponse(w, r, OrganizationDTO(obj), withCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-
 	obj, err := s.OrganizationService().Get(context.Background(), vars["name"])
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	writeResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
-
-	if err := DecodeQuery(&opts, r.URL.Query()); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
 	obj, err := s.OrganizationService().List(context.Background(), opts)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationListJSONAPIObject(obj))
+	writeResponse(w, r, OrganizationListDTO(obj))
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
-	opts := otf.OrganizationUpdateOptions{}
+	opts := dto.OrganizationUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		WriteError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-
-	obj, err := s.OrganizationService().Update(context.Background(), name, &opts)
+	obj, err := s.OrganizationService().Update(context.Background(), name, &otf.OrganizationUpdateOptions{
+		Name:            opts.Name,
+		SessionRemember: opts.SessionRemember,
+		SessionTimeout:  opts.SessionTimeout,
+	})
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, OrganizationJSONAPIObject(obj))
+	writeResponse(w, r, OrganizationDTO(obj))
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
 	if err := s.OrganizationService().Delete(context.Background(), name); err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-
-	obj, err := s.OrganizationService().GetEntitlements(context.Background(), name)
+	entitlements, err := s.OrganizationService().GetEntitlements(context.Background(), name)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, err)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
-
-	WriteResponse(w, r, obj)
+	converted := dto.Entitlements(*entitlements)
+	writeResponse(w, r, &converted)
 }
 
-// OrganizationJSONAPIObject converts a Organization to a struct
-// that can be marshalled into a JSON-API object
-func OrganizationJSONAPIObject(org *otf.Organization) *Organization {
-	obj := &Organization{
-		Name:            org.Name,
-		CreatedAt:       org.CreatedAt,
-		ExternalID:      org.ID,
-		Permissions:     &otf.DefaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember,
-		SessionTimeout:  org.SessionTimeout,
+// OrganizationDTO converts an org into a DTO
+func OrganizationDTO(org *otf.Organization) *dto.Organization {
+	return &dto.Organization{
+		Name:            org.Name(),
+		CreatedAt:       org.CreatedAt(),
+		ExternalID:      org.ID(),
+		Permissions:     &dto.DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
 	}
-
-	return obj
 }
 
-// OrganizationListJSONAPIObject converts a OrganizationList to
-// a struct that can be marshalled into a JSON-API object
-func OrganizationListJSONAPIObject(cvl *otf.OrganizationList) *OrganizationList {
-	obj := &OrganizationList{
-		Pagination: cvl.Pagination,
+// OrganizationListDTO converts an org list into a DTO
+func OrganizationListDTO(ol *otf.OrganizationList) *dto.OrganizationList {
+	pagination := dto.Pagination(*ol.Pagination)
+	jol := &dto.OrganizationList{
+		Pagination: &pagination,
 	}
-	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, OrganizationJSONAPIObject(item))
+	for _, item := range ol.Items {
+		jol.Items = append(jol.Items, OrganizationDTO(item))
 	}
-
-	return obj
+	return jol
 }
