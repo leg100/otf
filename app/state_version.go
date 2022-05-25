@@ -35,11 +35,11 @@ func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCre
 		return nil, err
 	}
 
-	if err := s.cache.Set(otf.StateVersionCacheKey(sv.ID()), sv.State); err != nil {
+	if err := s.cache.Set(otf.StateVersionCacheKey(sv.ID()), sv.State()); err != nil {
 		return nil, fmt.Errorf("caching state version: %w", err)
 	}
 
-	s.V(0).Info("created state version", "id", sv.ID(), "workspace", workspaceID, "serial", sv.Serial)
+	s.V(0).Info("created state version", "id", sv.ID(), "workspace", workspaceID, "serial", sv.Serial())
 	return sv, nil
 }
 

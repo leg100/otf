@@ -77,8 +77,8 @@ func StateVersionJSONAPIObject(r *otf.StateVersion) *dto.StateVersion {
 		ID:          r.ID(),
 		CreatedAt:   r.CreatedAt(),
 		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID()),
-		Serial:      r.Serial,
-		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs),
+		Serial:      r.Serial(),
+		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs()),
 	}
 }
 
