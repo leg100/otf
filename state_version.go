@@ -71,6 +71,17 @@ type StateVersionListOptions struct {
 	Workspace    *string `schema:"filter[workspace][name]"`
 }
 
+// LogFields provides fields for logging
+func (opts StateVersionListOptions) LogFields() (fields []interface{}) {
+	if opts.Workspace != nil {
+		fields = append(fields, "workspace", *opts.Workspace)
+	}
+	if opts.Organization != nil {
+		fields = append(fields, "organization", *opts.Organization)
+	}
+	return fields
+}
+
 // StateVersionCreateOptions represents the options for creating a state
 // version. See dto.StateVersionCreateOptions for more details.
 type StateVersionCreateOptions struct {

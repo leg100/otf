@@ -270,14 +270,15 @@ type WorkspaceSpec struct {
 	Include *string `schema:"include"`
 }
 
-func (spec WorkspaceSpec) LogInfo() (keysAndValues []interface{}) {
+// LogFields provides fields for logging
+func (spec WorkspaceSpec) LogFields() (fields []interface{}) {
 	if spec.ID != nil {
-		keysAndValues = append(keysAndValues, "id", *spec.ID)
+		fields = append(fields, "id", *spec.ID)
 	}
 	if spec.Name != nil && spec.OrganizationName != nil {
-		keysAndValues = append(keysAndValues, "name", *spec.Name, "organization", *spec.OrganizationName)
+		fields = append(fields, "name", *spec.Name, "organization", *spec.OrganizationName)
 	}
-	return keysAndValues
+	return fields
 }
 
 func (spec *WorkspaceSpec) String() string {

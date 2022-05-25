@@ -61,11 +61,11 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 		return ws.UpdateWithOptions(ctx, opts)
 	})
 	if err != nil {
-		s.Error(err, "updating workspace", spec.LogInfo()...)
+		s.Error(err, "updating workspace", spec.LogFields()...)
 		return nil, err
 	}
 
-	s.V(0).Info("updated workspace", spec.LogInfo()...)
+	s.V(0).Info("updated workspace", spec.LogFields()...)
 
 	return ws, nil
 }
@@ -82,11 +82,11 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 
 	ws, err := s.db.Get(spec)
 	if err != nil {
-		s.Error(err, "retrieving workspace", spec.LogInfo()...)
+		s.Error(err, "retrieving workspace", spec.LogFields()...)
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved workspace", spec.LogInfo()...)
+	s.V(2).Info("retrieved workspace", spec.LogFields()...)
 
 	return ws, nil
 }
@@ -115,11 +115,11 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ ot
 		return ws.ToggleLock(true)
 	})
 	if err != nil {
-		s.Error(err, "locking workspace", spec.LogInfo()...)
+		s.Error(err, "locking workspace", spec.LogFields()...)
 		return nil, err
 	}
 
-	s.V(1).Info("locked workspace", spec.LogInfo()...)
+	s.V(1).Info("locked workspace", spec.LogFields()...)
 
 	return ws, nil
 }
@@ -129,11 +129,11 @@ func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*
 		return ws.ToggleLock(false)
 	})
 	if err != nil {
-		s.Error(err, "unlocking workspace", spec.LogInfo()...)
+		s.Error(err, "unlocking workspace", spec.LogFields()...)
 		return nil, err
 	}
 
-	s.V(1).Info("unlocked workspace", spec.LogInfo()...)
+	s.V(1).Info("unlocked workspace", spec.LogFields()...)
 
 	return ws, nil
 }

@@ -10,14 +10,10 @@ import (
 var _ otf.ApplyService = (*ApplyService)(nil)
 
 type ApplyService struct {
-	db otf.RunStore
-
+	db   otf.RunStore
 	logs otf.ChunkStore
-
 	otf.EventService
-
 	cache otf.Cache
-
 	logr.Logger
 }
 
@@ -46,7 +42,7 @@ func (s ApplyService) GetChunk(ctx context.Context, id string, opts otf.GetChunk
 		s.Error(err, "reading apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
 		return otf.Chunk{}, err
 	}
-
+	s.V(2).Info("read apply logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
 	return logs, nil
 }
 
@@ -57,13 +53,10 @@ func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Ch
 		s.Error(err, "writing apply logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-
 	s.V(2).Info("written apply logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
-
 	if !chunk.End {
 		return nil
 	}
-
 	// Last chunk uploaded. A summary of applied changes can now be parsed from
 	// the full logs and set on the apply obj.
 	chunk, err = s.logs.GetChunk(ctx, applyID, otf.GetChunkOptions{})
@@ -71,23 +64,19 @@ func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Ch
 		s.Error(err, "reading apply logs", "id", applyID)
 		return err
 	}
-
 	report, err := otf.ParseApplyOutput(string(chunk.Data))
 	if err != nil {
 		s.Error(err, "compiling report of applied changes", "id", applyID)
 		return err
 	}
-
 	if err := s.db.CreateApplyReport(applyID, report); err != nil {
 		s.Error(err, "saving applied changes report", "id", applyID)
 		return err
 	}
-
 	s.V(1).Info("created applied changes report", "id", applyID,
 		"adds", report.Additions,
 		"changes", report.Changes,
 		"destructions", report.Destructions)
-
 	return nil
 }
 
@@ -100,9 +89,7 @@ func (s ApplyService) Claim(ctx context.Context, applyID string, opts otf.JobCla
 		s.Error(err, "starting apply")
 		return nil, err
 	}
-
 	s.V(0).Info("started apply", "id", run.ID())
-
 	return run, nil
 }
 
@@ -116,10 +103,7 @@ func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.JobFi
 		s.Error(err, "finishing apply", "id", applyID)
 		return nil, err
 	}
-
 	s.V(0).Info("finished apply", "id", applyID)
-
 	s.Publish(otf.Event{Payload: run, Type: otf.EventRunApplied})
-
 	return run, nil
 }

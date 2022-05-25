@@ -84,7 +84,7 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 		return nil, err
 	}
 
-	s.V(2).Info("listed runs", "count", len(rl.Items))
+	s.V(2).Info("listed runs", append(opts.LogFields(), "count", len(rl.Items))...)
 
 	return rl, nil
 }

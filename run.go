@@ -528,6 +528,20 @@ type RunListOptions struct {
 	WorkspaceName    *string `schema:"workspace_name"`
 }
 
+// LogFields provides fields for logging
+func (opts RunListOptions) LogFields() (fields []interface{}) {
+	if opts.WorkspaceID != nil {
+		fields = append(fields, "workspace_id", *opts.WorkspaceID)
+	}
+	if opts.WorkspaceName != nil && opts.OrganizationName != nil {
+		fields = append(fields, "name", *opts.WorkspaceName, "organization", *opts.OrganizationName)
+	}
+	if len(opts.Statuses) > 0 {
+		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))
+	}
+	return fields
+}
+
 func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 	for _, s := range statuses {
 		if s == status {
