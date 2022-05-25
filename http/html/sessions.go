@@ -27,8 +27,8 @@ type sessions struct {
 
 // Load provides middleware that loads and attaches the User to the current
 // request's context. It looks for a cookie containing a token on the request
-// and if found uses it retrieve and attach the User. Otherwise a new session is
-// created for the anonymous user.
+// and if found uses it to retrieve and attach the User. Otherwise a new session
+// is created for the anonymous user.
 func (s *sessions) Load(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// the user to attach to the request ctx
