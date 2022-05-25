@@ -81,13 +81,13 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org, err := db.OrganizationStore().Create(newTestOrganization())
+	org := newTestOrganization()
+	err := db.OrganizationStore().Create(org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		db.OrganizationStore().Delete(org.Name())
 	})
-
 	return org
 }
 
@@ -98,7 +98,6 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	t.Cleanup(func() {
 		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
-
 	return ws
 }
 
@@ -109,19 +108,17 @@ func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) 
 	t.Cleanup(func() {
 		db.ConfigurationVersionStore().Delete(cv.ID())
 	})
-
 	return cv
 }
 
-func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...otf.NewTestStateVersionOption) *otf.StateVersion {
-	sv := otf.NewTestStateVersion(opts...)
+func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
+	sv := otf.NewTestStateVersion(t, outputs...)
 	err := db.StateVersionStore().Create(ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		db.StateVersionStore().Delete(sv.ID())
 	})
-
 	return sv
 }
 
@@ -133,7 +130,6 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	t.Cleanup(func() {
 		db.RunStore().Delete(run.ID())
 	})
-
 	return run
 }
 
@@ -146,7 +142,6 @@ func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf
 	t.Cleanup(func() {
 		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	})
-
 	return user
 }
 
@@ -160,7 +155,6 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSe
 	t.Cleanup(func() {
 		db.SessionStore().DeleteSession(ctx, session.Token)
 	})
-
 	return session
 }
 
@@ -176,6 +170,5 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	t.Cleanup(func() {
 		db.TokenStore().DeleteToken(ctx, token.Token())
 	})
-
 	return token
 }

@@ -17,11 +17,11 @@ func TestOrganization_Create(t *testing.T) {
 		db.OrganizationStore().Delete(org.Name())
 	})
 
-	_, err := db.OrganizationStore().Create(org)
+	err := db.OrganizationStore().Create(org)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		_, err := db.OrganizationStore().Create(org)
+		err := db.OrganizationStore().Create(org)
 		require.Equal(t, otf.ErrResourcesAlreadyExists, err)
 	})
 }

@@ -4,7 +4,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"testing"
 	"time"
+
+	"github.com/leg100/otf/sql/pggen"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -13,20 +17,21 @@ var (
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {
-	id           string
-	createdAt    time.Time
-	Serial       int64
-	VCSCommitSHA string
-	VCSCommitURL string
-	// State is the state file itself.
-	State []byte
+	id        string
+	createdAt time.Time
+	serial    int64
+	// state is the state file in json.
+	state []byte
 	// State version has many outputs
-	Outputs []*StateVersionOutput
+	outputs []*StateVersionOutput
 }
 
-func (sv *StateVersion) ID() string           { return sv.id }
-func (sv *StateVersion) CreatedAt() time.Time { return sv.createdAt }
-func (sv *StateVersion) String() string       { return sv.id }
+func (sv *StateVersion) ID() string                     { return sv.id }
+func (sv *StateVersion) CreatedAt() time.Time           { return sv.createdAt }
+func (sv *StateVersion) String() string                 { return sv.id }
+func (sv *StateVersion) Serial() int64                  { return sv.serial }
+func (sv *StateVersion) State() []byte                  { return sv.state }
+func (sv *StateVersion) Outputs() []*StateVersionOutput { return sv.outputs }
 
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
@@ -67,55 +72,43 @@ type StateVersionListOptions struct {
 }
 
 // StateVersionCreateOptions represents the options for creating a state
-// version.
+// version. See dto.StateVersionCreateOptions for more details.
 type StateVersionCreateOptions struct {
-	// Type is a public field utilized by JSON:API to
-	// set the resource type via the field tag.
-	// It is not a user-defined value and does not need to be set.
-	// https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,state-versions"`
-	// The lineage of the state.
-	Lineage *string `jsonapi:"attr,lineage,omitempty"`
-	// The MD5 hash of the state version.
-	MD5 *string `jsonapi:"attr,md5"`
-	// The serial of the state.
-	Serial *int64 `jsonapi:"attr,serial"`
-	// The base64 encoded state.
-	State *string `jsonapi:"attr,state"`
-	// Force can be set to skip certain validations. Wrong use of this flag can
-	// cause data loss, so USE WITH CAUTION!
-	Force *bool `jsonapi:"attr,force"`
-	// Specifies the run to associate the state with.
-	Run *Run `jsonapi:"relation,run,omitempty"`
+	Lineage *string
+	Serial  *int64
+	State   *string
+	MD5     *string
+	Run     *Run
 }
 
 // Valid validates state version create options
+//
+// TODO: perform validation, check md5, etc
 func (opts *StateVersionCreateOptions) Valid() error {
 	return nil
 }
 
-type StateVersionFactory struct{}
-
-func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
+// NewStateVersion constructs a new state version.
+func NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, fmt.Errorf("invalid create options: %w", err)
 	}
-	sv := StateVersion{
-		id:        NewID("sv"),
-		Serial:    *opts.Serial,
-		createdAt: CurrentTimestamp(),
-	}
-	var err error
-	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
+	decoded, err := base64.StdEncoding.DecodeString(*opts.State)
 	if err != nil {
 		return nil, err
 	}
-	state, err := Parse(sv.State)
+	sv := StateVersion{
+		id:        NewID("sv"),
+		serial:    *opts.Serial,
+		createdAt: CurrentTimestamp(),
+		state:     decoded,
+	}
+	state, err := UnmarshalState(decoded)
 	if err != nil {
 		return nil, err
 	}
 	for k, v := range state.Outputs {
-		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
+		sv.outputs = append(sv.outputs, &StateVersionOutput{
 			id:    NewID("wsout"),
 			Name:  k,
 			Type:  v.Type,
@@ -125,29 +118,39 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	return &sv, nil
 }
 
-type NewTestStateVersionOption func(*StateVersion)
+func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
+	state := NewState(StateCreateOptions{}, outputs...)
+	encoded, err := state.Marshal()
+	require.NoError(t, err)
 
-func NewTestStateVersion(opts ...NewTestStateVersionOption) *StateVersion {
-	sv := StateVersion{
-		id:        NewID("sv"),
-		State:     []byte("stuff"),
-		createdAt: CurrentTimestamp(),
-	}
-	for _, o := range opts {
-		o(&sv)
-	}
-	return &sv
+	sv, err := NewStateVersion(StateVersionCreateOptions{
+		Serial: Int64(1),
+		State:  &encoded,
+	})
+	require.NoError(t, err)
+	return sv
 }
 
-func AppendOutput(name, outputType, value string, sensitive bool) NewTestStateVersionOption {
-	return func(sv *StateVersion) {
-		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			id:             NewID("wsout"),
-			Name:           name,
-			Type:           outputType,
-			Value:          value,
-			Sensitive:      sensitive,
-			StateVersionID: sv.ID(),
-		})
+// StateVersionDBRow is the state version postgres record.
+type StateVersionDBRow struct {
+	StateVersionID      string                      `json:"state_version_id"`
+	CreatedAt           time.Time                   `json:"created_at"`
+	Serial              int                         `json:"serial"`
+	State               []byte                      `json:"state"`
+	WorkspaceID         string                      `json:"workspace_id"`
+	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
+}
+
+// UnmarshalStateVersionDBResult unmarshals a state version postgres record.
+func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
+	sv := StateVersion{
+		id:        row.StateVersionID,
+		createdAt: row.CreatedAt,
+		serial:    int64(row.Serial),
+		state:     row.State,
 	}
+	for _, r := range row.StateVersionOutputs {
+		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputDBType(r))
+	}
+	return &sv, nil
 }

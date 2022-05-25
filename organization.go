@@ -50,7 +50,7 @@ type OrganizationService interface {
 }
 
 type OrganizationStore interface {
-	Create(org *Organization) (*Organization, error)
+	Create(org *Organization) error
 	Get(name string) (*Organization, error)
 	List(opts OrganizationListOptions) (*OrganizationList, error)
 	Update(name string, fn func(*Organization) error) (*Organization, error)

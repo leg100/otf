@@ -210,8 +210,6 @@ CREATE TABLE IF NOT EXISTS state_versions (
     state_version_id TEXT,
     created_at       TIMESTAMPTZ NOT NULL,
     serial           INTEGER     NOT NULL,
-    vcs_commit_sha   TEXT        NOT NULL,
-    vcs_commit_url   TEXT        NOT NULL,
     state            BYTEA       NOT NULL,
     workspace_id     TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE,
                      PRIMARY KEY (state_version_id)

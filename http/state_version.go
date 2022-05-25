@@ -11,6 +11,25 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
+func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	opts := dto.StateVersionCreateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	obj, err := s.StateVersionService().Create(vars["workspace_id"], otf.StateVersionCreateOptions{
+		Lineage: opts.Lineage,
+		Serial:  opts.Serial,
+		State:   opts.State,
+	})
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	writeResponse(w, r, StateVersionJSONAPIObject(obj))
+}
+
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 	var opts otf.StateVersionListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
@@ -45,21 +64,6 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, StateVersionJSONAPIObject(obj))
 }
 
-func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	opts := otf.StateVersionCreateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	obj, err := s.StateVersionService().Create(vars["workspace_id"], opts)
-	if err != nil {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
-	writeResponse(w, r, StateVersionJSONAPIObject(obj))
-}
-
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	resp, err := s.StateVersionService().Download(vars["id"])
@@ -77,8 +81,8 @@ func StateVersionJSONAPIObject(r *otf.StateVersion) *dto.StateVersion {
 		ID:          r.ID(),
 		CreatedAt:   r.CreatedAt(),
 		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID()),
-		Serial:      r.Serial,
-		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs),
+		Serial:      r.Serial(),
+		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs()),
 	}
 }
 

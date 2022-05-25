@@ -366,17 +366,17 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 
 // uploadState reads, parses, and uploads terraform state
 func (r *Run) uploadState(ctx context.Context, env Environment) error {
-	stateFile, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
+	f, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
 	if err != nil {
 		return err
 	}
-	state, err := Parse(stateFile)
+	state, err := UnmarshalState(f)
 	if err != nil {
 		return err
 	}
 	_, err = env.StateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
-		State:   String(base64.StdEncoding.EncodeToString(stateFile)),
-		MD5:     String(fmt.Sprintf("%x", md5.Sum(stateFile))),
+		State:   String(base64.StdEncoding.EncodeToString(f)),
+		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
 		Lineage: &state.Lineage,
 		Serial:  Int64(state.Serial),
 		Run:     r,

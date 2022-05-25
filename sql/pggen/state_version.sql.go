@@ -15,17 +15,13 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
     created_at,
     serial,
     state,
-    workspace_id,
-    vcs_commit_sha,
-    vcs_commit_url
+    workspace_id
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5,
-    '',
-    ''
+    $5
 );`
 
 type InsertStateVersionParams struct {
@@ -85,8 +81,6 @@ type FindStateVersionsByWorkspaceNameRow struct {
 	StateVersionID      string                `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
 	Serial              int                   `json:"serial"`
-	VcsCommitSHA        string                `json:"vcs_commit_sha"`
-	VcsCommitURL        string                `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	WorkspaceID         string                `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -104,7 +98,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceName(ctx context.Context, params
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceName row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -134,7 +128,7 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResult
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
 	for rows.Next() {
 		var item FindStateVersionsByWorkspaceNameRow
-		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+		if err := rows.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 			return nil, fmt.Errorf("scan FindStateVersionsByWorkspaceNameBatch row: %w", err)
 		}
 		if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -195,8 +189,6 @@ type FindStateVersionByIDRow struct {
 	StateVersionID      string                `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
 	Serial              int                   `json:"serial"`
-	VcsCommitSHA        string                `json:"vcs_commit_sha"`
-	VcsCommitURL        string                `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	WorkspaceID         string                `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -208,7 +200,7 @@ func (q *DBQuerier) FindStateVersionByID(ctx context.Context, id string) (FindSt
 	row := q.conn.QueryRow(ctx, findStateVersionByIDSQL, id)
 	var item FindStateVersionByIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("query FindStateVersionByID: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -227,7 +219,7 @@ func (q *DBQuerier) FindStateVersionByIDScan(results pgx.BatchResults) (FindStat
 	row := results.QueryRow()
 	var item FindStateVersionByIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("scan FindStateVersionByIDBatch row: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -250,8 +242,6 @@ type FindStateVersionLatestByWorkspaceIDRow struct {
 	StateVersionID      string                `json:"state_version_id"`
 	CreatedAt           time.Time             `json:"created_at"`
 	Serial              int                   `json:"serial"`
-	VcsCommitSHA        string                `json:"vcs_commit_sha"`
-	VcsCommitURL        string                `json:"vcs_commit_url"`
 	State               []byte                `json:"state"`
 	WorkspaceID         string                `json:"workspace_id"`
 	StateVersionOutputs []StateVersionOutputs `json:"state_version_outputs"`
@@ -263,7 +253,7 @@ func (q *DBQuerier) FindStateVersionLatestByWorkspaceID(ctx context.Context, wor
 	row := q.conn.QueryRow(ctx, findStateVersionLatestByWorkspaceIDSQL, workspaceID)
 	var item FindStateVersionLatestByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("query FindStateVersionLatestByWorkspaceID: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
@@ -282,7 +272,7 @@ func (q *DBQuerier) FindStateVersionLatestByWorkspaceIDScan(results pgx.BatchRes
 	row := results.QueryRow()
 	var item FindStateVersionLatestByWorkspaceIDRow
 	stateVersionOutputsArray := q.types.newStateVersionOutputsArray()
-	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.VcsCommitSHA, &item.VcsCommitURL, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
+	if err := row.Scan(&item.StateVersionID, &item.CreatedAt, &item.Serial, &item.State, &item.WorkspaceID, stateVersionOutputsArray); err != nil {
 		return item, fmt.Errorf("scan FindStateVersionLatestByWorkspaceIDBatch row: %w", err)
 	}
 	if err := stateVersionOutputsArray.AssignTo(&item.StateVersionOutputs); err != nil {
