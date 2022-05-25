@@ -104,6 +104,13 @@ func TestUser_Get(t *testing.T) {
 
 }
 
+func TestUser_Get_NotFound(t *testing.T) {
+	db := newTestDB(t)
+
+	_, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: otf.String("does-not-exist")})
+	assert.Equal(t, otf.ErrResourceNotFound, err)
+}
+
 func TestUser_Get_WithSessions(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)

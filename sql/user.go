@@ -93,25 +93,25 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 	} else if spec.Username != nil {
 		result, err := q.FindUserByUsername(ctx, *spec.Username)
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationToken != nil {
 		result, err := q.FindUserByAuthenticationToken(ctx, *spec.AuthenticationToken)
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationTokenID != nil {
 		result, err := q.FindUserByAuthenticationTokenID(ctx, *spec.AuthenticationTokenID)
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.SessionToken != nil {
 		result, err := q.FindUserBySessionToken(ctx, *spec.SessionToken)
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else {
