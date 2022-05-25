@@ -13,9 +13,9 @@ func TestStateVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	sv := otf.NewTestStateVersion(
-		otf.AppendOutput("out1", "string", "val1", false),
-		otf.AppendOutput("out2", "string", "val2", false),
+	sv := otf.NewTestStateVersion(t,
+		otf.StateOutput{"out1", "string", "val1", false},
+		otf.StateOutput{"out2", "string", "val2", false},
 	)
 
 	err := db.StateVersionStore().Create(ws.ID(), sv)
@@ -26,7 +26,9 @@ func TestStateVersion_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	sv := createTestStateVersion(t, db, ws, otf.AppendOutput("out1", "string", "val1", false))
+	sv := createTestStateVersion(t, db, ws,
+		otf.StateOutput{"out1", "string", "val1", false},
+	)
 
 	tests := []struct {
 		name string

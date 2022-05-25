@@ -24,7 +24,7 @@ func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 }
 
 // Create persists a Organization to the DB.
-func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error) {
+func (db OrganizationDB) Create(org *otf.Organization) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
@@ -36,9 +36,9 @@ func (db OrganizationDB) Create(org *otf.Organization) (*otf.Organization, error
 		SessionTimeout:  org.SessionTimeout(),
 	})
 	if err != nil {
-		return nil, databaseError(err)
+		return databaseError(err)
 	}
-	return org, nil
+	return nil
 }
 
 // Update persists an updated Organization to the DB. The existing org is

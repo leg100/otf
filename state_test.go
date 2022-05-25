@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParser(t *testing.T) {
+func TestState_UnmarshalState(t *testing.T) {
 	data, err := os.ReadFile("testdata/terraform.tfstate")
 	require.NoError(t, err)
 
-	state, err := Parse(data)
+	state, err := UnmarshalState(data)
 	require.NoError(t, err)
 
 	assert.Equal(t, state, &State{

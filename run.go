@@ -370,7 +370,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	state, err := Parse(stateFile)
+	state, err := UnmarshalState(stateFile)
 	if err != nil {
 		return err
 	}

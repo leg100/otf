@@ -10,9 +10,7 @@ import (
 var _ otf.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
-	db otf.StateVersionStore
-	*otf.StateVersionFactory
-
+	db    otf.StateVersionStore
 	cache otf.Cache
 
 	logr.Logger
@@ -20,22 +18,19 @@ type StateVersionService struct {
 
 func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, cache otf.Cache) *StateVersionService {
 	return &StateVersionService{
-		db:                  db,
-		cache:               cache,
-		Logger:              logger,
-		StateVersionFactory: &otf.StateVersionFactory{},
+		db:     db,
+		cache:  cache,
+		Logger: logger,
 	}
 }
 
 func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
-	sv, err := s.NewStateVersion(opts)
+	sv, err := otf.NewStateVersion(opts)
 	if err != nil {
 		s.Error(err, "constructing state version")
 		return nil, err
 	}
-
-	err = s.db.Create(workspaceID, sv)
-	if err != nil {
+	if err := s.db.Create(workspaceID, sv); err != nil {
 		s.Error(err, "creating state version")
 		return nil, err
 	}
@@ -45,7 +40,6 @@ func (s StateVersionService) Create(workspaceID string, opts otf.StateVersionCre
 	}
 
 	s.V(0).Info("created state version", "id", sv.ID(), "workspace", workspaceID, "serial", sv.Serial)
-
 	return sv, nil
 }
 

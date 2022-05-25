@@ -4,7 +4,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -94,9 +97,7 @@ func (opts *StateVersionCreateOptions) Valid() error {
 	return nil
 }
 
-type StateVersionFactory struct{}
-
-func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
+func NewStateVersion(opts StateVersionCreateOptions) (*StateVersion, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, fmt.Errorf("invalid create options: %w", err)
 	}
@@ -110,7 +111,7 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	if err != nil {
 		return nil, err
 	}
-	state, err := Parse(sv.State)
+	state, err := UnmarshalState(sv.State)
 	if err != nil {
 		return nil, err
 	}
@@ -125,29 +126,15 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 	return &sv, nil
 }
 
-type NewTestStateVersionOption func(*StateVersion)
+func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
+	state := NewState(StateCreateOptions{}, outputs...)
+	encoded, err := state.Marshal()
+	require.NoError(t, err)
 
-func NewTestStateVersion(opts ...NewTestStateVersionOption) *StateVersion {
-	sv := StateVersion{
-		id:        NewID("sv"),
-		State:     []byte("stuff"),
-		createdAt: CurrentTimestamp(),
-	}
-	for _, o := range opts {
-		o(&sv)
-	}
-	return &sv
-}
-
-func AppendOutput(name, outputType, value string, sensitive bool) NewTestStateVersionOption {
-	return func(sv *StateVersion) {
-		sv.Outputs = append(sv.Outputs, &StateVersionOutput{
-			id:             NewID("wsout"),
-			Name:           name,
-			Type:           outputType,
-			Value:          value,
-			Sensitive:      sensitive,
-			StateVersionID: sv.ID(),
-		})
-	}
+	sv, err := NewStateVersion(StateVersionCreateOptions{
+		Serial: Int64(1),
+		State:  &encoded,
+	})
+	require.NoError(t, err)
+	return sv
 }

@@ -32,8 +32,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	_, err = s.db.Create(org)
-	if err != nil {
+	if err := s.db.Create(org); err != nil {
 		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}

@@ -24,14 +24,8 @@ func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error)
 		Serial:    int64(row.Serial),
 		State:     row.State,
 	}
-
 	for _, r := range row.StateVersionOutputs {
-		out, err := UnmarshalStateVersionOutputDBType(r)
-		if err != nil {
-			return nil, err
-		}
-		sv.Outputs = append(sv.Outputs, out)
+		sv.Outputs = append(sv.Outputs, UnmarshalStateVersionOutputDBType(r))
 	}
-
 	return &sv, nil
 }
