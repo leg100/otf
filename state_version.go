@@ -101,8 +101,9 @@ func (f *StateVersionFactory) NewStateVersion(opts StateVersionCreateOptions) (*
 		return nil, fmt.Errorf("invalid create options: %w", err)
 	}
 	sv := StateVersion{
-		id:     NewID("sv"),
-		Serial: *opts.Serial,
+		id:        NewID("sv"),
+		Serial:    *opts.Serial,
+		createdAt: CurrentTimestamp(),
 	}
 	var err error
 	sv.State, err = base64.StdEncoding.DecodeString(*opts.State)
@@ -128,8 +129,9 @@ type NewTestStateVersionOption func(*StateVersion)
 
 func NewTestStateVersion(opts ...NewTestStateVersionOption) *StateVersion {
 	sv := StateVersion{
-		id:    NewID("sv"),
-		State: []byte("stuff"),
+		id:        NewID("sv"),
+		State:     []byte("stuff"),
+		createdAt: CurrentTimestamp(),
 	}
 	for _, o := range opts {
 		o(&sv)

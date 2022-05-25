@@ -31,7 +31,7 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 		createdAt:   CurrentTimestamp(),
 		Token:       token,
 		SessionData: *data,
-		Expiry:      time.Now().Add(DefaultSessionExpiry),
+		Expiry:      CurrentTimestamp().Add(DefaultSessionExpiry),
 		UserID:      uid,
 	}
 	return &session, nil

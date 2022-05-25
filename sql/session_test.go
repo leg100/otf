@@ -56,7 +56,7 @@ func TestSession_SessionCleanup(t *testing.T) {
 
 	time.Sleep(300 * time.Millisecond)
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: &user.Username})
+	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))

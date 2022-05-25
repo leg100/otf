@@ -20,7 +20,7 @@ type User struct {
 	id        string
 	createdAt time.Time
 	updatedAt time.Time
-	Username  string
+	username  string
 	// Name of the current Organization the user is using on the web app.
 	CurrentOrganization *string
 	// A user has many sessions
@@ -44,11 +44,14 @@ func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
 // IsAuthenticated determines if the user is authenticated, i.e. not an
 // anonymous user.
 func (u *User) IsAuthenticated() bool {
-	return u.Username != AnonymousUsername
+	return u.Username() != AnonymousUsername
 }
 
-func (u *User) ID() string     { return u.id }
-func (u *User) String() string { return u.Username }
+func (u *User) ID() string           { return u.id }
+func (u *User) Username() string     { return u.username }
+func (u *User) CreatedAt() time.Time { return u.createdAt }
+func (u *User) UpdatedAt() time.Time { return u.updatedAt }
+func (u *User) String() string       { return u.username }
 
 // SyncOrganizationMemberships synchronises a user's organization memberships,
 // taking an authoritative list of memberships and ensuring its memberships
@@ -161,8 +164,10 @@ func (spec *UserSpec) KeyValue() []interface{} {
 
 func NewUser(username string) *User {
 	user := User{
-		id:       NewID("user"),
-		Username: username,
+		id:        NewID("user"),
+		username:  username,
+		createdAt: CurrentTimestamp(),
+		updatedAt: CurrentTimestamp(),
 	}
 	return &user
 }
@@ -171,8 +176,10 @@ type NewTestUserOption func(*User)
 
 func NewTestUser(opts ...NewTestUserOption) *User {
 	u := User{
-		id:       NewID("user"),
-		Username: fmt.Sprintf("mr-%s", GenerateRandomString(6)),
+		id:        NewID("user"),
+		username:  fmt.Sprintf("mr-%s", GenerateRandomString(6)),
+		createdAt: CurrentTimestamp(),
+		updatedAt: CurrentTimestamp(),
 	}
 	for _, o := range opts {
 		o(&u)

@@ -185,7 +185,7 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		AllowDestroyPlan:     ws.AllowDestroyPlan(),
 		AutoApply:            ws.AutoApply(),
 		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
-		CreatedAt:            ws.CreatedAt,
+		CreatedAt:            ws.CreatedAt(),
 		Description:          ws.Description(),
 		Environment:          ws.Environment(),
 		ExecutionMode:        ws.ExecutionMode(),
@@ -216,7 +216,7 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		TerraformVersion:           ws.TerraformVersion(),
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
-		UpdatedAt:                  ws.UpdatedAt,
+		UpdatedAt:                  ws.UpdatedAt(),
 	}
 
 	if ws.Organization != nil {

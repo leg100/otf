@@ -481,12 +481,12 @@ type Querier interface {
 	// DeleteTokenByIDScan scans the result of an executed DeleteTokenByIDBatch query.
 	DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertUser(ctx context.Context, id string, username string) (InsertUserRow, error)
+	InsertUser(ctx context.Context, params InsertUserParams) (pgconn.CommandTag, error)
 	// InsertUserBatch enqueues a InsertUser query into batch to be executed
 	// later by the batch.
-	InsertUserBatch(batch genericBatch, id string, username string)
+	InsertUserBatch(batch genericBatch, params InsertUserParams)
 	// InsertUserScan scans the result of an executed InsertUserBatch query.
-	InsertUserScan(results pgx.BatchResults) (InsertUserRow, error)
+	InsertUserScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindUsers(ctx context.Context) ([]FindUsersRow, error)
 	// FindUsersBatch enqueues a FindUsers query into batch to be executed
@@ -530,12 +530,12 @@ type Querier interface {
 	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
 	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
-	UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error)
+	UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (string, error)
 	// UpdateUserCurrentOrganizationBatch enqueues a UpdateUserCurrentOrganization query into batch to be executed
 	// later by the batch.
-	UpdateUserCurrentOrganizationBatch(batch genericBatch, currentOrganization string, id string)
+	UpdateUserCurrentOrganizationBatch(batch genericBatch, params UpdateUserCurrentOrganizationParams)
 	// UpdateUserCurrentOrganizationScan scans the result of an executed UpdateUserCurrentOrganizationBatch query.
-	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (UpdateUserCurrentOrganizationRow, error)
+	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (string, error)
 
 	DeleteUserByID(ctx context.Context, userID string) (pgconn.CommandTag, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed

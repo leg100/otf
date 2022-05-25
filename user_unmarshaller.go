@@ -22,7 +22,7 @@ func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 		id:        row.UserID,
 		createdAt: row.CreatedAt,
 		updatedAt: row.UpdatedAt,
-		Username:  row.Username,
+		username:  row.Username,
 	}
 	if row.CurrentOrganization != "" {
 		user.CurrentOrganization = &row.CurrentOrganization

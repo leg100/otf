@@ -31,6 +31,7 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 		Token:       token.Token(),
 		Description: token.Description(),
 		UserID:      token.UserID(),
+		CreatedAt:   token.CreatedAt(),
 	})
 	if err != nil {
 		return err

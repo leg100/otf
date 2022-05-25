@@ -1,10 +1,7 @@
 package otf
 
-import "time"
-
 type StateVersionOutput struct {
 	id        string
-	createdAt time.Time
 	Name      string
 	Sensitive bool
 	Type      string

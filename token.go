@@ -31,16 +31,16 @@ type TokenStore interface {
 }
 
 func NewToken(uid, description string) (*Token, error) {
-	token, err := GenerateToken()
+	t, err := GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
-	session := Token{
+	token := Token{
 		id:          NewID("ut"),
 		createdAt:   CurrentTimestamp(),
-		token:       token,
+		token:       t,
 		description: description,
 		userID:      uid,
 	}
-	return &session, nil
+	return &token, nil
 }

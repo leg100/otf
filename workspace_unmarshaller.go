@@ -109,6 +109,8 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		allowDestroyPlan:           w.AllowDestroyPlan,
 		autoApply:                  w.AutoApply,
 		canQueueDestroyPlan:        w.CanQueueDestroyPlan,
+		createdAt:                  w.CreatedAt,
+		updatedAt:                  w.UpdatedAt,
 		description:                w.Description,
 		environment:                w.Environment,
 		executionMode:              w.ExecutionMode,

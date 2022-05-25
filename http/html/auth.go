@@ -186,7 +186,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		app.sessions.FlashSuccess(r, "created token: ", token.Token)
+		app.sessions.FlashSuccess(r, "created token: ", token.Token())
 	}
 
 	http.Redirect(w, r, app.route("listToken"), http.StatusFound)

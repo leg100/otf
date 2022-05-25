@@ -144,7 +144,7 @@ func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: &user.Username})
+		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	})
 
 	return user

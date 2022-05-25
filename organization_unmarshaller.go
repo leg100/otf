@@ -21,6 +21,7 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 func UnmarshalOrganizationJSONAPI(model *dto.Organization) *Organization {
 	return &Organization{
 		id:              model.ExternalID,
+		createdAt:       model.CreatedAt,
 		name:            model.Name,
 		sessionRemember: model.SessionRemember,
 		sessionTimeout:  model.SessionTimeout,

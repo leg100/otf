@@ -8,6 +8,8 @@ func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
 	ws := Workspace{
 		id:                  NewID("ws"),
 		name:                opts.Name,
+		createdAt:           CurrentTimestamp(),
+		updatedAt:           CurrentTimestamp(),
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
 		executionMode:       DefaultExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,
@@ -67,6 +69,8 @@ func NewTestWorkspace(org *Organization) *Workspace {
 		id:           NewID("ws"),
 		name:         uuid.NewString(),
 		Organization: &Organization{id: org.ID()},
+		createdAt:    CurrentTimestamp(),
+		updatedAt:    CurrentTimestamp(),
 	}
 	return &ws
 }

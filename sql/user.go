@@ -32,7 +32,12 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	}
 	defer tx.Rollback(ctx)
 	q := pggen.NewQuerier(tx)
-	_, err = q.InsertUser(ctx, user.ID(), user.Username)
+	_, err = q.InsertUser(ctx, pggen.InsertUserParams{
+		ID:        user.ID(),
+		Username:  user.Username(),
+		CreatedAt: user.CreatedAt(),
+		UpdatedAt: user.UpdatedAt(),
+	})
 	if err != nil {
 		return err
 	}
@@ -48,7 +53,11 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 func (db UserDB) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
 	q := pggen.NewQuerier(db.Pool)
 
-	_, err := q.UpdateUserCurrentOrganization(ctx, orgName, userID)
+	_, err := q.UpdateUserCurrentOrganization(ctx, pggen.UpdateUserCurrentOrganizationParams{
+		ID:                  userID,
+		CurrentOrganization: orgName,
+		UpdatedAt:           otf.CurrentTimestamp(),
+	})
 	return err
 }
 

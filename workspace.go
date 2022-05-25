@@ -85,9 +85,9 @@ func (ws *Workspace) ToggleLock(lock bool) error {
 	return nil
 }
 
-// TODO: validate options
-//
 // UpdateWithOptions updates the workspace with the given options.
+//
+// TODO: validate options
 func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) error {
 	if opts.Name != nil {
 		ws.name = *opts.Name

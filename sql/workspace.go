@@ -92,16 +92,9 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	} else {
 		return nil, fmt.Errorf("invalid spec")
 	}
-
-	lastUpdated := ws.UpdatedAt()
 	if err := fn(ws); err != nil {
 		return nil, err
 	}
-	if ws.UpdatedAt() == lastUpdated {
-		// no updates
-		return ws, nil
-	}
-
 	_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
 		ID:                         ws.ID(),
 		UpdatedAt:                  ws.UpdatedAt(),

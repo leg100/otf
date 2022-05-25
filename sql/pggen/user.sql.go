@@ -18,42 +18,41 @@ const insertUserSQL = `INSERT INTO users (
     current_organization
 ) VALUES (
     $1,
-    current_timestamp,
-    current_timestamp,
     $2,
+    $3,
+    $4,
     ''
-)
-RETURNING created_at, updated_at;`
+);`
 
-type InsertUserRow struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type InsertUserParams struct {
+	ID        string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Username  string
 }
 
 // InsertUser implements Querier.InsertUser.
-func (q *DBQuerier) InsertUser(ctx context.Context, id string, username string) (InsertUserRow, error) {
+func (q *DBQuerier) InsertUser(ctx context.Context, params InsertUserParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertUser")
-	row := q.conn.QueryRow(ctx, insertUserSQL, id, username)
-	var item InsertUserRow
-	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
-		return item, fmt.Errorf("query InsertUser: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertUserSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Username)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertUser: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertUserBatch implements Querier.InsertUserBatch.
-func (q *DBQuerier) InsertUserBatch(batch genericBatch, id string, username string) {
-	batch.Queue(insertUserSQL, id, username)
+func (q *DBQuerier) InsertUserBatch(batch genericBatch, params InsertUserParams) {
+	batch.Queue(insertUserSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.Username)
 }
 
 // InsertUserScan implements Querier.InsertUserScan.
-func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (InsertUserRow, error) {
-	row := results.QueryRow()
-	var item InsertUserRow
-	if err := row.Scan(&item.CreatedAt, &item.UpdatedAt); err != nil {
-		return item, fmt.Errorf("scan InsertUserBatch row: %w", err)
+func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertUserBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const findUsersSQL = `SELECT u.*,
@@ -518,39 +517,37 @@ func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults
 const updateUserCurrentOrganizationSQL = `UPDATE users
 SET
     current_organization = $1,
-    updated_at = current_timestamp
-WHERE user_id = $2
-RETURNING *;`
+    updated_at = $2
+WHERE user_id = $3
+RETURNING user_id;`
 
-type UpdateUserCurrentOrganizationRow struct {
-	UserID              string    `json:"user_id"`
-	Username            string    `json:"username"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
-	CurrentOrganization string    `json:"current_organization"`
+type UpdateUserCurrentOrganizationParams struct {
+	CurrentOrganization string
+	UpdatedAt           time.Time
+	ID                  string
 }
 
 // UpdateUserCurrentOrganization implements Querier.UpdateUserCurrentOrganization.
-func (q *DBQuerier) UpdateUserCurrentOrganization(ctx context.Context, currentOrganization string, id string) (UpdateUserCurrentOrganizationRow, error) {
+func (q *DBQuerier) UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateUserCurrentOrganization")
-	row := q.conn.QueryRow(ctx, updateUserCurrentOrganizationSQL, currentOrganization, id)
-	var item UpdateUserCurrentOrganizationRow
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization); err != nil {
+	row := q.conn.QueryRow(ctx, updateUserCurrentOrganizationSQL, params.CurrentOrganization, params.UpdatedAt, params.ID)
+	var item string
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateUserCurrentOrganization: %w", err)
 	}
 	return item, nil
 }
 
 // UpdateUserCurrentOrganizationBatch implements Querier.UpdateUserCurrentOrganizationBatch.
-func (q *DBQuerier) UpdateUserCurrentOrganizationBatch(batch genericBatch, currentOrganization string, id string) {
-	batch.Queue(updateUserCurrentOrganizationSQL, currentOrganization, id)
+func (q *DBQuerier) UpdateUserCurrentOrganizationBatch(batch genericBatch, params UpdateUserCurrentOrganizationParams) {
+	batch.Queue(updateUserCurrentOrganizationSQL, params.CurrentOrganization, params.UpdatedAt, params.ID)
 }
 
 // UpdateUserCurrentOrganizationScan implements Querier.UpdateUserCurrentOrganizationScan.
-func (q *DBQuerier) UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (UpdateUserCurrentOrganizationRow, error) {
+func (q *DBQuerier) UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (string, error) {
 	row := results.QueryRow()
-	var item UpdateUserCurrentOrganizationRow
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.CurrentOrganization); err != nil {
+	var item string
+	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateUserCurrentOrganizationBatch row: %w", err)
 	}
 	return item, nil
