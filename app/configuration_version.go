@@ -34,8 +34,7 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 		s.Error(err, "constructing configuration version", "id", cv.ID())
 		return nil, err
 	}
-	_, err = s.db.Create(cv)
-	if err != nil {
+	if err := s.db.Create(cv); err != nil {
 		s.Error(err, "creating configuration version", "id", cv.ID())
 		return nil, err
 	}

@@ -92,7 +92,8 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws, err := db.WorkspaceStore().Create(newTestWorkspace(org))
+	ws := newTestWorkspace(org)
+	err := db.WorkspaceStore().Create(ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -102,7 +103,8 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cv, err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(ws))
+	cv := newTestConfigurationVersion(ws)
+	err := db.ConfigurationVersionStore().Create(cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

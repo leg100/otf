@@ -114,20 +114,15 @@ type ConfigurationVersionService interface {
 
 type ConfigurationVersionStore interface {
 	// Creates a config version.
-	Create(run *ConfigurationVersion) (*ConfigurationVersion, error)
-
+	Create(cv *ConfigurationVersion) error
 	// Get retrieves a config version.
 	Get(opts ConfigurationVersionGetOptions) (*ConfigurationVersion, error)
-
 	// GetConfig retrieves the config tarball for the given config version ID.
 	GetConfig(ctx context.Context, id string) ([]byte, error)
-
 	// List lists config versions for the given workspace.
 	List(workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
-
 	// Delete deletes the config version from the store
 	Delete(id string) error
-
 	// Upload uploads a config tarball for the given config version ID
 	Upload(ctx context.Context, id string, fn func(cv *ConfigurationVersion, uploader ConfigUploader) error) error
 }
@@ -137,7 +132,6 @@ type ConfigUploader interface {
 	// Upload uploads the config tarball and returns a status indicating success
 	// or failure.
 	Upload(ctx context.Context, config []byte) (ConfigurationStatus, error)
-
 	// SetErrored sets the config version status to 'errored' in the store.
 	SetErrored(ctx context.Context) error
 }

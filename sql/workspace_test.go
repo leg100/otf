@@ -14,11 +14,11 @@ func TestWorkspace_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := newTestWorkspace(org)
 
-	_, err := db.WorkspaceStore().Create(ws)
+	err := db.WorkspaceStore().Create(ws)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		_, err := db.WorkspaceStore().Create(ws)
+		err := db.WorkspaceStore().Create(ws)
 		require.Equal(t, otf.ErrResourcesAlreadyExists, err)
 	})
 }

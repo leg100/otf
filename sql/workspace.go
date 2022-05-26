@@ -25,7 +25,7 @@ func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
 	}
 }
 
-func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
+func (db WorkspaceDB) Create(ws *otf.Workspace) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
@@ -54,9 +54,9 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) (*otf.Workspace, error) {
 		OrganizationID:             ws.Organization.ID(),
 	})
 	if err != nil {
-		return nil, databaseError(err)
+		return databaseError(err)
 	}
-	return ws, nil
+	return nil
 }
 
 func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {

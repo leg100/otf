@@ -24,12 +24,12 @@ func NewConfigurationVersionDB(conn *pgxpool.Pool) *ConfigurationVersionDB {
 	}
 }
 
-func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.ConfigurationVersion, error) {
+func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) error {
 	ctx := context.Background()
 
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback(ctx)
 
@@ -45,17 +45,17 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) (*otf.Conf
 		WorkspaceID:   cv.Workspace.ID(),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Insert timestamp for current status
 	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID(), string(cv.Status()))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status), ts.Timestamp)
 
-	return cv, tx.Commit(ctx)
+	return tx.Commit(ctx)
 }
 
 func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {

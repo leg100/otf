@@ -221,7 +221,7 @@ type WorkspaceService interface {
 }
 
 type WorkspaceStore interface {
-	Create(ws *Workspace) (*Workspace, error)
+	Create(ws *Workspace) error
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
