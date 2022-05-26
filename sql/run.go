@@ -44,6 +44,12 @@ func (db RunDB) Create(run *otf.Run) error {
 		ApplyStatus:            string(run.Apply.Status()),
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
+		PlannedAdditions:       0,
+		PlannedChanges:         0,
+		PlannedDestructions:    0,
+		AppliedAdditions:       0,
+		AppliedChanges:         0,
+		AppliedDestructions:    0,
 		ConfigurationVersionID: run.ConfigurationVersion.ID(),
 		WorkspaceID:            run.Workspace.ID(),
 	})
@@ -138,43 +144,35 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	return run, tx.Commit(ctx)
 }
 
-func (db RunDB) CreatePlanReport(runID string, report otf.ResourceReport) error {
+func (db RunDB) CreatePlanReport(planID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.UpdateRunPlannedChangesByRunID(ctx, pggen.UpdateRunPlannedChangesByRunIDParams{
-		ID:           runID,
+	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, pggen.UpdateRunPlannedChangesByPlanIDParams{
+		PlanID:       planID,
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
 	})
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return err
 }
 
-func (db RunDB) CreateApplyReport(applyID string, summary otf.ResourceReport) error {
+func (db RunDB) CreateApplyReport(applyID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
-		ID:           applyID,
-		Additions:    summary.Additions,
-		Changes:      summary.Changes,
-		Destructions: summary.Destructions,
+	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
+		ApplyID:      applyID,
+		Additions:    report.Additions,
+		Changes:      report.Changes,
+		Destructions: report.Destructions,
 	})
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return err
 }
 
@@ -263,16 +261,16 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db RunDB) SetPlanFile(id string, file []byte, format otf.PlanFormat) error {
+func (db RunDB) SetPlanFile(planID string, file []byte, format otf.PlanFormat) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := q.PutPlanBinByRunID(ctx, file, id)
+		_, err := q.UpdateRunPlanBinByPlanID(ctx, file, planID)
 		return err
 	case otf.PlanFormatJSON:
-		_, err := q.PutPlanJSONByRunID(ctx, file, id)
+		_, err := q.UpdateRunPlanJSONByPlanID(ctx, file, planID)
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))

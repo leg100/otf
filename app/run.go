@@ -199,31 +199,31 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then its parsed for a summary of planned changes and the Plan object is
 // updated accordingly.
-func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
-	if err := s.db.SetPlanFile(runID, plan, format); err != nil {
-		s.Error(err, "uploading plan file", "id", runID, "format", format)
+func (s RunService) UploadPlanFile(ctx context.Context, planID string, plan []byte, format otf.PlanFormat) error {
+	if err := s.db.SetPlanFile(planID, plan, format); err != nil {
+		s.Error(err, "uploading plan file", "plan_id", planID, "format", format)
 		return err
 	}
 
-	s.V(0).Info("uploaded plan file", "id", runID, "format", format)
+	s.V(0).Info("uploaded plan file", "plan_id", planID, "format", format)
 
 	if format == otf.PlanFormatJSON {
 		report, err := otf.CompilePlanReport(plan)
 		if err != nil {
-			s.Error(err, "compiling planned changes report", "id", runID)
+			s.Error(err, "compiling planned changes report", "id", planID)
 			return err
 		}
-		if err := s.db.CreatePlanReport(runID, report); err != nil {
-			s.Error(err, "saving planned changes report", "id", runID)
+		if err := s.db.CreatePlanReport(planID, report); err != nil {
+			s.Error(err, "saving planned changes report", "id", planID)
 			return err
 		}
-		s.V(1).Info("created planned changes report", "id", runID,
+		s.V(1).Info("created planned changes report", "id", planID,
 			"adds", report.Additions,
 			"changes", report.Changes,
 			"destructions", report.Destructions)
 	}
 
-	if err := s.cache.Set(format.CacheKey(runID), plan); err != nil {
+	if err := s.cache.Set(format.CacheKey(planID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
 

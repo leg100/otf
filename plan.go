@@ -148,6 +148,7 @@ func newPlan(run *Run) *Plan {
 		id:  NewID("plan"),
 		run: run,
 		// new plans always start off in pending state
-		status: PlanPending,
+		status:         PlanPending,
+		ResourceReport: &ResourceReport{},
 	}
 }

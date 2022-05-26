@@ -106,8 +106,9 @@ type ApplyStatusTimestamp struct {
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		id:     NewID("apply"),
-		run:    run,
-		status: ApplyPending,
+		id:             NewID("apply"),
+		run:            run,
+		status:         ApplyPending,
+		ResourceReport: &ResourceReport{},
 	}
 }

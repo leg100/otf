@@ -337,7 +337,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.RunService().UploadPlanFile(ctx, r.ID(), file, PlanFormatBinary); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -349,7 +349,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -425,7 +425,7 @@ type RunService interface {
 	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
+	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
 }
 
 // RunCreateOptions represents the options for creating a new run. See

@@ -1,10 +1,8 @@
 package http
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -70,24 +68,6 @@ func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, r, RunListDTO(r, obj))
-}
-
-func (s *Server) UploadPlanFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	var opts PlanFileOptions
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	if err := s.RunService().UploadPlanFile(r.Context(), vars["id"], buf.Bytes(), opts.Format); err != nil {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {

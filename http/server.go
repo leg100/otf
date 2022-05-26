@@ -105,7 +105,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	router.HandleFunc("/plans/{id}/logs", s.UploadPlanLogs).Methods("PUT")
 	router.HandleFunc("/applies/{id}/logs", s.GetApplyLogs).Methods("GET")
 	router.HandleFunc("/applies/{id}/logs", s.UploadApplyLogs).Methods("PUT")
-	router.HandleFunc("/runs/{id}/plan", s.UploadPlanFile).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", s.GetPlanFile).Methods("GET")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")

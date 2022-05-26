@@ -185,7 +185,7 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.RunStore().CreatePlanReport(run.ID(), report)
+	err := db.RunStore().CreatePlanReport(run.Plan.ID(), report)
 	require.NoError(t, err)
 
 	run, err = db.RunStore().Get(otf.RunGetOptions{ID: otf.String(run.ID())})

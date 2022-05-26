@@ -5,9 +5,10 @@ package pggen
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"time"
 )
 
 const insertStateVersionSQL = `INSERT INTO state_versions (

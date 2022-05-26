@@ -23,8 +23,12 @@ type RunDBResult struct {
 	ApplyStatus            string                        `json:"apply_status"`
 	ReplaceAddrs           []string                      `json:"replace_addrs"`
 	TargetAddrs            []string                      `json:"target_addrs"`
-	PlannedChanges         *pggen.ResourceReport         `json:"planned_changes"`
-	AppliedChanges         *pggen.ResourceReport         `json:"applied_changes"`
+	PlannedAdditions       int                           `json:"planned_additions"`
+	PlannedChanges         int                           `json:"planned_changes"`
+	PlannedDestructions    int                           `json:"planned_destructions"`
+	AppliedAdditions       int                           `json:"applied_additions"`
+	AppliedChanges         int                           `json:"applied_changes"`
+	AppliedDestructions    int                           `json:"applied_destructions"`
 	ConfigurationVersionID string                        `json:"configuration_version_id"`
 	WorkspaceID            string                        `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
@@ -53,14 +57,22 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		Plan: &Plan{
 			id:               result.PlanID,
 			status:           PlanStatus(result.PlanStatus),
-			ResourceReport:   unmarshalResourceReportDBType(result.PlannedChanges),
 			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
+			ResourceReport: &ResourceReport{
+				Additions:    result.PlannedAdditions,
+				Changes:      result.PlannedChanges,
+				Destructions: result.PlannedDestructions,
+			},
 		},
 		Apply: &Apply{
 			id:               result.ApplyID,
 			status:           ApplyStatus(result.ApplyStatus),
-			ResourceReport:   unmarshalResourceReportDBType(result.AppliedChanges),
 			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+			ResourceReport: &ResourceReport{
+				Additions:    result.AppliedAdditions,
+				Changes:      result.AppliedChanges,
+				Destructions: result.AppliedDestructions,
+			},
 		},
 	}
 	run.Plan.run = &run
@@ -88,18 +100,6 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	}
 
 	return &run, nil
-}
-
-func unmarshalResourceReportDBType(typ *pggen.ResourceReport) *ResourceReport {
-	if typ == nil {
-		return nil
-	}
-
-	return &ResourceReport{
-		Additions:    typ.Additions,
-		Changes:      typ.Changes,
-		Destructions: typ.Destructions,
-	}
 }
 
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

@@ -13,6 +13,12 @@ INSERT INTO runs (
     apply_status,
     replace_addrs,
     target_addrs,
+    planned_additions,
+    planned_changes,
+    planned_destructions,
+    applied_additions,
+    applied_changes,
+    applied_destructions,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -29,6 +35,12 @@ INSERT INTO runs (
     pggen.arg('ApplyStatus'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
+    pggen.arg('PlannedAdditions'),
+    pggen.arg('PlannedChanges'),
+    pggen.arg('PlannedDestructions'),
+    pggen.arg('AppliedAdditions'),
+    pggen.arg('AppliedChanges'),
+    pggen.arg('AppliedDestructions'),
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 );
@@ -59,8 +71,12 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
     runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
     runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
@@ -117,8 +133,12 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
     runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
     runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
@@ -176,8 +196,12 @@ SELECT
     runs.apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.planned_additions,
     runs.planned_changes,
+    runs.planned_destructions,
+    runs.applied_additions,
     runs.applied_changes,
+    runs.applied_destructions,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
@@ -217,16 +241,24 @@ WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;
 
--- name: UpdateRunPlannedChangesByRunID :exec
+-- name: UpdateRunPlannedChangesByPlanID :one
 UPDATE runs
-SET planned_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
-WHERE run_id = pggen.arg('id')
+SET
+    planned_additions = pggen.arg('additions'),
+    planned_changes = pggen.arg('changes'),
+    planned_destructions = pggen.arg('destructions')
+WHERE plan_id = pggen.arg('plan_id')
+RETURNING plan_id
 ;
 
--- name: UpdateRunAppliedChangesByApplyID :exec
+-- name: UpdateRunAppliedChangesByApplyID :one
 UPDATE runs
-SET applied_changes = ROW(pggen.arg('additions'), pggen.arg('changes'), pggen.arg('destructions'))
-WHERE apply_id = pggen.arg('id')
+SET
+    applied_additions = pggen.arg('additions'),
+    applied_changes = pggen.arg('changes'),
+    applied_destructions = pggen.arg('destructions')
+WHERE apply_id = pggen.arg('apply_id')
+RETURNING plan_id
 ;
 
 -- name: DeleteRunByID :exec

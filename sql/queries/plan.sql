@@ -29,14 +29,14 @@ FROM runs
 WHERE run_id = pggen.arg('run_id')
 ;
 
--- name: PutPlanBinByRunID :exec
+-- name: UpdateRunPlanBinByPlanID :exec
 UPDATE runs
 SET plan_bin = pggen.arg('plan_bin')
-WHERE run_id = pggen.arg('run_id')
+WHERE plan_id = pggen.arg('plan_id')
 ;
 
--- name: PutPlanJSONByRunID :exec
+-- name: UpdateRunPlanJSONByPlanID :exec
 UPDATE runs
 SET plan_json = pggen.arg('plan_json')
-WHERE run_id = pggen.arg('run_id')
+WHERE plan_id = pggen.arg('plan_id')
 ;
