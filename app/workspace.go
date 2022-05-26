@@ -109,9 +109,9 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	return nil
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) error {
-		return ws.ToggleLock(true)
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	ws, err := s.db.Lock(spec, func(ws *otf.Workspace) error {
+		return ws.ToggleLock(true, opts.Locker)
 	})
 	if err != nil {
 		s.Error(err, "locking workspace", spec.LogFields()...)
@@ -123,9 +123,9 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ ot
 	return ws, nil
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	ws, err := s.db.Update(spec, func(ws *otf.Workspace) error {
-		return ws.ToggleLock(false)
+		return ws.ToggleLock(false, opts.Locker)
 	})
 	if err != nil {
 		s.Error(err, "unlocking workspace", spec.LogFields()...)

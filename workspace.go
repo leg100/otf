@@ -44,6 +44,7 @@ type Workspace struct {
 	terraformVersion           string
 	triggerPrefixes            []string
 	workingDirectory           string
+	WorkspaceLock
 	// Workspace belongs to an organization
 	Organization *Organization
 }
@@ -203,7 +204,42 @@ type WorkspaceLock struct {
 }
 
 // ToggleLock toggles the workspace lock.
-func (wl *WorkspaceLock) ToggleLock(lock bool, locker WorkspaceLocker) error {
+func (wl *WorkspaceLock) Lock(lock bool, locker WorkspaceLocker) error {
+	if lock && wl.locked {
+		return ErrWorkspaceAlreadyLocked
+	}
+	if !lock && !wl.locked {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	wl.locked = lock
+	wl.locker = locker
+	return nil
+}
+
+func (wl *WorkspaceLock) Unlock(locker WorkspaceLocker) error {
+	if lock && wl.locked {
+		return ErrWorkspaceAlreadyLocked
+	}
+	if !lock && !wl.locked {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	wl.locked = lock
+	wl.locker = locker
+	return nil
+}
+
+func LockWorkspace(requestor, lock WorkspaceLock) (WorkspaceLocker, error) {
+	if lock == nil {
+		return requestor, nil
+	}
+	switch locker := lock.(type) {
+	case *User:
+		user, ok := requestor.(*User)
+		if ok {
+			if locker.ID() == user.ID() {
+
+
+
 	if lock && wl.locked {
 		return ErrWorkspaceAlreadyLocked
 	}
@@ -225,6 +261,16 @@ type WorkspaceLocker interface {
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
+	// The entity requesting the locker.
+	Locker WorkspaceLocker
+}
+
+// WorkspaceLockOptions represents the options for locking a workspace.
+type WorkspaceUnlockOptions struct {
+	// Specifies the reason for locking the workspace.
+	Reason *string `jsonapi:"attr,reason,omitempty"`
+	// The entity requesting the locker.
+	Locker WorkspaceLocker
 }
 
 // WorkspaceList represents a list of Workspaces.
@@ -239,7 +285,7 @@ type WorkspaceService interface {
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 

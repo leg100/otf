@@ -49,11 +49,15 @@ INSERT INTO workspaces (
 
 -- name: FindWorkspaces :many
 SELECT
-    workspaces.*,
+    w.*,
+    (u.*)::"users" AS user_lock,
+    (r.run_id)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
-FROM workspaces
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.name LIKE pggen.arg('prefix') || '%'
+LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
+LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
+WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND organizations.name = pggen.arg('organization_name')
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -78,11 +82,15 @@ AND organizations.name = pggen.arg('organization_name');
 --
 -- name: FindWorkspaceByName :one
 SELECT
-    workspaces.*,
+    w.*,
+    (u.*)::"users" AS user_lock,
+    (r.run_id)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
-FROM workspaces
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.name = pggen.arg('name')
+LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
+LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
+WHERE w.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name');
 
 -- name: FindWorkspaceByNameForUpdate :one
@@ -96,13 +104,13 @@ FOR UPDATE;
 -- name: FindWorkspaceByID :one
 SELECT
     w.*,
-    (users.*)::"users" AS user_lock,
-    (runs.run_id)::"runs" AS run_lock,
+    (u.*)::"users" AS user_lock,
+    (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
-LEFT JOIN (user_locks ul JOIN users USING (user_id)) ON w.workspace_id = ul.workspace_id
-LEFT JOIN (run_locks rl JOIN runs USING (run_id)) ON w.workspace_id = rl.workspace_id
+LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
+LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
 WHERE w.workspace_id = pggen.arg('id');
 
 -- name: FindWorkspaceByIDForUpdate :one

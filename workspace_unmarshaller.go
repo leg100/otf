@@ -19,7 +19,6 @@ type WorkspaceDBResult struct {
 	ExecutionMode              string               `json:"execution_mode"`
 	FileTriggersEnabled        bool                 `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool                 `json:"global_remote_state"`
-	Locked                     bool                 `json:"locked"`
 	MigrationEnvironment       string               `json:"migration_environment"`
 	Name                       string               `json:"name"`
 	QueueAllRuns               bool                 `json:"queue_all_runs"`
@@ -30,9 +29,9 @@ type WorkspaceDBResult struct {
 	TerraformVersion           string               `json:"terraform_version"`
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
 	WorkingDirectory           string               `json:"working_directory"`
+	OrganizationID             string               `json:"organization_id"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
 	RunLock                    *pggen.Runs          `json:"run_lock"`
-	OrganizationID             string               `json:"organization_id"`
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
@@ -49,7 +48,6 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		executionMode:              row.ExecutionMode,
 		fileTriggersEnabled:        row.FileTriggersEnabled,
 		globalRemoteState:          row.GlobalRemoteState,
-		locked:                     row.Locked,
 		migrationEnvironment:       row.MigrationEnvironment,
 		name:                       row.Name,
 		queueAllRuns:               row.QueueAllRuns,
@@ -88,7 +86,6 @@ func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 		executionMode:              typ.ExecutionMode,
 		fileTriggersEnabled:        typ.FileTriggersEnabled,
 		globalRemoteState:          typ.GlobalRemoteState,
-		locked:                     typ.Locked,
 		migrationEnvironment:       typ.MigrationEnvironment,
 		name:                       typ.Name,
 		queueAllRuns:               typ.QueueAllRuns,

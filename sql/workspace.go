@@ -40,7 +40,6 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) error {
 		ExecutionMode:              string(ws.ExecutionMode()),
 		FileTriggersEnabled:        ws.FileTriggersEnabled(),
 		GlobalRemoteState:          ws.GlobalRemoteState(),
-		Locked:                     ws.Locked(),
 		MigrationEnvironment:       ws.MigrationEnvironment(),
 		SourceName:                 ws.SourceName(),
 		SourceURL:                  ws.SourceURL(),
@@ -101,7 +100,6 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		Description:                ws.Description(),
 		ExecutionMode:              string(ws.ExecutionMode()),
-		Locked:                     ws.Locked(),
 		Name:                       ws.Name(),
 		QueueAllRuns:               ws.QueueAllRuns(),
 		SpeculativeEnabled:         ws.SpeculativeEnabled(),
@@ -115,6 +113,65 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	}
 
 	return ws, tx.Commit(ctx)
+}
+
+func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, locker otf.WorkspaceLocker) error {
+	ctx := context.Background()
+	q := pggen.NewQuerier(db.Pool)
+
+	workspaceID, err := getWorkspaceID(ctx, q, spec)
+	if err != nil {
+		return databaseError(err)
+	}
+
+	switch l := locker.(type) {
+	case *otf.Run:
+		_, err := q.InsertWorkspaceLockRun(ctx, workspaceID, l.ID())
+		if err != nil {
+			return databaseError(err)
+		}
+	case *otf.User:
+		_, err := q.InsertWorkspaceLockUser(ctx, workspaceID, l.ID())
+		if err != nil {
+			return databaseError(err)
+		}
+	default:
+		return otf.ErrWorkspaceInvalidLocker
+	}
+	return nil
+}
+
+// Unlock the specified workspace; the caller has the opportunity to check the
+// current locker passed into the provided callback. If an error is returned the
+// unlock will not go ahead.
+func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLocker) error) error {
+	ctx := context.Background()
+	q := pggen.NewQuerier(db.Pool)
+
+	workspaceID, err := getWorkspaceID(ctx, q, spec)
+	if err != nil {
+		return databaseError(err)
+	}
+	result, err := q.FindWorkspaceLockForUpdate(ctx, workspaceID)
+	if err != nil {
+		return databaseError(err)
+	}
+
+	switch l := locker.(type) {
+	case *otf.Run:
+		_, err := q.InsertWorkspaceLockRun(ctx, workspaceID, l.ID())
+		if err != nil {
+			return err
+		}
+	case *otf.User:
+		_, err := q.InsertWorkspaceLockUser(ctx, workspaceID, l.ID())
+		if err != nil {
+			return err
+		}
+	default:
+		return otf.ErrWorkspaceInvalidLocker
+	}
+	return nil
 }
 
 func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
@@ -207,4 +264,14 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	}
 
 	return nil
+}
+
+func getWorkspaceID(ctx context.Context, q *pggen.DBQuerier, spec otf.WorkspaceSpec) (string, error) {
+	if spec.ID != nil {
+		return *spec.ID, nil
+	}
+	if spec.Name != nil && spec.OrganizationName != nil {
+		return q.FindWorkspaceIDByName(ctx, *spec.Name, *spec.OrganizationName)
+	}
+	return "", otf.ErrInvalidWorkspaceSpec
 }

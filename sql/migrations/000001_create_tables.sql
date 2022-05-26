@@ -47,13 +47,6 @@ CREATE TABLE IF NOT EXISTS users (
                             UNIQUE (username)
 );
 
-CREATE TABLE IF NOT EXISTS user_locks (
-    user_id       TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                  PRIMARY KEY (workspace_id, user_id),
-                  UNIQUE (workspace_id)
-);
-
 CREATE TABLE IF NOT EXISTS organization_memberships (
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL
@@ -175,11 +168,12 @@ CREATE TABLE IF NOT EXISTS runs (
                                     UNIQUE (apply_id)
 );
 
-CREATE TABLE IF NOT EXISTS run_locks (
-    run_id        TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    workspace_id  TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                  PRIMARY KEY (workspace_id, run_id),
-                  UNIQUE (workspace_id)
+CREATE TABLE IF NOT EXISTS workspace_locks (
+    workspace_id  TEXT NOT NULL,
+    user_id       TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
+    run_id        TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE,
+                  UNIQUE (workspace_id),
+                  CHECK (user_id IS NULL OR run_id IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
@@ -244,8 +238,8 @@ DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
+DROP TABLE IF EXISTS workspace_locks;
 DROP TABLE IF EXISTS runs;
-DROP TABLE IF EXISTS run_locks;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
 DROP TABLE IF EXISTS run_statuses;
@@ -255,6 +249,5 @@ DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS organization_memberships;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS user_locks;
 DROP TABLE IF EXISTS workspaces;
 DROP TABLE IF EXISTS organizations;

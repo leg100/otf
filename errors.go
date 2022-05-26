@@ -39,8 +39,15 @@ var (
 	// ErrInvalidWorkspaceID is returned when the workspace ID is invalid.
 	ErrInvalidWorkspaceID = errors.New("invalid value for workspace ID")
 
+	// ErrWorkspaceInvalidSpec is returned when a workspace specification is
+	// invalid.
+	ErrWorkspaceInvalidSpec = errors.New("invalid workspace specification")
+
 	// ErrInvalidWorkspaceValue is returned when workspace value is invalid.
 	ErrInvalidWorkspaceValue = errors.New("invalid value for workspace")
+
+	// ErrWorkspaceInvalidLocker is returned when a workspace locker is invalid
+	ErrWorkspaceInvalidLocker = errors.New("invalid workspace locker entity")
 
 	// Organization errors
 

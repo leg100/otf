@@ -596,8 +596,6 @@ type Querier interface {
 	// FindWorkspaceByNameForUpdateScan scans the result of an executed FindWorkspaceByNameForUpdateBatch query.
 	FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error)
 
-	// FindWorkspaceByID finds a workspace by id.
-	//
 	FindWorkspaceByID(ctx context.Context, includeOrganization bool, id string) (FindWorkspaceByIDRow, error)
 	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -637,6 +635,34 @@ type Querier interface {
 	DeleteWorkspaceByNameBatch(batch genericBatch, name string, organizationName string)
 	// DeleteWorkspaceByNameScan scans the result of an executed DeleteWorkspaceByNameBatch query.
 	DeleteWorkspaceByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertWorkspaceLockUser(ctx context.Context, workspaceID string, userID string) (pgconn.CommandTag, error)
+	// InsertWorkspaceLockUserBatch enqueues a InsertWorkspaceLockUser query into batch to be executed
+	// later by the batch.
+	InsertWorkspaceLockUserBatch(batch genericBatch, workspaceID string, userID string)
+	// InsertWorkspaceLockUserScan scans the result of an executed InsertWorkspaceLockUserBatch query.
+	InsertWorkspaceLockUserScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertWorkspaceLockRun(ctx context.Context, workspaceID string, runID string) (pgconn.CommandTag, error)
+	// InsertWorkspaceLockRunBatch enqueues a InsertWorkspaceLockRun query into batch to be executed
+	// later by the batch.
+	InsertWorkspaceLockRunBatch(batch genericBatch, workspaceID string, runID string)
+	// InsertWorkspaceLockRunScan scans the result of an executed InsertWorkspaceLockRunBatch query.
+	InsertWorkspaceLockRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindWorkspaceLockForUpdate(ctx context.Context, workspaceID string) (FindWorkspaceLockForUpdateRow, error)
+	// FindWorkspaceLockForUpdateBatch enqueues a FindWorkspaceLockForUpdate query into batch to be executed
+	// later by the batch.
+	FindWorkspaceLockForUpdateBatch(batch genericBatch, workspaceID string)
+	// FindWorkspaceLockForUpdateScan scans the result of an executed FindWorkspaceLockForUpdateBatch query.
+	FindWorkspaceLockForUpdateScan(results pgx.BatchResults) (FindWorkspaceLockForUpdateRow, error)
+
+	DeleteWorkspaceLock(ctx context.Context, workspaceID string) (string, error)
+	// DeleteWorkspaceLockBatch enqueues a DeleteWorkspaceLock query into batch to be executed
+	// later by the batch.
+	DeleteWorkspaceLockBatch(batch genericBatch, workspaceID string)
+	// DeleteWorkspaceLockScan scans the result of an executed DeleteWorkspaceLockBatch query.
+	DeleteWorkspaceLockScan(results pgx.BatchResults) (string, error)
 }
 
 type DBQuerier struct {
@@ -969,6 +995,18 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteWorkspaceByNameSQL, deleteWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByName': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertWorkspaceLockUserSQL, insertWorkspaceLockUserSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWorkspaceLockUser': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertWorkspaceLockRunSQL, insertWorkspaceLockRunSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWorkspaceLockRun': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspaceLockForUpdateSQL, findWorkspaceLockForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceLockForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteWorkspaceLockSQL, deleteWorkspaceLockSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWorkspaceLock': %w", err)
+	}
 	return nil
 }
 
@@ -1024,25 +1062,29 @@ type RunStatusTimestamps struct {
 
 // Runs represents the Postgres composite type "runs".
 type Runs struct {
-	RunID                  string                  `json:"run_id"`
-	PlanID                 string                  `json:"plan_id"`
-	ApplyID                string                  `json:"apply_id"`
-	CreatedAt              time.Time               `json:"created_at"`
-	IsDestroy              bool                    `json:"is_destroy"`
-	PositionInQueue        int                     `json:"position_in_queue"`
-	Refresh                bool                    `json:"refresh"`
-	RefreshOnly            bool                    `json:"refresh_only"`
-	ReplaceAddrs           []string                `json:"replace_addrs"`
-	TargetAddrs            []string                `json:"target_addrs"`
-	PlanBin                []byte                  `json:"plan_bin"`
-	PlanJson               []byte                  `json:"plan_json"`
-	PlannedChanges         *queries.ResourceReport `json:"planned_changes"`
-	AppliedChanges         *queries.ResourceReport `json:"applied_changes"`
-	Status                 string                  `json:"status"`
-	PlanStatus             string                  `json:"plan_status"`
-	ApplyStatus            string                  `json:"apply_status"`
-	WorkspaceID            string                  `json:"workspace_id"`
-	ConfigurationVersionID string                  `json:"configuration_version_id"`
+	RunID                  string    `json:"run_id"`
+	PlanID                 string    `json:"plan_id"`
+	ApplyID                string    `json:"apply_id"`
+	CreatedAt              time.Time `json:"created_at"`
+	IsDestroy              bool      `json:"is_destroy"`
+	PositionInQueue        int       `json:"position_in_queue"`
+	Refresh                bool      `json:"refresh"`
+	RefreshOnly            bool      `json:"refresh_only"`
+	ReplaceAddrs           []string  `json:"replace_addrs"`
+	TargetAddrs            []string  `json:"target_addrs"`
+	PlanBin                []byte    `json:"plan_bin"`
+	PlanJson               []byte    `json:"plan_json"`
+	PlannedAdditions       int       `json:"planned_additions"`
+	PlannedChanges         int       `json:"planned_changes"`
+	PlannedDestructions    int       `json:"planned_destructions"`
+	AppliedAdditions       int       `json:"applied_additions"`
+	AppliedChanges         int       `json:"applied_changes"`
+	AppliedDestructions    int       `json:"applied_destructions"`
+	Status                 string    `json:"status"`
+	PlanStatus             string    `json:"plan_status"`
+	ApplyStatus            string    `json:"apply_status"`
+	WorkspaceID            string    `json:"workspace_id"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
 }
 
 // Sessions represents the Postgres composite type "sessions".
@@ -1286,8 +1328,12 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		compositeField{"target_addrs", "_text", &pgtype.TextArray{}},
 		compositeField{"plan_bin", "bytea", &pgtype.Bytea{}},
 		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
-		compositeField{"planned_changes", "resource_report", tr.newResourceReport()},
-		compositeField{"applied_changes", "resource_report", tr.newResourceReport()},
+		compositeField{"planned_additions", "int4", &pgtype.Int4{}},
+		compositeField{"planned_changes", "int4", &pgtype.Int4{}},
+		compositeField{"planned_destructions", "int4", &pgtype.Int4{}},
+		compositeField{"applied_additions", "int4", &pgtype.Int4{}},
+		compositeField{"applied_changes", "int4", &pgtype.Int4{}},
+		compositeField{"applied_destructions", "int4", &pgtype.Int4{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"plan_status", "text", &pgtype.Text{}},
 		compositeField{"apply_status", "text", &pgtype.Text{}},
