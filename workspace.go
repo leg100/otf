@@ -73,18 +73,6 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
 
-// ToggleLock toggles the workspace lock.
-func (ws *Workspace) ToggleLock(lock bool) error {
-	if lock && ws.locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !ws.locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-	ws.locked = lock
-	return nil
-}
-
 // UpdateWithOptions updates the workspace with the given options.
 //
 // TODO: validate options
@@ -170,6 +158,17 @@ type WorkspaceCreateOptions struct {
 	WorkingDirectory           *string
 }
 
+func (o WorkspaceCreateOptions) Valid() error {
+	if !ValidStringID(&o.Name) {
+		return ErrInvalidName
+	}
+	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
+		return ErrInvalidTerraformVersion
+	}
+
+	return nil
+}
+
 // WorkspaceUpdateOptions represents the options for updating a workspace.
 type WorkspaceUpdateOptions struct {
 	AllowDestroyPlan           *bool
@@ -196,6 +195,30 @@ func (o WorkspaceUpdateOptions) Valid() error {
 		return ErrInvalidTerraformVersion
 	}
 	return nil
+}
+
+type WorkspaceLock struct {
+	locked bool
+	locker WorkspaceLocker
+}
+
+// ToggleLock toggles the workspace lock.
+func (wl *WorkspaceLock) ToggleLock(lock bool, locker WorkspaceLocker) error {
+	if lock && wl.locked {
+		return ErrWorkspaceAlreadyLocked
+	}
+	if !lock && !wl.locked {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	wl.locked = lock
+	wl.locker = locker
+	return nil
+}
+
+// WorkspaceLocker is the entity locking a workspace
+type WorkspaceLocker interface {
+	// String provides a human friendly identification of the entity
+	String() string
 }
 
 // WorkspaceLockOptions represents the options for locking a workspace.
@@ -242,17 +265,6 @@ type WorkspaceListOptions struct {
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
-}
-
-func (o WorkspaceCreateOptions) Valid() error {
-	if !ValidStringID(&o.Name) {
-		return ErrInvalidName
-	}
-	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
-		return ErrInvalidTerraformVersion
-	}
-
-	return nil
 }
 
 // WorkspaceSpec is used for identifying an individual workspace. Either ID *or*

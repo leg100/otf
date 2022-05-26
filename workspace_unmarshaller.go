@@ -30,6 +30,8 @@ type WorkspaceDBResult struct {
 	TerraformVersion           string               `json:"terraform_version"`
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
 	WorkingDirectory           string               `json:"working_directory"`
+	UserLock                   *pggen.Users         `json:"user_lock"`
+	RunLock                    *pggen.Runs          `json:"run_lock"`
 	OrganizationID             string               `json:"organization_id"`
 	Organization               *pggen.Organizations `json:"organization"`
 }

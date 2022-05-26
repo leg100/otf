@@ -1022,6 +1022,29 @@ type RunStatusTimestamps struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// Runs represents the Postgres composite type "runs".
+type Runs struct {
+	RunID                  string                  `json:"run_id"`
+	PlanID                 string                  `json:"plan_id"`
+	ApplyID                string                  `json:"apply_id"`
+	CreatedAt              time.Time               `json:"created_at"`
+	IsDestroy              bool                    `json:"is_destroy"`
+	PositionInQueue        int                     `json:"position_in_queue"`
+	Refresh                bool                    `json:"refresh"`
+	RefreshOnly            bool                    `json:"refresh_only"`
+	ReplaceAddrs           []string                `json:"replace_addrs"`
+	TargetAddrs            []string                `json:"target_addrs"`
+	PlanBin                []byte                  `json:"plan_bin"`
+	PlanJson               []byte                  `json:"plan_json"`
+	PlannedChanges         *queries.ResourceReport `json:"planned_changes"`
+	AppliedChanges         *queries.ResourceReport `json:"applied_changes"`
+	Status                 string                  `json:"status"`
+	PlanStatus             string                  `json:"plan_status"`
+	ApplyStatus            string                  `json:"apply_status"`
+	WorkspaceID            string                  `json:"workspace_id"`
+	ConfigurationVersionID string                  `json:"configuration_version_id"`
+}
+
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
 	Token     string    `json:"token"`
@@ -1051,6 +1074,15 @@ type Tokens struct {
 	UserID      string    `json:"user_id"`
 }
 
+// Users represents the Postgres composite type "users".
+type Users struct {
+	UserID              string    `json:"user_id"`
+	Username            string    `json:"username"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+	CurrentOrganization string    `json:"current_organization"`
+}
+
 // Workspaces represents the Postgres composite type "workspaces".
 type Workspaces struct {
 	WorkspaceID                string    `json:"workspace_id"`
@@ -1064,7 +1096,6 @@ type Workspaces struct {
 	ExecutionMode              string    `json:"execution_mode"`
 	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool      `json:"global_remote_state"`
-	Locked                     bool      `json:"locked"`
 	MigrationEnvironment       string    `json:"migration_environment"`
 	Name                       string    `json:"name"`
 	QueueAllRuns               bool      `json:"queue_all_runs"`
@@ -1238,6 +1269,33 @@ func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
 	)
 }
 
+// newRuns creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'runs'.
+func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"runs",
+		compositeField{"run_id", "text", &pgtype.Text{}},
+		compositeField{"plan_id", "text", &pgtype.Text{}},
+		compositeField{"apply_id", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
+		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
+		compositeField{"refresh", "bool", &pgtype.Bool{}},
+		compositeField{"refresh_only", "bool", &pgtype.Bool{}},
+		compositeField{"replace_addrs", "_text", &pgtype.TextArray{}},
+		compositeField{"target_addrs", "_text", &pgtype.TextArray{}},
+		compositeField{"plan_bin", "bytea", &pgtype.Bytea{}},
+		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
+		compositeField{"planned_changes", "resource_report", tr.newResourceReport()},
+		compositeField{"applied_changes", "resource_report", tr.newResourceReport()},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"plan_status", "text", &pgtype.Text{}},
+		compositeField{"apply_status", "text", &pgtype.Text{}},
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
+		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newSessions creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'sessions'.
 func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
@@ -1279,6 +1337,19 @@ func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
 	)
 }
 
+// newUsers creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'users'.
+func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"users",
+		compositeField{"user_id", "text", &pgtype.Text{}},
+		compositeField{"username", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"current_organization", "text", &pgtype.Text{}},
+	)
+}
+
 // newWorkspaces creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'workspaces'.
 func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
@@ -1295,7 +1366,6 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"execution_mode", "text", &pgtype.Text{}},
 		compositeField{"file_triggers_enabled", "bool", &pgtype.Bool{}},
 		compositeField{"global_remote_state", "bool", &pgtype.Bool{}},
-		compositeField{"locked", "bool", &pgtype.Bool{}},
 		compositeField{"migration_environment", "text", &pgtype.Text{}},
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"queue_all_runs", "bool", &pgtype.Bool{}},

@@ -11,7 +11,6 @@ INSERT INTO workspaces (
     execution_mode,
     file_triggers_enabled,
     global_remote_state,
-    locked,
     migration_environment,
     name,
     queue_all_runs,
@@ -35,7 +34,6 @@ INSERT INTO workspaces (
     pggen.arg('ExecutionMode'),
     pggen.arg('FileTriggersEnabled'),
     pggen.arg('GlobalRemoteState'),
-    pggen.arg('Locked'),
     pggen.arg('MigrationEnvironment'),
     pggen.arg('Name'),
     pggen.arg('QueueAllRuns'),
@@ -95,15 +93,17 @@ WHERE workspaces.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name')
 FOR UPDATE;
 
--- FindWorkspaceByID finds a workspace by id.
---
 -- name: FindWorkspaceByID :one
 SELECT
-    workspaces.*,
+    w.*,
+    (users.*)::"users" AS user_lock,
+    (runs.run_id)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
-FROM workspaces
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.workspace_id = pggen.arg('id');
+LEFT JOIN (user_locks ul JOIN users USING (user_id)) ON w.workspace_id = ul.workspace_id
+LEFT JOIN (run_locks rl JOIN runs USING (run_id)) ON w.workspace_id = rl.workspace_id
+WHERE w.workspace_id = pggen.arg('id');
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT workspaces.*
@@ -118,7 +118,6 @@ SET
     allow_destroy_plan = pggen.arg('allow_destroy_plan'),
     description = pggen.arg('description'),
     execution_mode = pggen.arg('execution_mode'),
-    locked = pggen.arg('locked'),
     name = pggen.arg('name'),
     queue_all_runs = pggen.arg('queue_all_runs'),
     speculative_enabled = pggen.arg('speculative_enabled'),

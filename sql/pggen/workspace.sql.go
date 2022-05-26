@@ -23,7 +23,6 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
     execution_mode,
     file_triggers_enabled,
     global_remote_state,
-    locked,
     migration_environment,
     name,
     queue_all_runs,
@@ -57,8 +56,7 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
     $19,
     $20,
     $21,
-    $22,
-    $23
+    $22
 );`
 
 type InsertWorkspaceParams struct {
@@ -73,7 +71,6 @@ type InsertWorkspaceParams struct {
 	ExecutionMode              string
 	FileTriggersEnabled        bool
 	GlobalRemoteState          bool
-	Locked                     bool
 	MigrationEnvironment       string
 	Name                       string
 	QueueAllRuns               bool
@@ -90,7 +87,7 @@ type InsertWorkspaceParams struct {
 // InsertWorkspace implements Querier.InsertWorkspace.
 func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWorkspace")
-	cmdTag, err := q.conn.Exec(ctx, insertWorkspaceSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceURL, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
+	cmdTag, err := q.conn.Exec(ctx, insertWorkspaceSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceURL, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertWorkspace: %w", err)
 	}
@@ -99,7 +96,7 @@ func (q *DBQuerier) InsertWorkspace(ctx context.Context, params InsertWorkspaceP
 
 // InsertWorkspaceBatch implements Querier.InsertWorkspaceBatch.
 func (q *DBQuerier) InsertWorkspaceBatch(batch genericBatch, params InsertWorkspaceParams) {
-	batch.Queue(insertWorkspaceSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.Locked, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceURL, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
+	batch.Queue(insertWorkspaceSQL, params.ID, params.CreatedAt, params.UpdatedAt, params.AllowDestroyPlan, params.AutoApply, params.CanQueueDestroyPlan, params.Description, params.Environment, params.ExecutionMode, params.FileTriggersEnabled, params.GlobalRemoteState, params.MigrationEnvironment, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.SourceName, params.SourceURL, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.OrganizationID)
 }
 
 // InsertWorkspaceScan implements Querier.InsertWorkspaceScan.
@@ -142,7 +139,6 @@ type FindWorkspacesRow struct {
 	ExecutionMode              string         `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	Locked                     bool           `json:"locked"`
 	MigrationEnvironment       string         `json:"migration_environment"`
 	Name                       string         `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
@@ -169,7 +165,7 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspaces row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -199,7 +195,7 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -304,7 +300,6 @@ type FindWorkspaceByNameRow struct {
 	ExecutionMode              string         `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	Locked                     bool           `json:"locked"`
 	MigrationEnvironment       string         `json:"migration_environment"`
 	Name                       string         `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
@@ -325,7 +320,7 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, params FindWorkspac
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameSQL, params.IncludeOrganization, params.Name, params.OrganizationName)
 	var item FindWorkspaceByNameRow
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByName: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -344,7 +339,7 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	row := results.QueryRow()
 	var item FindWorkspaceByNameRow
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -372,7 +367,6 @@ type FindWorkspaceByNameForUpdateRow struct {
 	ExecutionMode              string    `json:"execution_mode"`
 	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool      `json:"global_remote_state"`
-	Locked                     bool      `json:"locked"`
 	MigrationEnvironment       string    `json:"migration_environment"`
 	Name                       string    `json:"name"`
 	QueueAllRuns               bool      `json:"queue_all_runs"`
@@ -391,7 +385,7 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name strin
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByNameForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameForUpdateSQL, name, organizationName)
 	var item FindWorkspaceByNameForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByNameForUpdate: %w", err)
 	}
 	return item, nil
@@ -406,18 +400,22 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name s
 func (q *DBQuerier) FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindWorkspaceByNameForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameForUpdateBatch row: %w", err)
 	}
 	return item, nil
 }
 
 const findWorkspaceByIDSQL = `SELECT
-    workspaces.*,
+    w.*,
+    (users.*)::"users" AS user_lock,
+    (runs.run_id)::"runs" AS run_lock,
     CASE WHEN $1 THEN (organizations.*)::"organizations" END AS organization
-FROM workspaces
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.workspace_id = $2;`
+LEFT JOIN (user_locks ul JOIN users USING (user_id)) ON w.workspace_id = ul.workspace_id
+LEFT JOIN (run_locks rl JOIN runs USING (run_id)) ON w.workspace_id = rl.workspace_id
+WHERE w.workspace_id = $2;`
 
 type FindWorkspaceByIDRow struct {
 	WorkspaceID                string         `json:"workspace_id"`
@@ -431,7 +429,6 @@ type FindWorkspaceByIDRow struct {
 	ExecutionMode              string         `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	Locked                     bool           `json:"locked"`
 	MigrationEnvironment       string         `json:"migration_environment"`
 	Name                       string         `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
@@ -443,6 +440,8 @@ type FindWorkspaceByIDRow struct {
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
 	WorkingDirectory           string         `json:"working_directory"`
 	OrganizationID             string         `json:"organization_id"`
+	UserLock                   *Users         `json:"user_lock"`
+	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
 }
 
@@ -451,9 +450,17 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, includeOrganization b
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByID")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDSQL, includeOrganization, id)
 	var item FindWorkspaceByIDRow
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByID: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
@@ -470,9 +477,17 @@ func (q *DBQuerier) FindWorkspaceByIDBatch(batch genericBatch, includeOrganizati
 func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspaceByIDRow, error) {
 	row := results.QueryRow()
 	var item FindWorkspaceByIDRow
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, organizationRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDBatch row: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
@@ -498,7 +513,6 @@ type FindWorkspaceByIDForUpdateRow struct {
 	ExecutionMode              string    `json:"execution_mode"`
 	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool      `json:"global_remote_state"`
-	Locked                     bool      `json:"locked"`
 	MigrationEnvironment       string    `json:"migration_environment"`
 	Name                       string    `json:"name"`
 	QueueAllRuns               bool      `json:"queue_all_runs"`
@@ -517,7 +531,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
 	var item FindWorkspaceByIDForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
 	}
 	return item, nil
@@ -532,7 +546,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id strin
 func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (FindWorkspaceByIDForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindWorkspaceByIDForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.Locked, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
 	}
 	return item, nil
@@ -543,23 +557,21 @@ SET
     allow_destroy_plan = $1,
     description = $2,
     execution_mode = $3,
-    locked = $4,
-    name = $5,
-    queue_all_runs = $6,
-    speculative_enabled = $7,
-    structured_run_output_enabled = $8,
-    terraform_version = $9,
-    trigger_prefixes = $10,
-    working_directory = $11,
-    updated_at = $12
-WHERE workspace_id = $13
+    name = $4,
+    queue_all_runs = $5,
+    speculative_enabled = $6,
+    structured_run_output_enabled = $7,
+    terraform_version = $8,
+    trigger_prefixes = $9,
+    working_directory = $10,
+    updated_at = $11
+WHERE workspace_id = $12
 RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
 	AllowDestroyPlan           bool
 	Description                string
 	ExecutionMode              string
-	Locked                     bool
 	Name                       string
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
@@ -574,7 +586,7 @@ type UpdateWorkspaceByIDParams struct {
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
 func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Locked, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
 	var item string
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
@@ -584,7 +596,7 @@ func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorksp
 
 // UpdateWorkspaceByIDBatch implements Querier.UpdateWorkspaceByIDBatch.
 func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams) {
-	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Locked, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
 }
 
 // UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.
