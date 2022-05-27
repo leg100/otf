@@ -96,6 +96,30 @@ func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 
+// Lock requests locking a workspace held by the run
+func (r *Run) Lock(requestor Identity) error {
+	if _, ok := requestor.(*Run); ok {
+		// run can replace lock held by different run
+		return nil
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// Unlock requests unlocking a workspace held by the run
+func (r *Run) Unlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user
+		//
+		// force unlock always granted
+		return nil
+	}
+	if _, ok := requestor.(*Run); ok {
+		// run can unlock lock held by different run
+		return nil
+	}
+	return ErrWorkspaceAlreadyUnlocked
+}
+
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
 	if !r.Discardable() {

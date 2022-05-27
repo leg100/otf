@@ -53,6 +53,29 @@ func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
 
+// Lock requests locking a workspace held by the user
+func (u *User) Lock(requestor Identity) error {
+	return ErrWorkspaceAlreadyLocked
+}
+
+// Unlock requests unlocking a workspace held by the user
+func (u *User) Unlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user
+		//
+		// force unlock always granted
+		return nil
+	}
+	if _, ok := requestor.(*User); ok {
+		if u.ID() == requestor.ID() {
+			// same user can unlock
+			return nil
+		}
+		return ErrWorkspaceLockedByDifferentUser
+	}
+	return ErrWorkspaceAlreadyUnlocked
+}
+
 // SyncOrganizationMemberships synchronises a user's organization memberships,
 // taking an authoritative list of memberships and ensuring its memberships
 // match, adding and removing memberships accordingly.

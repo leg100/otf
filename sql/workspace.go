@@ -115,14 +115,16 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	return ws, tx.Commit(ctx)
 }
 
-func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, locker otf.WorkspaceLocker) error {
+func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLock) error) (*otf.Workspace, error) {
 	ctx := context.Background()
 	q := pggen.NewQuerier(db.Pool)
 
 	workspaceID, err := getWorkspaceID(ctx, q, spec)
 	if err != nil {
-		return databaseError(err)
+		return nil, databaseError(err)
 	}
+
+	q.FindWorkspaceLockForUpdate(ctx, workspaceID)
 
 	switch l := locker.(type) {
 	case *otf.Run:
@@ -144,7 +146,7 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, locker otf.WorkspaceLocker) e
 // Unlock the specified workspace; the caller has the opportunity to check the
 // current locker passed into the provided callback. If an error is returned the
 // unlock will not go ahead.
-func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLocker) error) error {
+func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, callback func(otf.Identity) error) error {
 	ctx := context.Background()
 	q := pggen.NewQuerier(db.Pool)
 

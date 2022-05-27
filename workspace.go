@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -15,9 +16,10 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked   = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked = errors.New("workspace already unlocked")
-	ErrInvalidWorkspaceSpec     = errors.New("invalid workspace spec options")
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
+	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
+	ErrInvalidWorkspaceSpec           = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -44,7 +46,6 @@ type Workspace struct {
 	terraformVersion           string
 	triggerPrefixes            []string
 	workingDirectory           string
-	WorkspaceLock
 	// Workspace belongs to an organization
 	Organization *Organization
 }
@@ -198,79 +199,84 @@ func (o WorkspaceUpdateOptions) Valid() error {
 	return nil
 }
 
-type WorkspaceLock struct {
-	locked bool
-	locker WorkspaceLocker
-}
-
-// ToggleLock toggles the workspace lock.
-func (wl *WorkspaceLock) Lock(lock bool, locker WorkspaceLocker) error {
-	if lock && wl.locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !wl.locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-	wl.locked = lock
-	wl.locker = locker
-	return nil
-}
-
-func (wl *WorkspaceLock) Unlock(locker WorkspaceLocker) error {
-	if lock && wl.locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !wl.locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-	wl.locked = lock
-	wl.locker = locker
-	return nil
-}
-
-func LockWorkspace(requestor, lock WorkspaceLock) (WorkspaceLocker, error) {
-	if lock == nil {
-		return requestor, nil
-	}
-	switch locker := lock.(type) {
-	case *User:
-		user, ok := requestor.(*User)
-		if ok {
-			if locker.ID() == user.ID() {
-
-
-
-	if lock && wl.locked {
-		return ErrWorkspaceAlreadyLocked
-	}
-	if !lock && !wl.locked {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-	wl.locked = lock
-	wl.locker = locker
-	return nil
-}
-
-// WorkspaceLocker is the entity locking a workspace
-type WorkspaceLocker interface {
-	// String provides a human friendly identification of the entity
-	String() string
+type WorkspaceLock interface {
+	Lock(Identity) error
+	Unlock(Identity, bool) error
 }
 
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The entity requesting the locker.
-	Locker WorkspaceLocker
+	// The identity requesting the locker.
+	Requestor Identity
 }
 
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceUnlockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The entity requesting the locker.
-	Locker WorkspaceLocker
+	// The identity requesting the lock.
+	Requestor Identity
+}
+
+// Request workspace lock. Requestor is the entity requesting the lock, and lock
+// represents the current entity that has locked the workspace.
+func RequestWorkspaceLock(requestor, lock Identity) error {
+	if lock == nil {
+		// unlocked, request permitted
+		return nil
+	}
+	if reflect.TypeOf(lock) == reflect.TypeOf(requestor) {
+		if _, ok := lock.(*Run); ok {
+			// run can replace lock held by different run
+			return nil
+		}
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// Unlocked represents the unlocked state of a workspace lock
+type Unlocked struct{}
+
+// Lock requests locking a workspace lock
+func (u *Unlocked) Lock(requestor Identity) error {
+	return nil
+}
+
+// Unlock requests unlocking a workspace currently unlocked
+func (u *Unlocked) Unlock(requestor Identity) error {
+	return ErrWorkspaceAlreadyUnlocked
+}
+
+// Request workspace unlock. Requestor is the entity requesting the unlock, and
+// lock represents the current entity that has locked the workspace.
+func RequestWorkspaceUnlock(requestor, lock Identity, force bool) error {
+	if force {
+		// force unlock always granted
+		return nil
+	}
+	if lock == nil {
+		return ErrWorkspaceAlreadyUnlocked
+	}
+	if reflect.TypeOf(requestor) != reflect.TypeOf(lock) {
+		// different entity classes cannot unlock each other locks
+		return ErrWorkspaceAlreadyLocked
+	}
+	// entities are identical
+	switch lock.(type) {
+	case *User:
+		if lock.ID() == requestor.ID() {
+			// same user can unlock
+			return nil
+		}
+		return ErrWorkspaceLockedByDifferentUser
+	case *Run:
+		// run can unlock lock held by different run
+		return nil
+	default:
+		return ErrWorkspaceInvalidLocker
+	}
 }
 
 // WorkspaceList represents a list of Workspaces.
@@ -294,6 +300,8 @@ type WorkspaceStore interface {
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
+	Lock(spec WorkspaceSpec, callback func(lock WorkspaceLock) error) (*Workspace, error)
+	Unlock(spec WorkspaceSpec, callback func(lock WorkspaceLock) error) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 
