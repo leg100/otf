@@ -36,36 +36,16 @@ INSERT INTO organizations (
     pggen.arg('SessionTimeout')
 );
 
--- UpdateOrganizationNameByName updates an organization with a new name,
--- identifying the organization with its existing name, and returns the
--- updated row.
---
--- name: UpdateOrganizationNameByName :one
+-- name: UpdateOrganizationByName :one
 UPDATE organizations
 SET
     name = pggen.arg('new_name'),
-    updated_at = pggen.arg('updated_at')
-WHERE name = pggen.arg('name')
-RETURNING *;
-
--- name: UpdateOrganizationSessionRememberByName :one
-UPDATE organizations
-SET
     session_remember = pggen.arg('session_remember'),
-    updated_at = pggen.arg('updated_at')
-WHERE name = pggen.arg('name')
-RETURNING *;
-
--- name: UpdateOrganizationSessionTimeoutByName :one
-UPDATE organizations
-SET
     session_timeout = pggen.arg('session_timeout'),
     updated_at = pggen.arg('updated_at')
 WHERE name = pggen.arg('name')
-RETURNING *;
+RETURNING organization_id;
 
--- DeleteOrganization deletes an organization by id.
---
 -- name: DeleteOrganization :exec
 DELETE
 FROM organizations

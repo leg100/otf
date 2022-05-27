@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -31,7 +32,10 @@ func (db PlanLogDB) PutChunk(ctx context.Context, planID string, chunk otf.Chunk
 		return nil
 	}
 
-	_, err := q.InsertPlanLogChunk(ctx, planID, chunk.Marshal())
+	_, err := q.InsertPlanLogChunk(ctx,
+		pgtype.Text{String: planID, Status: pgtype.Present},
+		chunk.Marshal(),
+	)
 	return err
 }
 
@@ -46,7 +50,7 @@ func (db PlanLogDB) GetChunk(ctx context.Context, planID string, opts otf.GetChu
 	}
 
 	chunk, err := q.FindPlanLogChunks(ctx, pggen.FindPlanLogChunksParams{
-		PlanID: planID,
+		PlanID: pgtype.Text{String: planID, Status: pgtype.Present},
 		Offset: opts.Offset + 1,
 		Limit:  opts.Limit,
 	})

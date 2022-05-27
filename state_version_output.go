@@ -19,10 +19,10 @@ type StateVersionOutputList []*StateVersionOutput
 // composite type.
 func UnmarshalStateVersionOutputDBType(typ pggen.StateVersionOutputs) *StateVersionOutput {
 	return &StateVersionOutput{
-		id:        typ.StateVersionOutputID,
+		id:        typ.StateVersionOutputID.String,
 		Sensitive: typ.Sensitive,
-		Type:      typ.Type,
-		Value:     typ.Value,
-		Name:      typ.Name,
+		Type:      typ.Type.String,
+		Value:     typ.Value.String,
+		Name:      typ.Name.String,
 	}
 }

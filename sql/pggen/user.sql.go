@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -15,21 +16,19 @@ const insertUserSQL = `INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username,
-    current_organization
+    username
 ) VALUES (
     $1,
     $2,
     $3,
-    $4,
-    ''
+    $4
 );`
 
 type InsertUserParams struct {
-	ID        string
+	ID        pgtype.Text
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Username  string
+	Username  pgtype.Text
 }
 
 // InsertUser implements Querier.InsertUser.
@@ -68,11 +67,11 @@ GROUP BY u.user_id
 ;`
 
 type FindUsersRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
@@ -163,18 +162,18 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByIDRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
 
 // FindUserByID implements Querier.FindUserByID.
-func (q *DBQuerier) FindUserByID(ctx context.Context, userID string) (FindUserByIDRow, error) {
+func (q *DBQuerier) FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByID")
 	row := q.conn.QueryRow(ctx, findUserByIDSQL, userID)
 	var item FindUserByIDRow
@@ -197,7 +196,7 @@ func (q *DBQuerier) FindUserByID(ctx context.Context, userID string) (FindUserBy
 }
 
 // FindUserByIDBatch implements Querier.FindUserByIDBatch.
-func (q *DBQuerier) FindUserByIDBatch(batch genericBatch, userID string) {
+func (q *DBQuerier) FindUserByIDBatch(batch genericBatch, userID pgtype.Text) {
 	batch.Queue(findUserByIDSQL, userID)
 }
 
@@ -236,18 +235,18 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByUsernameRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
 
 // FindUserByUsername implements Querier.FindUserByUsername.
-func (q *DBQuerier) FindUserByUsername(ctx context.Context, username string) (FindUserByUsernameRow, error) {
+func (q *DBQuerier) FindUserByUsername(ctx context.Context, username pgtype.Text) (FindUserByUsernameRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByUsername")
 	row := q.conn.QueryRow(ctx, findUserByUsernameSQL, username)
 	var item FindUserByUsernameRow
@@ -270,7 +269,7 @@ func (q *DBQuerier) FindUserByUsername(ctx context.Context, username string) (Fi
 }
 
 // FindUserByUsernameBatch implements Querier.FindUserByUsernameBatch.
-func (q *DBQuerier) FindUserByUsernameBatch(batch genericBatch, username string) {
+func (q *DBQuerier) FindUserByUsernameBatch(batch genericBatch, username pgtype.Text) {
 	batch.Queue(findUserByUsernameSQL, username)
 }
 
@@ -309,18 +308,18 @@ GROUP BY u.user_id
 ;`
 
 type FindUserBySessionTokenRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
 
 // FindUserBySessionToken implements Querier.FindUserBySessionToken.
-func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token string) (FindUserBySessionTokenRow, error) {
+func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token pgtype.Text) (FindUserBySessionTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserBySessionToken")
 	row := q.conn.QueryRow(ctx, findUserBySessionTokenSQL, token)
 	var item FindUserBySessionTokenRow
@@ -343,7 +342,7 @@ func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token string) (F
 }
 
 // FindUserBySessionTokenBatch implements Querier.FindUserBySessionTokenBatch.
-func (q *DBQuerier) FindUserBySessionTokenBatch(batch genericBatch, token string) {
+func (q *DBQuerier) FindUserBySessionTokenBatch(batch genericBatch, token pgtype.Text) {
 	batch.Queue(findUserBySessionTokenSQL, token)
 }
 
@@ -382,18 +381,18 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
 
 // FindUserByAuthenticationToken implements Querier.FindUserByAuthenticationToken.
-func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token string) (FindUserByAuthenticationTokenRow, error) {
+func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token pgtype.Text) (FindUserByAuthenticationTokenRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationToken")
 	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenSQL, token)
 	var item FindUserByAuthenticationTokenRow
@@ -416,7 +415,7 @@ func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token str
 }
 
 // FindUserByAuthenticationTokenBatch implements Querier.FindUserByAuthenticationTokenBatch.
-func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, token string) {
+func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, token pgtype.Text) {
 	batch.Queue(findUserByAuthenticationTokenSQL, token)
 }
 
@@ -455,18 +454,18 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenIDRow struct {
-	UserID              string          `json:"user_id"`
-	Username            string          `json:"username"`
+	UserID              pgtype.Text     `json:"user_id"`
+	Username            pgtype.Text     `json:"username"`
 	CreatedAt           time.Time       `json:"created_at"`
 	UpdatedAt           time.Time       `json:"updated_at"`
-	CurrentOrganization string          `json:"current_organization"`
+	CurrentOrganization pgtype.Text     `json:"current_organization"`
 	Sessions            []Sessions      `json:"sessions"`
 	Tokens              []Tokens        `json:"tokens"`
 	Organizations       []Organizations `json:"organizations"`
 }
 
 // FindUserByAuthenticationTokenID implements Querier.FindUserByAuthenticationTokenID.
-func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID string) (FindUserByAuthenticationTokenIDRow, error) {
+func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationTokenID")
 	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenIDSQL, tokenID)
 	var item FindUserByAuthenticationTokenIDRow
@@ -489,7 +488,7 @@ func (q *DBQuerier) FindUserByAuthenticationTokenID(ctx context.Context, tokenID
 }
 
 // FindUserByAuthenticationTokenIDBatch implements Querier.FindUserByAuthenticationTokenIDBatch.
-func (q *DBQuerier) FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID string) {
+func (q *DBQuerier) FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID pgtype.Text) {
 	batch.Queue(findUserByAuthenticationTokenIDSQL, tokenID)
 }
 
@@ -523,16 +522,16 @@ WHERE user_id = $3
 RETURNING user_id;`
 
 type UpdateUserCurrentOrganizationParams struct {
-	CurrentOrganization string
+	CurrentOrganization pgtype.Text
 	UpdatedAt           time.Time
-	ID                  string
+	ID                  pgtype.Text
 }
 
 // UpdateUserCurrentOrganization implements Querier.UpdateUserCurrentOrganization.
-func (q *DBQuerier) UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (string, error) {
+func (q *DBQuerier) UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateUserCurrentOrganization")
 	row := q.conn.QueryRow(ctx, updateUserCurrentOrganizationSQL, params.CurrentOrganization, params.UpdatedAt, params.ID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateUserCurrentOrganization: %w", err)
 	}
@@ -545,9 +544,9 @@ func (q *DBQuerier) UpdateUserCurrentOrganizationBatch(batch genericBatch, param
 }
 
 // UpdateUserCurrentOrganizationScan implements Querier.UpdateUserCurrentOrganizationScan.
-func (q *DBQuerier) UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateUserCurrentOrganizationBatch row: %w", err)
 	}
@@ -559,7 +558,7 @@ FROM users
 WHERE user_id = $1;`
 
 // DeleteUserByID implements Querier.DeleteUserByID.
-func (q *DBQuerier) DeleteUserByID(ctx context.Context, userID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteUserByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteUserByIDSQL, userID)
 	if err != nil {
@@ -569,7 +568,7 @@ func (q *DBQuerier) DeleteUserByID(ctx context.Context, userID string) (pgconn.C
 }
 
 // DeleteUserByIDBatch implements Querier.DeleteUserByIDBatch.
-func (q *DBQuerier) DeleteUserByIDBatch(batch genericBatch, userID string) {
+func (q *DBQuerier) DeleteUserByIDBatch(batch genericBatch, userID pgtype.Text) {
 	batch.Queue(deleteUserByIDSQL, userID)
 }
 
@@ -587,7 +586,7 @@ FROM users
 WHERE username = $1;`
 
 // DeleteUserByUsername implements Querier.DeleteUserByUsername.
-func (q *DBQuerier) DeleteUserByUsername(ctx context.Context, username string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteUserByUsername")
 	cmdTag, err := q.conn.Exec(ctx, deleteUserByUsernameSQL, username)
 	if err != nil {
@@ -597,7 +596,7 @@ func (q *DBQuerier) DeleteUserByUsername(ctx context.Context, username string) (
 }
 
 // DeleteUserByUsernameBatch implements Querier.DeleteUserByUsernameBatch.
-func (q *DBQuerier) DeleteUserByUsernameBatch(batch genericBatch, username string) {
+func (q *DBQuerier) DeleteUserByUsernameBatch(batch genericBatch, username pgtype.Text) {
 	batch.Queue(deleteUserByUsernameSQL, username)
 }
 

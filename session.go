@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf/sql/pggen"
 )
 
 const (
@@ -87,4 +89,17 @@ type SessionStore interface {
 	SetFlash(ctx context.Context, token string, flash *Flash) error
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
+}
+
+func UnmarshalSessionDBType(typ pggen.Sessions) (*Session, error) {
+	session := Session{
+		Token:     typ.Token.String,
+		createdAt: typ.CreatedAt,
+		Expiry:    typ.Expiry,
+		UserID:    typ.UserID.String,
+		SessionData: SessionData{
+			Address: typ.Address.String,
+		},
+	}
+	return &session, nil
 }

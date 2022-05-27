@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/leg100/otf/sql/pggen"
 )
 
 // Token is a user authentication token.
@@ -41,6 +43,17 @@ func NewToken(uid, description string) (*Token, error) {
 		token:       t,
 		description: description,
 		userID:      uid,
+	}
+	return &token, nil
+}
+
+func unmarshalTokenDBType(typ pggen.Tokens) (*Token, error) {
+	token := Token{
+		id:          typ.UserID.String,
+		createdAt:   typ.CreatedAt,
+		token:       typ.TokenID.String,
+		description: typ.Description.String,
+		userID:      typ.UserID.String,
 	}
 	return &token, nil
 }
