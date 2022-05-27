@@ -22,7 +22,7 @@ FROM workspace_locks l
 LEFT JOIN users USING (user_id)
 LEFT JOIN runs USING (run_id)
 WHERE l.workspace_id = pggen.arg('workspace_id')
-FOR UPDATE of l;
+FOR UPDATE OF l;
 
 -- name: DeleteWorkspaceLock :one
 DELETE

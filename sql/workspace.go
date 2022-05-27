@@ -117,14 +117,24 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 
 func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLock) error) (*otf.Workspace, error) {
 	ctx := context.Background()
-	q := pggen.NewQuerier(db.Pool)
+
+	tx, err := db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	q := pggen.NewQuerier(tx)
 
 	workspaceID, err := getWorkspaceID(ctx, q, spec)
 	if err != nil {
 		return nil, databaseError(err)
 	}
+	result, err := q.FindWorkspaceLockForUpdate(ctx, workspaceID)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	if result.RunID
 
-	q.FindWorkspaceLockForUpdate(ctx, workspaceID)
 
 	switch l := locker.(type) {
 	case *otf.Run:

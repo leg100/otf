@@ -79,7 +79,7 @@ FROM workspace_locks l
 LEFT JOIN users USING (user_id)
 LEFT JOIN runs USING (run_id)
 WHERE l.workspace_id = $1
-FOR UPDATE of l;`
+FOR UPDATE OF l;`
 
 type FindWorkspaceLockForUpdateRow struct {
 	WorkspaceID string `json:"workspace_id"`
