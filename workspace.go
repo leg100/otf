@@ -300,8 +300,8 @@ type WorkspaceStore interface {
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
-	Lock(spec WorkspaceSpec, callback func(lock WorkspaceLock) error) (*Workspace, error)
-	Unlock(spec WorkspaceSpec, callback func(lock WorkspaceLock) error) (*Workspace, error)
+	Lock(spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 

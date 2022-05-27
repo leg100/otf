@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -115,7 +116,8 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 	return ws, tx.Commit(ctx)
 }
 
-func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLock) error) (*otf.Workspace, error) {
+// Lock the specified workspace.
+func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	ctx := context.Background()
 
 	tx, err := db.Pool.Begin(ctx)
@@ -129,16 +131,21 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, callback func(otf.WorkspaceLo
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	result, err := q.FindWorkspaceLockForUpdate(ctx, workspaceID)
+	result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	if result.RunID
-
+	ws, err := otf.UnmarshalWorkspaceDBResult(result)
+	if err != nil {
+		return nil, databaseError(err)
+	}
 
 	switch l := locker.(type) {
 	case *otf.Run:
-		_, err := q.InsertWorkspaceLockRun(ctx, workspaceID, l.ID())
+		_, err := q.UpdateWorkspaceLockByID(ctx, pggen.UpdateWorkspaceLockByIDParams{
+			WorkspaceID: workspaceID,
+			UserID:      pgtype.Text{Status: pgtype.Null},
+		})
 		if err != nil {
 			return databaseError(err)
 		}

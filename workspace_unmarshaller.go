@@ -8,31 +8,30 @@ import (
 )
 
 type WorkspaceDBResult struct {
-	WorkspaceID                string               `json:"workspace_id"`
-	CreatedAt                  time.Time            `json:"created_at"`
-	UpdatedAt                  time.Time            `json:"updated_at"`
-	AllowDestroyPlan           bool                 `json:"allow_destroy_plan"`
-	AutoApply                  bool                 `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                 `json:"can_queue_destroy_plan"`
-	Description                string               `json:"description"`
-	Environment                string               `json:"environment"`
-	ExecutionMode              string               `json:"execution_mode"`
-	FileTriggersEnabled        bool                 `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                 `json:"global_remote_state"`
-	MigrationEnvironment       string               `json:"migration_environment"`
-	Name                       string               `json:"name"`
-	QueueAllRuns               bool                 `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                 `json:"speculative_enabled"`
-	SourceName                 string               `json:"source_name"`
-	SourceURL                  string               `json:"source_url"`
-	StructuredRunOutputEnabled bool                 `json:"structured_run_output_enabled"`
-	TerraformVersion           string               `json:"terraform_version"`
-	TriggerPrefixes            []string             `json:"trigger_prefixes"`
-	WorkingDirectory           string               `json:"working_directory"`
-	OrganizationID             string               `json:"organization_id"`
-	UserLock                   *pggen.Users         `json:"user_lock"`
-	RunLock                    *pggen.Runs          `json:"run_lock"`
-	Organization               *pggen.Organizations `json:"organization"`
+	WorkspaceID                string    `json:"workspace_id"`
+	CreatedAt                  time.Time `json:"created_at"`
+	UpdatedAt                  time.Time `json:"updated_at"`
+	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
+	AutoApply                  bool      `json:"auto_apply"`
+	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
+	Description                string    `json:"description"`
+	Environment                string    `json:"environment"`
+	ExecutionMode              string    `json:"execution_mode"`
+	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool      `json:"global_remote_state"`
+	MigrationEnvironment       string    `json:"migration_environment"`
+	Name                       string    `json:"name"`
+	QueueAllRuns               bool      `json:"queue_all_runs"`
+	SpeculativeEnabled         bool      `json:"speculative_enabled"`
+	SourceName                 string    `json:"source_name"`
+	SourceURL                  string    `json:"source_url"`
+	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
+	TerraformVersion           string    `json:"terraform_version"`
+	TriggerPrefixes            []string  `json:"trigger_prefixes"`
+	WorkingDirectory           string    `json:"working_directory"`
+	OrganizationID             string    `json:"organization_id"`
+	LockRunID                  string    `json:"lock_run_id"`
+	LockUserID                 string    `json:"lock_user_id"`
 }
 
 func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {

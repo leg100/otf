@@ -617,6 +617,13 @@ type Querier interface {
 	// UpdateWorkspaceByIDScan scans the result of an executed UpdateWorkspaceByIDBatch query.
 	UpdateWorkspaceByIDScan(results pgx.BatchResults) (string, error)
 
+	UpdateWorkspaceLockByID(ctx context.Context, params UpdateWorkspaceLockByIDParams) (pgconn.CommandTag, error)
+	// UpdateWorkspaceLockByIDBatch enqueues a UpdateWorkspaceLockByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceLockByIDBatch(batch genericBatch, params UpdateWorkspaceLockByIDParams)
+	// UpdateWorkspaceLockByIDScan scans the result of an executed UpdateWorkspaceLockByIDBatch query.
+	UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
 	//
@@ -635,34 +642,6 @@ type Querier interface {
 	DeleteWorkspaceByNameBatch(batch genericBatch, name string, organizationName string)
 	// DeleteWorkspaceByNameScan scans the result of an executed DeleteWorkspaceByNameBatch query.
 	DeleteWorkspaceByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertWorkspaceLockUser(ctx context.Context, workspaceID string, userID string) (pgconn.CommandTag, error)
-	// InsertWorkspaceLockUserBatch enqueues a InsertWorkspaceLockUser query into batch to be executed
-	// later by the batch.
-	InsertWorkspaceLockUserBatch(batch genericBatch, workspaceID string, userID string)
-	// InsertWorkspaceLockUserScan scans the result of an executed InsertWorkspaceLockUserBatch query.
-	InsertWorkspaceLockUserScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertWorkspaceLockRun(ctx context.Context, workspaceID string, runID string) (pgconn.CommandTag, error)
-	// InsertWorkspaceLockRunBatch enqueues a InsertWorkspaceLockRun query into batch to be executed
-	// later by the batch.
-	InsertWorkspaceLockRunBatch(batch genericBatch, workspaceID string, runID string)
-	// InsertWorkspaceLockRunScan scans the result of an executed InsertWorkspaceLockRunBatch query.
-	InsertWorkspaceLockRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindWorkspaceLockForUpdate(ctx context.Context, workspaceID string) (FindWorkspaceLockForUpdateRow, error)
-	// FindWorkspaceLockForUpdateBatch enqueues a FindWorkspaceLockForUpdate query into batch to be executed
-	// later by the batch.
-	FindWorkspaceLockForUpdateBatch(batch genericBatch, workspaceID string)
-	// FindWorkspaceLockForUpdateScan scans the result of an executed FindWorkspaceLockForUpdateBatch query.
-	FindWorkspaceLockForUpdateScan(results pgx.BatchResults) (FindWorkspaceLockForUpdateRow, error)
-
-	DeleteWorkspaceLock(ctx context.Context, workspaceID string) (string, error)
-	// DeleteWorkspaceLockBatch enqueues a DeleteWorkspaceLock query into batch to be executed
-	// later by the batch.
-	DeleteWorkspaceLockBatch(batch genericBatch, workspaceID string)
-	// DeleteWorkspaceLockScan scans the result of an executed DeleteWorkspaceLockBatch query.
-	DeleteWorkspaceLockScan(results pgx.BatchResults) (string, error)
 }
 
 type DBQuerier struct {
@@ -989,23 +968,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateWorkspaceByIDSQL, updateWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateWorkspaceLockByIDSQL, updateWorkspaceLockByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceLockByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByNameSQL, deleteWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertWorkspaceLockUserSQL, insertWorkspaceLockUserSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertWorkspaceLockUser': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertWorkspaceLockRunSQL, insertWorkspaceLockRunSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertWorkspaceLockRun': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceLockForUpdateSQL, findWorkspaceLockForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceLockForUpdate': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceLockSQL, deleteWorkspaceLockSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceLock': %w", err)
 	}
 	return nil
 }
@@ -1149,6 +1119,8 @@ type Workspaces struct {
 	TriggerPrefixes            []string  `json:"trigger_prefixes"`
 	WorkingDirectory           string    `json:"working_directory"`
 	OrganizationID             string    `json:"organization_id"`
+	LockRunID                  string    `json:"lock_run_id"`
+	LockUserID                 string    `json:"lock_user_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1423,6 +1395,8 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"trigger_prefixes", "_text", &pgtype.TextArray{}},
 		compositeField{"working_directory", "text", &pgtype.Text{}},
 		compositeField{"organization_id", "text", &pgtype.Text{}},
+		compositeField{"lock_run_id", "text", &pgtype.Text{}},
+		compositeField{"lock_user_id", "text", &pgtype.Text{}},
 	)
 }
 

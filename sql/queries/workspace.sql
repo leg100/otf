@@ -51,12 +51,12 @@ INSERT INTO workspaces (
 SELECT
     w.*,
     (u.*)::"users" AS user_lock,
-    (r.run_id)::"runs" AS run_lock,
+    (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
-LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
-LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
+LEFT JOIN users u ON w.lock_user_id = u.user_id
+LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND organizations.name = pggen.arg('organization_name')
 LIMIT pggen.arg('limit')
@@ -84,22 +84,24 @@ AND organizations.name = pggen.arg('organization_name');
 SELECT
     w.*,
     (u.*)::"users" AS user_lock,
-    (r.run_id)::"runs" AS run_lock,
+    (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
-LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
-LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
+LEFT JOIN users u ON w.lock_user_id = u.user_id
+LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name');
 
 -- name: FindWorkspaceByNameForUpdate :one
-SELECT workspaces.*
-FROM workspaces
+SELECT w.*
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.name = pggen.arg('name')
+LEFT JOIN users u ON w.lock_user_id = u.user_id
+LEFT JOIN runs r ON w.lock_run_id = r.run_id
+WHERE w.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name')
-FOR UPDATE;
+FOR UPDATE OF w;
 
 -- name: FindWorkspaceByID :one
 SELECT
@@ -109,16 +111,18 @@ SELECT
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
-LEFT JOIN (workspace_locks wl JOIN users u USING (user_id)) ON w.workspace_id = wl.workspace_id
-LEFT JOIN (workspace_locks rl JOIN runs r USING (run_id)) ON w.workspace_id = rl.workspace_id
+LEFT JOIN users u ON w.lock_user_id = u.user_id
+LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = pggen.arg('id');
 
 -- name: FindWorkspaceByIDForUpdate :one
-SELECT workspaces.*
-FROM workspaces
+SELECT w.*
+FROM workspaces w
 JOIN organizations USING (organization_id)
-WHERE workspaces.workspace_id = pggen.arg('id')
-FOR UPDATE;
+LEFT JOIN users u ON w.lock_user_id = u.user_id
+LEFT JOIN runs r ON w.lock_run_id = r.run_id
+WHERE w.workspace_id = pggen.arg('id')
+FOR UPDATE OF w;
 
 -- name: UpdateWorkspaceByID :one
 UPDATE workspaces
@@ -136,6 +140,13 @@ SET
     updated_at = pggen.arg('updated_at')
 WHERE workspace_id = pggen.arg('id')
 RETURNING workspace_id;
+
+-- name: UpdateWorkspaceLockByID :exec
+UPDATE workspaces
+SET
+    lock_user_id = pggen.arg('user_id'),
+    lock_run_id = pggen.arg('run_id')
+WHERE workspace_id = pggen.arg('workspace_id');
 
 -- DeleteOrganization deletes an organization by id.
 -- DeleteWorkspaceByID deletes a workspace by id.
