@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -177,32 +176,22 @@ func (spec *UserSpec) KeyValue() []interface{} {
 	return []interface{}{"invalid user spec", ""}
 }
 
-func NewUser(username string) *User {
+func NewUser(username string, opts ...NewUserOption) *User {
 	user := User{
 		id:        NewID("user"),
 		username:  username,
 		createdAt: CurrentTimestamp(),
 		updatedAt: CurrentTimestamp(),
 	}
+	for _, o := range opts {
+		o(&user)
+	}
 	return &user
 }
 
-type NewTestUserOption func(*User)
+type NewUserOption func(*User)
 
-func NewTestUser(opts ...NewTestUserOption) *User {
-	u := User{
-		id:        NewID("user"),
-		username:  fmt.Sprintf("mr-%s", GenerateRandomString(6)),
-		createdAt: CurrentTimestamp(),
-		updatedAt: CurrentTimestamp(),
-	}
-	for _, o := range opts {
-		o(&u)
-	}
-	return &u
-}
-
-func WithOrganizationMemberships(memberships ...*Organization) NewTestUserOption {
+func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 	return func(user *User) {
 		user.Organizations = memberships
 	}

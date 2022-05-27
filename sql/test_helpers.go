@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"testing"
@@ -135,8 +136,9 @@ func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.Configura
 	return run
 }
 
-func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf.User {
-	user := otf.NewTestUser(opts...)
+func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
+	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
+	user := otf.NewUser(username, opts...)
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)

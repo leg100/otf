@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -58,17 +59,17 @@ const insertRunSQL = `INSERT INTO runs (
 );`
 
 type InsertRunParams struct {
-	ID                     string
-	PlanID                 string
-	ApplyID                string
+	ID                     pgtype.Text
+	PlanID                 pgtype.Text
+	ApplyID                pgtype.Text
 	CreatedAt              time.Time
 	IsDestroy              bool
 	PositionInQueue        int
 	Refresh                bool
 	RefreshOnly            bool
-	Status                 string
-	PlanStatus             string
-	ApplyStatus            string
+	Status                 pgtype.Text
+	PlanStatus             pgtype.Text
+	ApplyStatus            pgtype.Text
 	ReplaceAddrs           []string
 	TargetAddrs            []string
 	PlannedAdditions       int
@@ -77,8 +78,8 @@ type InsertRunParams struct {
 	AppliedAdditions       int
 	AppliedChanges         int
 	AppliedDestructions    int
-	ConfigurationVersionID string
-	WorkspaceID            string
+	ConfigurationVersionID pgtype.Text
+	WorkspaceID            pgtype.Text
 }
 
 // InsertRun implements Querier.InsertRun.
@@ -116,8 +117,8 @@ const insertRunStatusTimestampSQL = `INSERT INTO run_status_timestamps (
 );`
 
 type InsertRunStatusTimestampParams struct {
-	ID        string
-	Status    string
+	ID        pgtype.Text
+	Status    pgtype.Text
 	Timestamp time.Time
 }
 
@@ -209,17 +210,17 @@ type FindRunsParams struct {
 }
 
 type FindRunsRow struct {
-	RunID                  string                  `json:"run_id"`
-	PlanID                 string                  `json:"plan_id"`
-	ApplyID                string                  `json:"apply_id"`
+	RunID                  pgtype.Text             `json:"run_id"`
+	PlanID                 pgtype.Text             `json:"plan_id"`
+	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
-	Status                 string                  `json:"status"`
-	PlanStatus             string                  `json:"plan_status"`
-	ApplyStatus            string                  `json:"apply_status"`
+	Status                 pgtype.Text             `json:"status"`
+	PlanStatus             pgtype.Text             `json:"plan_status"`
+	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	PlannedAdditions       int                     `json:"planned_additions"`
@@ -228,8 +229,8 @@ type FindRunsRow struct {
 	AppliedAdditions       int                     `json:"applied_additions"`
 	AppliedChanges         int                     `json:"applied_changes"`
 	AppliedDestructions    int                     `json:"applied_destructions"`
-	ConfigurationVersionID string                  `json:"configuration_version_id"`
-	WorkspaceID            string                  `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
 	AutoApply              bool                    `json:"auto_apply"`
 	ConfigurationVersion   *ConfigurationVersions  `json:"configuration_version"`
@@ -412,21 +413,21 @@ WHERE runs.run_id = $3
 type FindRunByIDParams struct {
 	IncludeConfigurationVersion bool
 	IncludeWorkspace            bool
-	RunID                       string
+	RunID                       pgtype.Text
 }
 
 type FindRunByIDRow struct {
-	RunID                  string                  `json:"run_id"`
-	PlanID                 string                  `json:"plan_id"`
-	ApplyID                string                  `json:"apply_id"`
+	RunID                  pgtype.Text             `json:"run_id"`
+	PlanID                 pgtype.Text             `json:"plan_id"`
+	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
-	Status                 string                  `json:"status"`
-	PlanStatus             string                  `json:"plan_status"`
-	ApplyStatus            string                  `json:"apply_status"`
+	Status                 pgtype.Text             `json:"status"`
+	PlanStatus             pgtype.Text             `json:"plan_status"`
+	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	PlannedAdditions       int                     `json:"planned_additions"`
@@ -435,8 +436,8 @@ type FindRunByIDRow struct {
 	AppliedAdditions       int                     `json:"applied_additions"`
 	AppliedChanges         int                     `json:"applied_changes"`
 	AppliedDestructions    int                     `json:"applied_destructions"`
-	ConfigurationVersionID string                  `json:"configuration_version_id"`
-	WorkspaceID            string                  `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
 	AutoApply              bool                    `json:"auto_apply"`
 	ConfigurationVersion   *ConfigurationVersions  `json:"configuration_version"`
@@ -518,10 +519,10 @@ WHERE plan_id = $1
 ;`
 
 // FindRunIDByPlanID implements Querier.FindRunIDByPlanID.
-func (q *DBQuerier) FindRunIDByPlanID(ctx context.Context, planID string) (string, error) {
+func (q *DBQuerier) FindRunIDByPlanID(ctx context.Context, planID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunIDByPlanID")
 	row := q.conn.QueryRow(ctx, findRunIDByPlanIDSQL, planID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query FindRunIDByPlanID: %w", err)
 	}
@@ -529,14 +530,14 @@ func (q *DBQuerier) FindRunIDByPlanID(ctx context.Context, planID string) (strin
 }
 
 // FindRunIDByPlanIDBatch implements Querier.FindRunIDByPlanIDBatch.
-func (q *DBQuerier) FindRunIDByPlanIDBatch(batch genericBatch, planID string) {
+func (q *DBQuerier) FindRunIDByPlanIDBatch(batch genericBatch, planID pgtype.Text) {
 	batch.Queue(findRunIDByPlanIDSQL, planID)
 }
 
 // FindRunIDByPlanIDScan implements Querier.FindRunIDByPlanIDScan.
-func (q *DBQuerier) FindRunIDByPlanIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) FindRunIDByPlanIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan FindRunIDByPlanIDBatch row: %w", err)
 	}
@@ -549,10 +550,10 @@ WHERE apply_id = $1
 ;`
 
 // FindRunIDByApplyID implements Querier.FindRunIDByApplyID.
-func (q *DBQuerier) FindRunIDByApplyID(ctx context.Context, applyID string) (string, error) {
+func (q *DBQuerier) FindRunIDByApplyID(ctx context.Context, applyID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunIDByApplyID")
 	row := q.conn.QueryRow(ctx, findRunIDByApplyIDSQL, applyID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query FindRunIDByApplyID: %w", err)
 	}
@@ -560,14 +561,14 @@ func (q *DBQuerier) FindRunIDByApplyID(ctx context.Context, applyID string) (str
 }
 
 // FindRunIDByApplyIDBatch implements Querier.FindRunIDByApplyIDBatch.
-func (q *DBQuerier) FindRunIDByApplyIDBatch(batch genericBatch, applyID string) {
+func (q *DBQuerier) FindRunIDByApplyIDBatch(batch genericBatch, applyID pgtype.Text) {
 	batch.Queue(findRunIDByApplyIDSQL, applyID)
 }
 
 // FindRunIDByApplyIDScan implements Querier.FindRunIDByApplyIDScan.
-func (q *DBQuerier) FindRunIDByApplyIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) FindRunIDByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan FindRunIDByApplyIDBatch row: %w", err)
 	}
@@ -628,21 +629,21 @@ FOR UPDATE
 type FindRunByIDForUpdateParams struct {
 	IncludeConfigurationVersion bool
 	IncludeWorkspace            bool
-	RunID                       string
+	RunID                       pgtype.Text
 }
 
 type FindRunByIDForUpdateRow struct {
-	RunID                  string                  `json:"run_id"`
-	PlanID                 string                  `json:"plan_id"`
-	ApplyID                string                  `json:"apply_id"`
+	RunID                  pgtype.Text             `json:"run_id"`
+	PlanID                 pgtype.Text             `json:"plan_id"`
+	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
 	RefreshOnly            bool                    `json:"refresh_only"`
-	Status                 string                  `json:"status"`
-	PlanStatus             string                  `json:"plan_status"`
-	ApplyStatus            string                  `json:"apply_status"`
+	Status                 pgtype.Text             `json:"status"`
+	PlanStatus             pgtype.Text             `json:"plan_status"`
+	ApplyStatus            pgtype.Text             `json:"apply_status"`
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	PlannedAdditions       int                     `json:"planned_additions"`
@@ -651,8 +652,8 @@ type FindRunByIDForUpdateRow struct {
 	AppliedAdditions       int                     `json:"applied_additions"`
 	AppliedChanges         int                     `json:"applied_changes"`
 	AppliedDestructions    int                     `json:"applied_destructions"`
-	ConfigurationVersionID string                  `json:"configuration_version_id"`
-	WorkspaceID            string                  `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	Speculative            bool                    `json:"speculative"`
 	AutoApply              bool                    `json:"auto_apply"`
 	ConfigurationVersion   *ConfigurationVersions  `json:"configuration_version"`
@@ -736,10 +737,10 @@ RETURNING run_id
 ;`
 
 // UpdateRunStatus implements Querier.UpdateRunStatus.
-func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status string, id string) (string, error) {
+func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunStatus")
 	row := q.conn.QueryRow(ctx, updateRunStatusSQL, status, id)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateRunStatus: %w", err)
 	}
@@ -747,14 +748,14 @@ func (q *DBQuerier) UpdateRunStatus(ctx context.Context, status string, id strin
 }
 
 // UpdateRunStatusBatch implements Querier.UpdateRunStatusBatch.
-func (q *DBQuerier) UpdateRunStatusBatch(batch genericBatch, status string, id string) {
+func (q *DBQuerier) UpdateRunStatusBatch(batch genericBatch, status pgtype.Text, id pgtype.Text) {
 	batch.Queue(updateRunStatusSQL, status, id)
 }
 
 // UpdateRunStatusScan implements Querier.UpdateRunStatusScan.
-func (q *DBQuerier) UpdateRunStatusScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateRunStatusBatch row: %w", err)
 	}
@@ -774,14 +775,14 @@ type UpdateRunPlannedChangesByPlanIDParams struct {
 	Additions    int
 	Changes      int
 	Destructions int
-	PlanID       string
+	PlanID       pgtype.Text
 }
 
 // UpdateRunPlannedChangesByPlanID implements Querier.UpdateRunPlannedChangesByPlanID.
-func (q *DBQuerier) UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (string, error) {
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanID(ctx context.Context, params UpdateRunPlannedChangesByPlanIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlannedChangesByPlanID")
 	row := q.conn.QueryRow(ctx, updateRunPlannedChangesByPlanIDSQL, params.Additions, params.Changes, params.Destructions, params.PlanID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateRunPlannedChangesByPlanID: %w", err)
 	}
@@ -794,9 +795,9 @@ func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDBatch(batch genericBatch, par
 }
 
 // UpdateRunPlannedChangesByPlanIDScan implements Querier.UpdateRunPlannedChangesByPlanIDScan.
-func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateRunPlannedChangesByPlanIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateRunPlannedChangesByPlanIDBatch row: %w", err)
 	}
@@ -816,14 +817,14 @@ type UpdateRunAppliedChangesByApplyIDParams struct {
 	Additions    int
 	Changes      int
 	Destructions int
-	ApplyID      string
+	ApplyID      pgtype.Text
 }
 
 // UpdateRunAppliedChangesByApplyID implements Querier.UpdateRunAppliedChangesByApplyID.
-func (q *DBQuerier) UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (string, error) {
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyID(ctx context.Context, params UpdateRunAppliedChangesByApplyIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunAppliedChangesByApplyID")
 	row := q.conn.QueryRow(ctx, updateRunAppliedChangesByApplyIDSQL, params.Additions, params.Changes, params.Destructions, params.ApplyID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateRunAppliedChangesByApplyID: %w", err)
 	}
@@ -836,9 +837,9 @@ func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDBatch(batch genericBatch, pa
 }
 
 // UpdateRunAppliedChangesByApplyIDScan implements Querier.UpdateRunAppliedChangesByApplyIDScan.
-func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateRunAppliedChangesByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateRunAppliedChangesByApplyIDBatch row: %w", err)
 	}
@@ -850,7 +851,7 @@ FROM runs
 WHERE run_id = $1;`
 
 // DeleteRunByID implements Querier.DeleteRunByID.
-func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteRunByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteRunByIDSQL, runID)
 	if err != nil {
@@ -860,7 +861,7 @@ func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID string) (pgconn.Com
 }
 
 // DeleteRunByIDBatch implements Querier.DeleteRunByIDBatch.
-func (q *DBQuerier) DeleteRunByIDBatch(batch genericBatch, runID string) {
+func (q *DBQuerier) DeleteRunByIDBatch(batch genericBatch, runID pgtype.Text) {
 	batch.Queue(deleteRunByIDSQL, runID)
 }
 

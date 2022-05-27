@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -29,29 +30,29 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-		ID:                         ws.ID(),
+		ID:                         pgtype.Text{String: ws.ID(), Status: pgtype.Present},
 		CreatedAt:                  ws.CreatedAt(),
 		UpdatedAt:                  ws.UpdatedAt(),
-		Name:                       ws.Name(),
+		Name:                       pgtype.Text{String: ws.Name(), Status: pgtype.Present},
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
-		Environment:                ws.Environment(),
-		Description:                ws.Description(),
-		ExecutionMode:              string(ws.ExecutionMode()),
+		Environment:                pgtype.Text{String: ws.Environment(), Status: pgtype.Present},
+		Description:                pgtype.Text{String: ws.Description(), Status: pgtype.Present},
+		ExecutionMode:              pgtype.Text{String: string(ws.ExecutionMode()), Status: pgtype.Present},
 		FileTriggersEnabled:        ws.FileTriggersEnabled(),
 		GlobalRemoteState:          ws.GlobalRemoteState(),
 		Locked:                     ws.Locked(),
-		MigrationEnvironment:       ws.MigrationEnvironment(),
-		SourceName:                 ws.SourceName(),
-		SourceURL:                  ws.SourceURL(),
+		MigrationEnvironment:       pgtype.Text{String: ws.MigrationEnvironment(), Status: pgtype.Present},
+		SourceName:                 pgtype.Text{String: ws.SourceName(), Status: pgtype.Present},
+		SourceURL:                  pgtype.Text{String: ws.SourceURL(), Status: pgtype.Present},
 		SpeculativeEnabled:         ws.SpeculativeEnabled(),
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
+		TerraformVersion:           pgtype.Text{String: ws.TerraformVersion(), Status: pgtype.Present},
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		QueueAllRuns:               ws.QueueAllRuns(),
 		AutoApply:                  ws.AutoApply(),
-		WorkingDirectory:           ws.WorkingDirectory(),
-		OrganizationID:             ws.Organization.ID(),
+		WorkingDirectory:           pgtype.Text{String: ws.WorkingDirectory(), Status: pgtype.Present},
+		OrganizationID:             pgtype.Text{String: ws.Organization.ID(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return databaseError(err)
@@ -72,7 +73,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 
 	var ws *otf.Workspace
 	if spec.ID != nil {
-		result, err := q.FindWorkspaceByIDForUpdate(ctx, *spec.ID)
+		result, err := q.FindWorkspaceByIDForUpdate(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +82,10 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 			return nil, err
 		}
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := q.FindWorkspaceByNameForUpdate(ctx, *spec.Name, *spec.OrganizationName)
+		result, err := q.FindWorkspaceByNameForUpdate(ctx,
+			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
+			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -96,19 +100,19 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		return nil, err
 	}
 	_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
-		ID:                         ws.ID(),
+		ID:                         pgtype.Text{String: ws.ID(), Status: pgtype.Present},
 		UpdatedAt:                  ws.UpdatedAt(),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
-		Description:                ws.Description(),
-		ExecutionMode:              string(ws.ExecutionMode()),
+		Description:                pgtype.Text{String: ws.Description(), Status: pgtype.Present},
+		ExecutionMode:              pgtype.Text{String: string(ws.ExecutionMode()), Status: pgtype.Present},
 		Locked:                     ws.Locked(),
-		Name:                       ws.Name(),
+		Name:                       pgtype.Text{String: ws.Name(), Status: pgtype.Present},
 		QueueAllRuns:               ws.QueueAllRuns(),
 		SpeculativeEnabled:         ws.SpeculativeEnabled(),
 		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
+		TerraformVersion:           pgtype.Text{String: ws.TerraformVersion(), Status: pgtype.Present},
 		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           ws.WorkingDirectory(),
+		WorkingDirectory:           pgtype.Text{String: ws.WorkingDirectory(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return nil, err
@@ -123,13 +127,16 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	ctx := context.Background()
 
 	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationName:    opts.OrganizationName,
-		Prefix:              opts.Prefix,
+		OrganizationName:    pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
+		Prefix:              pgtype.Text{String: opts.Prefix, Status: pgtype.Present},
 		Limit:               opts.GetLimit(),
 		Offset:              opts.GetOffset(),
 		IncludeOrganization: includeOrganization(opts.Include),
 	})
-	q.CountWorkspacesBatch(batch, opts.Prefix, opts.OrganizationName)
+	q.CountWorkspacesBatch(batch,
+		pgtype.Text{String: opts.Prefix, Status: pgtype.Present},
+		pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
+	)
 
 	results := db.Pool.SendBatch(ctx, batch)
 	defer results.Close()
@@ -163,15 +170,18 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	q := pggen.NewQuerier(db.Pool)
 
 	if spec.ID != nil {
-		result, err := q.FindWorkspaceByID(ctx, includeOrganization(spec.Include), *spec.ID)
+		result, err := q.FindWorkspaceByID(ctx,
+			includeOrganization(spec.Include),
+			pgtype.Text{String: *spec.ID, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
 		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := q.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
-			Name:                *spec.Name,
-			OrganizationName:    *spec.OrganizationName,
+			Name:                pgtype.Text{String: *spec.Name, Status: pgtype.Present},
+			OrganizationName:    pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 			IncludeOrganization: includeOrganization(spec.Include),
 		})
 		if err != nil {
@@ -192,9 +202,12 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	var err error
 
 	if spec.ID != nil {
-		result, err = q.DeleteWorkspaceByID(ctx, *spec.ID)
+		result, err = q.DeleteWorkspaceByID(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err = q.DeleteWorkspaceByName(ctx, *spec.Name, *spec.OrganizationName)
+		result, err = q.DeleteWorkspaceByName(ctx,
+			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
+			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
+		)
 	} else {
 		return fmt.Errorf("no workspace spec provided")
 	}

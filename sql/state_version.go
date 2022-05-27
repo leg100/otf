@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -37,11 +38,11 @@ func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	q := pggen.NewQuerier(tx)
 
 	_, err = q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-		ID:          sv.ID(),
+		ID:          pgtype.Text{String: sv.ID(), Status: pgtype.Present},
 		CreatedAt:   sv.CreatedAt(),
 		Serial:      int(sv.Serial()),
 		State:       sv.State(),
-		WorkspaceID: workspaceID,
+		WorkspaceID: pgtype.Text{String: workspaceID, Status: pgtype.Present},
 	})
 	if err != nil {
 		return err
@@ -50,12 +51,12 @@ func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	// Insert state_version_outputs
 	for _, svo := range sv.Outputs() {
 		_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
-			ID:             svo.ID(),
-			Name:           svo.Name,
+			ID:             pgtype.Text{String: svo.ID(), Status: pgtype.Present},
+			Name:           pgtype.Text{String: svo.Name, Status: pgtype.Present},
 			Sensitive:      svo.Sensitive,
-			Type:           svo.Type,
-			Value:          svo.Value,
-			StateVersionID: sv.ID(),
+			Type:           pgtype.Text{String: svo.Type, Status: pgtype.Present},
+			Value:          pgtype.Text{String: svo.Value, Status: pgtype.Present},
+			StateVersionID: pgtype.Text{String: sv.ID(), Status: pgtype.Present},
 		})
 		if err != nil {
 			return err
@@ -78,12 +79,15 @@ func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersio
 	ctx := context.Background()
 
 	q.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
-		WorkspaceName:    *opts.Workspace,
-		OrganizationName: *opts.Organization,
+		WorkspaceName:    pgtype.Text{String: *opts.Workspace, Status: pgtype.Present},
+		OrganizationName: pgtype.Text{String: *opts.Organization, Status: pgtype.Present},
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	q.CountStateVersionsByWorkspaceNameBatch(batch, *opts.Workspace, *opts.Organization)
+	q.CountStateVersionsByWorkspaceNameBatch(batch,
+		pgtype.Text{String: *opts.Workspace, Status: pgtype.Present},
+		pgtype.Text{String: *opts.Organization, Status: pgtype.Present},
+	)
 
 	results := s.Pool.SendBatch(ctx, batch)
 	defer results.Close()
@@ -117,13 +121,15 @@ func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion,
 	q := pggen.NewQuerier(s.Pool)
 
 	if opts.ID != nil {
-		result, err := q.FindStateVersionByID(ctx, *opts.ID)
+		result, err := q.FindStateVersionByID(ctx, pgtype.Text{String: *opts.ID, Status: pgtype.Present})
 		if err != nil {
 			return nil, databaseError(err)
 		}
 		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindStateVersionLatestByWorkspaceID(ctx, *opts.WorkspaceID)
+		result, err := q.FindStateVersionLatestByWorkspaceID(ctx,
+			pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, databaseError(err)
 		}
@@ -137,7 +143,7 @@ func (s StateVersionDB) GetState(id string) ([]byte, error) {
 	ctx := context.Background()
 	q := pggen.NewQuerier(s.Pool)
 
-	return q.FindStateVersionStateByID(ctx, id)
+	return q.FindStateVersionStateByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 }
 
 // Delete deletes a state version from the DB
@@ -145,7 +151,7 @@ func (s StateVersionDB) Delete(id string) error {
 	ctx := context.Background()
 	q := pggen.NewQuerier(s.Pool)
 
-	result, err := q.DeleteStateVersionByID(ctx, id)
+	result, err := q.DeleteStateVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}

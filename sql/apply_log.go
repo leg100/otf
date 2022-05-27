@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -31,7 +32,7 @@ func (db ApplyLogDB) PutChunk(ctx context.Context, applyID string, chunk otf.Chu
 		return nil
 	}
 
-	_, err := q.InsertApplyLogChunk(ctx, applyID, chunk.Marshal())
+	_, err := q.InsertApplyLogChunk(ctx, pgtype.Text{String: applyID, Status: pgtype.Present}, chunk.Marshal())
 	return err
 }
 
@@ -46,7 +47,7 @@ func (db ApplyLogDB) GetChunk(ctx context.Context, applyID string, opts otf.GetC
 	}
 
 	chunk, err := q.FindApplyLogChunks(ctx, pggen.FindApplyLogChunksParams{
-		ApplyID: applyID,
+		ApplyID: pgtype.Text{String: applyID, Status: pgtype.Present},
 		Offset:  opts.Offset + 1,
 		Limit:   opts.Limit,
 	})

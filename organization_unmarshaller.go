@@ -7,10 +7,10 @@ import (
 
 func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, error) {
 	org := Organization{
-		id:              result.OrganizationID,
+		id:              result.OrganizationID.String,
 		createdAt:       result.CreatedAt,
 		updatedAt:       result.UpdatedAt,
-		name:            result.Name,
+		name:            result.Name.String,
 		sessionRemember: result.SessionRemember,
 		sessionTimeout:  result.SessionTimeout,
 	}

@@ -3,6 +3,7 @@ package otf
 import (
 	"time"
 
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -10,17 +11,17 @@ import (
 
 // RunDBResult is the database record for a run
 type RunDBResult struct {
-	RunID                  string                        `json:"run_id"`
-	PlanID                 string                        `json:"plan_id"`
-	ApplyID                string                        `json:"apply_id"`
+	RunID                  pgtype.Text                   `json:"run_id"`
+	PlanID                 pgtype.Text                   `json:"plan_id"`
+	ApplyID                pgtype.Text                   `json:"apply_id"`
 	CreatedAt              time.Time                     `json:"created_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
 	PositionInQueue        int                           `json:"position_in_queue"`
 	Refresh                bool                          `json:"refresh"`
 	RefreshOnly            bool                          `json:"refresh_only"`
-	Status                 string                        `json:"status"`
-	PlanStatus             string                        `json:"plan_status"`
-	ApplyStatus            string                        `json:"apply_status"`
+	Status                 pgtype.Text                   `json:"status"`
+	PlanStatus             pgtype.Text                   `json:"plan_status"`
+	ApplyStatus            pgtype.Text                   `json:"apply_status"`
 	ReplaceAddrs           []string                      `json:"replace_addrs"`
 	TargetAddrs            []string                      `json:"target_addrs"`
 	PlannedAdditions       int                           `json:"planned_additions"`
@@ -29,8 +30,8 @@ type RunDBResult struct {
 	AppliedAdditions       int                           `json:"applied_additions"`
 	AppliedChanges         int                           `json:"applied_changes"`
 	AppliedDestructions    int                           `json:"applied_destructions"`
-	ConfigurationVersionID string                        `json:"configuration_version_id"`
-	WorkspaceID            string                        `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
 	AutoApply              bool                          `json:"auto_apply"`
 	ConfigurationVersion   *pggen.ConfigurationVersions  `json:"configuration_version"`
@@ -42,21 +43,21 @@ type RunDBResult struct {
 
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
-		id:               result.RunID,
+		id:               result.RunID.String,
 		createdAt:        result.CreatedAt,
 		isDestroy:        result.IsDestroy,
 		positionInQueue:  result.PositionInQueue,
 		refresh:          result.Refresh,
 		refreshOnly:      result.RefreshOnly,
-		status:           RunStatus(result.Status),
+		status:           RunStatus(result.Status.String),
 		statusTimestamps: unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		replaceAddrs:     result.ReplaceAddrs,
 		targetAddrs:      result.TargetAddrs,
 		autoApply:        result.AutoApply,
 		speculative:      result.Speculative,
 		Plan: &Plan{
-			id:               result.PlanID,
-			status:           PlanStatus(result.PlanStatus),
+			id:               result.PlanID.String,
+			status:           PlanStatus(result.PlanStatus.String),
 			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 			ResourceReport: &ResourceReport{
 				Additions:    result.PlannedAdditions,
@@ -65,8 +66,8 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 			},
 		},
 		Apply: &Apply{
-			id:               result.ApplyID,
-			status:           ApplyStatus(result.ApplyStatus),
+			id:               result.ApplyID.String,
+			status:           ApplyStatus(result.ApplyStatus.String),
 			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 			ResourceReport: &ResourceReport{
 				Additions:    result.AppliedAdditions,
@@ -86,7 +87,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		}
 		run.Workspace = workspace
 	} else {
-		run.Workspace = &Workspace{id: result.WorkspaceID}
+		run.Workspace = &Workspace{id: result.WorkspaceID.String}
 	}
 
 	if result.ConfigurationVersion != nil {
@@ -96,7 +97,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		}
 		run.ConfigurationVersion = cv
 	} else {
-		run.ConfigurationVersion = &ConfigurationVersion{id: result.ConfigurationVersionID}
+		run.ConfigurationVersion = &ConfigurationVersion{id: result.ConfigurationVersionID.String}
 	}
 
 	return &run, nil
@@ -105,7 +106,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, RunStatusTimestamp{
-			Status:    RunStatus(ty.Status),
+			Status:    RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Local(),
 		})
 	}
@@ -115,7 +116,7 @@ func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (times
 func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (timestamps []PlanStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, PlanStatusTimestamp{
-			Status:    PlanStatus(ty.Status),
+			Status:    PlanStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Local(),
 		})
 	}
@@ -125,7 +126,7 @@ func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (tim
 func unmarshalApplyStatusTimestampDBTypes(typs []pggen.ApplyStatusTimestamps) (timestamps []ApplyStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, ApplyStatusTimestamp{
-			Status:    ApplyStatus(ty.Status),
+			Status:    ApplyStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Local(),
 		})
 	}

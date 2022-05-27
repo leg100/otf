@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -26,11 +27,11 @@ const insertTokenSQL = `INSERT INTO tokens (
 );`
 
 type InsertTokenParams struct {
-	TokenID     string
-	Token       string
+	TokenID     pgtype.Text
+	Token       pgtype.Text
 	CreatedAt   time.Time
-	Description string
-	UserID      string
+	Description pgtype.Text
+	UserID      pgtype.Text
 }
 
 // InsertToken implements Querier.InsertToken.
@@ -62,7 +63,7 @@ FROM tokens
 WHERE token_id = $1;`
 
 // DeleteTokenByID implements Querier.DeleteTokenByID.
-func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTokenByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteTokenByIDSQL, tokenID)
 	if err != nil {
@@ -72,7 +73,7 @@ func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID string) (pgconn
 }
 
 // DeleteTokenByIDBatch implements Querier.DeleteTokenByIDBatch.
-func (q *DBQuerier) DeleteTokenByIDBatch(batch genericBatch, tokenID string) {
+func (q *DBQuerier) DeleteTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) {
 	batch.Queue(deleteTokenByIDSQL, tokenID)
 }
 
