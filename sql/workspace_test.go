@@ -12,7 +12,7 @@ import (
 func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	ws := newTestWorkspace(org)
+	ws := newTestWorkspace(t, org)
 
 	err := db.WorkspaceStore().Create(ws)
 	require.NoError(t, err)
