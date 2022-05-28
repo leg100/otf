@@ -23,14 +23,14 @@ type workspaces struct {
 
 // Create is used to create a new workspace.
 func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&options.OrganizationName) {
-		return nil, otf.ErrInvalidOrg
-	}
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
+	if !otf.ValidStringID(options.OrganizationName) {
+		return nil, otf.ErrInvalidOrg
+	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err

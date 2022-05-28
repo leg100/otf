@@ -11,7 +11,7 @@ import (
 
 func TestOrganization_Create(t *testing.T) {
 	db := newTestDB(t)
-	org := newTestOrganization()
+	org := newTestOrganization(t)
 
 	t.Cleanup(func() {
 		db.OrganizationStore().Delete(org.Name())
