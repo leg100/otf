@@ -15,10 +15,7 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
-	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
-	ErrInvalidWorkspaceSpec           = errors.New("invalid workspace spec options")
+	ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -61,7 +58,6 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
-func (ws *Workspace) Lock() WorkspaceLock              { return ws.lock }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
 func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
@@ -74,10 +70,33 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
 
-/// Locked determines whether workspace is locked.
+// Locked determines whether workspace is locked.
 func (ws *Workspace) Locked() bool {
 	_, ok := ws.lock.(*Unlocked)
 	return !ok
+}
+
+// GetLock retrieves the workspace lock
+func (ws *Workspace) GetLock() WorkspaceLock {
+	return ws.lock
+}
+
+// Lock the workspace with the given lock
+func (ws *Workspace) Lock(lock WorkspaceLock) error {
+	if err := ws.lock.CanLock(lock); err != nil {
+		return err
+	}
+	ws.lock = lock
+	return nil
+}
+
+// Unlock the workspace using the given identity.
+func (ws *Workspace) Unlock(iden Identity, force bool) error {
+	if err := ws.lock.CanUnlock(iden, force); err != nil {
+		return err
+	}
+	ws.lock = &Unlocked{}
+	return nil
 }
 
 // UpdateWithOptions updates the workspace with the given options.
@@ -204,39 +223,20 @@ func (o WorkspaceUpdateOptions) Valid() error {
 	return nil
 }
 
-type WorkspaceLock interface {
-	// TODO: return bool to flag whether lock/unlock can proceed
-	Lock(Identity) error
-	Unlock(Identity, bool) error
-}
-
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The identity requesting the locker.
-	Requestor Identity
+	// The lock requesting to lock the workspace
+	Requestor WorkspaceLock
 }
 
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceUnlockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The identity requesting the lock.
+	// The identity requesting to unlock the workspace.
 	Requestor Identity
-}
-
-// Unlocked represents the unlocked state of a workspace lock
-type Unlocked struct{}
-
-// Lock requests locking a workspace lock
-func (u *Unlocked) Lock(requestor Identity) error {
-	return nil
-}
-
-// Unlock requests unlocking a workspace currently unlocked
-func (u *Unlocked) Unlock(requestor Identity, force bool) error {
-	return ErrWorkspaceAlreadyUnlocked
 }
 
 // WorkspaceList represents a list of Workspaces.

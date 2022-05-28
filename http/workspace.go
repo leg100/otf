@@ -134,7 +134,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	obj, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
-	if err == otf.ErrWorkspaceAlreadyLocked {
+	if err == otf.ErrWorkspaceLocker {
 		writeError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
@@ -151,7 +151,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
-	if err == otf.ErrWorkspaceAlreadyUnlocked {
+	if err == otf.ErrWorkspaceUnlocked {
 		writeError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {

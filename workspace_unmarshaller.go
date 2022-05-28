@@ -64,14 +64,8 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		workingDirectory:           row.WorkingDirectory.String,
 	}
 
-	if row.UserLock == nil && row.RunLock == nil {
-		ws.lock = &Unlocked{}
-	} else if row.UserLock != nil {
-		ws.lock = &User{id: row.UserLock.UserID.String, username: row.UserLock.Username.String}
-	} else if row.RunLock != nil {
-		ws.lock = &Run{id: row.RunLock.RunID.String}
-	} else {
-		return nil, fmt.Errorf("workspace cannot be locked by both a run and a user")
+	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {
+		return nil, err
 	}
 
 	if row.Organization != nil {
@@ -85,6 +79,39 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	}
 
 	return &ws, nil
+}
+
+func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDParams, error) {
+	params := pggen.UpdateWorkspaceLockByIDParams{
+		WorkspaceID: pgtype.Text{String: ws.ID(), Status: pgtype.Present},
+	}
+	switch lock := ws.GetLock().(type) {
+	case *Unlocked:
+		params.RunID = pgtype.Text{Status: pgtype.Null}
+		params.UserID = pgtype.Text{Status: pgtype.Null}
+	case *Run:
+		params.UserID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
+		params.RunID = pgtype.Text{Status: pgtype.Null}
+	case *User:
+		params.RunID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
+		params.UserID = pgtype.Text{Status: pgtype.Null}
+	default:
+		return params, ErrWorkspaceInvalidLock
+	}
+	return params, nil
+}
+
+func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceDBResult) error {
+	if row.UserLock == nil && row.RunLock == nil {
+		dst.lock = &Unlocked{}
+	} else if row.UserLock != nil {
+		dst.lock = &User{id: row.UserLock.UserID.String, username: row.UserLock.Username.String}
+	} else if row.RunLock != nil {
+		dst.lock = &Run{id: row.RunLock.RunID.String}
+	} else {
+		return fmt.Errorf("workspace cannot be locked by both a run and a user")
+	}
+	return nil
 }
 
 func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {

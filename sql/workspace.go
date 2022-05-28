@@ -130,6 +130,7 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions
 	defer tx.Rollback(ctx)
 	q := pggen.NewQuerier(tx)
 
+	// fetch workspace
 	workspaceID, err := getWorkspaceID(ctx, q, spec)
 	if err != nil {
 		return nil, databaseError(err)
@@ -142,29 +143,21 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions
 	if err != nil {
 		return nil, databaseError(err)
 	}
-
-	if err := ws.Lock().Lock(opts.Requestor); err != nil {
+	// lock the workspace
+	if err := ws.Lock(opts.Requestor); err != nil {
 		return nil, err
 	}
-
-	switch l := locker.(type) {
-	case *otf.Run:
-		_, err := q.UpdateWorkspaceLockByID(ctx, pggen.UpdateWorkspaceLockByIDParams{
-			WorkspaceID: workspaceID,
-			UserID:      pgtype.Text{Status: pgtype.Null},
-		})
-		if err != nil {
-			return databaseError(err)
-		}
-	case *otf.User:
-		_, err := q.InsertWorkspaceLockUser(ctx, workspaceID, l.ID())
-		if err != nil {
-			return databaseError(err)
-		}
-	default:
-		return otf.ErrWorkspaceInvalidLocker
+	// persist to db
+	params, err := otf.MarshalWorkspaceLockParams(ws)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	_, err = q.UpdateWorkspaceLockByID(ctx, params)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	// return ws with new lock
+	return ws, tx.Commit(ctx)
 }
 
 // Unlock the specified workspace; the caller has the opportunity to check the

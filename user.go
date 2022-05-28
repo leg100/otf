@@ -52,29 +52,6 @@ func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
 
-// Lock requests locking a workspace held by the user
-func (u *User) Lock(requestor Identity) error {
-	return ErrWorkspaceAlreadyLocked
-}
-
-// Unlock requests unlocking a workspace held by the user
-func (u *User) Unlock(requestor Identity, force bool) error {
-	if force {
-		// TODO: only grant admin user
-		//
-		// force unlock always granted
-		return nil
-	}
-	if _, ok := requestor.(*User); ok {
-		if u.ID() == requestor.ID() {
-			// same user can unlock
-			return nil
-		}
-		return ErrWorkspaceLockedByDifferentUser
-	}
-	return ErrWorkspaceAlreadyUnlocked
-}
-
 // SyncOrganizationMemberships synchronises a user's organization memberships,
 // taking an authoritative list of memberships and ensuring its memberships
 // match, adding and removing memberships accordingly.
@@ -118,6 +95,28 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
 	return nil
+}
+
+// CanLock always returns an error because nothing can replace a user lock
+func (u *User) CanLock(requestor Identity) error {
+	return ErrWorkspaceLocked
+}
+
+// CanUnlock decides whether to permits requestor to unlock a user lock
+func (u *User) CanUnlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user
+		return nil
+	}
+	if user, ok := requestor.(*User); ok {
+		if u.ID() == user.ID() {
+			// only same user can unlock
+			return nil
+		}
+		return ErrWorkspaceLockedByDifferentUser
+	}
+	// any other entity cannot unlock
+	return ErrWorkspaceUnlockDenied
 }
 
 // UserService provides methods to interact with user accounts and their
