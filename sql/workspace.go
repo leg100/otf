@@ -76,7 +76,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 		if err != nil {
 			return nil, err
 		}
-		ws, err = otf.UnmarshalWorkspaceDBType(pggen.Workspaces(result))
+		ws, err = otf.UnmarshalWorkspaceDBResult(result)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +163,7 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions
 // Unlock the specified workspace; the caller has the opportunity to check the
 // current locker passed into the provided callback. If an error is returned the
 // unlock will not go ahead.
-func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, callback func(otf.Identity) error) error {
+func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	ctx := context.Background()
 	q := pggen.NewQuerier(db.Pool)
 

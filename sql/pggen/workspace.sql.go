@@ -298,8 +298,7 @@ func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (string,
 	return item, nil
 }
 
-const findWorkspaceByNameSQL = `SELECT
-    w.*,
+const findWorkspaceByNameSQL = `SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN $1 THEN (organizations.*)::"organizations" END AS organization
@@ -396,7 +395,10 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	return item, nil
 }
 
-const findWorkspaceByNameForUpdateSQL = `SELECT w.*
+const findWorkspaceByNameForUpdateSQL = `SELECT w.*,
+    (u.*)::"users" AS user_lock,
+    (r.*)::"runs" AS run_lock,
+    NULL::"organizations" AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
@@ -406,30 +408,33 @@ AND organizations.name = $2
 FOR UPDATE OF w;`
 
 type FindWorkspaceByNameForUpdateRow struct {
-	WorkspaceID                string    `json:"workspace_id"`
-	CreatedAt                  time.Time `json:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
-	AutoApply                  bool      `json:"auto_apply"`
-	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
-	Description                string    `json:"description"`
-	Environment                string    `json:"environment"`
-	ExecutionMode              string    `json:"execution_mode"`
-	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool      `json:"global_remote_state"`
-	MigrationEnvironment       string    `json:"migration_environment"`
-	Name                       string    `json:"name"`
-	QueueAllRuns               bool      `json:"queue_all_runs"`
-	SpeculativeEnabled         bool      `json:"speculative_enabled"`
-	SourceName                 string    `json:"source_name"`
-	SourceURL                  string    `json:"source_url"`
-	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
-	TerraformVersion           string    `json:"terraform_version"`
-	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           string    `json:"working_directory"`
-	OrganizationID             string    `json:"organization_id"`
-	LockRunID                  string    `json:"lock_run_id"`
-	LockUserID                 string    `json:"lock_user_id"`
+	WorkspaceID                string         `json:"workspace_id"`
+	CreatedAt                  time.Time      `json:"created_at"`
+	UpdatedAt                  time.Time      `json:"updated_at"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceURL                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
+	TriggerPrefixes            []string       `json:"trigger_prefixes"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
+	LockRunID                  string         `json:"lock_run_id"`
+	LockUserID                 string         `json:"lock_user_id"`
+	UserLock                   *Users         `json:"user_lock"`
+	RunLock                    *Runs          `json:"run_lock"`
+	Organization               *Organizations `json:"organization"`
 }
 
 // FindWorkspaceByNameForUpdate implements Querier.FindWorkspaceByNameForUpdate.
@@ -437,8 +442,20 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name strin
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByNameForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameForUpdateSQL, name, organizationName)
 	var item FindWorkspaceByNameForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID); err != nil {
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByNameForUpdate: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
 	}
 	return item, nil
 }
@@ -452,14 +469,25 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name s
 func (q *DBQuerier) FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindWorkspaceByNameForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID); err != nil {
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameForUpdateBatch row: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByNameForUpdate row: %w", err)
 	}
 	return item, nil
 }
 
-const findWorkspaceByIDSQL = `SELECT
-    w.*,
+const findWorkspaceByIDSQL = `SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN $1 THEN (organizations.*)::"organizations" END AS organization
@@ -549,7 +577,10 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	return item, nil
 }
 
-const findWorkspaceByIDForUpdateSQL = `SELECT w.*
+const findWorkspaceByIDForUpdateSQL = `SELECT w.*,
+    (u.*)::"users" AS user_lock,
+    (r.*)::"runs" AS run_lock,
+    NULL::"organizations" AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
@@ -558,30 +589,33 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w;`
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                string    `json:"workspace_id"`
-	CreatedAt                  time.Time `json:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at"`
-	AllowDestroyPlan           bool      `json:"allow_destroy_plan"`
-	AutoApply                  bool      `json:"auto_apply"`
-	CanQueueDestroyPlan        bool      `json:"can_queue_destroy_plan"`
-	Description                string    `json:"description"`
-	Environment                string    `json:"environment"`
-	ExecutionMode              string    `json:"execution_mode"`
-	FileTriggersEnabled        bool      `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool      `json:"global_remote_state"`
-	MigrationEnvironment       string    `json:"migration_environment"`
-	Name                       string    `json:"name"`
-	QueueAllRuns               bool      `json:"queue_all_runs"`
-	SpeculativeEnabled         bool      `json:"speculative_enabled"`
-	SourceName                 string    `json:"source_name"`
-	SourceURL                  string    `json:"source_url"`
-	StructuredRunOutputEnabled bool      `json:"structured_run_output_enabled"`
-	TerraformVersion           string    `json:"terraform_version"`
-	TriggerPrefixes            []string  `json:"trigger_prefixes"`
-	WorkingDirectory           string    `json:"working_directory"`
-	OrganizationID             string    `json:"organization_id"`
-	LockRunID                  string    `json:"lock_run_id"`
-	LockUserID                 string    `json:"lock_user_id"`
+	WorkspaceID                string         `json:"workspace_id"`
+	CreatedAt                  time.Time      `json:"created_at"`
+	UpdatedAt                  time.Time      `json:"updated_at"`
+	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
+	AutoApply                  bool           `json:"auto_apply"`
+	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
+	Description                string         `json:"description"`
+	Environment                string         `json:"environment"`
+	ExecutionMode              string         `json:"execution_mode"`
+	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool           `json:"global_remote_state"`
+	MigrationEnvironment       string         `json:"migration_environment"`
+	Name                       string         `json:"name"`
+	QueueAllRuns               bool           `json:"queue_all_runs"`
+	SpeculativeEnabled         bool           `json:"speculative_enabled"`
+	SourceName                 string         `json:"source_name"`
+	SourceURL                  string         `json:"source_url"`
+	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
+	TerraformVersion           string         `json:"terraform_version"`
+	TriggerPrefixes            []string       `json:"trigger_prefixes"`
+	WorkingDirectory           string         `json:"working_directory"`
+	OrganizationID             string         `json:"organization_id"`
+	LockRunID                  string         `json:"lock_run_id"`
+	LockUserID                 string         `json:"lock_user_id"`
+	UserLock                   *Users         `json:"user_lock"`
+	RunLock                    *Runs          `json:"run_lock"`
+	Organization               *Organizations `json:"organization"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
@@ -589,8 +623,20 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
 	var item FindWorkspaceByIDForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID); err != nil {
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	return item, nil
 }
@@ -604,8 +650,20 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id strin
 func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (FindWorkspaceByIDForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindWorkspaceByIDForUpdateRow
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID); err != nil {
+	userLockRow := q.types.newUsers()
+	runLockRow := q.types.newRuns()
+	organizationRow := q.types.newOrganizations()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, userLockRow, runLockRow, organizationRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
+	}
+	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	return item, nil
 }

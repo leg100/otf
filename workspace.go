@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 )
 
@@ -35,7 +34,7 @@ type Workspace struct {
 	executionMode              string
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
-	locked                     bool
+	lock                       WorkspaceLock
 	migrationEnvironment       string
 	name                       string
 	queueAllRuns               bool
@@ -62,7 +61,6 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
-func (ws *Workspace) Locked() bool                     { return ws.locked }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
 func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
@@ -74,6 +72,12 @@ func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns 
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
+
+/// Locked determines whether workspace is locked.
+func (ws *Workspace) Locked() bool {
+	_, ok := ws.lock.(*Unlocked)
+	return !ok
+}
 
 // UpdateWithOptions updates the workspace with the given options.
 //
@@ -220,22 +224,6 @@ type WorkspaceUnlockOptions struct {
 	Requestor Identity
 }
 
-// Request workspace lock. Requestor is the entity requesting the lock, and lock
-// represents the current entity that has locked the workspace.
-func RequestWorkspaceLock(requestor, lock Identity) error {
-	if lock == nil {
-		// unlocked, request permitted
-		return nil
-	}
-	if reflect.TypeOf(lock) == reflect.TypeOf(requestor) {
-		if _, ok := lock.(*Run); ok {
-			// run can replace lock held by different run
-			return nil
-		}
-	}
-	return ErrWorkspaceAlreadyLocked
-}
-
 // Unlocked represents the unlocked state of a workspace lock
 type Unlocked struct{}
 
@@ -245,38 +233,8 @@ func (u *Unlocked) Lock(requestor Identity) error {
 }
 
 // Unlock requests unlocking a workspace currently unlocked
-func (u *Unlocked) Unlock(requestor Identity) error {
+func (u *Unlocked) Unlock(requestor Identity, force bool) error {
 	return ErrWorkspaceAlreadyUnlocked
-}
-
-// Request workspace unlock. Requestor is the entity requesting the unlock, and
-// lock represents the current entity that has locked the workspace.
-func RequestWorkspaceUnlock(requestor, lock Identity, force bool) error {
-	if force {
-		// force unlock always granted
-		return nil
-	}
-	if lock == nil {
-		return ErrWorkspaceAlreadyUnlocked
-	}
-	if reflect.TypeOf(requestor) != reflect.TypeOf(lock) {
-		// different entity classes cannot unlock each other locks
-		return ErrWorkspaceAlreadyLocked
-	}
-	// entities are identical
-	switch lock.(type) {
-	case *User:
-		if lock.ID() == requestor.ID() {
-			// same user can unlock
-			return nil
-		}
-		return ErrWorkspaceLockedByDifferentUser
-	case *Run:
-		// run can unlock lock held by different run
-		return nil
-	default:
-		return ErrWorkspaceInvalidLocker
-	}
 }
 
 // WorkspaceList represents a list of Workspaces.

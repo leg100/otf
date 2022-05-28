@@ -81,8 +81,7 @@ AND organizations.name = pggen.arg('organization_name');
 -- FindWorkspaceByName finds a workspace by name and organization name.
 --
 -- name: FindWorkspaceByName :one
-SELECT
-    w.*,
+SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
@@ -94,7 +93,10 @@ WHERE w.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name');
 
 -- name: FindWorkspaceByNameForUpdate :one
-SELECT w.*
+SELECT w.*,
+    (u.*)::"users" AS user_lock,
+    (r.*)::"runs" AS run_lock,
+    NULL::"organizations" AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
@@ -104,8 +106,7 @@ AND organizations.name = pggen.arg('organization_name')
 FOR UPDATE OF w;
 
 -- name: FindWorkspaceByID :one
-SELECT
-    w.*,
+SELECT w.*,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
@@ -116,7 +117,10 @@ LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = pggen.arg('id');
 
 -- name: FindWorkspaceByIDForUpdate :one
-SELECT w.*
+SELECT w.*,
+    (u.*)::"users" AS user_lock,
+    (r.*)::"runs" AS run_lock,
+    NULL::"organizations" AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
