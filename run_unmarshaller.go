@@ -54,7 +54,7 @@ type RunDBType struct {
 	ReplaceAddrs           []string  `json:"replace_addrs"`
 	TargetAddrs            []string  `json:"target_addrs"`
 	PlanBin                []byte    `json:"plan_bin"`
-	PlanJson               []byte    `json:"plan_json"`
+	PlanJSON               []byte    `json:"plan_json"`
 	PlannedAdditions       int       `json:"planned_additions"`
 	PlannedChanges         int       `json:"planned_changes"`
 	PlannedDestructions    int       `json:"planned_destructions"`

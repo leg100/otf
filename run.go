@@ -285,7 +285,7 @@ func (r *Run) CanLock(requestor Identity) error {
 		// run can replace lock held by different run
 		return nil
 	}
-	return ErrWorkspaceLocked
+	return ErrWorkspaceAlreadyLocked
 }
 
 // CanUnlock determines whether requestor can unlock run lock

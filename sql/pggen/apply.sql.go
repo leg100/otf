@@ -231,10 +231,10 @@ type Querier interface {
 	// UpdateRunPlanBinByPlanIDScan scans the result of an executed UpdateRunPlanBinByPlanIDBatch query.
 	UpdateRunPlanBinByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []byte, planID pgtype.Text) (pgconn.CommandTag, error)
+	UpdateRunPlanJSONByPlanID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgconn.CommandTag, error)
 	// UpdateRunPlanJSONByPlanIDBatch enqueues a UpdateRunPlanJSONByPlanID query into batch to be executed
 	// later by the batch.
-	UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJson []byte, planID pgtype.Text)
+	UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text)
 	// UpdateRunPlanJSONByPlanIDScan scans the result of an executed UpdateRunPlanJSONByPlanIDBatch query.
 	UpdateRunPlanJSONByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
@@ -1007,7 +1007,7 @@ type Runs struct {
 	ReplaceAddrs           []string    `json:"replace_addrs"`
 	TargetAddrs            []string    `json:"target_addrs"`
 	PlanBin                []byte      `json:"plan_bin"`
-	PlanJson               []byte      `json:"plan_json"`
+	PlanJSON               []byte      `json:"plan_json"`
 	PlannedAdditions       int         `json:"planned_additions"`
 	PlannedChanges         int         `json:"planned_changes"`
 	PlannedDestructions    int         `json:"planned_destructions"`

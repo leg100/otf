@@ -34,11 +34,11 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 	}
 
 	if err := s.db.Create(ws); err != nil {
-		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name())
+		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization.Name())
 		return nil, err
 	}
 
-	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name())
+	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization.Name())
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 

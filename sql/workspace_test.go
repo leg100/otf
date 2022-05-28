@@ -90,6 +90,28 @@ func TestWorkspace_Get(t *testing.T) {
 	}
 }
 
+func TestWorkspace_Lock(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	opts := otf.WorkspaceLockOptions{Requestor: &otf.AnonymousUser}
+
+	t.Run("by id", func(t *testing.T) {
+		ws := createTestWorkspace(t, db, org)
+		spec := otf.WorkspaceSpec{ID: otf.String(ws.ID())}
+		got, err := db.WorkspaceStore().Lock(spec, opts)
+		require.NoError(t, err)
+		assert.True(t, got.Locked())
+	})
+
+	t.Run("by name", func(t *testing.T) {
+		ws := createTestWorkspace(t, db, org)
+		spec := otf.WorkspaceSpec{Name: otf.String(ws.Name()), OrganizationName: otf.String(org.Name())}
+		got, err := db.WorkspaceStore().Lock(spec, opts)
+		require.NoError(t, err)
+		assert.True(t, got.Locked())
+	})
+}
+
 func TestWorkspace_List(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)

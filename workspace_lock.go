@@ -3,9 +3,9 @@ package otf
 import "errors"
 
 var (
-	ErrWorkspaceLocked                = errors.New("workspace already locked")
+	ErrWorkspaceAlreadyLocked         = errors.New("workspace already locked")
 	ErrWorkspaceLockedByDifferentUser = errors.New("workspace locked by different user")
-	ErrWorkspaceUnlocked              = errors.New("workspace already unlocked")
+	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
 	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
 	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
 )
@@ -26,11 +26,11 @@ type Unlocked struct {
 }
 
 // CanLock always returns true
-func (u *Unlocked) CanLock(_ Identity) error {
+func (u *Unlocked) CanLock(Identity) error {
 	return nil
 }
 
 // CanUnlock always returns error
-func (u *Unlocked) CanUnlock(_ Identity, _ bool) error {
-	return ErrWorkspaceUnlocked
+func (u *Unlocked) CanUnlock(Identity, bool) error {
+	return ErrWorkspaceAlreadyUnlocked
 }

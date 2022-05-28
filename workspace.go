@@ -199,7 +199,7 @@ type WorkspaceLockOptions struct {
 	Requestor WorkspaceLock
 }
 
-// WorkspaceLockOptions represents the options for locking a workspace.
+// WorkspaceUnlockOptions represents the options for unlocking a workspace.
 type WorkspaceUnlockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`

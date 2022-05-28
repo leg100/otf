@@ -90,11 +90,11 @@ func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDPar
 		params.RunID = pgtype.Text{Status: pgtype.Null}
 		params.UserID = pgtype.Text{Status: pgtype.Null}
 	case *Run:
-		params.UserID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
-		params.RunID = pgtype.Text{Status: pgtype.Null}
-	case *User:
 		params.RunID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
 		params.UserID = pgtype.Text{Status: pgtype.Null}
+	case *User:
+		params.UserID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
+		params.RunID = pgtype.Text{Status: pgtype.Null}
 	default:
 		return params, ErrWorkspaceInvalidLock
 	}

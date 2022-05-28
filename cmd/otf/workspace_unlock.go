@@ -22,15 +22,9 @@ func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// API only provides the ability to lock workspace by id so we need
-			// to fetch that first.
-			ws, err := client.Workspaces().Get(cmd.Context(), spec)
-			if err != nil {
-				return err
-			}
-
-			_, err = client.Workspaces().Unlock(cmd.Context(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+			ws, err := client.Workspaces().Unlock(cmd.Context(), spec, otf.WorkspaceUnlockOptions{
+				Requestor: &otf.AnonymousUser,
+			})
 			if err != nil {
 				return err
 			}
