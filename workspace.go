@@ -237,6 +237,8 @@ type WorkspaceUnlockOptions struct {
 	Reason *string `jsonapi:"attr,reason,omitempty"`
 	// The identity requesting to unlock the workspace.
 	Requestor Identity
+	// Force unlock of workspace
+	Force bool
 }
 
 // WorkspaceList represents a list of Workspaces.
