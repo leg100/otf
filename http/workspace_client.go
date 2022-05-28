@@ -149,12 +149,15 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.
 
 // Unlock a workspace by its ID.
 func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(spec.ID) {
-		return nil, otf.ErrInvalidWorkspaceID
+	var path string
+	if spec.ID != nil {
+		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
+	} else if spec.OrganizationName != nil && spec.Name != nil {
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/unlock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+	} else {
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
-
-	u := fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
-	req, err := s.client.newRequest("POST", u, nil)
+	req, err := s.client.newRequest("POST", path, nil)
 	if err != nil {
 		return nil, err
 	}
