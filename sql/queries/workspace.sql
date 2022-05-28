@@ -92,19 +92,6 @@ LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name = pggen.arg('name')
 AND organizations.name = pggen.arg('organization_name');
 
--- name: FindWorkspaceByNameForUpdate :one
-SELECT w.*,
-    (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock,
-    NULL::"organizations" AS organization
-FROM workspaces w
-JOIN organizations USING (organization_id)
-LEFT JOIN users u ON w.lock_user_id = u.user_id
-LEFT JOIN runs r ON w.lock_run_id = r.run_id
-WHERE w.name = pggen.arg('name')
-AND organizations.name = pggen.arg('organization_name')
-FOR UPDATE OF w;
-
 -- name: FindWorkspaceByID :one
 SELECT w.*,
     (u.*)::"users" AS user_lock,

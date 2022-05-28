@@ -569,13 +569,6 @@ type Querier interface {
 	// FindWorkspaceByNameScan scans the result of an executed FindWorkspaceByNameBatch query.
 	FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorkspaceByNameRow, error)
 
-	FindWorkspaceByNameForUpdate(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameForUpdateRow, error)
-	// FindWorkspaceByNameForUpdateBatch enqueues a FindWorkspaceByNameForUpdate query into batch to be executed
-	// later by the batch.
-	FindWorkspaceByNameForUpdateBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspaceByNameForUpdateScan scans the result of an executed FindWorkspaceByNameForUpdateBatch query.
-	FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error)
-
 	FindWorkspaceByID(ctx context.Context, includeOrganization bool, id pgtype.Text) (FindWorkspaceByIDRow, error)
 	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -929,9 +922,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspaceByNameForUpdateSQL, findWorkspaceByNameForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceByNameForUpdate': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceByIDSQL, findWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByID': %w", err)
