@@ -4,7 +4,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewWorkspace(opts WorkspaceCreateOptions, org *Organization) *Workspace {
+type WorkspaceFactory struct {
+	OrganizationService OrganizationService
+}
+
+func (f *WorkspaceFactory) NewWorkspace(opts WorkspaceCreateOptions) *Workspace {
 	ws := Workspace{
 		id:                  NewID("ws"),
 		name:                opts.Name,
