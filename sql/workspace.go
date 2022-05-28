@@ -282,8 +282,8 @@ func getWorkspaceID(ctx context.Context, q *pggen.DBQuerier, spec otf.WorkspaceS
 	}
 	if spec.Name != nil && spec.OrganizationName != nil {
 		return q.FindWorkspaceIDByName(ctx,
-			pgtype.Text{String: *spec.Name, Status: pgtype.Null},
-			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Null},
+			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
+			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 		)
 	}
 	return pgtype.Text{}, otf.ErrInvalidWorkspaceSpec

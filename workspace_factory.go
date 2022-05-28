@@ -24,6 +24,7 @@ func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreat
 		globalRemoteState:   true, // Only global remote state is supported
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
+		lock:                &Unlocked{},
 	}
 	orgID, err := f.getOrganizationID(ctx, opts)
 	if err != nil {

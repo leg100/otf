@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     execution_mode                  TEXT        NOT NULL,
     file_triggers_enabled           BOOLEAN     NOT NULL,
     global_remote_state             BOOLEAN     NOT NULL,
+    locked                          BOOLEAN     NOT NULL,
     migration_environment           TEXT        NOT NULL,
     name                            TEXT        NOT NULL,
     queue_all_runs                  BOOLEAN     NOT NULL,
@@ -230,8 +231,6 @@ DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
--- TODO: remove table
-DROP TABLE IF EXISTS workspace_locks;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
