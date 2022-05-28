@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 )
@@ -144,18 +145,18 @@ func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
 
 // StateVersionDBRow is the state version postgres record.
 type StateVersionDBRow struct {
-	StateVersionID      string                      `json:"state_version_id"`
+	StateVersionID      pgtype.Text                 `json:"state_version_id"`
 	CreatedAt           time.Time                   `json:"created_at"`
 	Serial              int                         `json:"serial"`
 	State               []byte                      `json:"state"`
-	WorkspaceID         string                      `json:"workspace_id"`
+	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
 // UnmarshalStateVersionDBResult unmarshals a state version postgres record.
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
-		id:        row.StateVersionID,
+		id:        row.StateVersionID.String,
 		createdAt: row.CreatedAt,
 		serial:    int64(row.Serial),
 		state:     row.State,

@@ -11,7 +11,7 @@ import (
 
 func TestUser_Create(t *testing.T) {
 	db := newTestDB(t)
-	user := otf.NewTestUser()
+	user := otf.NewUser("mr-t")
 
 	defer db.UserStore().Delete(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 
@@ -70,6 +70,7 @@ func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 	session := createTestSession(t, db, user.ID())
+	// ...and token
 	token := createTestToken(t, db, user.ID(), "testing")
 
 	tests := []struct {
@@ -121,7 +122,6 @@ func TestUser_Get_WithSessions(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(got.Sessions))
-
 }
 
 func TestUser_List(t *testing.T) {

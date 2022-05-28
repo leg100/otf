@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -27,10 +28,10 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 	q := pggen.NewQuerier(db.Pool)
 
 	_, err := q.InsertToken(ctx, pggen.InsertTokenParams{
-		TokenID:     token.ID(),
-		Token:       token.Token(),
-		Description: token.Description(),
-		UserID:      token.UserID(),
+		TokenID:     pgtype.Text{String: token.ID(), Status: pgtype.Present},
+		Token:       pgtype.Text{String: token.Token(), Status: pgtype.Present},
+		Description: pgtype.Text{String: token.Description(), Status: pgtype.Present},
+		UserID:      pgtype.Text{String: token.UserID(), Status: pgtype.Present},
 		CreatedAt:   token.CreatedAt(),
 	})
 	if err != nil {
@@ -44,7 +45,7 @@ func (db TokenDB) CreateToken(ctx context.Context, token *otf.Token) error {
 func (db TokenDB) DeleteToken(ctx context.Context, id string) error {
 	q := pggen.NewQuerier(db.Pool)
 
-	result, err := q.DeleteTokenByID(ctx, id)
+	result, err := q.DeleteTokenByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}

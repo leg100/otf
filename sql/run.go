@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -32,16 +33,16 @@ func (db RunDB) Create(run *otf.Run) error {
 	defer tx.Rollback(ctx)
 	q := pggen.NewQuerier(tx)
 	_, err = q.InsertRun(ctx, pggen.InsertRunParams{
-		ID:                     run.ID(),
+		ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
 		CreatedAt:              run.CreatedAt(),
-		PlanID:                 run.Plan.ID(),
-		ApplyID:                run.Apply.ID(),
+		PlanID:                 pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+		ApplyID:                pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
 		IsDestroy:              run.IsDestroy(),
 		Refresh:                run.Refresh(),
 		RefreshOnly:            run.RefreshOnly(),
-		Status:                 string(run.Status()),
-		PlanStatus:             string(run.Plan.Status()),
-		ApplyStatus:            string(run.Apply.Status()),
+		Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+		PlanStatus:             pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+		ApplyStatus:            pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
 		PlannedAdditions:       0,
@@ -50,8 +51,8 @@ func (db RunDB) Create(run *otf.Run) error {
 		AppliedAdditions:       0,
 		AppliedChanges:         0,
 		AppliedDestructions:    0,
-		ConfigurationVersionID: run.ConfigurationVersion.ID(),
-		WorkspaceID:            run.Workspace.ID(),
+		ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
+		WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return err
@@ -107,7 +108,10 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Status() != runStatus {
 		var err error
-		_, err = q.UpdateRunStatus(ctx, string(run.Status()), run.ID())
+		_, err = q.UpdateRunStatus(ctx,
+			pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+			pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +123,10 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Plan.Status() != planStatus {
 		var err error
-		_, err = q.UpdatePlanStatus(ctx, string(run.Plan.Status()), run.Plan.ID())
+		_, err = q.UpdatePlanStatus(ctx,
+			pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+			pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +138,10 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 
 	if run.Apply.Status() != applyStatus {
 		var err error
-		_, err = q.UpdateApplyStatus(ctx, string(run.Apply.Status()), run.Apply.ID())
+		_, err = q.UpdateApplyStatus(ctx,
+			pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+			pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +159,7 @@ func (db RunDB) CreatePlanReport(planID string, report otf.ResourceReport) error
 	ctx := context.Background()
 
 	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, pggen.UpdateRunPlannedChangesByPlanIDParams{
-		PlanID:       planID,
+		PlanID:       pgtype.Text{String: planID, Status: pgtype.Present},
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -165,7 +175,7 @@ func (db RunDB) CreateApplyReport(applyID string, report otf.ResourceReport) err
 	ctx := context.Background()
 
 	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
-		ApplyID:      applyID,
+		ApplyID:      pgtype.Text{String: applyID, Status: pgtype.Present},
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -181,18 +191,21 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	var workspaceID string
+	var workspaceID pgtype.Text
 	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-		wid, err := q.FindWorkspaceIDByName(ctx, *opts.WorkspaceName, *opts.OrganizationName)
+		wid, err := q.FindWorkspaceIDByName(ctx,
+			pgtype.Text{String: *opts.WorkspaceName, Status: pgtype.Present},
+			pgtype.Text{String: *opts.OrganizationName, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
 		workspaceID = wid
 	} else if opts.WorkspaceID != nil {
-		workspaceID = *opts.WorkspaceID
+		workspaceID = pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present}
 	} else {
 		// Match any workspace ID
-		workspaceID = "%"
+		workspaceID = pgtype.Text{String: "%", Status: pgtype.Present}
 	}
 
 	var statuses []string
@@ -204,14 +217,14 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	}
 
 	q.FindRunsBatch(batch, pggen.FindRunsParams{
-		WorkspaceIds:                []string{workspaceID},
+		WorkspaceIds:                []string{workspaceID.String},
 		Statuses:                    statuses,
 		Limit:                       opts.GetLimit(),
 		Offset:                      opts.GetOffset(),
 		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
 		IncludeWorkspace:            includeWorkspace(opts.Include),
 	})
-	q.CountRunsBatch(batch, []string{workspaceID}, statuses)
+	q.CountRunsBatch(batch, []string{workspaceID.String}, statuses)
 	results := db.Pool.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -267,10 +280,16 @@ func (db RunDB) SetPlanFile(planID string, file []byte, format otf.PlanFormat) e
 
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := q.UpdateRunPlanBinByPlanID(ctx, file, planID)
+		_, err := q.UpdateRunPlanBinByPlanID(ctx,
+			file,
+			pgtype.Text{String: planID, Status: pgtype.Present},
+		)
 		return err
 	case otf.PlanFormatJSON:
-		_, err := q.UpdateRunPlanJSONByPlanID(ctx, file, planID)
+		_, err := q.UpdateRunPlanJSONByPlanID(ctx,
+			file,
+			pgtype.Text{String: planID, Status: pgtype.Present},
+		)
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -284,9 +303,9 @@ func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
 
 	switch format {
 	case otf.PlanFormatBinary:
-		return q.GetPlanBinByRunID(ctx, id)
+		return q.GetPlanBinByRunID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	case otf.PlanFormatJSON:
-		return q.GetPlanJSONByRunID(ctx, id)
+		return q.GetPlanJSONByRunID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -297,7 +316,7 @@ func (db RunDB) Delete(id string) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.DeleteRunByID(ctx, id)
+	result, err := q.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}
@@ -309,15 +328,15 @@ func (db RunDB) Delete(id string) error {
 	return nil
 }
 
-func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (string, error) {
+func getRunID(ctx context.Context, q *pggen.DBQuerier, opts otf.RunGetOptions) (pgtype.Text, error) {
 	if opts.PlanID != nil {
-		return q.FindRunIDByPlanID(ctx, *opts.PlanID)
+		return q.FindRunIDByPlanID(ctx, pgtype.Text{String: *opts.PlanID, Status: pgtype.Present})
 	} else if opts.ApplyID != nil {
-		return q.FindRunIDByApplyID(ctx, *opts.ApplyID)
+		return q.FindRunIDByApplyID(ctx, pgtype.Text{String: *opts.ApplyID, Status: pgtype.Present})
 	} else if opts.ID != nil {
-		return *opts.ID, nil
+		return pgtype.Text{String: *opts.ID, Status: pgtype.Present}, nil
 	} else {
-		return "", fmt.Errorf("no ID specified")
+		return pgtype.Text{}, fmt.Errorf("no ID specified")
 	}
 }
 
@@ -327,8 +346,8 @@ func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.
 		return err
 	}
 	_, err = q.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
-		ID:        run.ID(),
-		Status:    string(run.Status()),
+		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err
@@ -340,8 +359,8 @@ func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf
 		return err
 	}
 	_, err = q.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
-		ID:        run.ID(),
-		Status:    string(run.Plan.Status()),
+		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err
@@ -353,8 +372,8 @@ func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *ot
 		return err
 	}
 	_, err = q.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
-		ID:        run.ID(),
-		Status:    string(run.Apply.Status()),
+		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err

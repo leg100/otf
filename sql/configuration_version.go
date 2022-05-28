@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -36,24 +37,27 @@ func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) error {
 	q := pggen.NewQuerier(tx)
 
 	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-		ID:            cv.ID(),
+		ID:            pgtype.Text{String: cv.ID(), Status: pgtype.Present},
 		CreatedAt:     cv.CreatedAt(),
 		AutoQueueRuns: cv.AutoQueueRuns(),
-		Source:        string(cv.Source()),
+		Source:        pgtype.Text{String: string(cv.Source()), Status: pgtype.Present},
 		Speculative:   cv.Speculative(),
-		Status:        string(cv.Status()),
-		WorkspaceID:   cv.Workspace.ID(),
+		Status:        pgtype.Text{String: string(cv.Status()), Status: pgtype.Present},
+		WorkspaceID:   pgtype.Text{String: cv.Workspace.ID(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return err
 	}
 
 	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, cv.ID(), string(cv.Status()))
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx,
+		pgtype.Text{String: cv.ID(), Status: pgtype.Present},
+		pgtype.Text{String: string(cv.Status()), Status: pgtype.Present},
+	)
 	if err != nil {
 		return err
 	}
-	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status), ts.Timestamp)
+	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp)
 
 	return tx.Commit(ctx)
 }
@@ -68,7 +72,7 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 	q := pggen.NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, false, id)
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, false, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}
@@ -90,11 +94,11 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 	ctx := context.Background()
 
 	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
-		WorkspaceID: workspaceID,
+		WorkspaceID: pgtype.Text{String: workspaceID, Status: pgtype.Present},
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, workspaceID)
+	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, pgtype.Text{String: workspaceID, Status: pgtype.Present})
 
 	results := db.Pool.SendBatch(ctx, batch)
 	defer results.Close()
@@ -128,13 +132,19 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 	q := pggen.NewQuerier(db.Pool)
 
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx, includeWorkspace(opts.Include), *opts.ID)
+		result, err := q.FindConfigurationVersionByID(ctx,
+			includeWorkspace(opts.Include),
+			pgtype.Text{String: *opts.ID, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
 		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx, includeWorkspace(opts.Include), *opts.WorkspaceID)
+		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx,
+			includeWorkspace(opts.Include),
+			pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present},
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +157,7 @@ func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*
 func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
 	q := pggen.NewQuerier(db.Pool)
 
-	return q.DownloadConfigurationVersion(ctx, id)
+	return q.DownloadConfigurationVersion(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 }
 
 // Delete deletes a configuration version from the DB
@@ -155,7 +165,7 @@ func (db ConfigurationVersionDB) Delete(id string) error {
 	q := pggen.NewQuerier(db.Pool)
 	ctx := context.Background()
 
-	result, err := q.DeleteConfigurationVersionByID(ctx, id)
+	result, err := q.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}

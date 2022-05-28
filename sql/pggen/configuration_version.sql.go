@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -30,13 +31,13 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
 );`
 
 type InsertConfigurationVersionParams struct {
-	ID            string
+	ID            pgtype.Text
 	CreatedAt     time.Time
 	AutoQueueRuns bool
-	Source        string
+	Source        pgtype.Text
 	Speculative   bool
-	Status        string
-	WorkspaceID   string
+	Status        pgtype.Text
+	WorkspaceID   pgtype.Text
 }
 
 // InsertConfigurationVersion implements Querier.InsertConfigurationVersion.
@@ -75,13 +76,13 @@ const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_
 RETURNING *;`
 
 type InsertConfigurationVersionStatusTimestampRow struct {
-	ConfigurationVersionID string    `json:"configuration_version_id"`
-	Status                 string    `json:"status"`
-	Timestamp              time.Time `json:"timestamp"`
+	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
+	Status                 pgtype.Text `json:"status"`
+	Timestamp              time.Time   `json:"timestamp"`
 }
 
 // InsertConfigurationVersionStatusTimestamp implements Querier.InsertConfigurationVersionStatusTimestamp.
-func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, id string, status string) (InsertConfigurationVersionStatusTimestampRow, error) {
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, id pgtype.Text, status pgtype.Text) (InsertConfigurationVersionStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersionStatusTimestamp")
 	row := q.conn.QueryRow(ctx, insertConfigurationVersionStatusTimestampSQL, id, status)
 	var item InsertConfigurationVersionStatusTimestampRow
@@ -92,7 +93,7 @@ func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Contex
 }
 
 // InsertConfigurationVersionStatusTimestampBatch implements Querier.InsertConfigurationVersionStatusTimestampBatch.
-func (q *DBQuerier) InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, id string, status string) {
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, id pgtype.Text, status pgtype.Text) {
 	batch.Queue(insertConfigurationVersionStatusTimestampSQL, id, status)
 }
 
@@ -129,19 +130,19 @@ OFFSET $4;`
 
 type FindConfigurationVersionsByWorkspaceIDParams struct {
 	IncludeWorkspace bool
-	WorkspaceID      string
+	WorkspaceID      pgtype.Text
 	Limit            int
 	Offset           int
 }
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {
-	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
+	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
-	Source                               string                                 `json:"source"`
+	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
-	Status                               string                                 `json:"status"`
-	WorkspaceID                          string                                 `json:"workspace_id"`
+	Status                               pgtype.Text                            `json:"status"`
+	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
@@ -216,7 +217,7 @@ WHERE configuration_versions.workspace_id = $1
 ;`
 
 // CountConfigurationVersionsByWorkspaceID implements Querier.CountConfigurationVersionsByWorkspaceID.
-func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID string) (*int, error) {
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (*int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountConfigurationVersionsByWorkspaceID")
 	row := q.conn.QueryRow(ctx, countConfigurationVersionsByWorkspaceIDSQL, workspaceID)
 	var item int
@@ -227,7 +228,7 @@ func (q *DBQuerier) CountConfigurationVersionsByWorkspaceID(ctx context.Context,
 }
 
 // CountConfigurationVersionsByWorkspaceIDBatch implements Querier.CountConfigurationVersionsByWorkspaceIDBatch.
-func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID string) {
+func (q *DBQuerier) CountConfigurationVersionsByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
 	batch.Queue(countConfigurationVersionsByWorkspaceIDSQL, workspaceID)
 }
 
@@ -261,19 +262,19 @@ JOIN workspaces USING (workspace_id)
 WHERE configuration_version_id = $2;`
 
 type FindConfigurationVersionByIDRow struct {
-	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
+	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
-	Source                               string                                 `json:"source"`
+	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
-	Status                               string                                 `json:"status"`
-	WorkspaceID                          string                                 `json:"workspace_id"`
+	Status                               pgtype.Text                            `json:"status"`
+	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
 // FindConfigurationVersionByID implements Querier.FindConfigurationVersionByID.
-func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, includeWorkspace bool, configurationVersionID string) (FindConfigurationVersionByIDRow, error) {
+func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, includeWorkspace bool, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindConfigurationVersionByID")
 	row := q.conn.QueryRow(ctx, findConfigurationVersionByIDSQL, includeWorkspace, configurationVersionID)
 	var item FindConfigurationVersionByIDRow
@@ -292,7 +293,7 @@ func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, includeWor
 }
 
 // FindConfigurationVersionByIDBatch implements Querier.FindConfigurationVersionByIDBatch.
-func (q *DBQuerier) FindConfigurationVersionByIDBatch(batch genericBatch, includeWorkspace bool, configurationVersionID string) {
+func (q *DBQuerier) FindConfigurationVersionByIDBatch(batch genericBatch, includeWorkspace bool, configurationVersionID pgtype.Text) {
 	batch.Queue(findConfigurationVersionByIDSQL, includeWorkspace, configurationVersionID)
 }
 
@@ -335,19 +336,19 @@ WHERE workspace_id = $2
 ORDER BY configuration_versions.created_at DESC;`
 
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
-	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
+	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
-	Source                               string                                 `json:"source"`
+	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
-	Status                               string                                 `json:"status"`
-	WorkspaceID                          string                                 `json:"workspace_id"`
+	Status                               pgtype.Text                            `json:"status"`
+	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
 // FindConfigurationVersionLatestByWorkspaceID implements Querier.FindConfigurationVersionLatestByWorkspaceID.
-func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, includeWorkspace bool, workspaceID string) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
+func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, includeWorkspace bool, workspaceID pgtype.Text) (FindConfigurationVersionLatestByWorkspaceIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindConfigurationVersionLatestByWorkspaceID")
 	row := q.conn.QueryRow(ctx, findConfigurationVersionLatestByWorkspaceIDSQL, includeWorkspace, workspaceID)
 	var item FindConfigurationVersionLatestByWorkspaceIDRow
@@ -366,7 +367,7 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Cont
 }
 
 // FindConfigurationVersionLatestByWorkspaceIDBatch implements Querier.FindConfigurationVersionLatestByWorkspaceIDBatch.
-func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, includeWorkspace bool, workspaceID string) {
+func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, includeWorkspace bool, workspaceID pgtype.Text) {
 	batch.Queue(findConfigurationVersionLatestByWorkspaceIDSQL, includeWorkspace, workspaceID)
 }
 
@@ -409,19 +410,19 @@ WHERE configuration_version_id = $2
 FOR UPDATE;`
 
 type FindConfigurationVersionByIDForUpdateRow struct {
-	ConfigurationVersionID               string                                 `json:"configuration_version_id"`
+	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
 	CreatedAt                            time.Time                              `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
-	Source                               string                                 `json:"source"`
+	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
-	Status                               string                                 `json:"status"`
-	WorkspaceID                          string                                 `json:"workspace_id"`
+	Status                               pgtype.Text                            `json:"status"`
+	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	Workspace                            *Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
 // FindConfigurationVersionByIDForUpdate implements Querier.FindConfigurationVersionByIDForUpdate.
-func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, includeWorkspace bool, configurationVersionID string) (FindConfigurationVersionByIDForUpdateRow, error) {
+func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, includeWorkspace bool, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindConfigurationVersionByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findConfigurationVersionByIDForUpdateSQL, includeWorkspace, configurationVersionID)
 	var item FindConfigurationVersionByIDForUpdateRow
@@ -440,7 +441,7 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, i
 }
 
 // FindConfigurationVersionByIDForUpdateBatch implements Querier.FindConfigurationVersionByIDForUpdateBatch.
-func (q *DBQuerier) FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, includeWorkspace bool, configurationVersionID string) {
+func (q *DBQuerier) FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, includeWorkspace bool, configurationVersionID pgtype.Text) {
 	batch.Queue(findConfigurationVersionByIDForUpdateSQL, includeWorkspace, configurationVersionID)
 }
 
@@ -467,7 +468,7 @@ FROM configuration_versions
 WHERE configuration_version_id = $1;`
 
 // DownloadConfigurationVersion implements Querier.DownloadConfigurationVersion.
-func (q *DBQuerier) DownloadConfigurationVersion(ctx context.Context, configurationVersionID string) ([]byte, error) {
+func (q *DBQuerier) DownloadConfigurationVersion(ctx context.Context, configurationVersionID pgtype.Text) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DownloadConfigurationVersion")
 	row := q.conn.QueryRow(ctx, downloadConfigurationVersionSQL, configurationVersionID)
 	item := []byte{}
@@ -478,7 +479,7 @@ func (q *DBQuerier) DownloadConfigurationVersion(ctx context.Context, configurat
 }
 
 // DownloadConfigurationVersionBatch implements Querier.DownloadConfigurationVersionBatch.
-func (q *DBQuerier) DownloadConfigurationVersionBatch(batch genericBatch, configurationVersionID string) {
+func (q *DBQuerier) DownloadConfigurationVersionBatch(batch genericBatch, configurationVersionID pgtype.Text) {
 	batch.Queue(downloadConfigurationVersionSQL, configurationVersionID)
 }
 
@@ -498,7 +499,7 @@ SET
 WHERE configuration_version_id = $1;`
 
 // UpdateConfigurationVersionErroredByID implements Querier.UpdateConfigurationVersionErroredByID.
-func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, id string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionErroredByID")
 	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionErroredByIDSQL, id)
 	if err != nil {
@@ -508,7 +509,7 @@ func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, i
 }
 
 // UpdateConfigurationVersionErroredByIDBatch implements Querier.UpdateConfigurationVersionErroredByIDBatch.
-func (q *DBQuerier) UpdateConfigurationVersionErroredByIDBatch(batch genericBatch, id string) {
+func (q *DBQuerier) UpdateConfigurationVersionErroredByIDBatch(batch genericBatch, id pgtype.Text) {
 	batch.Queue(updateConfigurationVersionErroredByIDSQL, id)
 }
 
@@ -528,7 +529,7 @@ SET
 WHERE configuration_version_id = $2;`
 
 // UpdateConfigurationVersionConfigByID implements Querier.UpdateConfigurationVersionConfigByID.
-func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionConfigByID")
 	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionConfigByIDSQL, config, id)
 	if err != nil {
@@ -538,7 +539,7 @@ func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, co
 }
 
 // UpdateConfigurationVersionConfigByIDBatch implements Querier.UpdateConfigurationVersionConfigByIDBatch.
-func (q *DBQuerier) UpdateConfigurationVersionConfigByIDBatch(batch genericBatch, config []byte, id string) {
+func (q *DBQuerier) UpdateConfigurationVersionConfigByIDBatch(batch genericBatch, config []byte, id pgtype.Text) {
 	batch.Queue(updateConfigurationVersionConfigByIDSQL, config, id)
 }
 
@@ -556,7 +557,7 @@ FROM configuration_versions
 WHERE configuration_version_id = $1;`
 
 // DeleteConfigurationVersionByID implements Querier.DeleteConfigurationVersionByID.
-func (q *DBQuerier) DeleteConfigurationVersionByID(ctx context.Context, id string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteConfigurationVersionByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteConfigurationVersionByIDSQL, id)
 	if err != nil {
@@ -566,7 +567,7 @@ func (q *DBQuerier) DeleteConfigurationVersionByID(ctx context.Context, id strin
 }
 
 // DeleteConfigurationVersionByIDBatch implements Querier.DeleteConfigurationVersionByIDBatch.
-func (q *DBQuerier) DeleteConfigurationVersionByIDBatch(batch genericBatch, id string) {
+func (q *DBQuerier) DeleteConfigurationVersionByIDBatch(batch genericBatch, id pgtype.Text) {
 	batch.Queue(deleteConfigurationVersionByIDSQL, id)
 }
 

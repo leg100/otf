@@ -3,14 +3,12 @@ INSERT INTO users (
     user_id,
     created_at,
     updated_at,
-    username,
-    current_organization
+    username
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('CreatedAt'),
     pggen.arg('UpdatedAt'),
-    pggen.arg('Username'),
-    ''
+    pggen.arg('Username')
 );
 
 -- name: FindUsers :many

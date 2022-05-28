@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
     username                TEXT        NOT NULL,
     created_at              TIMESTAMPTZ NOT NULL,
     updated_at              TIMESTAMPTZ NOT NULL,
-    current_organization    TEXT        NOT NULL,
+    current_organization    TEXT,
                             PRIMARY KEY (user_id),
                             UNIQUE (username)
 );

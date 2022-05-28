@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -22,8 +23,8 @@ const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
 );`
 
 type InsertPlanStatusTimestampParams struct {
-	ID        string
-	Status    string
+	ID        pgtype.Text
+	Status    pgtype.Text
 	Timestamp time.Time
 }
 
@@ -59,10 +60,10 @@ RETURNING plan_id
 ;`
 
 // UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id string) (string, error) {
+func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
 	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdatePlanStatus: %w", err)
 	}
@@ -70,14 +71,14 @@ func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status string, id stri
 }
 
 // UpdatePlanStatusBatch implements Querier.UpdatePlanStatusBatch.
-func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status string, id string) {
+func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status pgtype.Text, id pgtype.Text) {
 	batch.Queue(updatePlanStatusSQL, status, id)
 }
 
 // UpdatePlanStatusScan implements Querier.UpdatePlanStatusScan.
-func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdatePlanStatusBatch row: %w", err)
 	}
@@ -90,7 +91,7 @@ WHERE run_id = $1
 ;`
 
 // GetPlanBinByRunID implements Querier.GetPlanBinByRunID.
-func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID string) ([]byte, error) {
+func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanBinByRunID")
 	row := q.conn.QueryRow(ctx, getPlanBinByRunIDSQL, runID)
 	item := []byte{}
@@ -101,7 +102,7 @@ func (q *DBQuerier) GetPlanBinByRunID(ctx context.Context, runID string) ([]byte
 }
 
 // GetPlanBinByRunIDBatch implements Querier.GetPlanBinByRunIDBatch.
-func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID string) {
+func (q *DBQuerier) GetPlanBinByRunIDBatch(batch genericBatch, runID pgtype.Text) {
 	batch.Queue(getPlanBinByRunIDSQL, runID)
 }
 
@@ -121,7 +122,7 @@ WHERE run_id = $1
 ;`
 
 // GetPlanJSONByRunID implements Querier.GetPlanJSONByRunID.
-func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID string) ([]byte, error) {
+func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID pgtype.Text) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "GetPlanJSONByRunID")
 	row := q.conn.QueryRow(ctx, getPlanJSONByRunIDSQL, runID)
 	item := []byte{}
@@ -132,7 +133,7 @@ func (q *DBQuerier) GetPlanJSONByRunID(ctx context.Context, runID string) ([]byt
 }
 
 // GetPlanJSONByRunIDBatch implements Querier.GetPlanJSONByRunIDBatch.
-func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID string) {
+func (q *DBQuerier) GetPlanJSONByRunIDBatch(batch genericBatch, runID pgtype.Text) {
 	batch.Queue(getPlanJSONByRunIDSQL, runID)
 }
 
@@ -152,7 +153,7 @@ WHERE plan_id = $2
 ;`
 
 // UpdateRunPlanBinByPlanID implements Querier.UpdateRunPlanBinByPlanID.
-func (q *DBQuerier) UpdateRunPlanBinByPlanID(ctx context.Context, planBin []byte, planID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateRunPlanBinByPlanID(ctx context.Context, planBin []byte, planID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlanBinByPlanID")
 	cmdTag, err := q.conn.Exec(ctx, updateRunPlanBinByPlanIDSQL, planBin, planID)
 	if err != nil {
@@ -162,7 +163,7 @@ func (q *DBQuerier) UpdateRunPlanBinByPlanID(ctx context.Context, planBin []byte
 }
 
 // UpdateRunPlanBinByPlanIDBatch implements Querier.UpdateRunPlanBinByPlanIDBatch.
-func (q *DBQuerier) UpdateRunPlanBinByPlanIDBatch(batch genericBatch, planBin []byte, planID string) {
+func (q *DBQuerier) UpdateRunPlanBinByPlanIDBatch(batch genericBatch, planBin []byte, planID pgtype.Text) {
 	batch.Queue(updateRunPlanBinByPlanIDSQL, planBin, planID)
 }
 
@@ -181,7 +182,7 @@ WHERE plan_id = $2
 ;`
 
 // UpdateRunPlanJSONByPlanID implements Querier.UpdateRunPlanJSONByPlanID.
-func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []byte, planID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []byte, planID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlanJSONByPlanID")
 	cmdTag, err := q.conn.Exec(ctx, updateRunPlanJSONByPlanIDSQL, planJson, planID)
 	if err != nil {
@@ -191,7 +192,7 @@ func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []by
 }
 
 // UpdateRunPlanJSONByPlanIDBatch implements Querier.UpdateRunPlanJSONByPlanIDBatch.
-func (q *DBQuerier) UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJson []byte, planID string) {
+func (q *DBQuerier) UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJson []byte, planID pgtype.Text) {
 	batch.Queue(updateRunPlanJSONByPlanIDSQL, planJson, planID)
 }
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -60,28 +61,28 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
 );`
 
 type InsertWorkspaceParams struct {
-	ID                         string
+	ID                         pgtype.Text
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
 	AllowDestroyPlan           bool
 	AutoApply                  bool
 	CanQueueDestroyPlan        bool
-	Description                string
-	Environment                string
-	ExecutionMode              string
+	Description                pgtype.Text
+	Environment                pgtype.Text
+	ExecutionMode              pgtype.Text
 	FileTriggersEnabled        bool
 	GlobalRemoteState          bool
-	MigrationEnvironment       string
-	Name                       string
+	MigrationEnvironment       pgtype.Text
+	Name                       pgtype.Text
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
-	SourceName                 string
-	SourceURL                  string
+	SourceName                 pgtype.Text
+	SourceURL                  pgtype.Text
 	StructuredRunOutputEnabled bool
-	TerraformVersion           string
+	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []string
-	WorkingDirectory           string
-	OrganizationID             string
+	WorkingDirectory           pgtype.Text
+	OrganizationID             pgtype.Text
 }
 
 // InsertWorkspace implements Querier.InsertWorkspace.
@@ -125,37 +126,37 @@ OFFSET $5
 
 type FindWorkspacesParams struct {
 	IncludeOrganization bool
-	Prefix              string
-	OrganizationName    string
+	Prefix              pgtype.Text
+	OrganizationName    pgtype.Text
 	Limit               int
 	Offset              int
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                string         `json:"workspace_id"`
+	WorkspaceID                pgtype.Text    `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
 	AutoApply                  bool           `json:"auto_apply"`
 	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                string         `json:"description"`
-	Environment                string         `json:"environment"`
-	ExecutionMode              string         `json:"execution_mode"`
+	Description                pgtype.Text    `json:"description"`
+	Environment                pgtype.Text    `json:"environment"`
+	ExecutionMode              pgtype.Text    `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       string         `json:"migration_environment"`
-	Name                       string         `json:"name"`
+	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
+	Name                       pgtype.Text    `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
 	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 string         `json:"source_name"`
-	SourceURL                  string         `json:"source_url"`
+	SourceName                 pgtype.Text    `json:"source_name"`
+	SourceURL                  pgtype.Text    `json:"source_url"`
 	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           string         `json:"terraform_version"`
+	TerraformVersion           pgtype.Text    `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           string         `json:"working_directory"`
-	OrganizationID             string         `json:"organization_id"`
-	LockRunID                  string         `json:"lock_run_id"`
-	LockUserID                 string         `json:"lock_user_id"`
+	WorkingDirectory           pgtype.Text    `json:"working_directory"`
+	OrganizationID             pgtype.Text    `json:"organization_id"`
+	LockRunID                  pgtype.Text    `json:"lock_run_id"`
+	LockUserID                 pgtype.Text    `json:"lock_user_id"`
 	UserLock                   *Users         `json:"user_lock"`
 	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
@@ -241,7 +242,7 @@ AND organizations.name = $2
 ;`
 
 // CountWorkspaces implements Querier.CountWorkspaces.
-func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix string, organizationName string) (*int, error) {
+func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationName pgtype.Text) (*int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "CountWorkspaces")
 	row := q.conn.QueryRow(ctx, countWorkspacesSQL, prefix, organizationName)
 	var item int
@@ -252,7 +253,7 @@ func (q *DBQuerier) CountWorkspaces(ctx context.Context, prefix string, organiza
 }
 
 // CountWorkspacesBatch implements Querier.CountWorkspacesBatch.
-func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, prefix string, organizationName string) {
+func (q *DBQuerier) CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationName pgtype.Text) {
 	batch.Queue(countWorkspacesSQL, prefix, organizationName)
 }
 
@@ -273,10 +274,10 @@ WHERE workspaces.name = $1
 AND organizations.name = $2;`
 
 // FindWorkspaceIDByName implements Querier.FindWorkspaceIDByName.
-func (q *DBQuerier) FindWorkspaceIDByName(ctx context.Context, name string, organizationName string) (string, error) {
+func (q *DBQuerier) FindWorkspaceIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceIDByName")
 	row := q.conn.QueryRow(ctx, findWorkspaceIDByNameSQL, name, organizationName)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceIDByName: %w", err)
 	}
@@ -284,14 +285,14 @@ func (q *DBQuerier) FindWorkspaceIDByName(ctx context.Context, name string, orga
 }
 
 // FindWorkspaceIDByNameBatch implements Querier.FindWorkspaceIDByNameBatch.
-func (q *DBQuerier) FindWorkspaceIDByNameBatch(batch genericBatch, name string, organizationName string) {
+func (q *DBQuerier) FindWorkspaceIDByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text) {
 	batch.Queue(findWorkspaceIDByNameSQL, name, organizationName)
 }
 
 // FindWorkspaceIDByNameScan implements Querier.FindWorkspaceIDByNameScan.
-func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceIDByNameBatch row: %w", err)
 	}
@@ -311,35 +312,35 @@ AND organizations.name = $3;`
 
 type FindWorkspaceByNameParams struct {
 	IncludeOrganization bool
-	Name                string
-	OrganizationName    string
+	Name                pgtype.Text
+	OrganizationName    pgtype.Text
 }
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                string         `json:"workspace_id"`
+	WorkspaceID                pgtype.Text    `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
 	AutoApply                  bool           `json:"auto_apply"`
 	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                string         `json:"description"`
-	Environment                string         `json:"environment"`
-	ExecutionMode              string         `json:"execution_mode"`
+	Description                pgtype.Text    `json:"description"`
+	Environment                pgtype.Text    `json:"environment"`
+	ExecutionMode              pgtype.Text    `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       string         `json:"migration_environment"`
-	Name                       string         `json:"name"`
+	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
+	Name                       pgtype.Text    `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
 	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 string         `json:"source_name"`
-	SourceURL                  string         `json:"source_url"`
+	SourceName                 pgtype.Text    `json:"source_name"`
+	SourceURL                  pgtype.Text    `json:"source_url"`
 	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           string         `json:"terraform_version"`
+	TerraformVersion           pgtype.Text    `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           string         `json:"working_directory"`
-	OrganizationID             string         `json:"organization_id"`
-	LockRunID                  string         `json:"lock_run_id"`
-	LockUserID                 string         `json:"lock_user_id"`
+	WorkingDirectory           pgtype.Text    `json:"working_directory"`
+	OrganizationID             pgtype.Text    `json:"organization_id"`
+	LockRunID                  pgtype.Text    `json:"lock_run_id"`
+	LockUserID                 pgtype.Text    `json:"lock_user_id"`
 	UserLock                   *Users         `json:"user_lock"`
 	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
@@ -408,37 +409,37 @@ AND organizations.name = $2
 FOR UPDATE OF w;`
 
 type FindWorkspaceByNameForUpdateRow struct {
-	WorkspaceID                string         `json:"workspace_id"`
+	WorkspaceID                pgtype.Text    `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
 	AutoApply                  bool           `json:"auto_apply"`
 	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                string         `json:"description"`
-	Environment                string         `json:"environment"`
-	ExecutionMode              string         `json:"execution_mode"`
+	Description                pgtype.Text    `json:"description"`
+	Environment                pgtype.Text    `json:"environment"`
+	ExecutionMode              pgtype.Text    `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       string         `json:"migration_environment"`
-	Name                       string         `json:"name"`
+	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
+	Name                       pgtype.Text    `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
 	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 string         `json:"source_name"`
-	SourceURL                  string         `json:"source_url"`
+	SourceName                 pgtype.Text    `json:"source_name"`
+	SourceURL                  pgtype.Text    `json:"source_url"`
 	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           string         `json:"terraform_version"`
+	TerraformVersion           pgtype.Text    `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           string         `json:"working_directory"`
-	OrganizationID             string         `json:"organization_id"`
-	LockRunID                  string         `json:"lock_run_id"`
-	LockUserID                 string         `json:"lock_user_id"`
+	WorkingDirectory           pgtype.Text    `json:"working_directory"`
+	OrganizationID             pgtype.Text    `json:"organization_id"`
+	LockRunID                  pgtype.Text    `json:"lock_run_id"`
+	LockUserID                 pgtype.Text    `json:"lock_user_id"`
 	UserLock                   *Users         `json:"user_lock"`
 	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
 }
 
 // FindWorkspaceByNameForUpdate implements Querier.FindWorkspaceByNameForUpdate.
-func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name string, organizationName string) (FindWorkspaceByNameForUpdateRow, error) {
+func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByNameForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameForUpdateSQL, name, organizationName)
 	var item FindWorkspaceByNameForUpdateRow
@@ -461,7 +462,7 @@ func (q *DBQuerier) FindWorkspaceByNameForUpdate(ctx context.Context, name strin
 }
 
 // FindWorkspaceByNameForUpdateBatch implements Querier.FindWorkspaceByNameForUpdateBatch.
-func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name string, organizationName string) {
+func (q *DBQuerier) FindWorkspaceByNameForUpdateBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text) {
 	batch.Queue(findWorkspaceByNameForUpdateSQL, name, organizationName)
 }
 
@@ -498,37 +499,37 @@ LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = $2;`
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                string         `json:"workspace_id"`
+	WorkspaceID                pgtype.Text    `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
 	AutoApply                  bool           `json:"auto_apply"`
 	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                string         `json:"description"`
-	Environment                string         `json:"environment"`
-	ExecutionMode              string         `json:"execution_mode"`
+	Description                pgtype.Text    `json:"description"`
+	Environment                pgtype.Text    `json:"environment"`
+	ExecutionMode              pgtype.Text    `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       string         `json:"migration_environment"`
-	Name                       string         `json:"name"`
+	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
+	Name                       pgtype.Text    `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
 	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 string         `json:"source_name"`
-	SourceURL                  string         `json:"source_url"`
+	SourceName                 pgtype.Text    `json:"source_name"`
+	SourceURL                  pgtype.Text    `json:"source_url"`
 	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           string         `json:"terraform_version"`
+	TerraformVersion           pgtype.Text    `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           string         `json:"working_directory"`
-	OrganizationID             string         `json:"organization_id"`
-	LockRunID                  string         `json:"lock_run_id"`
-	LockUserID                 string         `json:"lock_user_id"`
+	WorkingDirectory           pgtype.Text    `json:"working_directory"`
+	OrganizationID             pgtype.Text    `json:"organization_id"`
+	LockRunID                  pgtype.Text    `json:"lock_run_id"`
+	LockUserID                 pgtype.Text    `json:"lock_user_id"`
 	UserLock                   *Users         `json:"user_lock"`
 	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
 }
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
-func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, includeOrganization bool, id string) (FindWorkspaceByIDRow, error) {
+func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, includeOrganization bool, id pgtype.Text) (FindWorkspaceByIDRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByID")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDSQL, includeOrganization, id)
 	var item FindWorkspaceByIDRow
@@ -551,7 +552,7 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, includeOrganization b
 }
 
 // FindWorkspaceByIDBatch implements Querier.FindWorkspaceByIDBatch.
-func (q *DBQuerier) FindWorkspaceByIDBatch(batch genericBatch, includeOrganization bool, id string) {
+func (q *DBQuerier) FindWorkspaceByIDBatch(batch genericBatch, includeOrganization bool, id pgtype.Text) {
 	batch.Queue(findWorkspaceByIDSQL, includeOrganization, id)
 }
 
@@ -589,37 +590,37 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w;`
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                string         `json:"workspace_id"`
+	WorkspaceID                pgtype.Text    `json:"workspace_id"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	UpdatedAt                  time.Time      `json:"updated_at"`
 	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
 	AutoApply                  bool           `json:"auto_apply"`
 	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                string         `json:"description"`
-	Environment                string         `json:"environment"`
-	ExecutionMode              string         `json:"execution_mode"`
+	Description                pgtype.Text    `json:"description"`
+	Environment                pgtype.Text    `json:"environment"`
+	ExecutionMode              pgtype.Text    `json:"execution_mode"`
 	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       string         `json:"migration_environment"`
-	Name                       string         `json:"name"`
+	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
+	Name                       pgtype.Text    `json:"name"`
 	QueueAllRuns               bool           `json:"queue_all_runs"`
 	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 string         `json:"source_name"`
-	SourceURL                  string         `json:"source_url"`
+	SourceName                 pgtype.Text    `json:"source_name"`
+	SourceURL                  pgtype.Text    `json:"source_url"`
 	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           string         `json:"terraform_version"`
+	TerraformVersion           pgtype.Text    `json:"terraform_version"`
 	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           string         `json:"working_directory"`
-	OrganizationID             string         `json:"organization_id"`
-	LockRunID                  string         `json:"lock_run_id"`
-	LockUserID                 string         `json:"lock_user_id"`
+	WorkingDirectory           pgtype.Text    `json:"working_directory"`
+	OrganizationID             pgtype.Text    `json:"organization_id"`
+	LockRunID                  pgtype.Text    `json:"lock_run_id"`
+	LockUserID                 pgtype.Text    `json:"lock_user_id"`
 	UserLock                   *Users         `json:"user_lock"`
 	RunLock                    *Runs          `json:"run_lock"`
 	Organization               *Organizations `json:"organization"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
-func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (FindWorkspaceByIDForUpdateRow, error) {
+func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDForUpdateRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
 	var item FindWorkspaceByIDForUpdateRow
@@ -642,7 +643,7 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id string) (
 }
 
 // FindWorkspaceByIDForUpdateBatch implements Querier.FindWorkspaceByIDForUpdateBatch.
-func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id string) {
+func (q *DBQuerier) FindWorkspaceByIDForUpdateBatch(batch genericBatch, id pgtype.Text) {
 	batch.Queue(findWorkspaceByIDForUpdateSQL, id)
 }
 
@@ -686,24 +687,24 @@ RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
 	AllowDestroyPlan           bool
-	Description                string
-	ExecutionMode              string
-	Name                       string
+	Description                pgtype.Text
+	ExecutionMode              pgtype.Text
+	Name                       pgtype.Text
 	QueueAllRuns               bool
 	SpeculativeEnabled         bool
 	StructuredRunOutputEnabled bool
-	TerraformVersion           string
+	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []string
-	WorkingDirectory           string
+	WorkingDirectory           pgtype.Text
 	UpdatedAt                  time.Time
-	ID                         string
+	ID                         pgtype.Text
 }
 
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
-func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (string, error) {
+func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
 	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
 	}
@@ -716,9 +717,9 @@ func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWo
 }
 
 // UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.
-func (q *DBQuerier) UpdateWorkspaceByIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateWorkspaceByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateWorkspaceByIDBatch row: %w", err)
 	}
@@ -732,9 +733,9 @@ SET
 WHERE workspace_id = $3;`
 
 type UpdateWorkspaceLockByIDParams struct {
-	UserID      string
-	RunID       string
-	WorkspaceID string
+	UserID      pgtype.Text
+	RunID       pgtype.Text
+	WorkspaceID pgtype.Text
 }
 
 // UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.
@@ -766,7 +767,7 @@ FROM workspaces
 WHERE workspace_id = $1;`
 
 // DeleteWorkspaceByID implements Querier.DeleteWorkspaceByID.
-func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceByID")
 	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceByIDSQL, workspaceID)
 	if err != nil {
@@ -776,7 +777,7 @@ func (q *DBQuerier) DeleteWorkspaceByID(ctx context.Context, workspaceID string)
 }
 
 // DeleteWorkspaceByIDBatch implements Querier.DeleteWorkspaceByIDBatch.
-func (q *DBQuerier) DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID string) {
+func (q *DBQuerier) DeleteWorkspaceByIDBatch(batch genericBatch, workspaceID pgtype.Text) {
 	batch.Queue(deleteWorkspaceByIDSQL, workspaceID)
 }
 
@@ -797,7 +798,7 @@ AND workspaces.name = $1
 AND organizations.name = $2;`
 
 // DeleteWorkspaceByName implements Querier.DeleteWorkspaceByName.
-func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name string, organizationName string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceByName")
 	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceByNameSQL, name, organizationName)
 	if err != nil {
@@ -807,7 +808,7 @@ func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name string, orga
 }
 
 // DeleteWorkspaceByNameBatch implements Querier.DeleteWorkspaceByNameBatch.
-func (q *DBQuerier) DeleteWorkspaceByNameBatch(batch genericBatch, name string, organizationName string) {
+func (q *DBQuerier) DeleteWorkspaceByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text) {
 	batch.Queue(deleteWorkspaceByNameSQL, name, organizationName)
 }
 

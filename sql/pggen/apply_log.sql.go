@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -19,13 +20,13 @@ const insertApplyLogChunkSQL = `INSERT INTO apply_logs (
 RETURNING *;`
 
 type InsertApplyLogChunkRow struct {
-	ApplyID string `json:"apply_id"`
-	ChunkID int    `json:"chunk_id"`
-	Chunk   []byte `json:"chunk"`
+	ApplyID pgtype.Text `json:"apply_id"`
+	ChunkID int         `json:"chunk_id"`
+	Chunk   []byte      `json:"chunk"`
 }
 
 // InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
-func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID string, chunk []byte) (InsertApplyLogChunkRow, error) {
+func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (InsertApplyLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")
 	row := q.conn.QueryRow(ctx, insertApplyLogChunkSQL, applyID, chunk)
 	var item InsertApplyLogChunkRow
@@ -36,7 +37,7 @@ func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID string, chu
 }
 
 // InsertApplyLogChunkBatch implements Querier.InsertApplyLogChunkBatch.
-func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID string, chunk []byte) {
+func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.Text, chunk []byte) {
 	batch.Queue(insertApplyLogChunkSQL, applyID, chunk)
 }
 
@@ -64,7 +65,7 @@ GROUP BY apply_id
 type FindApplyLogChunksParams struct {
 	Offset  int
 	Limit   int
-	ApplyID string
+	ApplyID pgtype.Text
 }
 
 // FindApplyLogChunks implements Querier.FindApplyLogChunks.
