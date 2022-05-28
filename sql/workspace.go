@@ -143,6 +143,10 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions
 		return nil, databaseError(err)
 	}
 
+	if err := ws.Lock().Lock(opts.Requestor); err != nil {
+		return nil, err
+	}
+
 	switch l := locker.(type) {
 	case *otf.Run:
 		_, err := q.UpdateWorkspaceLockByID(ctx, pggen.UpdateWorkspaceLockByIDParams{
@@ -297,12 +301,15 @@ func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
 	return nil
 }
 
-func getWorkspaceID(ctx context.Context, q *pggen.DBQuerier, spec otf.WorkspaceSpec) (string, error) {
+func getWorkspaceID(ctx context.Context, q *pggen.DBQuerier, spec otf.WorkspaceSpec) (pgtype.Text, error) {
 	if spec.ID != nil {
-		return *spec.ID, nil
+		return pgtype.Text{String: *spec.ID, Status: pgtype.Present}, nil
 	}
 	if spec.Name != nil && spec.OrganizationName != nil {
-		return q.FindWorkspaceIDByName(ctx, *spec.Name, *spec.OrganizationName)
+		return q.FindWorkspaceIDByName(ctx,
+			pgtype.Text{String: *spec.Name, Status: pgtype.Null},
+			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Null},
+		)
 	}
 	return "", otf.ErrInvalidWorkspaceSpec
 }

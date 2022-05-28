@@ -30,12 +30,12 @@ type WorkspaceDBResult struct {
 	StructuredRunOutputEnabled bool                 `json:"structured_run_output_enabled"`
 	TerraformVersion           pgtype.Text          `json:"terraform_version"`
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text          `json:"working_directory"`
+	OrganizationID             pgtype.Text          `json:"organization_id"`
 	LockRunID                  pgtype.Text          `json:"lock_run_id"`
 	LockUserID                 pgtype.Text          `json:"lock_user_id"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
 	RunLock                    *pggen.Runs          `json:"run_lock"`
-	WorkingDirectory           pgtype.Text          `json:"working_directory"`
-	OrganizationID             pgtype.Text          `json:"organization_id"`
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
@@ -67,9 +67,9 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	if row.UserLock == nil && row.RunLock == nil {
 		ws.lock = &Unlocked{}
 	} else if row.UserLock != nil {
-		ws.lock = &User{id: row.UserLock.UserID, username: row.UserLock.Username}
+		ws.lock = &User{id: row.UserLock.UserID.String, username: row.UserLock.Username.String}
 	} else if row.RunLock != nil {
-		ws.lock = &Run{id: row.RunLock.RunID}
+		ws.lock = &Run{id: row.RunLock.RunID.String}
 	} else {
 		return nil, fmt.Errorf("workspace cannot be locked by both a run and a user")
 	}

@@ -61,6 +61,7 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
+func (ws *Workspace) Lock() WorkspaceLock              { return ws.lock }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
 func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
@@ -204,6 +205,7 @@ func (o WorkspaceUpdateOptions) Valid() error {
 }
 
 type WorkspaceLock interface {
+	// TODO: return bool to flag whether lock/unlock can proceed
 	Lock(Identity) error
 	Unlock(Identity, bool) error
 }
