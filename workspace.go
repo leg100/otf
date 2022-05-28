@@ -149,27 +149,6 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 	return nil
 }
 
-// WorkspaceCreateOptions represents the options for creating a new workspace.
-type WorkspaceCreateOptions struct {
-	AllowDestroyPlan           *bool
-	AutoApply                  *bool
-	Description                *string
-	ExecutionMode              *string
-	FileTriggersEnabled        *bool
-	GlobalRemoteState          *bool
-	MigrationEnvironment       *string
-	Name                       string
-	OrganizationName           string
-	QueueAllRuns               *bool
-	SpeculativeEnabled         *bool
-	SourceName                 *string
-	SourceURL                  *string
-	StructuredRunOutputEnabled *bool
-	TerraformVersion           *string
-	TriggerPrefixes            []string
-	WorkingDirectory           *string
-}
-
 // WorkspaceUpdateOptions represents the options for updating a workspace.
 type WorkspaceUpdateOptions struct {
 	AllowDestroyPlan           *bool
@@ -242,17 +221,6 @@ type WorkspaceListOptions struct {
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
-}
-
-func (o WorkspaceCreateOptions) Valid() error {
-	if !ValidStringID(&o.Name) {
-		return ErrInvalidName
-	}
-	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
-		return ErrInvalidTerraformVersion
-	}
-
-	return nil
 }
 
 // WorkspaceSpec is used for identifying an individual workspace. Either ID *or*

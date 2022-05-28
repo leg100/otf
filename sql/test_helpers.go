@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 
@@ -44,12 +45,20 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	return db
 }
 
-func newTestOrganization() *otf.Organization {
-	return otf.NewTestOrganization()
+func newTestOrganization(t *testing.T) *otf.Organization {
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String(uuid.NewString())})
+	require.NoError(t, err)
+	return org
 }
 
-func newTestWorkspace(org *otf.Organization) *otf.Workspace {
-	return otf.NewTestWorkspace(org)
+func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
+	orgID := org.ID()
+	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+		Name:           uuid.NewString(),
+		OrganizationID: &orgID,
+	})
+	require.NoError(t, err)
+	return ws
 }
 
 func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
@@ -82,7 +91,7 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org := newTestOrganization()
+	org := newTestOrganization(t)
 	err := db.OrganizationStore().Create(org)
 	require.NoError(t, err)
 
@@ -93,7 +102,7 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws := newTestWorkspace(org)
+	ws := newTestWorkspace(t, org)
 	err := db.WorkspaceStore().Create(ws)
 	require.NoError(t, err)
 

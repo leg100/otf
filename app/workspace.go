@@ -11,7 +11,7 @@ var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
 	db otf.WorkspaceStore
-	os otf.OrganizationService
+	f  otf.WorkspaceFactory
 	es otf.EventService
 
 	logr.Logger
@@ -21,22 +21,17 @@ func NewWorkspaceService(db otf.WorkspaceStore, logger logr.Logger, os otf.Organ
 	return &WorkspaceService{
 		db:     db,
 		es:     es,
-		os:     os,
+		f:      otf.WorkspaceFactory{OrganizationService: os},
 		Logger: logger,
 	}
 }
 
 func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if err := opts.Valid(); err != nil {
-		return nil, err
-	}
-
-	org, err := s.os.Get(ctx, opts.OrganizationName)
+	ws, err := s.f.NewWorkspace(ctx, opts)
 	if err != nil {
+		s.Error(err, "constructing workspace", "name", ws.Name())
 		return nil, err
 	}
-
-	ws := otf.NewWorkspace(opts, org)
 
 	if err := s.db.Create(ws); err != nil {
 		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name())
