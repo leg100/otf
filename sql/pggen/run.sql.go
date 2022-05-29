@@ -191,8 +191,8 @@ const findRunsSQL = `SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE runs.workspace_id LIKE ANY($3)
 AND runs.status LIKE ANY($4)
@@ -405,8 +405,8 @@ const findRunByIDSQL = `SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 WHERE runs.run_id = $3
 ;`
 
@@ -620,8 +620,8 @@ const findRunByIDForUpdateSQL = `SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 WHERE runs.run_id = $3
 FOR UPDATE
 ;`

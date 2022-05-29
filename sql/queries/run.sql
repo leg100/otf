@@ -102,8 +102,8 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE runs.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND runs.status LIKE ANY(pggen.arg('statuses'))
@@ -164,8 +164,8 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 WHERE runs.run_id = pggen.arg('run_id')
 ;
 
@@ -227,8 +227,8 @@ SELECT
         GROUP BY run_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN configuration_versions USING(workspace_id)
-JOIN workspaces USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE
 ;
