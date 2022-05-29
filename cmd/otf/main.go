@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	cmdutil "github.com/leg100/otf/cmd"
@@ -16,7 +15,7 @@ func main() {
 	cmdutil.CatchCtrlC(cancel)
 
 	if err := Run(ctx, os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }

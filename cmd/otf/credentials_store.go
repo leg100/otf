@@ -49,7 +49,7 @@ func (c CredentialsStore) Load(hostname string) (string, error) {
 
 	config, err := c.read()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("reading credentials config: %w", err)
 	}
 
 	tokenConfig, ok := config.Credentials[hostname]

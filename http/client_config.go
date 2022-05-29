@@ -73,7 +73,9 @@ func NewConfig(opts ...ConfigOption) (*Config, error) {
 func (config *Config) NewClient() (Client, error) {
 	// Override config with option args
 	for _, o := range config.options {
-		o(config)
+		if err := o(config); err != nil {
+			return nil, err
+		}
 	}
 	var err error
 	config.Address, err = SanitizeAddress(config.Address)
