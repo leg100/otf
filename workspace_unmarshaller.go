@@ -62,6 +62,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		terraformVersion:           row.TerraformVersion.String,
 		triggerPrefixes:            row.TriggerPrefixes,
 		workingDirectory:           row.WorkingDirectory.String,
+		organizationID:             row.OrganizationID.String,
 	}
 
 	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {
@@ -73,9 +74,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		if err != nil {
 			return nil, err
 		}
-		ws.Organization = org
-	} else {
-		ws.Organization = &Organization{id: row.OrganizationID.String}
+		ws.organization = org
 	}
 
 	return &ws, nil
@@ -139,7 +138,7 @@ func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 		terraformVersion:           typ.TerraformVersion.String,
 		triggerPrefixes:            typ.TriggerPrefixes,
 		workingDirectory:           typ.WorkingDirectory.String,
-		Organization:               &Organization{id: typ.OrganizationID.String},
+		organizationID:             typ.OrganizationID.String,
 	}
 
 	return &ws, nil
@@ -168,6 +167,7 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		terraformVersion:           w.TerraformVersion,
 		workingDirectory:           w.WorkingDirectory,
 		triggerPrefixes:            w.TriggerPrefixes,
+		organizationID:             w.Organization.ExternalID,
 	}
 
 	// The DTO only encodes whether lock is unlocked or locked, whereas our
@@ -175,10 +175,6 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 	// Therefore we ignore when DTO says lock is locked because we cannot
 	// determine what/who locked it, so we assume it is unlocked.
 	domain.lock = &Unlocked{}
-
-	if w.Organization != nil {
-		domain.Organization = UnmarshalOrganizationJSONAPI(w.Organization)
-	}
 
 	return &domain
 }

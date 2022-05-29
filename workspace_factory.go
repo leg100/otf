@@ -26,11 +26,13 @@ func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreat
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
 	}
+
+	// get organization id if only organization name provided
 	orgID, err := f.getOrganizationID(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	ws.Organization = &Organization{id: orgID}
+	ws.organizationID = orgID
 
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
@@ -108,8 +110,9 @@ type WorkspaceCreateOptions struct {
 	TerraformVersion           *string
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	OrganizationName           *string
-	OrganizationID             *string
+	// Either OrganizationName or OrganizationID must be provided
+	OrganizationName *string
+	OrganizationID   *string
 }
 
 func (o WorkspaceCreateOptions) Valid() error {

@@ -42,8 +42,8 @@ type Workspace struct {
 	terraformVersion           string
 	triggerPrefixes            []string
 	workingDirectory           string
-	// Workspace belongs to an organization
-	Organization *Organization
+	organizationID             string
+	organization               *Organization
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -52,23 +52,25 @@ func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
 func (ws *Workspace) String() string                   { return ws.id }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
+func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
 func (ws *Workspace) Environment() string              { return ws.environment }
 func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
+func (ws *Workspace) GetLock() WorkspaceLock           { return ws.lock }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
+func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
 func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
 func (ws *Workspace) SpeculativeEnabled() bool         { return ws.speculativeEnabled }
 func (ws *Workspace) StructuredRunOutputEnabled() bool { return ws.structuredRunOutputEnabled }
 func (ws *Workspace) TerraformVersion() string         { return ws.terraformVersion }
 func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
-func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
-func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
-func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
+func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
+func (ws *Workspace) Organization() *Organization      { return ws.organization }
 
 func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}
@@ -82,11 +84,6 @@ func (ws *Workspace) SpecName(org *Organization) WorkspaceSpec {
 func (ws *Workspace) Locked() bool {
 	_, ok := ws.lock.(*Unlocked)
 	return !ok
-}
-
-// GetLock retrieves the workspace lock
-func (ws *Workspace) GetLock() WorkspaceLock {
-	return ws.lock
 }
 
 // Lock the workspace with the given lock

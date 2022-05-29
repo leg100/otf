@@ -182,7 +182,7 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 // WorkspaceDTO converts a Workspace to a struct that can be marshalled into a
 // JSON-API object
 func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
-	obj := &dto.Workspace{
+	japi := &dto.Workspace{
 		ID: ws.ID(),
 		Actions: &dto.WorkspaceActions{
 			IsDestroyable: false,
@@ -223,12 +223,12 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
-
-	if ws.Organization != nil {
-		obj.Organization = OrganizationDTO(ws.Organization)
+	if ws.Organization() != nil {
+		japi.Organization = OrganizationDTO(ws.Organization())
+	} else {
+		japi.Organization = &dto.Organization{ExternalID: ws.OrganizationID()}
 	}
-
-	return obj
+	return japi
 }
 
 // WorkspaceListJSONAPIObject converts a WorkspaceList to

@@ -51,7 +51,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) error {
 		QueueAllRuns:               ws.QueueAllRuns(),
 		AutoApply:                  ws.AutoApply(),
 		WorkingDirectory:           pgtype.Text{String: ws.WorkingDirectory(), Status: pgtype.Present},
-		OrganizationID:             pgtype.Text{String: ws.Organization.ID(), Status: pgtype.Present},
+		OrganizationID:             pgtype.Text{String: ws.OrganizationID(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return databaseError(err)
