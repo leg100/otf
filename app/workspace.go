@@ -29,7 +29,7 @@ func NewWorkspaceService(db otf.WorkspaceStore, logger logr.Logger, os otf.Organ
 func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	ws, err := s.f.NewWorkspace(ctx, opts)
 	if err != nil {
-		s.Error(err, "constructing workspace", "name", ws.Name())
+		s.Error(err, "constructing workspace", "name", opts.Name)
 		return nil, err
 	}
 

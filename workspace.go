@@ -70,6 +70,14 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
 
+func (ws *Workspace) SpecID() WorkspaceSpec {
+	return WorkspaceSpec{ID: &ws.id}
+}
+
+func (ws *Workspace) SpecName(org *Organization) WorkspaceSpec {
+	return WorkspaceSpec{Name: &ws.name, OrganizationName: &org.name}
+}
+
 // Locked determines whether workspace is locked.
 func (ws *Workspace) Locked() bool {
 	_, ok := ws.lock.(*Unlocked)
