@@ -173,7 +173,7 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 	// The DTO only encodes whether lock is unlocked or locked, whereas our
 	// domain object has three states: unlocked, run locked or user locked.
 	// Therefore we ignore when DTO says lock is locked because we cannot
-	// determine what/who locked it, so we can assume it is unlocked.
+	// determine what/who locked it, so we assume it is unlocked.
 	domain.lock = &Unlocked{}
 
 	if w.Organization != nil {
