@@ -111,13 +111,17 @@ func TestRun_Get(t *testing.T) {
 
 func TestRun_List(t *testing.T) {
 	db := newTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+	ws1 := createTestWorkspace(t, db, org1)
+	ws2 := createTestWorkspace(t, db, org2)
+	cv1 := createTestConfigurationVersion(t, db, ws1)
+	cv2 := createTestConfigurationVersion(t, db, ws2)
 
-	run1 := createTestRun(t, db, ws, cv)
-	run2 := createTestRun(t, db, ws, cv)
-	run3 := createTestRun(t, db, ws, cv)
+	run1 := createTestRun(t, db, ws1, cv1)
+	run2 := createTestRun(t, db, ws1, cv1)
+	run3 := createTestRun(t, db, ws2, cv2)
+	run4 := createTestRun(t, db, ws2, cv2)
 
 	tests := []struct {
 		name string
@@ -125,38 +129,59 @@ func TestRun_List(t *testing.T) {
 		want func(*testing.T, *otf.RunList)
 	}{
 		{
-			name: "by workspace id",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID())},
+			name: "unfiltered",
+			opts: otf.RunListOptions{},
 			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 3, len(l.Items))
+				// may match runs in the db belonging to organizations outside
+				// of this test
+				assert.GreaterOrEqual(t, len(l.Items), 4)
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
 				assert.Contains(t, l.Items, run3)
+				assert.Contains(t, l.Items, run4)
+			},
+		},
+		{
+			name: "by organization name",
+			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name())},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 2, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
+			},
+		},
+		{
+			name: "by workspace id",
+			opts: otf.RunListOptions{WorkspaceID: otf.String(ws1.ID())},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 2, len(l.Items))
+				assert.Contains(t, l.Items, run1)
+				assert.Contains(t, l.Items, run2)
 			},
 		},
 		{
 			name: "by workspace name and organization",
-			opts: otf.RunListOptions{WorkspaceName: otf.String(ws.Name()), OrganizationName: otf.String(org.Name())},
+			opts: otf.RunListOptions{WorkspaceName: otf.String(ws1.Name()), OrganizationName: otf.String(org1.Name())},
 			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 3, len(l.Items))
+				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
-				assert.Contains(t, l.Items, run3)
 			},
 		},
 		{
-			name: "by statuses",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID()), Statuses: []otf.RunStatus{otf.RunPending}},
+			name: "by pending status",
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
 			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 3, len(l.Items))
+				assert.Equal(t, 4, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
 				assert.Contains(t, l.Items, run3)
+				assert.Contains(t, l.Items, run4)
 			},
 		},
 		{
 			name: "by statuses - no match",
-			opts: otf.RunListOptions{WorkspaceID: otf.String(ws.ID()), Statuses: []otf.RunStatus{otf.RunPlanned}},
+			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},

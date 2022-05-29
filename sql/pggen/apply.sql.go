@@ -273,10 +273,10 @@ type Querier interface {
 	// FindRunsScan scans the result of an executed FindRunsBatch query.
 	FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error)
 
-	CountRuns(ctx context.Context, workspaceIds []string, statuses []string) (*int, error)
+	CountRuns(ctx context.Context, params CountRunsParams) (*int, error)
 	// CountRunsBatch enqueues a CountRuns query into batch to be executed
 	// later by the batch.
-	CountRunsBatch(batch genericBatch, workspaceIds []string, statuses []string)
+	CountRunsBatch(batch genericBatch, params CountRunsParams)
 	// CountRunsScan scans the result of an executed CountRunsBatch query.
 	CountRunsScan(results pgx.BatchResults) (*int, error)
 
