@@ -86,7 +86,7 @@ func TestOTF(t *testing.T) {
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err)
 		t.Log(string(out))
-		// TODO: require output match
+		require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 	})
 
 	t.Run("lock workspace", func(t *testing.T) {

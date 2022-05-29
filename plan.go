@@ -60,7 +60,7 @@ func (p *Plan) Do(env Environment) error {
 	if err := p.run.setupEnv(env); err != nil {
 		return err
 	}
-	if err := env.RunCLI("terraform", "plan", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+	if err := p.runTerraformPlan(env); err != nil {
 		return err
 	}
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
@@ -122,6 +122,18 @@ func (p *Plan) updateStatus(status PlanStatus) {
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
+}
+
+// runTerraformPlan runs a terraform plan
+func (p *Plan) runTerraformPlan(env Environment) error {
+	args := []string{
+		"plan",
+	}
+	if p.run.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, "-out="+PlanFilename)
+	return env.RunCLI("terraform", args...)
 }
 
 // PlanStatus represents a plan state.

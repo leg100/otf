@@ -57,20 +57,6 @@ func (a *Apply) Do(env Environment) error {
 	return nil
 }
 
-// runTerraformApply runs a terraform apply
-func (a *Apply) runTerraformApply(env Environment) error {
-	cmd := strings.Builder{}
-	cmd.WriteString("terraform apply")
-	if a.run.isDestroy {
-		cmd.WriteString(" -destroy")
-	}
-	cmd.WriteRune(' ')
-	cmd.WriteString(PlanFilename)
-	cmd.WriteString(" | tee ")
-	cmd.WriteString(ApplyOutputFilename)
-	return env.RunCLI("sh", "-c", cmd.String())
-}
-
 // Start updates the run to reflect its apply having started
 func (a *Apply) Start() error {
 	if a.run.Status() == RunApplying {
@@ -97,6 +83,20 @@ func (a *Apply) updateStatus(status ApplyStatus) {
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
+}
+
+// runTerraformApply runs a terraform apply
+func (a *Apply) runTerraformApply(env Environment) error {
+	cmd := strings.Builder{}
+	cmd.WriteString("terraform apply")
+	if a.run.isDestroy {
+		cmd.WriteString(" -destroy")
+	}
+	cmd.WriteRune(' ')
+	cmd.WriteString(PlanFilename)
+	cmd.WriteString(" | tee ")
+	cmd.WriteString(ApplyOutputFilename)
+	return env.RunCLI("sh", "-c", cmd.String())
 }
 
 // ApplyStatus represents an apply state.
