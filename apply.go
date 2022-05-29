@@ -2,6 +2,7 @@ package otf
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -47,13 +48,27 @@ func (a *Apply) Do(env Environment) error {
 	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
 		return err
 	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
+	if err := a.runTerraformApply(env); err != nil {
 		return err
 	}
 	if err := env.RunFunc(a.run.uploadState); err != nil {
 		return err
 	}
 	return nil
+}
+
+// runTerraformApply runs a terraform apply
+func (a *Apply) runTerraformApply(env Environment) error {
+	cmd := strings.Builder{}
+	cmd.WriteString("terraform apply")
+	if a.run.isDestroy {
+		cmd.WriteString(" -destroy")
+	}
+	cmd.WriteRune(' ')
+	cmd.WriteString(PlanFilename)
+	cmd.WriteString(" | tee ")
+	cmd.WriteString(ApplyOutputFilename)
+	return env.RunCLI("sh", "-c", cmd.String())
 }
 
 // Start updates the run to reflect its apply having started
