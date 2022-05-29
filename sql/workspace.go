@@ -215,7 +215,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 			pgtype.Text{String: *spec.ID, Status: pgtype.Present},
 		)
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
@@ -225,7 +225,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 			IncludeOrganization: includeOrganization(spec.Include),
 		})
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else {

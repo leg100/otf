@@ -83,14 +83,14 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	// Get run ID first
 	runID, err := getRunID(ctx, q, opts)
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 	// select ...for update
 	result, err := q.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
 		RunID: runID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 	run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 	if err != nil {
@@ -257,7 +257,7 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 	// Get run ID first
 	runID, err := getRunID(ctx, q, opts)
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 	// ...now get full run
 	result, err := q.FindRunByID(ctx, pggen.FindRunByIDParams{
@@ -266,7 +266,7 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 		IncludeWorkspace:            includeWorkspace(opts.Include),
 	})
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 }
