@@ -80,6 +80,15 @@ func TestOTF(t *testing.T) {
 		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 	})
 
+	t.Run("terraform destroy", func(t *testing.T) {
+		chdir(t, root)
+		cmd := exec.Command("terraform", "destroy", "-no-color", "-auto-approve")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		t.Log(string(out))
+		require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
+	})
+
 	t.Run("lock workspace", func(t *testing.T) {
 		cmd := exec.Command(client, "workspaces", "lock", "dev", "--organization", organization)
 		out, err := cmd.CombinedOutput()
