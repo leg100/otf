@@ -129,7 +129,7 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
 	} else if spec.OrganizationName != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/lock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
@@ -153,7 +153,7 @@ func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.W
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
 	} else if spec.OrganizationName != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/unlock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
