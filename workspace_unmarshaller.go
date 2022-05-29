@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -20,7 +21,6 @@ type WorkspaceDBResult struct {
 	ExecutionMode              pgtype.Text          `json:"execution_mode"`
 	FileTriggersEnabled        bool                 `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool                 `json:"global_remote_state"`
-	Locked                     bool                 `json:"locked"`
 	MigrationEnvironment       pgtype.Text          `json:"migration_environment"`
 	Name                       pgtype.Text          `json:"name"`
 	QueueAllRuns               bool                 `json:"queue_all_runs"`
@@ -32,6 +32,10 @@ type WorkspaceDBResult struct {
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text          `json:"working_directory"`
 	OrganizationID             pgtype.Text          `json:"organization_id"`
+	LockRunID                  pgtype.Text          `json:"lock_run_id"`
+	LockUserID                 pgtype.Text          `json:"lock_user_id"`
+	UserLock                   *pggen.Users         `json:"user_lock"`
+	RunLock                    *pggen.Runs          `json:"run_lock"`
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
@@ -48,7 +52,6 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		executionMode:              row.ExecutionMode.String,
 		fileTriggersEnabled:        row.FileTriggersEnabled,
 		globalRemoteState:          row.GlobalRemoteState,
-		locked:                     row.Locked,
 		migrationEnvironment:       row.MigrationEnvironment.String,
 		name:                       row.Name.String,
 		queueAllRuns:               row.QueueAllRuns,
@@ -59,6 +62,10 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		terraformVersion:           row.TerraformVersion.String,
 		triggerPrefixes:            row.TriggerPrefixes,
 		workingDirectory:           row.WorkingDirectory.String,
+	}
+
+	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {
+		return nil, err
 	}
 
 	if row.Organization != nil {
@@ -74,20 +81,54 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	return &ws, nil
 }
 
+func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDParams, error) {
+	params := pggen.UpdateWorkspaceLockByIDParams{
+		WorkspaceID: pgtype.Text{String: ws.ID(), Status: pgtype.Present},
+	}
+	switch lock := ws.GetLock().(type) {
+	case *Unlocked:
+		params.RunID = pgtype.Text{Status: pgtype.Null}
+		params.UserID = pgtype.Text{Status: pgtype.Null}
+	case *Run:
+		params.RunID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
+		params.UserID = pgtype.Text{Status: pgtype.Null}
+	case *User:
+		params.UserID = pgtype.Text{String: lock.ID(), Status: pgtype.Present}
+		params.RunID = pgtype.Text{Status: pgtype.Null}
+	default:
+		return params, ErrWorkspaceInvalidLock
+	}
+	return params, nil
+}
+
+func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceDBResult) error {
+	if row.UserLock == nil && row.RunLock == nil {
+		dst.lock = &Unlocked{}
+	} else if row.UserLock != nil {
+		dst.lock = &User{id: row.UserLock.UserID.String, username: row.UserLock.Username.String}
+	} else if row.RunLock != nil {
+		dst.lock = &Run{id: row.RunLock.RunID.String}
+	} else {
+		return fmt.Errorf("workspace cannot be locked by both a run and a user")
+	}
+	return nil
+}
+
 func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
 	ws := Workspace{
-		id:                         typ.WorkspaceID.String,
-		createdAt:                  typ.CreatedAt.Local(),
-		updatedAt:                  typ.UpdatedAt.Local(),
-		allowDestroyPlan:           typ.AllowDestroyPlan,
-		autoApply:                  typ.AutoApply,
-		canQueueDestroyPlan:        typ.CanQueueDestroyPlan,
-		description:                typ.Description.String,
-		environment:                typ.Environment.String,
-		executionMode:              typ.ExecutionMode.String,
-		fileTriggersEnabled:        typ.FileTriggersEnabled,
-		globalRemoteState:          typ.GlobalRemoteState,
-		locked:                     typ.Locked,
+		id:                  typ.WorkspaceID.String,
+		createdAt:           typ.CreatedAt.Local(),
+		updatedAt:           typ.UpdatedAt.Local(),
+		allowDestroyPlan:    typ.AllowDestroyPlan,
+		autoApply:           typ.AutoApply,
+		canQueueDestroyPlan: typ.CanQueueDestroyPlan,
+		description:         typ.Description.String,
+		environment:         typ.Environment.String,
+		executionMode:       typ.ExecutionMode.String,
+		fileTriggersEnabled: typ.FileTriggersEnabled,
+		globalRemoteState:   typ.GlobalRemoteState,
+		// Assume workspace is unlocked
+		lock:                       &Unlocked{},
 		migrationEnvironment:       typ.MigrationEnvironment.String,
 		name:                       typ.Name.String,
 		queueAllRuns:               typ.QueueAllRuns,
@@ -117,7 +158,6 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		executionMode:              w.ExecutionMode,
 		fileTriggersEnabled:        w.FileTriggersEnabled,
 		globalRemoteState:          w.GlobalRemoteState,
-		locked:                     w.Locked,
 		migrationEnvironment:       w.MigrationEnvironment,
 		name:                       w.Name,
 		queueAllRuns:               w.QueueAllRuns,
@@ -129,6 +169,12 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		workingDirectory:           w.WorkingDirectory,
 		triggerPrefixes:            w.TriggerPrefixes,
 	}
+
+	// The DTO only encodes whether lock is unlocked or locked, whereas our
+	// domain object has three states: unlocked, run locked or user locked.
+	// Therefore we ignore when DTO says lock is locked because we cannot
+	// determine what/who locked it, so we assume it is unlocked.
+	domain.lock = &Unlocked{}
 
 	if w.Organization != nil {
 		domain.Organization = UnmarshalOrganizationJSONAPI(w.Organization)

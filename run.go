@@ -279,6 +279,28 @@ func (r *Run) ApplyStatusTimestamp(status ApplyStatus) (time.Time, error) {
 	return time.Time{}, ErrStatusTimestampNotFound
 }
 
+// CanLock determines whether requestor can replace run lock
+func (r *Run) CanLock(requestor Identity) error {
+	if _, ok := requestor.(*Run); ok {
+		// run can replace lock held by different run
+		return nil
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// CanUnlock determines whether requestor can unlock run lock
+func (r *Run) CanUnlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user force unlock always granted
+		return nil
+	}
+	if _, ok := requestor.(*Run); ok {
+		// runs can unlock other run locks
+		return nil
+	}
+	return ErrWorkspaceLockedByDifferentUser
+}
+
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) setupEnv(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {

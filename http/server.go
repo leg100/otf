@@ -136,6 +136,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.CreateWorkspace).Methods("POST")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace).Methods("PATCH")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace).Methods("DELETE")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace).Methods("POST")
 	sub.HandleFunc("/workspaces/{id}", s.UpdateWorkspace).Methods("PATCH")
 	sub.HandleFunc("/workspaces/{id}", s.GetWorkspace).Methods("GET")
 	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspace).Methods("DELETE")

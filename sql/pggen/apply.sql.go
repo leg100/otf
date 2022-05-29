@@ -231,10 +231,10 @@ type Querier interface {
 	// UpdateRunPlanBinByPlanIDScan scans the result of an executed UpdateRunPlanBinByPlanIDBatch query.
 	UpdateRunPlanBinByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []byte, planID pgtype.Text) (pgconn.CommandTag, error)
+	UpdateRunPlanJSONByPlanID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgconn.CommandTag, error)
 	// UpdateRunPlanJSONByPlanIDBatch enqueues a UpdateRunPlanJSONByPlanID query into batch to be executed
 	// later by the batch.
-	UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJson []byte, planID pgtype.Text)
+	UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text)
 	// UpdateRunPlanJSONByPlanIDScan scans the result of an executed UpdateRunPlanJSONByPlanIDBatch query.
 	UpdateRunPlanJSONByPlanIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
@@ -569,15 +569,6 @@ type Querier interface {
 	// FindWorkspaceByNameScan scans the result of an executed FindWorkspaceByNameBatch query.
 	FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorkspaceByNameRow, error)
 
-	FindWorkspaceByNameForUpdate(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameForUpdateRow, error)
-	// FindWorkspaceByNameForUpdateBatch enqueues a FindWorkspaceByNameForUpdate query into batch to be executed
-	// later by the batch.
-	FindWorkspaceByNameForUpdateBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindWorkspaceByNameForUpdateScan scans the result of an executed FindWorkspaceByNameForUpdateBatch query.
-	FindWorkspaceByNameForUpdateScan(results pgx.BatchResults) (FindWorkspaceByNameForUpdateRow, error)
-
-	// FindWorkspaceByID finds a workspace by id.
-	//
 	FindWorkspaceByID(ctx context.Context, includeOrganization bool, id pgtype.Text) (FindWorkspaceByIDRow, error)
 	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -598,6 +589,13 @@ type Querier interface {
 	UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams)
 	// UpdateWorkspaceByIDScan scans the result of an executed UpdateWorkspaceByIDBatch query.
 	UpdateWorkspaceByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	UpdateWorkspaceLockByID(ctx context.Context, params UpdateWorkspaceLockByIDParams) (pgconn.CommandTag, error)
+	// UpdateWorkspaceLockByIDBatch enqueues a UpdateWorkspaceLockByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceLockByIDBatch(batch genericBatch, params UpdateWorkspaceLockByIDParams)
+	// UpdateWorkspaceLockByIDScan scans the result of an executed UpdateWorkspaceLockByIDBatch query.
+	UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
@@ -925,9 +923,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspaceByNameSQL, findWorkspaceByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByName': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWorkspaceByNameForUpdateSQL, findWorkspaceByNameForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspaceByNameForUpdate': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findWorkspaceByIDSQL, findWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceByID': %w", err)
 	}
@@ -936,6 +931,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateWorkspaceByIDSQL, updateWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceLockByIDSQL, updateWorkspaceLockByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceLockByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
@@ -996,6 +994,33 @@ type RunStatusTimestamps struct {
 	Timestamp time.Time   `json:"timestamp"`
 }
 
+// Runs represents the Postgres composite type "runs".
+type Runs struct {
+	RunID                  pgtype.Text `json:"run_id"`
+	PlanID                 pgtype.Text `json:"plan_id"`
+	ApplyID                pgtype.Text `json:"apply_id"`
+	CreatedAt              time.Time   `json:"created_at"`
+	IsDestroy              bool        `json:"is_destroy"`
+	PositionInQueue        int         `json:"position_in_queue"`
+	Refresh                bool        `json:"refresh"`
+	RefreshOnly            bool        `json:"refresh_only"`
+	ReplaceAddrs           []string    `json:"replace_addrs"`
+	TargetAddrs            []string    `json:"target_addrs"`
+	PlanBin                []byte      `json:"plan_bin"`
+	PlanJSON               []byte      `json:"plan_json"`
+	PlannedAdditions       int         `json:"planned_additions"`
+	PlannedChanges         int         `json:"planned_changes"`
+	PlannedDestructions    int         `json:"planned_destructions"`
+	AppliedAdditions       int         `json:"applied_additions"`
+	AppliedChanges         int         `json:"applied_changes"`
+	AppliedDestructions    int         `json:"applied_destructions"`
+	Status                 pgtype.Text `json:"status"`
+	PlanStatus             pgtype.Text `json:"plan_status"`
+	ApplyStatus            pgtype.Text `json:"apply_status"`
+	WorkspaceID            pgtype.Text `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
+}
+
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
 	Token     pgtype.Text `json:"token"`
@@ -1025,6 +1050,15 @@ type Tokens struct {
 	UserID      pgtype.Text `json:"user_id"`
 }
 
+// Users represents the Postgres composite type "users".
+type Users struct {
+	UserID              pgtype.Text `json:"user_id"`
+	Username            pgtype.Text `json:"username"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
+	CurrentOrganization pgtype.Text `json:"current_organization"`
+}
+
 // Workspaces represents the Postgres composite type "workspaces".
 type Workspaces struct {
 	WorkspaceID                pgtype.Text `json:"workspace_id"`
@@ -1038,7 +1072,6 @@ type Workspaces struct {
 	ExecutionMode              pgtype.Text `json:"execution_mode"`
 	FileTriggersEnabled        bool        `json:"file_triggers_enabled"`
 	GlobalRemoteState          bool        `json:"global_remote_state"`
-	Locked                     bool        `json:"locked"`
 	MigrationEnvironment       pgtype.Text `json:"migration_environment"`
 	Name                       pgtype.Text `json:"name"`
 	QueueAllRuns               bool        `json:"queue_all_runs"`
@@ -1050,6 +1083,8 @@ type Workspaces struct {
 	TriggerPrefixes            []string    `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text `json:"working_directory"`
 	OrganizationID             pgtype.Text `json:"organization_id"`
+	LockRunID                  pgtype.Text `json:"lock_run_id"`
+	LockUserID                 pgtype.Text `json:"lock_user_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1212,6 +1247,37 @@ func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
 	)
 }
 
+// newRuns creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'runs'.
+func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"runs",
+		compositeField{"run_id", "text", &pgtype.Text{}},
+		compositeField{"plan_id", "text", &pgtype.Text{}},
+		compositeField{"apply_id", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
+		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
+		compositeField{"refresh", "bool", &pgtype.Bool{}},
+		compositeField{"refresh_only", "bool", &pgtype.Bool{}},
+		compositeField{"replace_addrs", "_text", &pgtype.TextArray{}},
+		compositeField{"target_addrs", "_text", &pgtype.TextArray{}},
+		compositeField{"plan_bin", "bytea", &pgtype.Bytea{}},
+		compositeField{"plan_json", "bytea", &pgtype.Bytea{}},
+		compositeField{"planned_additions", "int4", &pgtype.Int4{}},
+		compositeField{"planned_changes", "int4", &pgtype.Int4{}},
+		compositeField{"planned_destructions", "int4", &pgtype.Int4{}},
+		compositeField{"applied_additions", "int4", &pgtype.Int4{}},
+		compositeField{"applied_changes", "int4", &pgtype.Int4{}},
+		compositeField{"applied_destructions", "int4", &pgtype.Int4{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"plan_status", "text", &pgtype.Text{}},
+		compositeField{"apply_status", "text", &pgtype.Text{}},
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
+		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newSessions creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'sessions'.
 func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
@@ -1253,6 +1319,19 @@ func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
 	)
 }
 
+// newUsers creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'users'.
+func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"users",
+		compositeField{"user_id", "text", &pgtype.Text{}},
+		compositeField{"username", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"current_organization", "text", &pgtype.Text{}},
+	)
+}
+
 // newWorkspaces creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'workspaces'.
 func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
@@ -1269,7 +1348,6 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"execution_mode", "text", &pgtype.Text{}},
 		compositeField{"file_triggers_enabled", "bool", &pgtype.Bool{}},
 		compositeField{"global_remote_state", "bool", &pgtype.Bool{}},
-		compositeField{"locked", "bool", &pgtype.Bool{}},
 		compositeField{"migration_environment", "text", &pgtype.Text{}},
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"queue_all_runs", "bool", &pgtype.Bool{}},
@@ -1281,6 +1359,8 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"trigger_prefixes", "_text", &pgtype.TextArray{}},
 		compositeField{"working_directory", "text", &pgtype.Text{}},
 		compositeField{"organization_id", "text", &pgtype.Text{}},
+		compositeField{"lock_run_id", "text", &pgtype.Text{}},
+		compositeField{"lock_user_id", "text", &pgtype.Text{}},
 	)
 }
 

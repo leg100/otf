@@ -13,6 +13,10 @@ const (
 	FlashSessionKey    = "flash"
 )
 
+var (
+	AnonymousUser = User{id: "user-anonymous", username: "anonymous"}
+)
+
 // User represents an oTF user account.
 type User struct {
 	// ID uniquely identifies users
@@ -95,6 +99,28 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 	// Add session to destination user
 	to.Sessions = append(to.Sessions, session)
 	return nil
+}
+
+// CanLock always returns an error because nothing can replace a user lock
+func (u *User) CanLock(requestor Identity) error {
+	return ErrWorkspaceAlreadyLocked
+}
+
+// CanUnlock decides whether to permits requestor to unlock a user lock
+func (u *User) CanUnlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user
+		return nil
+	}
+	if user, ok := requestor.(*User); ok {
+		if u.ID() == user.ID() {
+			// only same user can unlock
+			return nil
+		}
+		return ErrWorkspaceLockedByDifferentUser
+	}
+	// any other entity cannot unlock
+	return ErrWorkspaceUnlockDenied
 }
 
 // UserService provides methods to interact with user accounts and their

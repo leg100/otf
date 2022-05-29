@@ -88,6 +88,7 @@ sql:
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \
-		--acronym sha
+		--acronym sha \
+		--acronym json
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen

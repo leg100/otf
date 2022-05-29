@@ -60,14 +60,14 @@ func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpe
 	})
 }
 
-func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
 }
 
-func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),

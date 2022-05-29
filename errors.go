@@ -29,15 +29,12 @@ var (
 	// not a semantic version string (major.minor.patch).
 	ErrInvalidTerraformVersion = errors.New("invalid terraform version")
 
-	// ErrWorkspaceLocked is returned when trying to lock a locked workspace.
-	ErrWorkspaceLocked = errors.New("workspace already locked")
-
-	// ErrWorkspaceNotLocked is returned when trying to unlock
-	// a unlocked workspace.
-	ErrWorkspaceNotLocked = errors.New("workspace already unlocked")
-
 	// ErrInvalidWorkspaceID is returned when the workspace ID is invalid.
 	ErrInvalidWorkspaceID = errors.New("invalid value for workspace ID")
+
+	// ErrWorkspaceInvalidSpec is returned when a workspace specification is
+	// invalid.
+	ErrWorkspaceInvalidSpec = errors.New("invalid workspace specification")
 
 	// ErrInvalidWorkspaceValue is returned when workspace value is invalid.
 	ErrInvalidWorkspaceValue = errors.New("invalid value for workspace")

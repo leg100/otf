@@ -41,6 +41,33 @@ type RunDBResult struct {
 	ApplyStatusTimestamps  []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
 }
 
+// RunDBType represents the Postgres composite type "runs".
+type RunDBType struct {
+	RunID                  string    `json:"run_id"`
+	PlanID                 string    `json:"plan_id"`
+	ApplyID                string    `json:"apply_id"`
+	CreatedAt              time.Time `json:"created_at"`
+	IsDestroy              bool      `json:"is_destroy"`
+	PositionInQueue        int       `json:"position_in_queue"`
+	Refresh                bool      `json:"refresh"`
+	RefreshOnly            bool      `json:"refresh_only"`
+	ReplaceAddrs           []string  `json:"replace_addrs"`
+	TargetAddrs            []string  `json:"target_addrs"`
+	PlanBin                []byte    `json:"plan_bin"`
+	PlanJSON               []byte    `json:"plan_json"`
+	PlannedAdditions       int       `json:"planned_additions"`
+	PlannedChanges         int       `json:"planned_changes"`
+	PlannedDestructions    int       `json:"planned_destructions"`
+	AppliedAdditions       int       `json:"applied_additions"`
+	AppliedChanges         int       `json:"applied_changes"`
+	AppliedDestructions    int       `json:"applied_destructions"`
+	Status                 string    `json:"status"`
+	PlanStatus             string    `json:"plan_status"`
+	ApplyStatus            string    `json:"apply_status"`
+	WorkspaceID            string    `json:"workspace_id"`
+	ConfigurationVersionID string    `json:"configuration_version_id"`
+}
+
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
 		id:               result.RunID.String,

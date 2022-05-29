@@ -15,9 +15,7 @@ const (
 )
 
 var (
-	ErrWorkspaceAlreadyLocked   = errors.New("workspace already locked")
-	ErrWorkspaceAlreadyUnlocked = errors.New("workspace already unlocked")
-	ErrInvalidWorkspaceSpec     = errors.New("invalid workspace spec options")
+	ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -33,7 +31,7 @@ type Workspace struct {
 	executionMode              string
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
-	locked                     bool
+	lock                       WorkspaceLock
 	migrationEnvironment       string
 	name                       string
 	queueAllRuns               bool
@@ -60,7 +58,6 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
-func (ws *Workspace) Locked() bool                     { return ws.locked }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
 func (ws *Workspace) SourceURL() string                { return ws.sourceURL }
@@ -73,15 +70,32 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.Organization.ID() }
 
-// ToggleLock toggles the workspace lock.
-func (ws *Workspace) ToggleLock(lock bool) error {
-	if lock && ws.locked {
-		return ErrWorkspaceAlreadyLocked
+// Locked determines whether workspace is locked.
+func (ws *Workspace) Locked() bool {
+	_, ok := ws.lock.(*Unlocked)
+	return !ok
+}
+
+// GetLock retrieves the workspace lock
+func (ws *Workspace) GetLock() WorkspaceLock {
+	return ws.lock
+}
+
+// Lock the workspace with the given lock
+func (ws *Workspace) Lock(lock WorkspaceLock) error {
+	if err := ws.lock.CanLock(lock); err != nil {
+		return err
 	}
-	if !lock && !ws.locked {
-		return ErrWorkspaceAlreadyUnlocked
+	ws.lock = lock
+	return nil
+}
+
+// Unlock the workspace using the given identity.
+func (ws *Workspace) Unlock(iden Identity, force bool) error {
+	if err := ws.lock.CanUnlock(iden, force); err != nil {
+		return err
 	}
-	ws.locked = lock
+	ws.lock = &Unlocked{}
 	return nil
 }
 
@@ -181,6 +195,18 @@ func (o WorkspaceUpdateOptions) Valid() error {
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
+	// The lock requesting to lock the workspace
+	Requestor WorkspaceLock
+}
+
+// WorkspaceUnlockOptions represents the options for unlocking a workspace.
+type WorkspaceUnlockOptions struct {
+	// Specifies the reason for locking the workspace.
+	Reason *string `jsonapi:"attr,reason,omitempty"`
+	// The identity requesting to unlock the workspace.
+	Requestor Identity
+	// Force unlock of workspace
+	Force bool
 }
 
 // WorkspaceList represents a list of Workspaces.
@@ -195,7 +221,7 @@ type WorkspaceService interface {
 	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 
@@ -204,6 +230,8 @@ type WorkspaceStore interface {
 	Get(spec WorkspaceSpec) (*Workspace, error)
 	List(opts WorkspaceListOptions) (*WorkspaceList, error)
 	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
+	Lock(spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	Delete(spec WorkspaceSpec) error
 }
 

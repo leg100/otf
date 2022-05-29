@@ -182,9 +182,9 @@ WHERE plan_id = $2
 ;`
 
 // UpdateRunPlanJSONByPlanID implements Querier.UpdateRunPlanJSONByPlanID.
-func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []byte, planID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunPlanJSONByPlanID")
-	cmdTag, err := q.conn.Exec(ctx, updateRunPlanJSONByPlanIDSQL, planJson, planID)
+	cmdTag, err := q.conn.Exec(ctx, updateRunPlanJSONByPlanIDSQL, planJSON, planID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query UpdateRunPlanJSONByPlanID: %w", err)
 	}
@@ -192,8 +192,8 @@ func (q *DBQuerier) UpdateRunPlanJSONByPlanID(ctx context.Context, planJson []by
 }
 
 // UpdateRunPlanJSONByPlanIDBatch implements Querier.UpdateRunPlanJSONByPlanIDBatch.
-func (q *DBQuerier) UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJson []byte, planID pgtype.Text) {
-	batch.Queue(updateRunPlanJSONByPlanIDSQL, planJson, planID)
+func (q *DBQuerier) UpdateRunPlanJSONByPlanIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text) {
+	batch.Queue(updateRunPlanJSONByPlanIDSQL, planJSON, planID)
 }
 
 // UpdateRunPlanJSONByPlanIDScan implements Querier.UpdateRunPlanJSONByPlanIDScan.

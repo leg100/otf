@@ -67,6 +67,14 @@ type DB interface {
 	TokenStore() TokenStore
 }
 
+// Identity is an identifiable oTF entity.
+type Identity interface {
+	// Human friendly identification of the entity.
+	String() string
+	// Uniquely identifies the entity.
+	ID() string
+}
+
 func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }

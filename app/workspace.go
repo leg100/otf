@@ -34,11 +34,11 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 	}
 
 	if err := s.db.Create(ws); err != nil {
-		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name())
+		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization.Name())
 		return nil, err
 	}
 
-	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name())
+	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization.Name())
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 
@@ -104,10 +104,8 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	return nil
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) error {
-		return ws.ToggleLock(true)
-	})
+func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	ws, err := s.db.Lock(spec, opts)
 	if err != nil {
 		s.Error(err, "locking workspace", spec.LogFields()...)
 		return nil, err
@@ -118,10 +116,8 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ ot
 	return ws, nil
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) error {
-		return ws.ToggleLock(false)
-	})
+func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	ws, err := s.db.Unlock(spec, opts)
 	if err != nil {
 		s.Error(err, "unlocking workspace", spec.LogFields()...)
 		return nil, err
