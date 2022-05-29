@@ -61,8 +61,10 @@ func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
 	return ws
 }
 
-func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return otf.NewConfigurationVersionFromDefaults(ws)
+func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace) *otf.ConfigurationVersion {
+	cv, err := otf.NewConfigurationVersion(ws.ID(), otf.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
+	return cv
 }
 
 type newTestSessionOption func(*otf.Session)
@@ -87,7 +89,7 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	return otf.NewRunFromDefaults(cv, ws)
+	return otf.NewRun(cv, ws, otf.RunCreateOptions{})
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
@@ -113,7 +115,7 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cv := newTestConfigurationVersion(ws)
+	cv := newTestConfigurationVersion(t, ws)
 	err := db.ConfigurationVersionStore().Create(cv)
 	require.NoError(t, err)
 

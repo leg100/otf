@@ -14,7 +14,7 @@ func TestConfigurationVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(ws))
+	err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(t, ws))
 	require.NoError(t, err)
 }
 

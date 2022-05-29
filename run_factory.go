@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"testing"
 )
 
 // RunFactory is a factory for constructing Run objects.
@@ -17,26 +18,12 @@ func (f *RunFactory) New(opts RunCreateOptions) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	cv, err := f.getConfigurationVersion(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	run := NewRunFromDefaults(cv, ws)
-	run.replaceAddrs = opts.ReplaceAddrs
-	run.targetAddrs = opts.TargetAddrs
-	if opts.IsDestroy != nil {
-		run.isDestroy = *opts.IsDestroy
-	}
-	if opts.Message != nil {
-		run.message = *opts.Message
-	}
-	if opts.Refresh != nil {
-		run.refresh = *opts.Refresh
-	}
-
-	return run, nil
+	return NewRun(cv, ws, opts), nil
 }
 
 func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*ConfigurationVersion, error) {
@@ -47,8 +34,8 @@ func (f *RunFactory) getConfigurationVersion(opts RunCreateOptions) (*Configurat
 	return f.ConfigurationVersionService.Get(*opts.ConfigurationVersionID)
 }
 
-// NewRunFromDefaults creates a new run with defaults.
-func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
+// NewRun creates a new run with defaults.
+func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run {
 	run := Run{
 		id:        NewID("run"),
 		createdAt: CurrentTimestamp(),
@@ -66,42 +53,28 @@ func NewRunFromDefaults(cv *ConfigurationVersion, ws *Workspace) *Run {
 		// immediately enqueue plans for speculative runs
 		run.updateStatus(RunPlanQueued)
 	}
+	// apply options
+	run.replaceAddrs = opts.ReplaceAddrs
+	run.targetAddrs = opts.TargetAddrs
+	if opts.IsDestroy != nil {
+		run.isDestroy = *opts.IsDestroy
+	}
+	if opts.Message != nil {
+		run.message = *opts.Message
+	}
+	if opts.Refresh != nil {
+		run.refresh = *opts.Refresh
+	}
 	return &run
 }
 
-type TestRunOption func(*Run)
-
-func TestRunStatus(status RunStatus) TestRunOption {
-	return func(r *Run) {
-		r.status = status
+// NewTestRun creates a new run. Expressly for testing purposes
+func NewTestRun(t *testing.T, id, workspaceID string, opts TestRunCreateOptions) *Run {
+	ws := Workspace{id: workspaceID}
+	cv := ConfigurationVersion{id: "cv-123", speculative: opts.Speculative}
+	run := NewRun(&cv, &ws, RunCreateOptions{})
+	if opts.Status != RunStatus("") {
+		run.updateStatus(opts.Status)
 	}
-}
-
-func TestRunWorkspaceID(id string) TestRunOption {
-	return func(r *Run) {
-		r.Workspace = &Workspace{id: id}
-	}
-}
-
-func TestRunSpeculative() TestRunOption {
-	return func(r *Run) {
-		r.speculative = true
-	}
-}
-
-// NewTestRun creates a new run expressly for testing purposes
-func NewTestRun(id string, opts ...TestRunOption) *Run {
-	run := Run{
-		id:                   id,
-		refresh:              DefaultRefresh,
-		status:               RunPending,
-		ConfigurationVersion: &ConfigurationVersion{},
-	}
-	for _, o := range opts {
-		o(&run)
-	}
-	run.Plan = newPlan(&run)
-	run.Apply = newApply(&run)
-	run.setJob()
-	return &run
+	return run
 }

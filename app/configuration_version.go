@@ -14,22 +14,18 @@ type ConfigurationVersionService struct {
 	db    otf.ConfigurationVersionStore
 	cache otf.Cache
 	logr.Logger
-	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, cache otf.Cache) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, cache otf.Cache) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		db:     db,
 		cache:  cache,
 		Logger: logger,
-		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
-			WorkspaceService: wss,
-		},
 	}
 }
 
 func (s ConfigurationVersionService) Create(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	cv, err := s.NewConfigurationVersion(workspaceID, opts)
+	cv, err := otf.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		s.Error(err, "constructing configuration version", "id", cv.ID())
 		return nil, err

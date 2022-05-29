@@ -157,3 +157,26 @@ type ConfigurationVersionListOptions struct {
 
 	ListOptions
 }
+
+// NewConfigurationVersion creates a ConfigurationVersion object from scratch
+func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error) {
+	cv := ConfigurationVersion{
+		id:            NewID("cv"),
+		createdAt:     CurrentTimestamp(),
+		autoQueueRuns: DefaultAutoQueueRuns,
+		status:        ConfigurationPending,
+		source:        DefaultConfigurationSource,
+	}
+
+	if opts.AutoQueueRuns != nil {
+		cv.autoQueueRuns = *opts.AutoQueueRuns
+	}
+
+	if opts.Speculative != nil {
+		cv.speculative = *opts.Speculative
+	}
+
+	cv.Workspace = &Workspace{id: workspaceID}
+
+	return &cv, nil
+}

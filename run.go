@@ -463,6 +463,12 @@ type RunCreateOptions struct {
 	ReplaceAddrs           []string
 }
 
+// TestRunCreateOptions is for testing purposes only.
+type TestRunCreateOptions struct {
+	Speculative bool
+	Status      RunStatus
+}
+
 // RunApplyOptions represents the options for applying a run.
 type RunApplyOptions struct {
 	// An optional comment about the run.

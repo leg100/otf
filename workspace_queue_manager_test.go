@@ -10,15 +10,15 @@ import (
 )
 
 func TestWorkspaceQueueManager_Seed(t *testing.T) {
-	ws1speculative1 := NewTestRun("ws1-spec-1", TestRunWorkspaceID("ws1"), TestRunSpeculative())
-	ws1pending1 := NewTestRun("ws1-pending-1", TestRunWorkspaceID("ws1"))
-	ws1pending2 := NewTestRun("ws1-pending-2", TestRunWorkspaceID("ws1"))
-	ws1pending3 := NewTestRun("ws1-pending-3", TestRunWorkspaceID("ws1"))
+	ws1speculative1 := NewTestRun(t, "ws1-spec-1", "ws1", TestRunCreateOptions{Speculative: true})
+	ws1pending1 := NewTestRun(t, "ws1-pending-1", "ws1", TestRunCreateOptions{})
+	ws1pending2 := NewTestRun(t, "ws1-pending-2", "ws1", TestRunCreateOptions{})
+	ws1pending3 := NewTestRun(t, "ws1-pending-3", "ws1", TestRunCreateOptions{})
 
-	ws2planQueued1 := NewTestRun("ws1-plan-queued1", TestRunWorkspaceID("ws2"), TestRunStatus(RunPlanQueued))
-	ws2pending1 := NewTestRun("ws2-pending-1", TestRunWorkspaceID("ws2"))
-	ws2speculative1 := NewTestRun("ws2-spec-1", TestRunWorkspaceID("ws2"), TestRunSpeculative())
-	ws2pending2 := NewTestRun("ws2-pending-2", TestRunWorkspaceID("ws2"))
+	ws2planQueued1 := NewTestRun(t, "ws1-plan-queued1", "ws2", TestRunCreateOptions{Status: RunPlanQueued})
+	ws2pending1 := NewTestRun(t, "ws2-pending-1", "ws2", TestRunCreateOptions{})
+	ws2speculative1 := NewTestRun(t, "ws2-spec-1", "ws2", TestRunCreateOptions{Speculative: true})
+	ws2pending2 := NewTestRun(t, "ws2-pending-2", "ws2", TestRunCreateOptions{})
 
 	// order matters, with oldest run first
 	rs := newFakeRunService(
@@ -41,10 +41,10 @@ func TestWorkspaceQueueManager_Seed(t *testing.T) {
 }
 
 func TestWorkspaceQueueManager_Refresh(t *testing.T) {
-	ws1speculative1 := NewTestRun("ws1-spec-1", TestRunWorkspaceID("ws1"), TestRunSpeculative())
-	ws1planQueued1 := NewTestRun("ws1-plan-queued1", TestRunWorkspaceID("ws1"), TestRunStatus(RunPlanQueued))
-	ws1pending1 := NewTestRun("ws1-pending-1", TestRunWorkspaceID("ws1"))
-	ws1done1 := NewTestRun("ws1-done-1", TestRunWorkspaceID("ws1"), TestRunStatus(RunPlannedAndFinished))
+	ws1speculative1 := NewTestRun(t, "ws1-spec-1", "ws1", TestRunCreateOptions{Speculative: true})
+	ws1planQueued1 := NewTestRun(t, "ws1-plan-queued1", "ws1", TestRunCreateOptions{Status: RunPlanQueued})
+	ws1pending1 := NewTestRun(t, "ws1-pending-1", "ws1", TestRunCreateOptions{})
+	ws1done1 := NewTestRun(t, "ws1-done-1", "ws1", TestRunCreateOptions{Status: RunPlannedAndFinished})
 
 	tests := []struct {
 		name string
