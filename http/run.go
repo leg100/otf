@@ -53,7 +53,16 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
-	var opts otf.RunListOptions
+	s.listRuns(w, r, otf.RunListOptions{})
+}
+
+func (s *Server) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
+	s.listRuns(w, r, otf.RunListOptions{
+		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
+	})
+}
+
+func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return

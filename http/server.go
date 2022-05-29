@@ -164,6 +164,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	sub.HandleFunc("/runs/{id}/actions/cancel", s.CancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/force-cancel", s.ForceCancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/plan/json-output", s.GetJSONPlanByRunID).Methods("GET")
+	sub.HandleFunc("/organizations/{organization_name}/runs/queue", s.GetRunsQueue).Methods("GET")
 
 	// Plan routes
 	sub.HandleFunc("/plans/{id}", s.GetPlan).Methods("GET")

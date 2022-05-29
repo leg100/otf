@@ -550,10 +550,10 @@ type RunListOptions struct {
 	Statuses []RunStatus
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`
-	// Filter by organization and workspace name. Mutually exclusive with
-	// WorkspaceID.
+	// Filter by organization name
 	OrganizationName *string `schema:"organization_name"`
-	WorkspaceName    *string `schema:"workspace_name"`
+	// Filter by workspace name
+	WorkspaceName *string `schema:"workspace_name"`
 }
 
 // LogFields provides fields for logging
@@ -561,8 +561,11 @@ func (opts RunListOptions) LogFields() (fields []interface{}) {
 	if opts.WorkspaceID != nil {
 		fields = append(fields, "workspace_id", *opts.WorkspaceID)
 	}
-	if opts.WorkspaceName != nil && opts.OrganizationName != nil {
-		fields = append(fields, "name", *opts.WorkspaceName, "organization", *opts.OrganizationName)
+	if opts.WorkspaceName != nil {
+		fields = append(fields, "name", *opts.WorkspaceName)
+	}
+	if opts.OrganizationName != nil {
+		fields = append(fields, "organization", *opts.OrganizationName)
 	}
 	if len(opts.Statuses) > 0 {
 		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))

@@ -191,40 +191,38 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 	batch := &pgx.Batch{}
 	ctx := context.Background()
 
-	var workspaceID pgtype.Text
-	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-		wid, err := q.FindWorkspaceIDByName(ctx,
-			pgtype.Text{String: *opts.WorkspaceName, Status: pgtype.Present},
-			pgtype.Text{String: *opts.OrganizationName, Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-		workspaceID = wid
-	} else if opts.WorkspaceID != nil {
-		workspaceID = pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present}
-	} else {
-		// Match any workspace ID
-		workspaceID = pgtype.Text{String: "%", Status: pgtype.Present}
+	organizationName := "%"
+	if opts.OrganizationName != nil {
+		organizationName = *opts.OrganizationName
 	}
-
-	var statuses []string
+	workspaceName := "%"
+	if opts.WorkspaceName != nil {
+		workspaceName = *opts.WorkspaceName
+	}
+	workspaceID := "%"
+	if opts.WorkspaceID != nil {
+		workspaceID = *opts.WorkspaceID
+	}
+	statuses := []string{"%"}
 	if len(opts.Statuses) > 0 {
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
-	} else {
-		// Match any status
-		statuses = []string{"%"}
 	}
-
 	q.FindRunsBatch(batch, pggen.FindRunsParams{
-		WorkspaceIds:                []string{workspaceID.String},
+		OrganizationNames:           []string{organizationName},
+		WorkspaceNames:              []string{workspaceName},
+		WorkspaceIds:                []string{workspaceID},
 		Statuses:                    statuses,
 		Limit:                       opts.GetLimit(),
 		Offset:                      opts.GetOffset(),
 		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
 		IncludeWorkspace:            includeWorkspace(opts.Include),
 	})
-	q.CountRunsBatch(batch, []string{workspaceID.String}, statuses)
+	q.CountRunsBatch(batch, pggen.CountRunsParams{
+		OrganizationNames: []string{organizationName},
+		WorkspaceNames:    []string{workspaceName},
+		WorkspaceIds:      []string{workspaceID},
+		Statuses:          statuses,
+	})
 	results := db.Pool.SendBatch(ctx, batch)
 	defer results.Close()
 
