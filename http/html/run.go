@@ -24,8 +24,7 @@ type RunController struct {
 
 	*templateDataFactory
 
-	// flash db
-	*flashStack
+	*flashStore
 }
 
 func (c *RunController) addRoutes(router *mux.Router) {

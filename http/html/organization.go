@@ -20,8 +20,7 @@ type OrganizationController struct {
 
 	*templateDataFactory
 
-	// flash db
-	*flashStack
+	*flashStore
 }
 
 func (c *OrganizationController) addRoutes(router *mux.Router) {

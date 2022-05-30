@@ -25,15 +25,14 @@ type templateDataFactory struct {
 	// provide access to routes
 	router *mux.Router
 
-	// flash messages stack
-	flashes *flashStack
+	*flashStore
 }
 
 func (f *templateDataFactory) newTemplateData(r *http.Request, content interface{}) templateData {
 	return templateData{
 		Content:     content,
 		router:      &router{f.router},
-		flashPopper: f.flashes.popFunc(r),
+		flashPopper: f.popFunc(r),
 		request:     r,
 		Version:     otf.Version,
 	}

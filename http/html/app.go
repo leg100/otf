@@ -36,7 +36,7 @@ type Application struct {
 	// wrapper around mux router
 	*router
 
-	*flashStack
+	*flashStore
 }
 
 // AddRoutes adds routes for the html web app.
@@ -59,7 +59,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		ActiveUserService: &ActiveUserService{services.UserService()},
 	}
 
-	flashStack := newFlashStack()
+	fstore := newFlashStore()
 
 	app := &Application{
 		Application:  services,
@@ -69,12 +69,12 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		templateDataFactory: &templateDataFactory{
-			sessions: &sessions,
-			router:   muxrouter,
-			flashes:  flashStack,
+			sessions:   &sessions,
+			router:     muxrouter,
+			flashStore: fstore,
 		},
 		router:     &router{Router: muxrouter},
-		flashStack: flashStack,
+		flashStore: fstore,
 	}
 
 	app.addRoutes(muxrouter)
@@ -138,7 +138,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		flashStack:          app.flashStack,
+		flashStore:          app.flashStore,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
 	(&WorkspaceController{
@@ -146,7 +146,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		flashStack:          app.flashStack,
+		flashStore:          app.flashStore,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 
 	(&RunController{
@@ -157,6 +157,6 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		flashStack:          app.flashStack,
+		flashStore:          app.flashStore,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
 }

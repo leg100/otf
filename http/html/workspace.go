@@ -18,8 +18,7 @@ type WorkspaceController struct {
 
 	*templateDataFactory
 
-	// flash db
-	*flashStack
+	*flashStore
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
