@@ -26,9 +26,8 @@ func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
 	}
 }
 
-func (db WorkspaceDB) Create(ws *otf.Workspace) error {
+func (db WorkspaceDB) Create(ctx context.Context, ws *otf.Workspace) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
 	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         pgtype.Text{String: ws.ID(), Status: pgtype.Present},
 		CreatedAt:                  ws.CreatedAt(),
@@ -59,8 +58,7 @@ func (db WorkspaceDB) Create(ws *otf.Workspace) error {
 	return nil
 }
 
-func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	ctx := context.Background()
+func (db WorkspaceDB) Update(ctx context.Context, spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -98,8 +96,7 @@ func (db WorkspaceDB) Update(spec otf.WorkspaceSpec, fn func(*otf.Workspace) err
 }
 
 // Lock the specified workspace.
-func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	ctx := context.Background()
+func (db WorkspaceDB) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -131,8 +128,7 @@ func (db WorkspaceDB) Lock(spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions
 // Unlock the specified workspace; the caller has the opportunity to check the
 // current locker passed into the provided callback. If an error is returned the
 // unlock will not go ahead.
-func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	ctx := context.Background()
+func (db WorkspaceDB) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -161,10 +157,9 @@ func (db WorkspaceDB) Unlock(spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOpt
 	return ws, tx.Commit(ctx)
 }
 
-func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (db WorkspaceDB) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
 
 	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
 		OrganizationName:    pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
@@ -205,8 +200,7 @@ func (db WorkspaceDB) List(opts otf.WorkspaceListOptions) (*otf.WorkspaceList, e
 	}, nil
 }
 
-func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	ctx := context.Background()
+func (db WorkspaceDB) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	q := pggen.NewQuerier(db.Pool)
 
 	if spec.ID != nil {
@@ -234,8 +228,7 @@ func (db WorkspaceDB) Get(spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 }
 
 // Delete deletes a specific workspace, along with its child records (runs etc).
-func (db WorkspaceDB) Delete(spec otf.WorkspaceSpec) error {
-	ctx := context.Background()
+func (db WorkspaceDB) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
 	q := pggen.NewQuerier(db.Pool)
 
 	var result pgconn.CommandTag

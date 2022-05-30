@@ -26,9 +26,7 @@ func NewStateVersionDB(conn *pgxpool.Pool) *StateVersionDB {
 }
 
 // Create persists a StateVersion to the DB.
-func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
-	ctx := context.Background()
-
+func (s StateVersionDB) Create(ctx context.Context, workspaceID string, sv *otf.StateVersion) error {
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -66,7 +64,7 @@ func (s StateVersionDB) Create(workspaceID string, sv *otf.StateVersion) error {
 	return tx.Commit(ctx)
 }
 
-func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionDB) List(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	if opts.Workspace == nil {
 		return nil, fmt.Errorf("missing required option: workspace")
 	}
@@ -76,7 +74,6 @@ func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersio
 
 	q := pggen.NewQuerier(s.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
 
 	q.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
 		WorkspaceName:    pgtype.Text{String: *opts.Workspace, Status: pgtype.Present},
@@ -116,8 +113,7 @@ func (s StateVersionDB) List(opts otf.StateVersionListOptions) (*otf.StateVersio
 	}, nil
 }
 
-func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
-	ctx := context.Background()
+func (s StateVersionDB) Get(ctx context.Context, opts otf.StateVersionGetOptions) (*otf.StateVersion, error) {
 	q := pggen.NewQuerier(s.Pool)
 
 	if opts.ID != nil {
@@ -139,16 +135,14 @@ func (s StateVersionDB) Get(opts otf.StateVersionGetOptions) (*otf.StateVersion,
 	}
 }
 
-func (s StateVersionDB) GetState(id string) ([]byte, error) {
-	ctx := context.Background()
+func (s StateVersionDB) GetState(ctx context.Context, id string) ([]byte, error) {
 	q := pggen.NewQuerier(s.Pool)
 
 	return q.FindStateVersionStateByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 }
 
 // Delete deletes a state version from the DB
-func (s StateVersionDB) Delete(id string) error {
-	ctx := context.Background()
+func (s StateVersionDB) Delete(ctx context.Context, id string) error {
 	q := pggen.NewQuerier(s.Pool)
 
 	result, err := q.DeleteStateVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})

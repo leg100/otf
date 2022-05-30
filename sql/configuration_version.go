@@ -25,9 +25,7 @@ func NewConfigurationVersionDB(conn *pgxpool.Pool) *ConfigurationVersionDB {
 	}
 }
 
-func (db ConfigurationVersionDB) Create(cv *otf.ConfigurationVersion) error {
-	ctx := context.Background()
-
+func (db ConfigurationVersionDB) Create(ctx context.Context, cv *otf.ConfigurationVersion) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -88,11 +86,9 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 	return tx.Commit(ctx)
 }
 
-func (db ConfigurationVersionDB) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (db ConfigurationVersionDB) List(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
-
 	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: pgtype.Text{String: workspaceID, Status: pgtype.Present},
 		Limit:       opts.GetLimit(),
@@ -127,8 +123,7 @@ func (db ConfigurationVersionDB) List(workspaceID string, opts otf.Configuration
 	}, nil
 }
 
-func (db ConfigurationVersionDB) Get(opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	ctx := context.Background()
+func (db ConfigurationVersionDB) Get(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	q := pggen.NewQuerier(db.Pool)
 
 	if opts.ID != nil {
@@ -161,10 +156,8 @@ func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]by
 }
 
 // Delete deletes a configuration version from the DB
-func (db ConfigurationVersionDB) Delete(id string) error {
+func (db ConfigurationVersionDB) Delete(ctx context.Context, id string) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	result, err := q.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err

@@ -15,7 +15,7 @@ import (
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.ApplyService().Get(vars["id"])
+	obj, err := s.ApplyService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,7 @@ func TestRunFactory(t *testing.T) {
 				WorkspaceService:            &fakeRunFactoryWorkspaceService{ws: &tt.ws},
 				ConfigurationVersionService: &fakeRunFactoryConfigurationVersionService{cv: &tt.cv},
 			}
-			run, err := f.New(tt.opts)
+			run, err := f.New(context.Background(), tt.opts)
 			tt.want(t, run, err)
 		})
 	}

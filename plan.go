@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -140,7 +141,7 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 type PlanStatus string
 
 type PlanService interface {
-	Get(id string) (*Plan, error)
+	Get(ctx context.Context, id string) (*Plan, error)
 
 	JobService
 	ChunkStore

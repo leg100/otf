@@ -325,7 +325,7 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.ConfigurationVersionService().Download(r.ConfigurationVersion.ID())
+	cv, err := env.ConfigurationVersionService().Download(ctx, r.ConfigurationVersion.ID())
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -339,13 +339,13 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.StateVersionService().Current(r.Workspace.ID())
+	state, err := env.StateVersionService().Current(ctx, r.Workspace.ID())
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
-	statefile, err := env.StateVersionService().Download(state.ID())
+	statefile, err := env.StateVersionService().Download(ctx, state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
@@ -398,7 +398,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	_, err = env.StateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
+	_, err = env.StateVersionService().Create(ctx, r.Workspace.ID(), StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(f)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
 		Lineage: &state.Lineage,
@@ -497,17 +497,17 @@ type RunDiscardOptions struct {
 
 // RunStore implementations persist Run objects.
 type RunStore interface {
-	Create(run *Run) error
-	Get(opts RunGetOptions) (*Run, error)
-	SetPlanFile(id string, file []byte, format PlanFormat) error
-	GetPlanFile(id string, format PlanFormat) ([]byte, error)
-	List(opts RunListOptions) (*RunList, error)
+	Create(ctx context.Context, run *Run) error
+	Get(ctx context.Context, opts RunGetOptions) (*Run, error)
+	SetPlanFile(ctx context.Context, id string, file []byte, format PlanFormat) error
+	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
+	List(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
-	UpdateStatus(opts RunGetOptions, fn func(*Run) error) (*Run, error)
-	CreatePlanReport(planID string, report ResourceReport) error
-	CreateApplyReport(applyID string, report ResourceReport) error
-	Delete(id string) error
+	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	CreatePlanReport(ctx context.Context, planID string, report ResourceReport) error
+	CreateApplyReport(ctx context.Context, applyID string, report ResourceReport) error
+	Delete(ctx context.Context, id string) error
 }
 
 // RunList represents a list of runs.
