@@ -146,6 +146,8 @@ func (app *Application) authRoutes(router *mux.Router) {
 	(&RunController{
 		RunService:          app.RunService(),
 		PlanService:         app.PlanService(),
+		ApplyService:        app.ApplyService(),
+		WorkspaceService:    app.WorkspaceService(),
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,

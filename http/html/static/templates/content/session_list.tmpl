@@ -4,6 +4,10 @@
 
 {{ define "sidebar" }}{{ template "me_sidebar" . }}{{ end }}
 
+{{ define "container-header" }}profile / sessions{{ end }}
+
+{{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
+
 {{ define "content" }}
   <table>
     <thead>

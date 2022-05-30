@@ -27,8 +27,8 @@ type sessions struct {
 
 // Load provides middleware that loads and attaches the User to the current
 // request's context. It looks for a cookie containing a token on the request
-// and if found uses it retrieve and attach the User. Otherwise a new session is
-// created for the anonymous user.
+// and if found uses it to retrieve and attach the User. Otherwise a new session
+// is created for the anonymous user.
 func (s *sessions) Load(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// the user to attach to the request ctx
@@ -88,7 +88,7 @@ func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
 
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
-	user := s.GetUserFromContext(ctx)
+	user := GetUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
@@ -98,10 +98,10 @@ func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
-	return s.GetUserFromContext(ctx).IsAuthenticated()
+	return GetUserFromContext(ctx).IsAuthenticated()
 }
 
-func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
+func GetUserFromContext(ctx context.Context) *ActiveUser {
 	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
 	if !ok {
 		panic("no user in context")
@@ -110,7 +110,7 @@ func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
 }
 
 func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
-	return s.GetUserFromContext(ctx).Session
+	return GetUserFromContext(ctx).Session
 }
 
 // PopFlash retrieves a flash message from the current session. The message is

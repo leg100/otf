@@ -2,8 +2,9 @@
 
 {{ define "title" }}Workspaces{{ end }}
 
+{{ define "container-header" }}workspaces{{ end }}
 
-{{ define "container-button" }}
+{{ define "container-header-actions" }}
   <form action="{{ .Relative "newWorkspace" }}" method="GET">
     <button type="submit">New Workspace</button>
   </form>
@@ -12,11 +13,11 @@
 {{ define "content" }}
   <table class="table">
     <thead>
-    <tr>
-      <th scope="col">Name</th>
-    </tr>
-  </thead>
-  <tbody>
+      <tr>
+        <th scope="col">Name</th>
+      </tr>
+    </thead>
+    <tbody>
     {{ range .Content.List.Items }}
       <tr>
           <td><a href="{{ $.Relative "getWorkspace" "workspace_name" .Name }}">{{ .Name }}</a></td>

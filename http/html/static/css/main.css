@@ -1,14 +1,71 @@
-body {
-  font-family: 'Courier New', Courier, monospace;
-  margin: 0;
+* {
+  outline: 0px solid #000;
 }
 
-h2 {
-  margin: 0em;
+body {
+  font-family: Roboto,Helvetica Neue,sans-serif;
+
+  /*
+   * two vertically stacked items straddling full height of viewport:
+   * - div.body-container
+   * - footer
+   */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/*
+ * Container for both header and main elements.
+ */
+.body-container {
+  width: 100%;
+  max-width: 76em;
+
+  /* Center horizontally with a small gap at top and bottom */
+  margin: 0 auto;
+
+  /* Small gutter around edge */
+  padding: 0.5em;
+
+  /* Force footer down to bottom of viewport */
+  flex-grow: 1;
+
+  /*
+   * two vertically stacked items:
+   * - header
+   * - main
+   */
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+
+  /* Absolute positioned items are positioned relative to this container */
+  position: relative;
 }
 
 header nav {
-  padding-left: 0.5em;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+main {
+  /* Consume all remaining space below the header */
+  flex-grow: 1;
+
+  /* vertical stack of:
+   * - h2
+   * - div.content
+   */
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+footer {
+  border-top: 1px solid #ccc;
+  padding: 0.5em;
+  text-align: center;
+  font-size: 0.8em;
 }
 
 /* Unset browser style-sheet */
@@ -18,18 +75,21 @@ ul, ol {
   padding: 0;
 }
 
-/* Center main forms on the page */
+/* main-form is a form that is the main content of a page */
 .main-form {
-  margin: 0 auto;
   width: 500px;
   /* Form outline */
   padding: 1em;
   border: 1px solid #CCC;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
 }
 
-/* Space out form fields */
-li.field + li.field {
-  margin-top: 1em;
+/* Free-form inputs need to accommodate more text */
+input.freeform {
+  width: 30em;
 }
 
 /* Place labels above their inputs */
@@ -37,30 +97,21 @@ label {
   display: block;
 }
 
-/* Unless they're labels for radio inputs */
-input[type="radio"] + label {
-  display: inline;
-}
-
-input[type="radio"] {
-  margin-right: .75em;
-}
-
+/* Radio options are placed horizontally */
 .radio {
   display: flex;
   flex-wrap: wrap;
+  gap: 2em;
 }
 
-.radio li {
-  margin-right: 2em;
+/* Radio labels are placed alongside the option */
+.radio label {
+  display: inline;
 }
 
-.field {
-  width: 100%;
-}
-
-.field input {
-  max-width: 30em;
+/* Add some space between radio input and label */
+.radio input {
+  margin-right: .75em;
 }
 
 a, a:visited, a:active {
@@ -74,6 +125,7 @@ a:hover {
 }
 
 table {
+  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
@@ -88,73 +140,98 @@ th, td {
   padding: 0.2em .5em;
 }
 
-.logo {
-  margin-right: 2em;
+thead th:nth-child(1) {
+  width: 25%;
 }
 
+thead th:nth-child(2) {
+  width: 20%;
+}
+
+thead th:nth-child(3) {
+  width: 10%;
+}
+
+thead th:nth-child(4) {
+  width: 10%;
+}
+
+.identifier {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/*
+ * navbar = logo + navigation links
+ */
 .navbar {
   display: flex;
-  background-color: #2F445A;
-  color: #fff;
-  margin: 0;
   align-items: baseline;
+  gap: 2em;
 }
 
-.navbar a:hover {
-  color: lightgrey;
-  text-decoration: none;
+.logo {
+  flex: initial;
+  padding: 0.4em;
+  line-height: 1em;
+  background-color: black;
+  color: white;
+  font-weight: 900;
+}
+
+.logo a:hover {
+  color: white;
 }
 
 .navbar .nav-links {
+  /* nav-links consume remainder of navbar */
+  flex-grow: 1;
+}
+
+.navbar .nav-links ul {
+  display: flex;
+  gap: 1em;
+}
+
+/*
+ * current organization link is left-aligned, next to logo, whereas
+ * remainder of links are right-aligned
+ */
+.navbar .nav-links li.current-organization {
   margin-right: auto;
 }
 
-.navbar ul {
+/* content-header: title + links */
+.content-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.container-header-title {
+  font-size: 1.5em;
+
   display: flex;
-  padding: 0;
-  margin: 0;
-  align-items: baseline;
 }
 
-.navbar li {
-  padding: 0.5em;
-}
+.container-header-links {
+  /* Links take up remainder of header after title */
+  flex-grow: 1;
 
-.navbar > li:first-child {
-  margin-right: auto;
-}
-
-.navbar .current-organization {
-  font-size: 0.85em;
-}
-
-.navbar .current-user {
-  font-size: 0.85em;
-}
-
-.container {
   display: flex;
-  margin: 0.5em;
-  max-width: 76em;
-}
+  font-size: 1em;
+  align-items: center;
 
-.container-header {
-  display: flex;
-  align-items: baseline;
-}
+  /* Put gaps in between links */
+  gap: 1em;
 
-.container-title {
-  margin-right: auto;
-}
-
-.container-button {
-  margin: 1em;
+  /* Links are right-aligned */
+  justify-content: flex-end;
 }
 
 .center {
-  margin-top: 7em;
+  flex: 1;
+
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -222,7 +299,13 @@ th, td {
   padding-right: 0.5em;
 }
 
+/* Flash alert message in bottom left corner on top of any other content */
 .flash {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 999;
+
   background: #ddf4ff;
   border-color: rgba(84, 174, 255, 0.4);
   padding: 10px 16px;
@@ -257,23 +340,19 @@ th, td {
              "Fira Mono",
              "Droid Sans Mono",
              "Courier New", monospace;
+  font-size: 1rem;
 }
 
- /*
-  * Upstream strangely disables bold because it looks "wierd"
-  */
+/*
+ * Upstream strangely disables bold because it looks "wierd"
+ */
 .term-fg1 {
   font-weight: bold;
 }
 
 .workspace-lock {
   display: flex;
-  align-items: baseline;
-  margin: 0.5em;
-}
-
-.workspace-lock .workspace-lock-status {
-  margin-right: 0.5em;
+  gap: 0.5em;
 }
 
 .workspace-lock .workspace-lock-status-locked {
@@ -281,3 +360,34 @@ th, td {
   color: white;
   font-weight: 700;
 }
+
+/*
+ * Delete buttons
+ */
+button.delete {
+  border: solid 1px #9f2937;
+  background: #c73445;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+button.delete:hover {
+  color: #f9ecee;
+}
+
+.smallcaps {
+  font-variant: small-caps;
+  font-size: 1.5rem;
+}
+
+.status-planned_and_finished {
+  background: #ff933f;
+  color: white;
+}
+
+.status-applied {
+  background: lightgreen;
+  color: black;
+}
+

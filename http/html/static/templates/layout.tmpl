@@ -10,77 +10,58 @@
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
-  <header>
-    <nav class="navbar">
-      <div class="logo">
-        <strong><a href="/">oTF</a></strong>
-      </div>
-      <div class="nav-links">
-        <ul>
-          {{ if .CurrentUser.IsAuthenticated }}
-            {{ if not .IsOrganizationRoute }}
+  <div class="body-container">
+    <header>
+      <nav class="navbar">
+        <div class="logo">
+          <a href="/">oTF</a></strong>
+        </div>
+        <div class="nav-links">
+          <ul>
+            {{ if .CurrentUser.IsAuthenticated }}
               {{ if .CurrentUser.CurrentOrganization }}
-              <li>
-                <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
-                  {{ template "building_icon" }}
-                  <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
-                </a>
-              </li>
-              {{ else }}
+                <li class="current-organization">
+                  <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+                    {{ template "building_icon" }}
+                    <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+                  </a>
+                </li>
+              {{ end }}
               <li>
                 <a href="{{ $.Path "listOrganization" }}">organizations</a>
               </li>
-              {{ end }}
+              <li>
+                <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
+              </li>
             {{ end }}
-          {{ end }}
-        </ul>
-      </div>
-      <div class="nav-links-me">
-        <ul>
-          {{ if .CurrentUser.IsAuthenticated }}
-          <li>
-            <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
-          </li>
-          <li>
-            <form action="{{ .Path "logout" }}" method="POST">
-              <button type="submit">Logout</button>
-            </form>
-          </li>
-          {{ end }}
-        </ul>
-      </div>
-    </nav>
-    <nav aria-label="Breadcrumb" class="breadcrumbs">
-      <ol>
-        {{ range .Breadcrumbs }}
-          <li><a href="{{ .Link }}">{{ .Name }}</a></li>
-        {{ end }}
-      </ol>
-    </nav>
-  </header>
+          </ul>
+        </div>
+      </nav>
+    </header>
 
-  {{ block "container" . }}
-  <div class="container">
-    {{ block "sidebar" . }}{{ end }}
-
-    <div>
-      <div class="container-header">
-        <h2 class="container-title">{{ template "title" . }}</h2>
-        <div class="container-button">
-          {{ block "container-button" . }}{{ end }}
+    <main>
+    {{ block "container" . }}
+      <div class="content-header">
+        <div class="container-header-title">
+          <strong>{{ template "container-header" . }}</strong>
+        </div>
+        <div class="container-header-actions">
+          {{ block "container-header-actions" . }}{{ end }}
+        </div>
+        <div class="container-header-links">
+          {{ block "container-header-links" . }}{{ end }}
         </div>
       </div>
 
-      <hr>
-
       {{ template "flash" . }}
 
-      <main>
+      <div class="content">
         {{ block "content" . }}{{ end }}
-      </main>
-    </div>
+      </div>
+    {{ end }}
+    </main>
   </div>
-  {{ end }}
+  <footer><a href="https://github.com/leg100/otf">{{ .Version }}</a></footer>
 </body>
 </html>
 {{ end }}

@@ -2,7 +2,6 @@ package html
 
 import (
 	"net/http"
-	"path"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
@@ -96,8 +95,9 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, c.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
 }
 
+// Get lists the workspaces for the org.
 func (c *OrganizationController) Get(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, path.Join(r.URL.Path, "overview"), http.StatusFound)
+	http.Redirect(w, r, c.relative(r, "listWorkspace"), http.StatusFound)
 }
 
 func (c *OrganizationController) Overview(w http.ResponseWriter, r *http.Request) {
