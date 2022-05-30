@@ -42,7 +42,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = js.Claim(context.Background(), job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
+	job, err = js.Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -63,7 +63,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = js.Finish(context.Background(), job.JobID(), finishOptions)
+	_, err = js.Finish(ctx, job.JobID(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing job")
 	}

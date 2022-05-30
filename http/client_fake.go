@@ -34,14 +34,14 @@ type FakeWorkspacesClient struct {
 }
 
 func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
 }
 
 func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
@@ -54,21 +54,21 @@ func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListO
 }
 
 func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
 }
 
 func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
 }
 
 func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
 		Name:           uuid.NewString(),
 		OrganizationID: otf.String("org-123"),
 	})
