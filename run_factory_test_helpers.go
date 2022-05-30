@@ -16,10 +16,10 @@ type fakeRunFactoryConfigurationVersionService struct {
 	ConfigurationVersionService
 }
 
-func (f *fakeRunFactoryConfigurationVersionService) Get(string) (*ConfigurationVersion, error) {
+func (f *fakeRunFactoryConfigurationVersionService) Get(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeRunFactoryConfigurationVersionService) GetLatest(string) (*ConfigurationVersion, error) {
+func (f *fakeRunFactoryConfigurationVersionService) GetLatest(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
