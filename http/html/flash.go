@@ -1,6 +1,7 @@
 package html
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -30,17 +31,20 @@ type flashType string
 type flashStore struct {
 	// mapping session token to flash message
 	db map[string]flash
+	// func for retrieving session token from context
+	getToken func(context.Context) string
 }
 
 func newFlashStore() *flashStore {
 	return &flashStore{
-		db: make(map[string]flash),
+		db:       make(map[string]flash),
+		getToken: getCtxToken,
 	}
 }
 
 // push a flash message for the request's session
 func (s *flashStore) push(r *http.Request, f flash) {
-	token := getCtxToken(r.Context())
+	token := s.getToken(r.Context())
 	s.db[token] = f
 }
 
@@ -48,7 +52,7 @@ func (s *flashStore) push(r *http.Request, f flash) {
 // use in a go template
 func (s *flashStore) popFunc(r *http.Request) func() *flash {
 	return func() *flash {
-		token := getCtxToken(r.Context())
+		token := s.getToken(r.Context())
 		f, ok := s.db[token]
 		if !ok {
 			return nil
