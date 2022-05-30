@@ -219,6 +219,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		r.Plan.updateStatus(PlanRunning)
 	case RunPlanned, RunPlannedAndFinished:
 		r.Plan.updateStatus(PlanFinished)
+		r.Apply.updateStatus(ApplyUnreachable)
 	case RunApplyQueued:
 		r.Apply.status = ApplyQueued
 		r.Apply.updateStatus(ApplyQueued)
@@ -230,6 +231,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		switch r.Status() {
 		case RunPlanning:
 			r.Plan.updateStatus(PlanErrored)
+			r.Apply.updateStatus(ApplyUnreachable)
 		case RunApplying:
 			r.Apply.updateStatus(ApplyErrored)
 		}
@@ -237,6 +239,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
 			r.Plan.updateStatus(PlanCanceled)
+			r.Apply.updateStatus(ApplyUnreachable)
 		case RunApplyQueued, RunApplying:
 			r.Apply.updateStatus(ApplyCanceled)
 		}
@@ -248,7 +251,6 @@ func (r *Run) updateStatus(status RunStatus) error {
 	})
 	// set job reflecting new status
 	r.setJob()
-	// TODO: determine when ApplyUnreachable is applicable and set accordingly
 	return nil
 }
 

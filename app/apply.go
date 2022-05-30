@@ -86,10 +86,10 @@ func (s ApplyService) Claim(ctx context.Context, applyID string, opts otf.JobCla
 		return run.Apply.Start()
 	})
 	if err != nil {
-		s.Error(err, "starting apply")
+		s.Error(err, "starting apply", "id", applyID)
 		return nil, err
 	}
-	s.V(0).Info("started apply", "id", run.ID())
+	s.V(0).Info("started apply", "run_id", run.ID(), "id", applyID)
 	return run, nil
 }
 
