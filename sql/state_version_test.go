@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -18,7 +19,7 @@ func TestStateVersion_Create(t *testing.T) {
 		otf.StateOutput{"out2", "string", "val2", false},
 	)
 
-	err := db.StateVersionStore().Create(ws.ID(), sv)
+	err := db.StateVersionStore().Create(context.Background(), ws.ID(), sv)
 	require.NoError(t, err)
 }
 
@@ -71,7 +72,7 @@ func TestStateVersion_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.StateVersionStore().Get(tt.opts)
+			got, err := db.StateVersionStore().Get(context.Background(), tt.opts)
 			tt.want(t, got, err)
 		})
 	}
@@ -110,7 +111,7 @@ func TestStateVersion_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.StateVersionStore().List(tt.opts)
+			results, err := db.StateVersionStore().List(context.Background(), tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results, sv1, sv2)

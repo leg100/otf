@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -60,7 +61,7 @@ func (p *Plan) Do(env Environment) error {
 	if err := p.run.setupEnv(env); err != nil {
 		return err
 	}
-	if err := env.RunCLI("terraform", "plan", fmt.Sprintf("-out=%s", PlanFilename)); err != nil {
+	if err := p.runTerraformPlan(env); err != nil {
 		return err
 	}
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
@@ -124,11 +125,23 @@ func (p *Plan) updateStatus(status PlanStatus) {
 	})
 }
 
+// runTerraformPlan runs a terraform plan
+func (p *Plan) runTerraformPlan(env Environment) error {
+	args := []string{
+		"plan",
+	}
+	if p.run.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, "-out="+PlanFilename)
+	return env.RunCLI("terraform", args...)
+}
+
 // PlanStatus represents a plan state.
 type PlanStatus string
 
 type PlanService interface {
-	Get(id string) (*Plan, error)
+	Get(ctx context.Context, id string) (*Plan, error)
 
 	JobService
 	ChunkStore
@@ -148,6 +161,7 @@ func newPlan(run *Run) *Plan {
 		id:  NewID("plan"),
 		run: run,
 		// new plans always start off in pending state
-		status: PlanPending,
+		status:         PlanPending,
+		ResourceReport: &ResourceReport{},
 	}
 }

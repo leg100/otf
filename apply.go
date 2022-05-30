@@ -1,7 +1,9 @@
 package otf
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -47,7 +49,7 @@ func (a *Apply) Do(env Environment) error {
 	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
 		return err
 	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform apply %s | tee %s", PlanFilename, ApplyOutputFilename)); err != nil {
+	if err := a.runTerraformApply(env); err != nil {
 		return err
 	}
 	if err := env.RunFunc(a.run.uploadState); err != nil {
@@ -84,12 +86,26 @@ func (a *Apply) updateStatus(status ApplyStatus) {
 	})
 }
 
+// runTerraformApply runs a terraform apply
+func (a *Apply) runTerraformApply(env Environment) error {
+	cmd := strings.Builder{}
+	cmd.WriteString("terraform apply")
+	if a.run.isDestroy {
+		cmd.WriteString(" -destroy")
+	}
+	cmd.WriteRune(' ')
+	cmd.WriteString(PlanFilename)
+	cmd.WriteString(" | tee ")
+	cmd.WriteString(ApplyOutputFilename)
+	return env.RunCLI("sh", "-c", cmd.String())
+}
+
 // ApplyStatus represents an apply state.
 type ApplyStatus string
 
 // ApplyService allows interaction with Applies
 type ApplyService interface {
-	Get(id string) (*Apply, error)
+	Get(ctx context.Context, id string) (*Apply, error)
 
 	JobService
 	ChunkStore
@@ -106,8 +122,9 @@ type ApplyStatusTimestamp struct {
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		id:     NewID("apply"),
-		run:    run,
-		status: ApplyPending,
+		id:             NewID("apply"),
+		run:            run,
+		status:         ApplyPending,
+		ResourceReport: &ResourceReport{},
 	}
 }

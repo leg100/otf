@@ -5,9 +5,11 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
 	"time"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 )
 
 const insertSessionSQL = `INSERT INTO sessions (
@@ -27,12 +29,12 @@ const insertSessionSQL = `INSERT INTO sessions (
 );`
 
 type InsertSessionParams struct {
-	Token     string
+	Token     pgtype.Text
 	CreatedAt time.Time
 	Flash     []byte
-	Address   string
+	Address   pgtype.Text
 	Expiry    time.Time
-	UserID    string
+	UserID    pgtype.Text
 }
 
 // InsertSession implements Querier.InsertSession.
@@ -64,7 +66,7 @@ FROM sessions
 WHERE token = $1;`
 
 // FindSessionFlashByToken implements Querier.FindSessionFlashByToken.
-func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token string) ([]byte, error) {
+func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token pgtype.Text) ([]byte, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindSessionFlashByToken")
 	row := q.conn.QueryRow(ctx, findSessionFlashByTokenSQL, token)
 	item := []byte{}
@@ -75,7 +77,7 @@ func (q *DBQuerier) FindSessionFlashByToken(ctx context.Context, token string) (
 }
 
 // FindSessionFlashByTokenBatch implements Querier.FindSessionFlashByTokenBatch.
-func (q *DBQuerier) FindSessionFlashByTokenBatch(batch genericBatch, token string) {
+func (q *DBQuerier) FindSessionFlashByTokenBatch(batch genericBatch, token pgtype.Text) {
 	batch.Queue(findSessionFlashByTokenSQL, token)
 }
 
@@ -96,10 +98,10 @@ WHERE token = $2
 RETURNING token;`
 
 // UpdateSessionFlashByToken implements Querier.UpdateSessionFlashByToken.
-func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte, token string) (string, error) {
+func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlashByToken")
 	row := q.conn.QueryRow(ctx, updateSessionFlashByTokenSQL, flash, token)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateSessionFlashByToken: %w", err)
 	}
@@ -107,14 +109,14 @@ func (q *DBQuerier) UpdateSessionFlashByToken(ctx context.Context, flash []byte,
 }
 
 // UpdateSessionFlashByTokenBatch implements Querier.UpdateSessionFlashByTokenBatch.
-func (q *DBQuerier) UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token string) {
+func (q *DBQuerier) UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token pgtype.Text) {
 	batch.Queue(updateSessionFlashByTokenSQL, flash, token)
 }
 
 // UpdateSessionFlashByTokenScan implements Querier.UpdateSessionFlashByTokenScan.
-func (q *DBQuerier) UpdateSessionFlashByTokenScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateSessionFlashByTokenBatch row: %w", err)
 	}
@@ -128,10 +130,10 @@ WHERE token = $2
 RETURNING token;`
 
 // UpdateSessionUserID implements Querier.UpdateSessionUserID.
-func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID string, token string) (string, error) {
+func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID pgtype.Text, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionUserID")
 	row := q.conn.QueryRow(ctx, updateSessionUserIDSQL, userID, token)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateSessionUserID: %w", err)
 	}
@@ -139,14 +141,14 @@ func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID string, toke
 }
 
 // UpdateSessionUserIDBatch implements Querier.UpdateSessionUserIDBatch.
-func (q *DBQuerier) UpdateSessionUserIDBatch(batch genericBatch, userID string, token string) {
+func (q *DBQuerier) UpdateSessionUserIDBatch(batch genericBatch, userID pgtype.Text, token pgtype.Text) {
 	batch.Queue(updateSessionUserIDSQL, userID, token)
 }
 
 // UpdateSessionUserIDScan implements Querier.UpdateSessionUserIDScan.
-func (q *DBQuerier) UpdateSessionUserIDScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateSessionUserIDScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateSessionUserIDBatch row: %w", err)
 	}
@@ -160,10 +162,10 @@ WHERE token = $2
 RETURNING token;`
 
 // UpdateSessionExpiry implements Querier.UpdateSessionExpiry.
-func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token string) (string, error) {
+func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionExpiry")
 	row := q.conn.QueryRow(ctx, updateSessionExpirySQL, expiry, token)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateSessionExpiry: %w", err)
 	}
@@ -171,14 +173,14 @@ func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, t
 }
 
 // UpdateSessionExpiryBatch implements Querier.UpdateSessionExpiryBatch.
-func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token string) {
+func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token pgtype.Text) {
 	batch.Queue(updateSessionExpirySQL, expiry, token)
 }
 
 // UpdateSessionExpiryScan implements Querier.UpdateSessionExpiryScan.
-func (q *DBQuerier) UpdateSessionExpiryScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateSessionExpiryBatch row: %w", err)
 	}
@@ -192,10 +194,10 @@ WHERE token = $2
 RETURNING token;`
 
 // UpdateSessionFlash implements Querier.UpdateSessionFlash.
-func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token string) (string, error) {
+func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionFlash")
 	row := q.conn.QueryRow(ctx, updateSessionFlashSQL, flash, token)
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateSessionFlash: %w", err)
 	}
@@ -203,14 +205,14 @@ func (q *DBQuerier) UpdateSessionFlash(ctx context.Context, flash []byte, token 
 }
 
 // UpdateSessionFlashBatch implements Querier.UpdateSessionFlashBatch.
-func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash []byte, token string) {
+func (q *DBQuerier) UpdateSessionFlashBatch(batch genericBatch, flash []byte, token pgtype.Text) {
 	batch.Queue(updateSessionFlashSQL, flash, token)
 }
 
 // UpdateSessionFlashScan implements Querier.UpdateSessionFlashScan.
-func (q *DBQuerier) UpdateSessionFlashScan(results pgx.BatchResults) (string, error) {
+func (q *DBQuerier) UpdateSessionFlashScan(results pgx.BatchResults) (pgtype.Text, error) {
 	row := results.QueryRow()
-	var item string
+	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateSessionFlashBatch row: %w", err)
 	}
@@ -222,7 +224,7 @@ FROM sessions
 WHERE token = $1;`
 
 // DeleteSessionByToken implements Querier.DeleteSessionByToken.
-func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token string) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteSessionByToken")
 	cmdTag, err := q.conn.Exec(ctx, deleteSessionByTokenSQL, token)
 	if err != nil {
@@ -232,7 +234,7 @@ func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token string) (pgc
 }
 
 // DeleteSessionByTokenBatch implements Querier.DeleteSessionByTokenBatch.
-func (q *DBQuerier) DeleteSessionByTokenBatch(batch genericBatch, token string) {
+func (q *DBQuerier) DeleteSessionByTokenBatch(batch genericBatch, token pgtype.Text) {
 	batch.Queue(deleteSessionByTokenSQL, token)
 }
 

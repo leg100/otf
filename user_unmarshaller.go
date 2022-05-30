@@ -3,15 +3,16 @@ package otf
 import (
 	"time"
 
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 type UserDBResult struct {
-	UserID              string                `json:"user_id"`
-	Username            string                `json:"username"`
+	UserID              pgtype.Text           `json:"user_id"`
+	Username            pgtype.Text           `json:"username"`
 	CreatedAt           time.Time             `json:"created_at"`
 	UpdatedAt           time.Time             `json:"updated_at"`
-	CurrentOrganization string                `json:"current_organization"`
+	CurrentOrganization pgtype.Text           `json:"current_organization"`
 	Sessions            []pggen.Sessions      `json:"sessions"`
 	Tokens              []pggen.Tokens        `json:"tokens"`
 	Organizations       []pggen.Organizations `json:"organizations"`
@@ -19,13 +20,13 @@ type UserDBResult struct {
 
 func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 	user := User{
-		id:        row.UserID,
+		id:        row.UserID.String,
 		createdAt: row.CreatedAt,
 		updatedAt: row.UpdatedAt,
-		username:  row.Username,
+		username:  row.Username.String,
 	}
-	if row.CurrentOrganization != "" {
-		user.CurrentOrganization = &row.CurrentOrganization
+	if row.CurrentOrganization.Status == pgtype.Present {
+		user.CurrentOrganization = &row.CurrentOrganization.String
 	}
 
 	for _, typ := range row.Organizations {

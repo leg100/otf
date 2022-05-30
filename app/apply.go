@@ -27,8 +27,8 @@ func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, e
 	}
 }
 
-func (s ApplyService) Get(id string) (*otf.Apply, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ApplyID: &id})
+func (s ApplyService) Get(ctx context.Context, id string) (*otf.Apply, error) {
+	run, err := s.db.Get(ctx, otf.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Ch
 		s.Error(err, "compiling report of applied changes", "id", applyID)
 		return err
 	}
-	if err := s.db.CreateApplyReport(applyID, report); err != nil {
+	if err := s.db.CreateApplyReport(ctx, applyID, report); err != nil {
 		s.Error(err, "saving applied changes report", "id", applyID)
 		return err
 	}
@@ -82,21 +82,21 @@ func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Ch
 
 // Claim claims an apply job on behalf of an agent.
 func (s ApplyService) Claim(ctx context.Context, applyID string, opts otf.JobClaimOptions) (otf.Job, error) {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) error {
 		return run.Apply.Start()
 	})
 	if err != nil {
-		s.Error(err, "starting apply")
+		s.Error(err, "starting apply", "id", applyID)
 		return nil, err
 	}
-	s.V(0).Info("started apply", "id", run.ID())
+	s.V(0).Info("started apply", "run_id", run.ID(), "id", applyID)
 	return run, nil
 }
 
 // Finish marks a apply as having finished.  An event is emitted to notify any
 // subscribers of the new state.
 func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.JobFinishOptions) (otf.Job, error) {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) (err error) {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) (err error) {
 		return run.Apply.Finish()
 	})
 	if err != nil {

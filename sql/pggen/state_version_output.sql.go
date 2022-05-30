@@ -5,7 +5,9 @@ package pggen
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -26,12 +28,12 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
 );`
 
 type InsertStateVersionOutputParams struct {
-	ID             string
-	Name           string
+	ID             pgtype.Text
+	Name           pgtype.Text
 	Sensitive      bool
-	Type           string
-	Value          string
-	StateVersionID string
+	Type           pgtype.Text
+	Value          pgtype.Text
+	StateVersionID pgtype.Text
 }
 
 // InsertStateVersionOutput implements Querier.InsertStateVersionOutput.

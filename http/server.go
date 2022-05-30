@@ -105,7 +105,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	router.HandleFunc("/plans/{id}/logs", s.UploadPlanLogs).Methods("PUT")
 	router.HandleFunc("/applies/{id}/logs", s.GetApplyLogs).Methods("GET")
 	router.HandleFunc("/applies/{id}/logs", s.UploadApplyLogs).Methods("PUT")
-	router.HandleFunc("/runs/{id}/plan", s.UploadPlanFile).Methods("PUT")
 	router.HandleFunc("/runs/{id}/plan", s.GetPlanFile).Methods("GET")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
@@ -137,6 +136,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.CreateWorkspace).Methods("POST")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace).Methods("PATCH")
 	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace).Methods("DELETE")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace).Methods("POST")
+	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace).Methods("POST")
 	sub.HandleFunc("/workspaces/{id}", s.UpdateWorkspace).Methods("PATCH")
 	sub.HandleFunc("/workspaces/{id}", s.GetWorkspace).Methods("GET")
 	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspace).Methods("DELETE")
@@ -163,6 +164,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	sub.HandleFunc("/runs/{id}/actions/cancel", s.CancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/force-cancel", s.ForceCancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/plan/json-output", s.GetJSONPlanByRunID).Methods("GET")
+	sub.HandleFunc("/organizations/{organization_name}/runs/queue", s.GetRunsQueue).Methods("GET")
 
 	// Plan routes
 	sub.HandleFunc("/plans/{id}", s.GetPlan).Methods("GET")

@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -12,6 +11,10 @@ const (
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
 	FlashSessionKey    = "flash"
+)
+
+var (
+	AnonymousUser = User{id: "user-anonymous", username: "anonymous"}
 )
 
 // User represents an oTF user account.
@@ -98,6 +101,28 @@ func (u *User) TransferSession(ctx context.Context, session *Session, to *User, 
 	return nil
 }
 
+// CanLock always returns an error because nothing can replace a user lock
+func (u *User) CanLock(requestor Identity) error {
+	return ErrWorkspaceAlreadyLocked
+}
+
+// CanUnlock decides whether to permits requestor to unlock a user lock
+func (u *User) CanUnlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user
+		return nil
+	}
+	if user, ok := requestor.(*User); ok {
+		if u.ID() == user.ID() {
+			// only same user can unlock
+			return nil
+		}
+		return ErrWorkspaceLockedByDifferentUser
+	}
+	// any other entity cannot unlock
+	return ErrWorkspaceUnlockDenied
+}
+
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
@@ -128,6 +153,21 @@ type UserService interface {
 	// SyncOrganizationMemberships synchronises a user's organization
 	// memberships, adding and removing them accordingly.
 	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
+}
+
+// UserStore is a persistence store for user accounts.
+type UserStore interface {
+	Create(ctx context.Context, user *User) error
+	// SetCurrentOrganization sets the user's currently active organization
+	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
+	Get(ctx context.Context, spec UserSpec) (*User, error)
+	List(ctx context.Context) ([]*User, error)
+	Delete(ctx context.Context, spec UserSpec) error
+	// AddOrganizationMembership adds a user as a member of an organization
+	AddOrganizationMembership(ctx context.Context, id, orgID string) error
+	// RemoveOrganizationMembership removes a user as a member of an
+	// organization
+	RemoveOrganizationMembership(ctx context.Context, id, orgID string) error
 }
 
 type UserSpec struct {
@@ -162,32 +202,22 @@ func (spec *UserSpec) KeyValue() []interface{} {
 	return []interface{}{"invalid user spec", ""}
 }
 
-func NewUser(username string) *User {
+func NewUser(username string, opts ...NewUserOption) *User {
 	user := User{
 		id:        NewID("user"),
 		username:  username,
 		createdAt: CurrentTimestamp(),
 		updatedAt: CurrentTimestamp(),
 	}
+	for _, o := range opts {
+		o(&user)
+	}
 	return &user
 }
 
-type NewTestUserOption func(*User)
+type NewUserOption func(*User)
 
-func NewTestUser(opts ...NewTestUserOption) *User {
-	u := User{
-		id:        NewID("user"),
-		username:  fmt.Sprintf("mr-%s", GenerateRandomString(6)),
-		createdAt: CurrentTimestamp(),
-		updatedAt: CurrentTimestamp(),
-	}
-	for _, o := range opts {
-		o(&u)
-	}
-	return &u
-}
-
-func WithOrganizationMemberships(memberships ...*Organization) NewTestUserOption {
+func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 	return func(user *User) {
 		user.Organizations = memberships
 	}

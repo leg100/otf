@@ -2,12 +2,14 @@ package sql
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 
@@ -43,16 +45,26 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	return db
 }
 
-func newTestOrganization() *otf.Organization {
-	return otf.NewTestOrganization()
+func newTestOrganization(t *testing.T) *otf.Organization {
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String(uuid.NewString())})
+	require.NoError(t, err)
+	return org
 }
 
-func newTestWorkspace(org *otf.Organization) *otf.Workspace {
-	return otf.NewTestWorkspace(org)
+func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
+	orgID := org.ID()
+	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
+		Name:           uuid.NewString(),
+		OrganizationID: &orgID,
+	})
+	require.NoError(t, err)
+	return ws
 }
 
-func newTestConfigurationVersion(ws *otf.Workspace) *otf.ConfigurationVersion {
-	return otf.NewConfigurationVersionFromDefaults(ws)
+func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace) *otf.ConfigurationVersion {
+	cv, err := otf.NewConfigurationVersion(ws.ID(), otf.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
+	return cv
 }
 
 type newTestSessionOption func(*otf.Session)
@@ -77,64 +89,67 @@ func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *
 }
 
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	return otf.NewRunFromDefaults(cv, ws)
+	return otf.NewRun(cv, ws, otf.RunCreateOptions{})
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org := newTestOrganization()
-	err := db.OrganizationStore().Create(org)
+	org := newTestOrganization(t)
+	err := db.OrganizationStore().Create(context.Background(), org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(org.Name())
+		db.OrganizationStore().Delete(context.Background(), org.Name())
 	})
 	return org
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws, err := db.WorkspaceStore().Create(newTestWorkspace(org))
+	ws := newTestWorkspace(t, org)
+	err := db.WorkspaceStore().Create(context.Background(), ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.WorkspaceStore().Delete(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 	return ws
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cv, err := db.ConfigurationVersionStore().Create(newTestConfigurationVersion(ws))
+	cv := newTestConfigurationVersion(t, ws)
+	err := db.ConfigurationVersionStore().Create(context.Background(), cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.ConfigurationVersionStore().Delete(cv.ID())
+		db.ConfigurationVersionStore().Delete(context.Background(), cv.ID())
 	})
 	return cv
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
 	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.StateVersionStore().Create(ws.ID(), sv)
+	err := db.StateVersionStore().Create(context.Background(), ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.StateVersionStore().Delete(sv.ID())
+		db.StateVersionStore().Delete(context.Background(), sv.ID())
 	})
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	run := newTestRun(ws, cv)
-	err := db.RunStore().Create(run)
+	err := db.RunStore().Create(context.Background(), run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.RunStore().Delete(run.ID())
+		db.RunStore().Delete(context.Background(), run.ID())
 	})
 	return run
 }
 
-func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewTestUserOption) *otf.User {
-	user := otf.NewTestUser(opts...)
+func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
+	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
+	user := otf.NewUser(username, opts...)
 
 	err := db.UserStore().Create(context.Background(), user)
 	require.NoError(t, err)

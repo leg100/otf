@@ -5,6 +5,8 @@ package pggen
 import (
 	"context"
 	"fmt"
+
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -18,13 +20,13 @@ const insertPlanLogChunkSQL = `INSERT INTO plan_logs (
 RETURNING *;`
 
 type InsertPlanLogChunkRow struct {
-	PlanID  string `json:"plan_id"`
-	ChunkID int    `json:"chunk_id"`
-	Chunk   []byte `json:"chunk"`
+	PlanID  pgtype.Text `json:"plan_id"`
+	ChunkID int         `json:"chunk_id"`
+	Chunk   []byte      `json:"chunk"`
 }
 
 // InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
-func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID string, chunk []byte) (InsertPlanLogChunkRow, error) {
+func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (InsertPlanLogChunkRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")
 	row := q.conn.QueryRow(ctx, insertPlanLogChunkSQL, planID, chunk)
 	var item InsertPlanLogChunkRow
@@ -35,7 +37,7 @@ func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID string, chunk
 }
 
 // InsertPlanLogChunkBatch implements Querier.InsertPlanLogChunkBatch.
-func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID string, chunk []byte) {
+func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Text, chunk []byte) {
 	batch.Queue(insertPlanLogChunkSQL, planID, chunk)
 }
 
@@ -63,7 +65,7 @@ GROUP BY plan_id
 type FindPlanLogChunksParams struct {
 	Offset int
 	Limit  int
-	PlanID string
+	PlanID pgtype.Text
 }
 
 // FindPlanLogChunks implements Querier.FindPlanLogChunks.

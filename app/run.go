@@ -42,13 +42,13 @@ func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
 func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
-	run, err := s.New(opts)
+	run, err := s.New(ctx, opts)
 	if err != nil {
 		s.Error(err, "constructing new run")
 		return nil, err
 	}
 
-	if err = s.db.Create(run); err != nil {
+	if err = s.db.Create(ctx, run); err != nil {
 		s.Error(err, "creating run", "id", run.ID())
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf
 
 // Get retrieves a run obj with the given ID from the db.
 func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.db.Get(otf.RunGetOptions{ID: &id})
+	run, err := s.db.Get(ctx, otf.RunGetOptions{ID: &id})
 	if err != nil {
 		s.Error(err, "retrieving run", "id", id)
 		return nil, err
@@ -78,7 +78,7 @@ func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
 func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	rl, err := s.db.List(opts)
+	rl, err := s.db.List(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing runs")
 		return nil, err
@@ -90,7 +90,7 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.ApplyRun()
 	})
 	if err != nil {
@@ -106,7 +106,7 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 }
 
 func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardOptions) error {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Discard()
 	})
 	if err != nil {
@@ -124,14 +124,14 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 // Cancel enqueues a cancel request to cancel a currently queued or active plan
 // or apply.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
-	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	_, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.Cancel()
 	})
 	return err
 }
 
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	_, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.ForceCancel()
 
 		// TODO: send KILL signal to running terraform process
@@ -144,7 +144,7 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 }
 
 func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
@@ -166,7 +166,7 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 	// We need the run ID so if caller has specified plan or apply ID instead
 	// then we need to get run ID first
 	if spec.PlanID != nil || spec.ApplyID != nil {
-		run, err := s.db.Get(spec)
+		run, err := s.db.Get(ctx, spec)
 		if err != nil {
 			s.Error(err, "retrieving run for plan file", "id", spec.String())
 			return nil, err
@@ -181,7 +181,7 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 		return plan, nil
 	}
 
-	file, err := s.db.GetPlanFile(id, format)
+	file, err := s.db.GetPlanFile(ctx, id, format)
 	if err != nil {
 		s.Error(err, "retrieving plan file", "id", id, "format", format)
 		return nil, err
@@ -199,31 +199,31 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 // been produced using `terraform plan`. If the plan file is JSON serialized
 // then its parsed for a summary of planned changes and the Plan object is
 // updated accordingly.
-func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
-	if err := s.db.SetPlanFile(runID, plan, format); err != nil {
-		s.Error(err, "uploading plan file", "id", runID, "format", format)
+func (s RunService) UploadPlanFile(ctx context.Context, planID string, plan []byte, format otf.PlanFormat) error {
+	if err := s.db.SetPlanFile(ctx, planID, plan, format); err != nil {
+		s.Error(err, "uploading plan file", "plan_id", planID, "format", format)
 		return err
 	}
 
-	s.V(0).Info("uploaded plan file", "id", runID, "format", format)
+	s.V(0).Info("uploaded plan file", "plan_id", planID, "format", format)
 
 	if format == otf.PlanFormatJSON {
 		report, err := otf.CompilePlanReport(plan)
 		if err != nil {
-			s.Error(err, "compiling planned changes report", "id", runID)
+			s.Error(err, "compiling planned changes report", "id", planID)
 			return err
 		}
-		if err := s.db.CreatePlanReport(runID, report); err != nil {
-			s.Error(err, "saving planned changes report", "id", runID)
+		if err := s.db.CreatePlanReport(ctx, planID, report); err != nil {
+			s.Error(err, "saving planned changes report", "id", planID)
 			return err
 		}
-		s.V(1).Info("created planned changes report", "id", runID,
+		s.V(1).Info("created planned changes report", "id", planID,
 			"adds", report.Additions,
 			"changes", report.Changes,
 			"destructions", report.Destructions)
 	}
 
-	if err := s.cache.Set(format.CacheKey(runID), plan); err != nil {
+	if err := s.cache.Set(format.CacheKey(planID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
 
@@ -232,7 +232,7 @@ func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byt
 
 // Delete deletes a terraform run.
 func (s RunService) Delete(ctx context.Context, id string) error {
-	if err := s.db.Delete(id); err != nil {
+	if err := s.db.Delete(ctx, id); err != nil {
 		s.Error(err, "deleting run", "id", id)
 		return err
 	}

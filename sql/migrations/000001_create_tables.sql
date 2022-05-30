@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
     username                TEXT        NOT NULL,
     created_at              TIMESTAMPTZ NOT NULL,
     updated_at              TIMESTAMPTZ NOT NULL,
-    current_organization    TEXT        NOT NULL,
+    current_organization    TEXT,
                             PRIMARY KEY (user_id),
                             UNIQUE (username)
 );
@@ -140,12 +140,6 @@ INSERT INTO apply_statuses (status) VALUES
     ('running'),
     ('unreachable');
 
-CREATE TYPE resource_report AS (
-    additions       INTEGER,
-    changes         INTEGER,
-    destructions    INTEGER
-);
-
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
     plan_id                         TEXT            NOT NULL,
@@ -159,8 +153,12 @@ CREATE TABLE IF NOT EXISTS runs (
     target_addrs                    TEXT[],
     plan_bin                        BYTEA,
     plan_json                       BYTEA,
-    planned_changes                 RESOURCE_REPORT,
-    applied_changes                 RESOURCE_REPORT,
+    planned_additions               INTEGER         NOT NULL,
+    planned_changes                 INTEGER         NOT NULL,
+    planned_destructions            INTEGER         NOT NULL,
+    applied_additions               INTEGER         NOT NULL,
+    applied_changes                 INTEGER         NOT NULL,
+    applied_destructions            INTEGER         NOT NULL,
     status                          TEXT REFERENCES run_statuses  NOT NULL,
     plan_status                     TEXT REFERENCES plan_statuses NOT NULL,
     apply_status                    TEXT REFERENCES plan_statuses NOT NULL,
@@ -230,10 +228,6 @@ DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
-DROP TABLE IF EXISTS plan_resource_reports;
-DROP TABLE IF EXISTS apply_resource_reports;
-DROP TABLE IF EXISTS plan_resources_reports;
-DROP TABLE IF EXISTS apply_resources_reports;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS run_status_timestamps;
@@ -241,7 +235,6 @@ DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
 DROP TABLE IF EXISTS run_statuses;
-DROP TYPE resource_report;
 DROP TABLE IF EXISTS configuration_version_status_timestamps;
 DROP TABLE IF EXISTS configuration_versions;
 DROP TABLE IF EXISTS tokens;

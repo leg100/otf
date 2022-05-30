@@ -219,6 +219,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		r.Plan.updateStatus(PlanRunning)
 	case RunPlanned, RunPlannedAndFinished:
 		r.Plan.updateStatus(PlanFinished)
+		r.Apply.updateStatus(ApplyUnreachable)
 	case RunApplyQueued:
 		r.Apply.status = ApplyQueued
 		r.Apply.updateStatus(ApplyQueued)
@@ -230,6 +231,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		switch r.Status() {
 		case RunPlanning:
 			r.Plan.updateStatus(PlanErrored)
+			r.Apply.updateStatus(ApplyUnreachable)
 		case RunApplying:
 			r.Apply.updateStatus(ApplyErrored)
 		}
@@ -237,6 +239,7 @@ func (r *Run) updateStatus(status RunStatus) error {
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
 			r.Plan.updateStatus(PlanCanceled)
+			r.Apply.updateStatus(ApplyUnreachable)
 		case RunApplyQueued, RunApplying:
 			r.Apply.updateStatus(ApplyCanceled)
 		}
@@ -248,7 +251,6 @@ func (r *Run) updateStatus(status RunStatus) error {
 	})
 	// set job reflecting new status
 	r.setJob()
-	// TODO: determine when ApplyUnreachable is applicable and set accordingly
 	return nil
 }
 
@@ -279,6 +281,28 @@ func (r *Run) ApplyStatusTimestamp(status ApplyStatus) (time.Time, error) {
 	return time.Time{}, ErrStatusTimestampNotFound
 }
 
+// CanLock determines whether requestor can replace run lock
+func (r *Run) CanLock(requestor Identity) error {
+	if _, ok := requestor.(*Run); ok {
+		// run can replace lock held by different run
+		return nil
+	}
+	return ErrWorkspaceAlreadyLocked
+}
+
+// CanUnlock determines whether requestor can unlock run lock
+func (r *Run) CanUnlock(requestor Identity, force bool) error {
+	if force {
+		// TODO: only grant admin user force unlock always granted
+		return nil
+	}
+	if _, ok := requestor.(*Run); ok {
+		// runs can unlock other run locks
+		return nil
+	}
+	return ErrWorkspaceLockedByDifferentUser
+}
+
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) setupEnv(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
@@ -301,7 +325,7 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.ConfigurationVersionService().Download(r.ConfigurationVersion.ID())
+	cv, err := env.ConfigurationVersionService().Download(ctx, r.ConfigurationVersion.ID())
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -315,13 +339,13 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.StateVersionService().Current(r.Workspace.ID())
+	state, err := env.StateVersionService().Current(ctx, r.Workspace.ID())
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
-	statefile, err := env.StateVersionService().Download(state.ID())
+	statefile, err := env.StateVersionService().Download(ctx, state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
@@ -337,7 +361,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.RunService().UploadPlanFile(ctx, r.ID(), file, PlanFormatBinary); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -349,7 +373,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadPlanFile(ctx, r.ID(), jsonFile, PlanFormatJSON); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -374,7 +398,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	_, err = env.StateVersionService().Create(r.Workspace.ID(), StateVersionCreateOptions{
+	_, err = env.StateVersionService().Create(ctx, r.Workspace.ID(), StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(f)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
 		Lineage: &state.Lineage,
@@ -425,7 +449,7 @@ type RunService interface {
 	// GetPlanFile retrieves a run's plan file with the requested format.
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
-	UploadPlanFile(ctx context.Context, runID string, plan []byte, format PlanFormat) error
+	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -439,6 +463,12 @@ type RunCreateOptions struct {
 	WorkspaceID            string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
+}
+
+// TestRunCreateOptions is for testing purposes only.
+type TestRunCreateOptions struct {
+	Speculative bool
+	Status      RunStatus
 }
 
 // RunApplyOptions represents the options for applying a run.
@@ -467,17 +497,17 @@ type RunDiscardOptions struct {
 
 // RunStore implementations persist Run objects.
 type RunStore interface {
-	Create(run *Run) error
-	Get(opts RunGetOptions) (*Run, error)
-	SetPlanFile(id string, file []byte, format PlanFormat) error
-	GetPlanFile(id string, format PlanFormat) ([]byte, error)
-	List(opts RunListOptions) (*RunList, error)
+	Create(ctx context.Context, run *Run) error
+	Get(ctx context.Context, opts RunGetOptions) (*Run, error)
+	SetPlanFile(ctx context.Context, id string, file []byte, format PlanFormat) error
+	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
+	List(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
-	UpdateStatus(opts RunGetOptions, fn func(*Run) error) (*Run, error)
-	CreatePlanReport(planID string, report ResourceReport) error
-	CreateApplyReport(applyID string, report ResourceReport) error
-	Delete(id string) error
+	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	CreatePlanReport(ctx context.Context, planID string, report ResourceReport) error
+	CreateApplyReport(ctx context.Context, applyID string, report ResourceReport) error
+	Delete(ctx context.Context, id string) error
 }
 
 // RunList represents a list of runs.
@@ -522,10 +552,10 @@ type RunListOptions struct {
 	Statuses []RunStatus
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`
-	// Filter by organization and workspace name. Mutually exclusive with
-	// WorkspaceID.
+	// Filter by organization name
 	OrganizationName *string `schema:"organization_name"`
-	WorkspaceName    *string `schema:"workspace_name"`
+	// Filter by workspace name
+	WorkspaceName *string `schema:"workspace_name"`
 }
 
 // LogFields provides fields for logging
@@ -533,8 +563,11 @@ func (opts RunListOptions) LogFields() (fields []interface{}) {
 	if opts.WorkspaceID != nil {
 		fields = append(fields, "workspace_id", *opts.WorkspaceID)
 	}
-	if opts.WorkspaceName != nil && opts.OrganizationName != nil {
-		fields = append(fields, "name", *opts.WorkspaceName, "organization", *opts.OrganizationName)
+	if opts.WorkspaceName != nil {
+		fields = append(fields, "name", *opts.WorkspaceName)
+	}
+	if opts.OrganizationName != nil {
+		fields = append(fields, "organization", *opts.OrganizationName)
 	}
 	if len(opts.Statuses) > 0 {
 		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))

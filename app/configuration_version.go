@@ -14,28 +14,23 @@ type ConfigurationVersionService struct {
 	db    otf.ConfigurationVersionStore
 	cache otf.Cache
 	logr.Logger
-	*otf.ConfigurationVersionFactory
 }
 
-func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, wss otf.WorkspaceService, cache otf.Cache) *ConfigurationVersionService {
+func NewConfigurationVersionService(db otf.ConfigurationVersionStore, logger logr.Logger, cache otf.Cache) *ConfigurationVersionService {
 	return &ConfigurationVersionService{
 		db:     db,
 		cache:  cache,
 		Logger: logger,
-		ConfigurationVersionFactory: &otf.ConfigurationVersionFactory{
-			WorkspaceService: wss,
-		},
 	}
 }
 
-func (s ConfigurationVersionService) Create(workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
-	cv, err := s.NewConfigurationVersion(workspaceID, opts)
+func (s ConfigurationVersionService) Create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+	cv, err := otf.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		s.Error(err, "constructing configuration version", "id", cv.ID())
 		return nil, err
 	}
-	_, err = s.db.Create(cv)
-	if err != nil {
+	if err := s.db.Create(ctx, cv); err != nil {
 		s.Error(err, "creating configuration version", "id", cv.ID())
 		return nil, err
 	}
@@ -43,8 +38,8 @@ func (s ConfigurationVersionService) Create(workspaceID string, opts otf.Configu
 	return cv, nil
 }
 
-func (s ConfigurationVersionService) List(workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	cvl, err := s.db.List(workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
+func (s ConfigurationVersionService) List(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+	cvl, err := s.db.List(ctx, workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
 		s.Error(err, "listing configuration versions")
 		return nil, err
@@ -53,8 +48,8 @@ func (s ConfigurationVersionService) List(workspaceID string, opts otf.Configura
 	return cvl, nil
 }
 
-func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, error) {
-	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{ID: &id})
+func (s ConfigurationVersionService) Get(ctx context.Context, id string) (*otf.ConfigurationVersion, error) {
+	cv, err := s.db.Get(ctx, otf.ConfigurationVersionGetOptions{ID: &id})
 	if err != nil {
 		s.Error(err, "retrieving configuration version", "id", id)
 		return nil, err
@@ -63,8 +58,8 @@ func (s ConfigurationVersionService) Get(id string) (*otf.ConfigurationVersion, 
 	return cv, nil
 }
 
-func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.ConfigurationVersion, error) {
-	cv, err := s.db.Get(otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
+func (s ConfigurationVersionService) GetLatest(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
+	cv, err := s.db.Get(ctx, otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID)
 		return nil, err
@@ -74,7 +69,7 @@ func (s ConfigurationVersionService) GetLatest(workspaceID string) (*otf.Configu
 }
 
 // Upload a configuration version tarball
-func (s ConfigurationVersionService) Upload(id string, config []byte) error {
+func (s ConfigurationVersionService) Upload(ctx context.Context, id string, config []byte) error {
 	err := s.db.Upload(context.Background(), id, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		return cv.Upload(context.Background(), config, uploader)
 	})
@@ -93,7 +88,7 @@ func (s ConfigurationVersionService) Upload(id string, config []byte) error {
 	return nil
 }
 
-func (s ConfigurationVersionService) Download(id string) ([]byte, error) {
+func (s ConfigurationVersionService) Download(ctx context.Context, id string) ([]byte, error) {
 	if config, err := s.cache.Get(otf.ConfigVersionCacheKey(id)); err == nil {
 		return config, nil
 	}

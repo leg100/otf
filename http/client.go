@@ -427,11 +427,11 @@ func checkResponseCode(r *http.Response) error {
 	case 409:
 		switch {
 		case strings.HasSuffix(r.Request.URL.Path, "actions/lock"):
-			return otf.ErrWorkspaceLocked
+			return otf.ErrWorkspaceAlreadyLocked
 		case strings.HasSuffix(r.Request.URL.Path, "actions/unlock"):
-			return otf.ErrWorkspaceNotLocked
+			return otf.ErrWorkspaceAlreadyUnlocked
 		case strings.HasSuffix(r.Request.URL.Path, "actions/force-unlock"):
-			return otf.ErrWorkspaceNotLocked
+			return otf.ErrWorkspaceAlreadyUnlocked
 		}
 	}
 	// Decode the error payload.
@@ -446,7 +446,7 @@ func checkResponseCode(r *http.Response) error {
 		if e.Detail == "" {
 			errs = append(errs, e.Title)
 		} else {
-			errs = append(errs, fmt.Sprintf("%s\n\n%s", e.Title, e.Detail))
+			errs = append(errs, fmt.Sprintf("%s: %s", e.Title, e.Detail))
 		}
 	}
 	return fmt.Errorf(strings.Join(errs, "\n"))

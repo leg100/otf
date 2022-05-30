@@ -82,11 +82,13 @@ sql:
 		--postgres-connection "dbname=otf" \
 		--query-glob 'sql/queries/*.sql' \
 		--output-dir sql/pggen \
-		--go-type 'text=string' \
+		--go-type 'text=github.com/jackc/pgtype.Text' \
 		--go-type 'int4=int' \
 		--go-type 'bool=bool' \
 		--go-type 'timestamptz=time.Time' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \
-		--acronym sha
+		--acronym sha \
+		--acronym json
+	goimports -w ./sql/pggen
 	go fmt ./sql/pggen

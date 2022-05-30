@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
@@ -23,15 +24,14 @@ func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 	}
 }
 
-// Create persists a Organization to the DB.
-func (db OrganizationDB) Create(org *otf.Organization) error {
+// Create persists an Organization to the DB.
+func (db OrganizationDB) Create(ctx context.Context, org *otf.Organization) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
 	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-		ID:              org.ID(),
+		ID:              pgtype.Text{String: org.ID(), Status: pgtype.Present},
 		CreatedAt:       org.CreatedAt(),
 		UpdatedAt:       org.UpdatedAt(),
-		Name:            org.Name(),
+		Name:            pgtype.Text{String: org.Name(), Status: pgtype.Present},
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
 	})
@@ -44,15 +44,14 @@ func (db OrganizationDB) Create(org *otf.Organization) error {
 // Update persists an updated Organization to the DB. The existing org is
 // fetched from the DB, the supplied func is invoked on the org, and the updated
 // org is persisted back to the DB.
-func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	ctx := context.Background()
+func (db OrganizationDB) Update(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
 	q := pggen.NewQuerier(tx)
-	result, err := q.FindOrganizationByNameForUpdate(ctx, name)
+	result, err := q.FindOrganizationByNameForUpdate(ctx, pgtype.Text{String: name, Status: pgtype.Present})
 	if err != nil {
 		return nil, err
 	}
@@ -63,46 +62,22 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	if err := fn(org); err != nil {
 		return nil, err
 	}
-	if org.Name() != result.Name {
-		_, err := q.UpdateOrganizationNameByName(ctx, pggen.UpdateOrganizationNameByNameParams{
-			Name:      result.Name,
-			NewName:   org.Name(),
-			UpdatedAt: org.UpdatedAt(),
-		})
-		if err != nil {
-			return nil, err
-		}
+	_, err = q.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
+		Name:            pgtype.Text{String: name, Status: pgtype.Present},
+		NewName:         pgtype.Text{String: org.Name(), Status: pgtype.Present},
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
+		UpdatedAt:       org.UpdatedAt(),
+	})
+	if err != nil {
+		return nil, err
 	}
-	if org.SessionRemember() != result.SessionRemember {
-		_, err := q.UpdateOrganizationSessionRememberByName(ctx, pggen.UpdateOrganizationSessionRememberByNameParams{
-			Name:            org.Name(),
-			SessionRemember: org.SessionRemember(),
-			UpdatedAt:       org.UpdatedAt(),
-		})
-
-		if err != nil {
-			return nil, err
-		}
-	}
-	if org.SessionTimeout() != result.SessionTimeout {
-		_, err := q.UpdateOrganizationSessionTimeoutByName(ctx, pggen.UpdateOrganizationSessionTimeoutByNameParams{
-			Name:           org.Name(),
-			SessionTimeout: org.SessionTimeout(),
-			UpdatedAt:      org.UpdatedAt(),
-		})
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return org, tx.Commit(ctx)
 }
 
-func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (db OrganizationDB) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
 
 	q.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
 	q.CountOrganizationsBatch(batch)
@@ -133,21 +108,18 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	}, nil
 }
 
-func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
+func (db OrganizationDB) Get(ctx context.Context, name string) (*otf.Organization, error) {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-	r, err := q.FindOrganizationByName(ctx, name)
+	r, err := q.FindOrganizationByName(ctx, pgtype.Text{String: name, Status: pgtype.Present})
 	if err != nil {
 		return nil, databaseError(err)
 	}
 	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
 }
 
-func (db OrganizationDB) Delete(name string) error {
+func (db OrganizationDB) Delete(ctx context.Context, name string) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
-	result, err := q.DeleteOrganization(ctx, name)
+	result, err := q.DeleteOrganization(ctx, pgtype.Text{String: name, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}

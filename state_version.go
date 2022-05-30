@@ -1,12 +1,14 @@
 package otf
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 )
@@ -40,19 +42,19 @@ type StateVersionList struct {
 }
 
 type StateVersionService interface {
-	Create(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
-	Current(workspaceID string) (*StateVersion, error)
-	Get(id string) (*StateVersion, error)
-	Download(id string) ([]byte, error)
-	List(opts StateVersionListOptions) (*StateVersionList, error)
+	Create(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
+	Current(ctx context.Context, workspaceID string) (*StateVersion, error)
+	Get(ctx context.Context, id string) (*StateVersion, error)
+	Download(ctx context.Context, id string) ([]byte, error)
+	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 type StateVersionStore interface {
-	Create(workspaceID string, sv *StateVersion) error
-	Get(opts StateVersionGetOptions) (*StateVersion, error)
-	GetState(id string) ([]byte, error)
-	List(opts StateVersionListOptions) (*StateVersionList, error)
-	Delete(id string) error
+	Create(ctx context.Context, workspaceID string, sv *StateVersion) error
+	Get(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
+	GetState(ctx context.Context, id string) ([]byte, error)
+	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.
@@ -144,18 +146,18 @@ func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
 
 // StateVersionDBRow is the state version postgres record.
 type StateVersionDBRow struct {
-	StateVersionID      string                      `json:"state_version_id"`
+	StateVersionID      pgtype.Text                 `json:"state_version_id"`
 	CreatedAt           time.Time                   `json:"created_at"`
 	Serial              int                         `json:"serial"`
 	State               []byte                      `json:"state"`
-	WorkspaceID         string                      `json:"workspace_id"`
+	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
 // UnmarshalStateVersionDBResult unmarshals a state version postgres record.
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
-		id:        row.StateVersionID,
+		id:        row.StateVersionID.String,
 		createdAt: row.CreatedAt,
 		serial:    int64(row.Serial),
 		state:     row.State,

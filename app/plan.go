@@ -31,8 +31,8 @@ func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es
 	}
 }
 
-func (s PlanService) Get(id string) (*otf.Plan, error) {
-	run, err := s.db.Get(otf.RunGetOptions{PlanID: &id})
+func (s PlanService) Get(ctx context.Context, id string) (*otf.Plan, error) {
+	run, err := s.db.Get(ctx, otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s PlanService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) e
 
 // Claim implements Job
 func (s PlanService) Claim(ctx context.Context, planID string, opts otf.JobClaimOptions) (otf.Job, error) {
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
 		return run.Plan.Start(run)
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func (s PlanService) Claim(ctx context.Context, planID string, opts otf.JobClaim
 func (s PlanService) Finish(ctx context.Context, planID string, opts otf.JobFinishOptions) (otf.Job, error) {
 	var event *otf.Event
 
-	run, err := s.db.UpdateStatus(otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
 		event, err = run.Plan.Finish(opts)
 		return err
 	})

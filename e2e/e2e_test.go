@@ -14,11 +14,6 @@ import (
 const (
 	daemon = "../_build/otfd"
 	client = "../_build/otf"
-	config = `
-}
-
-resource "null_resource" "e2e" {}
-`
 )
 
 func newConfig(organization string) []byte {
@@ -32,7 +27,9 @@ terraform {
 	  name = "dev"
 	}
   }
-}`
+}
+resource "null_resource" "e2e" {}
+`
 	return []byte(fmt.Sprintf(config, organization))
 }
 
@@ -69,16 +66,27 @@ func TestOTF(t *testing.T) {
 		chdir(t, root)
 		cmd := exec.Command("terraform", "plan", "-no-color")
 		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
 		require.NoError(t, err)
+		t.Log(string(out))
+		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 	})
 
 	t.Run("terraform apply", func(t *testing.T) {
 		chdir(t, root)
 		cmd := exec.Command("terraform", "apply", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
 		require.NoError(t, err)
+		t.Log(string(out))
+		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
+	})
+
+	t.Run("terraform destroy", func(t *testing.T) {
+		chdir(t, root)
+		cmd := exec.Command("terraform", "destroy", "-no-color", "-auto-approve")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err)
+		t.Log(string(out))
+		require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 	})
 
 	t.Run("lock workspace", func(t *testing.T) {

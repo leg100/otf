@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fatih/color"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
@@ -35,7 +34,7 @@ func main() {
 	cmdutil.CatchCtrlC(cancel)
 
 	if err := run(ctx, os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "%s %s\n", color.HiRedString("Error:"), err.Error())
+		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }

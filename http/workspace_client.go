@@ -23,14 +23,14 @@ type workspaces struct {
 
 // Create is used to create a new workspace.
 func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(&options.OrganizationName) {
-		return nil, otf.ErrInvalidOrg
-	}
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
+	if !otf.ValidStringID(options.OrganizationName) {
+		return nil, otf.ErrInvalidOrg
+	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err
@@ -124,13 +124,16 @@ func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
 }
 
 // Lock a workspace by its ID.
-func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	if !otf.ValidStringID(spec.ID) {
-		return nil, otf.ErrInvalidWorkspaceID
+func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	var path string
+	if spec.ID != nil {
+		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
+	} else if spec.OrganizationName != nil && spec.Name != nil {
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+	} else {
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
-
-	u := fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
-	req, err := s.client.newRequest("POST", u, &options)
+	req, err := s.client.newRequest("POST", path, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +148,16 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, options o
 }
 
 // Unlock a workspace by its ID.
-func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	if !otf.ValidStringID(spec.ID) {
-		return nil, otf.ErrInvalidWorkspaceID
+func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	var path string
+	if spec.ID != nil {
+		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
+	} else if spec.OrganizationName != nil && spec.Name != nil {
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+	} else {
+		return nil, otf.ErrInvalidWorkspaceSpec
 	}
-
-	u := fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
-	req, err := s.client.newRequest("POST", u, nil)
+	req, err := s.client.newRequest("POST", path, nil)
 	if err != nil {
 		return nil, err
 	}

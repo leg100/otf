@@ -123,12 +123,14 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
-	opts := otf.WorkspaceLockOptions{}
+	opts := otf.WorkspaceLockOptions{
+		Requestor: &otf.AnonymousUser,
+	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var spec otf.WorkspaceSpec
+	spec := otf.WorkspaceSpec{}
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -145,12 +147,15 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
+	opts := otf.WorkspaceUnlockOptions{
+		Requestor: &otf.AnonymousUser,
+	}
+	spec := otf.WorkspaceSpec{}
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Unlock(r.Context(), spec)
+	obj, err := s.WorkspaceService().Unlock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -177,7 +182,7 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 // WorkspaceDTO converts a Workspace to a struct that can be marshalled into a
 // JSON-API object
 func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
-	obj := &dto.Workspace{
+	japi := &dto.Workspace{
 		ID: ws.ID(),
 		Actions: &dto.WorkspaceActions{
 			IsDestroyable: false,
@@ -218,12 +223,12 @@ func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
-
-	if ws.Organization != nil {
-		obj.Organization = OrganizationDTO(ws.Organization)
+	if ws.Organization() != nil {
+		japi.Organization = OrganizationDTO(ws.Organization())
+	} else {
+		japi.Organization = &dto.Organization{ExternalID: ws.OrganizationID()}
 	}
-
-	return obj
+	return japi
 }
 
 // WorkspaceListJSONAPIObject converts a WorkspaceList to

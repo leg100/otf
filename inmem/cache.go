@@ -14,6 +14,7 @@ type CacheConfig struct {
 
 func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 	defaults := bigcache.DefaultConfig(otf.DefaultCacheTTL)
+	defaults.Verbose = false
 
 	if config.TTL != 0 {
 		defaults.LifeWindow = config.TTL
