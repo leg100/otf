@@ -2,6 +2,10 @@
 
 {{ define "title" }}New Token{{ end }}
 
+{{ define "container-header" }}
+  <div>profile / tokens / new</div>
+{{ end }}
+
 {{ define "content" }}
   <form class="main-form" action="{{ .Path "createToken" }}" method="POST">
     <ul>

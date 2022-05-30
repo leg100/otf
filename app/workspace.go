@@ -107,11 +107,11 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	ws, err := s.db.Lock(ctx, spec, opts)
 	if err != nil {
-		s.Error(err, "locking workspace", spec.LogFields()...)
+		s.Error(err, "locking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 		return nil, err
 	}
 
-	s.V(1).Info("locked workspace", spec.LogFields()...)
+	s.V(1).Info("locked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 
 	return ws, nil
 }
@@ -119,11 +119,11 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts
 func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	ws, err := s.db.Unlock(ctx, spec, opts)
 	if err != nil {
-		s.Error(err, "unlocking workspace", spec.LogFields()...)
+		s.Error(err, "unlocking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 		return nil, err
 	}
 
-	s.V(1).Info("unlocked workspace", spec.LogFields()...)
+	s.V(1).Info("unlocked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 
 	return ws, nil
 }

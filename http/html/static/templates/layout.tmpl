@@ -19,12 +19,14 @@
         <div class="nav-links">
           <ul>
             {{ if .CurrentUser.IsAuthenticated }}
-              <li class="current-organization">
-                <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
-                  {{ template "building_icon" }}
-                  <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
-                </a>
-              </li>
+              {{ if .CurrentUser.CurrentOrganization }}
+                <li class="current-organization">
+                  <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+                    {{ template "building_icon" }}
+                    <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+                  </a>
+                </li>
+              {{ end }}
               <li>
                 <a href="{{ $.Path "listOrganization" }}">organizations</a>
               </li>

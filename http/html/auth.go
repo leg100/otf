@@ -73,7 +73,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Transfer session from anonymous to named user.
-	anon := app.sessions.GetUserFromContext(ctx)
+	anon := GetUserFromContext(ctx)
 	if err := app.UserService().TransferSession(ctx, anon.User, user, anon.Session); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,7 +101,7 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 // request then no action is taken.
 func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := app.sessions.GetUserFromContext(r.Context())
+		user := GetUserFromContext(r.Context())
 
 		current, ok := mux.Vars(r)["organization_name"]
 		if !ok {
@@ -145,7 +145,7 @@ func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -155,7 +155,7 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -173,7 +173,7 @@ func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 
 	var opts otf.TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
@@ -193,7 +193,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 
 	tdata := app.newTemplateData(r, user)
 
@@ -203,7 +203,7 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := app.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 
 	id := r.FormValue("id")
 	if id == "" {

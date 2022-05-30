@@ -111,7 +111,7 @@ type WorkspaceCreateOptions struct {
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
 	// Either OrganizationName or OrganizationID must be provided
-	OrganizationName *string
+	OrganizationName *string `schema:"organization_name"`
 	OrganizationID   *string
 }
 

@@ -168,7 +168,7 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
-	user := c.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
@@ -185,14 +185,14 @@ func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Unlock(w http.ResponseWriter, r *http.Request) {
-	user := c.sessions.GetUserFromContext(r.Context())
+	user := GetUserFromContext(r.Context())
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	_, err := c.WorkspaceService.Unlock(r.Context(), spec, otf.WorkspaceUnlockOptions{
-		Requestor: user,
+		Requestor: user.User,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

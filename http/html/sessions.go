@@ -88,7 +88,7 @@ func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
 
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
-	user := s.GetUserFromContext(ctx)
+	user := GetUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
@@ -98,10 +98,10 @@ func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
-	return s.GetUserFromContext(ctx).IsAuthenticated()
+	return GetUserFromContext(ctx).IsAuthenticated()
 }
 
-func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
+func GetUserFromContext(ctx context.Context) *ActiveUser {
 	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
 	if !ok {
 		panic("no user in context")
@@ -110,7 +110,7 @@ func (s *sessions) GetUserFromContext(ctx context.Context) *ActiveUser {
 }
 
 func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
-	return s.GetUserFromContext(ctx).Session
+	return GetUserFromContext(ctx).Session
 }
 
 // PopFlash retrieves a flash message from the current session. The message is
