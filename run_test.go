@@ -18,16 +18,18 @@ func TestRun_UpdateStatus(t *testing.T) {
 		wantApplyStatus ApplyStatus
 	}{
 		{
-			name:           "plan error",
-			fromStatus:     RunPlanning,
-			toStatus:       RunErrored,
-			wantPlanStatus: PlanErrored,
+			name:            "plan error",
+			fromStatus:      RunPlanning,
+			toStatus:        RunErrored,
+			wantPlanStatus:  PlanErrored,
+			wantApplyStatus: ApplyUnreachable,
 		},
 		{
-			name:           "plan canceled",
-			fromStatus:     RunPlanning,
-			toStatus:       RunCanceled,
-			wantPlanStatus: PlanCanceled,
+			name:            "plan canceled",
+			fromStatus:      RunPlanning,
+			toStatus:        RunCanceled,
+			wantPlanStatus:  PlanCanceled,
+			wantApplyStatus: ApplyUnreachable,
 		},
 		{
 			name:            "apply error",
