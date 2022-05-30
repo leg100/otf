@@ -22,7 +22,7 @@ type PlanFileOptions struct {
 
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.PlanService().Get(vars["id"])
+	obj, err := s.PlanService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

@@ -94,55 +94,55 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	org := newTestOrganization(t)
-	err := db.OrganizationStore().Create(org)
+	err := db.OrganizationStore().Create(context.Background(), org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(org.Name())
+		db.OrganizationStore().Delete(context.Background(), org.Name())
 	})
 	return org
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
 	ws := newTestWorkspace(t, org)
-	err := db.WorkspaceStore().Create(ws)
+	err := db.WorkspaceStore().Create(context.Background(), ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.WorkspaceStore().Delete(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 	return ws
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
 	cv := newTestConfigurationVersion(t, ws)
-	err := db.ConfigurationVersionStore().Create(cv)
+	err := db.ConfigurationVersionStore().Create(context.Background(), cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.ConfigurationVersionStore().Delete(cv.ID())
+		db.ConfigurationVersionStore().Delete(context.Background(), cv.ID())
 	})
 	return cv
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
 	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.StateVersionStore().Create(ws.ID(), sv)
+	err := db.StateVersionStore().Create(context.Background(), ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.StateVersionStore().Delete(sv.ID())
+		db.StateVersionStore().Delete(context.Background(), sv.ID())
 	})
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	run := newTestRun(ws, cv)
-	err := db.RunStore().Create(run)
+	err := db.RunStore().Create(context.Background(), run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.RunStore().Delete(run.ID())
+		db.RunStore().Delete(context.Background(), run.ID())
 	})
 	return run
 }

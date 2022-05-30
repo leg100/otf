@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -41,19 +42,19 @@ type StateVersionList struct {
 }
 
 type StateVersionService interface {
-	Create(workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
-	Current(workspaceID string) (*StateVersion, error)
-	Get(id string) (*StateVersion, error)
-	Download(id string) ([]byte, error)
-	List(opts StateVersionListOptions) (*StateVersionList, error)
+	Create(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
+	Current(ctx context.Context, workspaceID string) (*StateVersion, error)
+	Get(ctx context.Context, id string) (*StateVersion, error)
+	Download(ctx context.Context, id string) ([]byte, error)
+	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 type StateVersionStore interface {
-	Create(workspaceID string, sv *StateVersion) error
-	Get(opts StateVersionGetOptions) (*StateVersion, error)
-	GetState(id string) ([]byte, error)
-	List(opts StateVersionListOptions) (*StateVersionList, error)
-	Delete(id string) error
+	Create(ctx context.Context, workspaceID string, sv *StateVersion) error
+	Get(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
+	GetState(ctx context.Context, id string) ([]byte, error)
+	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	Delete(ctx context.Context, id string) error
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.

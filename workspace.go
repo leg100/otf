@@ -231,13 +231,13 @@ type WorkspaceService interface {
 }
 
 type WorkspaceStore interface {
-	Create(ws *Workspace) error
-	Get(spec WorkspaceSpec) (*Workspace, error)
-	List(opts WorkspaceListOptions) (*WorkspaceList, error)
-	Update(spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
-	Lock(spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
-	Delete(spec WorkspaceSpec) error
+	Create(ctx context.Context, ws *Workspace) error
+	Get(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	Update(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
+	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	Unlock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
+	Delete(ctx context.Context, spec WorkspaceSpec) error
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

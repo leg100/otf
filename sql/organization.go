@@ -25,9 +25,8 @@ func NewOrganizationDB(conn *pgxpool.Pool) *OrganizationDB {
 }
 
 // Create persists an Organization to the DB.
-func (db OrganizationDB) Create(org *otf.Organization) error {
+func (db OrganizationDB) Create(ctx context.Context, org *otf.Organization) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
 	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              pgtype.Text{String: org.ID(), Status: pgtype.Present},
 		CreatedAt:       org.CreatedAt(),
@@ -45,8 +44,7 @@ func (db OrganizationDB) Create(org *otf.Organization) error {
 // Update persists an updated Organization to the DB. The existing org is
 // fetched from the DB, the supplied func is invoked on the org, and the updated
 // org is persisted back to the DB.
-func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	ctx := context.Background()
+func (db OrganizationDB) Update(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -77,10 +75,9 @@ func (db OrganizationDB) Update(name string, fn func(*otf.Organization) error) (
 	return org, tx.Commit(ctx)
 }
 
-func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (db OrganizationDB) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
 
 	q.FindOrganizationsBatch(batch, opts.GetLimit(), opts.GetOffset())
 	q.CountOrganizationsBatch(batch)
@@ -111,9 +108,8 @@ func (db OrganizationDB) List(opts otf.OrganizationListOptions) (*otf.Organizati
 	}, nil
 }
 
-func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
+func (db OrganizationDB) Get(ctx context.Context, name string) (*otf.Organization, error) {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
 	r, err := q.FindOrganizationByName(ctx, pgtype.Text{String: name, Status: pgtype.Present})
 	if err != nil {
 		return nil, databaseError(err)
@@ -121,10 +117,8 @@ func (db OrganizationDB) Get(name string) (*otf.Organization, error) {
 	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
 }
 
-func (db OrganizationDB) Delete(name string) error {
+func (db OrganizationDB) Delete(ctx context.Context, name string) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	result, err := q.DeleteOrganization(ctx, pgtype.Text{String: name, Status: pgtype.Present})
 	if err != nil {
 		return err

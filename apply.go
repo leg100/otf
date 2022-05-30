@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -104,7 +105,7 @@ type ApplyStatus string
 
 // ApplyService allows interaction with Applies
 type ApplyService interface {
-	Get(id string) (*Apply, error)
+	Get(ctx context.Context, id string) (*Apply, error)
 
 	JobService
 	ChunkStore

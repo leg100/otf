@@ -33,7 +33,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 		return nil, err
 	}
 
-	if err := s.db.Create(ws); err != nil {
+	if err := s.db.Create(ctx, ws); err != nil {
 		s.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.OrganizationID())
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 		return nil, err
 	}
 
-	ws, err := s.db.Update(spec, func(ws *otf.Workspace) error {
+	ws, err := s.db.Update(ctx, spec, func(ws *otf.Workspace) error {
 		return ws.UpdateWithOptions(ctx, opts)
 	})
 	if err != nil {
@@ -65,7 +65,7 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 }
 
 func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	return s.db.List(opts)
+	return s.db.List(ctx, opts)
 }
 
 func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
@@ -74,7 +74,7 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 		return nil, err
 	}
 
-	ws, err := s.db.Get(spec)
+	ws, err := s.db.Get(ctx, spec)
 	if err != nil {
 		s.Error(err, "retrieving workspace", spec.LogFields()...)
 		return nil, err
@@ -87,12 +87,12 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 
 func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
 	// Get workspace so we can publish it in an event after we delete it
-	ws, err := s.db.Get(spec)
+	ws, err := s.db.Get(ctx, spec)
 	if err != nil {
 		return err
 	}
 
-	if err := s.db.Delete(spec); err != nil {
+	if err := s.db.Delete(ctx, spec); err != nil {
 		s.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name())
 		return err
 	}
@@ -105,7 +105,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 }
 
 func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	ws, err := s.db.Lock(spec, opts)
+	ws, err := s.db.Lock(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "locking workspace", spec.LogFields()...)
 		return nil, err
@@ -117,7 +117,7 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts
 }
 
 func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	ws, err := s.db.Unlock(spec, opts)
+	ws, err := s.db.Unlock(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "unlocking workspace", spec.LogFields()...)
 		return nil, err

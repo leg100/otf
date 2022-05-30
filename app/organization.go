@@ -32,7 +32,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	if err := s.db.Create(org); err != nil {
+	if err := s.db.Create(ctx, org); err != nil {
 		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 }
 
 func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	org, err := s.db.Get(*opts.Name)
+	org, err := s.db.Get(ctx, *opts.Name)
 	if err == nil {
 		return org, nil
 	}
@@ -59,7 +59,7 @@ func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.Organiz
 }
 
 func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
-	org, err := s.db.Get(name)
+	org, err := s.db.Get(ctx, name)
 	if err != nil {
 		s.Error(err, "retrieving organization", "name", name)
 		return nil, err
@@ -71,11 +71,11 @@ func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organiz
 }
 
 func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	return s.db.List(opts)
+	return s.db.List(ctx, opts)
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	org, err := s.db.Update(name, func(org *otf.Organization) error {
+	org, err := s.db.Update(ctx, name, func(org *otf.Organization) error {
 		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
 	if err != nil {
@@ -89,11 +89,11 @@ func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {
-	return s.db.Delete(name)
+	return s.db.Delete(ctx, name)
 }
 
 func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
-	org, err := s.db.Get(name)
+	org, err := s.db.Get(ctx, name)
 	if err != nil {
 		return nil, err
 	}

@@ -24,8 +24,7 @@ func NewRunDB(db *pgxpool.Pool) *RunDB {
 }
 
 // Create persists a Run to the DB.
-func (db RunDB) Create(run *otf.Run) error {
-	ctx := context.Background()
+func (db RunDB) Create(ctx context.Context, run *otf.Run) error {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -69,9 +68,7 @@ func (db RunDB) Create(run *otf.Run) error {
 	return tx.Commit(ctx)
 }
 
-func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
-	ctx := context.Background()
-
+func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -154,10 +151,8 @@ func (db RunDB) UpdateStatus(opts otf.RunGetOptions, fn func(*otf.Run) error) (*
 	return run, tx.Commit(ctx)
 }
 
-func (db RunDB) CreatePlanReport(planID string, report otf.ResourceReport) error {
+func (db RunDB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, pggen.UpdateRunPlannedChangesByPlanIDParams{
 		PlanID:       pgtype.Text{String: planID, Status: pgtype.Present},
 		Additions:    report.Additions,
@@ -170,10 +165,8 @@ func (db RunDB) CreatePlanReport(planID string, report otf.ResourceReport) error
 	return err
 }
 
-func (db RunDB) CreateApplyReport(applyID string, report otf.ResourceReport) error {
+func (db RunDB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
 		ApplyID:      pgtype.Text{String: applyID, Status: pgtype.Present},
 		Additions:    report.Additions,
@@ -186,11 +179,9 @@ func (db RunDB) CreateApplyReport(applyID string, report otf.ResourceReport) err
 	return err
 }
 
-func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
+func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	q := pggen.NewQuerier(db.Pool)
 	batch := &pgx.Batch{}
-	ctx := context.Background()
-
 	organizationName := "%"
 	if opts.OrganizationName != nil {
 		organizationName = *opts.OrganizationName
@@ -251,9 +242,8 @@ func (db RunDB) List(opts otf.RunListOptions) (*otf.RunList, error) {
 }
 
 // Get retrieves a run using the get options
-func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
+func (db RunDB) Get(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, error) {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
 	// Get run ID first
 	runID, err := getRunID(ctx, q, opts)
 	if err != nil {
@@ -272,10 +262,8 @@ func (db RunDB) Get(opts otf.RunGetOptions) (*otf.Run, error) {
 }
 
 // SetPlanFile writes a plan file to the db
-func (db RunDB) SetPlanFile(planID string, file []byte, format otf.PlanFormat) error {
+func (db RunDB) SetPlanFile(ctx context.Context, planID string, file []byte, format otf.PlanFormat) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	switch format {
 	case otf.PlanFormatBinary:
 		_, err := q.UpdateRunPlanBinByPlanID(ctx,
@@ -295,10 +283,8 @@ func (db RunDB) SetPlanFile(planID string, file []byte, format otf.PlanFormat) e
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
+func (db RunDB) GetPlanFile(ctx context.Context, id string, format otf.PlanFormat) ([]byte, error) {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	switch format {
 	case otf.PlanFormatBinary:
 		return q.GetPlanBinByRunID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
@@ -310,10 +296,8 @@ func (db RunDB) GetPlanFile(id string, format otf.PlanFormat) ([]byte, error) {
 }
 
 // Delete deletes a run from the DB
-func (db RunDB) Delete(id string) error {
+func (db RunDB) Delete(ctx context.Context, id string) error {
 	q := pggen.NewQuerier(db.Pool)
-	ctx := context.Background()
-
 	result, err := q.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
