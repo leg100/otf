@@ -18,10 +18,10 @@ type OrganizationController struct {
 
 	*router
 
-	// for setting flash messages
-	sessions *sessions
-
 	*templateDataFactory
+
+	// flash db
+	*flashStack
 }
 
 func (c *OrganizationController) addRoutes(router *mux.Router) {
@@ -81,7 +81,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 
 	organization, err := c.OrganizationService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.sessions.FlashError(r, "organization already exists: ", *opts.Name)
+		c.push(r, flashError("organization already exists: "+*opts.Name))
 		http.Redirect(w, r, c.route("newOrganization"), http.StatusFound)
 		return
 	}
@@ -90,8 +90,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "created organization: ", organization.Name())
-
+	c.push(r, flashSuccess("created organization: "+organization.Name()))
 	http.Redirect(w, r, c.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
 }
 
@@ -141,7 +140,7 @@ func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "updated organization")
+	c.push(r, flashSuccess("updated organization"))
 
 	// Explicitly specify route variable for organization name because the user
 	// might have updated it.
@@ -157,6 +156,6 @@ func (c *OrganizationController) Delete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "deleted organization: ", organizationName)
+	c.push(r, flashSuccess("deleted organization: "+organizationName))
 	http.Redirect(w, r, c.route("listOrganization"), http.StatusFound)
 }

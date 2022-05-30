@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
+	"path/filepath"
+
+	"github.com/Masterminds/sprig"
 )
 
 // renderer is capable of locating and rendering a template.
@@ -75,4 +79,34 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 
 	_, err := buf.WriteTo(w)
 	return err
+}
+
+// newTemplateCache populates a cache of templates.
+func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*template.Template, error) {
+	cache := make(map[string]*template.Template)
+
+	pages, err := fs.Glob(templates, contentTemplatesGlob)
+	if err != nil {
+		return nil, err
+	}
+
+	functions := sprig.GenericFuncMap()
+	functions["addHash"] = static.Path
+
+	for _, page := range pages {
+		name := filepath.Base(page)
+
+		template, err := template.New(name).Funcs(functions).ParseFS(templates,
+			layoutTemplatePath,
+			partialTemplatesGlob,
+			page,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		cache[name] = template
+	}
+
+	return cache, nil
 }

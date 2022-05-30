@@ -35,6 +35,8 @@ type Application struct {
 
 	// wrapper around mux router
 	*router
+
+	*flashStack
 }
 
 // AddRoutes adds routes for the html web app.
@@ -57,6 +59,8 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		ActiveUserService: &ActiveUserService{services.UserService()},
 	}
 
+	flashStack := newFlashStack()
+
 	app := &Application{
 		Application:  services,
 		sessions:     &sessions,
@@ -67,8 +71,10 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 		templateDataFactory: &templateDataFactory{
 			sessions: &sessions,
 			router:   muxrouter,
+			flashes:  flashStack,
 		},
-		router: &router{Router: muxrouter},
+		router:     &router{Router: muxrouter},
+		flashStack: flashStack,
 	}
 
 	app.addRoutes(muxrouter)
@@ -132,7 +138,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            app.sessions,
+		flashStack:          app.flashStack,
 	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
 
 	(&WorkspaceController{
@@ -140,7 +146,7 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            app.sessions,
+		flashStack:          app.flashStack,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
 
 	(&RunController{
@@ -151,6 +157,6 @@ func (app *Application) authRoutes(router *mux.Router) {
 		templateDataFactory: app.templateDataFactory,
 		renderer:            app.renderer,
 		router:              app.router,
-		sessions:            app.sessions,
+		flashStack:          app.flashStack,
 	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
 }

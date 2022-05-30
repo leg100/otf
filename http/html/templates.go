@@ -2,13 +2,9 @@ package html
 
 import (
 	"fmt"
-	"html/template"
-	"io/fs"
 	"net/http"
 	"path"
-	"path/filepath"
 
-	"github.com/Masterminds/sprig"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
@@ -28,15 +24,18 @@ type templateDataFactory struct {
 
 	// provide access to routes
 	router *mux.Router
+
+	// flash messages stack
+	flashes *flashStack
 }
 
 func (f *templateDataFactory) newTemplateData(r *http.Request, content interface{}) templateData {
 	return templateData{
-		Content:  content,
-		router:   &router{f.router},
-		sessions: f.sessions,
-		request:  r,
-		Version:  otf.Version,
+		Content:     content,
+		router:      &router{f.router},
+		flashPopper: f.flashes.popFunc(r),
+		request:     r,
+		Version:     otf.Version,
 	}
 }
 
@@ -48,7 +47,7 @@ type templateData struct {
 
 	request *http.Request
 
-	sessions *sessions
+	flashPopper func() *flash
 
 	// oTF version string for showing in footer
 	Version string
@@ -120,44 +119,14 @@ func (td *templateData) RouteVars() map[string]string {
 	return mux.Vars(td.request)
 }
 
-func (td *templateData) PopFlash() (*otf.Flash, error) {
-	return td.sessions.PopFlash(td.request)
+func (td *templateData) PopFlash() *flash {
+	return td.flashPopper()
 }
 
 func (td *templateData) CurrentUser() *ActiveUser {
-	return GetUserFromContext(td.request.Context())
+	return getUserFromContext(td.request.Context())
 }
 
 func (td *templateData) CurrentPath() string {
 	return td.request.URL.Path
-}
-
-// newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*template.Template, error) {
-	cache := make(map[string]*template.Template)
-
-	pages, err := fs.Glob(templates, contentTemplatesGlob)
-	if err != nil {
-		return nil, err
-	}
-
-	functions := sprig.GenericFuncMap()
-	functions["addHash"] = static.Path
-
-	for _, page := range pages {
-		name := filepath.Base(page)
-
-		template, err := template.New(name).Funcs(functions).ParseFS(templates,
-			layoutTemplatePath,
-			partialTemplatesGlob,
-			page,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		cache[name] = template
-	}
-
-	return cache, nil
 }

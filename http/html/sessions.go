@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -88,7 +87,7 @@ func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
 
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
-	user := GetUserFromContext(ctx)
+	user := getUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
@@ -98,10 +97,10 @@ func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
-	return GetUserFromContext(ctx).IsAuthenticated()
+	return getUserFromContext(ctx).IsAuthenticated()
 }
 
-func GetUserFromContext(ctx context.Context) *ActiveUser {
+func getUserFromContext(ctx context.Context) *ActiveUser {
 	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
 	if !ok {
 		panic("no user in context")
@@ -109,34 +108,12 @@ func GetUserFromContext(ctx context.Context) *ActiveUser {
 	return c
 }
 
-func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
-	return GetUserFromContext(ctx).Session
+func getCtxSession(ctx context.Context) *otf.Session {
+	return getUserFromContext(ctx).Session
 }
 
-// PopFlash retrieves a flash message from the current session. The message is
-// thereafter discarded. Nil is returned if there is no flash message.
-func (s *sessions) PopFlash(r *http.Request) (*otf.Flash, error) {
-	session := s.GetSessionFromContext(r.Context())
-
-	return s.UserService.PopFlash(r.Context(), session.Token)
-}
-
-func (s *sessions) FlashSuccess(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashSuccess(msg...))
-}
-
-func (s *sessions) FlashError(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashError(msg...))
-}
-
-func (s *sessions) flash(r *http.Request, flash *otf.Flash) error {
-	session := s.GetSessionFromContext(r.Context())
-
-	if err := s.UserService.SetFlash(r.Context(), session.Token, flash); err != nil {
-		return fmt.Errorf("saving flash message in session backend: %w", err)
-	}
-
-	return nil
+func getCtxToken(ctx context.Context) string {
+	return getCtxSession(ctx).Token
 }
 
 func newSessionData(r *http.Request) (*otf.SessionData, error) {

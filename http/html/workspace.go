@@ -16,10 +16,10 @@ type WorkspaceController struct {
 
 	*router
 
-	// for setting flash messages
-	sessions *sessions
-
 	*templateDataFactory
+
+	// flash db
+	*flashStack
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
@@ -76,7 +76,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	workspace, err := c.WorkspaceService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.sessions.FlashError(r, "workspace already exists: ", opts.Name)
+		c.push(r, flashError("workspace already exists: "+opts.Name))
 		http.Redirect(w, r, c.relative(r, "newWorkspace"), http.StatusFound)
 		return
 	}
@@ -84,7 +84,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.sessions.FlashSuccess(r, "created workspace: ", workspace.Name())
+	c.push(r, flashSuccess("created workspace: "+workspace.Name()))
 	http.Redirect(w, r, c.relative(r, "getWorkspace", "workspace_name", opts.Name), http.StatusFound)
 }
 
@@ -146,7 +146,7 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.sessions.FlashSuccess(r, "updated workspace")
+	c.push(r, flashSuccess("updated workspace"))
 
 	// Explicitly specify route variables because user may have updated them.
 	http.Redirect(w, r, c.relative(r, "editWorkspace", "workspace_name", workspace.Name()), http.StatusFound)
@@ -163,12 +163,12 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.sessions.FlashSuccess(r, "deleted workspace: ", *opts.Name)
+	c.push(r, flashSuccess("deleted workspace: "+*opts.Name))
 	http.Redirect(w, r, c.relative(r, "listWorkspace"), http.StatusFound)
 }
 
 func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
@@ -185,7 +185,7 @@ func (c *WorkspaceController) Lock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) Unlock(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)

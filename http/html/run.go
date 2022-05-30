@@ -22,10 +22,10 @@ type RunController struct {
 
 	*router
 
-	// for setting flash messages
-	sessions *sessions
-
 	*templateDataFactory
+
+	// flash db
+	*flashStack
 }
 
 func (c *RunController) addRoutes(router *mux.Router) {

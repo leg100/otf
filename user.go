@@ -10,7 +10,6 @@ const (
 	// Session data keys
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"
-	FlashSessionKey    = "flash"
 )
 
 var (
@@ -138,10 +137,6 @@ type UserService interface {
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 	// Transfer session from one user to another
 	TransferSession(ctx context.Context, from, to *User, session *Session) error
-	// PopFlash pops a flash message for the session identified by token.
-	PopFlash(ctx context.Context, token string) (*Flash, error)
-	// SetFlash sets a flash message for the session identified by token.
-	SetFlash(ctx context.Context, token string, flash *Flash) error
 	// SetCurrentOrganization sets the user's currently active organization
 	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
 	// DeleteSession deletes the session with the given token
