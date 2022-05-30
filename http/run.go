@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -44,7 +43,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.RunService().Get(context.Background(), vars["id"])
+	obj, err := s.RunService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -71,7 +70,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.RunService().List(context.Background(), opts)
+	obj, err := s.RunService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -86,7 +85,7 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.RunService().Apply(context.Background(), vars["id"], opts); err != nil {
+	if err := s.RunService().Apply(r.Context(), vars["id"], opts); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
@@ -100,7 +99,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().Discard(context.Background(), vars["id"], opts)
+	err := s.RunService().Discard(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunDiscardNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -118,7 +117,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().Cancel(context.Background(), vars["id"], opts)
+	err := s.RunService().Cancel(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunCancelNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -136,7 +135,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().ForceCancel(context.Background(), vars["id"], opts)
+	err := s.RunService().ForceCancel(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunForceCancelNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return

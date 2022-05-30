@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -31,7 +30,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.OrganizationService().Get(context.Background(), vars["name"])
+	obj, err := s.OrganizationService().Get(r.Context(), vars["name"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -45,7 +44,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().List(context.Background(), opts)
+	obj, err := s.OrganizationService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -60,7 +59,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().Update(context.Background(), name, &otf.OrganizationUpdateOptions{
+	obj, err := s.OrganizationService().Update(r.Context(), name, &otf.OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -74,7 +73,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	if err := s.OrganizationService().Delete(context.Background(), name); err != nil {
+	if err := s.OrganizationService().Delete(r.Context(), name); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
@@ -83,7 +82,7 @@ func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	entitlements, err := s.OrganizationService().GetEntitlements(context.Background(), name)
+	entitlements, err := s.OrganizationService().GetEntitlements(r.Context(), name)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
