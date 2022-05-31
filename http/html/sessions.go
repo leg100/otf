@@ -13,7 +13,7 @@ import (
 type ctxKey int
 
 const (
-	sessionCookieName = "session"
+	sessionCookie = "session"
 
 	userCtxKey ctxKey = iota
 )
@@ -33,7 +33,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 		// the user to attach to the request ctx
 		var user *ActiveUser
 
-		cookie, err := r.Cookie(sessionCookieName)
+		cookie, err := r.Cookie(sessionCookie)
 		if err == nil {
 			user, err = s.ActiveUserService.Get(r.Context(), cookie.Value)
 			if err != otf.ErrResourceNotFound && err != nil {
@@ -51,7 +51,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 				return
 			}
 			// set cookie on response
-			setCookie(w, user.Session.Token, user.Session.Expiry)
+			setCookie(w, sessionCookie, user.Session.Token, &user.Session.Expiry)
 		}
 
 		ctx := context.WithValue(r.Context(), userCtxKey, user)
@@ -61,37 +61,13 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 	})
 }
 
-func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
-	cookie := &http.Cookie{
-		Name:     "session",
-		Value:    token,
-		HttpOnly: true,
-		Path:     "/",
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	if expiry.IsZero() {
-		// Purge cookie from browser.
-		cookie.Expires = time.Unix(1, 0)
-		cookie.MaxAge = -1
-	} else {
-		// Round up to the nearest second.
-		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
-		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1)
-	}
-
-	w.Header().Add("Set-Cookie", cookie.String())
-	w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-}
-
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
 	user := getUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
-	setCookie(w, user.Session.Token, time.Time{})
+	setCookie(w, sessionCookie, user.Session.Token, &time.Time{})
 
 	return nil
 }

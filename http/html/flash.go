@@ -11,7 +11,7 @@ const (
 	FlashSuccess flashType = "success"
 	FlashError   flashType = "error"
 	// name of flash cookie
-	flashCookie = "otf-flash"
+	flashCookie = "flash"
 )
 
 // flash represents a flash message indicating success/failure to a user
@@ -30,8 +30,7 @@ func setFlash(w http.ResponseWriter, f flash) {
 		panic("marshalling flash message to json: " + err.Error())
 	}
 	encoded := base64.URLEncoding.EncodeToString(js)
-	c := &http.Cookie{Name: flashCookie, Value: encoded}
-	http.SetCookie(w, c)
+	setCookie(w, flashCookie, encoded, nil)
 }
 
 // flashSuccess helper
@@ -54,19 +53,14 @@ func popFlashFunc(w http.ResponseWriter, r *http.Request) func() *flash {
 	}
 	value, err := base64.URLEncoding.DecodeString(c.Value)
 	if err != nil {
-		if err != nil {
-			// reliant on middleware catching panic and sending HTTP500 to user
-			panic("decoding flash message: " + err.Error())
-		}
+		// reliant on middleware catching panic and sending HTTP500 to user
+		panic("decoding flash message: " + err.Error())
 	}
-	dc := &http.Cookie{Name: flashCookie, MaxAge: -1, Expires: time.Unix(1, 0)}
-	http.SetCookie(w, dc)
 	var f flash
 	if err := json.Unmarshal(value, &f); err != nil {
-		if err != nil {
-			// reliant on middleware catching panic and sending HTTP500 to user
-			panic("unmarshalling flash message: " + err.Error())
-		}
+		// reliant on middleware catching panic and sending HTTP500 to user
+		panic("unmarshalling flash message: " + err.Error())
 	}
+	setCookie(w, flashCookie, "", &time.Time{})
 	return func() *flash { return &f }
 }
