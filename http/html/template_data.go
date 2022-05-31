@@ -9,19 +9,8 @@ import (
 	"github.com/leg100/otf"
 )
 
-const (
-	// Paths to static assets relative to the templates filesystem. For use with
-	// the newTemplateCache function below.
-	layoutTemplatePath   = "static/templates/layout.tmpl"
-	contentTemplatesGlob = "static/templates/content/*.tmpl"
-	partialTemplatesGlob = "static/templates/partials/*.tmpl"
-)
-
 // templateDataFactory produces templateData structs
 type templateDataFactory struct {
-	// for extracting info from current session
-	sessions *sessions
-
 	// provide access to routes
 	router *mux.Router
 }
@@ -82,6 +71,34 @@ func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
 	return crumbs, nil
 }
 
+func (td *templateData) RouteVars() map[string]string {
+	return mux.Vars(td.request)
+}
+
+func (td *templateData) PopFlash() *flash {
+	return td.flashPopper()
+}
+
+func (td *templateData) CurrentUser() *otf.User {
+	user, err := getCtxUser(td.request.Context())
+	if err != nil {
+		return nil
+	}
+	return user
+}
+
+func (td *templateData) CurrentSession() *otf.Session {
+	session, err := getCtxSession(td.request.Context())
+	if err != nil {
+		return nil
+	}
+	return session
+}
+
+func (td *templateData) CurrentPath() string {
+	return td.request.URL.Path
+}
+
 func (td *templateData) makeBreadcrumbs(route *mux.Route, crumbs []Anchor) ([]Anchor, error) {
 	link, err := route.URLPath(flattenMap(mux.Vars(td.request))...)
 	if err != nil {
@@ -110,20 +127,4 @@ func flattenMap(m map[string]string) (s []string) {
 		s = append(s, k, v)
 	}
 	return
-}
-
-func (td *templateData) RouteVars() map[string]string {
-	return mux.Vars(td.request)
-}
-
-func (td *templateData) PopFlash() *flash {
-	return td.flashPopper()
-}
-
-func (td *templateData) CurrentUser() *ActiveUser {
-	return getUserFromContext(td.request.Context())
-}
-
-func (td *templateData) CurrentPath() string {
-	return td.request.URL.Path
 }

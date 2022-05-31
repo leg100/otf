@@ -2,23 +2,12 @@ package html
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"path"
+	"time"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-)
-
-type GithubClient interface {
-	GetUser(ctx context.Context, name string) (*github.User, error)
-	ListOrganizations(ctx context.Context, name string) ([]*github.Organization, error)
-}
-
-var (
-	ErrNoGithubOrganizationsFound = errors.New("no github organizations found")
 )
 
 // githubLogin is called upon a successful Github login. A new user is created
@@ -72,80 +61,49 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transfer session from anonymous to named user.
-	anon := getUserFromContext(ctx)
-	if err := app.UserService().TransferSession(ctx, anon.User, user, anon.Session); err != nil {
+	// create session data
+	data, err := newSessionData(r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
-}
-
-// requireAuthentication is middleware that insists on the user being
-// authenticated before passing on the request.
-func (app *Application) requireAuthentication(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		if !app.sessions.IsAuthenticated(r.Context()) {
-			http.Redirect(w, r, app.route("login"), http.StatusFound)
-			return
-		}
-
-		next.ServeHTTP(w, r)
+	// create session and redirect user to their profile
+	session, err := app.UserService().CreateSession(r.Context(), user, data)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return http.HandlerFunc(fn)
-}
-
-// setCurrentOrganization ensures a user's current organization matches the
-// organization in the request. If there is no organization in the current
-// request then no action is taken.
-func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := getUserFromContext(r.Context())
-
-		current, ok := mux.Vars(r)["organization_name"]
-		if !ok {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
-			user.CurrentOrganization = &current
-			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID(), current); err != nil {
-				writeError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			ctx := context.WithValue(r.Context(), userCtxKey, user)
-			r = r.WithContext(ctx)
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	setCookie(w, sessionCookie, session.Token, &session.Expiry)
+	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	tdata := app.newTemplateData(w, r, nil)
-
 	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	if err := app.sessions.Destroy(r.Context(), w); err != nil {
+	session, err := getCtxSession(r.Context())
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	if err := app.UserService().DeleteSession(r.Context(), session.Token); err != nil {
+		return
+	}
+	setCookie(w, sessionCookie, session.Token, &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
-func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, path.Join(r.URL.Path, "profile"), http.StatusFound)
-}
-
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
+	user, err := getCtxUser(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	tdata := app.newTemplateData(w, r, user)
 
@@ -155,7 +113,11 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
+	user, err := getCtxUser(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	tdata := app.newTemplateData(w, r, user)
 
@@ -173,28 +135,31 @@ func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
-
+	user, err := getCtxUser(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	var opts otf.TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	token, err := app.UserService().CreateToken(r.Context(), user.User, &opts)
+	token, err := app.UserService().CreateToken(r.Context(), user, &opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else {
-		flashSuccess(w, "created token: "+token.Token())
 	}
-
+	flashSuccess(w, "created token: "+token.Token())
 	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
-
+	user, err := getCtxUser(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	tdata := app.newTemplateData(w, r, user)
 
 	if err := app.renderTemplate("token_list.tmpl", w, tdata); err != nil {
@@ -203,19 +168,20 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
-
+	user, err := getCtxUser(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	id := r.FormValue("id")
 	if id == "" {
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-
-	if err := app.UserService().DeleteToken(r.Context(), user.User, id); err != nil {
+	if err := app.UserService().DeleteToken(r.Context(), user, id); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	flashSuccess(w, "Deleted token")
 	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
 }
@@ -226,12 +192,10 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		writeError(w, "missing token", http.StatusUnprocessableEntity)
 		return
 	}
-
 	if err := app.UserService().DeleteSession(r.Context(), token); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	flashSuccess(w, "Revoked session")
 	http.Redirect(w, r, app.route("listSession"), http.StatusFound)
 }

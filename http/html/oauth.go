@@ -35,6 +35,7 @@ func (o *oauth) requestHandler(w http.ResponseWriter, r *http.Request) {
 		panic("unable to generate state token: " + err.Error())
 	}
 
+	// TODO: replace with setCookie helper
 	http.SetCookie(w, &http.Cookie{
 		Name:     oauthCookieName,
 		Value:    state,
