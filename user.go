@@ -43,12 +43,6 @@ func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
 	return session, nil
 }
 
-// IsAuthenticated determines if the user is authenticated, i.e. not an
-// anonymous user.
-func (u *User) IsAuthenticated() bool {
-	return u.Username() != AnonymousUsername
-}
-
 func (u *User) ID() string           { return u.id }
 func (u *User) Username() string     { return u.username }
 func (u *User) CreatedAt() time.Time { return u.createdAt }
@@ -77,26 +71,6 @@ func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []
 	}
 	// ...and update receiver too.
 	u.Organizations = authoritative
-	return nil
-}
-
-// TransferSession transfers a session from the receiver to another user.
-func (u *User) TransferSession(ctx context.Context, session *Session, to *User, store SessionStore) error {
-	// Update session's user reference
-	session.UserID = to.ID()
-	// Remove session from receiver
-	for i, s := range u.Sessions {
-		if s.Token != session.Token {
-			u.Sessions = append(u.Sessions[0:i], u.Sessions[i+1:len(u.Sessions)]...)
-			break
-		}
-	}
-	// Update in persistence store
-	if err := store.TransferSession(ctx, session.Token, to.ID()); err != nil {
-		return err
-	}
-	// Add session to destination user
-	to.Sessions = append(to.Sessions, session)
 	return nil
 }
 
@@ -131,12 +105,8 @@ type UserService interface {
 	EnsureCreated(ctx context.Context, username string) (*User, error)
 	// Get retrieves a user according to the spec.
 	Get(ctx context.Context, spec UserSpec) (*User, error)
-	// Get retrieves the anonymous user.
-	GetAnonymous(ctx context.Context) (*User, error)
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-	// Transfer session from one user to another
-	TransferSession(ctx context.Context, from, to *User, session *Session) error
 	// SetCurrentOrganization sets the user's currently active organization
 	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
 	// DeleteSession deletes the session with the given token

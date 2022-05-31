@@ -92,24 +92,8 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, err
 	return user, nil
 }
 
-func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
-	return s.Get(ctx, otf.UserSpec{Username: otf.String(otf.AnonymousUsername)})
-}
-
 func (s UserService) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
 	return s.db.SetCurrentOrganization(ctx, userID, orgName)
-}
-
-// TransferSession transfers a session from one user to another.
-func (s UserService) TransferSession(ctx context.Context, from, to *otf.User, session *otf.Session) error {
-	if err := from.TransferSession(ctx, session, to, s.sdb); err != nil {
-		s.Error(err, "transferring session", "from", from.Username, "to", to.Username)
-		return err
-	}
-
-	s.V(1).Info("transferred session", "from", from.Username(), "to", to.Username())
-
-	return nil
 }
 
 func (s UserService) DeleteSession(ctx context.Context, token string) error {

@@ -22,7 +22,7 @@
       <tr>
         <td>{{ .Address }}</td>
 
-        {{ if eq .Token $.CurrentUser.Token }}
+        {{ if eq .Token $.CurrentSession.Token }}
         <td>&#10004;</td>
         <td></td>
         {{ else }}

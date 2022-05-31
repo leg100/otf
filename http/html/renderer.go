@@ -11,6 +11,19 @@ import (
 	"github.com/Masterminds/sprig"
 )
 
+const (
+	// Paths to static assets relative to the templates filesystem. For use with
+	// the newTemplateCache function below.
+	layoutTemplatePath   = "static/templates/layout.tmpl"
+	contentTemplatesGlob = "static/templates/content/*.tmpl"
+	partialTemplatesGlob = "static/templates/partials/*.tmpl"
+)
+
+var (
+	// template functions
+	funcs = sprig.HtmlFuncMap()
+)
+
 // renderer is capable of locating and rendering a template.
 type renderer interface {
 	renderTemplate(name string, w io.Writer, data templateData) error
@@ -36,7 +49,8 @@ func newRenderer(devMode bool) (renderer, error) {
 func newEmbeddedRenderer() (*embeddedRenderer, error) {
 	static := &cacheBuster{embedded}
 
-	cache, err := newTemplateCache(embedded, static)
+	funcs["addHash"] = static.Path
+	cache, err := newTemplateCache(embedded, funcs)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +69,8 @@ func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data templat
 func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
 	static := &cacheBuster{localDisk}
 
-	cache, err := newTemplateCache(localDisk, static)
+	funcs["addHash"] = static.Path
+	cache, err := newTemplateCache(localDisk, funcs)
 	if err != nil {
 		return err
 	}
@@ -82,7 +97,7 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 }
 
 // newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*template.Template, error) {
+func newTemplateCache(templates fs.FS, funcs template.FuncMap) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
 	pages, err := fs.Glob(templates, contentTemplatesGlob)
@@ -90,13 +105,10 @@ func newTemplateCache(templates fs.FS, static *cacheBuster) (map[string]*templat
 		return nil, err
 	}
 
-	functions := sprig.GenericFuncMap()
-	functions["addHash"] = static.Path
-
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		template, err := template.New(name).Funcs(functions).ParseFS(templates,
+		template, err := template.New(name).Funcs(funcs).ParseFS(templates,
 			layoutTemplatePath,
 			partialTemplatesGlob,
 			page,
