@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -14,7 +13,7 @@ import (
 type ctxKey int
 
 const (
-	sessionCookieName = "session"
+	sessionCookie = "session"
 
 	userCtxKey ctxKey = iota
 )
@@ -34,7 +33,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 		// the user to attach to the request ctx
 		var user *ActiveUser
 
-		cookie, err := r.Cookie(sessionCookieName)
+		cookie, err := r.Cookie(sessionCookie)
 		if err == nil {
 			user, err = s.ActiveUserService.Get(r.Context(), cookie.Value)
 			if err != otf.ErrResourceNotFound && err != nil {
@@ -52,7 +51,7 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 				return
 			}
 			// set cookie on response
-			setCookie(w, user.Session.Token, user.Session.Expiry)
+			setCookie(w, sessionCookie, user.Session.Token, &user.Session.Expiry)
 		}
 
 		ctx := context.WithValue(r.Context(), userCtxKey, user)
@@ -62,81 +61,27 @@ func (s *sessions) Load(next http.Handler) http.Handler {
 	})
 }
 
-func setCookie(w http.ResponseWriter, token string, expiry time.Time) {
-	cookie := &http.Cookie{
-		Name:     "session",
-		Value:    token,
-		HttpOnly: true,
-		Path:     "/",
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	if expiry.IsZero() {
-		// Purge cookie from browser.
-		cookie.Expires = time.Unix(1, 0)
-		cookie.MaxAge = -1
-	} else {
-		// Round up to the nearest second.
-		cookie.Expires = time.Unix(expiry.Unix()+1, 0)
-		cookie.MaxAge = int(time.Until(expiry).Seconds() + 1)
-	}
-
-	w.Header().Add("Set-Cookie", cookie.String())
-	w.Header().Add("Cache-Control", `no-cache="Set-Cookie"`)
-}
-
 // Destroy deletes the current session.
 func (s *sessions) Destroy(ctx context.Context, w http.ResponseWriter) error {
-	user := GetUserFromContext(ctx)
+	user := getUserFromContext(ctx)
 	if err := s.ActiveUserService.DeleteSession(ctx, user.Session.Token); err != nil {
 		return err
 	}
-	setCookie(w, user.Session.Token, time.Time{})
+	setCookie(w, sessionCookie, user.Session.Token, &time.Time{})
 
 	return nil
 }
 
 func (s *sessions) IsAuthenticated(ctx context.Context) bool {
-	return GetUserFromContext(ctx).IsAuthenticated()
+	return getUserFromContext(ctx).IsAuthenticated()
 }
 
-func GetUserFromContext(ctx context.Context) *ActiveUser {
+func getUserFromContext(ctx context.Context) *ActiveUser {
 	c, ok := ctx.Value(userCtxKey).(*ActiveUser)
 	if !ok {
 		panic("no user in context")
 	}
 	return c
-}
-
-func (s *sessions) GetSessionFromContext(ctx context.Context) *otf.Session {
-	return GetUserFromContext(ctx).Session
-}
-
-// PopFlash retrieves a flash message from the current session. The message is
-// thereafter discarded. Nil is returned if there is no flash message.
-func (s *sessions) PopFlash(r *http.Request) (*otf.Flash, error) {
-	session := s.GetSessionFromContext(r.Context())
-
-	return s.UserService.PopFlash(r.Context(), session.Token)
-}
-
-func (s *sessions) FlashSuccess(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashSuccess(msg...))
-}
-
-func (s *sessions) FlashError(r *http.Request, msg ...interface{}) error {
-	return s.flash(r, otf.FlashError(msg...))
-}
-
-func (s *sessions) flash(r *http.Request, flash *otf.Flash) error {
-	session := s.GetSessionFromContext(r.Context())
-
-	if err := s.UserService.SetFlash(r.Context(), session.Token, flash); err != nil {
-		return fmt.Errorf("saving flash message in session backend: %w", err)
-	}
-
-	return nil
 }
 
 func newSessionData(r *http.Request) (*otf.SessionData, error) {

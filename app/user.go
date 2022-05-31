@@ -96,15 +96,6 @@ func (s UserService) GetAnonymous(ctx context.Context) (*otf.User, error) {
 	return s.Get(ctx, otf.UserSpec{Username: otf.String(otf.AnonymousUsername)})
 }
 
-// PopFlash pops a flash message for the given session.
-func (s UserService) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
-	return s.sdb.PopFlash(ctx, token)
-}
-
-func (s UserService) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
-	return s.sdb.SetFlash(ctx, token, flash)
-}
-
 func (s UserService) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
 	return s.db.SetCurrentOrganization(ctx, userID, orgName)
 }

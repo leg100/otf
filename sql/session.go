@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -42,40 +41,6 @@ func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) err
 		CreatedAt: session.CreatedAt(),
 	})
 	return err
-}
-
-func (db SessionDB) SetFlash(ctx context.Context, token string, flash *otf.Flash) error {
-	q := pggen.NewQuerier(db.Pool)
-	data, err := json.Marshal(flash)
-	if err != nil {
-		return err
-	}
-	_, err = q.UpdateSessionFlashByToken(ctx, data, pgtype.Text{String: token, Status: pgtype.Present})
-	return err
-}
-
-func (db SessionDB) PopFlash(ctx context.Context, token string) (*otf.Flash, error) {
-	// TODO: wrap inside a tx
-	q := pggen.NewQuerier(db.Pool)
-	tokenText := pgtype.Text{String: token, Status: pgtype.Present}
-	data, err := q.FindSessionFlashByToken(ctx, tokenText)
-	if err != nil {
-		return nil, err
-	}
-	// No flash found
-	if data == nil {
-		return nil, nil
-	}
-	// Set flash in DB to NULL
-	if _, err := q.UpdateSessionFlashByToken(ctx, nil, tokenText); err != nil {
-		return nil, err
-	}
-	// Marshal bytes into flash obj
-	var flash otf.Flash
-	if err := json.Unmarshal(data, &flash); err != nil {
-		return nil, err
-	}
-	return &flash, nil
 }
 
 // TransferSession updates a session row in the sessions table with the given

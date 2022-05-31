@@ -9,9 +9,7 @@ import (
 )
 
 const (
-	DefaultSessionExpiry           = 24 * time.Hour
-	FlashSuccessType     FlashType = "success"
-	FlashErrorType       FlashType = "error"
+	DefaultSessionExpiry = 24 * time.Hour
 )
 
 // Session is a user session
@@ -45,31 +43,6 @@ func (s *Session) CreatedAt() time.Time { return s.createdAt }
 type SessionData struct {
 	// Client IP address
 	Address string
-
-	// Web app flash message
-	Flash *Flash
-}
-
-type FlashType string
-
-type Flash struct {
-	Type    FlashType
-	Message string
-}
-
-func FlashSuccess(msg ...interface{}) *Flash {
-	return flash(FlashSuccessType, msg...)
-}
-
-func FlashError(msg ...interface{}) *Flash {
-	return flash(FlashErrorType, msg...)
-}
-
-func flash(t FlashType, msg ...interface{}) *Flash {
-	return &Flash{
-		Type:    t,
-		Message: fmt.Sprint(msg...),
-	}
 }
 
 // SessionStore is a persistence store for user sessions.
@@ -81,12 +54,6 @@ type SessionStore interface {
 	// because this only ever used to transfer a session from the anonymous user
 	// to a named user.
 	TransferSession(ctx context.Context, token, userID string) error
-	// PopFlash reads a flash message from a persistence store before purging
-	// it. The token identifies the session.
-	PopFlash(ctx context.Context, token string) (*Flash, error)
-	// SetFlash writes a flash message the persistence store for the session
-	// identified by token.
-	SetFlash(ctx context.Context, token string, flash *Flash) error
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
 }

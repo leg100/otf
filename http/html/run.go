@@ -22,9 +22,6 @@ type RunController struct {
 
 	*router
 
-	// for setting flash messages
-	sessions *sessions
-
 	*templateDataFactory
 }
 
@@ -63,7 +60,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		List      *otf.RunList
 		Options   otf.RunListOptions
 		Workspace *otf.Workspace
@@ -78,7 +75,7 @@ func (c *RunController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *RunController) New(w http.ResponseWriter, r *http.Request) {
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		Organization string
 		Workspace    string
 	}{
@@ -134,7 +131,7 @@ func (c *RunController) Get(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logStr = strings.TrimSpace(logStr)
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		Run      *otf.Run
 		PlanLogs template.HTML
 	}{
@@ -172,7 +169,7 @@ func (c *RunController) GetPlan(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		Run  *otf.Run
 		Logs template.HTML
 	}{
@@ -210,7 +207,7 @@ func (c *RunController) GetApply(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		Run  *otf.Run
 		Logs template.HTML
 	}{

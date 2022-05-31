@@ -343,20 +343,6 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindSessionFlashByToken(ctx context.Context, token pgtype.Text) ([]byte, error)
-	// FindSessionFlashByTokenBatch enqueues a FindSessionFlashByToken query into batch to be executed
-	// later by the batch.
-	FindSessionFlashByTokenBatch(batch genericBatch, token pgtype.Text)
-	// FindSessionFlashByTokenScan scans the result of an executed FindSessionFlashByTokenBatch query.
-	FindSessionFlashByTokenScan(results pgx.BatchResults) ([]byte, error)
-
-	UpdateSessionFlashByToken(ctx context.Context, flash []byte, token pgtype.Text) (pgtype.Text, error)
-	// UpdateSessionFlashByTokenBatch enqueues a UpdateSessionFlashByToken query into batch to be executed
-	// later by the batch.
-	UpdateSessionFlashByTokenBatch(batch genericBatch, flash []byte, token pgtype.Text)
-	// UpdateSessionFlashByTokenScan scans the result of an executed UpdateSessionFlashByTokenBatch query.
-	UpdateSessionFlashByTokenScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	UpdateSessionUserID(ctx context.Context, userID pgtype.Text, token pgtype.Text) (pgtype.Text, error)
 	// UpdateSessionUserIDBatch enqueues a UpdateSessionUserID query into batch to be executed
 	// later by the batch.
@@ -370,13 +356,6 @@ type Querier interface {
 	UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token pgtype.Text)
 	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
 	UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	UpdateSessionFlash(ctx context.Context, flash []byte, token pgtype.Text) (pgtype.Text, error)
-	// UpdateSessionFlashBatch enqueues a UpdateSessionFlash query into batch to be executed
-	// later by the batch.
-	UpdateSessionFlashBatch(batch genericBatch, flash []byte, token pgtype.Text)
-	// UpdateSessionFlashScan scans the result of an executed UpdateSessionFlashBatch query.
-	UpdateSessionFlashScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteSessionByTokenBatch enqueues a DeleteSessionByToken query into batch to be executed
@@ -827,20 +806,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findSessionFlashByTokenSQL, findSessionFlashByTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindSessionFlashByToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionFlashByTokenSQL, updateSessionFlashByTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionFlashByToken': %w", err)
-	}
 	if _, err := p.Prepare(ctx, updateSessionUserIDSQL, updateSessionUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateSessionUserID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateSessionExpirySQL, updateSessionExpirySQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateSessionExpiry': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateSessionFlashSQL, updateSessionFlashSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionFlash': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteSessionByTokenSQL, deleteSessionByTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteSessionByToken': %w", err)
@@ -1026,7 +996,6 @@ type Sessions struct {
 	Token     pgtype.Text `json:"token"`
 	CreatedAt time.Time   `json:"created_at"`
 	Address   pgtype.Text `json:"address"`
-	Flash     []byte      `json:"flash"`
 	Expiry    time.Time   `json:"expiry"`
 	UserID    pgtype.Text `json:"user_id"`
 }
@@ -1286,7 +1255,6 @@ func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
 		compositeField{"token", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"address", "text", &pgtype.Text{}},
-		compositeField{"flash", "bytea", &pgtype.Bytea{}},
 		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"user_id", "text", &pgtype.Text{}},
 	)

@@ -30,7 +30,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	// page along with a flash alert.
 	token, err := app.oauth.responseHandler(r)
 	if err != nil {
-		app.sessions.FlashError(r, err.Error())
+		flashError(w, err.Error())
 		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
 	}
@@ -48,7 +48,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(githubOrganizations) == 0 {
-		app.sessions.FlashError(r, "no github organizations found")
+		flashError(w, "no github organizations found")
 		http.Redirect(w, r, app.route("login"), http.StatusFound)
 		return
 	}
@@ -73,7 +73,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Transfer session from anonymous to named user.
-	anon := GetUserFromContext(ctx)
+	anon := getUserFromContext(ctx)
 	if err := app.UserService().TransferSession(ctx, anon.User, user, anon.Session); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,7 +101,7 @@ func (app *Application) requireAuthentication(next http.Handler) http.Handler {
 // request then no action is taken.
 func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := GetUserFromContext(r.Context())
+		user := getUserFromContext(r.Context())
 
 		current, ok := mux.Vars(r)["organization_name"]
 		if !ok {
@@ -124,7 +124,7 @@ func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	tdata := app.newTemplateData(r, nil)
+	tdata := app.newTemplateData(w, r, nil)
 
 	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -145,9 +145,9 @@ func (app *Application) meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 
-	tdata := app.newTemplateData(r, user)
+	tdata := app.newTemplateData(w, r, user)
 
 	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -155,9 +155,9 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 
-	tdata := app.newTemplateData(r, user)
+	tdata := app.newTemplateData(w, r, user)
 
 	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -165,7 +165,7 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	tdata := app.newTemplateData(r, nil)
+	tdata := app.newTemplateData(w, r, nil)
 
 	if err := app.renderTemplate("token_new.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -173,7 +173,7 @@ func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 
 	var opts otf.TokenCreateOptions
 	if err := decode.Form(&opts, r); err != nil {
@@ -186,16 +186,16 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		app.sessions.FlashSuccess(r, "created token: ", token.Token())
+		flashSuccess(w, "created token: "+token.Token())
 	}
 
 	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 
-	tdata := app.newTemplateData(r, user)
+	tdata := app.newTemplateData(w, r, user)
 
 	if err := app.renderTemplate("token_list.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -203,7 +203,7 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user := GetUserFromContext(r.Context())
+	user := getUserFromContext(r.Context())
 
 	id := r.FormValue("id")
 	if id == "" {
@@ -216,11 +216,7 @@ func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := app.sessions.FlashSuccess(r, "Deleted token"); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	flashSuccess(w, "Deleted token")
 	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
 }
 
@@ -236,11 +232,7 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := app.sessions.FlashSuccess(r, "Revoked session"); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	flashSuccess(w, "Revoked session")
 	http.Redirect(w, r, app.route("listSession"), http.StatusFound)
 }
 

@@ -18,9 +18,6 @@ type OrganizationController struct {
 
 	*router
 
-	// for setting flash messages
-	sessions *sessions
-
 	*templateDataFactory
 }
 
@@ -50,7 +47,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		List    *otf.OrganizationList
 		Options otf.OrganizationListOptions
 	}{
@@ -64,7 +61,7 @@ func (c *OrganizationController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *OrganizationController) New(w http.ResponseWriter, r *http.Request) {
-	tdata := c.newTemplateData(r, nil)
+	tdata := c.newTemplateData(w, r, nil)
 
 	if err := c.renderTemplate("organization_new.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -81,7 +78,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 
 	organization, err := c.OrganizationService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.sessions.FlashError(r, "organization already exists: ", *opts.Name)
+		flashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, c.route("newOrganization"), http.StatusFound)
 		return
 	}
@@ -90,8 +87,7 @@ func (c *OrganizationController) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "created organization: ", organization.Name())
-
+	flashSuccess(w, "created organization: "+organization.Name())
 	http.Redirect(w, r, c.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
 }
 
@@ -107,7 +103,7 @@ func (c *OrganizationController) Overview(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tdata := c.newTemplateData(r, org)
+	tdata := c.newTemplateData(w, r, org)
 
 	if err := c.renderTemplate("organization_get.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -121,7 +117,7 @@ func (c *OrganizationController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, organization)
+	tdata := c.newTemplateData(w, r, organization)
 
 	if err := c.renderTemplate("organization_edit.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -141,7 +137,7 @@ func (c *OrganizationController) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "updated organization")
+	flashSuccess(w, "updated organization")
 
 	// Explicitly specify route variable for organization name because the user
 	// might have updated it.
@@ -157,6 +153,6 @@ func (c *OrganizationController) Delete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.sessions.FlashSuccess(r, "deleted organization: ", organizationName)
+	flashSuccess(w, "deleted organization: "+organizationName)
 	http.Redirect(w, r, c.route("listOrganization"), http.StatusFound)
 }

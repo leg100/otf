@@ -57,7 +57,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     token           TEXT,
     created_at      TIMESTAMPTZ NOT NULL,
     address         TEXT        NOT NULL,
-    flash           BYTEA,
     expiry          TIMESTAMPTZ NOT NULL,
     user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (token)
