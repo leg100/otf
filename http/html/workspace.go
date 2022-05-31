@@ -17,8 +17,6 @@ type WorkspaceController struct {
 	*router
 
 	*templateDataFactory
-
-	*flashStore
 }
 
 func (c *WorkspaceController) addRoutes(router *mux.Router) {
@@ -48,7 +46,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		List    *otf.WorkspaceList
 		Options otf.WorkspaceListOptions
 	}{workspaces, opts})
@@ -58,7 +56,7 @@ func (c *WorkspaceController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *WorkspaceController) New(w http.ResponseWriter, r *http.Request) {
-	tdata := c.newTemplateData(r, mux.Vars(r)["organization_name"])
+	tdata := c.newTemplateData(w, r, mux.Vars(r)["organization_name"])
 	if err := c.renderTemplate("workspace_new.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -75,7 +73,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	workspace, err := c.WorkspaceService.Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
-		c.push(r, flashError("workspace already exists: "+opts.Name))
+		flashError(w, "workspace already exists: "+opts.Name)
 		http.Redirect(w, r, c.relative(r, "newWorkspace"), http.StatusFound)
 		return
 	}
@@ -83,7 +81,7 @@ func (c *WorkspaceController) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.push(r, flashSuccess("created workspace: "+workspace.Name()))
+	flashSuccess(w, "created workspace: "+workspace.Name())
 	http.Redirect(w, r, c.relative(r, "getWorkspace", "workspace_name", opts.Name), http.StatusFound)
 }
 
@@ -98,7 +96,7 @@ func (c *WorkspaceController) Get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tdata := c.newTemplateData(r, workspace)
+	tdata := c.newTemplateData(w, r, workspace)
 	if err := c.renderTemplate("workspace_get.tmpl", w, tdata); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -117,7 +115,7 @@ func (c *WorkspaceController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tdata := c.newTemplateData(r, struct {
+	tdata := c.newTemplateData(w, r, struct {
 		Workspace *otf.Workspace
 		Options   otf.WorkspaceSpec
 	}{
@@ -145,7 +143,7 @@ func (c *WorkspaceController) Update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.push(r, flashSuccess("updated workspace"))
+	flashSuccess(w, "updated workspace")
 
 	// Explicitly specify route variables because user may have updated them.
 	http.Redirect(w, r, c.relative(r, "editWorkspace", "workspace_name", workspace.Name()), http.StatusFound)
@@ -162,7 +160,7 @@ func (c *WorkspaceController) Delete(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	c.push(r, flashSuccess("deleted workspace: "+*opts.Name))
+	flashSuccess(w, "deleted workspace: "+*opts.Name)
 	http.Redirect(w, r, c.relative(r, "listWorkspace"), http.StatusFound)
 }
 

@@ -1,25 +1,36 @@
 package html
 
 import (
-	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFlash(t *testing.T) {
+	w := httptest.NewRecorder()
+	flashSuccess(w, "great news")
+	cookies := w.Result().Cookies()
+	if assert.Equal(t, 1, len(cookies)) {
+		t.Run("pop flash", func(t *testing.T) {
+			w = httptest.NewRecorder()
+			r := fakeRequest(cookies[0])
+			got := popFlashFunc(w, r)()
+			if assert.NotNil(t, got) {
+				assert.Equal(t, "great news", got.Message)
+			}
+			cookies = w.Result().Cookies()
+			if assert.Equal(t, 1, len(cookies)) {
+				assert.Equal(t, -1, cookies[0].MaxAge)
+			}
+		})
+	}
+}
+
+func fakeRequest(cookie *http.Cookie) *http.Request {
 	r := &http.Request{}
-	store := &flashStore{
-		db:       make(map[string]flash),
-		getToken: func(context.Context) string { return "token123" },
-	}
-	want := flashSuccess("great news")
-	store.push(r, want)
-	got := store.popFunc(r)()
-	if assert.NotNil(t, got) {
-		assert.Equal(t, want, *got)
-	}
-	got = store.popFunc(r)()
-	assert.Nil(t, got)
+	r.Header = make(map[string][]string)
+	r.AddCookie(cookie)
+	return r
 }

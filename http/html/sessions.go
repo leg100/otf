@@ -108,14 +108,6 @@ func getUserFromContext(ctx context.Context) *ActiveUser {
 	return c
 }
 
-func getCtxSession(ctx context.Context) *otf.Session {
-	return getUserFromContext(ctx).Session
-}
-
-func getCtxToken(ctx context.Context) string {
-	return getCtxSession(ctx).Token
-}
-
 func newSessionData(r *http.Request) (*otf.SessionData, error) {
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

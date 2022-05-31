@@ -1,13 +1,17 @@
 package html
 
 import (
-	"context"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
+	"time"
 )
 
 const (
 	FlashSuccess flashType = "success"
 	FlashError   flashType = "error"
+	// name of flash cookie
+	flashCookie = "otf-flash"
 )
 
 // flash represents a flash message indicating success/failure to a user
@@ -16,48 +20,53 @@ type flash struct {
 	Message string
 }
 
-func flashSuccess(msg string) flash {
-	return flash{Type: FlashSuccess, Message: msg}
-}
-
-func flashError(msg string) flash {
-	return flash{Type: FlashError, Message: msg}
-}
-
 type flashType string
 
-// flashStore stores flash messages in memory, storing no more than one flash
-// message per session.
-type flashStore struct {
-	// mapping session token to flash message
-	db map[string]flash
-	// func for retrieving session token from context
-	getToken func(context.Context) string
-}
-
-func newFlashStore() *flashStore {
-	return &flashStore{
-		db:       make(map[string]flash),
-		getToken: getCtxToken,
+// setFlash sets flash message on response cookie
+func setFlash(w http.ResponseWriter, f flash) {
+	js, err := json.Marshal(f)
+	if err != nil {
+		// reliant on middleware catching panic and sending HTTP500 to user
+		panic("marshalling flash message to json: " + err.Error())
 	}
+	encoded := base64.URLEncoding.EncodeToString(js)
+	c := &http.Cookie{Name: flashCookie, Value: encoded}
+	http.SetCookie(w, c)
 }
 
-// push a flash message for the request's session
-func (s *flashStore) push(r *http.Request, f flash) {
-	token := s.getToken(r.Context())
-	s.db[token] = f
+// flashSuccess helper
+func flashSuccess(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashSuccess, Message: msg})
 }
 
-// popFunc returns a func to pop a flash message for the current session - for
+// flashError helper
+func flashError(w http.ResponseWriter, msg string) {
+	setFlash(w, flash{Type: FlashError, Message: msg})
+}
+
+// popFlashFunc returns a func to pop a flash message for the current session - for
 // use in a go template
-func (s *flashStore) popFunc(r *http.Request) func() *flash {
-	return func() *flash {
-		token := s.getToken(r.Context())
-		f, ok := s.db[token]
-		if !ok {
-			return nil
-		}
-		delete(s.db, token)
-		return &f
+func popFlashFunc(w http.ResponseWriter, r *http.Request) func() *flash {
+	c, err := r.Cookie(flashCookie)
+	if err != nil {
+		// err should only ever be http.ErrNoCookie
+		return func() *flash { return nil }
 	}
+	value, err := base64.URLEncoding.DecodeString(c.Value)
+	if err != nil {
+		if err != nil {
+			// reliant on middleware catching panic and sending HTTP500 to user
+			panic("decoding flash message: " + err.Error())
+		}
+	}
+	dc := &http.Cookie{Name: flashCookie, MaxAge: -1, Expires: time.Unix(1, 0)}
+	http.SetCookie(w, dc)
+	var f flash
+	if err := json.Unmarshal(value, &f); err != nil {
+		if err != nil {
+			// reliant on middleware catching panic and sending HTTP500 to user
+			panic("unmarshalling flash message: " + err.Error())
+		}
+	}
+	return func() *flash { return &f }
 }
