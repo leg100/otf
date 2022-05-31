@@ -996,7 +996,6 @@ type Sessions struct {
 	Token     pgtype.Text `json:"token"`
 	CreatedAt time.Time   `json:"created_at"`
 	Address   pgtype.Text `json:"address"`
-	Flash     []byte      `json:"flash"`
 	Expiry    time.Time   `json:"expiry"`
 	UserID    pgtype.Text `json:"user_id"`
 }
@@ -1256,7 +1255,6 @@ func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
 		compositeField{"token", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"address", "text", &pgtype.Text{}},
-		compositeField{"flash", "bytea", &pgtype.Bytea{}},
 		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"user_id", "text", &pgtype.Text{}},
 	)
