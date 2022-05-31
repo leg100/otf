@@ -1,125 +1,105 @@
 package html
 
 import (
-	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
-// templateDataFactory produces templateData structs
-type templateDataFactory struct {
-	// provide access to routes
-	router *mux.Router
-}
-
-func (f *templateDataFactory) newTemplateData(w http.ResponseWriter, r *http.Request, content interface{}) templateData {
-	return templateData{
-		Content:     content,
-		router:      &router{f.router},
-		flashPopper: popFlashFunc(w, r),
-		request:     r,
-		Version:     otf.Version,
-	}
-}
-
-type templateData struct {
-	// Content is specific to the content being embedded within the layout.
-	Content interface{}
-
+// viewEngine is responsible for populating and rendering views
+type viewEngine struct {
+	// views look up routes for links
 	router *router
-
-	request *http.Request
-
-	flashPopper func() *flash
-
-	// oTF version string for showing in footer
-	Version string
+	// render templates
+	renderer
 }
 
-// Path proxies access to the router's route method
-func (td *templateData) Path(name string, pairs ...string) string {
-	return td.router.route(name, pairs...)
-}
-
-// Relative proxies access to the router's relative method
-func (td *templateData) Relative(name string, pairs ...string) string {
-	return td.router.relative(td.request, name, pairs...)
-}
-
-// IsOrganizationRoute determines if the current request is for a route that
-// contains the current organization name, or the list of organizations.
-func (td *templateData) IsOrganizationRoute() bool {
-	if mux.CurrentRoute(td.request).GetName() == "listOrganization" {
-		return true
-	}
-
-	_, ok := mux.Vars(td.request)["organization_name"]
-	return ok
-}
-
-func (td *templateData) Breadcrumbs() (crumbs []Anchor, err error) {
-	route := mux.CurrentRoute(td.request)
-
-	crumbs, err = td.makeBreadcrumbs(route, crumbs)
+func newViewEngine(router *router, dev bool) (*viewEngine, error) {
+	renderer, err := newRenderer(dev)
 	if err != nil {
 		return nil, err
 	}
 
-	return crumbs, nil
+	return &viewEngine{
+		router:   router,
+		renderer: renderer,
+	}, nil
 }
 
-func (td *templateData) RouteVars() map[string]string {
-	return mux.Vars(td.request)
+func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request, content interface{}) {
+	err := ve.renderTemplate(name, w, &view{
+		Content:     content,
+		router:      ve.router,
+		flashPopper: popFlashFunc(w, r),
+		request:     r,
+		Version:     otf.Version,
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func (td *templateData) PopFlash() *flash {
-	return td.flashPopper()
+// view provides data and methods to a template
+type view struct {
+	// arbitary data made available to the template
+	Content interface{}
+	// make routes available for producing links in template
+	router *router
+	// info regarding current request
+	request *http.Request
+	// pop flash message in template
+	flashPopper func() *flash
+	// oTF version string in footer
+	Version string
 }
 
-func (td *templateData) CurrentUser() *otf.User {
-	user, err := getCtxUser(td.request.Context())
+// Path proxies access to the router's route method
+func (v *view) Path(name string, pairs ...string) string {
+	return v.router.route(name, pairs...)
+}
+
+// Relative proxies access to the router's relative method
+func (v *view) Relative(name string, pairs ...string) string {
+	return v.router.relative(v.request, name, pairs...)
+}
+
+// IsOrganizationRoute determines if the current request is for a route that
+// contains the current organization name, or the list of organizations.
+func (v *view) IsOrganizationRoute() bool {
+	if mux.CurrentRoute(v.request).GetName() == "listOrganization" {
+		return true
+	}
+	_, ok := mux.Vars(v.request)["organization_name"]
+	return ok
+}
+
+func (v *view) RouteVars() map[string]string {
+	return mux.Vars(v.request)
+}
+
+func (v *view) PopFlash() *flash {
+	return v.flashPopper()
+}
+
+func (v *view) CurrentUser() *otf.User {
+	user, err := getCtxUser(v.request.Context())
 	if err != nil {
 		return nil
 	}
 	return user
 }
 
-func (td *templateData) CurrentSession() *otf.Session {
-	session, err := getCtxSession(td.request.Context())
+func (v *view) CurrentSession() *otf.Session {
+	session, err := getCtxSession(v.request.Context())
 	if err != nil {
 		return nil
 	}
 	return session
 }
 
-func (td *templateData) CurrentPath() string {
-	return td.request.URL.Path
-}
-
-func (td *templateData) makeBreadcrumbs(route *mux.Route, crumbs []Anchor) ([]Anchor, error) {
-	link, err := route.URLPath(flattenMap(mux.Vars(td.request))...)
-	if err != nil {
-		return nil, err
-	}
-	name := path.Base(link.Path)
-
-	// place parent crumb in front
-	crumbs = append([]Anchor{{Name: name, Link: link.Path}}, crumbs...)
-
-	parent, ok := parentLookupTable[route.GetName()]
-	if !ok {
-		return crumbs, nil
-	}
-
-	parentRoute := td.router.Get(parent)
-	if parentRoute == nil {
-		return nil, fmt.Errorf("no such web route exists: %s", parent)
-	}
-
-	return td.makeBreadcrumbs(parentRoute, crumbs)
+func (v *view) CurrentPath() string {
+	return v.request.URL.Path
 }
 
 func flattenMap(m map[string]string) (s []string) {

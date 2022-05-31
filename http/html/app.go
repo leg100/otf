@@ -23,18 +23,18 @@ type Application struct {
 	// path prefix for all URLs
 	pathPrefix string
 	// factory for making templateData structs
-	*templateDataFactory
+	*viewEngine
 	// wrapper around mux router
 	*router
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, muxrouter *mux.Router) error {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxrouter *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
 
-	renderer, err := newRenderer(config.DevMode)
+	views, err := newViewEngine(&router{muxrouter}, config.DevMode)
 	if err != nil {
 		return err
 	}
@@ -47,13 +47,10 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, db o
 	app := &Application{
 		Application:  services,
 		oauth:        oauthApp,
-		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
-		templateDataFactory: &templateDataFactory{
-			router: muxrouter,
-		},
-		router: &router{Router: muxrouter},
+		viewEngine:   views,
+		router:       &router{Router: muxrouter},
 	}
 
 	app.addRoutes(muxrouter)
@@ -89,41 +86,44 @@ func (app *Application) githubRoutes(router *mux.Router) {
 }
 
 // authRoutes adds routes that require authentication.
-func (app *Application) authRoutes(router *mux.Router) {
-	router.Use(app.authenticateUser)
-	router.Use(app.setCurrentOrganization)
+func (app *Application) authRoutes(r *mux.Router) {
+	r.Use(app.authenticateUser)
+	r.Use(app.setCurrentOrganization)
 
-	router.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
-	router.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
-	router.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
+	r.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
+	r.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
+	r.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
+	r.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
 
-	router.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET").Name("listToken")
-	router.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST").Name("deleteToken")
-	router.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
-	router.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
+	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET").Name("listToken")
+	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST").Name("deleteToken")
+	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
+	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
 
-	(&OrganizationController{
-		OrganizationService: app.OrganizationService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
+	r.HandleFunc("/organizations/", app.listOrganizations).Methods("GET").Name("listOrganization")
+	r.HandleFunc("/organizations/new", app.newOrganization).Methods("GET").Name("newOrganization")
+	r.HandleFunc("/organizations/create", app.createOrganization).Methods("POST").Name("createOrganization")
+	r.HandleFunc("/organizations/{organization_name}", app.getOrganization).Methods("GET").Name("getOrganization")
+	r.HandleFunc("/organizations/{organization_name}/overview", app.getOrganizationOverview).Methods("GET").Name("getOrganizationOverview")
+	r.HandleFunc("/organizations/{organization_name}/edit", app.editOrganization).Methods("GET").Name("editOrganization")
+	r.HandleFunc("/organizations/{organization_name}/update", app.updateOrganization).Methods("POST").Name("updateOrganization")
+	r.HandleFunc("/organizations/{organization_name}/delete", app.deleteOrganization).Methods("POST").Name("deleteOrganization")
 
-	(&WorkspaceController{
-		WorkspaceService:    app.WorkspaceService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
+	r.HandleFunc("/organizations/{organization_name}/workspaces", app.listWorkspaces).Methods("GET").Name("listWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/new", app.newWorkspace).Methods("GET").Name("newWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/create", app.createWorkspace).Methods("POST").Name("createWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace).Methods("GET").Name("getWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace).Methods("GET").Name("editWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace).Methods("POST").Name("updateWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace).Methods("POST").Name("deleteWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace).Methods("POST").Name("lockWorkspace")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace).Methods("POST").Name("unlockWorkspace")
 
-	(&RunController{
-		RunService:          app.RunService(),
-		PlanService:         app.PlanService(),
-		ApplyService:        app.ApplyService(),
-		WorkspaceService:    app.WorkspaceService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns).Methods("GET").Name("listRun")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun).Methods("GET").Name("newRun")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun).Methods("POST").Name("createRun")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun).Methods("GET").Name("getRun")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan).Methods("GET").Name("getPlan")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply).Methods("GET").Name("getApply")
+	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun).Methods("POST").Name("deleteRun")
 }

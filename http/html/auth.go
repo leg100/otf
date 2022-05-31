@@ -79,10 +79,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	tdata := app.newTemplateData(w, r, nil)
-	if err := app.renderTemplate("login.tmpl", w, tdata); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
+	app.render("login.tmpl", w, r, nil)
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,12 +101,7 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	tdata := app.newTemplateData(w, r, user)
-
-	if err := app.renderTemplate("profile.tmpl", w, tdata); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
+	app.render("profile.tmpl", w, r, user)
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,20 +110,11 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	tdata := app.newTemplateData(w, r, user)
-
-	if err := app.renderTemplate("session_list.tmpl", w, tdata); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
+	app.render("session_list.tmpl", w, r, user)
 }
 
 func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	tdata := app.newTemplateData(w, r, nil)
-
-	if err := app.renderTemplate("token_new.tmpl", w, tdata); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
+	app.render("token_new.tmpl", w, r, nil)
 }
 
 func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -160,11 +143,7 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tdata := app.newTemplateData(w, r, user)
-
-	if err := app.renderTemplate("token_list.tmpl", w, tdata); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-	}
+	app.render("token_list.tmpl", w, r, user)
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
