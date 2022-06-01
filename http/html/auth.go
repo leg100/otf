@@ -62,7 +62,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create session data
-	data, err := newSessionData(r)
+	data, err := otf.NewSessionData(r)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -21,7 +21,7 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 			SessionToken: &cookie.Value,
 		})
 		if err != nil {
-			flashError(w, "unable to find user: %s"+err.Error())
+			flashError(w, "unable to find user: "+err.Error())
 			http.Redirect(w, r, app.route("login"), http.StatusFound)
 			return
 		}

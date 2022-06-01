@@ -27,6 +27,9 @@ func newViewEngine(router *router, dev bool) (*viewEngine, error) {
 	}, nil
 }
 
+// render the view using the template. Note this should be the last thing called
+// in a handler because it writes an HTTP5xx to the response if there is an
+// error.
 func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request, content interface{}) {
 	err := ve.renderTemplate(name, w, &view{
 		Content:     content,

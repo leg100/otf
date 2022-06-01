@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/leg100/otf/sql/pggen"
@@ -43,6 +45,17 @@ func (s *Session) CreatedAt() time.Time { return s.createdAt }
 type SessionData struct {
 	// Client IP address
 	Address string
+}
+
+func NewSessionData(r *http.Request) (*SessionData, error) {
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return nil, err
+	}
+	data := SessionData{
+		Address: addr,
+	}
+	return &data, nil
 }
 
 // SessionStore is a persistence store for user sessions.
