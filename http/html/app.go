@@ -33,17 +33,14 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
-
 	views, err := newViewEngine(&router{muxrouter}, config.DevMode)
 	if err != nil {
 		return err
 	}
-
 	oauthApp, err := newGithubOAuthApp(config.Github)
 	if err != nil {
 		return err
 	}
-
 	app := &Application{
 		Application:  services,
 		oauth:        oauthApp,
@@ -52,9 +49,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 		viewEngine:   views,
 		router:       &router{Router: muxrouter},
 	}
-
 	app.addRoutes(muxrouter)
-
 	return nil
 }
 
@@ -100,7 +95,7 @@ func (app *Application) authRoutes(r *mux.Router) {
 	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
 	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
 
-	r.HandleFunc("/organizations/", app.listOrganizations).Methods("GET").Name("listOrganization")
+	r.Handle("/organizations/", &orgLister{}).Methods("GET").Name("listOrganization")
 	r.HandleFunc("/organizations/new", app.newOrganization).Methods("GET").Name("newOrganization")
 	r.HandleFunc("/organizations/create", app.createOrganization).Methods("POST").Name("createOrganization")
 	r.HandleFunc("/organizations/{organization_name}", app.getOrganization).Methods("GET").Name("getOrganization")

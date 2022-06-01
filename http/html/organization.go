@@ -8,7 +8,9 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
-func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
+type orgLister struct{}
+
+func (app *orgLister) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
