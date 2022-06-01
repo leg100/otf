@@ -18,7 +18,7 @@
       </tr>
     </thead>
     <tbody>
-      {{ range .Content.List.Items }}
+      {{ range .Content.Items }}
       <tr>
         <td><a href="{{ $.Path "getOrganization" "organization_name" .Name }}">{{ .Name }}</a></td>
       </tr>

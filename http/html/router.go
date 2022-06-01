@@ -34,3 +34,15 @@ func (r *router) route(name string, params ...string) string {
 
 	return url.Path
 }
+
+func (r *router) sub(group func(r *router)) {
+	group(&router{r.NewRoute().Subrouter()})
+}
+
+func (r *router) get(path string, h http.HandlerFunc) *mux.Route {
+	return r.HandleFunc(path, h).Methods("GET")
+}
+
+func (r *router) pst(path string, h http.HandlerFunc) *mux.Route {
+	return r.HandleFunc(path, h).Methods("POST")
+}
