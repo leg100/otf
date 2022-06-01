@@ -49,76 +49,70 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 		viewEngine:   views,
 		router:       &router{Router: muxrouter},
 	}
-	app.addRoutes(muxrouter)
+	app.addRoutes(app.router)
 	return nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) addRoutes(router *mux.Router) {
-	router.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+func (app *Application) addRoutes(r *router) {
+	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
 
 	// Static assets (JS, CSS, etc).
-	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
+	r.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
 	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
 	// /runs. Uses an HTTP301.
-	router.StrictSlash(true)
+	r.StrictSlash(true)
 
-	app.nonAuthRoutes(router.NewRoute().Subrouter())
-	app.authRoutes(router.NewRoute().Subrouter())
-}
+	// routes that don't require authentication.
+	r.sub(func(r *router) {
+		r.get("/login", app.loginHandler).Name("login")
+		// github routes
+		r.sub(func(r *router) {
+			r.get("/github/login", app.oauth.requestHandler)
+			r.get(githubCallbackPath, app.githubLogin)
+		})
+	})
+	// routes that require authentication.
+	r.sub(func(r *router) {
+		r.Use(app.authenticateUser)
+		r.Use(app.setCurrentOrganization)
 
-// nonAuthRoutes adds routes that don't require authentication.
-func (app *Application) nonAuthRoutes(router *mux.Router) {
-	app.githubRoutes(router.NewRoute().Subrouter())
+		r.pst("/logout", app.logoutHandler).Name("logout")
+		r.get("/profile", app.profileHandler).Name("getProfile")
+		r.get("/profile/sessions", app.sessionsHandler).Name("listSession")
+		r.pst("/profile/sessions/revoke", app.revokeSessionHandler).Name("revokeSession")
 
-	router.HandleFunc("/login", app.loginHandler).Methods("GET").Name("login")
-}
+		r.get("/profile/tokens", app.tokensHandler).Name("listToken")
+		r.pst("/profile/tokens/delete", app.deleteTokenHandler).Name("deleteToken")
+		r.get("/profile/tokens/new", app.newTokenHandler).Name("newToken")
+		r.pst("/profile/tokens/create", app.createTokenHandler).Name("createToken")
 
-func (app *Application) githubRoutes(router *mux.Router) {
-	router.HandleFunc("/github/login", app.oauth.requestHandler)
-	router.HandleFunc(githubCallbackPath, app.githubLogin)
-}
+		r.get("/organizations/", app.listOrganizations).Name("listOrganization")
+		r.get("/organizations/new", app.newOrganization).Name("newOrganization")
+		r.pst("/organizations/create", app.createOrganization).Name("createOrganization")
+		r.get("/organizations/{organization_name}", app.getOrganization).Name("getOrganization")
+		r.get("/organizations/{organization_name}/overview", app.getOrganizationOverview).Name("getOrganizationOverview")
+		r.get("/organizations/{organization_name}/edit", app.editOrganization).Name("editOrganization")
+		r.pst("/organizations/{organization_name}/update", app.updateOrganization).Name("updateOrganization")
+		r.pst("/organizations/{organization_name}/delete", app.deleteOrganization).Name("deleteOrganization")
 
-// authRoutes adds routes that require authentication.
-func (app *Application) authRoutes(r *mux.Router) {
-	r.Use(app.authenticateUser)
-	r.Use(app.setCurrentOrganization)
+		r.get("/organizations/{organization_name}/workspaces", app.listWorkspaces).Name("listWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/new", app.newWorkspace).Name("newWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/create", app.createWorkspace).Name("createWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace).Name("getWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace).Name("editWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace).Name("updateWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace).Name("deleteWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace).Name("lockWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace).Name("unlockWorkspace")
 
-	r.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
-	r.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
-	r.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
-	r.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
-
-	r.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET").Name("listToken")
-	r.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST").Name("deleteToken")
-	r.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
-	r.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
-
-	r.Handle("/organizations/", &orgLister{}).Methods("GET").Name("listOrganization")
-	r.HandleFunc("/organizations/new", app.newOrganization).Methods("GET").Name("newOrganization")
-	r.HandleFunc("/organizations/create", app.createOrganization).Methods("POST").Name("createOrganization")
-	r.HandleFunc("/organizations/{organization_name}", app.getOrganization).Methods("GET").Name("getOrganization")
-	r.HandleFunc("/organizations/{organization_name}/overview", app.getOrganizationOverview).Methods("GET").Name("getOrganizationOverview")
-	r.HandleFunc("/organizations/{organization_name}/edit", app.editOrganization).Methods("GET").Name("editOrganization")
-	r.HandleFunc("/organizations/{organization_name}/update", app.updateOrganization).Methods("POST").Name("updateOrganization")
-	r.HandleFunc("/organizations/{organization_name}/delete", app.deleteOrganization).Methods("POST").Name("deleteOrganization")
-
-	r.HandleFunc("/organizations/{organization_name}/workspaces", app.listWorkspaces).Methods("GET").Name("listWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/new", app.newWorkspace).Methods("GET").Name("newWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/create", app.createWorkspace).Methods("POST").Name("createWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace).Methods("GET").Name("getWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace).Methods("GET").Name("editWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace).Methods("POST").Name("updateWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace).Methods("POST").Name("deleteWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace).Methods("POST").Name("lockWorkspace")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace).Methods("POST").Name("unlockWorkspace")
-
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns).Methods("GET").Name("listRun")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun).Methods("GET").Name("newRun")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun).Methods("POST").Name("createRun")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun).Methods("GET").Name("getRun")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan).Methods("GET").Name("getPlan")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply).Methods("GET").Name("getApply")
-	r.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun).Methods("POST").Name("deleteRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns).Name("listRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun).Name("newRun")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun).Name("createRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun).Name("getRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan).Name("getPlan")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply).Name("getApply")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun).Name("deleteRun")
+	})
 }
