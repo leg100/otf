@@ -18,12 +18,12 @@
         </div>
         <div class="nav-links">
           <ul>
-            {{ if .CurrentUser.IsAuthenticated }}
-              {{ if .CurrentUser.CurrentOrganization }}
+            {{ with .CurrentUser }}
+              {{ if .CurrentOrganization }}
                 <li class="current-organization">
-                  <a href="{{ $.Path "getOrganization" "organization_name" .CurrentUser.CurrentOrganization }}">
+                  <a href="{{ $.Path "getOrganization" "organization_name" .CurrentOrganization }}">
                     {{ template "building_icon" }}
-                    <span class="current-organization">{{ .CurrentUser.CurrentOrganization }}</span>
+                    <span class="current-organization">{{ .CurrentOrganization }}</span>
                   </a>
                 </li>
               {{ end }}
@@ -31,7 +31,7 @@
                 <a href="{{ $.Path "listOrganization" }}">organizations</a>
               </li>
               <li>
-                <a href="{{ .Path "getMe" }}"><span class="current-user">{{ .CurrentUser.Username }}</span></a>
+                <a href="{{ $.Path "getProfile" }}"><span class="current-user">{{ .Username }}</span></a>
               </li>
             {{ end }}
           </ul>
