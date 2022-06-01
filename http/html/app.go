@@ -23,107 +23,96 @@ type Application struct {
 	// path prefix for all URLs
 	pathPrefix string
 	// factory for making templateData structs
-	*templateDataFactory
+	*viewEngine
 	// wrapper around mux router
 	*router
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, db otf.DB, muxrouter *mux.Router) error {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxrouter *mux.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
-
-	renderer, err := newRenderer(config.DevMode)
+	views, err := newViewEngine(&router{muxrouter}, config.DevMode)
 	if err != nil {
 		return err
 	}
-
 	oauthApp, err := newGithubOAuthApp(config.Github)
 	if err != nil {
 		return err
 	}
-
 	app := &Application{
 		Application:  services,
 		oauth:        oauthApp,
-		renderer:     renderer,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
-		templateDataFactory: &templateDataFactory{
-			router: muxrouter,
-		},
-		router: &router{Router: muxrouter},
+		viewEngine:   views,
+		router:       &router{Router: muxrouter},
 	}
-
-	app.addRoutes(muxrouter)
-
+	app.addRoutes(app.router)
 	return nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) addRoutes(router *mux.Router) {
-	router.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
+func (app *Application) addRoutes(r *router) {
+	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
 
 	// Static assets (JS, CSS, etc).
-	router.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
+	r.PathPrefix("/static/").Handler(http.FileServer(app.staticServer)).Methods("GET")
 
 	// Redirect paths with a trailing slash to path without, e.g. /runs/ ->
 	// /runs. Uses an HTTP301.
-	router.StrictSlash(true)
+	r.StrictSlash(true)
 
-	app.nonAuthRoutes(router.NewRoute().Subrouter())
-	app.authRoutes(router.NewRoute().Subrouter())
-}
+	// routes that don't require authentication.
+	r.sub(func(r *router) {
+		r.get("/login", app.loginHandler).Name("login")
+		// github routes
+		r.sub(func(r *router) {
+			r.get("/github/login", app.oauth.requestHandler)
+			r.get(githubCallbackPath, app.githubLogin)
+		})
+	})
+	// routes that require authentication.
+	r.sub(func(r *router) {
+		r.Use(app.authenticateUser)
+		r.Use(app.setCurrentOrganization)
 
-// nonAuthRoutes adds routes that don't require authentication.
-func (app *Application) nonAuthRoutes(router *mux.Router) {
-	app.githubRoutes(router.NewRoute().Subrouter())
+		r.pst("/logout", app.logoutHandler).Name("logout")
+		r.get("/profile", app.profileHandler).Name("getProfile")
+		r.get("/profile/sessions", app.sessionsHandler).Name("listSession")
+		r.pst("/profile/sessions/revoke", app.revokeSessionHandler).Name("revokeSession")
 
-	router.HandleFunc("/login", app.loginHandler).Methods("GET").Name("login")
-}
+		r.get("/profile/tokens", app.tokensHandler).Name("listToken")
+		r.pst("/profile/tokens/delete", app.deleteTokenHandler).Name("deleteToken")
+		r.get("/profile/tokens/new", app.newTokenHandler).Name("newToken")
+		r.pst("/profile/tokens/create", app.createTokenHandler).Name("createToken")
 
-func (app *Application) githubRoutes(router *mux.Router) {
-	router.HandleFunc("/github/login", app.oauth.requestHandler)
-	router.HandleFunc(githubCallbackPath, app.githubLogin)
-}
+		r.get("/organizations/", app.listOrganizations).Name("listOrganization")
+		r.get("/organizations/new", app.newOrganization).Name("newOrganization")
+		r.pst("/organizations/create", app.createOrganization).Name("createOrganization")
+		r.get("/organizations/{organization_name}", app.getOrganization).Name("getOrganization")
+		r.get("/organizations/{organization_name}/overview", app.getOrganizationOverview).Name("getOrganizationOverview")
+		r.get("/organizations/{organization_name}/edit", app.editOrganization).Name("editOrganization")
+		r.pst("/organizations/{organization_name}/update", app.updateOrganization).Name("updateOrganization")
+		r.pst("/organizations/{organization_name}/delete", app.deleteOrganization).Name("deleteOrganization")
 
-// authRoutes adds routes that require authentication.
-func (app *Application) authRoutes(router *mux.Router) {
-	router.Use(app.authenticateUser)
-	router.Use(app.setCurrentOrganization)
+		r.get("/organizations/{organization_name}/workspaces", app.listWorkspaces).Name("listWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/new", app.newWorkspace).Name("newWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/create", app.createWorkspace).Name("createWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace).Name("getWorkspace")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace).Name("editWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace).Name("updateWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace).Name("deleteWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace).Name("lockWorkspace")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace).Name("unlockWorkspace")
 
-	router.HandleFunc("/logout", app.logoutHandler).Methods("POST").Name("logout")
-	router.HandleFunc("/profile", app.profileHandler).Methods("GET").Name("getProfile")
-	router.HandleFunc("/profile/sessions", app.sessionsHandler).Methods("GET").Name("listSession")
-	router.HandleFunc("/profile/sessions/revoke", app.revokeSessionHandler).Methods("POST").Name("revokeSession")
-
-	router.HandleFunc("/profile/tokens", app.tokensHandler).Methods("GET").Name("listToken")
-	router.HandleFunc("/profile/tokens/delete", app.deleteTokenHandler).Methods("POST").Name("deleteToken")
-	router.HandleFunc("/profile/tokens/new", app.newTokenHandler).Methods("GET").Name("newToken")
-	router.HandleFunc("/profile/tokens/create", app.createTokenHandler).Methods("POST").Name("createToken")
-
-	(&OrganizationController{
-		OrganizationService: app.OrganizationService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations").Subrouter())
-
-	(&WorkspaceController{
-		WorkspaceService:    app.WorkspaceService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces").Subrouter())
-
-	(&RunController{
-		RunService:          app.RunService(),
-		PlanService:         app.PlanService(),
-		ApplyService:        app.ApplyService(),
-		WorkspaceService:    app.WorkspaceService(),
-		templateDataFactory: app.templateDataFactory,
-		renderer:            app.renderer,
-		router:              app.router,
-	}).addRoutes(router.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/runs").Subrouter())
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns).Name("listRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun).Name("newRun")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun).Name("createRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun).Name("getRun")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan).Name("getPlan")
+		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply).Name("getApply")
+		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun).Name("deleteRun")
+	})
 }

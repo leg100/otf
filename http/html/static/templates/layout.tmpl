@@ -19,20 +19,20 @@
         <div class="nav-links">
           <ul>
             {{ with .CurrentUser }}
+            <li class="current-organization">
               {{ if .CurrentOrganization }}
-                <li class="current-organization">
-                  <a href="{{ $.Path "getOrganization" "organization_name" .CurrentOrganization }}">
-                    {{ template "building_icon" }}
-                    <span class="current-organization">{{ .CurrentOrganization }}</span>
-                  </a>
-                </li>
+              <a href="{{ $.Path "getOrganization" "organization_name" .CurrentOrganization }}">
+                {{ template "building_icon" }}
+                <span>{{ .CurrentOrganization }}</span>
+              </a>
               {{ end }}
-              <li>
-                <a href="{{ $.Path "listOrganization" }}">organizations</a>
-              </li>
-              <li>
-                <a href="{{ $.Path "getProfile" }}"><span class="current-user">{{ .Username }}</span></a>
-              </li>
+            </li>
+            <li>
+              <a href="{{ $.Path "listOrganization" }}">organizations</a>
+            </li>
+            <li class="profile">
+              <a href="{{ $.Path "getProfile" }}"><span class="current-user">{{ .Username }}</span></a>
+            </li>
             {{ end }}
           </ul>
         </div>

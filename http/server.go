@@ -92,7 +92,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	}
 
 	// Add web app routes.
-	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, db, router); err != nil {
+	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, router); err != nil {
 		return nil, err
 	}
 

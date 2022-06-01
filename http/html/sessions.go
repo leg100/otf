@@ -3,8 +3,6 @@ package html
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 
 	"github.com/leg100/otf"
 )
@@ -33,15 +31,4 @@ func getCtxSession(ctx context.Context) (*otf.Session, error) {
 		return nil, fmt.Errorf("no session in context")
 	}
 	return session, nil
-}
-
-func newSessionData(r *http.Request) (*otf.SessionData, error) {
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return nil, err
-	}
-	data := otf.SessionData{
-		Address: addr,
-	}
-	return &data, nil
 }

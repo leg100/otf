@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/sprig"
+	"github.com/leg100/otf"
 )
 
 const (
@@ -24,9 +25,14 @@ var (
 	funcs = sprig.HtmlFuncMap()
 )
 
+func init() {
+	// make version available to templates
+	funcs["version"] = func() string { return otf.Version }
+}
+
 // renderer is capable of locating and rendering a template.
 type renderer interface {
-	renderTemplate(name string, w io.Writer, data templateData) error
+	renderTemplate(name string, w io.Writer, data any) error
 }
 
 // embeddedRenderer renders templates embedded in the go bin. Uses cache for
@@ -62,11 +68,11 @@ func newEmbeddedRenderer() (*embeddedRenderer, error) {
 	return &renderer, nil
 }
 
-func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
+func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data any) error {
 	return renderTemplateFromCache(r.cache, name, w, data)
 }
 
-func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData) error {
+func (r *devRenderer) renderTemplate(name string, w io.Writer, data any) error {
 	static := &cacheBuster{localDisk}
 
 	funcs["addHash"] = static.Path
@@ -78,7 +84,7 @@ func (r *devRenderer) renderTemplate(name string, w io.Writer, data templateData
 	return renderTemplateFromCache(cache, name, w, data)
 }
 
-func renderTemplateFromCache(cache map[string]*template.Template, name string, w io.Writer, data templateData) error {
+func renderTemplateFromCache(cache map[string]*template.Template, name string, w io.Writer, data any) error {
 	tmpl, ok := cache[name]
 	if !ok {
 		return fmt.Errorf("unable to locate template: %s", name)
