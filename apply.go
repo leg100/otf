@@ -3,8 +3,12 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
+
+	"github.com/leg100/otf/http/dto"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 //List all available apply statuses supported in OTF.
@@ -98,6 +102,49 @@ func (a *Apply) runTerraformApply(env Environment) error {
 	cmd.WriteString(" | tee ")
 	cmd.WriteString(ApplyOutputFilename)
 	return env.RunCLI("sh", "-c", cmd.String())
+}
+
+// NewJSONAPIAssembler constructs an ApplyJSONAPIAssembler.
+func (a *Apply) NewJSONAPIAssembler(req *http.Request, GetApplyLogsRoute string) *ApplyJSONAPIAssembler {
+	o := &dto.Apply{
+		ID:         a.ID(),
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(GetApplyLogsRoute, a.ID())),
+		Status:     string(a.Status()),
+	}
+	if a.ResourceReport != nil {
+		o.ResourceAdditions = a.Additions
+		o.ResourceChanges = a.Changes
+		o.ResourceDestructions = a.Destructions
+	}
+	for _, ts := range a.StatusTimestamps() {
+		if o.StatusTimestamps == nil {
+			o.StatusTimestamps = &dto.ApplyStatusTimestamps{}
+		}
+		switch ts.Status {
+		case ApplyCanceled:
+			o.StatusTimestamps.CanceledAt = &ts.Timestamp
+		case ApplyErrored:
+			o.StatusTimestamps.ErroredAt = &ts.Timestamp
+		case ApplyFinished:
+			o.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case ApplyQueued:
+			o.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case ApplyRunning:
+			o.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return &ApplyJSONAPIAssembler{Apply: o}
+}
+
+// ApplyJSONAPIAssembler is an intermediatary between an apply and its DTO,
+// capable of being assembled into a DTO.
+type ApplyJSONAPIAssembler struct {
+	*dto.Apply
+}
+
+// ToJSONAPI implements the jsonapi.Assembler interface.
+func (a *ApplyJSONAPIAssembler) ToJSONAPI() any {
+	return a.Apply
 }
 
 // ApplyStatus represents an apply state.

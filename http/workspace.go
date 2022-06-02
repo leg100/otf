@@ -163,7 +163,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, obj)
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -179,60 +179,8 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// WorkspaceDTO converts a Workspace to a struct that can be marshalled into a
-// JSON-API object
-func WorkspaceDTO(ws *otf.Workspace) *dto.Workspace {
-	japi := &dto.Workspace{
-		ID: ws.ID(),
-		Actions: &dto.WorkspaceActions{
-			IsDestroyable: false,
-		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan(),
-		AutoApply:            ws.AutoApply(),
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
-		CreatedAt:            ws.CreatedAt(),
-		Description:          ws.Description(),
-		Environment:          ws.Environment(),
-		ExecutionMode:        ws.ExecutionMode(),
-		FileTriggersEnabled:  ws.FileTriggersEnabled(),
-		GlobalRemoteState:    ws.GlobalRemoteState(),
-		Locked:               ws.Locked(),
-		MigrationEnvironment: ws.MigrationEnvironment(),
-		Name:                 ws.Name(),
-		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &dto.WorkspacePermissions{
-			CanDestroy:        true,
-			CanForceUnlock:    true,
-			CanLock:           true,
-			CanUnlock:         true,
-			CanQueueApply:     true,
-			CanQueueDestroy:   true,
-			CanQueueRun:       true,
-			CanReadSettings:   true,
-			CanUpdate:         true,
-			CanUpdateVariable: true,
-		},
-		QueueAllRuns:               ws.QueueAllRuns(),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		SourceName:                 ws.SourceName(),
-		SourceURL:                  ws.SourceURL(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           ws.WorkingDirectory(),
-		UpdatedAt:                  ws.UpdatedAt(),
-	}
-	if ws.Organization() != nil {
-		japi.Organization = OrganizationDTO(ws.Organization())
-	} else {
-		japi.Organization = &dto.Organization{ExternalID: ws.OrganizationID()}
-	}
-	return japi
-}
-
-// WorkspaceListJSONAPIObject converts a WorkspaceList to
-// a struct that can be marshalled into a JSON-API object
+// WorkspaceListJSONAPIObject converts a WorkspaceList to a struct that can be
+// marshalled into a JSON-API object
 func WorkspaceListJSONAPIObject(l *otf.WorkspaceList) *dto.WorkspaceList {
 	pagination := dto.Pagination(*l.Pagination)
 	obj := &dto.WorkspaceList{

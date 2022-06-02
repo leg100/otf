@@ -3,7 +3,11 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
+
+	"github.com/leg100/otf/http/dto"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 const (
@@ -117,6 +121,39 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
 
+// NewJSONAPIAssembler constructs a PlanJSONAPIAssembler.
+func (p *Plan) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute string) *PlanJSONAPIAssembler {
+	result := &dto.Plan{
+		ID:         p.ID(),
+		HasChanges: p.HasChanges(),
+		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
+		Status:     string(p.Status()),
+	}
+	if p.ResourceReport != nil {
+		result.ResourceAdditions = p.Additions
+		result.ResourceChanges = p.Changes
+		result.ResourceDestructions = p.Destructions
+	}
+	for _, ts := range p.StatusTimestamps() {
+		if result.StatusTimestamps == nil {
+			result.StatusTimestamps = &dto.PlanStatusTimestamps{}
+		}
+		switch ts.Status {
+		case PlanCanceled:
+			result.StatusTimestamps.CanceledAt = &ts.Timestamp
+		case PlanErrored:
+			result.StatusTimestamps.ErroredAt = &ts.Timestamp
+		case PlanFinished:
+			result.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case PlanQueued:
+			result.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case PlanRunning:
+			result.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return &PlanJSONAPIAssembler{Plan: result}
+}
+
 func (p *Plan) updateStatus(status PlanStatus) {
 	p.status = status
 	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
@@ -135,6 +172,17 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 	}
 	args = append(args, "-out="+PlanFilename)
 	return env.RunCLI("terraform", args...)
+}
+
+// PlanJSONAPIAssembler is an intermediatary between an apply and its DTO,
+// capable of being assembled into a DTO.
+type PlanJSONAPIAssembler struct {
+	*dto.Plan
+}
+
+// ToJSONAPI implements the jsonapi.Assembler interface.
+func (a *PlanJSONAPIAssembler) ToJSONAPI() any {
+	return a.Plan
 }
 
 // PlanStatus represents a plan state.

@@ -38,7 +38,8 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunDTO(r, obj), withCode(http.StatusCreated))
+	run := obj.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
+	writeResponse(w, r, run, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -174,81 +175,6 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.Ru
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// RunDTO converts a Run to a struct
-// that can be marshalled into a JSON-API object
-func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
-	result := &dto.Run{
-		ID: r.ID(),
-		Actions: &dto.RunActions{
-			IsCancelable:      r.Cancelable(),
-			IsConfirmable:     r.Confirmable(),
-			IsForceCancelable: r.ForceCancelable(),
-			IsDiscardable:     r.Discardable(),
-		},
-		CreatedAt:              r.CreatedAt(),
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
-		HasChanges:             r.Plan.HasChanges(),
-		IsDestroy:              r.IsDestroy(),
-		Message:                r.Message(),
-		Permissions: &dto.RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
-		},
-		PositionInQueue: 0,
-		Refresh:         r.Refresh(),
-		RefreshOnly:     r.RefreshOnly(),
-		ReplaceAddrs:    r.ReplaceAddrs(),
-		Source:          otf.DefaultConfigurationSource,
-		Status:          string(r.Status()),
-		TargetAddrs:     r.TargetAddrs(),
-		// Relations
-		Apply:                ApplyDTO(req, r.Apply),
-		ConfigurationVersion: ConfigurationVersionDTO(r.ConfigurationVersion),
-		Plan:                 PlanDTO(req, r.Plan),
-		Workspace:            WorkspaceDTO(r.Workspace),
-		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &dto.User{
-			ID:       otf.DefaultUserID,
-			Username: otf.DefaultUsername,
-		},
-	}
-	for _, rst := range r.StatusTimestamps() {
-		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &dto.RunStatusTimestamps{}
-		}
-		switch rst.Status {
-		case otf.RunPending:
-			result.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
-		case otf.RunPlanQueued:
-			result.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
-		case otf.RunPlanning:
-			result.StatusTimestamps.PlanningAt = &rst.Timestamp
-		case otf.RunPlanned:
-			result.StatusTimestamps.PlannedAt = &rst.Timestamp
-		case otf.RunPlannedAndFinished:
-			result.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case otf.RunApplyQueued:
-			result.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
-		case otf.RunApplying:
-			result.StatusTimestamps.ApplyingAt = &rst.Timestamp
-		case otf.RunApplied:
-			result.StatusTimestamps.AppliedAt = &rst.Timestamp
-		case otf.RunErrored:
-			result.StatusTimestamps.ErroredAt = &rst.Timestamp
-		case otf.RunCanceled:
-			result.StatusTimestamps.CanceledAt = &rst.Timestamp
-		case otf.RunForceCanceled:
-			result.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
-		case otf.RunDiscarded:
-			result.StatusTimestamps.DiscardedAt = &rst.Timestamp
-		}
-	}
-	return result
 }
 
 // RunListDTO converts a RunList to a struct that can be marshalled into a

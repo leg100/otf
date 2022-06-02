@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -71,6 +73,41 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 	cv.status = status
 
 	return nil
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (cv *ConfigurationVersion) ToJSONAPI() any {
+	obj := &jsonapi.ConfigurationVersion{
+		ID:               cv.ID(),
+		AutoQueueRuns:    cv.AutoQueueRuns(),
+		Speculative:      cv.Speculative(),
+		Source:           string(cv.Source()),
+		Status:           string(cv.Status()),
+		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
+		UploadURL:        UploadConfigurationVersionPath(cv),
+	}
+	for _, ts := range cv.StatusTimestamps() {
+		switch ts.Status {
+		case ConfigurationPending:
+			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case ConfigurationErrored:
+			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case ConfigurationUploaded:
+			obj.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return obj
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (l *ConfigurationVersionList) ToJSONAPI() any {
+	dto := &jsonapi.ConfigurationVersionList{
+		Pagination: (*jsonapi.Pagination)(l.Pagination),
+	}
+	for _, item := range l.Items {
+		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.ConfigurationVersion))
+	}
+	return dto
 }
 
 // ConfigurationStatus represents a configuration version status.
