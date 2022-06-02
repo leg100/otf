@@ -20,6 +20,7 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-retryablehttp v0.5.2
 	github.com/hashicorp/hcl/v2 v2.10.0
+	github.com/iancoleman/strcase v0.2.0
 	github.com/jackc/pgconn v1.12.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.0

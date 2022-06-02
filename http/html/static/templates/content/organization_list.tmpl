@@ -2,8 +2,8 @@
 
 {{ define "title" }}Organizations{{ end }}
 
-{{ define "container-button" }}
-  <form action="{{ .Path "newOrganization" }}" method="GET">
+{{ define "container-header-actions" }}
+  <form action="{{ newOrganizationPath }}" method="GET">
     <button type="submit">New Organization</button>
   </form>
 {{ end }}
@@ -20,7 +20,7 @@
     <tbody>
       {{ range .Content.Items }}
       <tr>
-        <td><a href="{{ $.Path "getOrganization" "organization_name" .Name }}">{{ .Name }}</a></td>
+        <td><a href="{{ getOrganizationPath .Name }}">{{ .Name }}</a></td>
       </tr>
       {{ end }}
     </tbody>

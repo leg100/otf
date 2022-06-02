@@ -12,8 +12,6 @@ const DefaultPathPrefix = "/"
 
 // Application is the oTF web app.
 type Application struct {
-	// HTML template renderer
-	renderer
 	// Static asset server
 	staticServer http.FileSystem
 	// oTF service accessors
@@ -22,9 +20,9 @@ type Application struct {
 	oauth *githubOAuthApp
 	// path prefix for all URLs
 	pathPrefix string
-	// factory for making templateData structs
+	// view engine populates and renders templates
 	*viewEngine
-	// wrapper around mux router
+	// mux router wrapper
 	*router
 }
 
@@ -88,7 +86,7 @@ func (app *Application) addRoutes(r *router) {
 		r.get("/profile/tokens/new", app.newTokenHandler).Name("newToken")
 		r.pst("/profile/tokens/create", app.createTokenHandler).Name("createToken")
 
-		r.get("/organizations/", app.listOrganizations).Name("listOrganization")
+		r.get("/organizations", app.listOrganizations).Name("listOrganization")
 		r.get("/organizations/new", app.newOrganization).Name("newOrganization")
 		r.pst("/organizations/create", app.createOrganization).Name("createOrganization")
 		r.get("/organizations/{organization_name}", app.getOrganization).Name("getOrganization")

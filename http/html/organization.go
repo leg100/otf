@@ -35,7 +35,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 	organization, err := app.OrganizationService().Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
 		flashError(w, "organization already exists: "+*opts.Name)
-		http.Redirect(w, r, app.route("newOrganization"), http.StatusFound)
+		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -43,12 +43,12 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "created organization: "+organization.Name())
-	http.Redirect(w, r, app.relative(r, "getOrganization", "organization_name", *opts.Name), http.StatusFound)
+	http.Redirect(w, r, getOrganizationPath(*opts.Name), http.StatusFound)
 }
 
 // Get lists the workspaces for the org.
 func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, app.relative(r, "listWorkspace"), http.StatusFound)
+	http.Redirect(w, r, listWorkspacePath(param(r, "organization_name")), http.StatusFound)
 }
 
 func (app *Application) getOrganizationOverview(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 	flashSuccess(w, "updated organization")
 	// Override route variable for organization name because the user might have
 	// updated it.
-	http.Redirect(w, r, app.route("editOrganization", "organization_name", organization.Name()), http.StatusFound)
+	http.Redirect(w, r, editOrganizationPath(organization.Name()), http.StatusFound)
 }
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -94,5 +94,5 @@ func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "deleted organization: "+organizationName)
-	http.Redirect(w, r, app.route("listOrganization"), http.StatusFound)
+	http.Redirect(w, r, listOrganizationPath(), http.StatusFound)
 }

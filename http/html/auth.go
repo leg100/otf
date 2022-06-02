@@ -20,7 +20,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	token, err := app.oauth.responseHandler(r)
 	if err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, app.route("login"), http.StatusFound)
+		http.Redirect(w, r, loginPath(), http.StatusFound)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 
 	if len(githubOrganizations) == 0 {
 		flashError(w, "no github organizations found")
-		http.Redirect(w, r, app.route("login"), http.StatusFound)
+		http.Redirect(w, r, loginPath(), http.StatusFound)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setCookie(w, sessionCookie, session.Token, &session.Expiry)
-	http.Redirect(w, r, app.route("getProfile"), http.StatusFound)
+	http.Redirect(w, r, getProfilePath(), http.StatusFound)
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +134,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "created token: "+token.Token())
-	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
+	http.Redirect(w, r, listTokenPath(), http.StatusFound)
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +162,7 @@ func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, app.route("listToken"), http.StatusFound)
+	http.Redirect(w, r, listTokenPath(), http.StatusFound)
 }
 
 func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +176,7 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	flashSuccess(w, "Revoked session")
-	http.Redirect(w, r, app.route("listSession"), http.StatusFound)
+	http.Redirect(w, r, listSessionPath(), http.StatusFound)
 }
 
 // synchroniseOrganizations ensures an otf user's organization memberships match

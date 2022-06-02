@@ -10,6 +10,29 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
+	// get organization id if only organization name provided
+	orgID, err := f.getOrganizationID(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return NewWorkspace(orgID, opts)
+}
+
+func (f *WorkspaceFactory) getOrganizationID(ctx context.Context, opts WorkspaceCreateOptions) (string, error) {
+	if opts.OrganizationID != nil {
+		return *opts.OrganizationID, nil
+	} else if opts.OrganizationName != nil {
+		org, err := f.OrganizationService.Get(ctx, *opts.OrganizationName)
+		if err != nil {
+			return "", err
+		}
+		return org.ID(), nil
+	} else {
+		return "", fmt.Errorf("missing organization ID or name")
+	}
+}
+
+func NewWorkspace(orgID string, opts WorkspaceCreateOptions) (*Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
@@ -25,15 +48,8 @@ func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreat
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
+		organizationID:      orgID,
 	}
-
-	// get organization id if only organization name provided
-	orgID, err := f.getOrganizationID(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	ws.organizationID = orgID
-
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
 	if opts.ExecutionMode != nil {
@@ -78,20 +94,6 @@ func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreat
 	return &ws, nil
 }
 
-func (f *WorkspaceFactory) getOrganizationID(ctx context.Context, opts WorkspaceCreateOptions) (string, error) {
-	if opts.OrganizationID != nil {
-		return *opts.OrganizationID, nil
-	} else if opts.OrganizationName != nil {
-		org, err := f.OrganizationService.Get(ctx, *opts.OrganizationName)
-		if err != nil {
-			return "", err
-		}
-		return org.ID(), nil
-	} else {
-		return "", fmt.Errorf("missing organization ID or name")
-	}
-}
-
 // WorkspaceCreateOptions represents the options for creating a new workspace.
 type WorkspaceCreateOptions struct {
 	AllowDestroyPlan           *bool
@@ -118,9 +120,6 @@ type WorkspaceCreateOptions struct {
 func (o WorkspaceCreateOptions) Valid() error {
 	if !ValidStringID(&o.Name) {
 		return ErrInvalidName
-	}
-	if o.OrganizationName == nil && o.OrganizationID == nil {
-		return fmt.Errorf("missing organization ID or name")
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
 		return ErrInvalidTerraformVersion

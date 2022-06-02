@@ -18,7 +18,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := decode.Form(&opts, r); err != nil {
+	if err := decode.Route(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -27,20 +27,20 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// get workspace
-	spec := otf.WorkspaceSpec{OrganizationName: opts.OrganizationName, Name: opts.WorkspaceName}
-	workspace, err := app.WorkspaceService().Get(r.Context(), spec)
+	// get workspace, too
+	workspace, err := app.WorkspaceService().Get(r.Context(), otf.WorkspaceSpec{
+		OrganizationName: opts.OrganizationName,
+		Name:             opts.WorkspaceName,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("run_list.tmpl", w, r, struct {
 		List      *otf.RunList
-		Options   otf.RunListOptions
 		Workspace *otf.Workspace
 	}{
 		List:      runs,
-		Options:   opts,
 		Workspace: workspace,
 	})
 }
@@ -70,7 +70,8 @@ func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, app.relative(r, "getRun", "run_id", created.ID()), http.StatusFound)
+	path := getRunPath(param(r, "organization_name"), param(r, "workspace_name"), created.ID())
+	http.Redirect(w, r, path, http.StatusFound)
 }
 
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
@@ -121,11 +122,13 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 	app.render("plan_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
+		Run              *otf.Run
+		Logs             template.HTML
+		OrganizationName string
 	}{
-		Run:  run,
-		Logs: template.HTML(logs),
+		Run:              run,
+		Logs:             template.HTML(logs),
+		OrganizationName: mux.Vars(r)["organization_name"],
 	})
 }
 
@@ -163,6 +166,6 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	http.Redirect(w, r, "../../", http.StatusFound)
+	path := getWorkspacePath(param(r, "organization_name"), param(r, "workspace_name"))
+	http.Redirect(w, r, path, http.StatusFound)
 }
