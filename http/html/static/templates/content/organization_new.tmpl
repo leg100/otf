@@ -2,6 +2,8 @@
 
 {{ define "title" }}New Organization{{ end }}
 
+{{ define "container-header" }}Organizations > New{{ end }}
+
 {{ define "content" }}
   <form class="main-form" action="{{ .Path "createOrganization" }}" method="POST">
     <ul>

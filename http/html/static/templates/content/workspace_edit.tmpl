@@ -3,9 +3,9 @@
 {{ define "title" }}Edit Workspace{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ .Relative "listWorkspace" }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content.Workspace.Organization.Name }}">workspaces</a>
   /
-  <a href="{{ .Relative "getWorkspace" }}">{{ .Content.Workspace.Name }}</a>
+  <a href="{{ getWorkspace .Content.Workspace.Organization.Name .Content.Workspace.Name }}">{{ .Content.Workspace.Name }}</a>
   /
   settings
 {{ end }}

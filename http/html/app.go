@@ -88,7 +88,7 @@ func (app *Application) addRoutes(r *router) {
 		r.get("/profile/tokens/new", app.newTokenHandler).Name("newToken")
 		r.pst("/profile/tokens/create", app.createTokenHandler).Name("createToken")
 
-		r.get("/organizations/", app.listOrganizations).Name("listOrganization")
+		r.get("/organizations", app.listOrganizations).Name("listOrganization")
 		r.get("/organizations/new", app.newOrganization).Name("newOrganization")
 		r.pst("/organizations/create", app.createOrganization).Name("createOrganization")
 		r.get("/organizations/{organization_name}", app.getOrganization).Name("getOrganization")

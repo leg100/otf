@@ -1,105 +1,141 @@
-package html
+//go:build ignore
 
-import "fmt"
+package main
 
-// TODO: autogenerate path helpers from router
+import (
+	"os"
+	"regexp"
+	"strings"
 
-// Profile path helpers
+	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
+	"github.com/iancoleman/strcase"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
+)
 
-type pathHelpers struct{}
+var (
+	varRx = regexp.MustCompile(`\{([^\:\}]+)\}`)
+)
 
-func (h pathHelpers) getProfilePath() string {
-	return "/profile"
+// Dummy app to pass in
+type app struct {
+	otf.Application
 }
 
-func (h pathHelpers) listSessionPath() string {
-	return "/profile/sessions"
+// helper is the path helper to be generated
+type helper struct {
+	// name and path contains every needed to generate a path helper
+	name, path string
+	// func params extracted from path
+	params []string
 }
 
-func (h pathHelpers) revokeSessionPath() string {
-	return "/profile/revoke"
+func newHelper(name, path string) helper {
+	return helper{
+		name:   name,
+		path:   path,
+		params: parsePathVars(path),
+	}
 }
 
-func (h pathHelpers) listTokenPath() string {
-	return "/profile/tokens"
+// funcName returns the name of the helper function
+func (h helper) funcName() string {
+	return h.name + "Path"
 }
 
-func (h pathHelpers) deleteTokenPath() string {
-	return "/profile/tokens/delete"
+// return the function definition as a string
+func (h helper) funcDefStr() string {
+	b := strings.Builder{}
+	b.WriteString("func ")
+	b.WriteString(h.funcName())
+	b.WriteRune('(')
+	b.WriteString(strings.Join(h.params, ", "))
+	if len(h.params) == 0 {
+		b.WriteString(") string {\n")
+		b.WriteString("\treturn \"")
+		b.WriteString(h.fmtStr())
+		b.WriteString("\"\n")
+	} else {
+		// parameters share a string type
+		b.WriteString(" string")
+		b.WriteString(") string {\n")
+		b.WriteString("\treturn fmt.Sprintf(\"")
+		b.WriteString(h.fmtStr())
+		b.WriteString("\", ")
+		// fmt.Sprintf params
+		b.WriteString(strings.Join(h.params, ", "))
+		b.WriteString(")\n")
+	}
+	b.WriteString("}\n\n")
+	return b.String()
 }
 
-func (h pathHelpers) newTokenPath() string {
-	return "/profile/tokens/new"
+// funcMapAssignmentStr returns as a string the assignment of the helper
+// function to a template func map, i.e.:
+//
+//     m["getWorkspacePath"] = getWorkspacePath
+func (h helper) funcMapAssignmentStr() string {
+	b := strings.Builder{}
+	b.WriteString("\tm[\"")
+	b.WriteString(h.funcName())
+	b.WriteString("\"] = ")
+	b.WriteString(h.funcName())
+	b.WriteRune('\n')
+	return b.String()
 }
 
-func (h pathHelpers) createTokenPath() string {
-	return "/profile/tokens/create"
+func (h helper) fmtStr() string {
+	return varRx.ReplaceAllString(h.path, "%s")
 }
 
-// Workspace path helpers
-
-func (h pathHelpers) listOrganizationPath() string {
-	return "/organizations"
+// parsePathVars parses a mux route's path variables. It also ensures they're in
+// lower camel case, suitable for unexported go variables.
+func parsePathVars(path string) []string {
+	matches := varRx.FindAllStringSubmatch(path, -1)
+	if matches == nil {
+		return nil
+	}
+	var vars []string
+	for _, m := range matches {
+		vars = append(vars, strcase.ToLowerCamel(m[1]))
+	}
+	return vars
 }
 
-func (h pathHelpers) newOrganizationPath() string {
-	return "/organizations/new"
-}
-
-func (h pathHelpers) createOrganizationPath() string {
-	return "/organizations/create"
-}
-
-func (h pathHelpers) getOrganizationPath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s", organization_name)
-}
-
-func (h pathHelpers) editOrganizationPath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/edit", organization_name)
-}
-
-func updateOrganizationPath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/update", organization_name)
-}
-
-func deleteOrganizationPath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/delete", organization_name)
-}
-
-// Workspace path helpers
-
-func listWorkspacePath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces", organization_name)
-}
-
-func newWorkspacePath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/new", organization_name)
-}
-
-func createWorkspacePath(organization_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/create", organization_name)
-}
-
-func getWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s", organization_name, workspace_name)
-}
-
-func editWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", organization_name, workspace_name)
-}
-
-func updateWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/update", organization_name, workspace_name)
-}
-
-func deleteWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/delete", organization_name, workspace_name)
-}
-
-func lockWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/lock", organization_name, workspace_name)
-}
-
-func unlockWorkspacePath(organization_name, workspace_name string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/unlock", organization_name, workspace_name)
+func main() {
+	// get routes from web app
+	r := mux.NewRouter()
+	html.AddRoutes(logr.Discard(), html.Config{}, &app{}, r)
+	// walk routes and populate helpers
+	var helpers []helper
+	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		if route.GetName() == "" {
+			// skip routes without a name
+			return nil
+		}
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			// skip routes without a path
+			return nil
+		}
+		helpers = append(helpers, newHelper(route.GetName(), path))
+		return nil
+	})
+	// build str for output and write to file
+	b := strings.Builder{}
+	b.WriteString("package html\n\n")
+	b.WriteString("import (\n")
+	b.WriteString("\t\"fmt\"\n")
+	b.WriteString("\t\"html/template\"\n")
+	b.WriteString(")\n\n")
+	for _, h := range helpers {
+		b.WriteString(h.funcDefStr())
+	}
+	b.WriteString("func addHelpersToFuncMap(m template.FuncMap) {\n")
+	for _, h := range helpers {
+		b.WriteString(h.funcMapAssignmentStr())
+	}
+	b.WriteString("}\n")
+	os.WriteFile("path_helpers_gen.go", []byte(b.String()), 0644)
 }

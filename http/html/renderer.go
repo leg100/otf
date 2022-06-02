@@ -28,6 +28,8 @@ var (
 func init() {
 	// make version available to templates
 	funcs["version"] = func() string { return otf.Version }
+	// make path helpers available to templates
+	addHelpersToFuncMap(funcs)
 }
 
 // renderer is capable of locating and rendering a template.
