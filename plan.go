@@ -38,6 +38,8 @@ type Plan struct {
 	statusTimestamps []PlanStatusTimestamp
 	// run is the parent run
 	run *Run
+	// logReadURL is the JSON-API endpoint for reading plan logs
+	logReadURL string
 }
 
 func (p *Plan) ID() string         { return p.id }
@@ -121,12 +123,17 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
 
-// NewJSONAPIAssembler constructs a PlanJSONAPIAssembler.
-func (p *Plan) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute string) *PlanJSONAPIAssembler {
+func (p *Plan) SetLogReadURL(r *http.Request, path string) {
+	p.logReadURL = httputil.Absolute(r, path)
+}
+
+// ToJSONAPI assembles a JSON-API DTO. Call SetLogReadURL first to populate
+// LogReadURL field.
+func (p *Plan) ToJSONAPI() any {
 	result := &dto.Plan{
 		ID:               p.ID(),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
+		LogReadURL:       p.logReadURL,
 		Status:           string(p.Status()),
 		StatusTimestamps: &dto.PlanStatusTimestamps{},
 	}

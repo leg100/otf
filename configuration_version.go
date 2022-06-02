@@ -80,7 +80,8 @@ func (cv *ConfigurationVersion) SetUploadURL(url string) {
 	cv.uploadURL = url
 }
 
-// ToJSONAPI assembles a JSONAPI DTO
+// ToJSONAPI assembles a JSONAPI DTO. Call SetUploadURL first to populate
+// UploadURL field.
 func (cv *ConfigurationVersion) ToJSONAPI() any {
 	obj := &jsonapi.ConfigurationVersion{
 		ID:               cv.ID(),

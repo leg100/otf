@@ -38,8 +38,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	assembler := run.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
-	writeResponse(w, r, assembler, withCode(http.StatusCreated))
+	writeResponse(w, r, run, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {

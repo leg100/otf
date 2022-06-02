@@ -260,10 +260,7 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 }
 
 // NewJSONAPIAssembler cconstructs a RunJSONAPIAssembler.
-func (r *Run) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute, GetApplyLogsRoute string) *RunJSONAPIAssembler {
-	plan := r.Plan.NewJSONAPIAssembler(req, GetPlanLogsRoute).ToJSONAPI()
-	apply := r.Apply.NewJSONAPIAssembler(req, GetApplyLogsRoute).ToJSONAPI()
-
+func (r *Run) ToJSONAPI() *RunJSONAPIAssembler {
 	dto := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
@@ -293,9 +290,9 @@ func (r *Run) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute, GetApplyL
 		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply:                apply.(*jsonapi.Apply),
+		Apply:                r.Apply.ToJSONAPI().(*jsonapi.Apply),
 		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI().(*jsonapi.ConfigurationVersion),
-		Plan:                 plan.(*jsonapi.Plan),
+		Plan:                 r.Plan.ToJSONAPI(),.(*jsonapi.Plan)
 		Workspace:            r.Workspace.ToJSONAPI().(*jsonapi.Workspace),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{

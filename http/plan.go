@@ -27,7 +27,8 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, plan.NewJSONAPIAssembler(r, string(GetPlanLogsRoute)))
+	plan.SetLogReadURL(r)
+	writeResponse(w, r, plan)
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
