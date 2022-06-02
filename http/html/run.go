@@ -122,11 +122,13 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 	app.render("plan_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
+		Run              *otf.Run
+		Logs             template.HTML
+		OrganizationName string
 	}{
-		Run:  run,
-		Logs: template.HTML(logs),
+		Run:              run,
+		Logs:             template.HTML(logs),
+		OrganizationName: mux.Vars(r)["organization_name"],
 	})
 }
 

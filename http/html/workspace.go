@@ -67,7 +67,10 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_get.tmpl", w, r, workspace)
+	app.render("workspace_get.tmpl", w, r, struct {
+		Workspace        *otf.Workspace
+		OrganizationName string
+	}{workspace, *spec.OrganizationName})
 }
 
 func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +84,10 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_edit.tmpl", w, r, workspace)
+	app.render("workspace_edit.tmpl", w, r, struct {
+		Workspace        *otf.Workspace
+		OrganizationName string
+	}{workspace, param(r, "organization_name")})
 }
 
 func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) {

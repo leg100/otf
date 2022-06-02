@@ -3,11 +3,11 @@
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ .Relative "listWorkspace" }}">workspaces</a> / {{ .Content.Name }}
+  <a href="{{ listWorkspacePath .Content.OrganizationName }}">workspaces</a> / {{ .Content.Workspace.Name }}
 {{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ .Relative "newRun" }}" method="GET">
+  <form action="{{ newRunPath .Content.OrganizationName .Content.Workspace.Name }}" method="GET">
     <button type="submit">New Run</button>
   </form>
 {{ end }}
@@ -19,9 +19,9 @@
   <div>
     <a href="{{ .Relative "editWorkspace" }}">{{ template "cog_icon" }}</a>
   </div>
-  <div>v{{ .Content.TerraformVersion }}</div>
+  <div>v{{ .Content.Workspace.TerraformVersion }}</div>
   <div class="workspace-lock">
-    {{ if .Content.Locked }}
+    {{ if .Content.Workspace.Locked }}
       <span class="workspace-lock-status workspace-lock-status-locked">Locked</span>
       <form action="{{ .Relative "unlockWorkspace" }}" method="POST"><button>Unlock</button></form>
     {{ else }}

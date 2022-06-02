@@ -5,7 +5,7 @@
 {{ define "container-header" }}workspaces{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ .Relative "newWorkspace" }}" method="GET">
+  <form action="{{ newWorkspacePath .Content.Options.OrganizationName }}" method="GET">
     <button type="submit">New Workspace</button>
   </form>
 {{ end }}
@@ -20,7 +20,7 @@
     <tbody>
     {{ range .Content.List.Items }}
       <tr>
-          <td><a href="{{ $.Relative "getWorkspace" "workspace_name" .Name }}">{{ .Name }}</a></td>
+          <td><a href="{{ getWorkspacePath $.Content.Options.OrganizationName .Name }}">{{ .Name }}</a></td>
         </tr>
       {{ end }}
     </tbody>
