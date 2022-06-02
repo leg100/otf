@@ -124,10 +124,11 @@ func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimesta
 // NewJSONAPIAssembler constructs a PlanJSONAPIAssembler.
 func (p *Plan) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute string) *PlanJSONAPIAssembler {
 	result := &dto.Plan{
-		ID:         p.ID(),
-		HasChanges: p.HasChanges(),
-		LogReadURL: httputil.Absolute(req, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
-		Status:     string(p.Status()),
+		ID:               p.ID(),
+		HasChanges:       p.HasChanges(),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
+		Status:           string(p.Status()),
+		StatusTimestamps: &dto.PlanStatusTimestamps{},
 	}
 	if p.ResourceReport != nil {
 		result.ResourceAdditions = p.Additions
@@ -135,9 +136,6 @@ func (p *Plan) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute string) *
 		result.ResourceDestructions = p.Destructions
 	}
 	for _, ts := range p.StatusTimestamps() {
-		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &dto.PlanStatusTimestamps{}
-		}
 		switch ts.Status {
 		case PlanCanceled:
 			result.StatusTimestamps.CanceledAt = &ts.Timestamp

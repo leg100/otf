@@ -107,9 +107,10 @@ func (a *Apply) runTerraformApply(env Environment) error {
 // NewJSONAPIAssembler constructs an ApplyJSONAPIAssembler.
 func (a *Apply) NewJSONAPIAssembler(req *http.Request, GetApplyLogsRoute string) *ApplyJSONAPIAssembler {
 	o := &dto.Apply{
-		ID:         a.ID(),
-		LogReadURL: httputil.Absolute(req, fmt.Sprintf(GetApplyLogsRoute, a.ID())),
-		Status:     string(a.Status()),
+		ID:               a.ID(),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf(GetApplyLogsRoute, a.ID())),
+		Status:           string(a.Status()),
+		StatusTimestamps: &dto.ApplyStatusTimestamps{},
 	}
 	if a.ResourceReport != nil {
 		o.ResourceAdditions = a.Additions
@@ -117,9 +118,6 @@ func (a *Apply) NewJSONAPIAssembler(req *http.Request, GetApplyLogsRoute string)
 		o.ResourceDestructions = a.Destructions
 	}
 	for _, ts := range a.StatusTimestamps() {
-		if o.StatusTimestamps == nil {
-			o.StatusTimestamps = &dto.ApplyStatusTimestamps{}
-		}
 		switch ts.Status {
 		case ApplyCanceled:
 			o.StatusTimestamps.CanceledAt = &ts.Timestamp

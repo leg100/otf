@@ -24,7 +24,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	obj, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
+	run, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
 		RefreshOnly:            opts.RefreshOnly,
@@ -38,18 +38,19 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	run := obj.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
-	writeResponse(w, r, run, withCode(http.StatusCreated))
+	assembler := run.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
+	writeResponse(w, r, assembler, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.RunService().Get(r.Context(), vars["id"])
+	run, err := s.RunService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunDTO(r, obj))
+	assembler := run.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
+	writeResponse(w, r, assembler)
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {

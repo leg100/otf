@@ -284,13 +284,14 @@ func (r *Run) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute, GetApplyL
 			CanDiscard:      true,
 			CanForceExecute: true,
 		},
-		PositionInQueue: 0,
-		Refresh:         r.Refresh(),
-		RefreshOnly:     r.RefreshOnly(),
-		ReplaceAddrs:    r.ReplaceAddrs(),
-		Source:          DefaultConfigurationSource,
-		Status:          string(r.Status()),
-		TargetAddrs:     r.TargetAddrs(),
+		PositionInQueue:  0,
+		Refresh:          r.Refresh(),
+		RefreshOnly:      r.RefreshOnly(),
+		ReplaceAddrs:     r.ReplaceAddrs(),
+		Source:           DefaultConfigurationSource,
+		Status:           string(r.Status()),
+		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
+		TargetAddrs:      r.TargetAddrs(),
 		// Relations
 		Apply:                apply.(*jsonapi.Apply),
 		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI().(*jsonapi.ConfigurationVersion),
@@ -303,9 +304,6 @@ func (r *Run) NewJSONAPIAssembler(req *http.Request, GetPlanLogsRoute, GetApplyL
 		},
 	}
 	for _, rst := range r.StatusTimestamps() {
-		if dto.StatusTimestamps == nil {
-			dto.StatusTimestamps = &jsonapi.RunStatusTimestamps{}
-		}
 		switch rst.Status {
 		case RunPending:
 			dto.StatusTimestamps.PlanQueueableAt = &rst.Timestamp

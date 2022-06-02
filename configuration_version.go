@@ -34,7 +34,8 @@ type ConfigurationVersion struct {
 	speculative      bool
 	status           ConfigurationStatus
 	statusTimestamps []ConfigurationVersionStatusTimestamp
-
+	// uploadURL is the json-api endpoint for uploading the configuration
+	uploadURL string
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
 }
@@ -75,6 +76,10 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 	return nil
 }
 
+func (cv *ConfigurationVersion) SetUploadURL(url string) {
+	cv.uploadURL = url
+}
+
 // ToJSONAPI assembles a JSONAPI DTO
 func (cv *ConfigurationVersion) ToJSONAPI() any {
 	obj := &jsonapi.ConfigurationVersion{
@@ -84,7 +89,7 @@ func (cv *ConfigurationVersion) ToJSONAPI() any {
 		Source:           string(cv.Source()),
 		Status:           string(cv.Status()),
 		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
-		UploadURL:        UploadConfigurationVersionPath(cv),
+		UploadURL:        cv.uploadURL,
 	}
 	for _, ts := range cv.StatusTimestamps() {
 		switch ts.Status {
