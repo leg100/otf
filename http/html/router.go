@@ -1,48 +1,28 @@
 package html
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
+// router wraps mux's router, adding various helper methods
 type router struct {
 	*mux.Router
 }
 
-// relative gets a relative URL path with the given route name. Route variables
-// are retrieved from the current request and further variables can be provided
-// as parameters.
-func (r *router) relative(req *http.Request, name string, params ...string) string {
-	reqVars := flattenMap(mux.Vars(req))
-
-	return r.route(name, append(reqVars, params...)...)
-}
-
-func (r *router) route(name string, params ...string) string {
-	route := r.Get(name)
-
-	if route == nil {
-		panic(fmt.Errorf("no such web route exists: %s", name))
-	}
-
-	url, err := route.URLPath(params...)
-	if err != nil {
-		panic(err)
-	}
-
-	return url.Path
-}
-
+// sub turns mux into chi (almost)
 func (r *router) sub(group func(r *router)) {
 	group(&router{r.NewRoute().Subrouter()})
 }
 
+// get is a helper method for a mux handler with a get method
 func (r *router) get(path string, h http.HandlerFunc) *mux.Route {
 	return r.HandleFunc(path, h).Methods("GET")
 }
 
+// pst is a helper method for a mux handler with a post method. Shortened to pst
+// so that it lines up nicely with get when reading the routing code.
 func (r *router) pst(path string, h http.HandlerFunc) *mux.Route {
 	return r.HandleFunc(path, h).Methods("POST")
 }

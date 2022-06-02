@@ -14,7 +14,7 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
 		if err == http.ErrNoCookie {
-			http.Redirect(w, r, app.route("login"), http.StatusFound)
+			http.Redirect(w, r, loginPath(), http.StatusFound)
 			return
 		}
 		user, err := app.UserService().Get(r.Context(), otf.UserSpec{
@@ -22,7 +22,7 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			flashError(w, "unable to find user: "+err.Error())
-			http.Redirect(w, r, app.route("login"), http.StatusFound)
+			http.Redirect(w, r, loginPath(), http.StatusFound)
 			return
 		}
 		session := getActiveSession(user, cookie.Value)

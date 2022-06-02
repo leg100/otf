@@ -35,7 +35,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 	organization, err := app.OrganizationService().Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
 		flashError(w, "organization already exists: "+*opts.Name)
-		http.Redirect(w, r, app.route("newOrganization"), http.StatusFound)
+		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
 		return
 	}
 	if err != nil {

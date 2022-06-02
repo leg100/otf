@@ -12,8 +12,6 @@ const DefaultPathPrefix = "/"
 
 // Application is the oTF web app.
 type Application struct {
-	// HTML template renderer
-	renderer
 	// Static asset server
 	staticServer http.FileSystem
 	// oTF service accessors
@@ -22,9 +20,9 @@ type Application struct {
 	oauth *githubOAuthApp
 	// path prefix for all URLs
 	pathPrefix string
-	// factory for making templateData structs
+	// view engine populates and renders templates
 	*viewEngine
-	// wrapper around mux router
+	// mux router wrapper
 	*router
 }
 

@@ -90,10 +90,3 @@ func (v *view) IsOrganizationRoute() bool {
 	_, ok := mux.Vars(v.request)["organization_name"]
 	return ok
 }
-
-func flattenMap(m map[string]string) (s []string) {
-	for k, v := range m {
-		s = append(s, k, v)
-	}
-	return
-}
