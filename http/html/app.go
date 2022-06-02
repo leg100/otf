@@ -22,8 +22,6 @@ type Application struct {
 	pathPrefix string
 	// view engine populates and renders templates
 	*viewEngine
-	// mux router wrapper
-	*router
 }
 
 // AddRoutes adds routes for the html web app.
@@ -31,7 +29,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	views, err := newViewEngine(&router{muxrouter}, config.DevMode)
+	views, err := newViewEngine(config.DevMode)
 	if err != nil {
 		return err
 	}
@@ -45,9 +43,8 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
-		router:       &router{Router: muxrouter},
 	}
-	app.addRoutes(app.router)
+	app.addRoutes(&router{Router: muxrouter})
 	return nil
 }
 

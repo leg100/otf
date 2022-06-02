@@ -9,20 +9,16 @@ import (
 
 // viewEngine is responsible for populating and rendering views
 type viewEngine struct {
-	// views look up routes for links
-	router *router
 	// render templates
 	renderer
 }
 
-func newViewEngine(router *router, dev bool) (*viewEngine, error) {
+func newViewEngine(dev bool) (*viewEngine, error) {
 	renderer, err := newRenderer(dev)
 	if err != nil {
 		return nil, err
 	}
-
 	return &viewEngine{
-		router:   router,
 		renderer: renderer,
 	}, nil
 }
@@ -33,7 +29,6 @@ func newViewEngine(router *router, dev bool) (*viewEngine, error) {
 func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request, content interface{}) {
 	err := ve.renderTemplate(name, w, &view{
 		Content:     content,
-		router:      ve.router,
 		flashPopper: popFlashFunc(w, r),
 		request:     r,
 		Version:     otf.Version,
@@ -47,8 +42,6 @@ func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request
 type view struct {
 	// arbitary data made available to the template
 	Content interface{}
-	// make routes available for producing links in template
-	router *router
 	// info regarding current request
 	request *http.Request
 	// pop flash message in template
