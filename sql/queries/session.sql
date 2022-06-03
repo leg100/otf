@@ -13,13 +13,6 @@ INSERT INTO sessions (
     pggen.arg('UserID')
 );
 
--- name: UpdateSessionUserID :one
-UPDATE sessions
-SET
-    user_id = pggen.arg('user_id')
-WHERE token = pggen.arg('token')
-RETURNING token;
-
 -- name: UpdateSessionExpiry :one
 UPDATE sessions
 SET

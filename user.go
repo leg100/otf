@@ -25,8 +25,6 @@ type User struct {
 	createdAt time.Time
 	updatedAt time.Time
 	username  string
-	// Name of the current Organization the user is using on the web app.
-	CurrentOrganization *string
 	// A user has many sessions
 	Sessions []*Session
 	// A user has many tokens
@@ -109,8 +107,6 @@ type UserService interface {
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-	// SetCurrentOrganization sets the user's currently active organization
-	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
 	// CreateToken creates a user token.
@@ -125,8 +121,6 @@ type UserService interface {
 // UserStore is a persistence store for user accounts.
 type UserStore interface {
 	Create(ctx context.Context, user *User) error
-	// SetCurrentOrganization sets the user's currently active organization
-	SetCurrentOrganization(ctx context.Context, userID, orgName string) error
 	Get(ctx context.Context, spec UserSpec) (*User, error)
 	List(ctx context.Context) ([]*User, error)
 	Delete(ctx context.Context, spec UserSpec) error

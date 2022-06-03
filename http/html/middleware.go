@@ -8,6 +8,13 @@ import (
 	"github.com/leg100/otf"
 )
 
+type currentOrganization struct {
+	name string
+}
+
+// Name implements organizationName
+func (c *currentOrganization) Name() string { return c.name }
+
 // authUser middleware ensures the request has a valid session cookie, attaching
 // a session and user to the request context.
 func (app *Application) authenticateUser(next http.Handler) http.Handler {
@@ -33,28 +40,19 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 	})
 }
 
-// setCurrentOrganization ensures a user's current organization matches the
-// organization in the request. If there is no organization in the current
-// request then no action is taken.
-func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
+// setSessionOrganization is responsible for ensuring the session's organization
+// is kept current.
+func (app *Application) setSessionOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := getCtxUser(r.Context())
-		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 		current, ok := mux.Vars(r)["organization_name"]
 		if !ok {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
-			user.CurrentOrganization = &current
-			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID(), current); err != nil {
-				writeError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			ctx := context.WithValue(r.Context(), userCtxKey, user)
+		cookie, err := r.Cookie(organizationCookie)
+		if err == http.ErrNoCookie || cookie.Value != current {
+			setCookie(w, organizationCookie, current, nil)
+			ctx := context.WithValue(r.Context(), organizationCtxKey, current)
 			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)

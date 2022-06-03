@@ -58,38 +58,6 @@ func (q *DBQuerier) InsertSessionScan(results pgx.BatchResults) (pgconn.CommandT
 	return cmdTag, err
 }
 
-const updateSessionUserIDSQL = `UPDATE sessions
-SET
-    user_id = $1
-WHERE token = $2
-RETURNING token;`
-
-// UpdateSessionUserID implements Querier.UpdateSessionUserID.
-func (q *DBQuerier) UpdateSessionUserID(ctx context.Context, userID pgtype.Text, token pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionUserID")
-	row := q.conn.QueryRow(ctx, updateSessionUserIDSQL, userID, token)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdateSessionUserID: %w", err)
-	}
-	return item, nil
-}
-
-// UpdateSessionUserIDBatch implements Querier.UpdateSessionUserIDBatch.
-func (q *DBQuerier) UpdateSessionUserIDBatch(batch genericBatch, userID pgtype.Text, token pgtype.Text) {
-	batch.Queue(updateSessionUserIDSQL, userID, token)
-}
-
-// UpdateSessionUserIDScan implements Querier.UpdateSessionUserIDScan.
-func (q *DBQuerier) UpdateSessionUserIDScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdateSessionUserIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const updateSessionExpirySQL = `UPDATE sessions
 SET
     expiry = $1

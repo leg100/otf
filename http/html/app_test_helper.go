@@ -34,10 +34,6 @@ func (u *fakeUserService) Get(context.Context, otf.UserSpec) (*otf.User, error) 
 	return u.fakeUser, nil
 }
 
-func (u *fakeUserService) SetCurrentOrganization(ctx context.Context, userID, name string) error {
-	return nil
-}
-
 type fakeOrganizationService struct {
 	fakeOrganization *otf.Organization
 	otf.OrganizationService

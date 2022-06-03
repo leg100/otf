@@ -71,7 +71,7 @@ func (app *Application) addRoutes(r *router) {
 	// routes that require authentication.
 	r.sub(func(r *router) {
 		r.Use(app.authenticateUser)
-		r.Use(app.setCurrentOrganization)
+		r.Use(app.setSessionOrganization)
 
 		r.pst("/logout", app.logoutHandler).Name("logout")
 		r.get("/profile", app.profileHandler).Name("getProfile")

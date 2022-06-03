@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS users (
     username                TEXT        NOT NULL,
     created_at              TIMESTAMPTZ NOT NULL,
     updated_at              TIMESTAMPTZ NOT NULL,
-    current_organization    TEXT,
                             PRIMARY KEY (user_id),
                             UNIQUE (username)
 );
@@ -54,12 +53,12 @@ CREATE TABLE IF NOT EXISTS organization_memberships (
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    token           TEXT,
-    created_at      TIMESTAMPTZ NOT NULL,
-    address         TEXT        NOT NULL,
-    expiry          TIMESTAMPTZ NOT NULL,
-    user_id         TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                    PRIMARY KEY (token)
+    token                   TEXT,
+    created_at              TIMESTAMPTZ NOT NULL,
+    address                 TEXT        NOT NULL,
+    expiry                  TIMESTAMPTZ NOT NULL,
+    user_id                 TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                            PRIMARY KEY (token)
 );
 
 CREATE TABLE IF NOT EXISTS tokens (

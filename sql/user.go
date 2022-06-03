@@ -54,17 +54,6 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return tx.Commit(ctx)
 }
 
-func (db UserDB) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
-	q := pggen.NewQuerier(db.Pool)
-
-	_, err := q.UpdateUserCurrentOrganization(ctx, pggen.UpdateUserCurrentOrganizationParams{
-		ID:                  pgtype.Text{String: userID, Status: pgtype.Present},
-		CurrentOrganization: pgtype.Text{String: orgName, Status: pgtype.Present},
-		UpdatedAt:           otf.CurrentTimestamp(),
-	})
-	return err
-}
-
 func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 	q := pggen.NewQuerier(db.Pool)
 
