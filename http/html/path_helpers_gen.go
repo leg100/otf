@@ -7,6 +7,17 @@ import (
 	"html/template"
 )
 
+// organizationMeta provides organization name info
+type organizationName interface {
+	Name() string
+}
+
+// workspaceMeta provides workspace name info
+type workspaceName interface {
+	OrganizationName() string
+	Name() string
+}
+
 func loginPath() string {
 	return "/login"
 }
@@ -55,72 +66,72 @@ func createOrganizationPath() string {
 	return "/organizations/create"
 }
 
-func getOrganizationPath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s", organizationName)
+func getOrganizationPath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s", name.Name())
 }
 
-func getOrganizationOverviewPath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/overview", organizationName)
+func getOrganizationOverviewPath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/overview", name.Name())
 }
 
-func editOrganizationPath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/edit", organizationName)
+func editOrganizationPath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/edit", name.Name())
 }
 
-func updateOrganizationPath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/update", organizationName)
+func updateOrganizationPath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/update", name.Name())
 }
 
-func deleteOrganizationPath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/delete", organizationName)
+func deleteOrganizationPath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/delete", name.Name())
 }
 
-func listWorkspacePath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces", organizationName)
+func listWorkspacePath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces", name.Name())
 }
 
-func newWorkspacePath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/new", organizationName)
+func newWorkspacePath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/new", name.Name())
 }
 
-func createWorkspacePath(organizationName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/create", organizationName)
+func createWorkspacePath(name organizationName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/create", name.Name())
 }
 
-func getWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s", organizationName, workspaceName)
+func getWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s", ws.OrganizationName(), ws.Name())
 }
 
-func editWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", organizationName, workspaceName)
+func editWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", ws.OrganizationName(), ws.Name())
 }
 
-func updateWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/update", organizationName, workspaceName)
+func updateWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/update", ws.OrganizationName(), ws.Name())
 }
 
-func deleteWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/delete", organizationName, workspaceName)
+func deleteWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/delete", ws.OrganizationName(), ws.Name())
 }
 
-func lockWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/lock", organizationName, workspaceName)
+func lockWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/lock", ws.OrganizationName(), ws.Name())
 }
 
-func unlockWorkspacePath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/unlock", organizationName, workspaceName)
+func unlockWorkspacePath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/unlock", ws.OrganizationName(), ws.Name())
 }
 
-func listRunPath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs", organizationName, workspaceName)
+func listRunPath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs", ws.OrganizationName(), ws.Name())
 }
 
-func newRunPath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", organizationName, workspaceName)
+func newRunPath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", ws.OrganizationName(), ws.Name())
 }
 
-func createRunPath(organizationName, workspaceName string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/create", organizationName, workspaceName)
+func createRunPath(ws workspaceName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/create", ws.OrganizationName(), ws.Name())
 }
 
 func getRunPath(organizationName, workspaceName, runId string) string {

@@ -7,7 +7,7 @@
 {{ define "content" }}
   <p><strong>Name</strong></p>
   <p>{{ .Content.Name }}</p>
-  <form class="main-form" action="{{ deleteOrganizationPath .Content.Name }}" method="POST">
+  <form class="main-form" action="{{ deleteOrganizationPath .Content }}" method="POST">
       <button>Delete organization</button>
   </form>
 {{ end }}
