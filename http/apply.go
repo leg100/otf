@@ -17,7 +17,6 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	apply.SetLogReadURL(r, getApplyLogsPath(apply))
 	writeResponse(w, r, apply)
 }
 

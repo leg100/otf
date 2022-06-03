@@ -34,8 +34,6 @@ type Apply struct {
 	statusTimestamps []ApplyStatusTimestamp
 	// run is the parent run
 	run *Run
-	// logReadURL is the JSON-API endpoint for reading logs
-	logReadURL string
 }
 
 func (a *Apply) ID() string          { return a.id }
@@ -106,16 +104,11 @@ func (a *Apply) runTerraformApply(env Environment) error {
 	return env.RunCLI("sh", "-c", cmd.String())
 }
 
-func (a *Apply) SetLogReadURL(r *http.Request, path string) {
-	a.logReadURL = httputil.Absolute(r, path)
-}
-
-// ToJSONAPI assembles a JSONAPI DTO. Call SetLogReadURL first to populate log
-// read url field.
-func (a *Apply) ToJSONAPI() any {
+// ToJSONAPI assembles a JSONAPI DTO.
+func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
 		ID:               a.ID(),
-		LogReadURL:       a.logReadURL,
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("applies/%s/logs", a.ID())),
 		Status:           string(a.Status()),
 		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
 	}

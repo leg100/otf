@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -258,7 +259,7 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (r *Run) ToJSONAPI() any {
+func (r *Run) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
@@ -288,10 +289,10 @@ func (r *Run) ToJSONAPI() any {
 		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply:                r.Apply.ToJSONAPI().(*jsonapi.Apply),
-		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI().(*jsonapi.ConfigurationVersion),
-		Plan:                 r.Plan.ToJSONAPI().(*jsonapi.Plan),
-		Workspace:            r.Workspace.ToJSONAPI().(*jsonapi.Workspace),
+		Apply:                r.Apply.ToJSONAPI(req).(*jsonapi.Apply),
+		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI(req).(*jsonapi.ConfigurationVersion),
+		Plan:                 r.Plan.ToJSONAPI(req).(*jsonapi.Plan),
+		Workspace:            r.Workspace.ToJSONAPI(req).(*jsonapi.Workspace),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
 			ID:       DefaultUserID,
@@ -591,12 +592,12 @@ type RunList struct {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (l *RunList) ToJSONAPI() any {
+func (l *RunList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.RunList{
 		Pagination: (*jsonapi.Pagination)(l.Pagination),
 	}
 	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.Run))
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Run))
 	}
 	return dto
 }

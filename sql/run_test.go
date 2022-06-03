@@ -182,7 +182,7 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by statuses - no match",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPlanned}},
+			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
 			},

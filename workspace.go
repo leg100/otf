@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
@@ -171,7 +172,7 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
-func (ws *Workspace) ToJSONAPI() any {
+func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Workspace{
 		ID: ws.ID(),
 		Actions: &jsonapi.WorkspaceActions{
@@ -214,7 +215,7 @@ func (ws *Workspace) ToJSONAPI() any {
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
 	if ws.Organization() != nil {
-		dto.Organization = ws.Organization().ToJSONAPI().(*jsonapi.Organization)
+		dto.Organization = ws.Organization().ToJSONAPI(req).(*jsonapi.Organization)
 	} else {
 		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
 	}
@@ -274,12 +275,12 @@ type WorkspaceList struct {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (l *WorkspaceList) ToJSONAPI() any {
+func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.WorkspaceList{
 		Pagination: (*jsonapi.Pagination)(l.Pagination),
 	}
 	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.Workspace))
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Workspace))
 	}
 	return dto
 }

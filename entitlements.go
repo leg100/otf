@@ -1,6 +1,8 @@
 package otf
 
 import (
+	"net/http"
+
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
@@ -22,7 +24,7 @@ type Entitlements struct {
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
-func (e *Entitlements) ToJSONAPI() any {
+func (e *Entitlements) ToJSONAPI(req *http.Request) any {
 	return (*jsonapi.Entitlements)(e)
 }
 

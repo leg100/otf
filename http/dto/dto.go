@@ -2,7 +2,10 @@
 // JSON-API
 package dto
 
-// Assembler is capable of assembling itself into a JSONAPI DTO object.
+import "net/http"
+
+// Assembler is capable of assembling itself into a JSON-API DTO object.
 type Assembler interface {
-	ToJSONAPI() any
+	// ToJSONAPI assembles a JSON-API DTO using the current request.
+	ToJSONAPI(*http.Request) any
 }

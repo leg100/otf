@@ -68,9 +68,9 @@ func writeResponse(w http.ResponseWriter, r *http.Request, obj dto.Assembler, op
 	// Only sideline relationships for responses to GET requests
 	var err error
 	if r.Method == "GET" {
-		err = MarshalPayload(w, r, obj.ToJSONAPI())
+		err = MarshalPayload(w, r, obj.ToJSONAPI(r))
 	} else {
-		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj.ToJSONAPI())
+		err = jsonapi.MarshalPayloadWithoutIncluded(w, obj.ToJSONAPI(r))
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
@@ -34,8 +35,6 @@ type ConfigurationVersion struct {
 	speculative      bool
 	status           ConfigurationStatus
 	statusTimestamps []ConfigurationVersionStatusTimestamp
-	// uploadURL is the json-api endpoint for uploading the configuration
-	uploadURL string
 	// Configuration Version belongs to a Workspace
 	Workspace *Workspace
 }
@@ -76,13 +75,8 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 	return nil
 }
 
-func (cv *ConfigurationVersion) SetUploadURL(url string) {
-	cv.uploadURL = url
-}
-
-// ToJSONAPI assembles a JSONAPI DTO. Call SetUploadURL first to populate
-// UploadURL field.
-func (cv *ConfigurationVersion) ToJSONAPI() any {
+// ToJSONAPI assembles a JSONAPI DTO.
+func (cv *ConfigurationVersion) ToJSONAPI(req *http.Request) any {
 	obj := &jsonapi.ConfigurationVersion{
 		ID:               cv.ID(),
 		AutoQueueRuns:    cv.AutoQueueRuns(),
@@ -90,7 +84,7 @@ func (cv *ConfigurationVersion) ToJSONAPI() any {
 		Source:           string(cv.Source()),
 		Status:           string(cv.Status()),
 		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
-		UploadURL:        cv.uploadURL,
+		UploadURL:        fmt.Sprintf("/configuration-versions/%s/upload", cv.ID()),
 	}
 	for _, ts := range cv.StatusTimestamps() {
 		switch ts.Status {
@@ -106,12 +100,12 @@ func (cv *ConfigurationVersion) ToJSONAPI() any {
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
-func (l *ConfigurationVersionList) ToJSONAPI() any {
+func (l *ConfigurationVersionList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.ConfigurationVersionList{
 		Pagination: (*jsonapi.Pagination)(l.Pagination),
 	}
 	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.ConfigurationVersion))
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.ConfigurationVersion))
 	}
 	return dto
 }

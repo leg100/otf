@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
@@ -31,7 +32,7 @@ func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
 
 // ToJSONAPI assembles a JSONAPI DTO
-func (org *Organization) ToJSONAPI() any {
+func (org *Organization) ToJSONAPI(req *http.Request) any {
 	return &jsonapi.Organization{
 		Name:            org.Name(),
 		CreatedAt:       org.CreatedAt(),
@@ -49,12 +50,12 @@ type OrganizationList struct {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (l *OrganizationList) ToJSONAPI() any {
+func (l *OrganizationList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.OrganizationList{
 		Pagination: (*jsonapi.Pagination)(l.Pagination),
 	}
 	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.Organization))
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Organization))
 	}
 	return dto
 }

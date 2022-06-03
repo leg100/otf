@@ -27,7 +27,6 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	cv.SetUploadURL(uploadConfigurationVersionPath(cv))
 	writeResponse(w, r, cv, withCode(http.StatusCreated))
 }
 
@@ -38,7 +37,6 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	cv.SetUploadURL(uploadConfigurationVersionPath(cv))
 	writeResponse(w, r, cv)
 }
 

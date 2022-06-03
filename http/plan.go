@@ -24,7 +24,6 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	plan.SetLogReadURL(r, getPlanLogsPath(plan))
 	writeResponse(w, r, plan)
 }
 
