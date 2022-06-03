@@ -36,9 +36,9 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.render("workspace_list.tmpl", w, r, struct {
-		List    *otf.WorkspaceList
-		Options otf.WorkspaceListOptions
-	}{workspaces, opts})
+		Organization organizationName
+		List         *otf.WorkspaceList
+	}{organizationRequest{r}, workspaces})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
