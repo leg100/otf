@@ -33,30 +33,29 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 	})
 }
 
-// setCurrentOrganization ensures a user's current organization matches the
-// organization in the request. If there is no organization in the current
-// request then no action is taken.
-func (app *Application) setCurrentOrganization(next http.Handler) http.Handler {
+// setOrganization ensures the session's organization reflects the most recently
+// visited organization route.
+func setOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := getCtxUser(r.Context())
-		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 		current, ok := mux.Vars(r)["organization_name"]
-		if !ok {
-			next.ServeHTTP(w, r)
-			return
-		}
-		if user.CurrentOrganization == nil || *user.CurrentOrganization != current {
-			user.CurrentOrganization = &current
-			if err := app.UserService().SetCurrentOrganization(r.Context(), user.ID(), current); err != nil {
-				writeError(w, err.Error(), http.StatusInternalServerError)
+		cookie, err := r.Cookie(organizationCookie)
+		if ok {
+			if err == http.ErrNoCookie || current != cookie.Value {
+				// update session organization
+				setCookie(w, organizationCookie, current, nil)
+			}
+		} else {
+			if err == http.ErrNoCookie {
+				// not yet visited an organization route
+				next.ServeHTTP(w, r)
 				return
 			}
-			ctx := context.WithValue(r.Context(), userCtxKey, user)
-			r = r.WithContext(ctx)
+			// restore session org from cookie
+			current = cookie.Value
 		}
+		// wrap session organization in context
+		ctx := newOrganizationContext(r.Context(), current)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

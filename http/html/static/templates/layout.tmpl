@@ -20,10 +20,10 @@
           <ul>
             {{ with .CurrentUser }}
             <li class="current-organization">
-              {{ if .CurrentOrganization }}
-              <a href="{{ getOrganizationPath .CurrentOrganization }}">
+              {{ if $.CurrentOrganization }}
+              <a href="{{ getOrganizationPath $.CurrentOrganization }}">
                 {{ template "building_icon" }}
-                <span>{{ .CurrentOrganization }}</span>
+                <span>{{ $.CurrentOrganization }}</span>
               </a>
               {{ end }}
             </li>

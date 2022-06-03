@@ -92,10 +92,6 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, err
 	return user, nil
 }
 
-func (s UserService) SetCurrentOrganization(ctx context.Context, userID, orgName string) error {
-	return s.db.SetCurrentOrganization(ctx, userID, orgName)
-}
-
 func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	// Retrieve user purely for logging purposes
 	user, err := s.Get(ctx, otf.UserSpec{SessionToken: &token})

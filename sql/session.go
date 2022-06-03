@@ -43,18 +43,6 @@ func (db SessionDB) CreateSession(ctx context.Context, session *otf.Session) err
 	return err
 }
 
-// TransferSession updates a session row in the sessions table with the given
-// session.  The token identifies the session row to update.
-func (db SessionDB) TransferSession(ctx context.Context, token, to string) error {
-	q := pggen.NewQuerier(db.Pool)
-
-	_, err := q.UpdateSessionUserID(ctx,
-		pgtype.Text{String: to, Status: pgtype.Present},
-		pgtype.Text{String: token, Status: pgtype.Present},
-	)
-	return err
-}
-
 // DeleteSession deletes a user's session from the DB.
 func (db SessionDB) DeleteSession(ctx context.Context, token string) error {
 	q := pggen.NewQuerier(db.Pool)

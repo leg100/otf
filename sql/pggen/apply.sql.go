@@ -343,13 +343,6 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateSessionUserID(ctx context.Context, userID pgtype.Text, token pgtype.Text) (pgtype.Text, error)
-	// UpdateSessionUserIDBatch enqueues a UpdateSessionUserID query into batch to be executed
-	// later by the batch.
-	UpdateSessionUserIDBatch(batch genericBatch, userID pgtype.Text, token pgtype.Text)
-	// UpdateSessionUserIDScan scans the result of an executed UpdateSessionUserIDBatch query.
-	UpdateSessionUserIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	UpdateSessionExpiry(ctx context.Context, expiry time.Time, token pgtype.Text) (pgtype.Text, error)
 	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
 	// later by the batch.
@@ -489,13 +482,6 @@ type Querier interface {
 	FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID pgtype.Text)
 	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
 	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
-
-	UpdateUserCurrentOrganization(ctx context.Context, params UpdateUserCurrentOrganizationParams) (pgtype.Text, error)
-	// UpdateUserCurrentOrganizationBatch enqueues a UpdateUserCurrentOrganization query into batch to be executed
-	// later by the batch.
-	UpdateUserCurrentOrganizationBatch(batch genericBatch, params UpdateUserCurrentOrganizationParams)
-	// UpdateUserCurrentOrganizationScan scans the result of an executed UpdateUserCurrentOrganizationBatch query.
-	UpdateUserCurrentOrganizationScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
@@ -806,9 +792,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateSessionUserIDSQL, updateSessionUserIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateSessionUserID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, updateSessionExpirySQL, updateSessionExpirySQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateSessionExpiry': %w", err)
 	}
@@ -868,9 +851,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenIDSQL, findUserByAuthenticationTokenIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByAuthenticationTokenID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updateUserCurrentOrganizationSQL, updateUserCurrentOrganizationSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateUserCurrentOrganization': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteUserByIDSQL, deleteUserByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteUserByID': %w", err)
@@ -1021,11 +1001,10 @@ type Tokens struct {
 
 // Users represents the Postgres composite type "users".
 type Users struct {
-	UserID              pgtype.Text `json:"user_id"`
-	Username            pgtype.Text `json:"username"`
-	CreatedAt           time.Time   `json:"created_at"`
-	UpdatedAt           time.Time   `json:"updated_at"`
-	CurrentOrganization pgtype.Text `json:"current_organization"`
+	UserID    pgtype.Text `json:"user_id"`
+	Username  pgtype.Text `json:"username"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 // Workspaces represents the Postgres composite type "workspaces".
@@ -1296,7 +1275,6 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 		compositeField{"username", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"current_organization", "text", &pgtype.Text{}},
 	)
 }
 
