@@ -138,7 +138,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	user, err := getCtxUser(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -154,7 +154,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	user, err := getCtxUser(r.Context())
+	user, err := userFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
