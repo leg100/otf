@@ -49,23 +49,6 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	assert.NotContains(t, got.Organizations, org)
 }
 
-func TestUser_Update_CurrentOrganization(t *testing.T) {
-	db := newTestDB(t)
-
-	user := createTestUser(t, db)
-
-	// set current org
-	user.CurrentOrganization = otf.String("enron")
-
-	err := db.UserStore().SetCurrentOrganization(context.Background(), user.ID(), *user.CurrentOrganization)
-	require.NoError(t, err)
-
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
-	require.NoError(t, err)
-
-	assert.Equal(t, "enron", *got.CurrentOrganization)
-}
-
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)

@@ -8,13 +8,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-type currentOrganization struct {
-	name string
-}
-
-// Name implements organizationName
-func (c *currentOrganization) Name() string { return c.name }
-
 // authUser middleware ensures the request has a valid session cookie, attaching
 // a session and user to the request context.
 func (app *Application) authenticateUser(next http.Handler) http.Handler {
