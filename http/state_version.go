@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,7 +17,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.StateVersionService().Create(r.Context(), vars["workspace_id"], otf.StateVersionCreateOptions{
+	sv, err := s.StateVersionService().Create(r.Context(), vars["workspace_id"], otf.StateVersionCreateOptions{
 		Lineage: opts.Lineage,
 		Serial:  opts.Serial,
 		State:   opts.State,
@@ -27,7 +26,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, StateVersionJSONAPIObject(obj))
+	writeResponse(w, r, sv)
 }
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
@@ -36,32 +35,32 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.StateVersionService().List(r.Context(), opts)
+	svl, err := s.StateVersionService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, StateVersionListJSONAPIObject(obj))
+	writeResponse(w, r, svl)
 }
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.StateVersionService().Current(r.Context(), vars["workspace_id"])
+	sv, err := s.StateVersionService().Current(r.Context(), vars["workspace_id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, StateVersionJSONAPIObject(obj))
+	writeResponse(w, r, sv)
 }
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.StateVersionService().Get(r.Context(), vars["id"])
+	sv, err := s.StateVersionService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, StateVersionJSONAPIObject(obj))
+	writeResponse(w, r, sv)
 }
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -72,51 +71,4 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
-}
-
-// StateVersionJSONAPIObject converts a StateVersion to a struct that can be
-// marshalled into a JSON-API object
-func StateVersionJSONAPIObject(r *otf.StateVersion) *dto.StateVersion {
-	return &dto.StateVersion{
-		ID:          r.ID(),
-		CreatedAt:   r.CreatedAt(),
-		DownloadURL: fmt.Sprintf("/state-versions/%s/download", r.ID()),
-		Serial:      r.Serial(),
-		Outputs:     StateVersionOutputListJSONAPIObject(r.Outputs()),
-	}
-}
-
-// StateVersionListJSONAPIObject converts a StateVersionList to
-// a struct that can be marshalled into a JSON-API object
-func StateVersionListJSONAPIObject(l *otf.StateVersionList) *dto.StateVersionList {
-	pagination := dto.Pagination(*l.Pagination)
-	obj := &dto.StateVersionList{
-		Pagination: &pagination,
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, StateVersionJSONAPIObject(item))
-	}
-	return obj
-}
-
-// StateVersionOutputJSONAPIObject converts a StateVersionOutput to a struct that can be marshalled into a
-// JSON-API object
-func StateVersionOutputJSONAPIObject(svo *otf.StateVersionOutput) *dto.StateVersionOutput {
-	return &dto.StateVersionOutput{
-		ID:        svo.ID(),
-		Name:      svo.Name,
-		Sensitive: svo.Sensitive,
-		Type:      svo.Type,
-		Value:     svo.Value,
-	}
-}
-
-// StateVersionOutputListJSONAPIObject converts a StateVersionOutputList to
-// a struct that can be marshalled into a JSON-API object
-func StateVersionOutputListJSONAPIObject(svol otf.StateVersionOutputList) []*dto.StateVersionOutput {
-	var obj []*dto.StateVersionOutput
-	for _, item := range svol {
-		obj = append(obj, StateVersionOutputJSONAPIObject(item))
-	}
-	return obj
 }

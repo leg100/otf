@@ -3,7 +3,11 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 const (
@@ -116,6 +120,37 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 }
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (p *Plan) ToJSONAPI(req *http.Request) any {
+	dto := &jsonapi.Plan{
+		ID:               p.ID(),
+		HasChanges:       p.HasChanges(),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("plans/%s/logs", p.ID())),
+		Status:           string(p.Status()),
+		StatusTimestamps: &jsonapi.PlanStatusTimestamps{},
+	}
+	if p.ResourceReport != nil {
+		dto.ResourceAdditions = p.Additions
+		dto.ResourceChanges = p.Changes
+		dto.ResourceDestructions = p.Destructions
+	}
+	for _, ts := range p.StatusTimestamps() {
+		switch ts.Status {
+		case PlanCanceled:
+			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
+		case PlanErrored:
+			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
+		case PlanFinished:
+			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case PlanQueued:
+			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case PlanRunning:
+			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return dto
+}
 
 func (p *Plan) updateStatus(status PlanStatus) {
 	p.status = status

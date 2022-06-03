@@ -2,7 +2,10 @@ package otf
 
 import (
 	"context"
+	"net/http"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 var (
@@ -28,10 +31,33 @@ func (org *Organization) Name() string         { return org.name }
 func (org *Organization) SessionRemember() int { return org.sessionRemember }
 func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
 
+// ToJSONAPI assembles a JSONAPI DTO
+func (org *Organization) ToJSONAPI(req *http.Request) any {
+	return &jsonapi.Organization{
+		Name:            org.Name(),
+		CreatedAt:       org.CreatedAt(),
+		ExternalID:      org.ID(),
+		Permissions:     &jsonapi.DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
+	}
+}
+
 // OrganizationList represents a list of Organizations.
 type OrganizationList struct {
 	*Pagination
 	Items []*Organization
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *OrganizationList) ToJSONAPI(req *http.Request) any {
+	dto := &jsonapi.OrganizationList{
+		Pagination: (*jsonapi.Pagination)(l.Pagination),
+	}
+	for _, item := range l.Items {
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Organization))
+	}
+	return dto
 }
 
 // OrganizationListOptions represents the options for listing organizations.

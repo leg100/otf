@@ -1,6 +1,8 @@
 package otf
 
-import "github.com/leg100/otf/sql/pggen"
+import (
+	"github.com/leg100/otf/sql/pggen"
+)
 
 type StateVersionOutput struct {
 	id        string
@@ -12,8 +14,6 @@ type StateVersionOutput struct {
 
 func (svo *StateVersionOutput) ID() string     { return svo.id }
 func (svo *StateVersionOutput) String() string { return svo.id }
-
-type StateVersionOutputList []*StateVersionOutput
 
 // UnmarshalStateVersionOutputDBType unmarshals a state version output postgres
 // composite type.

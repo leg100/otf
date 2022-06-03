@@ -7,9 +7,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -206,54 +209,6 @@ func (r *Run) EnqueuePlan() error {
 	return r.updateStatus(RunPlanQueued)
 }
 
-// updateStatus transitions the state - changes to a run are made only via this
-// method.
-func (r *Run) updateStatus(status RunStatus) error {
-	switch status {
-	case RunPending:
-		r.Plan.updateStatus(PlanPending)
-		r.Apply.updateStatus(ApplyPending)
-	case RunPlanQueued:
-		r.Plan.updateStatus(PlanQueued)
-	case RunPlanning:
-		r.Plan.updateStatus(PlanRunning)
-	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.updateStatus(PlanFinished)
-		r.Apply.updateStatus(ApplyUnreachable)
-	case RunApplyQueued:
-		r.Apply.status = ApplyQueued
-		r.Apply.updateStatus(ApplyQueued)
-	case RunApplying:
-		r.Apply.updateStatus(ApplyRunning)
-	case RunApplied:
-		r.Apply.updateStatus(ApplyFinished)
-	case RunErrored:
-		switch r.Status() {
-		case RunPlanning:
-			r.Plan.updateStatus(PlanErrored)
-			r.Apply.updateStatus(ApplyUnreachable)
-		case RunApplying:
-			r.Apply.updateStatus(ApplyErrored)
-		}
-	case RunCanceled:
-		switch r.Status() {
-		case RunPlanQueued, RunPlanning:
-			r.Plan.updateStatus(PlanCanceled)
-			r.Apply.updateStatus(ApplyUnreachable)
-		case RunApplyQueued, RunApplying:
-			r.Apply.updateStatus(ApplyCanceled)
-		}
-	}
-	r.status = status
-	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
-	// set job reflecting new status
-	r.setJob()
-	return nil
-}
-
 func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
 	for _, rst := range r.statusTimestamps {
 		if rst.Status == status {
@@ -301,6 +256,126 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 		return nil
 	}
 	return ErrWorkspaceLockedByDifferentUser
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (r *Run) ToJSONAPI(req *http.Request) any {
+	dto := &jsonapi.Run{
+		ID: r.ID(),
+		Actions: &jsonapi.RunActions{
+			IsCancelable:      r.Cancelable(),
+			IsConfirmable:     r.Confirmable(),
+			IsForceCancelable: r.ForceCancelable(),
+			IsDiscardable:     r.Discardable(),
+		},
+		CreatedAt:              r.CreatedAt(),
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
+		HasChanges:             r.Plan.HasChanges(),
+		IsDestroy:              r.IsDestroy(),
+		Message:                r.Message(),
+		Permissions: &jsonapi.RunPermissions{
+			CanForceCancel:  true,
+			CanApply:        true,
+			CanCancel:       true,
+			CanDiscard:      true,
+			CanForceExecute: true,
+		},
+		PositionInQueue:  0,
+		Refresh:          r.Refresh(),
+		RefreshOnly:      r.RefreshOnly(),
+		ReplaceAddrs:     r.ReplaceAddrs(),
+		Source:           DefaultConfigurationSource,
+		Status:           string(r.Status()),
+		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
+		TargetAddrs:      r.TargetAddrs(),
+		// Relations
+		Apply:                r.Apply.ToJSONAPI(req).(*jsonapi.Apply),
+		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI(req).(*jsonapi.ConfigurationVersion),
+		Plan:                 r.Plan.ToJSONAPI(req).(*jsonapi.Plan),
+		Workspace:            r.Workspace.ToJSONAPI(req).(*jsonapi.Workspace),
+		// Hardcoded anonymous user until authorization is introduced
+		CreatedBy: &jsonapi.User{
+			ID:       DefaultUserID,
+			Username: DefaultUsername,
+		},
+	}
+	for _, rst := range r.StatusTimestamps() {
+		switch rst.Status {
+		case RunPending:
+			dto.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
+		case RunPlanQueued:
+			dto.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
+		case RunPlanning:
+			dto.StatusTimestamps.PlanningAt = &rst.Timestamp
+		case RunPlanned:
+			dto.StatusTimestamps.PlannedAt = &rst.Timestamp
+		case RunPlannedAndFinished:
+			dto.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
+		case RunApplyQueued:
+			dto.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
+		case RunApplying:
+			dto.StatusTimestamps.ApplyingAt = &rst.Timestamp
+		case RunApplied:
+			dto.StatusTimestamps.AppliedAt = &rst.Timestamp
+		case RunErrored:
+			dto.StatusTimestamps.ErroredAt = &rst.Timestamp
+		case RunCanceled:
+			dto.StatusTimestamps.CanceledAt = &rst.Timestamp
+		case RunForceCanceled:
+			dto.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
+		case RunDiscarded:
+			dto.StatusTimestamps.DiscardedAt = &rst.Timestamp
+		}
+	}
+	return dto
+}
+
+// updateStatus transitions the state - changes to a run are made only via this
+// method.
+func (r *Run) updateStatus(status RunStatus) error {
+	switch status {
+	case RunPending:
+		r.Plan.updateStatus(PlanPending)
+		r.Apply.updateStatus(ApplyPending)
+	case RunPlanQueued:
+		r.Plan.updateStatus(PlanQueued)
+	case RunPlanning:
+		r.Plan.updateStatus(PlanRunning)
+	case RunPlanned, RunPlannedAndFinished:
+		r.Plan.updateStatus(PlanFinished)
+		r.Apply.updateStatus(ApplyUnreachable)
+	case RunApplyQueued:
+		r.Apply.status = ApplyQueued
+		r.Apply.updateStatus(ApplyQueued)
+	case RunApplying:
+		r.Apply.updateStatus(ApplyRunning)
+	case RunApplied:
+		r.Apply.updateStatus(ApplyFinished)
+	case RunErrored:
+		switch r.Status() {
+		case RunPlanning:
+			r.Plan.updateStatus(PlanErrored)
+			r.Apply.updateStatus(ApplyUnreachable)
+		case RunApplying:
+			r.Apply.updateStatus(ApplyErrored)
+		}
+	case RunCanceled:
+		switch r.Status() {
+		case RunPlanQueued, RunPlanning:
+			r.Plan.updateStatus(PlanCanceled)
+			r.Apply.updateStatus(ApplyUnreachable)
+		case RunApplyQueued, RunApplying:
+			r.Apply.updateStatus(ApplyCanceled)
+		}
+	}
+	r.status = status
+	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
+		Status:    status,
+		Timestamp: CurrentTimestamp(),
+	})
+	// set job reflecting new status
+	r.setJob()
+	return nil
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
@@ -514,6 +589,17 @@ type RunStore interface {
 type RunList struct {
 	*Pagination
 	Items []*Run
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *RunList) ToJSONAPI(req *http.Request) any {
+	dto := &jsonapi.RunList{
+		Pagination: (*jsonapi.Pagination)(l.Pagination),
+	}
+	for _, item := range l.Items {
+		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Run))
+	}
+	return dto
 }
 
 // RunGetOptions are options for retrieving a single Run. Either ID or ApplyID

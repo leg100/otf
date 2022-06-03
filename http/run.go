@@ -24,7 +24,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	obj, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
+	run, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
 		RefreshOnly:            opts.RefreshOnly,
@@ -38,17 +38,17 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunDTO(r, obj), withCode(http.StatusCreated))
+	writeResponse(w, r, run, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.RunService().Get(r.Context(), vars["id"])
+	run, err := s.RunService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunDTO(r, obj))
+	writeResponse(w, r, run)
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -70,12 +70,12 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.RunService().List(r.Context(), opts)
+	rl, err := s.RunService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunListDTO(r, obj))
+	writeResponse(w, r, rl)
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -174,92 +174,4 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.Ru
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// RunDTO converts a Run to a struct
-// that can be marshalled into a JSON-API object
-func RunDTO(req *http.Request, r *otf.Run) *dto.Run {
-	result := &dto.Run{
-		ID: r.ID(),
-		Actions: &dto.RunActions{
-			IsCancelable:      r.Cancelable(),
-			IsConfirmable:     r.Confirmable(),
-			IsForceCancelable: r.ForceCancelable(),
-			IsDiscardable:     r.Discardable(),
-		},
-		CreatedAt:              r.CreatedAt(),
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
-		HasChanges:             r.Plan.HasChanges(),
-		IsDestroy:              r.IsDestroy(),
-		Message:                r.Message(),
-		Permissions: &dto.RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
-		},
-		PositionInQueue: 0,
-		Refresh:         r.Refresh(),
-		RefreshOnly:     r.RefreshOnly(),
-		ReplaceAddrs:    r.ReplaceAddrs(),
-		Source:          otf.DefaultConfigurationSource,
-		Status:          string(r.Status()),
-		TargetAddrs:     r.TargetAddrs(),
-		// Relations
-		Apply:                ApplyDTO(req, r.Apply),
-		ConfigurationVersion: ConfigurationVersionDTO(r.ConfigurationVersion),
-		Plan:                 PlanDTO(req, r.Plan),
-		Workspace:            WorkspaceDTO(r.Workspace),
-		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &dto.User{
-			ID:       otf.DefaultUserID,
-			Username: otf.DefaultUsername,
-		},
-	}
-	for _, rst := range r.StatusTimestamps() {
-		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &dto.RunStatusTimestamps{}
-		}
-		switch rst.Status {
-		case otf.RunPending:
-			result.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
-		case otf.RunPlanQueued:
-			result.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
-		case otf.RunPlanning:
-			result.StatusTimestamps.PlanningAt = &rst.Timestamp
-		case otf.RunPlanned:
-			result.StatusTimestamps.PlannedAt = &rst.Timestamp
-		case otf.RunPlannedAndFinished:
-			result.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case otf.RunApplyQueued:
-			result.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
-		case otf.RunApplying:
-			result.StatusTimestamps.ApplyingAt = &rst.Timestamp
-		case otf.RunApplied:
-			result.StatusTimestamps.AppliedAt = &rst.Timestamp
-		case otf.RunErrored:
-			result.StatusTimestamps.ErroredAt = &rst.Timestamp
-		case otf.RunCanceled:
-			result.StatusTimestamps.CanceledAt = &rst.Timestamp
-		case otf.RunForceCanceled:
-			result.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
-		case otf.RunDiscarded:
-			result.StatusTimestamps.DiscardedAt = &rst.Timestamp
-		}
-	}
-	return result
-}
-
-// RunListDTO converts a RunList to a struct that can be marshalled into a
-// JSON-API object
-func RunListDTO(req *http.Request, l *otf.RunList) *dto.RunList {
-	pagination := dto.Pagination(*l.Pagination)
-	obj := &dto.RunList{
-		Pagination: &pagination,
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, RunDTO(req, item))
-	}
-	return obj
 }

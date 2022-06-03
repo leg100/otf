@@ -2,15 +2,12 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	"github.com/leg100/otf/http/dto"
-	httputil "github.com/leg100/otf/http/util"
 )
 
 // PlanFileOptions represents the options for retrieving the plan file for a
@@ -22,12 +19,12 @@ type PlanFileOptions struct {
 
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.PlanService().Get(r.Context(), vars["id"])
+	plan, err := s.PlanService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, PlanDTO(r, obj))
+	writeResponse(w, r, plan)
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
@@ -83,38 +80,4 @@ func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-}
-
-// PlanDTO converts a Plan to a struct that can be
-// marshalled into a JSON-API object
-func PlanDTO(r *http.Request, p *otf.Plan) *dto.Plan {
-	result := &dto.Plan{
-		ID:         p.ID(),
-		HasChanges: p.HasChanges(),
-		LogReadURL: httputil.Absolute(r, fmt.Sprintf(string(GetPlanLogsRoute), p.ID())),
-		Status:     string(p.Status()),
-	}
-	if p.ResourceReport != nil {
-		result.ResourceAdditions = p.Additions
-		result.ResourceChanges = p.Changes
-		result.ResourceDestructions = p.Destructions
-	}
-	for _, ts := range p.StatusTimestamps() {
-		if result.StatusTimestamps == nil {
-			result.StatusTimestamps = &dto.PlanStatusTimestamps{}
-		}
-		switch ts.Status {
-		case otf.PlanCanceled:
-			result.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case otf.PlanErrored:
-			result.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case otf.PlanFinished:
-			result.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case otf.PlanQueued:
-			result.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case otf.PlanRunning:
-			result.StatusTimestamps.StartedAt = &ts.Timestamp
-		}
-	}
-	return result
 }

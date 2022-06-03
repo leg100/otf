@@ -3,8 +3,12 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
+	httputil "github.com/leg100/otf/http/util"
 )
 
 //List all available apply statuses supported in OTF.
@@ -98,6 +102,36 @@ func (a *Apply) runTerraformApply(env Environment) error {
 	cmd.WriteString(" | tee ")
 	cmd.WriteString(ApplyOutputFilename)
 	return env.RunCLI("sh", "-c", cmd.String())
+}
+
+// ToJSONAPI assembles a JSONAPI DTO.
+func (a *Apply) ToJSONAPI(req *http.Request) any {
+	dto := &jsonapi.Apply{
+		ID:               a.ID(),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("applies/%s/logs", a.ID())),
+		Status:           string(a.Status()),
+		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
+	}
+	if a.ResourceReport != nil {
+		dto.ResourceAdditions = a.Additions
+		dto.ResourceChanges = a.Changes
+		dto.ResourceDestructions = a.Destructions
+	}
+	for _, ts := range a.StatusTimestamps() {
+		switch ts.Status {
+		case ApplyCanceled:
+			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
+		case ApplyErrored:
+			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
+		case ApplyFinished:
+			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case ApplyQueued:
+			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case ApplyRunning:
+			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return dto
 }
 
 // ApplyStatus represents an apply state.

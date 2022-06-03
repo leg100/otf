@@ -7,6 +7,8 @@ import (
 
 const (
 	AnonymousUsername = "anonymous"
+	DefaultUserID     = "user-123"
+	DefaultUsername   = "otf"
 	// Session data keys
 	UsernameSessionKey = "username"
 	AddressSessionKey  = "ip_address"

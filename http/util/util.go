@@ -25,19 +25,16 @@ func Absolute(r *http.Request, path string) string {
 		Host: r.Host,
 		Path: path,
 	}
-
 	if SSL {
 		u.Scheme = "https"
 	} else {
 		u.Scheme = "http"
 	}
-
 	if host := r.Header.Get("X-Forwarded-Host"); host != "" {
 		u.Host = host
 	}
 	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
 		u.Scheme = proto
 	}
-
 	return u.String()
 }

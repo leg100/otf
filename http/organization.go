@@ -16,7 +16,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().Create(r.Context(), otf.OrganizationCreateOptions{
+	org, err := s.OrganizationService().Create(r.Context(), otf.OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -25,17 +25,17 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, OrganizationDTO(obj), withCode(http.StatusCreated))
+	writeResponse(w, r, org, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.OrganizationService().Get(r.Context(), vars["name"])
+	org, err := s.OrganizationService().Get(r.Context(), vars["name"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, OrganizationDTO(obj))
+	writeResponse(w, r, org)
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -44,12 +44,12 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().List(r.Context(), opts)
+	org, err := s.OrganizationService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, OrganizationListDTO(obj))
+	writeResponse(w, r, org)
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.OrganizationService().Update(r.Context(), name, &otf.OrganizationUpdateOptions{
+	org, err := s.OrganizationService().Update(r.Context(), name, &otf.OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -68,7 +68,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, OrganizationDTO(obj))
+	writeResponse(w, r, org)
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -87,30 +87,5 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	converted := dto.Entitlements(*entitlements)
-	writeResponse(w, r, &converted)
-}
-
-// OrganizationDTO converts an org into a DTO
-func OrganizationDTO(org *otf.Organization) *dto.Organization {
-	return &dto.Organization{
-		Name:            org.Name(),
-		CreatedAt:       org.CreatedAt(),
-		ExternalID:      org.ID(),
-		Permissions:     &dto.DefaultOrganizationPermissions,
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
-	}
-}
-
-// OrganizationListDTO converts an org list into a DTO
-func OrganizationListDTO(ol *otf.OrganizationList) *dto.OrganizationList {
-	pagination := dto.Pagination(*ol.Pagination)
-	jol := &dto.OrganizationList{
-		Pagination: &pagination,
-	}
-	for _, item := range ol.Items {
-		jol.Items = append(jol.Items, OrganizationDTO(item))
-	}
-	return jol
+	writeResponse(w, r, entitlements)
 }

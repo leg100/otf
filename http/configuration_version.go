@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -20,7 +19,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.ConfigurationVersionService().Create(r.Context(), vars["workspace_id"], otf.ConfigurationVersionCreateOptions{
+	cv, err := s.ConfigurationVersionService().Create(r.Context(), vars["workspace_id"], otf.ConfigurationVersionCreateOptions{
 		AutoQueueRuns: opts.AutoQueueRuns,
 		Speculative:   opts.Speculative,
 	})
@@ -28,17 +27,17 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ConfigurationVersionDTO(obj), withCode(http.StatusCreated))
+	writeResponse(w, r, cv, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.ConfigurationVersionService().Get(r.Context(), vars["id"])
+	cv, err := s.ConfigurationVersionService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ConfigurationVersionDTO(obj))
+	writeResponse(w, r, cv)
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -48,12 +47,12 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.ConfigurationVersionService().List(r.Context(), vars["workspace_id"], opts)
+	cvl, err := s.ConfigurationVersionService().List(r.Context(), vars["workspace_id"], opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, s.ConfigurationVersionListJSONAPIObject(obj))
+	writeResponse(w, r, cvl)
 }
 
 func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -67,43 +66,4 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-}
-
-// ConfigurationVersionDTO converts a cv into a DTO
-func ConfigurationVersionDTO(cv *otf.ConfigurationVersion) *dto.ConfigurationVersion {
-	obj := &dto.ConfigurationVersion{
-		ID:            cv.ID(),
-		AutoQueueRuns: cv.AutoQueueRuns(),
-		Speculative:   cv.Speculative(),
-		Source:        string(cv.Source()),
-		Status:        string(cv.Status()),
-		UploadURL:     fmt.Sprintf(string(UploadConfigurationVersionRoute), cv.ID()),
-	}
-	for _, ts := range cv.StatusTimestamps() {
-		if obj.StatusTimestamps == nil {
-			obj.StatusTimestamps = &dto.CVStatusTimestamps{}
-		}
-		switch ts.Status {
-		case otf.ConfigurationPending:
-			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case otf.ConfigurationErrored:
-			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case otf.ConfigurationUploaded:
-			obj.StatusTimestamps.StartedAt = &ts.Timestamp
-		}
-	}
-	return obj
-}
-
-// ConfigurationVersionListJSONAPIObject converts a ConfigurationVersionList to
-// a struct that can be marshalled into a JSON-API object
-func (s *Server) ConfigurationVersionListJSONAPIObject(cvl *otf.ConfigurationVersionList) *dto.ConfigurationVersionList {
-	pagination := dto.Pagination(*cvl.Pagination)
-	obj := &dto.ConfigurationVersionList{
-		Pagination: &pagination,
-	}
-	for _, item := range cvl.Items {
-		obj.Items = append(obj.Items, ConfigurationVersionDTO(item))
-	}
-	return obj
 }
