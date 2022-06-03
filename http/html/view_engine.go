@@ -54,16 +54,24 @@ func (v *view) PopFlash() *flash {
 	return v.flashPopper()
 }
 
-func (v *view) CurrentUser() (*otf.User, error) {
-	return userFromContext(v.request.Context())
+func (v *view) CurrentUser() *otf.User {
+	user, err := userFromContext(v.request.Context())
+	if err != nil {
+		return nil
+	}
+	return user
 }
 
 func (v *view) CurrentSession() (*otf.Session, error) {
 	return sessionFromContext(v.request.Context())
 }
 
-func (v *view) CurrentOrganization() (string, error) {
-	return organizationFromContext(v.request.Context())
+func (v *view) CurrentOrganization() string {
+	name, err := organizationFromContext(v.request.Context())
+	if err != nil {
+		return ""
+	}
+	return name
 }
 
 func (v *view) CurrentPath() string {
