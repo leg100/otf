@@ -12,12 +12,13 @@ import (
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	obj, err := s.ApplyService().Get(r.Context(), vars["id"])
+	apply, err := s.ApplyService().Get(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, obj.NewJSONAPIAssembler(r, string(GetApplyLogsRoute)))
+	apply.SetLogReadURL(r, getApplyLogsPath(apply))
+	writeResponse(w, r, apply)
 }
 
 func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {

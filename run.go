@@ -7,12 +7,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/leg100/otf/http/dto"
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
@@ -259,8 +257,8 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 	return ErrWorkspaceLockedByDifferentUser
 }
 
-// NewJSONAPIAssembler cconstructs a RunJSONAPIAssembler.
-func (r *Run) ToJSONAPI() *RunJSONAPIAssembler {
+// ToJSONAPI assembles a JSON-API DTO.
+func (r *Run) ToJSONAPI() any {
 	dto := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
@@ -292,7 +290,7 @@ func (r *Run) ToJSONAPI() *RunJSONAPIAssembler {
 		// Relations
 		Apply:                r.Apply.ToJSONAPI().(*jsonapi.Apply),
 		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI().(*jsonapi.ConfigurationVersion),
-		Plan:                 r.Plan.ToJSONAPI(),.(*jsonapi.Plan)
+		Plan:                 r.Plan.ToJSONAPI().(*jsonapi.Plan),
 		Workspace:            r.Workspace.ToJSONAPI().(*jsonapi.Workspace),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
@@ -328,7 +326,7 @@ func (r *Run) ToJSONAPI() *RunJSONAPIAssembler {
 			dto.StatusTimestamps.DiscardedAt = &rst.Timestamp
 		}
 	}
-	return &RunJSONAPIAssembler{dto}
+	return dto
 }
 
 // updateStatus transitions the state - changes to a run are made only via this
@@ -499,17 +497,6 @@ func (r *Run) setJob() {
 	}
 }
 
-// RunJSONAPIAssembler is an intermediatary between an apply and its DTO,
-// capable of being assembled into a DTO.
-type RunJSONAPIAssembler struct {
-	*dto.Run
-}
-
-// ToJSONAPI implements the jsonapi.Assembler interface.
-func (r *RunJSONAPIAssembler) ToJSONAPI() any {
-	return r.Run
-}
-
 type RunStatusTimestamp struct {
 	Status    RunStatus
 	Timestamp time.Time
@@ -601,6 +588,17 @@ type RunStore interface {
 type RunList struct {
 	*Pagination
 	Items []*Run
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *RunList) ToJSONAPI() any {
+	dto := &jsonapi.RunList{
+		Pagination: (*jsonapi.Pagination)(l.Pagination),
+	}
+	for _, item := range l.Items {
+		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.Run))
+	}
+	return dto
 }
 
 // RunGetOptions are options for retrieving a single Run. Either ID or ApplyID

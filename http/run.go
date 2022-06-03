@@ -48,8 +48,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	assembler := run.NewJSONAPIAssembler(r, string(GetPlanLogsRoute), string(GetApplyLogsRoute))
-	writeResponse(w, r, assembler)
+	writeResponse(w, r, run)
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -71,12 +70,12 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.RunService().List(r.Context(), opts)
+	rl, err := s.RunService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, RunListDTO(r, obj))
+	writeResponse(w, r, rl)
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -175,17 +174,4 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.Ru
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// RunListDTO converts a RunList to a struct that can be marshalled into a
-// JSON-API object
-func RunListDTO(req *http.Request, l *otf.RunList) *dto.RunList {
-	pagination := dto.Pagination(*l.Pagination)
-	obj := &dto.RunList{
-		Pagination: &pagination,
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, RunDTO(req, item))
-	}
-	return obj
 }

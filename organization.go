@@ -48,7 +48,7 @@ type OrganizationList struct {
 	Items []*Organization
 }
 
-// OrganizationListDTO converts an org list into a DTO
+// ToJSONAPI assembles a JSON-API DTO.
 func (l *OrganizationList) ToJSONAPI() any {
 	dto := &jsonapi.OrganizationList{
 		Pagination: (*jsonapi.Pagination)(l.Pagination),

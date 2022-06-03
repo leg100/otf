@@ -26,10 +26,6 @@ const (
 	shutdownTimeout = 1 * time.Second
 
 	jsonApplication = "application/json"
-
-	UploadConfigurationVersionRoute WebRoute = "/configuration-versions/%v/upload"
-	GetPlanLogsRoute                WebRoute = "plans/%v/logs"
-	GetApplyLogsRoute               WebRoute = "applies/%v/logs"
 )
 
 type WebRoute string

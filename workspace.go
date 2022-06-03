@@ -273,6 +273,17 @@ type WorkspaceList struct {
 	Items []*Workspace
 }
 
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *WorkspaceList) ToJSONAPI() any {
+	dto := &jsonapi.WorkspaceList{
+		Pagination: (*jsonapi.Pagination)(l.Pagination),
+	}
+	for _, item := range l.Items {
+		dto.Items = append(dto.Items, item.ToJSONAPI().(*jsonapi.Workspace))
+	}
+	return dto
+}
+
 type WorkspaceService interface {
 	Create(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	Get(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)

@@ -23,7 +23,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
+	ws, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -46,7 +46,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceDTO(obj), withCode(http.StatusCreated))
+	writeResponse(w, r, ws, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +59,12 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Get(r.Context(), spec)
+	ws, err := s.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, ws)
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +77,12 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().List(r.Context(), opts)
+	ws, err := s.WorkspaceService().List(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceListJSONAPIObject(obj))
+	writeResponse(w, r, ws)
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +100,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
+	ws, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -119,7 +119,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, ws)
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +135,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
+	ws, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -143,7 +143,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, WorkspaceDTO(obj))
+	writeResponse(w, r, ws)
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	obj, err := s.WorkspaceService().Unlock(r.Context(), spec, opts)
+	ws, err := s.WorkspaceService().Unlock(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -163,7 +163,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, obj)
+	writeResponse(w, r, ws)
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -177,18 +177,4 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// WorkspaceListJSONAPIObject converts a WorkspaceList to a struct that can be
-// marshalled into a JSON-API object
-func WorkspaceListJSONAPIObject(l *otf.WorkspaceList) *dto.WorkspaceList {
-	pagination := dto.Pagination(*l.Pagination)
-	obj := &dto.WorkspaceList{
-		Pagination: &pagination,
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, WorkspaceDTO(item))
-	}
-
-	return obj
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leg100/otf/http/dto"
+	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
 
@@ -34,6 +34,8 @@ type Apply struct {
 	statusTimestamps []ApplyStatusTimestamp
 	// run is the parent run
 	run *Run
+	// logReadURL is the JSON-API endpoint for reading logs
+	logReadURL string
 }
 
 func (a *Apply) ID() string          { return a.id }
@@ -104,45 +106,39 @@ func (a *Apply) runTerraformApply(env Environment) error {
 	return env.RunCLI("sh", "-c", cmd.String())
 }
 
-// NewJSONAPIAssembler constructs an ApplyJSONAPIAssembler.
-func (a *Apply) NewJSONAPIAssembler(req *http.Request, GetApplyLogsRoute string) *ApplyJSONAPIAssembler {
-	o := &dto.Apply{
+func (a *Apply) SetLogReadURL(r *http.Request, path string) {
+	a.logReadURL = httputil.Absolute(r, path)
+}
+
+// ToJSONAPI assembles a JSONAPI DTO. Call SetLogReadURL first to populate log
+// read url field.
+func (a *Apply) ToJSONAPI() any {
+	dto := &jsonapi.Apply{
 		ID:               a.ID(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf(GetApplyLogsRoute, a.ID())),
+		LogReadURL:       a.logReadURL,
 		Status:           string(a.Status()),
-		StatusTimestamps: &dto.ApplyStatusTimestamps{},
+		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
 	}
 	if a.ResourceReport != nil {
-		o.ResourceAdditions = a.Additions
-		o.ResourceChanges = a.Changes
-		o.ResourceDestructions = a.Destructions
+		dto.ResourceAdditions = a.Additions
+		dto.ResourceChanges = a.Changes
+		dto.ResourceDestructions = a.Destructions
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {
 		case ApplyCanceled:
-			o.StatusTimestamps.CanceledAt = &ts.Timestamp
+			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case ApplyErrored:
-			o.StatusTimestamps.ErroredAt = &ts.Timestamp
+			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case ApplyFinished:
-			o.StatusTimestamps.FinishedAt = &ts.Timestamp
+			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case ApplyQueued:
-			o.StatusTimestamps.QueuedAt = &ts.Timestamp
+			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case ApplyRunning:
-			o.StatusTimestamps.StartedAt = &ts.Timestamp
+			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-	return &ApplyJSONAPIAssembler{Apply: o}
-}
-
-// ApplyJSONAPIAssembler is an intermediatary between an apply and its DTO,
-// capable of being assembled into a DTO.
-type ApplyJSONAPIAssembler struct {
-	*dto.Apply
-}
-
-// ToJSONAPI implements the jsonapi.Assembler interface.
-func (a *ApplyJSONAPIAssembler) ToJSONAPI() any {
-	return a.Apply
+	return dto
 }
 
 // ApplyStatus represents an apply state.

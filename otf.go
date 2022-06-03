@@ -16,9 +16,6 @@ const (
 	DefaultPageSize   = 20
 	MaxPageSize       = 100
 
-	DefaultUserID   = "user-123"
-	DefaultUsername = "otf"
-
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
 
 	// ChunkMaxLimit is maximum permissible size of a chunk

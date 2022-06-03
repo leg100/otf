@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/leg100/otf/http/dto"
+	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
 )
 
@@ -38,7 +38,7 @@ type Plan struct {
 	statusTimestamps []PlanStatusTimestamp
 	// run is the parent run
 	run *Run
-	// logReadURL is the JSON-API endpoint for reading plan logs
+	// logReadURL is the JSON-API endpoint for reading logs
 	logReadURL string
 }
 
@@ -130,33 +130,33 @@ func (p *Plan) SetLogReadURL(r *http.Request, path string) {
 // ToJSONAPI assembles a JSON-API DTO. Call SetLogReadURL first to populate
 // LogReadURL field.
 func (p *Plan) ToJSONAPI() any {
-	result := &dto.Plan{
+	dto := &jsonapi.Plan{
 		ID:               p.ID(),
 		HasChanges:       p.HasChanges(),
 		LogReadURL:       p.logReadURL,
 		Status:           string(p.Status()),
-		StatusTimestamps: &dto.PlanStatusTimestamps{},
+		StatusTimestamps: &jsonapi.PlanStatusTimestamps{},
 	}
 	if p.ResourceReport != nil {
-		result.ResourceAdditions = p.Additions
-		result.ResourceChanges = p.Changes
-		result.ResourceDestructions = p.Destructions
+		dto.ResourceAdditions = p.Additions
+		dto.ResourceChanges = p.Changes
+		dto.ResourceDestructions = p.Destructions
 	}
 	for _, ts := range p.StatusTimestamps() {
 		switch ts.Status {
 		case PlanCanceled:
-			result.StatusTimestamps.CanceledAt = &ts.Timestamp
+			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case PlanErrored:
-			result.StatusTimestamps.ErroredAt = &ts.Timestamp
+			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
 		case PlanFinished:
-			result.StatusTimestamps.FinishedAt = &ts.Timestamp
+			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
 		case PlanQueued:
-			result.StatusTimestamps.QueuedAt = &ts.Timestamp
+			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case PlanRunning:
-			result.StatusTimestamps.StartedAt = &ts.Timestamp
+			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
-	return &PlanJSONAPIAssembler{Plan: result}
+	return dto
 }
 
 func (p *Plan) updateStatus(status PlanStatus) {
@@ -177,17 +177,6 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 	}
 	args = append(args, "-out="+PlanFilename)
 	return env.RunCLI("terraform", args...)
-}
-
-// PlanJSONAPIAssembler is an intermediatary between an apply and its DTO,
-// capable of being assembled into a DTO.
-type PlanJSONAPIAssembler struct {
-	*dto.Plan
-}
-
-// ToJSONAPI implements the jsonapi.Assembler interface.
-func (a *PlanJSONAPIAssembler) ToJSONAPI() any {
-	return a.Plan
 }
 
 // PlanStatus represents a plan state.
