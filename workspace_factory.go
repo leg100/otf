@@ -10,7 +10,6 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	// get organization id if only organization name provided
 	orgID, err := f.getOrganizationID(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -32,7 +31,7 @@ func (f *WorkspaceFactory) getOrganizationID(ctx context.Context, opts Workspace
 	}
 }
 
-func NewWorkspace(orgID string, opts WorkspaceCreateOptions) (*Workspace, error) {
+func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
@@ -48,7 +47,8 @@ func NewWorkspace(orgID string, opts WorkspaceCreateOptions) (*Workspace, error)
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
-		organizationID:      orgID,
+		organizationID:      organization.id,
+		organizationName:    organization.name,
 	}
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.

@@ -46,6 +46,7 @@ type Workspace struct {
 	triggerPrefixes            []string
 	workingDirectory           string
 	organizationID             string
+	organizationName           string
 	organization               *Organization
 }
 
@@ -73,15 +74,7 @@ func (ws *Workspace) TerraformVersion() string         { return ws.terraformVers
 func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
-
-// OrganizationName gets the workspace organization's name. Not necessarily
-// populated.
-func (ws *Workspace) OrganizationName() string {
-	if ws.organization != nil {
-		return ws.organization.Name()
-	}
-	return ""
-}
+func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
 
 func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}

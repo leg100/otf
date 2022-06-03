@@ -71,6 +71,9 @@ func TestApp(t *testing.T) {
 			path: "/organizations/org-fake/workspaces",
 		},
 		{
+			path: "/organizations/org-fake/workspaces/new",
+		},
+		{
 			path: "/organizations/org-fake/workspaces/ws-fake",
 		},
 	}

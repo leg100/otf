@@ -32,6 +32,7 @@ type WorkspaceDBResult struct {
 	TriggerPrefixes            []string             `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text          `json:"working_directory"`
 	OrganizationID             pgtype.Text          `json:"organization_id"`
+	OrganizationName           pgtype.Text          `json:"organization_name"`
 	LockRunID                  pgtype.Text          `json:"lock_run_id"`
 	LockUserID                 pgtype.Text          `json:"lock_user_id"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
@@ -63,6 +64,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		triggerPrefixes:            row.TriggerPrefixes,
 		workingDirectory:           row.WorkingDirectory.String,
 		organizationID:             row.OrganizationID.String,
+		organizationName:           row.OrganizationID.String,
 	}
 
 	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {

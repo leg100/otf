@@ -42,7 +42,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	app.render("workspace_new.tmpl", w, r, param(r, "organization_name"))
+	app.render("workspace_new.tmpl", w, r, organizationRequest{r})
 }
 
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
