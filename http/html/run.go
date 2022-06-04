@@ -166,6 +166,5 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	path := getWorkspacePath(param(r, "organization_name"), param(r, "workspace_name"))
-	http.Redirect(w, r, path, http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
 }

@@ -3,36 +3,36 @@
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content.OrganizationName }}">workspaces</a> / {{ .Content.Workspace.Name }}
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a> / {{ .Content.Name }}
 {{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ newRunPath .Content.OrganizationName .Content.Workspace.Name }}" method="GET">
+  <form action="{{ newRunPath .Content }}" method="GET">
     <button type="submit">New Run</button>
   </form>
 {{ end }}
 
 {{ define "container-header-links" }}
   <div class="smallcaps">
-    <a href="{{ listRunPath .Content.OrganizationName .Content.Workspace.Name }}">runs</a>
+    <a href="{{ listRunPath .Content }}">runs</a>
   </div>
   <div>
-    <a href="{{ editWorkspacePath .Content.OrganizationName .Content.Workspace.Name }}">{{ template "cog_icon" }}</a>
+    <a href="{{ editWorkspacePath .Content }}">{{ template "cog_icon" }}</a>
   </div>
-  <div>v{{ .Content.Workspace.TerraformVersion }}</div>
+  <div>v{{ .Content.TerraformVersion }}</div>
   <div class="workspace-lock">
-    {{ if .Content.Workspace.Locked }}
+    {{ if .Content.Locked }}
       <span class="workspace-lock-status workspace-lock-status-locked">Locked</span>
-      <form action="{{ unlockWorkspacePath .Content.OrganizationName .Content.Workspace.Name }}" method="POST"><button>Unlock</button></form>
+      <form action="{{ unlockWorkspacePath .Content }}" method="POST"><button>Unlock</button></form>
     {{ else }}
       <span class="workspace-lock-status">Unlocked</span>
-      <form action="{{ lockWorkspacePath .Content.OrganizationName .Content.Workspace.Name }}" method="POST"><button>Lock</button></form>
+      <form action="{{ lockWorkspacePath .Content }}" method="POST"><button>Lock</button></form>
     {{ end }}
   </div>
 {{ end }}
 
 {{ define "content" }}
-  <form action="{{ deleteWorkspacePath .Content.OrganizationName .Content.Workspace.Name }}" method="POST">
+  <form action="{{ deleteWorkspacePath .Content }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
   </form>
 {{ end }}

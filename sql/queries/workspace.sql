@@ -50,6 +50,7 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
+    organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
@@ -82,6 +83,7 @@ AND organizations.name = pggen.arg('organization_name');
 --
 -- name: FindWorkspaceByName :one
 SELECT w.*,
+    organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
@@ -94,6 +96,7 @@ AND organizations.name = pggen.arg('organization_name');
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
+    organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
@@ -105,6 +108,7 @@ WHERE w.workspace_id = pggen.arg('id');
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
+    organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     NULL::"organizations" AS organization

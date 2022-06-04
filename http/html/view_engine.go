@@ -66,12 +66,12 @@ func (v *view) CurrentSession() (*otf.Session, error) {
 	return sessionFromContext(v.request.Context())
 }
 
-func (v *view) CurrentOrganization() string {
+func (v *view) CurrentOrganization() *currentOrganization {
 	name, err := organizationFromContext(v.request.Context())
 	if err != nil {
-		return ""
+		return nil
 	}
-	return name
+	return &currentOrganization{name}
 }
 
 func (v *view) CurrentPath() string {

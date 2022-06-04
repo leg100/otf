@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"fmt"
 )
 
 type WorkspaceFactory struct {
@@ -10,29 +9,14 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	// get organization id if only organization name provided
-	orgID, err := f.getOrganizationID(ctx, opts)
+	org, err := f.OrganizationService.Get(ctx, opts.OrganizationName)
 	if err != nil {
 		return nil, err
 	}
-	return NewWorkspace(orgID, opts)
+	return NewWorkspace(org, opts)
 }
 
-func (f *WorkspaceFactory) getOrganizationID(ctx context.Context, opts WorkspaceCreateOptions) (string, error) {
-	if opts.OrganizationID != nil {
-		return *opts.OrganizationID, nil
-	} else if opts.OrganizationName != nil {
-		org, err := f.OrganizationService.Get(ctx, *opts.OrganizationName)
-		if err != nil {
-			return "", err
-		}
-		return org.ID(), nil
-	} else {
-		return "", fmt.Errorf("missing organization ID or name")
-	}
-}
-
-func NewWorkspace(orgID string, opts WorkspaceCreateOptions) (*Workspace, error) {
+func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Workspace, error) {
 	if err := opts.Valid(); err != nil {
 		return nil, err
 	}
@@ -48,7 +32,8 @@ func NewWorkspace(orgID string, opts WorkspaceCreateOptions) (*Workspace, error)
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
-		organizationID:      orgID,
+		organizationID:      organization.id,
+		organizationName:    organization.name,
 	}
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
@@ -112,9 +97,7 @@ type WorkspaceCreateOptions struct {
 	TerraformVersion           *string
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	// Either OrganizationName or OrganizationID must be provided
-	OrganizationName *string `schema:"organization_name"`
-	OrganizationID   *string
+	OrganizationName           string `schema:"organization_name"`
 }
 
 func (o WorkspaceCreateOptions) Valid() error {

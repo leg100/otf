@@ -46,6 +46,7 @@ type Workspace struct {
 	triggerPrefixes            []string
 	workingDirectory           string
 	organizationID             string
+	organizationName           string
 	organization               *Organization
 }
 
@@ -73,7 +74,7 @@ func (ws *Workspace) TerraformVersion() string         { return ws.terraformVers
 func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
-func (ws *Workspace) Organization() *Organization      { return ws.organization }
+func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
 
 func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}
@@ -214,8 +215,8 @@ func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
-	if ws.Organization() != nil {
-		dto.Organization = ws.Organization().ToJSONAPI(req).(*jsonapi.Organization)
+	if ws.organization != nil {
+		dto.Organization = ws.organization.ToJSONAPI(req).(*jsonapi.Organization)
 	} else {
 		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
 	}

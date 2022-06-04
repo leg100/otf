@@ -26,11 +26,8 @@ func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOpti
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
-	if !otf.ValidStringID(options.OrganizationName) {
-		return nil, otf.ErrInvalidOrg
-	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
 	req, err := s.client.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err

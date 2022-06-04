@@ -7,6 +7,19 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// workspaceRequest provides metadata about a request for a workspace
+type workspaceRequest struct {
+	r *http.Request
+}
+
+func (w workspaceRequest) OrganizationName() string {
+	return param(w.r, "organization_name")
+}
+
+func (w workspaceRequest) Name() string {
+	return param(w.r, "workspace_name")
+}
+
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 	if err := decode.Route(&opts, r); err != nil {
@@ -23,13 +36,13 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.render("workspace_list.tmpl", w, r, struct {
-		List    *otf.WorkspaceList
-		Options otf.WorkspaceListOptions
-	}{workspaces, opts})
+		Organization organizationName
+		List         *otf.WorkspaceList
+	}{organizationRequest{r}, workspaces})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	app.render("workspace_new.tmpl", w, r, param(r, "organization_name"))
+	app.render("workspace_new.tmpl", w, r, organizationRequest{r})
 }
 
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +58,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 	workspace, err := app.WorkspaceService().Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
-		http.Redirect(w, r, newWorkspacePath(*opts.OrganizationName), http.StatusFound)
+		http.Redirect(w, r, newWorkspacePath(organizationRequest{r}), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -53,7 +66,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "created workspace: "+workspace.Name())
-	http.Redirect(w, r, getWorkspacePath(*opts.OrganizationName, opts.Name), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(workspace), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -67,10 +80,7 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_get.tmpl", w, r, struct {
-		Workspace        *otf.Workspace
-		OrganizationName string
-	}{workspace, *spec.OrganizationName})
+	app.render("workspace_get.tmpl", w, r, workspace)
 }
 
 func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -84,10 +94,7 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_edit.tmpl", w, r, struct {
-		Workspace        *otf.Workspace
-		OrganizationName string
-	}{workspace, param(r, "organization_name")})
+	app.render("workspace_edit.tmpl", w, r, workspace)
 }
 
 func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -106,8 +113,8 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "updated workspace")
-	// User may have updated workspace name so use new name
-	http.Redirect(w, r, editWorkspacePath(*spec.OrganizationName, workspace.Name()), http.StatusFound)
+	// User may have updated workspace name so path references updated workspace
+	http.Redirect(w, r, editWorkspacePath(workspace), http.StatusFound)
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +129,7 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "deleted workspace: "+*spec.Name)
-	http.Redirect(w, r, listWorkspacePath(*spec.OrganizationName), http.StatusFound)
+	http.Redirect(w, r, listWorkspacePath(organizationRequest{r}), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +150,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(*spec.OrganizationName, *spec.Name), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -164,5 +171,5 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(*spec.OrganizationName, *spec.Name), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
 }

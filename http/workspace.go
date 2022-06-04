@@ -32,7 +32,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		MigrationEnvironment:       opts.MigrationEnvironment,
 		Name:                       *opts.Name,
-		OrganizationName:           opts.Organization,
+		OrganizationName:           *opts.Organization,
 		QueueAllRuns:               opts.QueueAllRuns,
 		SpeculativeEnabled:         opts.SpeculativeEnabled,
 		SourceName:                 opts.SourceName,

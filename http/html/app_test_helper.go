@@ -63,3 +63,7 @@ func (u *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListO
 		Items: []*otf.Workspace{u.fakeWorkspace},
 	}, nil
 }
+
+func (u *fakeWorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+	return u.fakeWorkspace, nil
+}

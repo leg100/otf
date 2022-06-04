@@ -8,6 +8,15 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// organizationRequest provides metadata about a request for a organization
+type organizationRequest struct {
+	r *http.Request
+}
+
+func (w organizationRequest) Name() string {
+	return param(w.r, "organization_name")
+}
+
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
@@ -43,12 +52,12 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "created organization: "+organization.Name())
-	http.Redirect(w, r, getOrganizationPath(*opts.Name), http.StatusFound)
+	http.Redirect(w, r, getOrganizationPath(organizationRequest{r}), http.StatusFound)
 }
 
 // Get lists the workspaces for the org.
 func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, listWorkspacePath(param(r, "organization_name")), http.StatusFound)
+	http.Redirect(w, r, listWorkspacePath(organizationRequest{r}), http.StatusFound)
 }
 
 func (app *Application) getOrganizationOverview(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +84,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	organization, err := app.OrganizationService().Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
+	_, err := app.OrganizationService().Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -83,7 +92,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 	flashSuccess(w, "updated organization")
 	// Override route variable for organization name because the user might have
 	// updated it.
-	http.Redirect(w, r, editOrganizationPath(organization.Name()), http.StatusFound)
+	http.Redirect(w, r, editOrganizationPath(organizationRequest{r}), http.StatusFound)
 }
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {

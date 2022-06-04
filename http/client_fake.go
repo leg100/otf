@@ -9,17 +9,24 @@ import (
 
 var _ ClientFactory = (*FakeClientFactory)(nil)
 
-type FakeClientFactory struct{}
+type FakeClientFactory struct {
+	Workspace *otf.Workspace
+}
 
-func (f FakeClientFactory) NewClient() (Client, error) { return &FakeClient{}, nil }
+func (f FakeClientFactory) NewClient() (Client, error) {
+	return &FakeClient{workspaces: f.Workspace}, nil
+}
 
 type FakeClient struct {
 	Client
+	workspaces *otf.Workspace
 }
 
 func (f FakeClient) Organizations() otf.OrganizationService { return &FakeOrganizationsClient{} }
 
-func (f FakeClient) Workspaces() otf.WorkspaceService { return &FakeWorkspacesClient{} }
+func (f FakeClient) Workspaces() otf.WorkspaceService {
+	return &FakeWorkspacesClient{workspace: f.workspaces}
+}
 
 type FakeOrganizationsClient struct {
 	otf.OrganizationService
@@ -31,45 +38,27 @@ func (f *FakeOrganizationsClient) Create(ctx context.Context, opts otf.Organizat
 
 type FakeWorkspacesClient struct {
 	otf.WorkspaceService
+	workspace *otf.Workspace
 }
 
 func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: otf.String("org-123"),
-	})
+	return f.workspace, nil
 }
 
 func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: otf.String("org-123"),
-	})
-	if err != nil {
-		return nil, err
-	}
 	return &otf.WorkspaceList{
-		Items: []*otf.Workspace{ws},
+		Items: []*otf.Workspace{f.workspace},
 	}, nil
 }
 
 func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: otf.String("org-123"),
-	})
+	return f.workspace, nil
 }
 
 func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: otf.String("org-123"),
-	})
+	return f.workspace, nil
 }
 
 func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	return (&otf.WorkspaceFactory{}).NewWorkspace(ctx, otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: otf.String("org-123"),
-	})
+	return f.workspace, nil
 }
