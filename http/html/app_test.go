@@ -20,8 +20,8 @@ func TestApp(t *testing.T) {
 		Name: otf.String("org-fake"),
 	})
 	require.NoError(t, err)
-	// setup ws
-	fakeWorkspace, err := otf.NewWorkspace(fakeOrganization.ID(), otf.WorkspaceCreateOptions{
+	// setup workspace
+	fakeWorkspace, err := otf.NewWorkspace(fakeOrganization, otf.WorkspaceCreateOptions{
 		Name: "ws-fake",
 	})
 	require.NoError(t, err)
@@ -58,34 +58,48 @@ func TestApp(t *testing.T) {
 
 	tests := []struct {
 		path     string
+		method   string
 		redirect string
 	}{
 		{
-			path: "/organizations",
+			method: "GET",
+			path:   "/organizations",
 		},
 		{
+			method:   "GET",
 			path:     "/organizations/org-fake",
 			redirect: "/organizations/org-fake/workspaces",
 		},
 		{
-			path: "/organizations/org-fake/workspaces",
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces",
 		},
 		{
-			path: "/organizations/org-fake/workspaces/new",
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/new",
 		},
 		{
-			path: "/organizations/org-fake/workspaces/ws-fake",
+			method:   "POST",
+			path:     "/organizations/org-fake/workspaces/create",
+			redirect: "/organizations/org-fake/workspaces/ws-fake",
+		},
+		{
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			// make request
 			buf := new(bytes.Buffer)
-			req, err := http.NewRequest("GET", srv.URL+tt.path, buf)
+			req, err := http.NewRequest(tt.method, srv.URL+tt.path, buf)
 			require.NoError(t, err)
 			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 			res, err := client.Do(req)
 			require.NoError(t, err)
 			defer res.Body.Close()
+
+			// check response
 			if tt.redirect != "" {
 				assert.Equal(t, 302, res.StatusCode)
 				loc, err := res.Location()

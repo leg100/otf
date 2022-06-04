@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"fmt"
 )
 
 type WorkspaceFactory struct {
@@ -10,25 +9,11 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	orgID, err := f.getOrganizationID(ctx, opts)
+	org, err := f.OrganizationService.Get(ctx, opts.OrganizationName)
 	if err != nil {
 		return nil, err
 	}
-	return NewWorkspace(orgID, opts)
-}
-
-func (f *WorkspaceFactory) getOrganizationID(ctx context.Context, opts WorkspaceCreateOptions) (string, error) {
-	if opts.OrganizationID != nil {
-		return *opts.OrganizationID, nil
-	} else if opts.OrganizationName != nil {
-		org, err := f.OrganizationService.Get(ctx, *opts.OrganizationName)
-		if err != nil {
-			return "", err
-		}
-		return org.ID(), nil
-	} else {
-		return "", fmt.Errorf("missing organization ID or name")
-	}
+	return NewWorkspace(org, opts)
 }
 
 func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Workspace, error) {
@@ -112,9 +97,7 @@ type WorkspaceCreateOptions struct {
 	TerraformVersion           *string
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	// Either OrganizationName or OrganizationID must be provided
-	OrganizationName *string `schema:"organization_name"`
-	OrganizationID   *string
+	OrganizationName           string `schema:"organization_name"`
 }
 
 func (o WorkspaceCreateOptions) Valid() error {

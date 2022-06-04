@@ -52,10 +52,8 @@ func newTestOrganization(t *testing.T) *otf.Organization {
 }
 
 func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
-	orgID := org.ID()
-	ws, err := (&otf.WorkspaceFactory{}).NewWorkspace(context.Background(), otf.WorkspaceCreateOptions{
-		Name:           uuid.NewString(),
-		OrganizationID: &orgID,
+	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{
+		Name: uuid.NewString(),
 	})
 	require.NoError(t, err)
 	return ws

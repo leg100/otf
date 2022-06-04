@@ -66,7 +66,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "created workspace: "+workspace.Name())
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(workspace), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {

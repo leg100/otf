@@ -3,13 +3,20 @@ package main
 import (
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspaceLock(t *testing.T) {
-	cmd := WorkspaceLockCommand(&http.FakeClientFactory{})
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String("automatize")})
+	require.NoError(t, err)
+	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{Name: "dev"})
+	require.NoError(t, err)
+	factory := &http.FakeClientFactory{Workspace: ws}
+
+	cmd := WorkspaceLockCommand(factory)
 	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
 	require.NoError(t, cmd.Execute())
 }
