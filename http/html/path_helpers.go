@@ -132,20 +132,20 @@ func createRunPath(ws workspaceName) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/create", ws.OrganizationName(), ws.Name())
 }
 
-func getRunPath(organizationName, workspaceName, runId string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", organizationName, workspaceName, runId)
+func getRunPath(organizationName, workspaceName, runID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", organizationName, workspaceName, runID)
 }
 
-func getPlanPath(organizationName, workspaceName, runId string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/plan", organizationName, workspaceName, runId)
+func getPlanPath(organizationName, workspaceName, runID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/plan", organizationName, workspaceName, runID)
 }
 
-func getApplyPath(organizationName, workspaceName, runId string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", organizationName, workspaceName, runId)
+func getApplyPath(organizationName, workspaceName, runID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", organizationName, workspaceName, runID)
 }
 
-func deleteRunPath(organizationName, workspaceName, runId string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/delete", organizationName, workspaceName, runId)
+func deleteRunPath(organizationName, workspaceName, runID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/delete", organizationName, workspaceName, runID)
 }
 
 func addHelpersToFuncMap(m template.FuncMap) {
