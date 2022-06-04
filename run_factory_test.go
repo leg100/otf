@@ -19,7 +19,7 @@ func TestRunFactory(t *testing.T) {
 			name: "defaults",
 			ws:   Workspace{id: "ws-123"},
 			cv:   ConfigurationVersion{id: "cv-123"},
-			opts: RunCreateOptions{WorkspaceID: "ws-123"},
+			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.Equal(t, RunPending, run.status)
 				assert.NotZero(t, run.createdAt)
@@ -32,7 +32,7 @@ func TestRunFactory(t *testing.T) {
 			name: "speculative",
 			ws:   Workspace{id: "ws-123"},
 			cv:   ConfigurationVersion{id: "cv-123", speculative: true},
-			opts: RunCreateOptions{WorkspaceID: "ws-123"},
+			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.speculative)
 				assert.Equal(t, RunPlanQueued, run.status)
@@ -42,7 +42,7 @@ func TestRunFactory(t *testing.T) {
 			name: "auto-apply",
 			ws:   Workspace{id: "ws-123", autoApply: true},
 			cv:   ConfigurationVersion{id: "cv-123"},
-			opts: RunCreateOptions{WorkspaceID: "ws-123"},
+			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.autoApply)
 			},
@@ -54,7 +54,7 @@ func TestRunFactory(t *testing.T) {
 				WorkspaceService:            &fakeRunFactoryWorkspaceService{ws: &tt.ws},
 				ConfigurationVersionService: &fakeRunFactoryConfigurationVersionService{cv: &tt.cv},
 			}
-			run, err := f.New(context.Background(), tt.opts)
+			run, err := f.New(context.Background(), tt.ws.SpecID(), tt.opts)
 			tt.want(t, run, err)
 		})
 	}

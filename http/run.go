@@ -19,18 +19,19 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if opts.Workspace == nil {
 		writeError(w, http.StatusUnprocessableEntity, fmt.Errorf("missing workspace"))
+		return
 	}
+	workspace := otf.WorkspaceSpec{ID: &opts.Workspace.ID}
 	var configurationVersionID *string
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.RunService().Create(r.Context(), otf.RunCreateOptions{
+	run, err := s.RunService().Create(r.Context(), workspace, otf.RunCreateOptions{
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
 		RefreshOnly:            opts.RefreshOnly,
 		Message:                opts.Message,
 		ConfigurationVersionID: configurationVersionID,
-		WorkspaceID:            opts.Workspace.ID,
 		TargetAddrs:            opts.TargetAddrs,
 		ReplaceAddrs:           opts.ReplaceAddrs,
 	})

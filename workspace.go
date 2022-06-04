@@ -81,8 +81,8 @@ func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}
 }
 
-func (ws *Workspace) SpecName(org *Organization) WorkspaceSpec {
-	return WorkspaceSpec{Name: &ws.name, OrganizationName: &org.name}
+func (ws *Workspace) SpecName() WorkspaceSpec {
+	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organizationName}
 }
 
 // Locked determines whether workspace is locked.

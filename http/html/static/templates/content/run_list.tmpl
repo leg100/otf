@@ -3,9 +3,9 @@
 {{ define "title" }}Runs{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ .Relative "listWorkspace" }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content.Workspace }}">workspaces</a>
   /
-  <a href="{{ .Relative "getWorkspace" }}">{{ .Content.Workspace.Name }}</a>
+  <a href="{{ getWorkspacePath .Content.Workspace }}">{{ .Content.Workspace.WorkspaceName }}</a>
   /
   runs
 {{ end }}
@@ -24,11 +24,11 @@
     <tbody>
       {{ range .Content.List.Items }}
         <tr>
-          <td><a class="identifier" href="{{ $.Relative "getRun" "run_id" .ID }}">{{ .ID }}</a></td>
+          <td><a class="identifier" href="{{ getRunPath . }}">{{ .ID }}</a></td>
           <td><span class="status-{{ .Status }}">{{ .Status }}</span></td>
-          <td><a href="{{ $.Relative "getPlan" "run_id" .ID }}">logs</a></td>
-          <td><a href="{{ $.Relative "getApply" "run_id" .ID }}">logs</a></td>
-          <td>{{ ago .UpdatedAt }} ago</td>
+          <td><a href="{{ getPlanPath . }}">logs</a></td>
+          <td><a href="{{ getApplyPath . }}">logs</a></td>
+          <td>{{ ago .CreatedAt }} ago</td>
         </tr>
       {{ end }}
     </tbody>

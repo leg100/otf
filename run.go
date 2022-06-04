@@ -511,7 +511,7 @@ type RunStatusTimestamp struct {
 // RunService implementations allow interactions with runs
 type RunService interface {
 	// Create a new run with the given options.
-	Create(ctx context.Context, opts RunCreateOptions) (*Run, error)
+	Create(ctx context.Context, ws WorkspaceSpec, opts RunCreateOptions) (*Run, error)
 	// Get retrieves a run with the given ID.
 	Get(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
@@ -540,9 +540,10 @@ type RunCreateOptions struct {
 	RefreshOnly            *bool
 	Message                *string
 	ConfigurationVersionID *string
-	WorkspaceID            string
+	WorkspaceID            *string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
+	WorkspaceSpec          WorkspaceSpec
 }
 
 // TestRunCreateOptions is for testing purposes only.

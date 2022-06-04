@@ -25,6 +25,12 @@ func TestApp(t *testing.T) {
 		Name: "ws-fake",
 	})
 	require.NoError(t, err)
+	// setup configuration version
+	fakeCV, err := otf.NewConfigurationVersion(fakeWorkspace.ID(), otf.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
+	// setup run
+	fakeRun := otf.NewRun(fakeCV, fakeWorkspace, otf.RunCreateOptions{})
+	require.NoError(t, err)
 	// setup user
 	fakeUser := otf.NewUser("fake")
 	session, err := fakeUser.AttachNewSession(&otf.SessionData{Address: "127.0.0.1"})
@@ -40,6 +46,9 @@ func TestApp(t *testing.T) {
 		},
 		fakeWorkspaceService: &fakeWorkspaceService{
 			fakeWorkspace: fakeWorkspace,
+		},
+		fakeRunService: &fakeRunService{
+			fakeRun: fakeRun,
 		},
 	}
 	// Add web app routes.
@@ -86,6 +95,14 @@ func TestApp(t *testing.T) {
 		{
 			method: "GET",
 			path:   "/organizations/org-fake/workspaces/ws-fake",
+		},
+		{
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake/runs",
+		},
+		{
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID(),
 		},
 	}
 	for _, tt := range tests {

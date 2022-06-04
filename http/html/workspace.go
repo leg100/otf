@@ -20,6 +20,13 @@ func (w workspaceRequest) WorkspaceName() string {
 	return param(w.r, "workspace_name")
 }
 
+func (w workspaceRequest) Spec() otf.WorkspaceSpec {
+	return otf.WorkspaceSpec{
+		Name:             otf.String(w.WorkspaceName()),
+		OrganizationName: otf.String(w.OrganizationName()),
+	}
+}
+
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 	if err := decode.Route(&opts, r); err != nil {
