@@ -78,6 +78,8 @@ type Run struct {
 	statusTimestamps []RunStatusTimestamp
 	replaceAddrs     []string
 	targetAddrs      []string
+	organizationName string
+	workspaceName    string
 	// Relations
 	Plan                 *Plan
 	Apply                *Apply
@@ -88,16 +90,19 @@ type Run struct {
 }
 
 func (r *Run) ID() string                             { return r.id }
+func (r *Run) RunID() string                          { return r.id }
 func (r *Run) CreatedAt() time.Time                   { return r.createdAt }
 func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
 func (r *Run) Message() string                        { return r.message }
+func (r *Run) OrganizationName() string               { return r.organizationName }
 func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
+func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {

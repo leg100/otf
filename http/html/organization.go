@@ -13,7 +13,7 @@ type organizationRequest struct {
 	r *http.Request
 }
 
-func (w organizationRequest) Name() string {
+func (w organizationRequest) OrganizationName() string {
 	return param(w.r, "organization_name")
 }
 
@@ -41,7 +41,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	organization, err := app.OrganizationService().Create(r.Context(), opts)
+	org, err := app.OrganizationService().Create(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
 		flashError(w, "organization already exists: "+*opts.Name)
 		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
@@ -51,8 +51,8 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "created organization: "+organization.Name())
-	http.Redirect(w, r, getOrganizationPath(organizationRequest{r}), http.StatusFound)
+	flashSuccess(w, "created organization: "+org.Name())
+	http.Redirect(w, r, getOrganizationPath(org), http.StatusFound)
 }
 
 // Get lists the workspaces for the org.
@@ -84,15 +84,13 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, err := app.OrganizationService().Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
+	org, err := app.OrganizationService().Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "updated organization")
-	// Override route variable for organization name because the user might have
-	// updated it.
-	http.Redirect(w, r, editOrganizationPath(organizationRequest{r}), http.StatusFound)
+	http.Redirect(w, r, editOrganizationPath(org), http.StatusFound)
 }
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {

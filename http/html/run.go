@@ -70,8 +70,7 @@ func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	path := getRunPath(param(r, "organization_name"), param(r, "workspace_name"), created.ID())
-	http.Redirect(w, r, path, http.StatusFound)
+	http.Redirect(w, r, getRunPath(created), http.StatusFound)
 }
 
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
@@ -122,13 +121,11 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 	app.render("plan_get.tmpl", w, r, struct {
-		Run              *otf.Run
-		Logs             template.HTML
-		OrganizationName string
+		Run  *otf.Run
+		Logs template.HTML
 	}{
-		Run:              run,
-		Logs:             template.HTML(logs),
-		OrganizationName: mux.Vars(r)["organization_name"],
+		Run:  run,
+		Logs: template.HTML(logs),
 	})
 }
 

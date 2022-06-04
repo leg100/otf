@@ -55,6 +55,7 @@ func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
 func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
 func (ws *Workspace) String() string                   { return ws.id }
 func (ws *Workspace) Name() string                     { return ws.name }
+func (ws *Workspace) WorkspaceName() string            { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
 func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }

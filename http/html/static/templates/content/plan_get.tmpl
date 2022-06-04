@@ -3,7 +3,7 @@
 {{ define "title" }}{{ .Content.Run.ID }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content.OrganizationName }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content.Run.OrganizationName }}">workspaces</a>
   /
   <a href="{{ getWorkspacePath .Content.OrganizationName .Content.Run.Workspace.Name }}">{{ .Content.Run.Workspace.Name }}</a>
   /

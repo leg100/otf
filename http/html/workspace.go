@@ -16,7 +16,7 @@ func (w workspaceRequest) OrganizationName() string {
 	return param(w.r, "organization_name")
 }
 
-func (w workspaceRequest) Name() string {
+func (w workspaceRequest) WorkspaceName() string {
 	return param(w.r, "workspace_name")
 }
 
@@ -36,7 +36,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.render("workspace_list.tmpl", w, r, struct {
-		Organization organizationName
+		Organization organizationRoute
 		List         *otf.WorkspaceList
 	}{organizationRequest{r}, workspaces})
 }
@@ -143,14 +143,14 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_, err = app.WorkspaceService().Lock(r.Context(), spec, otf.WorkspaceLockOptions{
+	ws, err := app.WorkspaceService().Lock(r.Context(), spec, otf.WorkspaceLockOptions{
 		Requestor: user,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -164,12 +164,12 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, err = app.WorkspaceService().Unlock(r.Context(), spec, otf.WorkspaceUnlockOptions{
+	ws, err := app.WorkspaceService().Unlock(r.Context(), spec, otf.WorkspaceUnlockOptions{
 		Requestor: user,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }

@@ -37,9 +37,11 @@ func (f *RunFactory) getConfigurationVersion(ctx context.Context, opts RunCreate
 // NewRun creates a new run with defaults.
 func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run {
 	run := Run{
-		id:        NewID("run"),
-		createdAt: CurrentTimestamp(),
-		refresh:   DefaultRefresh,
+		id:               NewID("run"),
+		createdAt:        CurrentTimestamp(),
+		refresh:          DefaultRefresh,
+		workspaceName:    ws.Name(),
+		organizationName: ws.OrganizationName(),
 	}
 	run.ConfigurationVersion = &ConfigurationVersion{id: cv.ID()}
 	run.Workspace = &Workspace{id: ws.ID()}

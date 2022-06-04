@@ -81,6 +81,8 @@ SELECT
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
+    workspaces.name AS workspace_name,
+    organizations.name AS organization_name,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -151,6 +153,8 @@ SELECT
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
+    workspaces.name AS workspace_name,
+    organizations.name AS organization_name,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -174,6 +178,7 @@ SELECT
 FROM runs
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
 ;
 
@@ -214,6 +219,8 @@ SELECT
     runs.workspace_id,
     configuration_versions.speculative,
     workspaces.auto_apply,
+    workspaces.name AS workspace_name,
+    organizations.name AS organization_name,
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
@@ -237,6 +244,7 @@ SELECT
 FROM runs
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
+JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE
 ;
