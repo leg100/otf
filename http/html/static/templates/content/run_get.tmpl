@@ -3,15 +3,11 @@
 {{ define "title" }}{{ .Content.Run.ID }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ .Relative "listWorkspace" }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
   /
-  <a href="{{ .Relative "getWorkspace" }}">{{ .Content.Run.Workspace.Name }}</a>
+  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
   /
-  <a href="{{ .Relative "listRun" }}">runs</a>
+  <a href="{{ listRunPath .Content }}">runs</a>
   /
-  {{ .Content.Run.ID }}
-{{ end }}
-
-{{ define "content" }}
-  <div class="term-container">{{- .Content.PlanLogs -}}</div>
+  {{ .Content.ID }}
 {{ end }}

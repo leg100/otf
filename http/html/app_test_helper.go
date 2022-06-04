@@ -11,6 +11,7 @@ type fakeApp struct {
 	fakeUserService         *fakeUserService
 	fakeOrganizationService *fakeOrganizationService
 	fakeWorkspaceService    *fakeWorkspaceService
+	fakeRunService          *fakeRunService
 }
 
 func (a fakeApp) UserService() otf.UserService {
@@ -23,6 +24,10 @@ func (a fakeApp) OrganizationService() otf.OrganizationService {
 
 func (a fakeApp) WorkspaceService() otf.WorkspaceService {
 	return a.fakeWorkspaceService
+}
+
+func (a fakeApp) RunService() otf.RunService {
+	return a.fakeRunService
 }
 
 type fakeUserService struct {
@@ -66,4 +71,19 @@ func (u *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListO
 
 func (u *fakeWorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
+}
+
+type fakeRunService struct {
+	fakeRun *otf.Run
+	otf.RunService
+}
+
+func (u *fakeRunService) Get(context.Context, string) (*otf.Run, error) {
+	return u.fakeRun, nil
+}
+
+func (u *fakeRunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+	return &otf.RunList{
+		Items: []*otf.Run{u.fakeRun},
+	}, nil
 }

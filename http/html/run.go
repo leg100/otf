@@ -27,21 +27,12 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// get workspace, too
-	workspace, err := app.WorkspaceService().Get(r.Context(), otf.WorkspaceSpec{
-		OrganizationName: opts.OrganizationName,
-		Name:             opts.WorkspaceName,
-	})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	app.render("run_list.tmpl", w, r, struct {
 		List      *otf.RunList
-		Workspace *otf.Workspace
+		Workspace workspaceRoute
 	}{
 		List:      runs,
-		Workspace: workspace,
+		Workspace: workspaceRequest{r},
 	})
 }
 
@@ -65,13 +56,13 @@ func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	created, err := app.RunService().Create(r.Context(), opts)
+	ws := workspaceRequest{r}.Spec()
+	created, err := app.RunService().Create(r.Context(), ws, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	path := getRunPath(param(r, "organization_name"), param(r, "workspace_name"), created.ID())
-	http.Redirect(w, r, path, http.StatusFound)
+	http.Redirect(w, r, getRunPath(created), http.StatusFound)
 }
 
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
@@ -80,26 +71,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	chunk, err := app.PlanService().GetChunk(r.Context(), run.Plan.ID(), otf.GetChunkOptions{})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// convert to string
-	logStr := string(chunk.Data)
-	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
-	// convert ANSI escape sequences to HTML
-	logStr = string(term2html.Render([]byte(logStr)))
-	// trim leading and trailing white space
-	logStr = strings.TrimSpace(logStr)
-	app.render("run_get.tmpl", w, r, struct {
-		Run      *otf.Run
-		PlanLogs template.HTML
-	}{
-		Run:      run,
-		PlanLogs: template.HTML(logStr),
-	})
+	app.render("run_get.tmpl", w, r, run)
 }
 
 func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
@@ -122,13 +94,11 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 	// trim leading and trailing white space
 	logs = strings.TrimSpace(logs)
 	app.render("plan_get.tmpl", w, r, struct {
-		Run              *otf.Run
-		Logs             template.HTML
-		OrganizationName string
+		Run  *otf.Run
+		Logs template.HTML
 	}{
-		Run:              run,
-		Logs:             template.HTML(logs),
-		OrganizationName: mux.Vars(r)["organization_name"],
+		Run:  run,
+		Logs: template.HTML(logs),
 	})
 }
 

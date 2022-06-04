@@ -41,7 +41,7 @@ func TestWorkspace_Update(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecName(org)
+				return ws.SpecName()
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func TestWorkspace_Get(t *testing.T) {
 		},
 		{
 			name: "by name",
-			spec: ws.SpecName(org),
+			spec: ws.SpecName(),
 		},
 	}
 
@@ -106,7 +106,7 @@ func TestWorkspace_Lock(t *testing.T) {
 
 	t.Run("lock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.WorkspaceStore().Lock(ctx, ws.SpecName(org), otf.WorkspaceLockOptions{
+		got, err := db.WorkspaceStore().Lock(ctx, ws.SpecName(), otf.WorkspaceLockOptions{
 			Requestor: &otf.AnonymousUser,
 		})
 		require.NoError(t, err)
@@ -128,7 +128,7 @@ func TestWorkspace_Lock(t *testing.T) {
 
 	t.Run("unlock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.WorkspaceStore().Lock(ctx, ws.SpecName(org), otf.WorkspaceLockOptions{
+		_, err := db.WorkspaceStore().Lock(ctx, ws.SpecName(), otf.WorkspaceLockOptions{
 			Requestor: &otf.AnonymousUser,
 		})
 		require.NoError(t, err)
@@ -221,7 +221,7 @@ func TestWorkspace_Delete(t *testing.T) {
 		{
 			name: "by name",
 			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecName(org)
+				return ws.SpecName()
 			},
 		},
 	}

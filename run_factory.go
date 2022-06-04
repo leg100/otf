@@ -13,12 +13,12 @@ type RunFactory struct {
 
 // New constructs a new run at the beginning of its lifecycle using the provided
 // options.
-func (f *RunFactory) New(ctx context.Context, opts RunCreateOptions) (*Run, error) {
-	ws, err := f.WorkspaceService.Get(context.Background(), WorkspaceSpec{ID: String(opts.WorkspaceID)})
+func (f *RunFactory) New(ctx context.Context, workspaceSpec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
+	ws, err := f.WorkspaceService.Get(context.Background(), workspaceSpec)
 	if err != nil {
 		return nil, err
 	}
-	cv, err := f.getConfigurationVersion(ctx, opts)
+	cv, err := f.getConfigurationVersion(ctx, ws.ID(), opts.ConfigurationVersionID)
 	if err != nil {
 		return nil, err
 	}
@@ -26,20 +26,22 @@ func (f *RunFactory) New(ctx context.Context, opts RunCreateOptions) (*Run, erro
 	return NewRun(cv, ws, opts), nil
 }
 
-func (f *RunFactory) getConfigurationVersion(ctx context.Context, opts RunCreateOptions) (*ConfigurationVersion, error) {
-	if opts.ConfigurationVersionID == nil {
+func (f *RunFactory) getConfigurationVersion(ctx context.Context, workspaceID string, cvID *string) (*ConfigurationVersion, error) {
+	if cvID == nil {
 		// CV ID not provided, get workspace's latest CV
-		return f.ConfigurationVersionService.GetLatest(ctx, opts.WorkspaceID)
+		return f.ConfigurationVersionService.GetLatest(ctx, workspaceID)
 	}
-	return f.ConfigurationVersionService.Get(ctx, *opts.ConfigurationVersionID)
+	return f.ConfigurationVersionService.Get(ctx, *cvID)
 }
 
 // NewRun creates a new run with defaults.
 func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run {
 	run := Run{
-		id:        NewID("run"),
-		createdAt: CurrentTimestamp(),
-		refresh:   DefaultRefresh,
+		id:               NewID("run"),
+		createdAt:        CurrentTimestamp(),
+		refresh:          DefaultRefresh,
+		workspaceName:    ws.Name(),
+		organizationName: ws.OrganizationName(),
 	}
 	run.ConfigurationVersion = &ConfigurationVersion{id: cv.ID()}
 	run.Workspace = &Workspace{id: ws.ID()}
