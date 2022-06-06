@@ -14,7 +14,6 @@ import (
 //List all available apply statuses supported in OTF.
 const (
 	ApplyCanceled    ApplyStatus = "canceled"
-	ApplyCreated     ApplyStatus = "created"
 	ApplyErrored     ApplyStatus = "errored"
 	ApplyFinished    ApplyStatus = "finished"
 	ApplyPending     ApplyStatus = "pending"
@@ -81,6 +80,15 @@ func (a *Apply) Finish() error {
 }
 
 func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }
+
+func (a *Apply) StatusTimestamp(status ApplyStatus) (time.Time, error) {
+	for _, rst := range a.statusTimestamps {
+		if rst.Status == status {
+			return rst.Timestamp, nil
+		}
+	}
+	return time.Time{}, ErrStatusTimestampNotFound
+}
 
 func (a *Apply) updateStatus(status ApplyStatus) {
 	a.status = status
