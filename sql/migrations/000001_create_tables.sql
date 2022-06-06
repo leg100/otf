@@ -135,6 +135,21 @@ INSERT INTO apply_statuses (status) VALUES
     ('running'),
     ('unreachable');
 
+INSERT INTO job_statuses (status) VALUES
+    ('canceled'),
+    ('errored'),
+    ('finished'),
+    ('pending'),
+    ('claimed'),
+    ('running');
+
+CREATE TABLE IF NOT EXISTS jobs (
+    job_id      TEXT,
+    created_at  TIMESTAMPTZ                   NOT NULL,
+    status      TEXT REFERENCES job_statuses  NOT NULL,
+                PRIMARY KEY (job_id)
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
     created_at                      TIMESTAMPTZ     NOT NULL,
@@ -160,6 +175,7 @@ CREATE TABLE IF NOT EXISTS run_status_timestamps (
 CREATE TABLE IF NOT EXISTS plans (
     plan_id                     TEXT            NOT NULL,
     run_id                      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    job_id                      TEXT REFERENCES jobs ON UPDATE CASCADE,
     plan_bin                    BYTEA,
     plan_json                   BYTEA,
     additions                   INTEGER         NOT NULL,
@@ -179,6 +195,7 @@ CREATE TABLE IF NOT EXISTS plan_status_timestamps (
 CREATE TABLE IF NOT EXISTS applies (
     apply_id          TEXT            NOT NULL,
     run_id            TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    job_id            TEXT REFERENCES jobs ON UPDATE CASCADE,
     additions         INTEGER         NOT NULL,
     changes           INTEGER         NOT NULL,
     destructions      INTEGER         NOT NULL,
@@ -237,6 +254,8 @@ DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
+DROP TABLE IF EXISTS jobs;
+DROP TABLE IF EXISTS job_statuses;
 DROP TABLE IF EXISTS apply_statuses;
 DROP TABLE IF EXISTS plan_statuses;
 DROP TABLE IF EXISTS run_statuses;

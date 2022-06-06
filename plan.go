@@ -28,6 +28,8 @@ const (
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	id string
+	// id of corresponding job
+	jobID *string
 	// Resources is a report of planned resource changes
 	*ResourceReport
 	// Status is the current status
