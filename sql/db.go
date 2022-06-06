@@ -43,7 +43,7 @@ func New(logger logr.Logger, path string, cache *bigcache.BigCache, sessionExpir
 		workspaceStore:            NewWorkspaceDB(conn),
 		stateVersionStore:         NewStateVersionDB(conn),
 		configurationVersionStore: NewConfigurationVersionDB(conn),
-		runStore:                  NewRunDB(conn),
+		runStore:                  newRunDB(conn),
 		planLogStore:              NewPlanLogDB(conn),
 		applyLogStore:             NewApplyLogDB(conn),
 		userStore:                 NewUserDB(conn),
