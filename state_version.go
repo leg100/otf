@@ -83,11 +83,11 @@ type StateVersionService interface {
 }
 
 type StateVersionStore interface {
-	Create(ctx context.Context, workspaceID string, sv *StateVersion) error
-	Get(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
+	CreateStateVersion(ctx context.Context, workspaceID string, sv *StateVersion) error
+	GetStateVersion(ctx context.Context, opts StateVersionGetOptions) (*StateVersion, error)
 	GetState(ctx context.Context, id string) ([]byte, error)
-	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
-	Delete(ctx context.Context, id string) error
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	DeleteStateVersion(ctx context.Context, id string) error
 }
 
 // StateVersionGetOptions are options for retrieving a single StateVersion.

@@ -6,32 +6,25 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
-	db otf.RunStore
-	es otf.EventService
-
-	planLogs  otf.ChunkStore
-	applyLogs otf.ChunkStore
-
+	db    *sql.DB
+	es    otf.EventService
 	cache otf.Cache
-
 	logr.Logger
-
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, planLogs, applyLogs otf.ChunkStore, cache otf.Cache) *RunService {
+func NewRunService(db *sql.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cache otf.Cache) *RunService {
 	return &RunService{
-		db:        db,
-		es:        es,
-		planLogs:  planLogs,
-		applyLogs: applyLogs,
-		cache:     cache,
-		Logger:    logger,
+		db:     db,
+		es:     es,
+		cache:  cache,
+		Logger: logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -48,8 +41,8 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(db otf.RunStore) error {
-		if err = db.Create(ctx, run); err != nil {
+	err = s.db.Tx(ctx, func(db otf.DB) error {
+		if err = db.CreateRun(ctx, run); err != nil {
 			s.Error(err, "creating run", "id", run.ID())
 			return err
 		}
@@ -80,7 +73,7 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 
 // Get retrieves a run obj with the given ID from the db.
 func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.db.Get(ctx, otf.RunGetOptions{ID: &id})
+	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ID: &id})
 	if err != nil {
 		s.Error(err, "retrieving run", "id", id)
 		return nil, err
@@ -93,7 +86,7 @@ func (s RunService) Get(ctx context.Context, id string) (*otf.Run, error) {
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
 func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	rl, err := s.db.List(ctx, opts)
+	rl, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing runs")
 		return nil, err
@@ -168,7 +161,7 @@ func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
 	return run, nil
 }
 
-func (s RunService) enqueuePlan(ctx context.Context, db otf.RunStore, runID string) (*otf.Run, error) {
+func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*otf.Run, error) {
 	run, err := db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
@@ -187,7 +180,7 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 	// We need the plan ID so if caller has specified run or apply ID instead
 	// then we need to get plan ID first
 	if spec.ID != nil || spec.ApplyID != nil {
-		run, err := s.db.Get(ctx, spec)
+		run, err := s.db.GetRun(ctx, spec)
 		if err != nil {
 			s.Error(err, "retrieving plan file", "id", spec.String())
 			return nil, err
@@ -250,7 +243,7 @@ func (s RunService) UploadPlanFile(ctx context.Context, planID string, plan []by
 
 // Delete deletes a terraform run.
 func (s RunService) Delete(ctx context.Context, id string) error {
-	if err := s.db.Delete(ctx, id); err != nil {
+	if err := s.db.DeleteRun(ctx, id); err != nil {
 		s.Error(err, "deleting run", "id", id)
 		return err
 	}

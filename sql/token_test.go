@@ -16,9 +16,9 @@ func TestToken_CreateToken(t *testing.T) {
 	token, err := otf.NewToken(user.ID(), "testing")
 	require.NoError(t, err)
 
-	defer db.TokenStore().DeleteToken(ctx, token.ID())
+	defer db.DeleteToken(ctx, token.ID())
 
-	err = db.TokenStore().CreateToken(ctx, token)
+	err = db.CreateToken(ctx, token)
 	require.NoError(t, err)
 }
 
@@ -27,6 +27,6 @@ func TestToken_DeleteToken(t *testing.T) {
 	user := createTestUser(t, db)
 	token := createTestToken(t, db, user.ID(), "testing")
 
-	err := db.TokenStore().DeleteToken(context.Background(), token.ID())
+	err := db.DeleteToken(context.Background(), token.ID())
 	require.NoError(t, err)
 }

@@ -15,9 +15,9 @@ func TestSession_CreateSession(t *testing.T) {
 	user := createTestUser(t, db)
 	session := newTestSession(t, user.ID())
 
-	defer db.SessionStore().DeleteSession(context.Background(), session.Token)
+	defer db.DeleteSession(context.Background(), session.Token)
 
-	err := db.SessionStore().CreateSession(context.Background(), session)
+	err := db.CreateSession(context.Background(), session)
 	require.NoError(t, err)
 }
 
@@ -33,7 +33,7 @@ func TestSession_SessionCleanup(t *testing.T) {
 
 	time.Sleep(300 * time.Millisecond)
 
-	got, err := db.UserStore().Get(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
+	got, err := db.GetUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(got.Sessions))

@@ -7,28 +7,12 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var (
-	_ otf.WorkspaceStore = (*WorkspaceDB)(nil)
-)
-
-type WorkspaceDB struct {
-	*pgxpool.Pool
-}
-
-func NewWorkspaceDB(conn *pgxpool.Pool) *WorkspaceDB {
-	return &WorkspaceDB{
-		Pool: conn,
-	}
-}
-
-func (db WorkspaceDB) Create(ctx context.Context, ws *otf.Workspace) error {
-	q := pggen.NewQuerier(db.Pool)
-	_, err := q.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
+	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         pgtype.Text{String: ws.ID(), Status: pgtype.Present},
 		CreatedAt:                  ws.CreatedAt(),
 		UpdatedAt:                  ws.UpdatedAt(),
@@ -58,8 +42,8 @@ func (db WorkspaceDB) Create(ctx context.Context, ws *otf.Workspace) error {
 	return nil
 }
 
-func (db WorkspaceDB) Update(ctx context.Context, spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	tx, err := db.Pool.Begin(ctx)
+func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +79,9 @@ func (db WorkspaceDB) Update(ctx context.Context, spec otf.WorkspaceSpec, fn fun
 	return ws, tx.Commit(ctx)
 }
 
-// Lock the specified workspace.
-func (db WorkspaceDB) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	tx, err := db.Pool.Begin(ctx)
+// LockWorkspace locks the specified workspace.
+func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,11 +109,11 @@ func (db WorkspaceDB) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 	return ws, tx.Commit(ctx)
 }
 
-// Unlock the specified workspace; the caller has the opportunity to check the
-// current locker passed into the provided callback. If an error is returned the
-// unlock will not go ahead.
-func (db WorkspaceDB) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	tx, err := db.Pool.Begin(ctx)
+// UnlockWorkspace unlocks the specified workspace; the caller has the
+// opportunity to check the current locker passed into the provided callback. If
+// an error is returned the unlock will not go ahead.
+func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +141,8 @@ func (db WorkspaceDB) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts o
 	return ws, tx.Commit(ctx)
 }
 
-func (db WorkspaceDB) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	q := pggen.NewQuerier(db.Pool)
+func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+	q := pggen.NewQuerier(db)
 	batch := &pgx.Batch{}
 
 	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
@@ -173,7 +157,7 @@ func (db WorkspaceDB) List(ctx context.Context, opts otf.WorkspaceListOptions) (
 		pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
 	)
 
-	results := db.Pool.SendBatch(ctx, batch)
+	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
 	rows, err := q.FindWorkspacesScan(results)
@@ -200,8 +184,8 @@ func (db WorkspaceDB) List(ctx context.Context, opts otf.WorkspaceListOptions) (
 	}, nil
 }
 
-func (db WorkspaceDB) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	q := pggen.NewQuerier(db.Pool)
+func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	q := pggen.NewQuerier(db)
 
 	if spec.ID != nil {
 		result, err := q.FindWorkspaceByID(ctx,
@@ -227,17 +211,16 @@ func (db WorkspaceDB) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wor
 	}
 }
 
-// Delete deletes a specific workspace, along with its child records (runs etc).
-func (db WorkspaceDB) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
-	q := pggen.NewQuerier(db.Pool)
-
+// DeleteWorkspace deletes a specific workspace, along with its child records
+// (runs etc).
+func (db *DB) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
 	var result pgconn.CommandTag
 	var err error
 
 	if spec.ID != nil {
-		result, err = q.DeleteWorkspaceByID(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
+		result, err = db.DeleteWorkspaceByID(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err = q.DeleteWorkspaceByName(ctx,
+		result, err = db.DeleteWorkspaceByName(ctx,
 			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
 			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 		)
@@ -255,25 +238,24 @@ func (db WorkspaceDB) Delete(ctx context.Context, spec otf.WorkspaceSpec) error 
 	return nil
 }
 
-func (db WorkspaceDB) getWorkspaceForUpdate(ctx context.Context, tx pgx.Tx, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	q := pggen.NewQuerier(tx)
-	workspaceID, err := getWorkspaceID(ctx, q, spec)
+func (db *DB) getWorkspaceForUpdate(ctx context.Context, tx pgx.Tx, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	workspaceID, err := db.getWorkspaceID(ctx, spec)
 	if err != nil {
 		return nil, err
 	}
-	result, err := q.FindWorkspaceByIDForUpdate(ctx, workspaceID)
+	result, err := db.FindWorkspaceByIDForUpdate(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 }
 
-func getWorkspaceID(ctx context.Context, q *pggen.DBQuerier, spec otf.WorkspaceSpec) (pgtype.Text, error) {
+func (db *DB) getWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (pgtype.Text, error) {
 	if spec.ID != nil {
 		return pgtype.Text{String: *spec.ID, Status: pgtype.Present}, nil
 	}
 	if spec.Name != nil && spec.OrganizationName != nil {
-		return q.FindWorkspaceIDByName(ctx,
+		return db.FindWorkspaceIDByName(ctx,
 			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
 			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 		)

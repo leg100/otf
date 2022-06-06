@@ -2,15 +2,18 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.PlanService = (*PlanService)(nil)
 
 type PlanService struct {
-	db otf.RunStore
+	db *sql.DB
 
 	logs otf.ChunkStore
 
@@ -21,18 +24,22 @@ type PlanService struct {
 	logr.Logger
 }
 
-func NewPlanService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *PlanService {
+func NewPlanService(db *sql.DB, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) (*PlanService, error) {
+	logs, err := inmem.NewChunkProxy(cache, logs)
+	if err != nil {
+		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
+	}
 	return &PlanService{
 		db:           db,
 		EventService: es,
 		logs:         logs,
 		cache:        cache,
 		Logger:       logger,
-	}
+	}, nil
 }
 
 func (s PlanService) Get(ctx context.Context, id string) (*otf.Plan, error) {
-	run, err := s.db.Get(ctx, otf.RunGetOptions{PlanID: &id})
+	run, err := s.db.GetRun(ctx, otf.RunGetOptions{PlanID: &id})
 	if err != nil {
 		return nil, err
 	}

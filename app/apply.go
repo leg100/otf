@@ -2,33 +2,40 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.ApplyService = (*ApplyService)(nil)
 
 type ApplyService struct {
-	db   otf.RunStore
+	db   *sql.DB
 	logs otf.ChunkStore
 	otf.EventService
 	cache otf.Cache
 	logr.Logger
 }
 
-func NewApplyService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *ApplyService {
+func NewApplyService(db *sql.DB, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) (*ApplyService, error) {
+	logs, err := inmem.NewChunkProxy(cache, logs)
+	if err != nil {
+		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
+	}
 	return &ApplyService{
 		db:           db,
 		EventService: es,
 		logs:         logs,
 		cache:        cache,
 		Logger:       logger,
-	}
+	}, nil
 }
 
 func (s ApplyService) Get(ctx context.Context, id string) (*otf.Apply, error) {
-	run, err := s.db.Get(ctx, otf.RunGetOptions{ApplyID: &id})
+	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ApplyID: &id})
 	if err != nil {
 		return nil, err
 	}

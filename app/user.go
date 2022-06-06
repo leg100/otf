@@ -5,22 +5,20 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.UserService = (*UserService)(nil)
 
 type UserService struct {
-	db  otf.UserStore
-	sdb otf.SessionStore
-	tdb otf.TokenStore
+	db *sql.DB
 
 	logr.Logger
 }
 
-func NewUserService(logger logr.Logger, db otf.DB) *UserService {
+func NewUserService(logger logr.Logger, db *sql.DB) *UserService {
 	return &UserService{
-		db:     db.UserStore(),
-		sdb:    db.SessionStore(),
+		db:     db,
 		Logger: logger,
 	}
 }
@@ -28,7 +26,7 @@ func NewUserService(logger logr.Logger, db otf.DB) *UserService {
 func (s UserService) Create(ctx context.Context, username string) (*otf.User, error) {
 	user := otf.NewUser(username)
 
-	if err := s.db.Create(ctx, user); err != nil {
+	if err := s.db.CreateUser(ctx, user); err != nil {
 		s.Error(err, "creating user", "username", username)
 		return nil, err
 	}
@@ -40,7 +38,7 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 
 // EnsureCreated retrieves the user or creates the user if they don't exist.
 func (s UserService) EnsureCreated(ctx context.Context, username string) (*otf.User, error) {
-	user, err := s.db.Get(ctx, otf.UserSpec{Username: &username})
+	user, err := s.db.GetUser(ctx, otf.UserSpec{Username: &username})
 	if err == nil {
 		return user, nil
 	}
@@ -70,7 +68,7 @@ func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *ot
 		return nil, err
 	}
 
-	if err := s.sdb.CreateSession(ctx, session); err != nil {
+	if err := s.db.CreateSession(ctx, session); err != nil {
 		s.Error(err, "creating session", "username", user.Username())
 		return nil, err
 	}
@@ -81,7 +79,7 @@ func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *ot
 }
 
 func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
-	user, err := s.db.Get(ctx, spec)
+	user, err := s.db.GetUser(ctx, spec)
 	if err != nil {
 		s.Error(err, "retrieving user", spec.KeyValue()...)
 		return nil, err
@@ -99,7 +97,7 @@ func (s UserService) DeleteSession(ctx context.Context, token string) error {
 		return err
 	}
 
-	if err := s.sdb.DeleteSession(ctx, token); err != nil {
+	if err := s.db.DeleteSession(ctx, token); err != nil {
 		s.Error(err, "deleting session", "username", user.Username())
 		return err
 	}
@@ -117,7 +115,7 @@ func (s UserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.
 		return nil, err
 	}
 
-	if err := s.tdb.CreateToken(ctx, token); err != nil {
+	if err := s.db.CreateToken(ctx, token); err != nil {
 		s.Error(err, "creating token", "username", user.Username())
 		return nil, err
 	}
@@ -128,7 +126,7 @@ func (s UserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.
 }
 
 func (s UserService) DeleteToken(ctx context.Context, user *otf.User, tokenID string) error {
-	if err := s.tdb.DeleteToken(ctx, tokenID); err != nil {
+	if err := s.db.DeleteToken(ctx, tokenID); err != nil {
 		s.Error(err, "deleting token", "username", user.Username())
 		return err
 	}

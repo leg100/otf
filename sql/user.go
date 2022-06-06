@@ -6,28 +6,13 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var (
-	_ otf.UserStore = (*UserDB)(nil)
-)
-
-type UserDB struct {
-	*pgxpool.Pool
-}
-
-func NewUserDB(conn *pgxpool.Pool) *UserDB {
-	return &UserDB{
-		Pool: conn,
-	}
-}
-
-// Create persists a User to the DB.
-func (db UserDB) Create(ctx context.Context, user *otf.User) error {
-	tx, err := db.Pool.Begin(ctx)
+// CreateUser persists a User to the DB.
+func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -54,10 +39,8 @@ func (db UserDB) Create(ctx context.Context, user *otf.User) error {
 	return tx.Commit(ctx)
 }
 
-func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
-	q := pggen.NewQuerier(db.Pool)
-
-	result, err := q.FindUsers(ctx)
+func (db *DB) ListUsers(ctx context.Context) ([]*otf.User, error) {
+	result, err := db.FindUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +56,10 @@ func (db UserDB) List(ctx context.Context) ([]*otf.User, error) {
 	return items, nil
 }
 
-// Get retrieves a user from the DB, along with its sessions.
-func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
-	q := pggen.NewQuerier(db.Pool)
-
+// GetUser retrieves a user from the DB, along with its sessions.
+func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	if spec.UserID != nil {
-		result, err := q.FindUserByID(ctx,
+		result, err := db.FindUserByID(ctx,
 			pgtype.Text{String: *spec.UserID, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -86,7 +67,7 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.Username != nil {
-		result, err := q.FindUserByUsername(ctx,
+		result, err := db.FindUserByUsername(ctx,
 			pgtype.Text{String: *spec.Username, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -94,7 +75,7 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationToken != nil {
-		result, err := q.FindUserByAuthenticationToken(ctx,
+		result, err := db.FindUserByAuthenticationToken(ctx,
 			pgtype.Text{String: *spec.AuthenticationToken, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -102,7 +83,7 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.AuthenticationTokenID != nil {
-		result, err := q.FindUserByAuthenticationTokenID(ctx,
+		result, err := db.FindUserByAuthenticationTokenID(ctx,
 			pgtype.Text{String: *spec.AuthenticationTokenID, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -110,7 +91,7 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 		}
 		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
 	} else if spec.SessionToken != nil {
-		result, err := q.FindUserBySessionToken(ctx,
+		result, err := db.FindUserBySessionToken(ctx,
 			pgtype.Text{String: *spec.SessionToken, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -122,20 +103,16 @@ func (db UserDB) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) 
 	}
 }
 
-func (db UserDB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
-	q := pggen.NewQuerier(db.Pool)
-
-	_, err := q.InsertOrganizationMembership(ctx,
+func (db *DB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
+	_, err := db.InsertOrganizationMembership(ctx,
 		pgtype.Text{String: id, Status: pgtype.Present},
 		pgtype.Text{String: orgID, Status: pgtype.Present},
 	)
 	return err
 }
 
-func (db UserDB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
-	q := pggen.NewQuerier(db.Pool)
-
-	result, err := q.DeleteOrganizationMembership(ctx,
+func (db *DB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
+	result, err := db.DeleteOrganizationMembership(ctx,
 		pgtype.Text{String: id, Status: pgtype.Present},
 		pgtype.Text{String: orgID, Status: pgtype.Present},
 	)
@@ -149,18 +126,16 @@ func (db UserDB) RemoveOrganizationMembership(ctx context.Context, id, orgID str
 	return nil
 }
 
-// Delete deletes a user from the DB.
-func (db UserDB) Delete(ctx context.Context, spec otf.UserSpec) error {
-	q := pggen.NewQuerier(db.Pool)
-
+// DeleteUser deletes a user from the DB.
+func (db *DB) DeleteUser(ctx context.Context, spec otf.UserSpec) error {
 	var result pgconn.CommandTag
 	var err error
 	if spec.UserID != nil {
-		result, err = q.DeleteUserByID(ctx,
+		result, err = db.DeleteUserByID(ctx,
 			pgtype.Text{String: *spec.UserID, Status: pgtype.Present},
 		)
 	} else if spec.Username != nil {
-		result, err = q.DeleteUserByUsername(ctx,
+		result, err = db.DeleteUserByUsername(ctx,
 			pgtype.Text{String: *spec.Username, Status: pgtype.Present},
 		)
 	} else {

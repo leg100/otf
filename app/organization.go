@@ -5,18 +5,19 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	db otf.OrganizationStore
+	db *sql.DB
 	es otf.EventService
 
 	logr.Logger
 }
 
-func NewOrganizationService(db otf.OrganizationStore, logger logr.Logger, es otf.EventService) *OrganizationService {
+func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService) *OrganizationService {
 	return &OrganizationService{
 		db:     db,
 		es:     es,
@@ -32,7 +33,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	if err := s.db.Create(ctx, org); err != nil {
+	if err := s.db.CreateOrganization(ctx, org); err != nil {
 		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
@@ -45,7 +46,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 }
 
 func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	org, err := s.db.Get(ctx, *opts.Name)
+	org, err := s.db.GetOrganization(ctx, *opts.Name)
 	if err == nil {
 		return org, nil
 	}
@@ -59,7 +60,7 @@ func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.Organiz
 }
 
 func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
-	org, err := s.db.Get(ctx, name)
+	org, err := s.db.GetOrganization(ctx, name)
 	if err != nil {
 		s.Error(err, "retrieving organization", "name", name)
 		return nil, err
@@ -71,11 +72,11 @@ func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organiz
 }
 
 func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
-	return s.db.List(ctx, opts)
+	return s.db.ListOrganizations(ctx, opts)
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	org, err := s.db.Update(ctx, name, func(org *otf.Organization) error {
+	org, err := s.db.UpdateOrganization(ctx, name, func(org *otf.Organization) error {
 		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
 	if err != nil {
@@ -89,11 +90,11 @@ func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {
-	return s.db.Delete(ctx, name)
+	return s.db.DeleteOrganization(ctx, name)
 }
 
 func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
-	org, err := s.db.Get(ctx, name)
+	org, err := s.db.GetOrganization(ctx, name)
 	if err != nil {
 		return nil, err
 	}
