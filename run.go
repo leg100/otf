@@ -571,6 +571,8 @@ type RunStore interface {
 	CreatePlanReport(ctx context.Context, planID string, report ResourceReport) error
 	CreateApplyReport(ctx context.Context, applyID string, report ResourceReport) error
 	Delete(ctx context.Context, id string) error
+	// Tx provides a transaction within which to operate on the store.
+	Tx(ctx context.Context, tx func(RunStore) error) error
 }
 
 // RunList represents a list of runs.

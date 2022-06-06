@@ -35,7 +35,6 @@ func TestRunFactory(t *testing.T) {
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.speculative)
-				assert.Equal(t, RunPlanQueued, run.status)
 			},
 		},
 		{

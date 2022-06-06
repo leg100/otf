@@ -51,10 +51,6 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.speculative = cv.Speculative()
 	run.setJob()
 	run.updateStatus(RunPending)
-	if run.Speculative() {
-		// immediately enqueue plans for speculative runs
-		run.updateStatus(RunPlanQueued)
-	}
 	// apply options
 	run.replaceAddrs = opts.ReplaceAddrs
 	run.targetAddrs = opts.TargetAddrs

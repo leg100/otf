@@ -48,14 +48,29 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 		return nil, err
 	}
 
-	if err = s.db.Create(ctx, run); err != nil {
-		s.Error(err, "creating run", "id", run.ID())
+	err = s.db.Tx(ctx, func(db otf.RunStore) error {
+		if err = db.Create(ctx, run); err != nil {
+			s.Error(err, "creating run", "id", run.ID())
+			return err
+		}
+		s.V(1).Info("created run", "id", run.ID())
+
+		if !run.Speculative() {
+			return nil
+		}
+		// immediately enqueue plan for speculative runs
+		run, err = s.enqueuePlan(ctx, db, run.ID())
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	s.V(1).Info("created run", "id", run.ID())
-
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
+	// TODO: remove once event types are simplified, i.e. EventRunStateChange
 	if run.Speculative() {
 		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 	}
@@ -144,17 +159,24 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 }
 
 func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
-		return run.EnqueuePlan()
-	})
+	run, err := s.enqueuePlan(ctx, s.db, id)
 	if err != nil {
-		s.Error(err, "started run", "id", id)
 		return nil, err
 	}
 
-	s.V(0).Info("started run", "id", id)
-
 	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
+	return run, nil
+}
+
+func (s RunService) enqueuePlan(ctx context.Context, db otf.RunStore, runID string) (*otf.Run, error) {
+	run, err := db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
+		return run.EnqueuePlan()
+	})
+	if err != nil {
+		s.Error(err, "started run", "id", runID)
+		return nil, err
+	}
+	s.V(0).Info("started run", "id", runID)
 
 	return run, err
 }
