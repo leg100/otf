@@ -17,10 +17,8 @@ const (
 	ApplyOutputFilename = "apply.out"
 	//List all available plan statuses.
 	PlanCanceled    PlanStatus = "canceled"
-	PlanCreated     PlanStatus = "created"
 	PlanErrored     PlanStatus = "errored"
 	PlanFinished    PlanStatus = "finished"
-	PlanMFAWaiting  PlanStatus = "mfa_waiting"
 	PlanPending     PlanStatus = "pending"
 	PlanQueued      PlanStatus = "queued"
 	PlanRunning     PlanStatus = "running"
@@ -120,6 +118,15 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 }
 
 func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
+
+func (p *Plan) StatusTimestamp(status PlanStatus) (time.Time, error) {
+	for _, pst := range p.statusTimestamps {
+		if pst.Status == status {
+			return pst.Timestamp, nil
+		}
+	}
+	return time.Time{}, ErrStatusTimestampNotFound
+}
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (p *Plan) ToJSONAPI(req *http.Request) any {

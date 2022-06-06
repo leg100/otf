@@ -41,8 +41,8 @@ func NewRunService(db otf.RunStore, logger logr.Logger, wss otf.WorkspaceService
 
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
-func (s RunService) Create(ctx context.Context, opts otf.RunCreateOptions) (*otf.Run, error) {
-	run, err := s.New(ctx, opts)
+func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
+	run, err := s.New(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "constructing new run")
 		return nil, err
@@ -183,37 +183,33 @@ func (s RunService) enqueuePlan(ctx context.Context, db otf.RunStore, runID stri
 
 // GetPlanFile returns the plan file for the run.
 func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, format otf.PlanFormat) ([]byte, error) {
-	var id string
-
-	// We need the run ID so if caller has specified plan or apply ID instead
-	// then we need to get run ID first
-	if spec.PlanID != nil || spec.ApplyID != nil {
+	var planID string
+	// We need the plan ID so if caller has specified run or apply ID instead
+	// then we need to get plan ID first
+	if spec.ID != nil || spec.ApplyID != nil {
 		run, err := s.db.Get(ctx, spec)
 		if err != nil {
-			s.Error(err, "retrieving run for plan file", "id", spec.String())
+			s.Error(err, "retrieving plan file", "id", spec.String())
 			return nil, err
 		}
-		id = run.ID()
+		planID = run.Plan.ID()
 	} else {
-		id = *spec.ID
+		planID = *spec.PlanID
 	}
-
 	// Now use run ID to look up cache
-	if plan, err := s.cache.Get(format.CacheKey(id)); err == nil {
+	if plan, err := s.cache.Get(format.CacheKey(planID)); err == nil {
 		return plan, nil
 	}
-
-	file, err := s.db.GetPlanFile(ctx, id, format)
+	// Cache is empty; retrieve from DB
+	file, err := s.db.GetPlanFile(ctx, planID, format)
 	if err != nil {
-		s.Error(err, "retrieving plan file", "id", id, "format", format)
+		s.Error(err, "retrieving plan file", "id", planID, "format", format)
 		return nil, err
 	}
-
 	// Cache plan before returning
-	if err := s.cache.Set(format.CacheKey(id), file); err != nil {
+	if err := s.cache.Set(format.CacheKey(planID), file); err != nil {
 		return nil, fmt.Errorf("caching plan: %w", err)
 	}
-
 	return file, nil
 }
 

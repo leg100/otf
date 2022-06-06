@@ -12,8 +12,8 @@ type currentOrganization struct {
 	name string
 }
 
-// Name implements organizationName for use in path helpers
-func (c *currentOrganization) Name() string {
+// Name implements organizationName, for use in path helpers
+func (c *currentOrganization) OrganizationName() string {
 	return c.name
 }
 

@@ -23,13 +23,14 @@ type Organization struct {
 	sessionTimeout  int
 }
 
-func (org *Organization) ID() string           { return org.id }
-func (org *Organization) CreatedAt() time.Time { return org.createdAt }
-func (org *Organization) UpdatedAt() time.Time { return org.updatedAt }
-func (org *Organization) String() string       { return org.id }
-func (org *Organization) Name() string         { return org.name }
-func (org *Organization) SessionRemember() int { return org.sessionRemember }
-func (org *Organization) SessionTimeout() int  { return org.sessionTimeout }
+func (org *Organization) ID() string               { return org.id }
+func (org *Organization) CreatedAt() time.Time     { return org.createdAt }
+func (org *Organization) UpdatedAt() time.Time     { return org.updatedAt }
+func (org *Organization) String() string           { return org.id }
+func (org *Organization) Name() string             { return org.name }
+func (org *Organization) OrganizationName() string { return org.name }
+func (org *Organization) SessionRemember() int     { return org.sessionRemember }
+func (org *Organization) SessionTimeout() int      { return org.sessionTimeout }
 
 // ToJSONAPI assembles a JSONAPI DTO
 func (org *Organization) ToJSONAPI(req *http.Request) any {

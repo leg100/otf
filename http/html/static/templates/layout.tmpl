@@ -23,7 +23,7 @@
               {{ if $.CurrentOrganization }}
               <a href="{{ getOrganizationPath $.CurrentOrganization }}">
                 {{ template "building_icon" }}
-                <span>{{ $.CurrentOrganization.Name }}</span>
+                <span>{{ $.CurrentOrganization.OrganizationName }}</span>
               </a>
               {{ end }}
             </li>

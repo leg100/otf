@@ -255,7 +255,6 @@ func (db WorkspaceDB) Delete(ctx context.Context, spec otf.WorkspaceSpec) error 
 	return nil
 }
 
-// Lock the specified workspace.
 func (db WorkspaceDB) getWorkspaceForUpdate(ctx context.Context, tx pgx.Tx, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	q := pggen.NewQuerier(tx)
 	workspaceID, err := getWorkspaceID(ctx, q, spec)
