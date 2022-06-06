@@ -189,7 +189,6 @@ func (db RunDB) CreateApplyReport(ctx context.Context, applyID string, report ot
 }
 
 func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	q := pggen.NewQuerier(db)
 	batch := &pgx.Batch{}
 	organizationName := "%"
 	if opts.OrganizationName != nil {
@@ -207,7 +206,7 @@ func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList
 	if len(opts.Statuses) > 0 {
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	}
-	q.FindRunsBatch(batch, pggen.FindRunsParams{
+	db.FindRunsBatch(batch, pggen.FindRunsParams{
 		OrganizationNames:           []string{organizationName},
 		WorkspaceNames:              []string{workspaceName},
 		WorkspaceIds:                []string{workspaceID},
@@ -217,7 +216,7 @@ func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList
 		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
 		IncludeWorkspace:            includeWorkspace(opts.Include),
 	})
-	q.CountRunsBatch(batch, pggen.CountRunsParams{
+	db.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organizationName},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
@@ -226,11 +225,11 @@ func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := q.FindRunsScan(results)
+	rows, err := db.FindRunsScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountRunsScan(results)
+	count, err := db.CountRunsScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -252,14 +251,13 @@ func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList
 
 // Get retrieves a run using the get options
 func (db RunDB) Get(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, error) {
-	q := pggen.NewQuerier(db)
 	// Get run ID first
 	runID, err := db.getRunID(ctx, opts)
 	if err != nil {
 		return nil, databaseError(err)
 	}
 	// ...now get full run
-	result, err := q.FindRunByID(ctx, pggen.FindRunByIDParams{
+	result, err := db.FindRunByID(ctx, pggen.FindRunByIDParams{
 		RunID:                       runID,
 		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
 		IncludeWorkspace:            includeWorkspace(opts.Include),
@@ -298,8 +296,7 @@ func (db RunDB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFo
 
 // Delete deletes a run from the DB
 func (db RunDB) Delete(ctx context.Context, id string) error {
-	q := pggen.NewQuerier(db)
-	result, err := q.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	result, err := db.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}
