@@ -34,24 +34,36 @@ func (db RunDB) Create(ctx context.Context, run *otf.Run) error {
 	_, err = q.InsertRun(ctx, pggen.InsertRunParams{
 		ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
 		CreatedAt:              run.CreatedAt(),
-		PlanID:                 pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-		ApplyID:                pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
 		IsDestroy:              run.IsDestroy(),
 		Refresh:                run.Refresh(),
 		RefreshOnly:            run.RefreshOnly(),
 		Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
-		PlanStatus:             pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-		ApplyStatus:            pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 		ReplaceAddrs:           run.ReplaceAddrs(),
 		TargetAddrs:            run.TargetAddrs(),
-		PlannedAdditions:       0,
-		PlannedChanges:         0,
-		PlannedDestructions:    0,
-		AppliedAdditions:       0,
-		AppliedChanges:         0,
-		AppliedDestructions:    0,
 		ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
 		WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
+	})
+	if err != nil {
+		return err
+	}
+	_, err = q.InsertPlan(ctx, pggen.InsertPlanParams{
+		PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+		RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		Status:       pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+		Additions:    0,
+		Changes:      0,
+		Destructions: 0,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = q.InsertApply(ctx, pggen.InsertApplyParams{
+		ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
+		RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		Status:       pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+		Additions:    0,
+		Changes:      0,
+		Destructions: 0,
 	})
 	if err != nil {
 		return err
@@ -59,10 +71,10 @@ func (db RunDB) Create(ctx context.Context, run *otf.Run) error {
 	if err := insertRunStatusTimestamp(ctx, q, run); err != nil {
 		return fmt.Errorf("inserting run status timestamp: %w", err)
 	}
-	if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
+	if err := insertPlanStatusTimestamp(ctx, q, run.Plan); err != nil {
 		return fmt.Errorf("inserting plan status timestamp: %w", err)
 	}
-	if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
+	if err := insertApplyStatusTimestamp(ctx, q, run.Apply); err != nil {
 		return fmt.Errorf("inserting apply status timestamp: %w", err)
 	}
 	return tx.Commit(ctx)
@@ -128,7 +140,7 @@ func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn fun
 			return nil, err
 		}
 
-		if err := insertPlanStatusTimestamp(ctx, q, run); err != nil {
+		if err := insertPlanStatusTimestamp(ctx, q, run.Plan); err != nil {
 			return nil, err
 		}
 	}
@@ -143,7 +155,7 @@ func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn fun
 			return nil, err
 		}
 
-		if err := insertApplyStatusTimestamp(ctx, q, run); err != nil {
+		if err := insertApplyStatusTimestamp(ctx, q, run.Apply); err != nil {
 			return nil, err
 		}
 	}
@@ -153,7 +165,7 @@ func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn fun
 
 func (db RunDB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
-	_, err := q.UpdateRunPlannedChangesByPlanID(ctx, pggen.UpdateRunPlannedChangesByPlanIDParams{
+	_, err := q.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		PlanID:       pgtype.Text{String: planID, Status: pgtype.Present},
 		Additions:    report.Additions,
 		Changes:      report.Changes,
@@ -167,7 +179,7 @@ func (db RunDB) CreatePlanReport(ctx context.Context, planID string, report otf.
 
 func (db RunDB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
 	q := pggen.NewQuerier(db.Pool)
-	_, err := q.UpdateRunAppliedChangesByApplyID(ctx, pggen.UpdateRunAppliedChangesByApplyIDParams{
+	_, err := q.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		ApplyID:      pgtype.Text{String: applyID, Status: pgtype.Present},
 		Additions:    report.Additions,
 		Changes:      report.Changes,
@@ -266,13 +278,13 @@ func (db RunDB) SetPlanFile(ctx context.Context, planID string, file []byte, for
 	q := pggen.NewQuerier(db.Pool)
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := q.UpdateRunPlanBinByPlanID(ctx,
+		_, err := q.UpdatePlanBinByID(ctx,
 			file,
 			pgtype.Text{String: planID, Status: pgtype.Present},
 		)
 		return err
 	case otf.PlanFormatJSON:
-		_, err := q.UpdateRunPlanJSONByPlanID(ctx,
+		_, err := q.UpdatePlanJSONByID(ctx,
 			file,
 			pgtype.Text{String: planID, Status: pgtype.Present},
 		)
@@ -283,13 +295,13 @@ func (db RunDB) SetPlanFile(ctx context.Context, planID string, file []byte, for
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db RunDB) GetPlanFile(ctx context.Context, id string, format otf.PlanFormat) ([]byte, error) {
+func (db RunDB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	q := pggen.NewQuerier(db.Pool)
 	switch format {
 	case otf.PlanFormatBinary:
-		return q.GetPlanBinByRunID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+		return q.GetPlanBinByID(ctx, pgtype.Text{String: runID, Status: pgtype.Present})
 	case otf.PlanFormatJSON:
-		return q.GetPlanJSONByRunID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+		return q.GetPlanJSONByID(ctx, pgtype.Text{String: runID, Status: pgtype.Present})
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -335,27 +347,27 @@ func insertRunStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.
 	return err
 }
 
-func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := run.PlanStatusTimestamp(run.Plan.Status())
+func insertPlanStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, plan *otf.Plan) error {
+	ts, err := plan.StatusTimestamp(plan.Status())
 	if err != nil {
 		return err
 	}
 	_, err = q.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
-		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+		ID:        pgtype.Text{String: plan.ID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(plan.Status()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err
 }
 
-func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, run *otf.Run) error {
-	ts, err := run.ApplyStatusTimestamp(run.Apply.Status())
+func insertApplyStatusTimestamp(ctx context.Context, q *pggen.DBQuerier, apply *otf.Apply) error {
+	ts, err := apply.StatusTimestamp(apply.Status())
 	if err != nil {
 		return err
 	}
 	_, err = q.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
-		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+		ID:        pgtype.Text{String: apply.ID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(apply.Status()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err

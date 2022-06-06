@@ -223,24 +223,6 @@ func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
 	return time.Time{}, ErrStatusTimestampNotFound
 }
 
-func (r *Run) PlanStatusTimestamp(status PlanStatus) (time.Time, error) {
-	for _, rst := range r.Plan.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
-func (r *Run) ApplyStatusTimestamp(status ApplyStatus) (time.Time, error) {
-	for _, rst := range r.Apply.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
 // CanLock determines whether requestor can replace run lock
 func (r *Run) CanLock(requestor Identity) error {
 	if _, ok := requestor.(*Run); ok {

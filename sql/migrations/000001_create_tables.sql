@@ -119,10 +119,8 @@ INSERT INTO run_statuses (status) VALUES
 
 INSERT INTO plan_statuses (status) VALUES
     ('canceled'),
-    ('created'),
     ('errored'),
     ('finished'),
-    ('mfa_waiting'),
     ('pending'),
     ('queued'),
     ('running'),
@@ -130,7 +128,6 @@ INSERT INTO plan_statuses (status) VALUES
 
 INSERT INTO apply_statuses (status) VALUES
     ('canceled'),
-    ('created'),
     ('errored'),
     ('finished'),
     ('pending'),
@@ -140,8 +137,6 @@ INSERT INTO apply_statuses (status) VALUES
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
-    plan_id                         TEXT            NOT NULL,
-    apply_id                        TEXT            NOT NULL,
     created_at                      TIMESTAMPTZ     NOT NULL,
     is_destroy                      BOOLEAN         NOT NULL,
     position_in_queue               INTEGER         NOT NULL,
@@ -149,22 +144,10 @@ CREATE TABLE IF NOT EXISTS runs (
     refresh_only                    BOOLEAN         NOT NULL,
     replace_addrs                   TEXT[],
     target_addrs                    TEXT[],
-    plan_bin                        BYTEA,
-    plan_json                       BYTEA,
-    planned_additions               INTEGER         NOT NULL,
-    planned_changes                 INTEGER         NOT NULL,
-    planned_destructions            INTEGER         NOT NULL,
-    applied_additions               INTEGER         NOT NULL,
-    applied_changes                 INTEGER         NOT NULL,
-    applied_destructions            INTEGER         NOT NULL,
     status                          TEXT REFERENCES run_statuses  NOT NULL,
-    plan_status                     TEXT REFERENCES plan_statuses NOT NULL,
-    apply_status                    TEXT REFERENCES plan_statuses NOT NULL,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                                    PRIMARY KEY (run_id),
-                                    UNIQUE (plan_id),
-                                    UNIQUE (apply_id)
+                                    PRIMARY KEY (run_id)
 );
 
 CREATE TABLE IF NOT EXISTS run_status_timestamps (
@@ -174,29 +157,51 @@ CREATE TABLE IF NOT EXISTS run_status_timestamps (
                 PRIMARY KEY (run_id, status)
 );
 
+CREATE TABLE IF NOT EXISTS plans (
+    plan_id                     TEXT            NOT NULL,
+    run_id                      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    plan_bin                    BYTEA,
+    plan_json                   BYTEA,
+    additions                   INTEGER         NOT NULL,
+    changes                     INTEGER         NOT NULL,
+    destructions                INTEGER         NOT NULL,
+    status                      TEXT REFERENCES plan_statuses NOT NULL,
+                                PRIMARY KEY (plan_id)
+);
+
 CREATE TABLE IF NOT EXISTS plan_status_timestamps (
-    run_id      TEXT        REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    plan_id      TEXT       REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     status      TEXT        REFERENCES plan_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (run_id, status)
+                PRIMARY KEY (plan_id, status)
+);
+
+CREATE TABLE IF NOT EXISTS applies (
+    apply_id          TEXT            NOT NULL,
+    run_id            TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    additions         INTEGER         NOT NULL,
+    changes           INTEGER         NOT NULL,
+    destructions      INTEGER         NOT NULL,
+    status            TEXT REFERENCES apply_statuses NOT NULL,
+                      PRIMARY KEY (apply_id)
 );
 
 CREATE TABLE IF NOT EXISTS apply_status_timestamps (
-    run_id      TEXT        REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    apply_id    TEXT        REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     status      TEXT        REFERENCES apply_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (run_id, status)
+                PRIMARY KEY (apply_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id     TEXT REFERENCES runs (plan_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    plan_id     TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     chunk_id    INT GENERATED ALWAYS AS IDENTITY,
     chunk       BYTEA   NOT NULL,
                 PRIMARY KEY (plan_id, chunk_id)
 );
 
 CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id    TEXT REFERENCES runs (apply_id) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    apply_id    TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     chunk_id    INT GENERATED ALWAYS AS IDENTITY,
     chunk       BYTEA   NOT NULL,
                 PRIMARY KEY (apply_id, chunk_id)
@@ -227,7 +232,9 @@ DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS apply_logs;
 DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS apply_status_timestamps;
+DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS plan_status_timestamps;
+DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS apply_statuses;
