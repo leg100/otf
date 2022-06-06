@@ -4,6 +4,7 @@ Package otf is responsible for domain logic.
 package otf
 
 import (
+	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
 	"math/rand"
@@ -50,18 +51,17 @@ type Application interface {
 
 // DB provides access to oTF database
 type DB interface {
-	Close() error
-
-	OrganizationStore() OrganizationStore
-	WorkspaceStore() WorkspaceStore
-	StateVersionStore() StateVersionStore
-	ConfigurationVersionStore() ConfigurationVersionStore
-	RunStore() RunStore
-	PlanLogStore() PlanLogStore
-	ApplyLogStore() ApplyLogStore
-	UserStore() UserStore
-	SessionStore() SessionStore
-	TokenStore() TokenStore
+	// Tx provides a transaction within which to operate on the store.
+	Tx(ctx context.Context, tx func(DB) error) error
+	Close()
+	UserStore
+	OrganizationStore
+	WorkspaceStore
+	RunStore
+	SessionStore
+	StateVersionStore
+	TokenStore
+	ConfigurationVersionStore
 }
 
 // Identity is an identifiable oTF entity.

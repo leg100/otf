@@ -16,7 +16,7 @@ func TestRun_Create(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 
 	run := newTestRun(ws, cv)
-	err := db.RunStore().Create(context.Background(), run)
+	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 }
 
@@ -27,10 +27,10 @@ func TestRun_Timestamps(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 
 	run := newTestRun(ws, cv)
-	err := db.RunStore().Create(context.Background(), run)
+	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 
-	got, err := db.RunStore().Get(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
+	got, err := db.GetRun(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
 	assert.Equal(t, run.CreatedAt(), got.CreatedAt())
@@ -67,7 +67,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			run := createTestRun(t, db, ws, cv)
 
-			got, err := db.RunStore().UpdateStatus(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())}, tt.update)
+			got, err := db.UpdateStatus(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())}, tt.update)
 			require.NoError(t, err)
 
 			tt.want(t, got)
@@ -102,7 +102,7 @@ func TestRun_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.RunStore().Get(context.Background(), tt.opts)
+			got, err := db.GetRun(context.Background(), tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, want, got)
@@ -190,7 +190,7 @@ func TestRun_List(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.RunStore().List(context.Background(), tt.opts)
+			got, err := db.ListRuns(context.Background(), tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, got)
@@ -211,10 +211,10 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.RunStore().CreatePlanReport(context.Background(), run.Plan.ID(), report)
+	err := db.CreatePlanReport(context.Background(), run.Plan.ID(), report)
 	require.NoError(t, err)
 
-	run, err = db.RunStore().Get(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
+	run, err = db.GetRun(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan.ResourceReport)

@@ -16,7 +16,7 @@ func TestApplyLog_PutChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
+	err := db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
 	require.NoError(t, err)
 }
 
@@ -27,10 +27,10 @@ func TestApplyLog_GetChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("hello"), Start: true})
+	err := db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("hello"), Start: true})
 	require.NoError(t, err)
 
-	err = db.ApplyLogStore().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte(" world"), End: true})
+	err = db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte(" world"), End: true})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -72,7 +72,7 @@ func TestApplyLog_GetChunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ApplyLogStore().GetChunk(context.Background(), run.Apply.ID(), tt.opts)
+			got, err := db.ApplyLogs().GetChunk(context.Background(), run.Apply.ID(), tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want, got)

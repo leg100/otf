@@ -6,18 +6,19 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql"
 )
 
 var _ otf.StateVersionService = (*StateVersionService)(nil)
 
 type StateVersionService struct {
-	db    otf.StateVersionStore
+	db    *sql.DB
 	cache otf.Cache
 
 	logr.Logger
 }
 
-func NewStateVersionService(db otf.StateVersionStore, logger logr.Logger, cache otf.Cache) *StateVersionService {
+func NewStateVersionService(db *sql.DB, logger logr.Logger, cache otf.Cache) *StateVersionService {
 	return &StateVersionService{
 		db:     db,
 		cache:  cache,
@@ -31,7 +32,7 @@ func (s StateVersionService) Create(ctx context.Context, workspaceID string, opt
 		s.Error(err, "constructing state version")
 		return nil, err
 	}
-	if err := s.db.Create(ctx, workspaceID, sv); err != nil {
+	if err := s.db.CreateStateVersion(ctx, workspaceID, sv); err != nil {
 		s.Error(err, "creating state version")
 		return nil, err
 	}
@@ -45,7 +46,7 @@ func (s StateVersionService) Create(ctx context.Context, workspaceID string, opt
 }
 
 func (s StateVersionService) List(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	svl, err := s.db.List(ctx, opts)
+	svl, err := s.db.ListStateVersions(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing state versions", opts.LogFields()...)
 		return nil, err
@@ -55,7 +56,7 @@ func (s StateVersionService) List(ctx context.Context, opts otf.StateVersionList
 }
 
 func (s StateVersionService) Current(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
-	sv, err := s.db.Get(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
+	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving current state version", "workspace_id", workspaceID)
 		return nil, err
@@ -65,7 +66,7 @@ func (s StateVersionService) Current(ctx context.Context, workspaceID string) (*
 }
 
 func (s StateVersionService) Get(ctx context.Context, id string) (*otf.StateVersion, error) {
-	sv, err := s.db.Get(ctx, otf.StateVersionGetOptions{ID: &id})
+	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{ID: &id})
 	if err != nil {
 		s.Error(err, "retrieving state version", "id", id)
 		return nil, err

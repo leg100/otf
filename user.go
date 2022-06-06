@@ -120,10 +120,10 @@ type UserService interface {
 
 // UserStore is a persistence store for user accounts.
 type UserStore interface {
-	Create(ctx context.Context, user *User) error
-	Get(ctx context.Context, spec UserSpec) (*User, error)
-	List(ctx context.Context) ([]*User, error)
-	Delete(ctx context.Context, spec UserSpec) error
+	CreateUser(ctx context.Context, user *User) error
+	GetUser(ctx context.Context, spec UserSpec) (*User, error)
+	ListUsers(ctx context.Context) ([]*User, error)
+	DeleteUser(ctx context.Context, spec UserSpec) error
 	// AddOrganizationMembership adds a user as a member of an organization
 	AddOrganizationMembership(ctx context.Context, id, orgID string) error
 	// RemoveOrganizationMembership removes a user as a member of an

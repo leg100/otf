@@ -560,19 +560,17 @@ type RunDiscardOptions struct {
 
 // RunStore implementations persist Run objects.
 type RunStore interface {
-	Create(ctx context.Context, run *Run) error
-	Get(ctx context.Context, opts RunGetOptions) (*Run, error)
+	CreateRun(ctx context.Context, run *Run) error
+	GetRun(ctx context.Context, opts RunGetOptions) (*Run, error)
 	SetPlanFile(ctx context.Context, id string, file []byte, format PlanFormat) error
 	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
-	List(ctx context.Context, opts RunListOptions) (*RunList, error)
+	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
 	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
 	CreatePlanReport(ctx context.Context, planID string, report ResourceReport) error
 	CreateApplyReport(ctx context.Context, applyID string, report ResourceReport) error
-	Delete(ctx context.Context, id string) error
-	// Tx provides a transaction within which to operate on the store.
-	Tx(ctx context.Context, tx func(RunStore) error) error
+	DeleteRun(ctx context.Context, id string) error
 }
 
 // RunList represents a list of runs.

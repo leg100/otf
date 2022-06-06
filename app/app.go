@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/sql"
 )
 
 var (
@@ -26,18 +27,24 @@ type Application struct {
 	userService                 otf.UserService
 }
 
-func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
+func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*Application, error) {
 	// Setup event broker
 	eventService := inmem.NewEventService(logger)
 
 	// Setup services
-	orgService := NewOrganizationService(db.OrganizationStore(), logger, eventService)
-	workspaceService := NewWorkspaceService(db.WorkspaceStore(), logger, orgService, eventService)
-	stateVersionService := NewStateVersionService(db.StateVersionStore(), logger, cache)
-	configurationVersionService := NewConfigurationVersionService(db.ConfigurationVersionStore(), logger, cache)
-	runService := NewRunService(db.RunStore(), logger, workspaceService, configurationVersionService, eventService, db.PlanLogStore(), db.ApplyLogStore(), cache)
-	planService := NewPlanService(db.RunStore(), db.PlanLogStore(), logger, eventService, cache)
-	applyService := NewApplyService(db.RunStore(), db.ApplyLogStore(), logger, eventService, cache)
+	orgService := NewOrganizationService(db, logger, eventService)
+	workspaceService := NewWorkspaceService(db, logger, orgService, eventService)
+	stateVersionService := NewStateVersionService(db, logger, cache)
+	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
+	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
+	planService, err := NewPlanService(db, db.PlanLogs(), logger, eventService, cache)
+	if err != nil {
+		return nil, err
+	}
+	applyService, err := NewApplyService(db, db.ApplyLogs(), logger, eventService, cache)
+	if err != nil {
+		return nil, err
+	}
 	userService := NewUserService(logger, db)
 
 	return &Application{

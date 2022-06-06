@@ -6,27 +6,12 @@ import (
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var (
-	_ otf.ConfigurationVersionStore = (*ConfigurationVersionDB)(nil)
-)
-
-type ConfigurationVersionDB struct {
-	*pgxpool.Pool
-}
-
-func NewConfigurationVersionDB(conn *pgxpool.Pool) *ConfigurationVersionDB {
-	return &ConfigurationVersionDB{
-		Pool: conn,
-	}
-}
-
-func (db ConfigurationVersionDB) Create(ctx context.Context, cv *otf.ConfigurationVersion) error {
-	tx, err := db.Pool.Begin(ctx)
+func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -60,8 +45,8 @@ func (db ConfigurationVersionDB) Create(ctx context.Context, cv *otf.Configurati
 	return tx.Commit(ctx)
 }
 
-func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
-	tx, err := db.Pool.Begin(ctx)
+func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
+	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -86,24 +71,22 @@ func (db ConfigurationVersionDB) Upload(ctx context.Context, id string, fn func(
 	return tx.Commit(ctx)
 }
 
-func (db ConfigurationVersionDB) List(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
-	q := pggen.NewQuerier(db.Pool)
+func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	batch := &pgx.Batch{}
-	q.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
+	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
 		WorkspaceID: pgtype.Text{String: workspaceID, Status: pgtype.Present},
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	q.CountConfigurationVersionsByWorkspaceIDBatch(batch, pgtype.Text{String: workspaceID, Status: pgtype.Present})
-
-	results := db.Pool.SendBatch(ctx, batch)
+	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, pgtype.Text{String: workspaceID, Status: pgtype.Present})
+	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := q.FindConfigurationVersionsByWorkspaceIDScan(results)
+	rows, err := db.FindConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountConfigurationVersionsByWorkspaceIDScan(results)
+	count, err := db.CountConfigurationVersionsByWorkspaceIDScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -123,11 +106,9 @@ func (db ConfigurationVersionDB) List(ctx context.Context, workspaceID string, o
 	}, nil
 }
 
-func (db ConfigurationVersionDB) Get(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
-	q := pggen.NewQuerier(db.Pool)
-
+func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	if opts.ID != nil {
-		result, err := q.FindConfigurationVersionByID(ctx,
+		result, err := db.FindConfigurationVersionByID(ctx,
 			includeWorkspace(opts.Include),
 			pgtype.Text{String: *opts.ID, Status: pgtype.Present},
 		)
@@ -136,7 +117,7 @@ func (db ConfigurationVersionDB) Get(ctx context.Context, opts otf.Configuration
 		}
 		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	} else if opts.WorkspaceID != nil {
-		result, err := q.FindConfigurationVersionLatestByWorkspaceID(ctx,
+		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx,
 			includeWorkspace(opts.Include),
 			pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present},
 		)
@@ -149,23 +130,17 @@ func (db ConfigurationVersionDB) Get(ctx context.Context, opts otf.Configuration
 	}
 }
 
-func (db ConfigurationVersionDB) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	q := pggen.NewQuerier(db.Pool)
-
-	return q.DownloadConfigurationVersion(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+func (db *DB) GetConfig(ctx context.Context, id string) ([]byte, error) {
+	return db.DownloadConfigurationVersion(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 }
 
-// Delete deletes a configuration version from the DB
-func (db ConfigurationVersionDB) Delete(ctx context.Context, id string) error {
-	q := pggen.NewQuerier(db.Pool)
-	result, err := q.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
+	result, err := db.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}
-
 	if result.RowsAffected() == 0 {
 		return otf.ErrResourceNotFound
 	}
-
 	return nil
 }

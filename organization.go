@@ -77,11 +77,11 @@ type OrganizationService interface {
 }
 
 type OrganizationStore interface {
-	Create(ctx context.Context, org *Organization) error
-	Get(ctx context.Context, name string) (*Organization, error)
-	List(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
-	Update(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
-	Delete(ctx context.Context, name string) error
+	CreateOrganization(ctx context.Context, org *Organization) error
+	GetOrganization(ctx context.Context, name string) (*Organization, error)
+	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+	UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
+	DeleteOrganization(ctx context.Context, name string) error
 }
 
 // OrganizationCreateOptions represents the options for creating an

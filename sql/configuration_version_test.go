@@ -14,7 +14,7 @@ func TestConfigurationVersion_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	err := db.ConfigurationVersionStore().Create(context.Background(), newTestConfigurationVersion(t, ws))
+	err := db.CreateConfigurationVersion(context.Background(), newTestConfigurationVersion(t, ws))
 	require.NoError(t, err)
 }
 
@@ -24,13 +24,13 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	err := db.ConfigurationVersionStore().Upload(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+	err := db.UploadConfigurationVersion(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		_, err := uploader.Upload(context.Background(), nil)
 		return err
 	})
 	require.NoError(t, err)
 
-	got, err := db.ConfigurationVersionStore().Get(context.Background(), otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())})
+	got, err := db.GetConfigurationVersion(context.Background(), otf.ConfigurationVersionGetOptions{ID: otf.String(cv.ID())})
 	require.NoError(t, err)
 
 	assert.Equal(t, otf.ConfigurationUploaded, got.Status())
@@ -58,7 +58,7 @@ func TestConfigurationVersion_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ConfigurationVersionStore().Get(context.Background(), tt.opts)
+			got, err := db.GetConfigurationVersion(context.Background(), tt.opts)
 			require.NoError(t, err)
 			assert.Equal(t, cv, got)
 		})
@@ -120,7 +120,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := db.ConfigurationVersionStore().List(context.Background(), tt.workspaceID, tt.opts)
+			results, err := db.ListConfigurationVersions(context.Background(), tt.workspaceID, tt.opts)
 			require.NoError(t, err)
 
 			tt.want(t, results)

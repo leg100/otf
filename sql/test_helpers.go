@@ -18,7 +18,7 @@ import (
 
 const TestDatabaseURL = "OTF_TEST_DATABASE_URL"
 
-func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) otf.DB {
+func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *DB {
 	urlStr := os.Getenv(TestDatabaseURL)
 	if urlStr == "" {
 		t.Fatalf("%s must be set", TestDatabaseURL)
@@ -37,10 +37,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) ot
 	db, err := New(logr.Discard(), u.String(), nil, interval)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		err := db.Close()
-		require.NoError(t, err)
-	})
+	t.Cleanup(func() { db.Close() })
 
 	return db
 }
@@ -92,55 +89,55 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 	org := newTestOrganization(t)
-	err := db.OrganizationStore().Create(context.Background(), org)
+	err := db.CreateOrganization(context.Background(), org)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.OrganizationStore().Delete(context.Background(), org.Name())
+		db.DeleteOrganization(context.Background(), org.Name())
 	})
 	return org
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
 	ws := newTestWorkspace(t, org)
-	err := db.WorkspaceStore().Create(context.Background(), ws)
+	err := db.CreateWorkspace(context.Background(), ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.WorkspaceStore().Delete(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.DeleteWorkspace(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 	return ws
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
 	cv := newTestConfigurationVersion(t, ws)
-	err := db.ConfigurationVersionStore().Create(context.Background(), cv)
+	err := db.CreateConfigurationVersion(context.Background(), cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.ConfigurationVersionStore().Delete(context.Background(), cv.ID())
+		db.DeleteConfigurationVersion(context.Background(), cv.ID())
 	})
 	return cv
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
 	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.StateVersionStore().Create(context.Background(), ws.ID(), sv)
+	err := db.CreateStateVersion(context.Background(), ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.StateVersionStore().Delete(context.Background(), sv.ID())
+		db.DeleteStateVersion(context.Background(), sv.ID())
 	})
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	run := newTestRun(ws, cv)
-	err := db.RunStore().Create(context.Background(), run)
+	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.RunStore().Delete(context.Background(), run.ID())
+		db.DeleteRun(context.Background(), run.ID())
 	})
 	return run
 }
@@ -149,11 +146,11 @@ func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.Use
 	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
 	user := otf.NewUser(username, opts...)
 
-	err := db.UserStore().Create(context.Background(), user)
+	err := db.CreateUser(context.Background(), user)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UserStore().Delete(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
+		db.DeleteUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	})
 	return user
 }
@@ -162,11 +159,11 @@ func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSe
 	session := newTestSession(t, userID, opts...)
 	ctx := context.Background()
 
-	err := db.SessionStore().CreateSession(ctx, session)
+	err := db.CreateSession(ctx, session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.SessionStore().DeleteSession(ctx, session.Token)
+		db.DeleteSession(ctx, session.Token)
 	})
 	return session
 }
@@ -177,11 +174,11 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	token, err := otf.NewToken(userID, description)
 	require.NoError(t, err)
 
-	err = db.TokenStore().CreateToken(ctx, token)
+	err = db.CreateToken(ctx, token)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.TokenStore().DeleteToken(ctx, token.Token())
+		db.DeleteToken(ctx, token.Token())
 	})
 	return token
 }

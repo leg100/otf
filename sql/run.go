@@ -10,33 +10,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var _ otf.RunStore = (*RunDB)(nil)
-
-type RunDB struct {
-	conn
-	pggen.Querier
-}
-
-func newRunDB(conn conn) *RunDB {
-	return &RunDB{
-		conn:    conn,
-		Querier: pggen.NewQuerier(conn),
-	}
-}
-
-func (db RunDB) Tx(ctx context.Context, callback func(otf.RunStore) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	if err := callback(newRunDB(tx)); err != nil {
-		return tx.Rollback(ctx)
-	}
-	return tx.Commit(ctx)
-}
-
-// Create persists a Run to the DB. Should be wrapped in a transaction.
-func (db RunDB) Create(ctx context.Context, run *otf.Run) error {
+// CreateRun persists a Run to the DB. Should be wrapped in a transaction.
+func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 	_, err := db.InsertRun(ctx, pggen.InsertRunParams{
 		ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
 		CreatedAt:              run.CreatedAt(),
@@ -88,7 +63,7 @@ func (db RunDB) Create(ctx context.Context, run *otf.Run) error {
 
 // UpdateStatus updates the run status as well as its plan and/or apply. Wrap in
 // a tx.
-func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
+func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
 	// Get run ID first
 	runID, err := db.getRunID(ctx, opts)
 	if err != nil {
@@ -162,7 +137,7 @@ func (db RunDB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn fun
 	return run, nil
 }
 
-func (db RunDB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
+func (db *DB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
 		PlanID:       pgtype.Text{String: planID, Status: pgtype.Present},
 		Additions:    report.Additions,
@@ -175,7 +150,7 @@ func (db RunDB) CreatePlanReport(ctx context.Context, planID string, report otf.
 	return err
 }
 
-func (db RunDB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
+func (db *DB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
 		ApplyID:      pgtype.Text{String: applyID, Status: pgtype.Present},
 		Additions:    report.Additions,
@@ -188,7 +163,7 @@ func (db RunDB) CreateApplyReport(ctx context.Context, applyID string, report ot
 	return err
 }
 
-func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	batch := &pgx.Batch{}
 	organizationName := "%"
 	if opts.OrganizationName != nil {
@@ -249,8 +224,8 @@ func (db RunDB) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList
 	}, nil
 }
 
-// Get retrieves a run using the get options
-func (db RunDB) Get(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, error) {
+// GetRun retrieves a run using the get options
+func (db *DB) GetRun(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, error) {
 	// Get run ID first
 	runID, err := db.getRunID(ctx, opts)
 	if err != nil {
@@ -269,7 +244,7 @@ func (db RunDB) Get(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, erro
 }
 
 // SetPlanFile writes a plan file to the db
-func (db RunDB) SetPlanFile(ctx context.Context, planID string, file []byte, format otf.PlanFormat) error {
+func (db *DB) SetPlanFile(ctx context.Context, planID string, file []byte, format otf.PlanFormat) error {
 	switch format {
 	case otf.PlanFormatBinary:
 		_, err := db.UpdatePlanBinByID(ctx, file, pgtype.Text{String: planID, Status: pgtype.Present})
@@ -283,7 +258,7 @@ func (db RunDB) SetPlanFile(ctx context.Context, planID string, file []byte, for
 }
 
 // GetPlanFile retrieves a plan file for the run
-func (db RunDB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
+func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	switch format {
 	case otf.PlanFormatBinary:
 		return db.GetPlanBinByID(ctx, pgtype.Text{String: runID, Status: pgtype.Present})
@@ -294,8 +269,8 @@ func (db RunDB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFo
 	}
 }
 
-// Delete deletes a run from the DB
-func (db RunDB) Delete(ctx context.Context, id string) error {
+// DeleteRun deletes a run from the DB
+func (db *DB) DeleteRun(ctx context.Context, id string) error {
 	result, err := db.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
@@ -308,7 +283,7 @@ func (db RunDB) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db RunDB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text, error) {
+func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text, error) {
 	if opts.PlanID != nil {
 		return db.FindRunIDByPlanID(ctx, pgtype.Text{String: *opts.PlanID, Status: pgtype.Present})
 	} else if opts.ApplyID != nil {
@@ -320,7 +295,7 @@ func (db RunDB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Te
 	}
 }
 
-func (db RunDB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error {
+func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error {
 	ts, err := run.StatusTimestamp(run.Status())
 	if err != nil {
 		return err
@@ -333,7 +308,7 @@ func (db RunDB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) erro
 	return err
 }
 
-func (db RunDB) insertPlanStatusTimestamp(ctx context.Context, plan *otf.Plan) error {
+func (db *DB) insertPlanStatusTimestamp(ctx context.Context, plan *otf.Plan) error {
 	ts, err := plan.StatusTimestamp(plan.Status())
 	if err != nil {
 		return err
@@ -346,7 +321,7 @@ func (db RunDB) insertPlanStatusTimestamp(ctx context.Context, plan *otf.Plan) e
 	return err
 }
 
-func (db RunDB) insertApplyStatusTimestamp(ctx context.Context, apply *otf.Apply) error {
+func (db *DB) insertApplyStatusTimestamp(ctx context.Context, apply *otf.Apply) error {
 	ts, err := apply.StatusTimestamp(apply.Status())
 	if err != nil {
 		return err
