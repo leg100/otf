@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -214,13 +213,11 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 // DeleteWorkspace deletes a specific workspace, along with its child records
 // (runs etc).
 func (db *DB) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
-	var result pgconn.CommandTag
 	var err error
-
 	if spec.ID != nil {
-		result, err = db.DeleteWorkspaceByID(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
+		_, err = db.DeleteWorkspaceByID(ctx, pgtype.Text{String: *spec.ID, Status: pgtype.Present})
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err = db.DeleteWorkspaceByName(ctx,
+		_, err = db.DeleteWorkspaceByName(ctx,
 			pgtype.Text{String: *spec.Name, Status: pgtype.Present},
 			pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 		)
@@ -228,13 +225,8 @@ func (db *DB) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error
 		return fmt.Errorf("no workspace spec provided")
 	}
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
-
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return nil
 }
 

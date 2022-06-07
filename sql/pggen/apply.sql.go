@@ -1041,7 +1041,6 @@ type Workspaces struct {
 	OrganizationID             pgtype.Text `json:"organization_id"`
 	LockRunID                  pgtype.Text `json:"lock_run_id"`
 	LockUserID                 pgtype.Text `json:"lock_user_id"`
-	CurrentRunID               pgtype.Text `json:"current_run_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1304,7 +1303,6 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"organization_id", "text", &pgtype.Text{}},
 		compositeField{"lock_run_id", "text", &pgtype.Text{}},
 		compositeField{"lock_user_id", "text", &pgtype.Text{}},
-		compositeField{"current_run_id", "text", &pgtype.Text{}},
 	)
 }
 

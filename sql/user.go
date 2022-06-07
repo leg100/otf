@@ -125,14 +125,14 @@ func (db *DB) DeleteUser(ctx context.Context, spec otf.UserSpec) error {
 			pgtype.Text{String: *spec.UserID, Status: pgtype.Present},
 		)
 		if err != nil {
-			return err
+			return databaseError(err)
 		}
 	} else if spec.Username != nil {
 		_, err := db.DeleteUserByUsername(ctx,
 			pgtype.Text{String: *spec.Username, Status: pgtype.Present},
 		)
 		if err != nil {
-			return err
+			return databaseError(err)
 		}
 	} else {
 		return fmt.Errorf("unsupported user spec for deletion")
