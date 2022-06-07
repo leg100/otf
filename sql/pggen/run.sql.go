@@ -709,16 +709,19 @@ func (q *DBQuerier) UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, 
 
 const deleteRunByIDSQL = `DELETE
 FROM runs
-WHERE run_id = $1;`
+WHERE run_id = $1
+RETURNING run_id
+;`
 
 // DeleteRunByID implements Querier.DeleteRunByID.
-func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteRunByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteRunByIDSQL, runID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteRunByID: %w", err)
+	row := q.conn.QueryRow(ctx, deleteRunByIDSQL, runID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteRunByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteRunByIDBatch implements Querier.DeleteRunByIDBatch.
@@ -727,10 +730,11 @@ func (q *DBQuerier) DeleteRunByIDBatch(batch genericBatch, runID pgtype.Text) {
 }
 
 // DeleteRunByIDScan implements Querier.DeleteRunByIDScan.
-func (q *DBQuerier) DeleteRunByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteRunByIDBatch: %w", err)
+func (q *DBQuerier) DeleteRunByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteRunByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

@@ -496,16 +496,18 @@ func (q *DBQuerier) DownloadConfigurationVersionScan(results pgx.BatchResults) (
 const updateConfigurationVersionErroredByIDSQL = `UPDATE configuration_versions
 SET
     status = 'errored'
-WHERE configuration_version_id = $1;`
+WHERE configuration_version_id = $1
+RETURNING configuration_version_id;`
 
 // UpdateConfigurationVersionErroredByID implements Querier.UpdateConfigurationVersionErroredByID.
-func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionErroredByID")
-	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionErroredByIDSQL, id)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionErroredByID: %w", err)
+	row := q.conn.QueryRow(ctx, updateConfigurationVersionErroredByIDSQL, id)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateConfigurationVersionErroredByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // UpdateConfigurationVersionErroredByIDBatch implements Querier.UpdateConfigurationVersionErroredByIDBatch.
@@ -514,28 +516,31 @@ func (q *DBQuerier) UpdateConfigurationVersionErroredByIDBatch(batch genericBatc
 }
 
 // UpdateConfigurationVersionErroredByIDScan implements Querier.UpdateConfigurationVersionErroredByIDScan.
-func (q *DBQuerier) UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionErroredByIDBatch: %w", err)
+func (q *DBQuerier) UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateConfigurationVersionErroredByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const updateConfigurationVersionConfigByIDSQL = `UPDATE configuration_versions
 SET
     config = $1,
     status = 'uploaded'
-WHERE configuration_version_id = $2;`
+WHERE configuration_version_id = $2
+RETURNING configuration_version_id;`
 
 // UpdateConfigurationVersionConfigByID implements Querier.UpdateConfigurationVersionConfigByID.
-func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateConfigurationVersionConfigByID")
-	cmdTag, err := q.conn.Exec(ctx, updateConfigurationVersionConfigByIDSQL, config, id)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query UpdateConfigurationVersionConfigByID: %w", err)
+	row := q.conn.QueryRow(ctx, updateConfigurationVersionConfigByIDSQL, config, id)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateConfigurationVersionConfigByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // UpdateConfigurationVersionConfigByIDBatch implements Querier.UpdateConfigurationVersionConfigByIDBatch.
@@ -544,26 +549,29 @@ func (q *DBQuerier) UpdateConfigurationVersionConfigByIDBatch(batch genericBatch
 }
 
 // UpdateConfigurationVersionConfigByIDScan implements Querier.UpdateConfigurationVersionConfigByIDScan.
-func (q *DBQuerier) UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec UpdateConfigurationVersionConfigByIDBatch: %w", err)
+func (q *DBQuerier) UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateConfigurationVersionConfigByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const deleteConfigurationVersionByIDSQL = `DELETE
 FROM configuration_versions
-WHERE configuration_version_id = $1;`
+WHERE configuration_version_id = $1
+RETURNING configuration_version_id;`
 
 // DeleteConfigurationVersionByID implements Querier.DeleteConfigurationVersionByID.
-func (q *DBQuerier) DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteConfigurationVersionByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteConfigurationVersionByIDSQL, id)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteConfigurationVersionByID: %w", err)
+	row := q.conn.QueryRow(ctx, deleteConfigurationVersionByIDSQL, id)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteConfigurationVersionByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteConfigurationVersionByIDBatch implements Querier.DeleteConfigurationVersionByIDBatch.
@@ -572,10 +580,11 @@ func (q *DBQuerier) DeleteConfigurationVersionByIDBatch(batch genericBatch, id p
 }
 
 // DeleteConfigurationVersionByIDScan implements Querier.DeleteConfigurationVersionByIDScan.
-func (q *DBQuerier) DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteConfigurationVersionByIDBatch: %w", err)
+func (q *DBQuerier) DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteConfigurationVersionByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

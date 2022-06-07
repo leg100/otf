@@ -88,12 +88,16 @@ WHERE t.token_id = pggen.arg('token_id')
 GROUP BY u.user_id
 ;
 
--- name: DeleteUserByID :exec
+-- name: DeleteUserByID :one
 DELETE
 FROM users
-WHERE user_id = pggen.arg('user_id');
+WHERE user_id = pggen.arg('user_id')
+RETURNING user_id
+;
 
--- name: DeleteUserByUsername :exec
+-- name: DeleteUserByUsername :one
 DELETE
 FROM users
-WHERE username = pggen.arg('username');
+WHERE username = pggen.arg('username')
+RETURNING user_id
+;

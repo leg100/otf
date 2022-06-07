@@ -53,12 +53,12 @@ type Querier interface {
 	// UpdateAppliedChangesByIDScan scans the result of an executed UpdateAppliedChangesByIDBatch query.
 	UpdateAppliedChangesByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (InsertApplyLogChunkRow, error)
+	InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
 	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
 	// later by the batch.
 	InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.Text, chunk []byte)
 	// InsertApplyLogChunkScan scans the result of an executed InsertApplyLogChunkBatch query.
-	InsertApplyLogChunkScan(results pgx.BatchResults) (InsertApplyLogChunkRow, error)
+	InsertApplyLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindApplyLogChunks(ctx context.Context, params FindApplyLogChunksParams) ([]byte, error)
 	// FindApplyLogChunksBatch enqueues a FindApplyLogChunks query into batch to be executed
@@ -131,26 +131,26 @@ type Querier interface {
 	// DownloadConfigurationVersionScan scans the result of an executed DownloadConfigurationVersionBatch query.
 	DownloadConfigurationVersionScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionErroredByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
 	// UpdateConfigurationVersionErroredByIDBatch enqueues a UpdateConfigurationVersionErroredByID query into batch to be executed
 	// later by the batch.
 	UpdateConfigurationVersionErroredByIDBatch(batch genericBatch, id pgtype.Text)
 	// UpdateConfigurationVersionErroredByIDScan scans the result of an executed UpdateConfigurationVersionErroredByIDBatch query.
-	UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionErroredByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id pgtype.Text) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionConfigByID(ctx context.Context, config []byte, id pgtype.Text) (pgtype.Text, error)
 	// UpdateConfigurationVersionConfigByIDBatch enqueues a UpdateConfigurationVersionConfigByID query into batch to be executed
 	// later by the batch.
 	UpdateConfigurationVersionConfigByIDBatch(batch genericBatch, config []byte, id pgtype.Text)
 	// UpdateConfigurationVersionConfigByIDScan scans the result of an executed UpdateConfigurationVersionConfigByIDBatch query.
-	UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdateConfigurationVersionConfigByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgconn.CommandTag, error)
+	DeleteConfigurationVersionByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
 	// DeleteConfigurationVersionByIDBatch enqueues a DeleteConfigurationVersionByID query into batch to be executed
 	// later by the batch.
 	DeleteConfigurationVersionByIDBatch(batch genericBatch, id pgtype.Text)
 	// DeleteConfigurationVersionByIDScan scans the result of an executed DeleteConfigurationVersionByIDBatch query.
-	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	// FindOrganizationByName finds an organization by name.
 	//
@@ -196,26 +196,26 @@ type Querier interface {
 	// UpdateOrganizationByNameScan scans the result of an executed UpdateOrganizationByNameBatch query.
 	UpdateOrganizationByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteOrganization(ctx context.Context, name pgtype.Text) (pgconn.CommandTag, error)
+	DeleteOrganization(ctx context.Context, name pgtype.Text) (pgtype.Text, error)
 	// DeleteOrganizationBatch enqueues a DeleteOrganization query into batch to be executed
 	// later by the batch.
 	DeleteOrganizationBatch(batch genericBatch, name pgtype.Text)
 	// DeleteOrganizationScan scans the result of an executed DeleteOrganizationBatch query.
-	DeleteOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteOrganizationScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (InsertOrganizationMembershipRow, error)
+	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (pgconn.CommandTag, error)
 	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
 	// later by the batch.
 	InsertOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationID pgtype.Text)
 	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
-	InsertOrganizationMembershipScan(results pgx.BatchResults) (InsertOrganizationMembershipRow, error)
+	InsertOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (pgtype.Text, error)
 	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
 	// later by the batch.
 	DeleteOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationID pgtype.Text)
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
-	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error)
 	// InsertPlanBatch enqueues a InsertPlan query into batch to be executed
@@ -266,26 +266,26 @@ type Querier interface {
 	// GetPlanJSONByIDScan scans the result of an executed GetPlanJSONByIDBatch query.
 	GetPlanJSONByIDScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdatePlanBinByID(ctx context.Context, planBin []byte, planID pgtype.Text) (pgconn.CommandTag, error)
+	UpdatePlanBinByID(ctx context.Context, planBin []byte, planID pgtype.Text) (pgtype.Text, error)
 	// UpdatePlanBinByIDBatch enqueues a UpdatePlanBinByID query into batch to be executed
 	// later by the batch.
 	UpdatePlanBinByIDBatch(batch genericBatch, planBin []byte, planID pgtype.Text)
 	// UpdatePlanBinByIDScan scans the result of an executed UpdatePlanBinByIDBatch query.
-	UpdatePlanBinByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdatePlanBinByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdatePlanJSONByID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgconn.CommandTag, error)
+	UpdatePlanJSONByID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgtype.Text, error)
 	// UpdatePlanJSONByIDBatch enqueues a UpdatePlanJSONByID query into batch to be executed
 	// later by the batch.
 	UpdatePlanJSONByIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text)
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
-	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (InsertPlanLogChunkRow, error)
+	InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
 	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
 	// later by the batch.
 	InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Text, chunk []byte)
 	// InsertPlanLogChunkScan scans the result of an executed InsertPlanLogChunkBatch query.
-	InsertPlanLogChunkScan(results pgx.BatchResults) (InsertPlanLogChunkRow, error)
+	InsertPlanLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error)
 	// FindPlanLogChunksBatch enqueues a FindPlanLogChunks query into batch to be executed
@@ -343,12 +343,12 @@ type Querier interface {
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
 	// later by the batch.
 	DeleteRunByIDBatch(batch genericBatch, runID pgtype.Text)
 	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
-	DeleteRunByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteRunByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertSession(ctx context.Context, params InsertSessionParams) (pgconn.CommandTag, error)
 	// InsertSessionBatch enqueues a InsertSession query into batch to be executed
@@ -364,19 +364,19 @@ type Querier interface {
 	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
 	UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgconn.CommandTag, error)
+	DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgtype.Text, error)
 	// DeleteSessionByTokenBatch enqueues a DeleteSessionByToken query into batch to be executed
 	// later by the batch.
 	DeleteSessionByTokenBatch(batch genericBatch, token pgtype.Text)
 	// DeleteSessionByTokenScan scans the result of an executed DeleteSessionByTokenBatch query.
-	DeleteSessionByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteSessionByTokenScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteSessionsExpired(ctx context.Context) (pgconn.CommandTag, error)
+	DeleteSessionsExpired(ctx context.Context) (pgtype.Text, error)
 	// DeleteSessionsExpiredBatch enqueues a DeleteSessionsExpired query into batch to be executed
 	// later by the batch.
 	DeleteSessionsExpiredBatch(batch genericBatch)
 	// DeleteSessionsExpiredScan scans the result of an executed DeleteSessionsExpiredBatch query.
-	DeleteSessionsExpiredScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteSessionsExpiredScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (pgconn.CommandTag, error)
 	// InsertStateVersionBatch enqueues a InsertStateVersion query into batch to be executed
@@ -420,12 +420,12 @@ type Querier interface {
 	// FindStateVersionStateByIDScan scans the result of an executed FindStateVersionStateByIDBatch query.
 	FindStateVersionStateByIDScan(results pgx.BatchResults) ([]byte, error)
 
-	DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error)
 	// DeleteStateVersionByIDBatch enqueues a DeleteStateVersionByID query into batch to be executed
 	// later by the batch.
 	DeleteStateVersionByIDBatch(batch genericBatch, stateVersionID pgtype.Text)
 	// DeleteStateVersionByIDScan scans the result of an executed DeleteStateVersionByIDBatch query.
-	DeleteStateVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteStateVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertStateVersionOutput(ctx context.Context, params InsertStateVersionOutputParams) (pgconn.CommandTag, error)
 	// InsertStateVersionOutputBatch enqueues a InsertStateVersionOutput query into batch to be executed
@@ -441,12 +441,12 @@ type Querier interface {
 	// InsertTokenScan scans the result of an executed InsertTokenBatch query.
 	InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error)
 	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
 	// later by the batch.
 	DeleteTokenByIDBatch(batch genericBatch, tokenID pgtype.Text)
 	// DeleteTokenByIDScan scans the result of an executed DeleteTokenByIDBatch query.
-	DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertUser(ctx context.Context, params InsertUserParams) (pgconn.CommandTag, error)
 	// InsertUserBatch enqueues a InsertUser query into batch to be executed
@@ -497,19 +497,19 @@ type Querier interface {
 	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
 	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
-	DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgconn.CommandTag, error)
+	DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
 	// later by the batch.
 	DeleteUserByIDBatch(batch genericBatch, userID pgtype.Text)
 	// DeleteUserByIDScan scans the result of an executed DeleteUserByIDBatch query.
-	DeleteUserByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteUserByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgconn.CommandTag, error)
+	DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgtype.Text, error)
 	// DeleteUserByUsernameBatch enqueues a DeleteUserByUsername query into batch to be executed
 	// later by the batch.
 	DeleteUserByUsernameBatch(batch genericBatch, username pgtype.Text)
 	// DeleteUserByUsernameScan scans the result of an executed DeleteUserByUsernameBatch query.
-	DeleteUserByUsernameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	DeleteUserByUsernameScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
@@ -1041,6 +1041,7 @@ type Workspaces struct {
 	OrganizationID             pgtype.Text `json:"organization_id"`
 	LockRunID                  pgtype.Text `json:"lock_run_id"`
 	LockUserID                 pgtype.Text `json:"lock_user_id"`
+	CurrentRunID               pgtype.Text `json:"current_run_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1303,6 +1304,7 @@ func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
 		compositeField{"organization_id", "text", &pgtype.Text{}},
 		compositeField{"lock_run_id", "text", &pgtype.Text{}},
 		compositeField{"lock_user_id", "text", &pgtype.Text{}},
+		compositeField{"current_run_id", "text", &pgtype.Text{}},
 	)
 }
 

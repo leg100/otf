@@ -231,7 +231,9 @@ WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;
 
--- name: DeleteRunByID :exec
+-- name: DeleteRunByID :one
 DELETE
 FROM runs
-WHERE run_id = pggen.arg('run_id');
+WHERE run_id = pggen.arg('run_id')
+RETURNING run_id
+;

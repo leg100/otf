@@ -64,8 +64,9 @@ FROM state_versions
 WHERE state_version_id = pggen.arg('id')
 ;
 
--- name: DeleteStateVersionByID :exec
+-- name: DeleteStateVersionByID :one
 DELETE
 FROM state_versions
 WHERE state_version_id = pggen.arg('state_version_id')
+RETURNING state_version_id
 ;

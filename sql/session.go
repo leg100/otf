@@ -27,14 +27,8 @@ func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 
 // DeleteSession deletes a user's session from the DB.
 func (db *DB) DeleteSession(ctx context.Context, token string) error {
-	result, err := db.DeleteSessionByToken(ctx, pgtype.Text{String: token, Status: pgtype.Present})
-	if err != nil {
-		return err
-	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-	return nil
+	_, err := db.DeleteSessionByToken(ctx, pgtype.Text{String: token, Status: pgtype.Present})
+	return err
 }
 
 func (db *DB) startCleanup(interval time.Duration) {

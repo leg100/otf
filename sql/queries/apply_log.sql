@@ -1,4 +1,4 @@
--- name: InsertApplyLogChunk :one
+-- name: InsertApplyLogChunk :exec
 INSERT INTO apply_logs (
     apply_id,
     chunk
@@ -6,7 +6,7 @@ INSERT INTO apply_logs (
     pggen.arg('apply_id'),
     pggen.arg('chunk')
 )
-RETURNING *;
+;
 
 -- name: FindApplyLogChunks :one
 SELECT

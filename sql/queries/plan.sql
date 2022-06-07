@@ -62,14 +62,16 @@ FROM plans
 WHERE plan_id = pggen.arg('plan_id')
 ;
 
--- name: UpdatePlanBinByID :exec
+-- name: UpdatePlanBinByID :one
 UPDATE plans
 SET plan_bin = pggen.arg('plan_bin')
 WHERE plan_id = pggen.arg('plan_id')
+RETURNING plan_id
 ;
 
--- name: UpdatePlanJSONByID :exec
+-- name: UpdatePlanJSONByID :one
 UPDATE plans
 SET plan_json = pggen.arg('plan_json')
 WHERE plan_id = pggen.arg('plan_id')
+RETURNING plan_id
 ;

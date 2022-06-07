@@ -132,20 +132,23 @@ SELECT config
 FROM configuration_versions
 WHERE configuration_version_id = pggen.arg('configuration_version_id');
 
--- name: UpdateConfigurationVersionErroredByID :exec
+-- name: UpdateConfigurationVersionErroredByID :one
 UPDATE configuration_versions
 SET
     status = 'errored'
-WHERE configuration_version_id = pggen.arg('id');
+WHERE configuration_version_id = pggen.arg('id')
+RETURNING configuration_version_id;
 
--- name: UpdateConfigurationVersionConfigByID :exec
+-- name: UpdateConfigurationVersionConfigByID :one
 UPDATE configuration_versions
 SET
     config = pggen.arg('config'),
     status = 'uploaded'
-WHERE configuration_version_id = pggen.arg('id');
+WHERE configuration_version_id = pggen.arg('id')
+RETURNING configuration_version_id;
 
--- name: DeleteConfigurationVersionByID :exec
+-- name: DeleteConfigurationVersionByID :one
 DELETE
 FROM configuration_versions
-WHERE configuration_version_id = pggen.arg('id');
+WHERE configuration_version_id = pggen.arg('id')
+RETURNING configuration_version_id;
