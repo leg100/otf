@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
@@ -17,23 +18,16 @@ const insertPlanLogChunkSQL = `INSERT INTO plan_logs (
     $1,
     $2
 )
-RETURNING *;`
-
-type InsertPlanLogChunkRow struct {
-	PlanID  pgtype.Text `json:"plan_id"`
-	ChunkID int         `json:"chunk_id"`
-	Chunk   []byte      `json:"chunk"`
-}
+;`
 
 // InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
-func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (InsertPlanLogChunkRow, error) {
+func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")
-	row := q.conn.QueryRow(ctx, insertPlanLogChunkSQL, planID, chunk)
-	var item InsertPlanLogChunkRow
-	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk); err != nil {
-		return item, fmt.Errorf("query InsertPlanLogChunk: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanLogChunkSQL, planID, chunk)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertPlanLogChunk: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertPlanLogChunkBatch implements Querier.InsertPlanLogChunkBatch.
@@ -42,13 +36,12 @@ func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Te
 }
 
 // InsertPlanLogChunkScan implements Querier.InsertPlanLogChunkScan.
-func (q *DBQuerier) InsertPlanLogChunkScan(results pgx.BatchResults) (InsertPlanLogChunkRow, error) {
-	row := results.QueryRow()
-	var item InsertPlanLogChunkRow
-	if err := row.Scan(&item.PlanID, &item.ChunkID, &item.Chunk); err != nil {
-		return item, fmt.Errorf("scan InsertPlanLogChunkBatch row: %w", err)
+func (q *DBQuerier) InsertPlanLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertPlanLogChunkBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const findPlanLogChunksSQL = `SELECT

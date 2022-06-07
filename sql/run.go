@@ -271,16 +271,8 @@ func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanForm
 
 // DeleteRun deletes a run from the DB
 func (db *DB) DeleteRun(ctx context.Context, id string) error {
-	result, err := db.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
-	if err != nil {
-		return err
-	}
-
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
-	return nil
+	_, err := db.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	return err
 }
 
 func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text, error) {

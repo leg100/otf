@@ -60,16 +60,19 @@ func (q *DBQuerier) InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag
 
 const deleteTokenByIDSQL = `DELETE
 FROM tokens
-WHERE token_id = $1;`
+WHERE token_id = $1
+RETURNING token_id
+;`
 
 // DeleteTokenByID implements Querier.DeleteTokenByID.
-func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteTokenByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteTokenByIDSQL, tokenID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteTokenByID: %w", err)
+	row := q.conn.QueryRow(ctx, deleteTokenByIDSQL, tokenID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteTokenByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteTokenByIDBatch implements Querier.DeleteTokenByIDBatch.
@@ -78,10 +81,11 @@ func (q *DBQuerier) DeleteTokenByIDBatch(batch genericBatch, tokenID pgtype.Text
 }
 
 // DeleteTokenByIDScan implements Querier.DeleteTokenByIDScan.
-func (q *DBQuerier) DeleteTokenByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteTokenByIDBatch: %w", err)
+func (q *DBQuerier) DeleteTokenByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteTokenByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

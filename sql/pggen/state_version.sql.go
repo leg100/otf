@@ -317,16 +317,18 @@ func (q *DBQuerier) FindStateVersionStateByIDScan(results pgx.BatchResults) ([]b
 const deleteStateVersionByIDSQL = `DELETE
 FROM state_versions
 WHERE state_version_id = $1
+RETURNING state_version_id
 ;`
 
 // DeleteStateVersionByID implements Querier.DeleteStateVersionByID.
-func (q *DBQuerier) DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteStateVersionByID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteStateVersionByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteStateVersionByIDSQL, stateVersionID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteStateVersionByID: %w", err)
+	row := q.conn.QueryRow(ctx, deleteStateVersionByIDSQL, stateVersionID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteStateVersionByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteStateVersionByIDBatch implements Querier.DeleteStateVersionByIDBatch.
@@ -335,10 +337,11 @@ func (q *DBQuerier) DeleteStateVersionByIDBatch(batch genericBatch, stateVersion
 }
 
 // DeleteStateVersionByIDScan implements Querier.DeleteStateVersionByIDScan.
-func (q *DBQuerier) DeleteStateVersionByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteStateVersionByIDBatch: %w", err)
+func (q *DBQuerier) DeleteStateVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteStateVersionByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

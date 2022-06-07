@@ -62,7 +62,8 @@ const updateSessionExpirySQL = `UPDATE sessions
 SET
     expiry = $1
 WHERE token = $2
-RETURNING token;`
+RETURNING token
+;`
 
 // UpdateSessionExpiry implements Querier.UpdateSessionExpiry.
 func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token pgtype.Text) (pgtype.Text, error) {
@@ -92,16 +93,19 @@ func (q *DBQuerier) UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Te
 
 const deleteSessionByTokenSQL = `DELETE
 FROM sessions
-WHERE token = $1;`
+WHERE token = $1
+RETURNING token
+;`
 
 // DeleteSessionByToken implements Querier.DeleteSessionByToken.
-func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteSessionByToken(ctx context.Context, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteSessionByToken")
-	cmdTag, err := q.conn.Exec(ctx, deleteSessionByTokenSQL, token)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteSessionByToken: %w", err)
+	row := q.conn.QueryRow(ctx, deleteSessionByTokenSQL, token)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteSessionByToken: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteSessionByTokenBatch implements Querier.DeleteSessionByTokenBatch.
@@ -110,26 +114,30 @@ func (q *DBQuerier) DeleteSessionByTokenBatch(batch genericBatch, token pgtype.T
 }
 
 // DeleteSessionByTokenScan implements Querier.DeleteSessionByTokenScan.
-func (q *DBQuerier) DeleteSessionByTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteSessionByTokenBatch: %w", err)
+func (q *DBQuerier) DeleteSessionByTokenScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteSessionByTokenBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const deleteSessionsExpiredSQL = `DELETE
 FROM sessions
-WHERE expiry < current_timestamp;`
+WHERE expiry < current_timestamp
+RETURNING token
+;`
 
 // DeleteSessionsExpired implements Querier.DeleteSessionsExpired.
-func (q *DBQuerier) DeleteSessionsExpired(ctx context.Context) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteSessionsExpired(ctx context.Context) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteSessionsExpired")
-	cmdTag, err := q.conn.Exec(ctx, deleteSessionsExpiredSQL)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteSessionsExpired: %w", err)
+	row := q.conn.QueryRow(ctx, deleteSessionsExpiredSQL)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteSessionsExpired: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteSessionsExpiredBatch implements Querier.DeleteSessionsExpiredBatch.
@@ -138,10 +146,11 @@ func (q *DBQuerier) DeleteSessionsExpiredBatch(batch genericBatch) {
 }
 
 // DeleteSessionsExpiredScan implements Querier.DeleteSessionsExpiredScan.
-func (q *DBQuerier) DeleteSessionsExpiredScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteSessionsExpiredBatch: %w", err)
+func (q *DBQuerier) DeleteSessionsExpiredScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteSessionsExpiredBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

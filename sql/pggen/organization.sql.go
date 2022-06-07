@@ -274,16 +274,18 @@ func (q *DBQuerier) UpdateOrganizationByNameScan(results pgx.BatchResults) (pgty
 
 const deleteOrganizationSQL = `DELETE
 FROM organizations
-WHERE name = $1;`
+WHERE name = $1
+RETURNING organization_id;`
 
 // DeleteOrganization implements Querier.DeleteOrganization.
-func (q *DBQuerier) DeleteOrganization(ctx context.Context, name pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteOrganization(ctx context.Context, name pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteOrganization")
-	cmdTag, err := q.conn.Exec(ctx, deleteOrganizationSQL, name)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteOrganization: %w", err)
+	row := q.conn.QueryRow(ctx, deleteOrganizationSQL, name)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteOrganization: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteOrganizationBatch implements Querier.DeleteOrganizationBatch.
@@ -292,10 +294,11 @@ func (q *DBQuerier) DeleteOrganizationBatch(batch genericBatch, name pgtype.Text
 }
 
 // DeleteOrganizationScan implements Querier.DeleteOrganizationScan.
-func (q *DBQuerier) DeleteOrganizationScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteOrganizationBatch: %w", err)
+func (q *DBQuerier) DeleteOrganizationScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteOrganizationBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

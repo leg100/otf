@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
@@ -17,23 +18,16 @@ const insertApplyLogChunkSQL = `INSERT INTO apply_logs (
     $1,
     $2
 )
-RETURNING *;`
-
-type InsertApplyLogChunkRow struct {
-	ApplyID pgtype.Text `json:"apply_id"`
-	ChunkID int         `json:"chunk_id"`
-	Chunk   []byte      `json:"chunk"`
-}
+;`
 
 // InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
-func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (InsertApplyLogChunkRow, error) {
+func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")
-	row := q.conn.QueryRow(ctx, insertApplyLogChunkSQL, applyID, chunk)
-	var item InsertApplyLogChunkRow
-	if err := row.Scan(&item.ApplyID, &item.ChunkID, &item.Chunk); err != nil {
-		return item, fmt.Errorf("query InsertApplyLogChunk: %w", err)
+	cmdTag, err := q.conn.Exec(ctx, insertApplyLogChunkSQL, applyID, chunk)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertApplyLogChunk: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 // InsertApplyLogChunkBatch implements Querier.InsertApplyLogChunkBatch.
@@ -42,13 +36,12 @@ func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.
 }
 
 // InsertApplyLogChunkScan implements Querier.InsertApplyLogChunkScan.
-func (q *DBQuerier) InsertApplyLogChunkScan(results pgx.BatchResults) (InsertApplyLogChunkRow, error) {
-	row := results.QueryRow()
-	var item InsertApplyLogChunkRow
-	if err := row.Scan(&item.ApplyID, &item.ChunkID, &item.Chunk); err != nil {
-		return item, fmt.Errorf("scan InsertApplyLogChunkBatch row: %w", err)
+func (q *DBQuerier) InsertApplyLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertApplyLogChunkBatch: %w", err)
 	}
-	return item, nil
+	return cmdTag, err
 }
 
 const findApplyLogChunksSQL = `SELECT

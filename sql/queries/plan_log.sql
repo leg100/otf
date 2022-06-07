@@ -1,4 +1,4 @@
--- name: InsertPlanLogChunk :one
+-- name: InsertPlanLogChunk :exec
 INSERT INTO plan_logs (
     plan_id,
     chunk
@@ -6,7 +6,7 @@ INSERT INTO plan_logs (
     pggen.arg('plan_id'),
     pggen.arg('chunk')
 )
-RETURNING *;
+;
 
 -- name: FindPlanLogChunks :one
 SELECT

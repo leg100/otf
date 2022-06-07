@@ -510,16 +510,19 @@ func (q *DBQuerier) FindUserByAuthenticationTokenIDScan(results pgx.BatchResults
 
 const deleteUserByIDSQL = `DELETE
 FROM users
-WHERE user_id = $1;`
+WHERE user_id = $1
+RETURNING user_id
+;`
 
 // DeleteUserByID implements Querier.DeleteUserByID.
-func (q *DBQuerier) DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteUserByID")
-	cmdTag, err := q.conn.Exec(ctx, deleteUserByIDSQL, userID)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteUserByID: %w", err)
+	row := q.conn.QueryRow(ctx, deleteUserByIDSQL, userID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteUserByID: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteUserByIDBatch implements Querier.DeleteUserByIDBatch.
@@ -528,26 +531,30 @@ func (q *DBQuerier) DeleteUserByIDBatch(batch genericBatch, userID pgtype.Text) 
 }
 
 // DeleteUserByIDScan implements Querier.DeleteUserByIDScan.
-func (q *DBQuerier) DeleteUserByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteUserByIDBatch: %w", err)
+func (q *DBQuerier) DeleteUserByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteUserByIDBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const deleteUserByUsernameSQL = `DELETE
 FROM users
-WHERE username = $1;`
+WHERE username = $1
+RETURNING user_id
+;`
 
 // DeleteUserByUsername implements Querier.DeleteUserByUsername.
-func (q *DBQuerier) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) DeleteUserByUsername(ctx context.Context, username pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteUserByUsername")
-	cmdTag, err := q.conn.Exec(ctx, deleteUserByUsernameSQL, username)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteUserByUsername: %w", err)
+	row := q.conn.QueryRow(ctx, deleteUserByUsernameSQL, username)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query DeleteUserByUsername: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // DeleteUserByUsernameBatch implements Querier.DeleteUserByUsernameBatch.
@@ -556,10 +563,11 @@ func (q *DBQuerier) DeleteUserByUsernameBatch(batch genericBatch, username pgtyp
 }
 
 // DeleteUserByUsernameScan implements Querier.DeleteUserByUsernameScan.
-func (q *DBQuerier) DeleteUserByUsernameScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteUserByUsernameBatch: %w", err)
+func (q *DBQuerier) DeleteUserByUsernameScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan DeleteUserByUsernameBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }

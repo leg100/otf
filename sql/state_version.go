@@ -123,13 +123,9 @@ func (db *DB) GetState(ctx context.Context, id string) ([]byte, error) {
 
 // DeleteStateVersion deletes a state version from the DB
 func (db *DB) DeleteStateVersion(ctx context.Context, id string) error {
-	result, err := db.DeleteStateVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	_, err := db.DeleteStateVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return nil
 }

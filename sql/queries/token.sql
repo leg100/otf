@@ -13,7 +13,9 @@ INSERT INTO tokens (
     pggen.arg('UserID')
 );
 
--- name: DeleteTokenByID :exec
+-- name: DeleteTokenByID :one
 DELETE
 FROM tokens
-WHERE token_id = pggen.arg('token_id');
+WHERE token_id = pggen.arg('token_id')
+RETURNING token_id
+;

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -112,41 +111,34 @@ func (db *DB) AddOrganizationMembership(ctx context.Context, id, orgID string) e
 }
 
 func (db *DB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
-	result, err := db.DeleteOrganizationMembership(ctx,
+	_, err := db.DeleteOrganizationMembership(ctx,
 		pgtype.Text{String: id, Status: pgtype.Present},
 		pgtype.Text{String: orgID, Status: pgtype.Present},
 	)
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return nil
 }
 
 // DeleteUser deletes a user from the DB.
 func (db *DB) DeleteUser(ctx context.Context, spec otf.UserSpec) error {
-	var result pgconn.CommandTag
-	var err error
 	if spec.UserID != nil {
-		result, err = db.DeleteUserByID(ctx,
+		_, err := db.DeleteUserByID(ctx,
 			pgtype.Text{String: *spec.UserID, Status: pgtype.Present},
 		)
+		if err != nil {
+			return databaseError(err)
+		}
 	} else if spec.Username != nil {
-		result, err = db.DeleteUserByUsername(ctx,
+		_, err := db.DeleteUserByUsername(ctx,
 			pgtype.Text{String: *spec.Username, Status: pgtype.Present},
 		)
+		if err != nil {
+			return databaseError(err)
+		}
 	} else {
 		return fmt.Errorf("unsupported user spec for deletion")
 	}
-	if err != nil {
-		return err
-	}
-	if result.RowsAffected() == 0 {
-		return otf.ErrResourceNotFound
-	}
-
 	return nil
 }

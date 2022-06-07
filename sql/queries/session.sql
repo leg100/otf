@@ -18,14 +18,19 @@ UPDATE sessions
 SET
     expiry = pggen.arg('expiry')
 WHERE token = pggen.arg('token')
-RETURNING token;
+RETURNING token
+;
 
--- name: DeleteSessionByToken :exec
+-- name: DeleteSessionByToken :one
 DELETE
 FROM sessions
-WHERE token = pggen.arg('token');
+WHERE token = pggen.arg('token')
+RETURNING token
+;
 
--- name: DeleteSessionsExpired :exec
+-- name: DeleteSessionsExpired :one
 DELETE
 FROM sessions
-WHERE expiry < current_timestamp;
+WHERE expiry < current_timestamp
+RETURNING token
+;
