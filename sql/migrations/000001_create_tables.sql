@@ -176,6 +176,13 @@ CREATE TABLE IF NOT EXISTS jobs (
                 PRIMARY KEY (job_id)
 );
 
+CREATE TABLE IF NOT EXISTS logs (
+    job_id      TEXT REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
+    chunk       BYTEA   NOT NULL,
+                PRIMARY KEY (job_id, chunk_id)
+);
+
 CREATE TABLE IF NOT EXISTS plans (
     plan_id                     TEXT            NOT NULL,
     plan_bin                    BYTEA,
@@ -208,20 +215,6 @@ CREATE TABLE IF NOT EXISTS apply_status_timestamps (
                 PRIMARY KEY (apply_id, status)
 );
 
-CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id     TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
-    chunk       BYTEA   NOT NULL,
-                PRIMARY KEY (plan_id, chunk_id)
-);
-
-CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id    TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
-    chunk       BYTEA   NOT NULL,
-                PRIMARY KEY (apply_id, chunk_id)
-);
-
 CREATE TABLE IF NOT EXISTS state_versions (
     state_version_id TEXT,
     created_at       TIMESTAMPTZ NOT NULL,
@@ -244,13 +237,12 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
 -- +goose Down
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
-DROP TABLE IF EXISTS apply_logs;
-DROP TABLE IF EXISTS plan_logs;
 DROP TABLE IF EXISTS apply_status_timestamps;
 DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS plan_status_timestamps;
 DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS run_status_timestamps;
+DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS job_statuses;

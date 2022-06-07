@@ -83,71 +83,8 @@ func (db JobDB) Create(ctx context.Context, job *otf.Job) error {
 	return tx.Commit(ctx)
 }
 
-func (db JobDB) UpdateStatus(ctx context.Context, opts otf.JobGetOptions, fn func(*otf.Job) error) (*otf.Job, error) {
-	tx, err := db.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-
-	q := pggen.NewQuerier(tx)
-
-	// Get run ID first
-	runID, err := getJobID(ctx, q, opts)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	// select ...for update
-	result, err := q.FindJobByIDForUpdate(ctx, pggen.FindJobByIDForUpdateParams{
-		JobID: runID,
-	})
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	run, err := otf.UnmarshalJobDBResult(otf.JobDBResult(result))
-	if err != nil {
-		return nil, err
-	}
-
-	// Make copies of statuses before update
-	runStatus := run.Status()
-	planStatus := run.Plan.Status()
-	applyStatus := run.Apply.Status()
-
-	if err := fn(run); err != nil {
-		return nil, err
-	}
-
-	if run.Status() != runStatus {
-		var err error
-		_, err = q.UpdateJobStatus(ctx,
-			pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
-			pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := insertJobStatusTimestamp(ctx, q, run); err != nil {
-			return nil, err
-		}
-	}
-
-	if run.Plan.Status() != planStatus {
-		var err error
-		_, err = q.UpdatePlanStatus(ctx,
-			pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-			pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := insertPlanStatusTimestamp(ctx, q, run.Plan); err != nil {
-			return nil, err
-		}
-	}
-
+func (db *DB) UpdateJobStatus(ctx context.Context, jobID string, status otf.JobStatus) (*otf.Job, error) {
+	_, err := db.conn.UpdateJobStatus(ctx, jobID, status)
 	if run.Apply.Status() != applyStatus {
 		var err error
 		_, err = q.UpdateApplyStatus(ctx,

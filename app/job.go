@@ -10,22 +10,16 @@ import (
 var _ otf.JobService = (*JobService)(nil)
 
 type JobService struct {
-	db otf.RunStore
-
-	logs otf.ChunkStore
-
-	otf.EventService
-
+	db    otf.DB
 	cache otf.Cache
-
+	otf.EventService
 	logr.Logger
 }
 
-func NewJobService(db otf.RunStore, logs otf.ChunkStore, logger logr.Logger, es otf.EventService, cache otf.Cache) *JobService {
+func NewJobService(db otf.DB, logger logr.Logger, es otf.EventService, cache otf.Cache) *JobService {
 	return &JobService{
 		db:           db,
 		EventService: es,
-		logs:         logs,
 		cache:        cache,
 		Logger:       logger,
 	}
@@ -39,43 +33,39 @@ func (s JobService) Queued(ctx context.Context, id string) ([]*otf.Job, error) {
 	return run.Job, nil
 }
 
-// GetChunk reads a chunk of logs for a terraform plan.
-func (s JobService) GetChunk(ctx context.Context, id string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	logs, err := s.logs.GetChunk(ctx, id, opts)
+// GetChunk reads a chunk of logs for a job.
+func (s JobService) GetChunk(ctx context.Context, jobID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	chunk, err := s.db.GetChunk(ctx, jobID, opts)
 	if err != nil {
-		s.Error(err, "reading plan logs", "id", id, "offset", opts.Offset, "limit", opts.Limit)
+		s.Error(err, "reading logs", "id", jobID, "offset", opts.Offset, "limit", opts.Limit)
 		return otf.Chunk{}, err
 	}
+	s.V(2).Info("read logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
 
-	return logs, nil
+	return chunk, nil
 }
 
-// PutChunk writes a chunk of logs for a terraform plan.
-func (s JobService) PutChunk(ctx context.Context, id string, chunk otf.Chunk) error {
-	err := s.logs.PutChunk(ctx, id, chunk)
+// PutChunk writes a chunk of logs for a job.
+func (s JobService) PutChunk(ctx context.Context, jobID string, chunk otf.Chunk) error {
+	err := s.db.PutChunk(ctx, jobID, chunk)
 	if err != nil {
-		s.Error(err, "writing plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
+		s.Error(err, "writing logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-
-	s.V(2).Info("written plan logs", "id", id, "start", chunk.Start, "end", chunk.End)
+	s.V(2).Info("written logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
 
 	return nil
 }
 
 // Claim implements Job
-func (s JobService) Claim(ctx context.Context, planID string, opts otf.JobClaimOptions) (otf.Job, error) {
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &planID}, func(run *otf.Run) error {
-		return run.Job.Start(run)
-	})
+func (s JobService) Claim(ctx context.Context, jobID string, opts otf.JobClaimOptions) (*otf.Job, error) {
+	job, err := s.db.UpdateJobStatus(ctx, jobID, otf.JobClaimed)
 	if err != nil {
-		s.Error(err, "starting plan", "plan_id", planID)
+		s.Error(err, "claiming job", "id", jobID)
 		return nil, err
 	}
-
-	s.V(0).Info("started plan", "id", run.ID())
-
-	return run, nil
+	s.V(0).Info("claimed job", "id", jobID)
+	return job, nil
 }
 
 // Finish marks a plan as having finished.  An event is emitted to notify any

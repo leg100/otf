@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 )
@@ -87,4 +88,112 @@ func (q *DBQuerier) FindQueuedJobsScan(results pgx.BatchResults) ([]FindQueuedJo
 		return nil, fmt.Errorf("close FindQueuedJobsBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const insertLogChunkSQL = `INSERT INTO logs (
+    job_id,
+    chunk
+) VALUES (
+    $1,
+    $2
+)
+;`
+
+// InsertLogChunk implements Querier.InsertLogChunk.
+func (q *DBQuerier) InsertLogChunk(ctx context.Context, jobID pgtype.Text, chunk []byte) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertLogChunk")
+	cmdTag, err := q.conn.Exec(ctx, insertLogChunkSQL, jobID, chunk)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertLogChunk: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertLogChunkBatch implements Querier.InsertLogChunkBatch.
+func (q *DBQuerier) InsertLogChunkBatch(batch genericBatch, jobID pgtype.Text, chunk []byte) {
+	batch.Queue(insertLogChunkSQL, jobID, chunk)
+}
+
+// InsertLogChunkScan implements Querier.InsertLogChunkScan.
+func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertLogChunkBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const findLogChunksSQL = `SELECT
+    substring(string_agg(chunk, '') FROM $1 FOR $2)
+FROM (
+    SELECT job_id, chunk
+    FROM logs
+    WHERE job_id = $3
+    ORDER BY chunk_id
+) c
+GROUP BY job_id
+;`
+
+type FindLogChunksParams struct {
+	Offset int
+	Limit  int
+	JobID  pgtype.Text
+}
+
+// FindLogChunks implements Querier.FindLogChunks.
+func (q *DBQuerier) FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindLogChunks")
+	row := q.conn.QueryRow(ctx, findLogChunksSQL, params.Offset, params.Limit, params.JobID)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindLogChunks: %w", err)
+	}
+	return item, nil
+}
+
+// FindLogChunksBatch implements Querier.FindLogChunksBatch.
+func (q *DBQuerier) FindLogChunksBatch(batch genericBatch, params FindLogChunksParams) {
+	batch.Queue(findLogChunksSQL, params.Offset, params.Limit, params.JobID)
+}
+
+// FindLogChunksScan implements Querier.FindLogChunksScan.
+func (q *DBQuerier) FindLogChunksScan(results pgx.BatchResults) ([]byte, error) {
+	row := results.QueryRow()
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindLogChunksBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateJobStatusSQL = `UPDATE jobs
+SET status = $1
+WHERE job_id = $2
+RETURNING job_id
+;`
+
+// UpdateJobStatus implements Querier.UpdateJobStatus.
+func (q *DBQuerier) UpdateJobStatus(ctx context.Context, status pgtype.Text, jobID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJobStatus")
+	row := q.conn.QueryRow(ctx, updateJobStatusSQL, status, jobID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateJobStatus: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateJobStatusBatch implements Querier.UpdateJobStatusBatch.
+func (q *DBQuerier) UpdateJobStatusBatch(batch genericBatch, status pgtype.Text, jobID pgtype.Text) {
+	batch.Queue(updateJobStatusSQL, status, jobID)
+}
+
+// UpdateJobStatusScan implements Querier.UpdateJobStatusScan.
+func (q *DBQuerier) UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateJobStatusBatch row: %w", err)
+	}
+	return item, nil
 }

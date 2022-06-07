@@ -53,20 +53,6 @@ type Querier interface {
 	// UpdateAppliedChangesByIDScan scans the result of an executed UpdateAppliedChangesByIDBatch query.
 	UpdateAppliedChangesByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
-	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
-	// later by the batch.
-	InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.Text, chunk []byte)
-	// InsertApplyLogChunkScan scans the result of an executed InsertApplyLogChunkBatch query.
-	InsertApplyLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindApplyLogChunks(ctx context.Context, params FindApplyLogChunksParams) ([]byte, error)
-	// FindApplyLogChunksBatch enqueues a FindApplyLogChunks query into batch to be executed
-	// later by the batch.
-	FindApplyLogChunksBatch(batch genericBatch, params FindApplyLogChunksParams)
-	// FindApplyLogChunksScan scans the result of an executed FindApplyLogChunksBatch query.
-	FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error)
-
 	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (pgconn.CommandTag, error)
 	// InsertConfigurationVersionBatch enqueues a InsertConfigurationVersion query into batch to be executed
 	// later by the batch.
@@ -158,6 +144,27 @@ type Querier interface {
 	FindQueuedJobsBatch(batch genericBatch)
 	// FindQueuedJobsScan scans the result of an executed FindQueuedJobsBatch query.
 	FindQueuedJobsScan(results pgx.BatchResults) ([]FindQueuedJobsRow, error)
+
+	InsertLogChunk(ctx context.Context, jobID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
+	// InsertLogChunkBatch enqueues a InsertLogChunk query into batch to be executed
+	// later by the batch.
+	InsertLogChunkBatch(batch genericBatch, jobID pgtype.Text, chunk []byte)
+	// InsertLogChunkScan scans the result of an executed InsertLogChunkBatch query.
+	InsertLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error)
+	// FindLogChunksBatch enqueues a FindLogChunks query into batch to be executed
+	// later by the batch.
+	FindLogChunksBatch(batch genericBatch, params FindLogChunksParams)
+	// FindLogChunksScan scans the result of an executed FindLogChunksBatch query.
+	FindLogChunksScan(results pgx.BatchResults) ([]byte, error)
+
+	UpdateJobStatus(ctx context.Context, status pgtype.Text, jobID pgtype.Text) (pgtype.Text, error)
+	// UpdateJobStatusBatch enqueues a UpdateJobStatus query into batch to be executed
+	// later by the batch.
+	UpdateJobStatusBatch(batch genericBatch, status pgtype.Text, jobID pgtype.Text)
+	// UpdateJobStatusScan scans the result of an executed UpdateJobStatusBatch query.
+	UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	// FindOrganizationByName finds an organization by name.
 	//
@@ -286,20 +293,6 @@ type Querier interface {
 	UpdatePlanJSONByIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text)
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
 	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
-	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
-	// later by the batch.
-	InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Text, chunk []byte)
-	// InsertPlanLogChunkScan scans the result of an executed InsertPlanLogChunkBatch query.
-	InsertPlanLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error)
-	// FindPlanLogChunksBatch enqueues a FindPlanLogChunks query into batch to be executed
-	// later by the batch.
-	FindPlanLogChunksBatch(batch genericBatch, params FindPlanLogChunksParams)
-	// FindPlanLogChunksScan scans the result of an executed FindPlanLogChunksBatch query.
-	FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -693,12 +686,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateAppliedChangesByIDSQL, updateAppliedChangesByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateAppliedChangesByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertApplyLogChunkSQL, insertApplyLogChunkSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertApplyLogChunk': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findApplyLogChunksSQL, findApplyLogChunksSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindApplyLogChunks': %w", err)
-	}
 	if _, err := p.Prepare(ctx, insertConfigurationVersionSQL, insertConfigurationVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertConfigurationVersion': %w", err)
 	}
@@ -734,6 +721,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findQueuedJobsSQL, findQueuedJobsSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindQueuedJobs': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertLogChunkSQL, insertLogChunkSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertLogChunk': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findLogChunksSQL, findLogChunksSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindLogChunks': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateJobStatusSQL, updateJobStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateJobStatus': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
@@ -788,12 +784,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updatePlanJSONByIDSQL, updatePlanJSONByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanJSONByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertPlanLogChunkSQL, insertPlanLogChunkSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertPlanLogChunk': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findPlanLogChunksSQL, findPlanLogChunksSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindPlanLogChunks': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRun': %w", err)
