@@ -51,8 +51,7 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	js otf.JobService,
-	job otf.Job,
+	job otf.Doer,
 	environmentVariables []string) (*Environment, error) {
 
 	path, err := os.MkdirTemp("", "otf-plan")
@@ -61,8 +60,8 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         job.JobID(),
-		JobService: js,
+		ID:         job.ID(),
+		JobService: app.JobService(),
 		Logger:     logger,
 	}
 
@@ -79,11 +78,11 @@ func NewEnvironment(
 
 // Execute executes a job and regardless of whether it fails, it'll close the
 // environment logs.
-func (e *Environment) Execute(job otf.Job) (err error) {
+func (e *Environment) Execute(job otf.Doer) (err error) {
 	var errors *multierror.Error
 
 	if err := job.Do(e); err != nil {
-		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
+		errors = multierror.Append(errors, fmt.Errorf("executing job: %w", err))
 	}
 
 	// Mark the logs as fully uploaded

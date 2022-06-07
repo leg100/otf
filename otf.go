@@ -46,6 +46,7 @@ type Application interface {
 	ApplyService() ApplyService
 	EventService() EventService
 	UserService() UserService
+	JobService() JobService
 	//GetCacheService() *CacheService
 }
 

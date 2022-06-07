@@ -1,6 +1,7 @@
 -- name: InsertPlan :exec
 INSERT INTO plans (
     plan_id,
+    job_id,
     run_id,
     status,
     additions,
@@ -8,6 +9,7 @@ INSERT INTO plans (
     destructions
 ) VALUES (
     pggen.arg('plan_id'),
+    pggen.arg('job_id'),
     pggen.arg('run_id'),
     pggen.arg('status'),
     pggen.arg('additions'),

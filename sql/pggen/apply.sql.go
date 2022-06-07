@@ -152,6 +152,13 @@ type Querier interface {
 	// DeleteConfigurationVersionByIDScan scans the result of an executed DeleteConfigurationVersionByIDBatch query.
 	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	FindQueuedJobs(ctx context.Context) ([]FindQueuedJobsRow, error)
+	// FindQueuedJobsBatch enqueues a FindQueuedJobs query into batch to be executed
+	// later by the batch.
+	FindQueuedJobsBatch(batch genericBatch)
+	// FindQueuedJobsScan scans the result of an executed FindQueuedJobsBatch query.
+	FindQueuedJobsScan(results pgx.BatchResults) ([]FindQueuedJobsRow, error)
+
 	// FindOrganizationByName finds an organization by name.
 	//
 	FindOrganizationByName(ctx context.Context, name pgtype.Text) (FindOrganizationByNameRow, error)
@@ -724,6 +731,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteConfigurationVersionByIDSQL, deleteConfigurationVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteConfigurationVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findQueuedJobsSQL, findQueuedJobsSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindQueuedJobs': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)

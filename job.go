@@ -25,6 +25,10 @@ var (
 type Doer interface {
 	// Do some work in an execution environment
 	Do(Environment) error
+	// ID identifies the work
+	ID() string
+	// Status provides the current status of the work
+	Status() JobStatus
 }
 
 type JobStatus string
@@ -37,6 +41,9 @@ type Job struct {
 	Doer
 }
 
+func (j *Job) ID() string        { return j.id }
+func (j *Job) Status() JobStatus { return j.status }
+
 func NewJob(id string, doer Doer) *Job {
 	return &Job{
 		id:        NewID("job"),
@@ -47,6 +54,8 @@ func NewJob(id string, doer Doer) *Job {
 }
 
 type JobService interface {
+	// Queued returns a list of queued jobs
+	Queued(ctx context.Context) ([]*Job, error)
 	// Claim claims a job entitling the caller to do the job.
 	// ErrJobAlreadyClaimed is returned if job is already claimed.
 	Claim(ctx context.Context, id string, opts JobClaimOptions) (*Job, error)

@@ -15,7 +15,7 @@ type Worker struct {
 func (w *Worker) Start(ctx context.Context) {
 	for {
 		select {
-		case job := <-w.GetRun():
+		case job := <-w.GetJob():
 			w.handle(ctx, job)
 		case <-ctx.Done():
 			return
@@ -24,15 +24,12 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, job otf.Job) {
-	js := job.GetService(w.App)
-
-	log := w.Logger.WithValues("job", job.JobID())
+func (w *Worker) handle(ctx context.Context, job *otf.Job) {
+	log := w.Logger.WithValues("job", job.ID())
 
 	env, err := NewEnvironment(
 		log,
 		w.App,
-		js,
 		job,
 		w.environmentVariables,
 	)
@@ -42,7 +39,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = js.Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
+	job, err = w.App.JobService().Claim(ctx, job.ID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -50,8 +47,8 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(job.JobID(), env)
-	defer w.CheckOut(job.JobID())
+	w.CheckIn(job.ID(), env)
+	defer w.CheckOut(job.ID())
 
 	log.Info("executing job")
 
@@ -63,7 +60,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = js.Finish(ctx, job.JobID(), finishOptions)
+	_, err = w.App.JobService().Finish(ctx, job.ID(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing job")
 	}

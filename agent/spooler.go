@@ -25,7 +25,7 @@ type Spooler interface {
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
-	queue chan *otf.Run
+	queue chan *otf.Job
 
 	// Queue of cancelation requests
 	cancelations chan *otf.Run
@@ -56,7 +56,7 @@ var (
 	QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
 )
 
-// NewSpooler is a constructor for a Spooler pre-populated with queued runs
+// NewSpooler is a constructor for a Spooler pre-populated with queued jobs
 func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// TODO: order runs by created_at date
 	runs, err := rl.List(context.Background(), otf.RunListOptions{Statuses: QueuedStatuses})
@@ -98,7 +98,7 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 }
 
 // GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetRun() <-chan *otf.Run {
+func (s *SpoolerDaemon) GetJob() <-chan *otf.Job {
 	return s.queue
 }
 
@@ -109,8 +109,8 @@ func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
 
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
-	case *otf.Run:
-		s.V(2).Info("received run event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
+	case *otf.Job:
+		s.V(2).Info("received job event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
 
 		switch ev.Type {
 		case otf.EventPlanQueued, otf.EventApplyQueued:

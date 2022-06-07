@@ -21,21 +21,13 @@ var (
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
 	App otf.Application
-
-	otf.JobSelector
-
 	// concurrency is the max number of concurrent workers
-	concurrency int
-
-	logr.Logger
-
-	AgentID string
-
-	Spooler
-
-	*Terminator
-
+	concurrency          int
+	AgentID              string
 	environmentVariables []string
+	Spooler
+	*Terminator
+	logr.Logger
 }
 
 // NewSupervisor is the constructor for Supervisor
