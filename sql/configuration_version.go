@@ -136,5 +136,8 @@ func (db *DB) GetConfig(ctx context.Context, id string) ([]byte, error) {
 
 func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
 	_, err := db.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
-	return err
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }

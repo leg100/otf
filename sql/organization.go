@@ -102,5 +102,8 @@ func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organizati
 
 func (db *DB) DeleteOrganization(ctx context.Context, name string) error {
 	_, err := db.Querier.DeleteOrganization(ctx, pgtype.Text{String: name, Status: pgtype.Present})
-	return err
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }

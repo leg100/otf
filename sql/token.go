@@ -23,5 +23,8 @@ func (db *DB) CreateToken(ctx context.Context, token *otf.Token) error {
 // DeleteToken deletes a user's token from the DB.
 func (db *DB) DeleteToken(ctx context.Context, id string) error {
 	_, err := db.DeleteTokenByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
-	return err
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }

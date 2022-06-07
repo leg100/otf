@@ -115,7 +115,10 @@ func (db *DB) RemoveOrganizationMembership(ctx context.Context, id, orgID string
 		pgtype.Text{String: id, Status: pgtype.Present},
 		pgtype.Text{String: orgID, Status: pgtype.Present},
 	)
-	return err
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }
 
 // DeleteUser deletes a user from the DB.
