@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 )
 
 const (
@@ -35,21 +34,23 @@ type JobStatus string
 
 // Job is a unit of work to do.
 type Job struct {
-	id        string
-	createdAt time.Time
-	status    JobStatus
+	id     string
+	status JobStatus
 	Doer
 }
 
 func (j *Job) ID() string        { return j.id }
 func (j *Job) Status() JobStatus { return j.status }
 
-func NewJob(id string, doer Doer) *Job {
+func (j *Job) UpdateStatus(status JobStatus) {
+	j.status = status
+}
+
+func NewJob(doer Doer) *Job {
 	return &Job{
-		id:        NewID("job"),
-		createdAt: CurrentTimestamp(),
-		status:    JobPending,
-		Doer:      doer,
+		id:     NewID("job"),
+		status: JobPending,
+		Doer:   doer,
 	}
 }
 

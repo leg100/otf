@@ -70,19 +70,19 @@ func (s JobService) Claim(ctx context.Context, jobID string, opts otf.JobClaimOp
 
 // Finish marks a plan as having finished.  An event is emitted to notify any
 // subscribers of the new state.
-func (s JobService) Finish(ctx context.Context, planID string, opts otf.JobFinishOptions) (otf.Job, error) {
+func (s JobService) Finish(ctx context.Context, jobID string, opts otf.JobFinishOptions) (*otf.Job, error) {
 	var event *otf.Event
 
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &planID}, func(run *otf.Run) (err error) {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &jobID}, func(run *otf.Run) (err error) {
 		event, err = run.Job.Finish(opts)
 		return err
 	})
 	if err != nil {
-		s.Error(err, "finishing plan", "id", planID)
+		s.Error(err, "finishing plan", "id", jobID)
 		return nil, err
 	}
 
-	s.V(0).Info("finished plan", "id", planID)
+	s.V(0).Info("finished plan", "id", jobID)
 
 	s.Publish(*event)
 

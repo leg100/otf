@@ -28,22 +28,19 @@ const (
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
 	id string
-	// id of corresponding job
-	jobID *string
 	// Resources is a report of planned resource changes
 	*ResourceReport
-	// Status is the current status
-	status PlanStatus
 	// statusTimestamps records timestamps of status transitions
 	statusTimestamps []PlanStatusTimestamp
 	// run is the parent run
 	run *Run
+	// A plan is a job
+	*Job
 }
 
 func (p *Plan) ID() string         { return p.id }
 func (p *Plan) JobID() string      { return p.id }
 func (p *Plan) String() string     { return p.id }
-func (p *Plan) Status() PlanStatus { return p.status }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -204,8 +201,7 @@ func newPlan(run *Run) *Plan {
 	return &Plan{
 		id:  NewID("plan"),
 		run: run,
-		// new plans always start off in pending state
-		status:         PlanPending,
+		Job: NewJob(
 		ResourceReport: &ResourceReport{},
 	}
 }
