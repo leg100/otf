@@ -5,21 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
-)
-
-//List all available apply statuses supported in OTF.
-const (
-	ApplyCanceled    ApplyStatus = "canceled"
-	ApplyErrored     ApplyStatus = "errored"
-	ApplyFinished    ApplyStatus = "finished"
-	ApplyPending     ApplyStatus = "pending"
-	ApplyQueued      ApplyStatus = "queued"
-	ApplyRunning     ApplyStatus = "running"
-	ApplyUnreachable ApplyStatus = "unreachable"
 )
 
 // Apply represents a terraform apply
@@ -27,35 +15,25 @@ type Apply struct {
 	id string
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
-	// Status is the current status
-	status ApplyStatus
-	// StatusTimestamps records timestamps of status transitions
-	statusTimestamps []ApplyStatusTimestamp
-	// run is the parent run
-	run *Run
+	// A plan is a job
+	*job
 }
 
-func (a *Apply) ID() string          { return a.id }
-func (a *Apply) JobID() string       { return a.id }
-func (a *Apply) String() string      { return a.id }
-func (a *Apply) Status() ApplyStatus { return a.status }
+func (a *Apply) ID() string     { return a.id }
+func (a *Apply) String() string { return a.id }
 
-func (a *Apply) GetService(app Application) JobService {
-	return app.ApplyService()
-}
-
-// Do performs a terraform apply
+// Do sets up and runs terraform apply.
 func (a *Apply) Do(env Environment) error {
-	if err := a.run.setupEnv(env); err != nil {
+	if err := a.setup(env); err != nil {
 		return err
 	}
-	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
+	if err := env.RunFunc(a.downloadPlanFile); err != nil {
 		return err
 	}
-	if err := a.runTerraformApply(env); err != nil {
+	if err := a.apply(env); err != nil {
 		return err
 	}
-	if err := env.RunFunc(a.run.uploadState); err != nil {
+	if err := env.RunFunc(a.uploadState); err != nil {
 		return err
 	}
 	return nil
@@ -63,46 +41,31 @@ func (a *Apply) Do(env Environment) error {
 
 // Start updates the run to reflect its apply having started
 func (a *Apply) Start() error {
-	if a.run.Status() == RunApplying {
+	if a.status == JobRunning {
 		return ErrJobAlreadyClaimed
 	}
-	if a.run.Status() != RunApplyQueued {
-		return fmt.Errorf("run cannot be started: invalid status: %s", a.run.Status())
+	if a.status != JobQueued {
+		return fmt.Errorf("run cannot be started: invalid status: %s", a.status)
 	}
-	a.run.updateStatus(RunApplying)
+	a.UpdateStatus(JobRunning)
 	return nil
 }
 
 // Finish updates the run to reflect its apply having finished. An event is
 // returned reflecting the run's new status.
 func (a *Apply) Finish() error {
-	return a.run.updateStatus(RunApplied)
+	a.UpdateStatus(JobFinished)
+	return nil
 }
 
-func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }
-
-func (a *Apply) StatusTimestamp(status ApplyStatus) (time.Time, error) {
-	for _, rst := range a.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
-func (a *Apply) updateStatus(status ApplyStatus) {
-	a.status = status
-	a.statusTimestamps = append(a.statusTimestamps, ApplyStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
-}
-
-// runTerraformApply runs a terraform apply
-func (a *Apply) runTerraformApply(env Environment) error {
+// TODO: return a command string instead and have Do() execute it - this'll make
+// it more suitable for unit testing.
+//
+// apply executes terraform apply
+func (a *Apply) apply(env Environment) error {
 	cmd := strings.Builder{}
 	cmd.WriteString("terraform apply")
-	if a.run.isDestroy {
+	if a.isDestroy {
 		cmd.WriteString(" -destroy")
 	}
 	cmd.WriteRune(' ')
@@ -127,46 +90,30 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {
-		case ApplyCanceled:
+		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case ApplyErrored:
+		case JobErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case ApplyFinished:
+		case JobFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case ApplyQueued:
+		case JobQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case ApplyRunning:
+		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 	return dto
 }
 
-// ApplyStatus represents an apply state.
-type ApplyStatus string
-
 // ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
-
-	JobService
-	ChunkStore
-}
-
-type ApplyLogStore interface {
-	ChunkStore
-}
-
-type ApplyStatusTimestamp struct {
-	Status    ApplyStatus
-	Timestamp time.Time
 }
 
 func newApply(run *Run) *Apply {
 	return &Apply{
 		id:             NewID("apply"),
-		run:            run,
-		status:         ApplyPending,
+		job:            newJob(),
 		ResourceReport: &ResourceReport{},
 	}
 }

@@ -124,7 +124,7 @@ type StateVersionCreateOptions struct {
 	Serial  *int64
 	State   *string
 	MD5     *string
-	Run     *Run
+	RunID   *string
 }
 
 // Valid validates state version create options

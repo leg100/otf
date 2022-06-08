@@ -5,83 +5,9 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
-
-var _ otf.JobStore = (*JobDB)(nil)
-
-type JobDB struct {
-	*pgxpool.Pool
-}
-
-func NewJobDB(db *pgxpool.Pool) *JobDB {
-	return &JobDB{
-		Pool: db,
-	}
-}
-
-// Create persists a Job to the DB.
-func (db JobDB) Create(ctx context.Context, job *otf.Job) error {
-	tx, err := db.Pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	_, err = q.InsertJob(ctx, pggen.InsertJobParams{
-		ID:                     pgtype.Text{String: job.ID(), Status: pgtype.Present},
-		CreatedAt:              job.CreatedAt(),
-		IsDestroy:              job.IsDestroy(),
-		Refresh:                job.Refresh(),
-		RefreshOnly:            job.RefreshOnly(),
-		Status:                 pgtype.Text{String: string(job.Status()), Status: pgtype.Present},
-		ReplaceAddrs:           job.ReplaceAddrs(),
-		TargetAddrs:            job.TargetAddrs(),
-		ConfigurationVersionID: pgtype.Text{String: job.ConfigurationVersion.ID(), Status: pgtype.Present},
-		WorkspaceID:            pgtype.Text{String: job.Workspace.ID(), Status: pgtype.Present},
-	})
-	if err != nil {
-		return err
-	}
-
-	// find out which doer the job is referrring to and update its job id.
-
-	_, err = q.InsertPlan(ctx, pggen.InsertPlanParams{
-		PlanID:       pgtype.Text{String: job.Plan.ID(), Status: pgtype.Present},
-		JobID:        pgtype.Text{String: job.ID(), Status: pgtype.Present},
-		Status:       pgtype.Text{String: string(job.Plan.Status()), Status: pgtype.Present},
-		Additions:    0,
-		Changes:      0,
-		Destructions: 0,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = q.InsertApply(ctx, pggen.InsertApplyParams{
-		ApplyID:      pgtype.Text{String: job.Apply.ID(), Status: pgtype.Present},
-		JobID:        pgtype.Text{String: job.ID(), Status: pgtype.Present},
-		Status:       pgtype.Text{String: string(job.Apply.Status()), Status: pgtype.Present},
-		Additions:    0,
-		Changes:      0,
-		Destructions: 0,
-	})
-	if err != nil {
-		return err
-	}
-	if err := insertJobStatusTimestamp(ctx, q, job); err != nil {
-		return fmt.Errorf("inserting run status timestamp: %w", err)
-	}
-	if err := insertPlanStatusTimestamp(ctx, q, job.Plan); err != nil {
-		return fmt.Errorf("inserting plan status timestamp: %w", err)
-	}
-	if err := insertApplyStatusTimestamp(ctx, q, job.Apply); err != nil {
-		return fmt.Errorf("inserting apply status timestamp: %w", err)
-	}
-	return tx.Commit(ctx)
-}
 
 func (db *DB) UpdateJobStatus(ctx context.Context, jobID string, status otf.JobStatus) (*otf.Job, error) {
 	_, err := db.conn.UpdateJobStatus(ctx, jobID, status)
@@ -131,25 +57,7 @@ func (db JobDB) CreateApplyReport(ctx context.Context, applyID string, report ot
 	return err
 }
 
-func (db JobDB) List(ctx context.Context, opts otf.JobListOptions) (*otf.JobList, error) {
-	q := pggen.NewQuerier(db.Pool)
-	batch := &pgx.Batch{}
-	organizationName := "%"
-	if opts.OrganizationName != nil {
-		organizationName = *opts.OrganizationName
-	}
-	workspaceName := "%"
-	if opts.WorkspaceName != nil {
-		workspaceName = *opts.WorkspaceName
-	}
-	workspaceID := "%"
-	if opts.WorkspaceID != nil {
-		workspaceID = *opts.WorkspaceID
-	}
-	statuses := []string{"%"}
-	if len(opts.Statuses) > 0 {
-		statuses = convertStatusSliceToStringSlice(opts.Statuses)
-	}
+func (db *DB) GetQueuedJobs(ctx context.Context) ([]otf.Job, error) {
 	q.FindJobsBatch(batch, pggen.FindJobsParams{
 		OrganizationNames:           []string{organizationName},
 		WorkspaceNames:              []string{workspaceName},

@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -60,46 +59,6 @@ func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag,
 	cmdTag, err := results.Exec()
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec InsertPlanBatch: %w", err)
-	}
-	return cmdTag, err
-}
-
-const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
-    plan_id,
-    status,
-    timestamp
-) VALUES (
-    $1,
-    $2,
-    $3
-);`
-
-type InsertPlanStatusTimestampParams struct {
-	ID        pgtype.Text
-	Status    pgtype.Text
-	Timestamp time.Time
-}
-
-// InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.
-func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, params InsertPlanStatusTimestampParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanStatusTimestamp")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertPlanStatusTimestamp: %w", err)
-	}
-	return cmdTag, err
-}
-
-// InsertPlanStatusTimestampBatch implements Querier.InsertPlanStatusTimestampBatch.
-func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, params InsertPlanStatusTimestampParams) {
-	batch.Queue(insertPlanStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
-}
-
-// InsertPlanStatusTimestampScan implements Querier.InsertPlanStatusTimestampScan.
-func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertPlanStatusTimestampBatch: %w", err)
 	}
 	return cmdTag, err
 }
@@ -175,6 +134,65 @@ func (q *DBQuerier) UpdatePlannedChangesByIDScan(results pgx.BatchResults) (pgty
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdatePlannedChangesByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findPlanByIDSQL = `SELECT
+    plan_id,
+    status,
+    additions,
+    changes,
+    destructions,
+    (
+        SELECT array_agg(st.*)
+        FROM job_status_timestamps st
+        WHERE st.job_id = p.job_id
+        GROUP BY p.job_id
+    ) AS status_timestamps
+FROM plans p
+WHERE plan_id = $1
+;`
+
+type FindPlanByIDRow struct {
+	PlanID           pgtype.Text           `json:"plan_id"`
+	Status           pgtype.Text           `json:"status"`
+	Additions        int                   `json:"additions"`
+	Changes          int                   `json:"changes"`
+	Destructions     int                   `json:"destructions"`
+	StatusTimestamps []JobStatusTimestamps `json:"status_timestamps"`
+}
+
+// FindPlanByID implements Querier.FindPlanByID.
+func (q *DBQuerier) FindPlanByID(ctx context.Context, planID pgtype.Text) (FindPlanByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindPlanByID")
+	row := q.conn.QueryRow(ctx, findPlanByIDSQL, planID)
+	var item FindPlanByIDRow
+	statusTimestampsArray := q.types.newJobStatusTimestampsArray()
+	if err := row.Scan(&item.PlanID, &item.Status, &item.Additions, &item.Changes, &item.Destructions, statusTimestampsArray); err != nil {
+		return item, fmt.Errorf("query FindPlanByID: %w", err)
+	}
+	if err := statusTimestampsArray.AssignTo(&item.StatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindPlanByID row: %w", err)
+	}
+	return item, nil
+}
+
+// FindPlanByIDBatch implements Querier.FindPlanByIDBatch.
+func (q *DBQuerier) FindPlanByIDBatch(batch genericBatch, planID pgtype.Text) {
+	batch.Queue(findPlanByIDSQL, planID)
+}
+
+// FindPlanByIDScan implements Querier.FindPlanByIDScan.
+func (q *DBQuerier) FindPlanByIDScan(results pgx.BatchResults) (FindPlanByIDRow, error) {
+	row := results.QueryRow()
+	var item FindPlanByIDRow
+	statusTimestampsArray := q.types.newJobStatusTimestampsArray()
+	if err := row.Scan(&item.PlanID, &item.Status, &item.Additions, &item.Changes, &item.Destructions, statusTimestampsArray); err != nil {
+		return item, fmt.Errorf("scan FindPlanByIDBatch row: %w", err)
+	}
+	if err := statusTimestampsArray.AssignTo(&item.StatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindPlanByID row: %w", err)
 	}
 	return item, nil
 }

@@ -25,12 +25,12 @@ func NewJobService(db otf.DB, logger logr.Logger, es otf.EventService, cache otf
 	}
 }
 
-func (s JobService) Queued(ctx context.Context, id string) ([]*otf.Job, error) {
-	run, err := s.db.Get(ctx, otf.RunGetOptions{JobID: &id})
+func (s JobService) Queued(ctx context.Context) ([]otf.Job, error) {
+	jobs, err := s.db.GetQueuedJobs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return run.Job, nil
+	return jobs, nil
 }
 
 // GetChunk reads a chunk of logs for a job.

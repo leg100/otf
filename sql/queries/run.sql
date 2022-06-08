@@ -66,22 +66,22 @@ SELECT
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
+        SELECT array_agg(st.*) AS run_status_timestamps
+        FROM run_status_timestamps st
+        WHERE st.run_id = runs.run_id
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(pst.*) AS plan_status_timestamps
-        FROM plan_status_timestamps pst
-        WHERE pst.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = plans.job_id
+        GROUP BY job_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(ast.*) AS apply_status_timestamps
-        FROM apply_status_timestamps ast
-        WHERE ast.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = applies.job_id
+        GROUP BY job_id
     ) AS apply_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
@@ -140,22 +140,22 @@ SELECT
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
+        SELECT array_agg(st.*) AS run_status_timestamps
+        FROM run_status_timestamps st
+        WHERE st.run_id = runs.run_id
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(pst.*) AS plan_status_timestamps
-        FROM plan_status_timestamps pst
-        WHERE pst.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = plans.job_id
+        GROUP BY job_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(ast.*) AS apply_status_timestamps
-        FROM apply_status_timestamps ast
-        WHERE ast.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = applies.job_id
+        GROUP BY job_id
     ) AS apply_status_timestamps
 FROM runs
 JOIN plans USING(run_id)
@@ -171,6 +171,8 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
+    plan_jobs.job_id AS plan_job_id,
+    apply_jobs.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
@@ -196,26 +198,26 @@ SELECT
     CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
     CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
-        SELECT array_agg(rst.*) AS run_status_timestamps
-        FROM run_status_timestamps rst
-        WHERE rst.run_id = runs.run_id
+        SELECT array_agg(st.*) AS run_status_timestamps
+        FROM run_status_timestamps st
+        WHERE st.run_id = runs.run_id
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(pst.*) AS plan_status_timestamps
-        FROM plan_status_timestamps pst
-        WHERE pst.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = plans.job_id
+        GROUP BY job_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(ast.*) AS apply_status_timestamps
-        FROM apply_status_timestamps ast
-        WHERE ast.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM job_status_timestamps st
+        WHERE st.job_id = applies.job_id
+        GROUP BY job_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN plans USING(run_id)
-JOIN applies USING(run_id)
+JOIN (plans JOIN jobs plan_jobs USING (job_id)) ON plans.run_id = runs.run_id
+JOIN (applies JOIN jobs apply_jobs USING (job_id)) ON applies.run_id = runs.run_id
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)

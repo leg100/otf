@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
+	"os"
+	"path/filepath"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
@@ -15,32 +16,19 @@ const (
 	PlanFilename        = "plan.out"
 	JSONPlanFilename    = "plan.out.json"
 	ApplyOutputFilename = "apply.out"
-	//List all available plan statuses.
-	PlanCanceled    PlanStatus = "canceled"
-	PlanErrored     PlanStatus = "errored"
-	PlanFinished    PlanStatus = "finished"
-	PlanPending     PlanStatus = "pending"
-	PlanQueued      PlanStatus = "queued"
-	PlanRunning     PlanStatus = "running"
-	PlanUnreachable PlanStatus = "unreachable"
 )
 
-// Plan represents a Terraform Enterprise plan.
+// Plan represents a "terraform plan"
 type Plan struct {
 	id string
 	// Resources is a report of planned resource changes
 	*ResourceReport
-	// statusTimestamps records timestamps of status transitions
-	statusTimestamps []PlanStatusTimestamp
-	// run is the parent run
-	run *Run
 	// A plan is a job
-	*Job
+	*job
 }
 
-func (p *Plan) ID() string         { return p.id }
-func (p *Plan) JobID() string      { return p.id }
-func (p *Plan) String() string     { return p.id }
+func (p *Plan) ID() string     { return p.id }
+func (p *Plan) String() string { return p.id }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -53,25 +41,21 @@ func (p *Plan) HasChanges() bool {
 	return false
 }
 
-func (p *Plan) GetService(app Application) JobService {
-	return app.PlanService()
-}
-
 // Do performs a terraform plan
 func (p *Plan) Do(env Environment) error {
-	if err := p.run.setupEnv(env); err != nil {
+	if err := p.setup(env); err != nil {
 		return err
 	}
-	if err := p.runTerraformPlan(env); err != nil {
+	if err := p.plan(env); err != nil {
 		return err
 	}
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
-	if err := env.RunFunc(p.run.uploadPlan); err != nil {
+	if err := env.RunFunc(p.uploadPlan); err != nil {
 		return err
 	}
-	if err := env.RunFunc(p.run.uploadJSONPlan); err != nil {
+	if err := env.RunFunc(p.uploadJSONPlan); err != nil {
 		return err
 	}
 	return nil
@@ -116,17 +100,6 @@ func (p *Plan) Finish(opts JobFinishOptions) (*Event, error) {
 	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
 }
 
-func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
-
-func (p *Plan) StatusTimestamp(status PlanStatus) (time.Time, error) {
-	for _, pst := range p.statusTimestamps {
-		if pst.Status == status {
-			return pst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
 // ToJSONAPI assembles a JSON-API DTO.
 func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
@@ -143,65 +116,68 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range p.StatusTimestamps() {
 		switch ts.Status {
-		case PlanCanceled:
+		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case PlanErrored:
+		case JobErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case PlanFinished:
+		case JobFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case PlanQueued:
+		case JobQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case PlanRunning:
+		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 	return dto
 }
 
-func (p *Plan) updateStatus(status PlanStatus) {
-	p.status = status
-	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
-}
-
-// runTerraformPlan runs a terraform plan
-func (p *Plan) runTerraformPlan(env Environment) error {
+// TODO: return a command string instead and have Do() execute it - this'll make
+// it more suitable for unit testing.
+//
+// plan executes terraform plan
+func (p *Plan) plan(env Environment) error {
 	args := []string{
 		"plan",
 	}
-	if p.run.isDestroy {
+	if p.isDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+PlanFilename)
 	return env.RunCLI("terraform", args...)
 }
 
-// PlanStatus represents a plan state.
-type PlanStatus string
+func (p *Plan) uploadPlan(ctx context.Context, env Environment) error {
+	file, err := os.ReadFile(filepath.Join(env.Path(), PlanFilename))
+	if err != nil {
+		return err
+	}
+
+	if err := env.RunService().UploadPlanFile(ctx, p.ID(), file, PlanFormatBinary); err != nil {
+		return fmt.Errorf("unable to upload plan: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Plan) uploadJSONPlan(ctx context.Context, env Environment) error {
+	jsonFile, err := os.ReadFile(filepath.Join(env.Path(), JSONPlanFilename))
+	if err != nil {
+		return err
+	}
+	if err := env.RunService().UploadPlanFile(ctx, p.ID(), jsonFile, PlanFormatJSON); err != nil {
+		return fmt.Errorf("unable to upload JSON plan: %w", err)
+	}
+	return nil
+}
 
 type PlanService interface {
 	Get(ctx context.Context, id string) (*Plan, error)
-
-	JobService
-	ChunkStore
-}
-
-type PlanLogStore interface {
-	ChunkStore
-}
-
-type PlanStatusTimestamp struct {
-	Status    PlanStatus
-	Timestamp time.Time
 }
 
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:  NewID("plan"),
-		run: run,
-		Job: NewJob(
+		id:             NewID("plan"),
+		job:            newJob(),
 		ResourceReport: &ResourceReport{},
 	}
 }

@@ -5,6 +5,7 @@ package pggen
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -14,6 +15,7 @@ import (
 const findQueuedJobsSQL = `SELECT
     j.job_id,
     j.run_id,
+    p.relname AS job_type,
     j.status,
     r.is_destroy,
     r.refresh,
@@ -23,15 +25,18 @@ const findQueuedJobsSQL = `SELECT
     r.configuration_version_id,
     r.workspace_id
 FROM jobs j
+JOIN pg_class p ON j.tableoid = p.tableoid
 JOIN runs r ON r.run_id = j.run_id
 JOIN configuration_versions cv USING(configuration_version_id)
 JOIN workspaces w ON r.workspace_id = w.workspace_id
 WHERE j.status = 'queued'
+AND   j.tableoid = p.oid
 ;`
 
 type FindQueuedJobsRow struct {
 	JobID                  pgtype.Text `json:"job_id"`
 	RunID                  pgtype.Text `json:"run_id"`
+	JobType                pgtype.Name `json:"job_type"`
 	Status                 pgtype.Text `json:"status"`
 	IsDestroy              bool        `json:"is_destroy"`
 	Refresh                bool        `json:"refresh"`
@@ -53,7 +58,7 @@ func (q *DBQuerier) FindQueuedJobs(ctx context.Context) ([]FindQueuedJobsRow, er
 	items := []FindQueuedJobsRow{}
 	for rows.Next() {
 		var item FindQueuedJobsRow
-		if err := rows.Scan(&item.JobID, &item.RunID, &item.Status, &item.IsDestroy, &item.Refresh, &item.RefreshOnly, &item.AutoApply, &item.Speculative, &item.ConfigurationVersionID, &item.WorkspaceID); err != nil {
+		if err := rows.Scan(&item.JobID, &item.RunID, &item.JobType, &item.Status, &item.IsDestroy, &item.Refresh, &item.RefreshOnly, &item.AutoApply, &item.Speculative, &item.ConfigurationVersionID, &item.WorkspaceID); err != nil {
 			return nil, fmt.Errorf("scan FindQueuedJobs row: %w", err)
 		}
 		items = append(items, item)
@@ -79,7 +84,7 @@ func (q *DBQuerier) FindQueuedJobsScan(results pgx.BatchResults) ([]FindQueuedJo
 	items := []FindQueuedJobsRow{}
 	for rows.Next() {
 		var item FindQueuedJobsRow
-		if err := rows.Scan(&item.JobID, &item.RunID, &item.Status, &item.IsDestroy, &item.Refresh, &item.RefreshOnly, &item.AutoApply, &item.Speculative, &item.ConfigurationVersionID, &item.WorkspaceID); err != nil {
+		if err := rows.Scan(&item.JobID, &item.RunID, &item.JobType, &item.Status, &item.IsDestroy, &item.Refresh, &item.RefreshOnly, &item.AutoApply, &item.Speculative, &item.ConfigurationVersionID, &item.WorkspaceID); err != nil {
 			return nil, fmt.Errorf("scan FindQueuedJobsBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -88,6 +93,46 @@ func (q *DBQuerier) FindQueuedJobsScan(results pgx.BatchResults) ([]FindQueuedJo
 		return nil, fmt.Errorf("close FindQueuedJobsBatch rows: %w", err)
 	}
 	return items, err
+}
+
+const insertJobStatusTimestampSQL = `INSERT INTO job_status_timestamps (
+    job_id,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertJobStatusTimestampParams struct {
+	JobID     pgtype.Text
+	Status    pgtype.Text
+	Timestamp time.Time
+}
+
+// InsertJobStatusTimestamp implements Querier.InsertJobStatusTimestamp.
+func (q *DBQuerier) InsertJobStatusTimestamp(ctx context.Context, params InsertJobStatusTimestampParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertJobStatusTimestamp")
+	cmdTag, err := q.conn.Exec(ctx, insertJobStatusTimestampSQL, params.JobID, params.Status, params.Timestamp)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertJobStatusTimestamp: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertJobStatusTimestampBatch implements Querier.InsertJobStatusTimestampBatch.
+func (q *DBQuerier) InsertJobStatusTimestampBatch(batch genericBatch, params InsertJobStatusTimestampParams) {
+	batch.Queue(insertJobStatusTimestampSQL, params.JobID, params.Status, params.Timestamp)
+}
+
+// InsertJobStatusTimestampScan implements Querier.InsertJobStatusTimestampScan.
+func (q *DBQuerier) InsertJobStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertJobStatusTimestampBatch: %w", err)
+	}
+	return cmdTag, err
 }
 
 const insertLogChunkSQL = `INSERT INTO logs (

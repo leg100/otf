@@ -121,31 +121,14 @@ INSERT INTO run_statuses (status) VALUES
 	('planned_and_finished'),
 	('planning');
 
-INSERT INTO plan_statuses (status) VALUES
-    ('canceled'),
-    ('errored'),
-    ('finished'),
-    ('pending'),
-    ('queued'),
-    ('running'),
-    ('unreachable');
-
-INSERT INTO apply_statuses (status) VALUES
-    ('canceled'),
-    ('errored'),
-    ('finished'),
-    ('pending'),
-    ('queued'),
-    ('running'),
-    ('unreachable');
-
 INSERT INTO job_statuses (status) VALUES
     ('canceled'),
     ('errored'),
     ('finished'),
     ('pending'),
-    ('claimed'),
-    ('running');
+    ('queued'),
+    ('running'),
+    ('unreachable');
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
@@ -171,9 +154,30 @@ CREATE TABLE IF NOT EXISTS run_status_timestamps (
 
 CREATE TABLE IF NOT EXISTS jobs (
     job_id      TEXT,
-    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     status      TEXT REFERENCES job_statuses  NOT NULL,
                 PRIMARY KEY (job_id)
+);
+
+CREATE TABLE IF NOT EXISTS plans (
+    job_id             TEXT      REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    run_id             TEXT      REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    plan_id            TEXT      NOT NULL,
+    plan_bin           BYTEA,
+    plan_json          BYTEA,
+    additions          INTEGER   NOT NULL,
+    changes            INTEGER   NOT NULL,
+    destructions       INTEGER   NOT NULL,
+                       PRIMARY KEY (plan_id)
+);
+
+CREATE TABLE IF NOT EXISTS applies (
+    job_id            TEXT      REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    run_id            TEXT      REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    apply_id          TEXT      NOT NULL,
+    additions         INTEGER   NOT NULL,
+    changes           INTEGER   NOT NULL,
+    destructions      INTEGER   NOT NULL,
+                      PRIMARY KEY (apply_id)
 );
 
 CREATE TABLE IF NOT EXISTS logs (
@@ -183,36 +187,11 @@ CREATE TABLE IF NOT EXISTS logs (
                 PRIMARY KEY (job_id, chunk_id)
 );
 
-CREATE TABLE IF NOT EXISTS plans (
-    plan_id                     TEXT            NOT NULL,
-    plan_bin                    BYTEA,
-    plan_json                   BYTEA,
-    additions                   INTEGER         NOT NULL,
-    changes                     INTEGER         NOT NULL,
-    destructions                INTEGER         NOT NULL,
-                                PRIMARY KEY (plan_id)
-) INHERITS (jobs);
-
-CREATE TABLE IF NOT EXISTS applies (
-    apply_id          TEXT            NOT NULL,
-    additions         INTEGER         NOT NULL,
-    changes           INTEGER         NOT NULL,
-    destructions      INTEGER         NOT NULL,
-                      PRIMARY KEY (apply_id)
-) INHERITS (jobs);
-
-CREATE TABLE IF NOT EXISTS plan_status_timestamps (
-    plan_id      TEXT       REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT        REFERENCES plan_statuses NOT NULL,
+CREATE TABLE IF NOT EXISTS job_status_timestamps (
+    job_id      TEXT        REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    status      TEXT        REFERENCES job_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (plan_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS apply_status_timestamps (
-    apply_id    TEXT        REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT        REFERENCES apply_statuses NOT NULL,
-    timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (apply_id, status)
+                PRIMARY KEY (job_id, status)
 );
 
 CREATE TABLE IF NOT EXISTS state_versions (
@@ -237,12 +216,11 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
 -- +goose Down
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
-DROP TABLE IF EXISTS apply_status_timestamps;
-DROP TABLE IF EXISTS applies;
-DROP TABLE IF EXISTS plan_status_timestamps;
-DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS run_status_timestamps;
+DROP TABLE IF EXISTS job_status_timestamps;
 DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS applies;
+DROP TABLE IF EXISTS plans;
 DROP TABLE IF EXISTS jobs;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS job_statuses;

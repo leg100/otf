@@ -9,26 +9,26 @@ import (
 
 var _ Spooler = (*SpoolerDaemon)(nil)
 
-// Spooler is a daemon from which enqueued runs can be retrieved
+// Spooler is a daemon from which enqueued jobs can be retrieved
 type Spooler interface {
 	// Start the daemon
 	Start(context.Context) error
 
-	// GetRun receives spooled runs
-	GetRun() <-chan *otf.Run
+	// GetJob receives spooled runs
+	GetJob() <-chan otf.Job
 
 	// GetCancelation receives requests to cancel runs
-	GetCancelation() <-chan *otf.Run
+	GetCancelation() <-chan otf.Job
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
 // apply, and converting them into spooled jobs.
 type SpoolerDaemon struct {
 	// Queue of queued jobs
-	queue chan *otf.Job
+	queue chan otf.Job
 
 	// Queue of cancelation requests
-	cancelations chan *otf.Run
+	cancelations chan otf.Job
 
 	// Subscriber allows subscribing to stream of events
 	Subscriber
@@ -37,8 +37,8 @@ type SpoolerDaemon struct {
 	logr.Logger
 }
 
-type RunLister interface {
-	List(context.Context, otf.RunListOptions) (*otf.RunList, error)
+type JobQueueGetter interface {
+	Queued(context.Context) ([]otf.Job, error)
 }
 
 type Subscriber interface {
@@ -57,22 +57,21 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued jobs
-func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
-	// TODO: order runs by created_at date
-	runs, err := rl.List(context.Background(), otf.RunListOptions{Statuses: QueuedStatuses})
+func NewSpooler(rl JobQueueGetter, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
+	jobs, err := rl.Queued(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate queue
-	queue := make(chan *otf.Run, SpoolerCapacity)
-	for _, r := range runs.Items {
-		queue <- r
+	queue := make(chan otf.Job, SpoolerCapacity)
+	for _, j := range jobs {
+		queue <- j
 	}
 
 	return &SpoolerDaemon{
 		queue:        queue,
-		cancelations: make(chan *otf.Run, SpoolerCapacity),
+		cancelations: make(chan otf.Job, SpoolerCapacity),
 		Subscriber:   sub,
 		Logger:       logger,
 	}, nil
@@ -98,25 +97,27 @@ func (s *SpoolerDaemon) Start(ctx context.Context) error {
 }
 
 // GetRun returns a channel of queued runs
-func (s *SpoolerDaemon) GetJob() <-chan *otf.Job {
+func (s *SpoolerDaemon) GetJob() <-chan otf.Job {
 	return s.queue
 }
 
 // GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
+func (s *SpoolerDaemon) GetCancelation() <-chan otf.Job {
 	return s.cancelations
 }
 
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
-	switch obj := ev.Payload.(type) {
-	case *otf.Job:
-		s.V(2).Info("received job event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
+	job, ok := ev.Payload.(otf.Job)
+	if !ok {
+		// skip non-job events
+		return
+	}
+	s.V(2).Info("received job event", "run", job.JobID(), "type", ev.Type, "status", job.Status())
 
-		switch ev.Type {
-		case otf.EventPlanQueued, otf.EventApplyQueued:
-			s.queue <- obj
-		case otf.EventRunCanceled:
-			s.cancelations <- obj
-		}
+	switch ev.Type {
+	case otf.EventPlanQueued, otf.EventApplyQueued:
+		s.queue <- job
+	case otf.EventRunCanceled:
+		s.cancelations <- job
 	}
 }

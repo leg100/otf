@@ -15,17 +15,6 @@ INSERT INTO applies (
     pggen.arg('destructions')
 );
 
--- name: InsertApplyStatusTimestamp :exec
-INSERT INTO apply_status_timestamps (
-    apply_id,
-    status,
-    timestamp
-) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Status'),
-    pggen.arg('Timestamp')
-);
-
 -- name: FindRunIDByApplyID :one
 SELECT run_id
 FROM applies

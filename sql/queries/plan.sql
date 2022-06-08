@@ -17,17 +17,6 @@ INSERT INTO plans (
     pggen.arg('destructions')
 );
 
--- name: InsertPlanStatusTimestamp :exec
-INSERT INTO plan_status_timestamps (
-    plan_id,
-    status,
-    timestamp
-) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Status'),
-    pggen.arg('Timestamp')
-);
-
 -- name: UpdatePlanStatus :one
 UPDATE plans
 SET
@@ -44,6 +33,23 @@ SET
     destructions = pggen.arg('destructions')
 WHERE plan_id = pggen.arg('plan_id')
 RETURNING plan_id
+;
+
+-- name: FindPlanByID :one
+SELECT
+    plan_id,
+    status,
+    additions,
+    changes,
+    destructions,
+    (
+        SELECT array_agg(st.*)
+        FROM job_status_timestamps st
+        WHERE st.job_id = p.job_id
+        GROUP BY p.job_id
+    ) AS status_timestamps
+FROM plans p
+WHERE plan_id = pggen.arg('plan_id')
 ;
 
 -- name: FindRunIDByPlanID :one

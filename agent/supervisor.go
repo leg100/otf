@@ -58,9 +58,9 @@ func (s *Supervisor) Start(ctx context.Context) {
 
 	for {
 		select {
-		case run := <-s.GetCancelation():
+		case job := <-s.GetCancelation():
 			// TODO: support force cancelations too.
-			s.Cancel(run.ID(), false)
+			s.Cancel(job.JobID(), false)
 		case <-ctx.Done():
 			return
 		}

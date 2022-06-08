@@ -1,56 +1,167 @@
 package otf
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 const (
-	JobCanceled      JobStatus = "canceled"
-	JobForceCanceled JobStatus = "force_canceled"
-	JobErrored       JobStatus = "errored"
-	JobPending       JobStatus = "pending"
-	JobClaimed       JobStatus = "claimed"
-	JobRunning       JobStatus = "running"
-	JobFinished      JobStatus = "finished"
+	JobCanceled    JobStatus = "canceled"
+	JobErrored     JobStatus = "errored"
+	JobPending     JobStatus = "pending"
+	JobQueued      JobStatus = "queued"
+	JobRunning     JobStatus = "running"
+	JobFinished    JobStatus = "finished"
+	JobUnreachable JobStatus = "unreachable"
 )
 
 var (
 	ErrJobAlreadyClaimed = errors.New("job already claimed")
 )
 
-// Doer does some work.
-type Doer interface {
+// Job is a unit of work
+type Job interface {
 	// Do some work in an execution environment
 	Do(Environment) error
 	// ID identifies the work
-	ID() string
-	// Status provides the current status of the work
+	JobID() string
+	// Status provides the current status of the job
 	Status() JobStatus
 }
 
 type JobStatus string
 
-// Job is a unit of work to do.
-type Job struct {
-	id     string
-	status JobStatus
-	Doer
+// job is functionality common to all jobs
+type job struct {
+	id                     string
+	status                 JobStatus
+	statusTimestamps       []JobStatusTimestamp
+	runID                  string
+	configurationVersionID string
+	workspaceID            string
+	// terraform flags
+	isDestroy bool
 }
 
-func (j *Job) ID() string        { return j.id }
-func (j *Job) Status() JobStatus { return j.status }
+func (j *job) JobID() string                          { return j.id }
+func (j *job) Status() JobStatus                      { return j.status }
+func (j *job) StatusTimestamps() []JobStatusTimestamp { return j.statusTimestamps }
 
-func (j *Job) UpdateStatus(status JobStatus) {
+// StatusTimestamp retrieves the timestamp for a status.
+func (j *job) StatusTimestamp(status JobStatus) (time.Time, error) {
+	for _, rst := range j.statusTimestamps {
+		if rst.Status == status {
+			return rst.Timestamp, nil
+		}
+	}
+	return time.Time{}, ErrStatusTimestampNotFound
+}
+
+func (j *job) UpdateStatus(status JobStatus) {
 	j.status = status
+	j.statusTimestamps = append(j.statusTimestamps, JobStatusTimestamp{
+		Status:    status,
+		Timestamp: CurrentTimestamp(),
+	})
 }
 
-func NewJob(doer Doer) *Job {
-	return &Job{
+// setupEnv invokes the necessary steps before a plan or apply can proceed.
+func (j *job) setup(env Environment) error {
+	if err := env.RunFunc(j.downloadConfig); err != nil {
+		return err
+	}
+	err := env.RunFunc(func(ctx context.Context, env Environment) error {
+		return deleteBackendConfigFromDirectory(ctx, env.Path())
+	})
+	if err != nil {
+		return err
+	}
+	if err := env.RunFunc(j.downloadState); err != nil {
+		return err
+	}
+	if err := env.RunCLI("terraform", "init"); err != nil {
+		return fmt.Errorf("running terraform init: %w", err)
+	}
+	return nil
+}
+
+func (j *job) downloadConfig(ctx context.Context, env Environment) error {
+	// Download config
+	cv, err := env.ConfigurationVersionService().Download(ctx, j.configurationVersionID)
+	if err != nil {
+		return fmt.Errorf("unable to download config: %w", err)
+	}
+	// Decompress and untar config
+	if err := Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
+		return fmt.Errorf("unable to unpack config: %w", err)
+	}
+	return nil
+}
+
+// downloadState downloads current state to disk. If there is no state yet
+// nothing will be downloaded and no error will be reported.
+func (j *job) downloadState(ctx context.Context, env Environment) error {
+	state, err := env.StateVersionService().Current(ctx, j.workspaceID)
+	if errors.Is(err, ErrResourceNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("retrieving current state version: %w", err)
+	}
+	statefile, err := env.StateVersionService().Download(ctx, state.ID())
+	if err != nil {
+		return fmt.Errorf("downloading state version: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0644); err != nil {
+		return fmt.Errorf("saving state to local disk: %w", err)
+	}
+	return nil
+}
+
+func (j *job) downloadPlanFile(ctx context.Context, env Environment) error {
+	plan, err := env.RunService().GetPlanFile(ctx, RunGetOptions{ID: String(j.runID)}, PlanFormatBinary)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0644)
+}
+
+// uploadState reads, parses, and uploads terraform state
+func (j *job) uploadState(ctx context.Context, env Environment) error {
+	f, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
+	if err != nil {
+		return err
+	}
+	state, err := UnmarshalState(f)
+	if err != nil {
+		return err
+	}
+	_, err = env.StateVersionService().Create(ctx, j.workspaceID, StateVersionCreateOptions{
+		State:   String(base64.StdEncoding.EncodeToString(f)),
+		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
+		Lineage: &state.Lineage,
+		Serial:  Int64(state.Serial),
+		RunID:   &j.runID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func newJob() *job {
+	return &job{
 		id:     NewID("job"),
 		status: JobPending,
-		Doer:   doer,
 	}
 }
 
@@ -79,22 +190,9 @@ type JobStore interface {
 	Create(ctx context.Context, job *Job) error
 }
 
-// JobSelector selects the appropriate job and job service for a Run
-type JobSelector struct {
-	PlanService  PlanService
-	ApplyService ApplyService
-}
-
-// GetJob returns the appropriate job and job service for the Run
-func (jsp *JobSelector) GetJob(run *Run) (Job, JobService, error) {
-	switch run.Status() {
-	case RunPlanQueued, RunPlanning:
-		return run.Plan, jsp.PlanService, nil
-	case RunApplyQueued, RunApplying:
-		return run.Apply, jsp.ApplyService, nil
-	default:
-		return nil, nil, fmt.Errorf("attempted to retrieve active job for run but run has an invalid status: %s", run.Status())
-	}
+type JobStatusTimestamp struct {
+	Status    JobStatus
+	Timestamp time.Time
 }
 
 type PlanJob struct {
@@ -118,3 +216,23 @@ type ApplyJob struct {
 	// flags for terraform apply
 	isDestroy bool
 }
+
+type JobDBResult struct {
+	JobID                  pgtype.Text `json:"job_id"`
+	RunID                  pgtype.Text `json:"run_id"`
+	JobType                pgtype.Name `json:"job_type"`
+	Status                 pgtype.Text `json:"status"`
+	IsDestroy              bool        `json:"is_destroy"`
+	Refresh                bool        `json:"refresh"`
+	RefreshOnly            bool        `json:"refresh_only"`
+	AutoApply              bool        `json:"auto_apply"`
+	Speculative            bool        `json:"speculative"`
+	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text `json:"workspace_id"`
+}
+
+type Action string
+
+const (
+	Confirmed Action = "confirmed"
+)

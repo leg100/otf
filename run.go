@@ -1,15 +1,10 @@
 package otf
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
@@ -20,19 +15,35 @@ const (
 	// plan
 	DefaultRefresh = true
 	// List all available run statuses supported in OTF.
-	RunApplied            RunStatus = "applied"
-	RunApplyQueued        RunStatus = "apply_queued"
-	RunApplying           RunStatus = "applying"
-	RunCanceled           RunStatus = "canceled"
-	RunForceCanceled      RunStatus = "force_canceled"
-	RunConfirmed          RunStatus = "confirmed"
-	RunDiscarded          RunStatus = "discarded"
-	RunErrored            RunStatus = "errored"
-	RunPending            RunStatus = "pending"
-	RunPlanQueued         RunStatus = "plan_queued"
-	RunPlanned            RunStatus = "planned"
+
+	// computed: plan=finished & apply=finished
+	RunApplied RunStatus = "applied"
+	// computed: plan=finished & apply=queued
+	RunApplyQueued RunStatus = "apply_queued"
+	// computed: plan=finished & apply=running
+	RunApplying RunStatus = "applying"
+	// computed: plan=canceled || apply=canceled
+	RunCanceled RunStatus = "canceled"
+	// ?
+	RunForceCanceled RunStatus = "force_canceled"
+	// precondition: plan=finished & apply=pending
+	//
+	// is confirmation queued? is it set as a status in db?
+	RunConfirmed RunStatus = "confirmed"
+	// precondition: plan=finished & apply=pending
+	RunDiscarded RunStatus = "discarded"
+	// computed: plan=pending || (run=planned)
+	RunErrored RunStatus = "errored"
+	// computed: plan=pending
+	RunPending RunStatus = "pending"
+	// computed: plan=queued
+	RunPlanQueued RunStatus = "plan_queued"
+	// computed: plan=finished & apply=pending
+	RunPlanned RunStatus = "planned"
+	// computed: plan=finished & apply=unreachable
 	RunPlannedAndFinished RunStatus = "planned_and_finished"
-	RunPlanning           RunStatus = "planning"
+	// computed: plan=running
+	RunPlanning RunStatus = "planning"
 )
 
 var (
@@ -362,114 +373,6 @@ func (r *Run) updateStatus(status RunStatus) error {
 	})
 	// set job reflecting new status
 	r.setJob()
-	return nil
-}
-
-// setupEnv invokes the necessary steps before a plan or apply can proceed.
-func (r *Run) setupEnv(env Environment) error {
-	if err := env.RunFunc(r.downloadConfig); err != nil {
-		return err
-	}
-	err := env.RunFunc(func(ctx context.Context, env Environment) error {
-		return deleteBackendConfigFromDirectory(ctx, env.Path())
-	})
-	if err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.downloadState); err != nil {
-		return err
-	}
-	if err := env.RunCLI("terraform", "init"); err != nil {
-		return fmt.Errorf("running terraform init: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
-	// Download config
-	cv, err := env.ConfigurationVersionService().Download(ctx, r.ConfigurationVersion.ID())
-	if err != nil {
-		return fmt.Errorf("unable to download config: %w", err)
-	}
-	// Decompress and untar config
-	if err := Unpack(bytes.NewBuffer(cv), env.Path()); err != nil {
-		return fmt.Errorf("unable to unpack config: %w", err)
-	}
-	return nil
-}
-
-// downloadState downloads current state to disk. If there is no state yet
-// nothing will be downloaded and no error will be reported.
-func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.StateVersionService().Current(ctx, r.Workspace.ID())
-	if errors.Is(err, ErrResourceNotFound) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("retrieving current state version: %w", err)
-	}
-	statefile, err := env.StateVersionService().Download(ctx, state.ID())
-	if err != nil {
-		return fmt.Errorf("downloading state version: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0644); err != nil {
-		return fmt.Errorf("saving state to local disk: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
-	file, err := os.ReadFile(filepath.Join(env.Path(), PlanFilename))
-	if err != nil {
-		return err
-	}
-
-	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), file, PlanFormatBinary); err != nil {
-		return fmt.Errorf("unable to upload plan: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
-	jsonFile, err := os.ReadFile(filepath.Join(env.Path(), JSONPlanFilename))
-	if err != nil {
-		return err
-	}
-	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), jsonFile, PlanFormatJSON); err != nil {
-		return fmt.Errorf("unable to upload JSON plan: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.RunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0644)
-}
-
-// uploadState reads, parses, and uploads terraform state
-func (r *Run) uploadState(ctx context.Context, env Environment) error {
-	f, err := os.ReadFile(filepath.Join(env.Path(), LocalStateFilename))
-	if err != nil {
-		return err
-	}
-	state, err := UnmarshalState(f)
-	if err != nil {
-		return err
-	}
-	_, err = env.StateVersionService().Create(ctx, r.Workspace.ID(), StateVersionCreateOptions{
-		State:   String(base64.StdEncoding.EncodeToString(f)),
-		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
-		Lineage: &state.Lineage,
-		Serial:  Int64(state.Serial),
-		Run:     r,
-	})
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
