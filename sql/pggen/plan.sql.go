@@ -63,39 +63,6 @@ func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag,
 	return cmdTag, err
 }
 
-const updatePlanStatusSQL = `UPDATE plans
-SET
-    status = $1
-WHERE plan_id = $2
-RETURNING plan_id
-;`
-
-// UpdatePlanStatus implements Querier.UpdatePlanStatus.
-func (q *DBQuerier) UpdatePlanStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatus")
-	row := q.conn.QueryRow(ctx, updatePlanStatusSQL, status, id)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UpdatePlanStatus: %w", err)
-	}
-	return item, nil
-}
-
-// UpdatePlanStatusBatch implements Querier.UpdatePlanStatusBatch.
-func (q *DBQuerier) UpdatePlanStatusBatch(batch genericBatch, status pgtype.Text, id pgtype.Text) {
-	batch.Queue(updatePlanStatusSQL, status, id)
-}
-
-// UpdatePlanStatusScan implements Querier.UpdatePlanStatusScan.
-func (q *DBQuerier) UpdatePlanStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UpdatePlanStatusBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const updatePlannedChangesByIDSQL = `UPDATE plans
 SET
     additions = $1,

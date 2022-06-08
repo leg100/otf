@@ -60,3 +60,23 @@ WHERE job_id = pggen.arg('job_id')
 RETURNING job_id
 ;
 
+-- name: UpdateJobStatusByPlanID :one
+UPDATE jobs
+SET
+    status = pggen.arg('status')
+FROM plans
+WHERE plan_id = pggen.arg('plan_id')
+AND   plans.job_id = jobs.job_id
+RETURNING plan_id
+;
+
+-- name: UpdateJobStatusByApplyID :one
+UPDATE jobs
+SET
+    status = pggen.arg('status')
+FROM applies
+WHERE apply_id = pggen.arg('apply_id')
+AND   applies.job_id = jobs.job_id
+RETURNING apply_id
+;
+

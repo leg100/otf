@@ -97,6 +97,10 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		},
 	}
 
+	run.Plan.run = &run
+	run.Apply.run = &run
+	run.setJob()
+
 	if result.Workspace != nil {
 		workspace, err := UnmarshalWorkspaceDBType(*result.Workspace)
 		if err != nil {

@@ -242,3 +242,73 @@ func (q *DBQuerier) UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, 
 	}
 	return item, nil
 }
+
+const updateJobStatusByPlanIDSQL = `UPDATE jobs
+SET
+    status = $1
+FROM plans
+WHERE plan_id = $2
+AND   plans.job_id = jobs.job_id
+RETURNING plan_id
+;`
+
+// UpdateJobStatusByPlanID implements Querier.UpdateJobStatusByPlanID.
+func (q *DBQuerier) UpdateJobStatusByPlanID(ctx context.Context, status pgtype.Text, planID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJobStatusByPlanID")
+	row := q.conn.QueryRow(ctx, updateJobStatusByPlanIDSQL, status, planID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateJobStatusByPlanID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateJobStatusByPlanIDBatch implements Querier.UpdateJobStatusByPlanIDBatch.
+func (q *DBQuerier) UpdateJobStatusByPlanIDBatch(batch genericBatch, status pgtype.Text, planID pgtype.Text) {
+	batch.Queue(updateJobStatusByPlanIDSQL, status, planID)
+}
+
+// UpdateJobStatusByPlanIDScan implements Querier.UpdateJobStatusByPlanIDScan.
+func (q *DBQuerier) UpdateJobStatusByPlanIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateJobStatusByPlanIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateJobStatusByApplyIDSQL = `UPDATE jobs
+SET
+    status = $1
+FROM applies
+WHERE apply_id = $2
+AND   applies.job_id = jobs.job_id
+RETURNING apply_id
+;`
+
+// UpdateJobStatusByApplyID implements Querier.UpdateJobStatusByApplyID.
+func (q *DBQuerier) UpdateJobStatusByApplyID(ctx context.Context, status pgtype.Text, applyID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJobStatusByApplyID")
+	row := q.conn.QueryRow(ctx, updateJobStatusByApplyIDSQL, status, applyID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateJobStatusByApplyID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateJobStatusByApplyIDBatch implements Querier.UpdateJobStatusByApplyIDBatch.
+func (q *DBQuerier) UpdateJobStatusByApplyIDBatch(batch genericBatch, status pgtype.Text, applyID pgtype.Text) {
+	batch.Queue(updateJobStatusByApplyIDSQL, status, applyID)
+}
+
+// UpdateJobStatusByApplyIDScan implements Querier.UpdateJobStatusByApplyIDScan.
+func (q *DBQuerier) UpdateJobStatusByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateJobStatusByApplyIDBatch row: %w", err)
+	}
+	return item, nil
+}

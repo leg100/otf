@@ -166,6 +166,20 @@ type Querier interface {
 	// UpdateJobStatusScan scans the result of an executed UpdateJobStatusBatch query.
 	UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	UpdateJobStatusByPlanID(ctx context.Context, status pgtype.Text, planID pgtype.Text) (pgtype.Text, error)
+	// UpdateJobStatusByPlanIDBatch enqueues a UpdateJobStatusByPlanID query into batch to be executed
+	// later by the batch.
+	UpdateJobStatusByPlanIDBatch(batch genericBatch, status pgtype.Text, planID pgtype.Text)
+	// UpdateJobStatusByPlanIDScan scans the result of an executed UpdateJobStatusByPlanIDBatch query.
+	UpdateJobStatusByPlanIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	UpdateJobStatusByApplyID(ctx context.Context, status pgtype.Text, applyID pgtype.Text) (pgtype.Text, error)
+	// UpdateJobStatusByApplyIDBatch enqueues a UpdateJobStatusByApplyID query into batch to be executed
+	// later by the batch.
+	UpdateJobStatusByApplyIDBatch(batch genericBatch, status pgtype.Text, applyID pgtype.Text)
+	// UpdateJobStatusByApplyIDScan scans the result of an executed UpdateJobStatusByApplyIDBatch query.
+	UpdateJobStatusByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	// FindOrganizationByName finds an organization by name.
 	//
 	FindOrganizationByName(ctx context.Context, name pgtype.Text) (FindOrganizationByNameRow, error)
@@ -237,13 +251,6 @@ type Querier interface {
 	InsertPlanBatch(batch genericBatch, params InsertPlanParams)
 	// InsertPlanScan scans the result of an executed InsertPlanBatch query.
 	InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	UpdatePlanStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error)
-	// UpdatePlanStatusBatch enqueues a UpdatePlanStatus query into batch to be executed
-	// later by the batch.
-	UpdatePlanStatusBatch(batch genericBatch, status pgtype.Text, id pgtype.Text)
-	// UpdatePlanStatusScan scans the result of an executed UpdatePlanStatusBatch query.
-	UpdatePlanStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	UpdatePlannedChangesByID(ctx context.Context, params UpdatePlannedChangesByIDParams) (pgtype.Text, error)
 	// UpdatePlannedChangesByIDBatch enqueues a UpdatePlannedChangesByID query into batch to be executed
@@ -731,6 +738,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateJobStatusSQL, updateJobStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateJobStatus': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateJobStatusByPlanIDSQL, updateJobStatusByPlanIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateJobStatusByPlanID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateJobStatusByApplyIDSQL, updateJobStatusByApplyIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateJobStatusByApplyID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
 	}
@@ -760,9 +773,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertPlanSQL, insertPlanSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPlan': %w", err)
-	}
-	if _, err := p.Prepare(ctx, updatePlanStatusSQL, updatePlanStatusSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdatePlanStatus': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updatePlannedChangesByIDSQL, updatePlannedChangesByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlannedChangesByID': %w", err)

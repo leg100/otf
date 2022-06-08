@@ -17,14 +17,6 @@ INSERT INTO plans (
     pggen.arg('destructions')
 );
 
--- name: UpdatePlanStatus :one
-UPDATE plans
-SET
-    status = pggen.arg('status')
-WHERE plan_id = pggen.arg('id')
-RETURNING plan_id
-;
-
 -- name: UpdatePlannedChangesByID :one
 UPDATE plans
 SET

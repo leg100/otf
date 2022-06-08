@@ -36,6 +36,10 @@ type Job interface {
 	JobID() string
 	// Status provides the current status of the job
 	Status() JobStatus
+	// StatusTimestamps provides timestamps for when statuses were set
+	StatusTimestamps() []JobStatusTimestamp
+	// StatusTimestamp retrieves the timestamp for a status.
+	StatusTimestamp(JobStatus) (time.Time, error)
 }
 
 type JobStatus string
