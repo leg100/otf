@@ -85,7 +85,7 @@ type Run struct {
 	refreshOnly      bool
 	autoApply        bool
 	speculative      bool
-	status           RunStatus
+	status           *RunStatus
 	statusTimestamps []RunStatusTimestamp
 	replaceAddrs     []string
 	targetAddrs      []string
@@ -117,7 +117,7 @@ func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) Status() RunStatus {
 	// explicitly set status overrides computed statuses
 	if r.status != nil {
-		return r.status
+		return *r.status
 	}
 
 	switch r.Plan.Status() {
@@ -375,7 +375,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 
 // updateStatus transitions the state - changes to a run are made only via this
 // method.
-func (r *Run) updateStatus(status JobStatus) error {
+func (r *Run) updateStatus(status RunStatus) error {
 	switch status {
 	case JobPending:
 		r.Plan.updateStatus(JobPending)
