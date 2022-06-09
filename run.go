@@ -111,9 +111,50 @@ func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
-func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceName() string                  { return r.workspaceName }
+
+func (r *Run) Status() RunStatus {
+	// explicitly set status overrides computed statuses
+	if r.status != nil {
+		return r.status
+	}
+
+	switch r.Plan.Status() {
+	case JobPending:
+		return RunPending
+	case JobQueued:
+		return RunPlanQueued
+	case JobRunning:
+		return RunPlanning
+	case JobErrored:
+		return RunErrored
+	case JobCanceled:
+		return RunCanceled
+	case JobFinished:
+		if r.speculative {
+			return RunPlannedAndFinished
+		}
+		switch r.Apply.Status() {
+		case JobPending:
+			// awaiting user to confirm apply
+			return RunPlanned
+		case JobQueued:
+			return RunApplyQueued
+		case JobRunning:
+			return RunApplying
+		case JobErrored:
+			return RunErrored
+		case JobCanceled:
+			return RunCanceled
+		case JobFinished:
+			return RunApplied
+		}
+	}
+
+	// should never reach here
+	return RunErrored
+}
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {

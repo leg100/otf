@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	JobCanceled    JobStatus = "canceled"
-	JobErrored     JobStatus = "errored"
 	JobPending     JobStatus = "pending"
 	JobQueued      JobStatus = "queued"
 	JobRunning     JobStatus = "running"
 	JobFinished    JobStatus = "finished"
+	JobCanceled    JobStatus = "canceled"
+	JobErrored     JobStatus = "errored"
 	JobUnreachable JobStatus = "unreachable"
 )
 
@@ -59,6 +59,23 @@ type job struct {
 func (j *job) JobID() string                          { return j.id }
 func (j *job) Status() JobStatus                      { return j.status }
 func (j *job) StatusTimestamps() []JobStatusTimestamp { return j.statusTimestamps }
+
+func (j *job) Discardable() bool {
+	switch j.status {
+	case JobPending, JobFinished:
+		return true
+	default:
+		return false
+	}
+}
+
+func (j *job) Discard() error {
+	if !j.Discardable() {
+		return ErrRunDiscardNotAllowed
+	}
+	j.updateStatus(JobUnreachable)
+	return nil
+}
 
 // StatusTimestamp retrieves the timestamp for a status.
 func (j *job) StatusTimestamp(status JobStatus) (time.Time, error) {
