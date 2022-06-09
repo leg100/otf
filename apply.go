@@ -17,6 +17,8 @@ type Apply struct {
 	*ResourceReport
 	// A plan is a job
 	*job
+	// run is the parent run
+	run *Run
 }
 
 func (a *Apply) ID() string     { return a.id }
@@ -47,7 +49,7 @@ func (a *Apply) Start() error {
 	if a.status != JobQueued {
 		return fmt.Errorf("run cannot be started: invalid status: %s", a.status)
 	}
-	a.UpdateStatus(JobRunning)
+	a.run.updateStatus(JobRunning)
 	return nil
 }
 

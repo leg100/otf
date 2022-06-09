@@ -120,6 +120,10 @@ func (r *Run) Discard() error {
 	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
+	if r.Plan.status == JobPending {
+		r.Plan.updateStatus(JobUnreachable)
+		r.Apply.updateStatus(JobUnreachable)
+	}
 	r.updateStatus(RunDiscarded)
 	return nil
 }
@@ -330,12 +334,12 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 
 // updateStatus transitions the state - changes to a run are made only via this
 // method.
-func (r *Run) updateStatus(status RunStatus) error {
+func (r *Run) updateStatus(status JobStatus) error {
 	switch status {
-	case RunPending:
-		r.Plan.updateStatus(PlanPending)
-		r.Apply.updateStatus(ApplyPending)
-	case RunPlanQueued:
+	case JobPending:
+		r.Plan.updateStatus(JobPending)
+		r.Apply.updateStatus(JobPending)
+	case JobQueued:
 		r.Plan.updateStatus(PlanQueued)
 	case RunPlanning:
 		r.Plan.updateStatus(PlanRunning)

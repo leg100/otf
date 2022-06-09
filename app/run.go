@@ -65,7 +65,7 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 	// TODO: remove once event types are simplified, i.e. EventRunStateChange
 	if run.Speculative() {
-		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
+		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run.Plan})
 	}
 
 	return run, nil
@@ -98,7 +98,7 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 }
 
 func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
-	run, err := s.db.UpdateJobStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
 		return run.ApplyRun()
 	})
 	if err != nil {
@@ -151,17 +151,17 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 	return err
 }
 
-func (s RunService) Start(ctx context.Context, id string) (*otf.Plan, error) {
-	plan, err := s.enqueuePlan(ctx, s.db, id)
+func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
+	run, err := s.enqueuePlan(ctx, s.db, id)
 	if err != nil {
 		return nil, err
 	}
 
-	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: plan})
-	return plan, nil
+	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
+	return run, nil
 }
 
-func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*otf.Plan, error) {
+func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*otf.Run, error) {
 	run, err := db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
@@ -171,7 +171,7 @@ func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*
 	}
 	s.V(0).Info("started run", "id", runID)
 
-	return run.Plan, err
+	return run, err
 }
 
 // GetPlanFile returns the plan file for the run.

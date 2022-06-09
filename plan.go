@@ -25,6 +25,8 @@ type Plan struct {
 	*ResourceReport
 	// A plan is a job
 	*job
+	// run is the parent run
+	run *Run
 }
 
 func (p *Plan) ID() string     { return p.id }

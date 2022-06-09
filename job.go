@@ -70,7 +70,7 @@ func (j *job) StatusTimestamp(status JobStatus) (time.Time, error) {
 	return time.Time{}, ErrStatusTimestampNotFound
 }
 
-func (j *job) UpdateStatus(status JobStatus) {
+func (j *job) updateStatus(status JobStatus) {
 	j.status = status
 	j.statusTimestamps = append(j.statusTimestamps, JobStatusTimestamp{
 		Status:    status,
