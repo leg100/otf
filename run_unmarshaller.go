@@ -14,6 +14,8 @@ type RunDBResult struct {
 	RunID                  pgtype.Text                   `json:"run_id"`
 	PlanID                 pgtype.Text                   `json:"plan_id"`
 	ApplyID                pgtype.Text                   `json:"apply_id"`
+	PlanJobID              pgtype.Text                   `json:"plan_job_id"`
+	ApplyJobID             pgtype.Text                   `json:"apply_job_id"`
 	CreatedAt              time.Time                     `json:"created_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
 	PositionInQueue        int                           `json:"position_in_queue"`
@@ -88,6 +90,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		organizationName: result.OrganizationName.String,
 		Plan: &Plan{
 			id:               result.PlanID.String,
+			jobID:            result.PlanJobID.String,
 			status:           PlanStatus(result.PlanStatus.String),
 			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 			ResourceReport: &ResourceReport{
@@ -98,6 +101,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		},
 		Apply: &Apply{
 			id:               result.ApplyID.String,
+			jobID:            result.ApplyJobID.String,
 			status:           ApplyStatus(result.ApplyStatus.String),
 			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 			ResourceReport: &ResourceReport{

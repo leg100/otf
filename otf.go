@@ -46,6 +46,7 @@ type Application interface {
 	ApplyService() ApplyService
 	EventService() EventService
 	UserService() UserService
+	JobService() JobService
 	//GetCacheService() *CacheService
 }
 
@@ -62,6 +63,7 @@ type DB interface {
 	StateVersionStore
 	TokenStore
 	ConfigurationVersionStore
+	ChunkStore
 }
 
 // Identity is an identifiable oTF entity.

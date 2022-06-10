@@ -41,6 +41,8 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
+    plans.job_id AS plan_job_id,
+    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
@@ -84,8 +86,8 @@ SELECT
         GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN plans USING(run_id)
-JOIN applies USING(run_id)
+JOIN (applies JOIN jobs j1 USING (job_id)) USING (run_id)
+JOIN (plans JOIN jobs j2 USING (job_id)) USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
@@ -115,6 +117,8 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
+    plans.job_id AS plan_job_id,
+    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
@@ -158,8 +162,8 @@ SELECT
         GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN plans USING(run_id)
-JOIN applies USING(run_id)
+JOIN (applies JOIN jobs j1 USING (job_id)) USING (run_id)
+JOIN (plans JOIN jobs j2 USING (job_id)) USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
@@ -171,6 +175,8 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
+    plans.job_id AS plan_job_id,
+    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
@@ -214,8 +220,8 @@ SELECT
         GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN plans USING(run_id)
-JOIN applies USING(run_id)
+JOIN (applies JOIN jobs j1 USING (job_id)) USING (run_id)
+JOIN (plans JOIN jobs j2 USING (job_id)) USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)

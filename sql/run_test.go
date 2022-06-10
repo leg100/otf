@@ -171,13 +171,11 @@ func TestRun_List(t *testing.T) {
 		},
 		{
 			name: "by pending status",
-			opts: otf.RunListOptions{Statuses: []otf.RunStatus{otf.RunPending}},
+			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPending}},
 			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 4, len(l.Items))
+				assert.Equal(t, 2, len(l.Items))
 				assert.Contains(t, l.Items, run1)
 				assert.Contains(t, l.Items, run2)
-				assert.Contains(t, l.Items, run3)
-				assert.Contains(t, l.Items, run4)
 			},
 		},
 		{

@@ -1,14 +1,14 @@
 -- name: InsertApply :exec
 INSERT INTO applies (
     apply_id,
-    run_id,
+    job_id,
     status,
     additions,
     changes,
     destructions
 ) VALUES (
     pggen.arg('apply_id'),
-    pggen.arg('run_id'),
+    pggen.arg('job_id'),
     pggen.arg('status'),
     pggen.arg('additions'),
     pggen.arg('changes'),
@@ -27,9 +27,10 @@ INSERT INTO apply_status_timestamps (
 );
 
 -- name: FindRunIDByApplyID :one
-SELECT run_id
+SELECT jobs.run_id
 FROM applies
-WHERE apply_id = pggen.arg('apply_id')
+JOIN jobs USING(job_id)
+WHERE applies.apply_id = pggen.arg('apply_id')
 ;
 
 -- name: UpdateApplyStatus :one

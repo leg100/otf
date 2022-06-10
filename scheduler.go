@@ -70,5 +70,10 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 			return err
 		}
 	}
+	if run.Status() == RunApplied {
+		if err := s.RunService.CreateApplyReport(ctx, run.ID()); err != nil {
+			return err
+		}
+	}
 	return nil
 }

@@ -94,10 +94,9 @@ func (s OrganizationService) Delete(ctx context.Context, name string) error {
 }
 
 func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
-	org, err := s.db.GetOrganization(ctx, name)
+	org, err := s.Get(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-
 	return otf.DefaultEntitlements(org.ID()), nil
 }

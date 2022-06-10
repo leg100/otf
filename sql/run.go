@@ -28,9 +28,16 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
+		_, err = db.InsertJob(ctx,
+			pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
+			pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		)
+		if err != nil {
+			return err
+		}
 		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
 			PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-			RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			JobID:        pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
 			Status:       pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
 			Additions:    0,
 			Changes:      0,
@@ -39,9 +46,16 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
+		_, err = db.InsertJob(ctx,
+			pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
+			pgtype.Text{String: run.ID(), Status: pgtype.Present},
+		)
+		if err != nil {
+			return err
+		}
 		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
 			ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
-			RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			JobID:        pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
 			Status:       pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 			Additions:    0,
 			Changes:      0,
@@ -288,6 +302,8 @@ func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text
 		return db.FindRunIDByPlanID(ctx, pgtype.Text{String: *opts.PlanID, Status: pgtype.Present})
 	} else if opts.ApplyID != nil {
 		return db.FindRunIDByApplyID(ctx, pgtype.Text{String: *opts.ApplyID, Status: pgtype.Present})
+	} else if opts.JobID != nil {
+		return db.FindRunIDByJobID(ctx, pgtype.Text{String: *opts.JobID, Status: pgtype.Present})
 	} else if opts.ID != nil {
 		return pgtype.Text{String: *opts.ID, Status: pgtype.Present}, nil
 	} else {

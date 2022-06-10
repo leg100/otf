@@ -14,7 +14,7 @@ import (
 
 const insertPlanSQL = `INSERT INTO plans (
     plan_id,
-    run_id,
+    job_id,
     status,
     additions,
     changes,
@@ -30,7 +30,7 @@ const insertPlanSQL = `INSERT INTO plans (
 
 type InsertPlanParams struct {
 	PlanID       pgtype.Text
-	RunID        pgtype.Text
+	JobID        pgtype.Text
 	Status       pgtype.Text
 	Additions    int
 	Changes      int
@@ -40,7 +40,7 @@ type InsertPlanParams struct {
 // InsertPlan implements Querier.InsertPlan.
 func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlan")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, params.PlanID, params.RunID, params.Status, params.Additions, params.Changes, params.Destructions)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, params.PlanID, params.JobID, params.Status, params.Additions, params.Changes, params.Destructions)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertPlan: %w", err)
 	}
@@ -49,7 +49,7 @@ func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (pg
 
 // InsertPlanBatch implements Querier.InsertPlanBatch.
 func (q *DBQuerier) InsertPlanBatch(batch genericBatch, params InsertPlanParams) {
-	batch.Queue(insertPlanSQL, params.PlanID, params.RunID, params.Status, params.Additions, params.Changes, params.Destructions)
+	batch.Queue(insertPlanSQL, params.PlanID, params.JobID, params.Status, params.Additions, params.Changes, params.Destructions)
 }
 
 // InsertPlanScan implements Querier.InsertPlanScan.
@@ -176,9 +176,10 @@ func (q *DBQuerier) UpdatePlannedChangesByIDScan(results pgx.BatchResults) (pgty
 	return item, nil
 }
 
-const findRunIDByPlanIDSQL = `SELECT run_id
+const findRunIDByPlanIDSQL = `SELECT jobs.run_id
 FROM plans
-WHERE plan_id = $1
+JOIN jobs USING(job_id)
+WHERE plans.plan_id = $1
 ;`
 
 // FindRunIDByPlanID implements Querier.FindRunIDByPlanID.

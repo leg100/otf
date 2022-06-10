@@ -245,6 +245,42 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 	return ErrWorkspaceLockedByDifferentUser
 }
 
+// Start a run job
+func (r *Run) Start() error {
+	switch r.status {
+	case RunPlanQueued:
+		r.updateStatus(RunPlanning)
+	case RunApplyQueued:
+		r.updateStatus(RunApplying)
+	case RunPlanning, RunApplying:
+		return ErrJobAlreadyClaimed
+	default:
+		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status())
+	}
+	return nil
+}
+
+// Finish updates the run to reflect its plan having finished. An event is
+// returned reflecting the run's new status.
+func (r *Run) Finish(opts JobFinishOptions) (*Event, error) {
+	if opts.Errored {
+		if err := r.updateStatus(RunErrored); err != nil {
+			return nil, err
+		}
+		return &Event{Payload: r, Type: EventRunErrored}, nil
+	}
+	switch r.status {
+	case RunPlanning:
+		r.updateStatus(RunPlanned)
+		return r.Plan.Finish()
+	case RunApplying:
+		r.updateStatus(RunApplied)
+		return &Event{Payload: r, Type: EventRunApplied}, nil
+	default:
+		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.status)
+	}
+}
+
 // ToJSONAPI assembles a JSON-API DTO.
 func (r *Run) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Run{
@@ -514,6 +550,11 @@ type RunService interface {
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
+	// UpdateStatus updates the run status
+	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	// CreateApplyReport parses the logs from a successful terraform apply and
+	// persists a resource report to the database.
+	CreateApplyReport(ctx context.Context, runID string) error
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -601,6 +642,8 @@ type RunGetOptions struct {
 	ApplyID *string
 	// Get run via plan ID
 	PlanID *string
+	// Get run via job ID
+	JobID *string
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `schema:"include"`
@@ -613,6 +656,8 @@ func (o *RunGetOptions) String() string {
 		return *o.PlanID
 	} else if o.ApplyID != nil {
 		return *o.ApplyID
+	} else if o.JobID != nil {
+		return *o.JobID
 	} else {
 		panic("no ID specified")
 	}

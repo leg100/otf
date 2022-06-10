@@ -22,8 +22,6 @@ var (
 type Supervisor struct {
 	App otf.Application
 
-	otf.JobSelector
-
 	// concurrency is the max number of concurrent workers
 	concurrency int
 

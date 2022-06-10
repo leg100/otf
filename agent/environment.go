@@ -51,7 +51,6 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	js otf.JobService,
 	job otf.Job,
 	environmentVariables []string) (*Environment, error) {
 
@@ -62,8 +61,8 @@ func NewEnvironment(
 
 	out := &otf.JobWriter{
 		ID:         job.JobID(),
-		JobService: js,
 		Logger:     logger,
+		JobService: app.JobService(),
 	}
 
 	return &Environment{

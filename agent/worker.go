@@ -25,14 +25,11 @@ func (w *Worker) Start(ctx context.Context) {
 
 // handle executes the incoming job
 func (w *Worker) handle(ctx context.Context, job otf.Job) {
-	js := job.GetService(w.App)
-
 	log := w.Logger.WithValues("job", job.JobID())
 
 	env, err := NewEnvironment(
 		log,
 		w.App,
-		js,
 		job,
 		w.environmentVariables,
 	)
@@ -42,7 +39,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = js.Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
+	job, err = w.App.JobService().Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "unable to start job")
 		return
@@ -63,7 +60,7 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = js.Finish(ctx, job.JobID(), finishOptions)
+	_, err = w.App.JobService().Finish(ctx, job.JobID(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing job")
 	}

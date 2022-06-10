@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.$`)
+	applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.`)
 )
 
 func ParseApplyOutput(output string) (ResourceReport, error) {

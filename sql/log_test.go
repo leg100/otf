@@ -9,28 +9,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestApplyLog_PutChunk(t *testing.T) {
+func TestLog_PutChunk(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
+	err := db.PutChunk(context.Background(), run.Apply.JobID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
 	require.NoError(t, err)
 }
 
-func TestApplyLog_GetChunk(t *testing.T) {
+func TestLog_GetChunk(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte("hello"), Start: true})
+	err := db.PutChunk(context.Background(), run.Apply.JobID(), otf.Chunk{Data: []byte("hello"), Start: true})
 	require.NoError(t, err)
 
-	err = db.ApplyLogs().PutChunk(context.Background(), run.Apply.ID(), otf.Chunk{Data: []byte(" world"), End: true})
+	err = db.PutChunk(context.Background(), run.Apply.JobID(), otf.Chunk{Data: []byte(" world"), End: true})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -72,10 +72,31 @@ func TestApplyLog_GetChunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ApplyLogs().GetChunk(context.Background(), run.Apply.ID(), tt.opts)
+			got, err := db.GetChunk(context.Background(), run.Apply.JobID(), tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestLog_GetLogsByApplyID(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+
+	want := otf.Chunk{
+		Data:  []byte("hello world"),
+		Start: true,
+		End:   true,
+	}
+	err := db.PutChunk(context.Background(), run.Apply.JobID(), want)
+	require.NoError(t, err)
+
+	got, err := db.GetLogsByApplyID(context.Background(), run.Apply.ID())
+	require.NoError(t, err)
+
+	assert.Equal(t, want, got)
 }

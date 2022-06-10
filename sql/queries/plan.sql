@@ -1,14 +1,14 @@
 -- name: InsertPlan :exec
 INSERT INTO plans (
     plan_id,
-    run_id,
+    job_id,
     status,
     additions,
     changes,
     destructions
 ) VALUES (
     pggen.arg('plan_id'),
-    pggen.arg('run_id'),
+    pggen.arg('job_id'),
     pggen.arg('status'),
     pggen.arg('additions'),
     pggen.arg('changes'),
@@ -45,9 +45,10 @@ RETURNING plan_id
 ;
 
 -- name: FindRunIDByPlanID :one
-SELECT run_id
+SELECT jobs.run_id
 FROM plans
-WHERE plan_id = pggen.arg('plan_id')
+JOIN jobs USING(job_id)
+WHERE plans.plan_id = pggen.arg('plan_id')
 ;
 
 -- name: GetPlanBinByID :one

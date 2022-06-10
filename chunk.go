@@ -12,12 +12,14 @@ type Chunk struct {
 	Start, End bool
 }
 
+// ChunkService has same signatures as ChunkStore
+type ChunkService ChunkStore
+
 // ChunkStore implementations provide a persistent store from and to which chunks
 // of binary objects can be fetched and uploaded.
 type ChunkStore interface {
 	// GetChunk fetches a blob chunk for entity with id
 	GetChunk(ctx context.Context, id string, opts GetChunkOptions) (Chunk, error)
-
 	// PutChunk uploads a blob chunk for entity with id
 	PutChunk(ctx context.Context, id string, chunk Chunk) error
 }
