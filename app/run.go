@@ -41,32 +41,13 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 		return nil, err
 	}
 
-	err = s.db.Tx(ctx, func(db otf.DB) error {
-		if err = db.CreateRun(ctx, run); err != nil {
-			s.Error(err, "creating run", "id", run.ID())
-			return err
-		}
-		s.V(1).Info("created run", "id", run.ID())
-
-		if !run.Speculative() {
-			return nil
-		}
-		// immediately enqueue plan for speculative runs
-		run, err = s.enqueuePlan(ctx, db, run.ID())
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
+	if err = s.db.CreateRun(ctx, run); err != nil {
+		s.Error(err, "creating run", "id", run.ID())
 		return nil, err
 	}
+	s.V(1).Info("created run", "id", run.ID())
 
 	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
-	// TODO: remove once event types are simplified, i.e. EventRunStateChange
-	if run.Speculative() {
-		s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
-	}
 
 	return run, nil
 }
@@ -95,6 +76,47 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 	s.V(2).Info("listed runs", append(opts.LogFields(), "count", len(rl.Items))...)
 
 	return rl, nil
+}
+
+// ListWatch lists runs and then watches for changes to runs. Note: The options
+// filter the list but not the watch.
+func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
+	// retrieve incomplete runs from db
+	existing, err := s.db.ListRuns(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	spool := make(chan *otf.Run, len(existing.Items))
+	for _, r := range existing.Items {
+		spool <- r
+	}
+	sub, err := s.es.Subscribe("spooler")
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				// context cancelled; shutdown spooler
+				close(spool)
+				return
+			case event, ok := <-sub.C():
+				if !ok {
+					// sender closed channel; shutdown spooler
+					close(spool)
+					return
+				}
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				spool <- run
+			}
+		}
+	}()
+	return spool, nil
 }
 
 func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptions) error {
@@ -171,7 +193,7 @@ func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*
 	}
 	s.V(0).Info("started run", "id", runID)
 
-	return run, err
+	return run, nil
 }
 
 // GetPlanFile returns the plan file for the run.

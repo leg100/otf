@@ -98,6 +98,13 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
+	// run spec scheduler
+	specScheduler, err := otf.NewSpeculativeScheduler(ctx, logger, app.RunService())
+	if err != nil {
+		return err
+	}
+	go specScheduler.Start(ctx)
+
 	scheduler, err := otf.NewWorkspaceQueueManager(ctx, app, logger)
 	if err != nil {
 		return fmt.Errorf("initialising workspace queue manager: %w", err)
