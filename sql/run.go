@@ -10,129 +10,137 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// CreateRun persists a Run to the DB. Should be wrapped in a transaction.
+// CreateRun persists a Run to the DB.
 func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
-	_, err := db.InsertRun(ctx, pggen.InsertRunParams{
-		ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		CreatedAt:              run.CreatedAt(),
-		IsDestroy:              run.IsDestroy(),
-		Refresh:                run.Refresh(),
-		RefreshOnly:            run.RefreshOnly(),
-		Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
-		ReplaceAddrs:           run.ReplaceAddrs(),
-		TargetAddrs:            run.TargetAddrs(),
-		ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
-		WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
+	return db.Tx(ctx, func(tx otf.DB) error {
+		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
+			ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			CreatedAt:              run.CreatedAt(),
+			IsDestroy:              run.IsDestroy(),
+			Refresh:                run.Refresh(),
+			RefreshOnly:            run.RefreshOnly(),
+			Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+			ReplaceAddrs:           run.ReplaceAddrs(),
+			TargetAddrs:            run.TargetAddrs(),
+			ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
+			WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
+		})
+		if err != nil {
+			return err
+		}
+		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
+			PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+			RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			Status:       pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+			Additions:    0,
+			Changes:      0,
+			Destructions: 0,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
+			ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
+			RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			Status:       pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+			Additions:    0,
+			Changes:      0,
+			Destructions: 0,
+		})
+		if err != nil {
+			return err
+		}
+		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
+			return fmt.Errorf("inserting run status timestamp: %w", err)
+		}
+		if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
+			return fmt.Errorf("inserting plan status timestamp: %w", err)
+		}
+		if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
+			return fmt.Errorf("inserting apply status timestamp: %w", err)
+		}
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-	_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
-		PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-		RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		Status:       pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-		Additions:    0,
-		Changes:      0,
-		Destructions: 0,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
-		ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
-		RunID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		Status:       pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
-		Additions:    0,
-		Changes:      0,
-		Destructions: 0,
-	})
-	if err != nil {
-		return err
-	}
-	if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
-		return fmt.Errorf("inserting run status timestamp: %w", err)
-	}
-	if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
-		return fmt.Errorf("inserting plan status timestamp: %w", err)
-	}
-	if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
-		return fmt.Errorf("inserting apply status timestamp: %w", err)
-	}
-	return nil
 }
 
-// UpdateStatus updates the run status as well as its plan and/or apply. Wrap in
-// a tx.
+// UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
-	// Get run ID first
-	runID, err := db.getRunID(ctx, opts)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	// select ...for update
-	result, err := db.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
-		RunID: runID,
+	var run *otf.Run
+	err := db.Tx(ctx, func(tx otf.DB) error {
+		// Get run ID first
+		runID, err := db.getRunID(ctx, opts)
+		if err != nil {
+			return databaseError(err)
+		}
+		// select ...for update
+		result, err := db.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
+			RunID: runID,
+		})
+		if err != nil {
+			return databaseError(err)
+		}
+		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		if err != nil {
+			return err
+		}
+
+		// Make copies of statuses before update
+		runStatus := run.Status()
+		planStatus := run.Plan.Status()
+		applyStatus := run.Apply.Status()
+
+		if err := fn(run); err != nil {
+			return err
+		}
+
+		if run.Status() != runStatus {
+			var err error
+			_, err = db.UpdateRunStatus(ctx,
+				pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+				pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
+				return err
+			}
+		}
+
+		if run.Plan.Status() != planStatus {
+			var err error
+			_, err = db.UpdatePlanStatus(ctx,
+				pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+				pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
+				return err
+			}
+		}
+
+		if run.Apply.Status() != applyStatus {
+			var err error
+			_, err = db.UpdateApplyStatus(ctx,
+				pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+				pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
-		return nil, databaseError(err)
-	}
-	run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
-	if err != nil {
 		return nil, err
-	}
-
-	// Make copies of statuses before update
-	runStatus := run.Status()
-	planStatus := run.Plan.Status()
-	applyStatus := run.Apply.Status()
-
-	if err := fn(run); err != nil {
-		return nil, err
-	}
-
-	if run.Status() != runStatus {
-		var err error
-		_, err = db.UpdateRunStatus(ctx,
-			pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
-			pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
-			return nil, err
-		}
-	}
-
-	if run.Plan.Status() != planStatus {
-		var err error
-		_, err = db.UpdatePlanStatus(ctx,
-			pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-			pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
-			return nil, err
-		}
-	}
-
-	if run.Apply.Status() != applyStatus {
-		var err error
-		_, err = db.UpdateApplyStatus(ctx,
-			pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
-			pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
-			return nil, err
-		}
 	}
 	return run, nil
 }

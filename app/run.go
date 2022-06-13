@@ -90,7 +90,7 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 	for _, r := range existing.Items {
 		spool <- r
 	}
-	sub, err := s.es.Subscribe("spooler")
+	sub, err := s.es.Subscribe("run-listwatch")
 	if err != nil {
 		return nil, err
 	}
