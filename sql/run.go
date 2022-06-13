@@ -79,7 +79,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 		if err != nil {
 			return databaseError(err)
 		}
-		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 		if err != nil {
 			return err
 		}

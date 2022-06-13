@@ -33,7 +33,11 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 		return err
 	}
 	if err := callback(newDB(tx)); err != nil {
-		return tx.Rollback(ctx)
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		// return original callback error if rollback succeeds
+		return err
 	}
 	return tx.Commit(ctx)
 }

@@ -37,7 +37,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 			return
 		case run := <-s.incoming:
 			if err := s.handleRun(ctx, run); err != nil {
-				s.Error(err, "scheduling run")
+				s.Error(err, "scheduling run", "run", run.ID())
 			}
 		}
 	}

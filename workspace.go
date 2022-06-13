@@ -322,7 +322,7 @@ type WorkspaceListOptions struct {
 	Prefix string `schema:"search[name],omitempty"`
 
 	// OrganizationName filters workspaces by organization name. Required.
-	OrganizationName string `schema:"organization_name,omitempty"`
+	OrganizationName *string `schema:"organization_name,omitempty"`
 
 	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`

@@ -50,26 +50,26 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
-    organizations.name AS organization_name,
+    o.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
+    CASE WHEN pggen.arg('include_organization') THEN (o.*)::"organizations" END AS organization
 FROM workspaces w
-JOIN organizations USING (organization_id)
+JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name LIKE pggen.arg('prefix') || '%'
-AND organizations.name = pggen.arg('organization_name')
+AND   o.name LIKE ANY(pggen.arg('organization_names'))
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
 ;
 
 -- name: CountWorkspaces :one
 SELECT count(*)
-FROM workspaces
-JOIN organizations USING (organization_id)
-WHERE workspaces.name LIKE pggen.arg('prefix') || '%'
-AND organizations.name = pggen.arg('organization_name')
+FROM workspaces w
+JOIN organizations o USING (organization_id)
+WHERE w.name LIKE pggen.arg('prefix') || '%'
+AND   o.name LIKE ANY(pggen.arg('organization_names'))
 ;
 
 -- name: FindWorkspaceIDByName :one

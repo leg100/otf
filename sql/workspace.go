@@ -144,8 +144,17 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	q := pggen.NewQuerier(db)
 	batch := &pgx.Batch{}
 
+	// Organization name filter is optional - if not provided use a % which in
+	// SQL means match any organization.
+	var organizationName string
+	if opts.OrganizationName != nil {
+		organizationName = *opts.OrganizationName
+	} else {
+		organizationName = "%"
+	}
+
 	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationName:    pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
+		OrganizationNames:   []string{organizationName},
 		Prefix:              pgtype.Text{String: opts.Prefix, Status: pgtype.Present},
 		Limit:               opts.GetLimit(),
 		Offset:              opts.GetOffset(),
@@ -153,7 +162,7 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	})
 	q.CountWorkspacesBatch(batch,
 		pgtype.Text{String: opts.Prefix, Status: pgtype.Present},
-		pgtype.Text{String: opts.OrganizationName, Status: pgtype.Present},
+		[]string{organizationName},
 	)
 
 	results := db.SendBatch(ctx, batch)
