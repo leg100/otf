@@ -149,7 +149,7 @@ func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
 	if err != nil {
 		return fmt.Errorf("compiling report of applied changes: %w", err)
 	}
-	if err := s.db.CreateApplyReport(ctx, run.Apply.JobID(), report); err != nil {
+	if err := s.db.CreateApplyReport(ctx, run.Apply.ID(), report); err != nil {
 		return fmt.Errorf("saving applied changes report: %w", err)
 	}
 	s.V(0).Info("compiled apply report",
