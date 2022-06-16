@@ -11,38 +11,38 @@ import (
 
 // RunDBResult is the database record for a run
 type RunDBResult struct {
-	RunID                  pgtype.Text                   `json:"run_id"`
-	PlanID                 pgtype.Text                   `json:"plan_id"`
-	ApplyID                pgtype.Text                   `json:"apply_id"`
-	PlanJobID              pgtype.Text                   `json:"plan_job_id"`
-	ApplyJobID             pgtype.Text                   `json:"apply_job_id"`
-	CreatedAt              time.Time                     `json:"created_at"`
-	IsDestroy              bool                          `json:"is_destroy"`
-	PositionInQueue        int                           `json:"position_in_queue"`
-	Refresh                bool                          `json:"refresh"`
-	RefreshOnly            bool                          `json:"refresh_only"`
-	Status                 pgtype.Text                   `json:"status"`
-	PlanStatus             pgtype.Text                   `json:"plan_status"`
-	ApplyStatus            pgtype.Text                   `json:"apply_status"`
-	ReplaceAddrs           []string                      `json:"replace_addrs"`
-	TargetAddrs            []string                      `json:"target_addrs"`
-	PlannedAdditions       int                           `json:"planned_additions"`
-	PlannedChanges         int                           `json:"planned_changes"`
-	PlannedDestructions    int                           `json:"planned_destructions"`
-	AppliedAdditions       int                           `json:"applied_additions"`
-	AppliedChanges         int                           `json:"applied_changes"`
-	AppliedDestructions    int                           `json:"applied_destructions"`
-	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
-	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
-	Speculative            bool                          `json:"speculative"`
-	AutoApply              bool                          `json:"auto_apply"`
-	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
-	OrganizationName       pgtype.Text                   `json:"organization_name"`
-	ConfigurationVersion   *pggen.ConfigurationVersions  `json:"configuration_version"`
-	Workspace              *pggen.Workspaces             `json:"workspace"`
-	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps   []pggen.PlanStatusTimestamps  `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps  []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
+	RunID                  pgtype.Text                  `json:"run_id"`
+	PlanID                 pgtype.Text                  `json:"plan_id"`
+	ApplyID                pgtype.Text                  `json:"apply_id"`
+	PlanJobID              pgtype.Text                  `json:"plan_job_id"`
+	ApplyJobID             pgtype.Text                  `json:"apply_job_id"`
+	CreatedAt              time.Time                    `json:"created_at"`
+	IsDestroy              bool                         `json:"is_destroy"`
+	PositionInQueue        int                          `json:"position_in_queue"`
+	Refresh                bool                         `json:"refresh"`
+	RefreshOnly            bool                         `json:"refresh_only"`
+	Status                 pgtype.Text                  `json:"status"`
+	PlanStatus             pgtype.Text                  `json:"plan_status"`
+	ApplyStatus            pgtype.Text                  `json:"apply_status"`
+	ReplaceAddrs           []string                     `json:"replace_addrs"`
+	TargetAddrs            []string                     `json:"target_addrs"`
+	PlannedAdditions       int                          `json:"planned_additions"`
+	PlannedChanges         int                          `json:"planned_changes"`
+	PlannedDestructions    int                          `json:"planned_destructions"`
+	AppliedAdditions       int                          `json:"applied_additions"`
+	AppliedChanges         int                          `json:"applied_changes"`
+	AppliedDestructions    int                          `json:"applied_destructions"`
+	ConfigurationVersionID pgtype.Text                  `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text                  `json:"workspace_id"`
+	Speculative            bool                         `json:"speculative"`
+	AutoApply              bool                         `json:"auto_apply"`
+	WorkspaceName          pgtype.Text                  `json:"workspace_name"`
+	OrganizationName       pgtype.Text                  `json:"organization_name"`
+	ConfigurationVersion   *pggen.ConfigurationVersions `json:"configuration_version"`
+	Workspace              *pggen.Workspaces            `json:"workspace"`
+	RunStatusTimestamps    []pggen.RunStatusTimestamps  `json:"run_status_timestamps"`
+	PlanStatusTimestamps   []pggen.JobStatusTimestamps  `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps  []pggen.JobStatusTimestamps  `json:"apply_status_timestamps"`
 }
 
 // RunDBType represents the Postgres composite type "runs".
@@ -89,10 +89,12 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		workspaceName:    result.WorkspaceName.String,
 		organizationName: result.OrganizationName.String,
 		Plan: &Plan{
-			id:               result.PlanID.String,
-			jobID:            result.PlanJobID.String,
-			status:           PlanStatus(result.PlanStatus.String),
-			statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
+			id: result.PlanID.String,
+			job: &job{
+				id:               result.PlanJobID.String,
+				status:           JobStatus(result.PlanStatus.String),
+				statusTimestamps: unmarshalJobStatusTimestampDBTypes(result.PlanStatusTimestamps),
+			},
 			ResourceReport: &ResourceReport{
 				Additions:    result.PlannedAdditions,
 				Changes:      result.PlannedChanges,
@@ -100,10 +102,12 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 			},
 		},
 		Apply: &Apply{
-			id:               result.ApplyID.String,
-			jobID:            result.ApplyJobID.String,
-			status:           ApplyStatus(result.ApplyStatus.String),
-			statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+			id: result.ApplyID.String,
+			job: &job{
+				id:               result.ApplyJobID.String,
+				status:           JobStatus(result.ApplyStatus.String),
+				statusTimestamps: unmarshalJobStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+			},
 			ResourceReport: &ResourceReport{
 				Additions:    result.AppliedAdditions,
 				Changes:      result.AppliedChanges,
@@ -148,20 +152,10 @@ func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (times
 	return timestamps
 }
 
-func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (timestamps []PlanStatusTimestamp) {
+func unmarshalJobStatusTimestampDBTypes(typs []pggen.JobStatusTimestamps) (timestamps []JobStatusTimestamp) {
 	for _, ty := range typs {
-		timestamps = append(timestamps, PlanStatusTimestamp{
-			Status:    PlanStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Local(),
-		})
-	}
-	return timestamps
-}
-
-func unmarshalApplyStatusTimestampDBTypes(typs []pggen.ApplyStatusTimestamps) (timestamps []ApplyStatusTimestamp) {
-	for _, ty := range typs {
-		timestamps = append(timestamps, ApplyStatusTimestamp{
-			Status:    ApplyStatus(ty.Status.String),
+		timestamps = append(timestamps, JobStatusTimestamp{
+			Status:    JobStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Local(),
 		})
 	}

@@ -24,7 +24,7 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, job otf.Job) {
+func (w *Worker) handle(ctx context.Context, job Job) {
 	log := w.Logger.WithValues("job", job.JobID())
 
 	env, err := NewEnvironment(
@@ -66,4 +66,12 @@ func (w *Worker) handle(ctx context.Context, job otf.Job) {
 	}
 
 	log.Info("finished job")
+}
+
+// Job is a unit of work
+type Job interface {
+	// Do some work in an execution environment
+	Do(otf.Environment) error
+	// GetID gets the ID of the Job
+	JobID() string
 }

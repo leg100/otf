@@ -28,17 +28,17 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertJob(ctx,
-			pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
-			pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		)
+		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
+			JobID:  pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
+			RunID:  pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			Status: pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+		})
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
 			PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
 			JobID:        pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
-			Status:       pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
 			Additions:    0,
 			Changes:      0,
 			Destructions: 0,
@@ -46,17 +46,17 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertJob(ctx,
-			pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
-			pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		)
+		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
+			JobID:  pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
+			RunID:  pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			Status: pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+		})
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
 			ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
 			JobID:        pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
-			Status:       pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
 			Additions:    0,
 			Changes:      0,
 			Destructions: 0,
@@ -67,10 +67,10 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
+		if err := db.insertJobStatusTimestamp(ctx, run.Plan); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
+		if err := db.insertJobStatusTimestamp(ctx, run.Apply); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -124,30 +124,30 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		if run.Plan.Status() != planStatus {
 			var err error
-			_, err = db.UpdatePlanStatus(ctx,
+			_, err = db.UpdateJobStatus(ctx,
 				pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-				pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
+				pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
 			)
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertPlanStatusTimestamp(ctx, run.Plan); err != nil {
+			if err := db.insertJobStatusTimestamp(ctx, run.Plan); err != nil {
 				return err
 			}
 		}
 
 		if run.Apply.Status() != applyStatus {
 			var err error
-			_, err = db.UpdateApplyStatus(ctx,
+			_, err = db.UpdateJobStatus(ctx,
 				pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
-				pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
+				pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
 			)
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertApplyStatusTimestamp(ctx, run.Apply); err != nil {
+			if err := db.insertJobStatusTimestamp(ctx, run.Apply); err != nil {
 				return err
 			}
 		}
@@ -324,27 +324,14 @@ func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error 
 	return err
 }
 
-func (db *DB) insertPlanStatusTimestamp(ctx context.Context, plan *otf.Plan) error {
-	ts, err := plan.StatusTimestamp(plan.Status())
+func (db *DB) insertJobStatusTimestamp(ctx context.Context, job otf.Job) error {
+	ts, err := job.JobStatusTimestamp(job.JobStatus())
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
-		ID:        pgtype.Text{String: plan.ID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(plan.Status()), Status: pgtype.Present},
-		Timestamp: ts,
-	})
-	return err
-}
-
-func (db *DB) insertApplyStatusTimestamp(ctx context.Context, apply *otf.Apply) error {
-	ts, err := apply.StatusTimestamp(apply.Status())
-	if err != nil {
-		return err
-	}
-	_, err = db.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
-		ID:        pgtype.Text{String: apply.ID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(apply.Status()), Status: pgtype.Present},
+	_, err = db.InsertJobStatusTimestamp(ctx, pggen.InsertJobStatusTimestampParams{
+		ID:        pgtype.Text{String: job.JobID(), Status: pgtype.Present},
+		Status:    pgtype.Text{String: string(job.JobStatus()), Status: pgtype.Present},
 		Timestamp: ts,
 	})
 	return err
