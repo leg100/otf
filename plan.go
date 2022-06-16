@@ -60,6 +60,12 @@ func (p *Plan) Do(env Environment) error {
 	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
+	if err := env.RunCLI("terraform", "version"); err != nil {
+		return err
+	}
+	if err := env.RunCLI("ls", "-al", env.Path()); err != nil {
+		return err
+	}
 	if err := env.RunFunc(p.run.uploadPlan); err != nil {
 		return err
 	}
