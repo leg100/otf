@@ -102,6 +102,14 @@ func TestOTF(t *testing.T) {
 		t.Log(string(out))
 		require.NoError(t, err)
 	})
+
+	t.Run("list workspaces", func(t *testing.T) {
+		cmd := exec.Command(client, "workspaces", "list", "--organization", organization)
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+		require.Contains(t, string(out), "dev")
+	})
 }
 
 // Chdir changes current directory to this temp directory.
