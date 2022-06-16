@@ -43,6 +43,12 @@ func (a *Apply) Do(env Environment) error {
 	if err := a.runTerraformApply(env); err != nil {
 		return err
 	}
+	if err := env.RunCLI("terraform", "version"); err != nil {
+		return err
+	}
+	if err := env.RunCLI("ls", "-al", env.Path()); err != nil {
+		return err
+	}
 	if err := env.RunFunc(a.run.uploadState); err != nil {
 		return err
 	}
