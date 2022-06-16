@@ -11,10 +11,9 @@ import (
 )
 
 const (
-	LocalStateFilename  = "terraform.tfstate"
-	PlanFilename        = "plan.out"
-	JSONPlanFilename    = "plan.out.json"
-	ApplyOutputFilename = "apply.out"
+	LocalStateFilename = "terraform.tfstate"
+	PlanFilename       = "plan.out"
+	JSONPlanFilename   = "plan.out.json"
 )
 
 // Plan represents a Terraform Enterprise plan.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
@@ -57,16 +56,12 @@ func (a *Apply) Do(env Environment) error {
 
 // runTerraformApply runs a terraform apply
 func (a *Apply) runTerraformApply(env Environment) error {
-	cmd := strings.Builder{}
-	cmd.WriteString("terraform apply")
+	args := []string{"apply"}
 	if a.run.isDestroy {
-		cmd.WriteString(" -destroy")
+		args = append(args, "-destroy")
 	}
-	cmd.WriteRune(' ')
-	cmd.WriteString(PlanFilename)
-	cmd.WriteString(" | tee ")
-	cmd.WriteString(ApplyOutputFilename)
-	return env.RunCLI("sh", "-c", cmd.String())
+	args = append(args, PlanFilename)
+	return env.RunCLI("terraform", args...)
 }
 
 // ToJSONAPI assembles a JSONAPI DTO.
