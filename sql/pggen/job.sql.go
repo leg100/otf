@@ -5,6 +5,7 @@ package pggen
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -13,16 +14,24 @@ import (
 
 const insertJobSQL = `INSERT INTO jobs (
     job_id,
-    run_id
+    run_id,
+    status
 ) VALUES (
     $1,
-    $2
+    $2,
+    $3
 );`
 
+type InsertJobParams struct {
+	JobID  pgtype.Text
+	RunID  pgtype.Text
+	Status pgtype.Text
+}
+
 // InsertJob implements Querier.InsertJob.
-func (q *DBQuerier) InsertJob(ctx context.Context, jobID pgtype.Text, runID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertJob(ctx context.Context, params InsertJobParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertJob")
-	cmdTag, err := q.conn.Exec(ctx, insertJobSQL, jobID, runID)
+	cmdTag, err := q.conn.Exec(ctx, insertJobSQL, params.JobID, params.RunID, params.Status)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertJob: %w", err)
 	}
@@ -30,8 +39,8 @@ func (q *DBQuerier) InsertJob(ctx context.Context, jobID pgtype.Text, runID pgty
 }
 
 // InsertJobBatch implements Querier.InsertJobBatch.
-func (q *DBQuerier) InsertJobBatch(batch genericBatch, jobID pgtype.Text, runID pgtype.Text) {
-	batch.Queue(insertJobSQL, jobID, runID)
+func (q *DBQuerier) InsertJobBatch(batch genericBatch, params InsertJobParams) {
+	batch.Queue(insertJobSQL, params.JobID, params.RunID, params.Status)
 }
 
 // InsertJobScan implements Querier.InsertJobScan.
@@ -41,6 +50,78 @@ func (q *DBQuerier) InsertJobScan(results pgx.BatchResults) (pgconn.CommandTag, 
 		return cmdTag, fmt.Errorf("exec InsertJobBatch: %w", err)
 	}
 	return cmdTag, err
+}
+
+const insertJobStatusTimestampSQL = `INSERT INTO job_status_timestamps (
+    job_id,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertJobStatusTimestampParams struct {
+	ID        pgtype.Text
+	Status    pgtype.Text
+	Timestamp time.Time
+}
+
+// InsertJobStatusTimestamp implements Querier.InsertJobStatusTimestamp.
+func (q *DBQuerier) InsertJobStatusTimestamp(ctx context.Context, params InsertJobStatusTimestampParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertJobStatusTimestamp")
+	cmdTag, err := q.conn.Exec(ctx, insertJobStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertJobStatusTimestamp: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertJobStatusTimestampBatch implements Querier.InsertJobStatusTimestampBatch.
+func (q *DBQuerier) InsertJobStatusTimestampBatch(batch genericBatch, params InsertJobStatusTimestampParams) {
+	batch.Queue(insertJobStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
+}
+
+// InsertJobStatusTimestampScan implements Querier.InsertJobStatusTimestampScan.
+func (q *DBQuerier) InsertJobStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertJobStatusTimestampBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const updateJobStatusSQL = `UPDATE jobs
+SET status = $1
+WHERE job_id = $2
+RETURNING job_id
+;`
+
+// UpdateJobStatus implements Querier.UpdateJobStatus.
+func (q *DBQuerier) UpdateJobStatus(ctx context.Context, status pgtype.Text, jobID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateJobStatus")
+	row := q.conn.QueryRow(ctx, updateJobStatusSQL, status, jobID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateJobStatus: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateJobStatusBatch implements Querier.UpdateJobStatusBatch.
+func (q *DBQuerier) UpdateJobStatusBatch(batch genericBatch, status pgtype.Text, jobID pgtype.Text) {
+	batch.Queue(updateJobStatusSQL, status, jobID)
+}
+
+// UpdateJobStatusScan implements Querier.UpdateJobStatusScan.
+func (q *DBQuerier) UpdateJobStatusScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateJobStatusBatch row: %w", err)
+	}
+	return item, nil
 }
 
 const findJobIDByApplyIDSQL = `SELECT job_id

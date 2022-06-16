@@ -15,34 +15,28 @@ const (
 	PlanFilename        = "plan.out"
 	JSONPlanFilename    = "plan.out.json"
 	ApplyOutputFilename = "apply.out"
-	//List all available plan statuses.
-	PlanCanceled    PlanStatus = "canceled"
-	PlanErrored     PlanStatus = "errored"
-	PlanFinished    PlanStatus = "finished"
-	PlanPending     PlanStatus = "pending"
-	PlanQueued      PlanStatus = "queued"
-	PlanRunning     PlanStatus = "running"
-	PlanUnreachable PlanStatus = "unreachable"
 )
 
 // Plan represents a Terraform Enterprise plan.
 type Plan struct {
-	id    string
-	jobID string
+	id string
 	// Resources is a report of planned resource changes
 	*ResourceReport
-	// Status is the current status
-	status PlanStatus
-	// statusTimestamps records timestamps of status transitions
-	statusTimestamps []PlanStatusTimestamp
 	// run is the parent run
 	run *Run
+	// plan is a job
+	*job
 }
 
-func (p *Plan) ID() string         { return p.id }
-func (p *Plan) JobID() string      { return p.jobID }
-func (p *Plan) String() string     { return p.id }
-func (p *Plan) Status() PlanStatus { return p.status }
+func (p *Plan) ID() string           { return p.id }
+func (p *Plan) String() string       { return p.id }
+func (p *Plan) JobStatus() JobStatus { return p.job.status }
+func (p *Plan) JobStatusTimestamp(status JobStatus) (time.Time, error) {
+	return p.job.StatusTimestamp(status)
+}
+func (p *Plan) JobStatusTimestamps() []JobStatusTimestamp {
+	return p.job.statusTimestamps
+}
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -93,17 +87,6 @@ func (p *Plan) Finish() (*Event, error) {
 	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
 }
 
-func (p *Plan) StatusTimestamps() []PlanStatusTimestamp { return p.statusTimestamps }
-
-func (p *Plan) StatusTimestamp(status PlanStatus) (time.Time, error) {
-	for _, pst := range p.statusTimestamps {
-		if pst.Status == status {
-			return pst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
 // ToJSONAPI assembles a JSON-API DTO.
 func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
@@ -120,27 +103,19 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range p.StatusTimestamps() {
 		switch ts.Status {
-		case PlanCanceled:
+		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case PlanErrored:
+		case JobErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case PlanFinished:
+		case JobFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case PlanQueued:
+		case JobQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case PlanRunning:
+		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 	return dto
-}
-
-func (p *Plan) updateStatus(status PlanStatus) {
-	p.status = status
-	p.statusTimestamps = append(p.statusTimestamps, PlanStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
 }
 
 // runTerraformPlan runs a terraform plan
@@ -155,25 +130,15 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 	return env.RunCLI("terraform", args...)
 }
 
-// PlanStatus represents a plan state.
-type PlanStatus string
-
 type PlanService interface {
 	Get(ctx context.Context, id string) (*Plan, error)
 }
 
-type PlanStatusTimestamp struct {
-	Status    PlanStatus
-	Timestamp time.Time
-}
-
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:    NewID("plan"),
-		jobID: NewID("job"),
-		run:   run,
-		// new plans always start off in pending state
-		status:         PlanPending,
+		id:             NewID("plan"),
+		run:            run,
+		job:            newJob(),
 		ResourceReport: &ResourceReport{},
 	}
 }

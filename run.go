@@ -358,37 +358,36 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 func (r *Run) updateStatus(status RunStatus) error {
 	switch status {
 	case RunPending:
-		r.Plan.updateStatus(PlanPending)
-		r.Apply.updateStatus(ApplyPending)
+		r.Plan.updateStatus(JobPending)
+		r.Apply.updateStatus(JobPending)
 	case RunPlanQueued:
-		r.Plan.updateStatus(PlanQueued)
+		r.Plan.updateStatus(JobQueued)
 	case RunPlanning:
-		r.Plan.updateStatus(PlanRunning)
+		r.Plan.updateStatus(JobRunning)
 	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.updateStatus(PlanFinished)
-		r.Apply.updateStatus(ApplyUnreachable)
+		r.Plan.updateStatus(JobFinished)
+		r.Apply.updateStatus(JobUnreachable)
 	case RunApplyQueued:
-		r.Apply.status = ApplyQueued
-		r.Apply.updateStatus(ApplyQueued)
+		r.Apply.updateStatus(JobQueued)
 	case RunApplying:
-		r.Apply.updateStatus(ApplyRunning)
+		r.Apply.updateStatus(JobRunning)
 	case RunApplied:
-		r.Apply.updateStatus(ApplyFinished)
+		r.Apply.updateStatus(JobFinished)
 	case RunErrored:
 		switch r.Status() {
 		case RunPlanning:
-			r.Plan.updateStatus(PlanErrored)
-			r.Apply.updateStatus(ApplyUnreachable)
+			r.Plan.updateStatus(JobErrored)
+			r.Apply.updateStatus(JobUnreachable)
 		case RunApplying:
-			r.Apply.updateStatus(ApplyErrored)
+			r.Apply.updateStatus(JobErrored)
 		}
 	case RunCanceled:
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
-			r.Plan.updateStatus(PlanCanceled)
-			r.Apply.updateStatus(ApplyUnreachable)
+			r.Plan.updateStatus(JobCanceled)
+			r.Apply.updateStatus(JobUnreachable)
 		case RunApplyQueued, RunApplying:
-			r.Apply.updateStatus(ApplyCanceled)
+			r.Apply.updateStatus(JobCanceled)
 		}
 	}
 	r.status = status

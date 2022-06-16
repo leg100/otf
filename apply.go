@@ -11,35 +11,26 @@ import (
 	httputil "github.com/leg100/otf/http/util"
 )
 
-//List all available apply statuses supported in OTF.
-const (
-	ApplyCanceled    ApplyStatus = "canceled"
-	ApplyErrored     ApplyStatus = "errored"
-	ApplyFinished    ApplyStatus = "finished"
-	ApplyPending     ApplyStatus = "pending"
-	ApplyQueued      ApplyStatus = "queued"
-	ApplyRunning     ApplyStatus = "running"
-	ApplyUnreachable ApplyStatus = "unreachable"
-)
-
 // Apply represents a terraform apply
 type Apply struct {
-	id    string
-	jobID string
+	id string
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
-	// Status is the current status
-	status ApplyStatus
-	// StatusTimestamps records timestamps of status transitions
-	statusTimestamps []ApplyStatusTimestamp
 	// run is the parent run
 	run *Run
+	// apply is a job
+	*job
 }
 
-func (a *Apply) ID() string          { return a.id }
-func (a *Apply) JobID() string       { return a.jobID }
-func (a *Apply) String() string      { return a.id }
-func (a *Apply) Status() ApplyStatus { return a.status }
+func (a *Apply) ID() string           { return a.id }
+func (a *Apply) String() string       { return a.id }
+func (a *Apply) JobStatus() JobStatus { return a.job.status }
+func (a *Apply) JobStatusTimestamp(status JobStatus) (time.Time, error) {
+	return a.job.StatusTimestamp(status)
+}
+func (a *Apply) JobStatusTimestamps() []JobStatusTimestamp {
+	return a.job.statusTimestamps
+}
 
 // Do performs a terraform apply
 func (a *Apply) Do(env Environment) error {
@@ -56,25 +47,6 @@ func (a *Apply) Do(env Environment) error {
 		return err
 	}
 	return nil
-}
-
-func (a *Apply) StatusTimestamps() []ApplyStatusTimestamp { return a.statusTimestamps }
-
-func (a *Apply) StatusTimestamp(status ApplyStatus) (time.Time, error) {
-	for _, rst := range a.statusTimestamps {
-		if rst.Status == status {
-			return rst.Timestamp, nil
-		}
-	}
-	return time.Time{}, ErrStatusTimestampNotFound
-}
-
-func (a *Apply) updateStatus(status ApplyStatus) {
-	a.status = status
-	a.statusTimestamps = append(a.statusTimestamps, ApplyStatusTimestamp{
-		Status:    status,
-		Timestamp: CurrentTimestamp(),
-	})
 }
 
 // runTerraformApply runs a terraform apply
@@ -106,40 +78,31 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {
-		case ApplyCanceled:
+		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case ApplyErrored:
+		case JobErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case ApplyFinished:
+		case JobFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case ApplyQueued:
+		case JobQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case ApplyRunning:
+		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
 	return dto
 }
 
-// ApplyStatus represents an apply state.
-type ApplyStatus string
-
 // ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
 }
 
-type ApplyStatusTimestamp struct {
-	Status    ApplyStatus
-	Timestamp time.Time
-}
-
 func newApply(run *Run) *Apply {
 	return &Apply{
 		id:             NewID("apply"),
-		jobID:          NewID("job"),
 		run:            run,
-		status:         ApplyPending,
+		job:            newJob(),
 		ResourceReport: &ResourceReport{},
 	}
 }

@@ -2,37 +2,16 @@
 INSERT INTO plans (
     plan_id,
     job_id,
-    status,
     additions,
     changes,
     destructions
 ) VALUES (
     pggen.arg('plan_id'),
     pggen.arg('job_id'),
-    pggen.arg('status'),
     pggen.arg('additions'),
     pggen.arg('changes'),
     pggen.arg('destructions')
 );
-
--- name: InsertPlanStatusTimestamp :exec
-INSERT INTO plan_status_timestamps (
-    plan_id,
-    status,
-    timestamp
-) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Status'),
-    pggen.arg('Timestamp')
-);
-
--- name: UpdatePlanStatus :one
-UPDATE plans
-SET
-    status = pggen.arg('status')
-WHERE plan_id = pggen.arg('id')
-RETURNING plan_id
-;
 
 -- name: UpdatePlannedChangesByID :one
 UPDATE plans

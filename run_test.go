@@ -14,43 +14,46 @@ func TestRun_UpdateStatus(t *testing.T) {
 		name            string
 		fromStatus      RunStatus
 		toStatus        RunStatus
-		wantPlanStatus  PlanStatus
-		wantApplyStatus ApplyStatus
+		wantPlanStatus  JobStatus
+		wantApplyStatus JobStatus
 	}{
 		{
 			name:            "plan error",
 			fromStatus:      RunPlanning,
 			toStatus:        RunErrored,
-			wantPlanStatus:  PlanErrored,
-			wantApplyStatus: ApplyUnreachable,
+			wantPlanStatus:  JobErrored,
+			wantApplyStatus: JobUnreachable,
 		},
 		{
 			name:            "plan canceled",
 			fromStatus:      RunPlanning,
 			toStatus:        RunCanceled,
-			wantPlanStatus:  PlanCanceled,
-			wantApplyStatus: ApplyUnreachable,
+			wantPlanStatus:  JobCanceled,
+			wantApplyStatus: JobUnreachable,
 		},
 		{
 			name:            "apply error",
 			fromStatus:      RunApplying,
 			toStatus:        RunErrored,
-			wantApplyStatus: ApplyErrored,
+			wantApplyStatus: JobErrored,
+			wantPlanStatus:  JobPending,
 		},
 		{
 			name:            "apply canceled",
 			fromStatus:      RunApplying,
 			toStatus:        RunCanceled,
-			wantApplyStatus: ApplyCanceled,
+			wantApplyStatus: JobCanceled,
+			wantPlanStatus:  JobPending,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Run{
 				status: tt.fromStatus,
-				Plan:   &Plan{},
 				Apply:  &Apply{},
 			}
+			r.Plan = newPlan(r)
+			r.Apply = newApply(r)
 
 			r.updateStatus(tt.toStatus)
 
@@ -78,11 +81,10 @@ func TestRun_ForceCancelAvailableAt(t *testing.T) {
 
 func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
 	run := &Run{
-		Plan:  &Plan{},
-		Apply: &Apply{},
+		status: RunPending,
+		Plan:   &Plan{},
+		Apply:  &Apply{},
 	}
-
-	run.updateStatus(RunPending)
 
 	assert.Zero(t, run.ForceCancelAvailableAt())
 }

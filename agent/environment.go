@@ -51,7 +51,7 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	job otf.Job,
+	job Job,
 	environmentVariables []string) (*Environment, error) {
 
 	path, err := os.MkdirTemp("", "otf-plan")
@@ -78,7 +78,7 @@ func NewEnvironment(
 
 // Execute executes a job and regardless of whether it fails, it'll close the
 // environment logs.
-func (e *Environment) Execute(job otf.Job) (err error) {
+func (e *Environment) Execute(job Job) (err error) {
 	var errors *multierror.Error
 
 	if err := job.Do(e); err != nil {
