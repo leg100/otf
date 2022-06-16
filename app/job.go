@@ -38,7 +38,6 @@ func (s jobService) GetChunk(ctx context.Context, jobID string, opts otf.GetChun
 		s.Error(err, "reading logs", "id", jobID, "offset", opts.Offset, "limit", opts.Limit)
 		return otf.Chunk{}, err
 	}
-	s.V(2).Info("read logs", "id", jobID, "offset", opts.Offset, "limit", opts.Limit)
 	return logs, nil
 }
 
@@ -49,7 +48,7 @@ func (s jobService) PutChunk(ctx context.Context, jobID string, chunk otf.Chunk)
 		s.Error(err, "writing logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-	s.V(2).Info("written logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
+	s.V(2).Info("written logs", "id", jobID, "start", chunk.Start, "end", chunk.End, "content", string(chunk.Data))
 	return nil
 }
 
