@@ -19,20 +19,6 @@ const (
 	// DefaultRefresh specifies that the state be refreshed prior to running a
 	// plan
 	DefaultRefresh = true
-	// List all available run statuses supported in OTF.
-	RunApplied            RunStatus = "applied"
-	RunApplyQueued        RunStatus = "apply_queued"
-	RunApplying           RunStatus = "applying"
-	RunCanceled           RunStatus = "canceled"
-	RunForceCanceled      RunStatus = "force_canceled"
-	RunConfirmed          RunStatus = "confirmed"
-	RunDiscarded          RunStatus = "discarded"
-	RunErrored            RunStatus = "errored"
-	RunPending            RunStatus = "pending"
-	RunPlanQueued         RunStatus = "plan_queued"
-	RunPlanned            RunStatus = "planned"
-	RunPlannedAndFinished RunStatus = "planned_and_finished"
-	RunPlanning           RunStatus = "planning"
 )
 
 var (
@@ -59,11 +45,6 @@ var (
 	}
 )
 
-// RunStatus represents a run state.
-type RunStatus string
-
-func (r RunStatus) String() string { return string(r) }
-
 type Run struct {
 	id                     string
 	createdAt              time.Time
@@ -75,6 +56,7 @@ type Run struct {
 	autoApply              bool
 	speculative            bool
 	status                 RunStatus
+	state                  runState
 	statusTimestamps       []RunStatusTimestamp
 	replaceAddrs           []string
 	targetAddrs            []string
@@ -88,6 +70,17 @@ type Run struct {
 	workspace *Workspace
 	// Job is the current job the run is performing
 	Job
+
+	// states
+	planEnqueuedState       *planQueuedState
+	planningState           *planningState
+	plannedState            *plannedState
+	canceledState           *canceledState
+	discardedState          *discardedState
+	plannedAndFinishedState *plannedAndFinishedState
+	applyQueuedState        *applyQueuedState
+	applyingState           *applyingState
+	appliedState            *appliedState
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -107,6 +100,7 @@ func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
 func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
+func (r *Run) HasChanges() bool                       { return r.Plan.HasChanges() }
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
@@ -184,15 +178,6 @@ func (r *Run) ForceCancelable() bool {
 		return false
 	}
 	return CurrentTimestamp().After(availAt)
-}
-
-// Active determines whether run is currently the active run on a workspace,
-// i.e. it is neither finished nor pending
-func (r *Run) Active() bool {
-	if r.Done() || r.Status() == RunPending {
-		return false
-	}
-	return true
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
@@ -364,6 +349,10 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		}
 	}
 	return dto
+}
+
+func (r *Run) setState(s runState) {
+	r.state = s
 }
 
 // updateStatus transitions the state - changes to a run are made only via this
