@@ -9,9 +9,15 @@ import (
 	"strings"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 )
+
+// String converts a go-string into a postgres non-null string
+func String(s string) pgtype.Text {
+	return pgtype.Text{String: s, Status: pgtype.Present}
+}
 
 func databaseError(err error) error {
 	var pgErr *pgconn.PgError

@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -13,10 +12,10 @@ import (
 func (db *DB) CreateOrganization(ctx context.Context, org *otf.Organization) error {
 	q := pggen.NewQuerier(db)
 	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
-		ID:              pgtype.Text{String: org.ID(), Status: pgtype.Present},
+		ID:              String(org.ID()),
 		CreatedAt:       org.CreatedAt(),
 		UpdatedAt:       org.UpdatedAt(),
-		Name:            pgtype.Text{String: org.Name(), Status: pgtype.Present},
+		Name:            String(org.Name()),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
 	})
@@ -36,7 +35,7 @@ func (db *DB) UpdateOrganization(ctx context.Context, name string, fn func(*otf.
 	}
 	defer tx.Rollback(ctx)
 	q := pggen.NewQuerier(tx)
-	result, err := q.FindOrganizationByNameForUpdate(ctx, pgtype.Text{String: name, Status: pgtype.Present})
+	result, err := q.FindOrganizationByNameForUpdate(ctx, String(name))
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +47,8 @@ func (db *DB) UpdateOrganization(ctx context.Context, name string, fn func(*otf.
 		return nil, err
 	}
 	_, err = q.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
-		Name:            pgtype.Text{String: name, Status: pgtype.Present},
-		NewName:         pgtype.Text{String: org.Name(), Status: pgtype.Present},
+		Name:            String(name),
+		NewName:         String(org.Name()),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
 		UpdatedAt:       org.UpdatedAt(),
@@ -93,7 +92,7 @@ func (db *DB) ListOrganizations(ctx context.Context, opts otf.OrganizationListOp
 }
 
 func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
-	r, err := db.FindOrganizationByName(ctx, pgtype.Text{String: name, Status: pgtype.Present})
+	r, err := db.FindOrganizationByName(ctx, String(name))
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -101,7 +100,7 @@ func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organizati
 }
 
 func (db *DB) DeleteOrganization(ctx context.Context, name string) error {
-	_, err := db.Querier.DeleteOrganization(ctx, pgtype.Text{String: name, Status: pgtype.Present})
+	_, err := db.Querier.DeleteOrganization(ctx, String(name))
 	if err != nil {
 		return databaseError(err)
 	}

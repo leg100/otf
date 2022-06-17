@@ -3,7 +3,6 @@ package sql
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -22,7 +21,7 @@ func newConfigUploader(tx pgx.Tx, id string) *cvUploader {
 }
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {
-	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, pgtype.Text{String: u.id, Status: pgtype.Present})
+	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, String(u.id))
 	if err != nil {
 		return err
 	}
@@ -30,7 +29,7 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 }
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (otf.ConfigurationStatus, error) {
-	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, config, pgtype.Text{String: u.id, Status: pgtype.Present})
+	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, config, String(u.id))
 	if err != nil {
 		return otf.ConfigurationErrored, err
 	}

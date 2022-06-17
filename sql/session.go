@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -16,10 +15,10 @@ var (
 // CreateSession inserts the session, associating it with the user.
 func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 	_, err := db.InsertSession(ctx, pggen.InsertSessionParams{
-		Token:     pgtype.Text{String: session.Token, Status: pgtype.Present},
-		Address:   pgtype.Text{String: session.Address, Status: pgtype.Present},
+		Token:     String(session.Token),
+		Address:   String(session.Address),
 		Expiry:    session.Expiry,
-		UserID:    pgtype.Text{String: session.UserID, Status: pgtype.Present},
+		UserID:    String(session.UserID),
 		CreatedAt: session.CreatedAt(),
 	})
 	return err
@@ -27,7 +26,7 @@ func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 
 // DeleteSession deletes a user's session from the DB.
 func (db *DB) DeleteSession(ctx context.Context, token string) error {
-	_, err := db.DeleteSessionByToken(ctx, pgtype.Text{String: token, Status: pgtype.Present})
+	_, err := db.DeleteSessionByToken(ctx, String(token))
 	if err != nil {
 		return databaseError(err)
 	}

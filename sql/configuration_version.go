@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -20,23 +19,20 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 	q := pggen.NewQuerier(tx)
 
 	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-		ID:            pgtype.Text{String: cv.ID(), Status: pgtype.Present},
+		ID:            String(cv.ID()),
 		CreatedAt:     cv.CreatedAt(),
 		AutoQueueRuns: cv.AutoQueueRuns(),
-		Source:        pgtype.Text{String: string(cv.Source()), Status: pgtype.Present},
+		Source:        String(string(cv.Source())),
 		Speculative:   cv.Speculative(),
-		Status:        pgtype.Text{String: string(cv.Status()), Status: pgtype.Present},
-		WorkspaceID:   pgtype.Text{String: cv.WorkspaceID(), Status: pgtype.Present},
+		Status:        String(string(cv.Status())),
+		WorkspaceID:   String(cv.WorkspaceID()),
 	})
 	if err != nil {
 		return err
 	}
 
 	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx,
-		pgtype.Text{String: cv.ID(), Status: pgtype.Present},
-		pgtype.Text{String: string(cv.Status()), Status: pgtype.Present},
-	)
+	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, String(cv.ID()), String(string(cv.Status())))
 	if err != nil {
 		return err
 	}
@@ -55,7 +51,7 @@ func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func
 	q := pggen.NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, String(id))
 	if err != nil {
 		return err
 	}
@@ -74,11 +70,11 @@ func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func
 func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	batch := &pgx.Batch{}
 	db.FindConfigurationVersionsByWorkspaceIDBatch(batch, pggen.FindConfigurationVersionsByWorkspaceIDParams{
-		WorkspaceID: pgtype.Text{String: workspaceID, Status: pgtype.Present},
+		WorkspaceID: String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, pgtype.Text{String: workspaceID, Status: pgtype.Present})
+	db.CountConfigurationVersionsByWorkspaceIDBatch(batch, String(workspaceID))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -108,17 +104,13 @@ func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string,
 
 func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	if opts.ID != nil {
-		result, err := db.FindConfigurationVersionByID(ctx,
-			pgtype.Text{String: *opts.ID, Status: pgtype.Present},
-		)
+		result, err := db.FindConfigurationVersionByID(ctx, String(*opts.ID))
 		if err != nil {
 			return nil, err
 		}
 		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	} else if opts.WorkspaceID != nil {
-		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx,
-			pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present},
-		)
+		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, err
 		}
@@ -129,11 +121,11 @@ func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.Configuratio
 }
 
 func (db *DB) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	return db.DownloadConfigurationVersion(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	return db.DownloadConfigurationVersion(ctx, String(id))
 }
 
 func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
-	_, err := db.DeleteConfigurationVersionByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	_, err := db.DeleteConfigurationVersionByID(ctx, String(id))
 	if err != nil {
 		return databaseError(err)
 	}

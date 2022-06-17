@@ -14,31 +14,31 @@ import (
 func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
-			ID:                     pgtype.Text{String: run.ID(), Status: pgtype.Present},
+			ID:                     String(run.ID()),
 			CreatedAt:              run.CreatedAt(),
 			IsDestroy:              run.IsDestroy(),
 			Refresh:                run.Refresh(),
 			RefreshOnly:            run.RefreshOnly(),
-			Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+			Status:                 String(string(run.Status())),
 			ReplaceAddrs:           run.ReplaceAddrs(),
 			TargetAddrs:            run.TargetAddrs(),
-			ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersionID(), Status: pgtype.Present},
-			WorkspaceID:            pgtype.Text{String: run.WorkspaceID(), Status: pgtype.Present},
+			ConfigurationVersionID: String(run.ConfigurationVersionID()),
+			WorkspaceID:            String(run.WorkspaceID()),
 		})
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
-			RunID:  pgtype.Text{String: run.ID(), Status: pgtype.Present},
-			Status: pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
+			JobID:  String(run.Plan.JobID()),
+			RunID:  String(run.ID()),
+			Status: String(string(run.Plan.Status())),
 		})
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
-			PlanID:       pgtype.Text{String: run.Plan.ID(), Status: pgtype.Present},
-			JobID:        pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
+			PlanID:       String(run.Plan.ID()),
+			JobID:        String(run.Plan.JobID()),
 			Additions:    0,
 			Changes:      0,
 			Destructions: 0,
@@ -47,16 +47,16 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 			return err
 		}
 		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
-			RunID:  pgtype.Text{String: run.ID(), Status: pgtype.Present},
-			Status: pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
+			JobID:  String(run.Apply.JobID()),
+			RunID:  String(run.ID()),
+			Status: String(string(run.Apply.Status())),
 		})
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
-			ApplyID:      pgtype.Text{String: run.Apply.ID(), Status: pgtype.Present},
-			JobID:        pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
+			ApplyID:      String(run.Apply.ID()),
+			JobID:        String(run.Apply.JobID()),
 			Additions:    0,
 			Changes:      0,
 			Destructions: 0,
@@ -107,10 +107,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		if run.Status() != runStatus {
 			var err error
-			_, err = db.UpdateRunStatus(ctx,
-				pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
-				pgtype.Text{String: run.ID(), Status: pgtype.Present},
-			)
+			_, err = db.UpdateRunStatus(ctx, String(string(run.Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
@@ -122,10 +119,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		if run.Plan.Status() != planStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx,
-				pgtype.Text{String: string(run.Plan.Status()), Status: pgtype.Present},
-				pgtype.Text{String: run.Plan.JobID(), Status: pgtype.Present},
-			)
+			_, err = db.UpdateJobStatus(ctx, String(string(run.Plan.Status())), String(run.Plan.JobID()))
 			if err != nil {
 				return err
 			}
@@ -137,10 +131,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		if run.Apply.Status() != applyStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx,
-				pgtype.Text{String: string(run.Apply.Status()), Status: pgtype.Present},
-				pgtype.Text{String: run.Apply.JobID(), Status: pgtype.Present},
-			)
+			_, err = db.UpdateJobStatus(ctx, String(string(run.Apply.Status())), String(run.Apply.JobID()))
 			if err != nil {
 				return err
 			}
@@ -159,7 +150,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 func (db *DB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
-		PlanID:       pgtype.Text{String: planID, Status: pgtype.Present},
+		PlanID:       String(planID),
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -172,7 +163,7 @@ func (db *DB) CreatePlanReport(ctx context.Context, planID string, report otf.Re
 
 func (db *DB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
-		ApplyID:      pgtype.Text{String: applyID, Status: pgtype.Present},
+		ApplyID:      String(applyID),
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -218,11 +209,11 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 	if includeWorkspace(opts.Include) {
 		if opts.WorkspaceID != nil {
 			db.FindWorkspaceByIDBatch(batch, false,
-				pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present})
+				String(*opts.WorkspaceID))
 		} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
 			db.FindWorkspaceByNameBatch(batch, pggen.FindWorkspaceByNameParams{
-				Name:             pgtype.Text{String: *opts.WorkspaceName, Status: pgtype.Present},
-				OrganizationName: pgtype.Text{String: *opts.OrganizationName, Status: pgtype.Present},
+				Name:             String(*opts.WorkspaceName),
+				OrganizationName: String(*opts.OrganizationName),
 			})
 		} else {
 			return nil, fmt.Errorf("cannot include workspace without specifying workspace")
@@ -308,10 +299,10 @@ func (db *DB) GetRun(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, err
 func (db *DB) SetPlanFile(ctx context.Context, planID string, file []byte, format otf.PlanFormat) error {
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := db.UpdatePlanBinByID(ctx, file, pgtype.Text{String: planID, Status: pgtype.Present})
+		_, err := db.UpdatePlanBinByID(ctx, file, String(planID))
 		return err
 	case otf.PlanFormatJSON:
-		_, err := db.UpdatePlanJSONByID(ctx, file, pgtype.Text{String: planID, Status: pgtype.Present})
+		_, err := db.UpdatePlanJSONByID(ctx, file, String(planID))
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -322,9 +313,9 @@ func (db *DB) SetPlanFile(ctx context.Context, planID string, file []byte, forma
 func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	switch format {
 	case otf.PlanFormatBinary:
-		return db.GetPlanBinByID(ctx, pgtype.Text{String: runID, Status: pgtype.Present})
+		return db.GetPlanBinByID(ctx, String(runID))
 	case otf.PlanFormatJSON:
-		return db.GetPlanJSONByID(ctx, pgtype.Text{String: runID, Status: pgtype.Present})
+		return db.GetPlanJSONByID(ctx, String(runID))
 	default:
 		return nil, fmt.Errorf("unknown plan format: %s", string(format))
 	}
@@ -332,19 +323,19 @@ func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanForm
 
 // DeleteRun deletes a run from the DB
 func (db *DB) DeleteRun(ctx context.Context, id string) error {
-	_, err := db.DeleteRunByID(ctx, pgtype.Text{String: id, Status: pgtype.Present})
+	_, err := db.DeleteRunByID(ctx, String(id))
 	return err
 }
 
 func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text, error) {
 	if opts.PlanID != nil {
-		return db.FindRunIDByPlanID(ctx, pgtype.Text{String: *opts.PlanID, Status: pgtype.Present})
+		return db.FindRunIDByPlanID(ctx, String(*opts.PlanID))
 	} else if opts.ApplyID != nil {
-		return db.FindRunIDByApplyID(ctx, pgtype.Text{String: *opts.ApplyID, Status: pgtype.Present})
+		return db.FindRunIDByApplyID(ctx, String(*opts.ApplyID))
 	} else if opts.JobID != nil {
-		return db.FindRunIDByJobID(ctx, pgtype.Text{String: *opts.JobID, Status: pgtype.Present})
+		return db.FindRunIDByJobID(ctx, String(*opts.JobID))
 	} else if opts.ID != nil {
-		return pgtype.Text{String: *opts.ID, Status: pgtype.Present}, nil
+		return String(*opts.ID), nil
 	} else {
 		return pgtype.Text{}, fmt.Errorf("no ID specified")
 	}
@@ -356,8 +347,8 @@ func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error 
 		return err
 	}
 	_, err = db.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
-		ID:        pgtype.Text{String: run.ID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
+		ID:        String(run.ID()),
+		Status:    String(string(run.Status())),
 		Timestamp: ts,
 	})
 	return err
@@ -369,8 +360,8 @@ func (db *DB) insertJobStatusTimestamp(ctx context.Context, job otf.Job) error {
 		return err
 	}
 	_, err = db.InsertJobStatusTimestamp(ctx, pggen.InsertJobStatusTimestampParams{
-		ID:        pgtype.Text{String: job.JobID(), Status: pgtype.Present},
-		Status:    pgtype.Text{String: string(job.JobStatus()), Status: pgtype.Present},
+		ID:        String(job.JobID()),
+		Status:    String(string(job.JobStatus())),
 		Timestamp: ts,
 	})
 	return err
