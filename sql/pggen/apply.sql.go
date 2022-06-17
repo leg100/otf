@@ -72,24 +72,24 @@ type Querier interface {
 
 	// FindConfigurationVersionByID finds a configuration_version by its id.
 	//
-	FindConfigurationVersionByID(ctx context.Context, includeWorkspace bool, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDRow, error)
+	FindConfigurationVersionByID(ctx context.Context, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDRow, error)
 	// FindConfigurationVersionByIDBatch enqueues a FindConfigurationVersionByID query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionByIDBatch(batch genericBatch, includeWorkspace bool, configurationVersionID pgtype.Text)
+	FindConfigurationVersionByIDBatch(batch genericBatch, configurationVersionID pgtype.Text)
 	// FindConfigurationVersionByIDScan scans the result of an executed FindConfigurationVersionByIDBatch query.
 	FindConfigurationVersionByIDScan(results pgx.BatchResults) (FindConfigurationVersionByIDRow, error)
 
-	FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, includeWorkspace bool, workspaceID pgtype.Text) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
+	FindConfigurationVersionLatestByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
 	// FindConfigurationVersionLatestByWorkspaceIDBatch enqueues a FindConfigurationVersionLatestByWorkspaceID query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, includeWorkspace bool, workspaceID pgtype.Text)
+	FindConfigurationVersionLatestByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
 	// FindConfigurationVersionLatestByWorkspaceIDScan scans the result of an executed FindConfigurationVersionLatestByWorkspaceIDBatch query.
 	FindConfigurationVersionLatestByWorkspaceIDScan(results pgx.BatchResults) (FindConfigurationVersionLatestByWorkspaceIDRow, error)
 
-	FindConfigurationVersionByIDForUpdate(ctx context.Context, includeWorkspace bool, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDForUpdateRow, error)
+	FindConfigurationVersionByIDForUpdate(ctx context.Context, configurationVersionID pgtype.Text) (FindConfigurationVersionByIDForUpdateRow, error)
 	// FindConfigurationVersionByIDForUpdateBatch enqueues a FindConfigurationVersionByIDForUpdate query into batch to be executed
 	// later by the batch.
-	FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, includeWorkspace bool, configurationVersionID pgtype.Text)
+	FindConfigurationVersionByIDForUpdateBatch(batch genericBatch, configurationVersionID pgtype.Text)
 	// FindConfigurationVersionByIDForUpdateScan scans the result of an executed FindConfigurationVersionByIDForUpdateBatch query.
 	FindConfigurationVersionByIDForUpdateScan(results pgx.BatchResults) (FindConfigurationVersionByIDForUpdateRow, error)
 
@@ -322,17 +322,17 @@ type Querier interface {
 	// CountRunsScan scans the result of an executed CountRunsBatch query.
 	CountRunsScan(results pgx.BatchResults) (*int, error)
 
-	FindRunByID(ctx context.Context, params FindRunByIDParams) (FindRunByIDRow, error)
+	FindRunByID(ctx context.Context, runID pgtype.Text) (FindRunByIDRow, error)
 	// FindRunByIDBatch enqueues a FindRunByID query into batch to be executed
 	// later by the batch.
-	FindRunByIDBatch(batch genericBatch, params FindRunByIDParams)
+	FindRunByIDBatch(batch genericBatch, runID pgtype.Text)
 	// FindRunByIDScan scans the result of an executed FindRunByIDBatch query.
 	FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, error)
 
-	FindRunByIDForUpdate(ctx context.Context, params FindRunByIDForUpdateParams) (FindRunByIDForUpdateRow, error)
+	FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text) (FindRunByIDForUpdateRow, error)
 	// FindRunByIDForUpdateBatch enqueues a FindRunByIDForUpdate query into batch to be executed
 	// later by the batch.
-	FindRunByIDForUpdateBatch(batch genericBatch, params FindRunByIDForUpdateParams)
+	FindRunByIDForUpdateBatch(batch genericBatch, runID pgtype.Text)
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
@@ -921,18 +921,6 @@ type ConfigurationVersionStatusTimestamps struct {
 	Timestamp              time.Time   `json:"timestamp"`
 }
 
-// ConfigurationVersions represents the Postgres composite type "configuration_versions".
-type ConfigurationVersions struct {
-	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
-	CreatedAt              time.Time   `json:"created_at"`
-	AutoQueueRuns          bool        `json:"auto_queue_runs"`
-	Source                 pgtype.Text `json:"source"`
-	Speculative            bool        `json:"speculative"`
-	Status                 pgtype.Text `json:"status"`
-	Config                 []byte      `json:"config"`
-	WorkspaceID            pgtype.Text `json:"workspace_id"`
-}
-
 // JobStatusTimestamps represents the Postgres composite type "job_status_timestamps".
 type JobStatusTimestamps struct {
 	JobID     pgtype.Text `json:"job_id"`
@@ -1006,34 +994,6 @@ type Users struct {
 	Username  pgtype.Text `json:"username"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
-}
-
-// Workspaces represents the Postgres composite type "workspaces".
-type Workspaces struct {
-	WorkspaceID                pgtype.Text `json:"workspace_id"`
-	CreatedAt                  time.Time   `json:"created_at"`
-	UpdatedAt                  time.Time   `json:"updated_at"`
-	AllowDestroyPlan           bool        `json:"allow_destroy_plan"`
-	AutoApply                  bool        `json:"auto_apply"`
-	CanQueueDestroyPlan        bool        `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text `json:"description"`
-	Environment                pgtype.Text `json:"environment"`
-	ExecutionMode              pgtype.Text `json:"execution_mode"`
-	FileTriggersEnabled        bool        `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool        `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text `json:"migration_environment"`
-	Name                       pgtype.Text `json:"name"`
-	QueueAllRuns               bool        `json:"queue_all_runs"`
-	SpeculativeEnabled         bool        `json:"speculative_enabled"`
-	SourceName                 pgtype.Text `json:"source_name"`
-	SourceURL                  pgtype.Text `json:"source_url"`
-	StructuredRunOutputEnabled bool        `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text `json:"terraform_version"`
-	TriggerPrefixes            []string    `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text `json:"working_directory"`
-	OrganizationID             pgtype.Text `json:"organization_id"`
-	LockRunID                  pgtype.Text `json:"lock_run_id"`
-	LockUserID                 pgtype.Text `json:"lock_user_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1130,22 +1090,6 @@ func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTr
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
-	)
-}
-
-// newConfigurationVersions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'configuration_versions'.
-func (tr *typeResolver) newConfigurationVersions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"configuration_versions",
-		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"auto_queue_runs", "bool", &pgtype.Bool{}},
-		compositeField{"source", "text", &pgtype.Text{}},
-		compositeField{"speculative", "bool", &pgtype.Bool{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"config", "bytea", &pgtype.Bytea{}},
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
 }
 
@@ -1253,38 +1197,6 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 		compositeField{"username", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-	)
-}
-
-// newWorkspaces creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspaces'.
-func (tr *typeResolver) newWorkspaces() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspaces",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"allow_destroy_plan", "bool", &pgtype.Bool{}},
-		compositeField{"auto_apply", "bool", &pgtype.Bool{}},
-		compositeField{"can_queue_destroy_plan", "bool", &pgtype.Bool{}},
-		compositeField{"description", "text", &pgtype.Text{}},
-		compositeField{"environment", "text", &pgtype.Text{}},
-		compositeField{"execution_mode", "text", &pgtype.Text{}},
-		compositeField{"file_triggers_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"global_remote_state", "bool", &pgtype.Bool{}},
-		compositeField{"migration_environment", "text", &pgtype.Text{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"queue_all_runs", "bool", &pgtype.Bool{}},
-		compositeField{"speculative_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"source_name", "text", &pgtype.Text{}},
-		compositeField{"source_url", "text", &pgtype.Text{}},
-		compositeField{"structured_run_output_enabled", "bool", &pgtype.Bool{}},
-		compositeField{"terraform_version", "text", &pgtype.Text{}},
-		compositeField{"trigger_prefixes", "_text", &pgtype.TextArray{}},
-		compositeField{"working_directory", "text", &pgtype.Text{}},
-		compositeField{"organization_id", "text", &pgtype.Text{}},
-		compositeField{"lock_run_id", "text", &pgtype.Text{}},
-		compositeField{"lock_user_id", "text", &pgtype.Text{}},
 	)
 }
 

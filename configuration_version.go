@@ -35,8 +35,7 @@ type ConfigurationVersion struct {
 	speculative      bool
 	status           ConfigurationStatus
 	statusTimestamps []ConfigurationVersionStatusTimestamp
-	// Configuration Version belongs to a Workspace
-	Workspace *Workspace
+	workspaceID      string
 }
 
 func (cv *ConfigurationVersion) ID() string                  { return cv.id }
@@ -49,6 +48,7 @@ func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status 
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
+func (cv *ConfigurationVersion) WorkspaceID() string { return cv.workspaceID }
 
 func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
 	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
@@ -203,17 +203,13 @@ func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreate
 		autoQueueRuns: DefaultAutoQueueRuns,
 		status:        ConfigurationPending,
 		source:        DefaultConfigurationSource,
+		workspaceID:   workspaceID,
 	}
-
 	if opts.AutoQueueRuns != nil {
 		cv.autoQueueRuns = *opts.AutoQueueRuns
 	}
-
 	if opts.Speculative != nil {
 		cv.speculative = *opts.Speculative
 	}
-
-	cv.Workspace = &Workspace{id: workspaceID}
-
 	return &cv, nil
 }

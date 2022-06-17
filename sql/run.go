@@ -22,8 +22,8 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 			Status:                 pgtype.Text{String: string(run.Status()), Status: pgtype.Present},
 			ReplaceAddrs:           run.ReplaceAddrs(),
 			TargetAddrs:            run.TargetAddrs(),
-			ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersion.ID(), Status: pgtype.Present},
-			WorkspaceID:            pgtype.Text{String: run.Workspace.ID(), Status: pgtype.Present},
+			ConfigurationVersionID: pgtype.Text{String: run.ConfigurationVersionID(), Status: pgtype.Present},
+			WorkspaceID:            pgtype.Text{String: run.WorkspaceID(), Status: pgtype.Present},
 		})
 		if err != nil {
 			return err
@@ -87,13 +87,11 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 			return databaseError(err)
 		}
 		// select ...for update
-		result, err := db.FindRunByIDForUpdate(ctx, pggen.FindRunByIDForUpdateParams{
-			RunID: runID,
-		})
+		result, err := db.FindRunByIDForUpdate(ctx, runID)
 		if err != nil {
 			return databaseError(err)
 		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result), nil)
 		if err != nil {
 			return err
 		}
@@ -204,14 +202,12 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	}
 	db.FindRunsBatch(batch, pggen.FindRunsParams{
-		OrganizationNames:           []string{organizationName},
-		WorkspaceNames:              []string{workspaceName},
-		WorkspaceIds:                []string{workspaceID},
-		Statuses:                    statuses,
-		Limit:                       opts.GetLimit(),
-		Offset:                      opts.GetOffset(),
-		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
-		IncludeWorkspace:            includeWorkspace(opts.Include),
+		OrganizationNames: []string{organizationName},
+		WorkspaceNames:    []string{workspaceName},
+		WorkspaceIds:      []string{workspaceID},
+		Statuses:          statuses,
+		Limit:             opts.GetLimit(),
+		Offset:            opts.GetOffset(),
 	})
 	db.CountRunsBatch(batch, pggen.CountRunsParams{
 		OrganizationNames: []string{organizationName},
@@ -219,6 +215,20 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
 	})
+	if includeWorkspace(opts.Include) {
+		if opts.WorkspaceID != nil {
+			db.FindWorkspaceByIDBatch(batch, false,
+				pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present})
+		} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+			db.FindWorkspaceByNameBatch(batch, pggen.FindWorkspaceByNameParams{
+				Name:             pgtype.Text{String: *opts.WorkspaceName, Status: pgtype.Present},
+				OrganizationName: pgtype.Text{String: *opts.OrganizationName, Status: pgtype.Present},
+			})
+		} else {
+			return nil, fmt.Errorf("cannot include workspace without specifying workspace")
+		}
+	}
+
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -231,9 +241,32 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		return nil, err
 	}
 
+	var ws *otf.Workspace
+	if includeWorkspace(opts.Include) {
+		if opts.WorkspaceID != nil {
+			result, err := db.FindWorkspaceByIDScan(results)
+			if err != nil {
+				return nil, err
+			}
+			ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+			if err != nil {
+				return nil, err
+			}
+		} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+			result, err := db.FindWorkspaceByNameScan(results)
+			if err != nil {
+				return nil, err
+			}
+			ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	var items []*otf.Run
 	for _, r := range rows {
-		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r))
+		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r), ws)
 		if err != nil {
 			return nil, err
 		}
@@ -253,16 +286,22 @@ func (db *DB) GetRun(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, err
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	// ...now get full run
-	result, err := db.FindRunByID(ctx, pggen.FindRunByIDParams{
-		RunID:                       runID,
-		IncludeConfigurationVersion: includeConfigurationVersion(opts.Include),
-		IncludeWorkspace:            includeWorkspace(opts.Include),
-	})
+	result, err := db.FindRunByID(ctx, runID)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+	var ws *otf.Workspace
+	if includeWorkspace(opts.Include) {
+		result, err := db.FindWorkspaceByID(ctx, false, result.WorkspaceID)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return otf.UnmarshalRunDBResult(otf.RunDBResult(result), ws)
 }
 
 // SetPlanFile writes a plan file to the db

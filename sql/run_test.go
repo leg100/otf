@@ -108,6 +108,15 @@ func TestRun_Get(t *testing.T) {
 			assert.Equal(t, want, got)
 		})
 	}
+
+	t.Run("include workspace", func(t *testing.T) {
+		got, err := db.GetRun(context.Background(), otf.RunGetOptions{
+			ID:      otf.String(want.ID()),
+			Include: otf.String("workspace"),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, ws, got.Workspace())
+	})
 }
 
 func TestRun_List(t *testing.T) {
@@ -183,6 +192,19 @@ func TestRun_List(t *testing.T) {
 			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name: "include workspace",
+			opts: otf.RunListOptions{
+				OrganizationName: otf.String(org1.Name()),
+				WorkspaceName:    otf.String(ws1.Name()),
+				Include:          otf.String("workspace"),
+			},
+			want: func(t *testing.T, l *otf.RunList) {
+				assert.Equal(t, 2, len(l.Items))
+				assert.Equal(t, ws1, l.Items[0].Workspace())
+				assert.Equal(t, ws1, l.Items[1].Workspace())
 			},
 		},
 	}

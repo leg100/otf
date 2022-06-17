@@ -15,7 +15,6 @@ type ConfigurationVersionDBResult struct {
 	Speculative                          bool                                         `json:"speculative"`
 	Status                               pgtype.Text                                  `json:"status"`
 	WorkspaceID                          pgtype.Text                                  `json:"workspace_id"`
-	Workspace                            *pggen.Workspaces                            `json:"workspace"`
 	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
@@ -28,32 +27,8 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 		source:           ConfigurationSource(result.Source.String),
 		status:           ConfigurationStatus(result.Status.String),
 		statusTimestamps: unmarshalConfigurationVersionStatusTimestampDBTypes(result.ConfigurationVersionStatusTimestamps),
+		workspaceID:      result.WorkspaceID.String,
 	}
-
-	if result.Workspace != nil {
-		workspace, err := UnmarshalWorkspaceDBType(*result.Workspace)
-		if err != nil {
-			return nil, err
-		}
-		cv.Workspace = workspace
-	} else {
-		cv.Workspace = &Workspace{id: result.WorkspaceID.String}
-	}
-
-	return &cv, nil
-}
-
-func unmarshalConfigurationVersionDBType(typ pggen.ConfigurationVersions) (*ConfigurationVersion, error) {
-	cv := ConfigurationVersion{
-		id:            typ.ConfigurationVersionID.String,
-		createdAt:     typ.CreatedAt.Local(),
-		autoQueueRuns: typ.AutoQueueRuns,
-		speculative:   typ.Speculative,
-		source:        ConfigurationSource(typ.Source.String),
-		status:        ConfigurationStatus(typ.Status.String),
-		Workspace:     &Workspace{id: typ.WorkspaceID.String},
-	}
-
 	return &cv, nil
 }
 

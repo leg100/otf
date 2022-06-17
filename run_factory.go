@@ -43,8 +43,8 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 		workspaceName:    ws.Name(),
 		organizationName: ws.OrganizationName(),
 	}
-	run.ConfigurationVersion = &ConfigurationVersion{id: cv.ID()}
-	run.Workspace = &Workspace{id: ws.ID()}
+	run.configurationVersionID = cv.ID()
+	run.workspaceID = ws.ID()
 	run.Plan = newPlan(&run)
 	run.Apply = newApply(&run)
 	run.autoApply = ws.AutoApply()

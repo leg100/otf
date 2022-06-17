@@ -84,7 +84,7 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 }
 
 func (s WorkspaceService) UpdateQueue(run *otf.Run) error {
-	return s.WorkspaceQueueManager.Update(run.Workspace.ID(), run)
+	return s.WorkspaceQueueManager.Update(run.WorkspaceID(), run)
 }
 
 func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
