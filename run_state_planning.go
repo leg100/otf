@@ -23,14 +23,7 @@ func (s *planningState) Finish(svc RunService) (*ResourceReport, error) {
 		s.Error(err, "compiling planned changes report", "id", planID)
 		return err
 	}
-	if err := s.db.CreatePlanReport(ctx, planID, report); err != nil {
-		s.Error(err, "saving planned changes report", "id", planID)
-		return err
-	}
-	s.V(1).Info("created planned changes report", "id", planID,
-		"adds", report.Additions,
-		"changes", report.Changes,
-		"destructions", report.Destructions)
+
 	if !s.run.HasChanges() || s.run.Speculative() {
 		s.run.setState(s.run.plannedAndFinishedState)
 	} else if s.run.autoApply {

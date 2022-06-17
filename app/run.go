@@ -136,12 +136,16 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 	return err
 }
 
+func (s RunService) GetApplyLogs(ctx context.Context, applyID string) ([]byte, error) {
+	chunk, err := s.cs.GetChunk(ctx, applyID, otf.GetChunkOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return chunk.Data, nil
+}
+
 func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
 	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ID: &runID})
-	if err != nil {
-		return err
-	}
-	chunk, err := s.cs.GetChunk(ctx, run.Apply.JobID(), otf.GetChunkOptions{})
 	if err != nil {
 		return err
 	}

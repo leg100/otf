@@ -556,6 +556,7 @@ type RunService interface {
 	// CreateApplyReport parses the logs from a successful terraform apply and
 	// persists a resource report to the database.
 	CreateApplyReport(ctx context.Context, runID string) error
+	GetApplyLogs(ctx context.Context, applyID string) ([]byte, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

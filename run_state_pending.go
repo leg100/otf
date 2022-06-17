@@ -14,8 +14,8 @@ func newPendingState(r *Run) *pendingState {
 	}
 }
 
-func (s *pendingState) Start() error {
-	s.run.setState(s.run.planningState)
+func (s *pendingState) Enqueue() error {
+	s.run.setState(s.run.planEnqueuedState)
 	return nil
 }
 

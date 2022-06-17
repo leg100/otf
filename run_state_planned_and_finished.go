@@ -15,3 +15,4 @@ func newPlannedAndFinishedState(r *Run) *plannedAndFinishedState {
 }
 
 func (s *plannedAndFinishedState) String() string { return "planned_and_finished" }
+func (s *plannedAndFinishedState) Done() bool     { return true }

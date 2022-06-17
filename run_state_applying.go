@@ -22,22 +22,17 @@ func newApplyingState(r *Run) *applyingState {
 func (s *applyingState) String() string { return "applying" }
 
 func (s *applyingState) Finish(svc RunService) (*ResourceReport, error) {
-	chunk, err := svc.GetChunk(ctx, run.Apply.JobID(), otf.GetChunkOptions{})
+	logs, err := svc.GetApplyLogs(context.Background(), s.run.Apply.JobID())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	report, err := otf.ParseApplyOutput(string(chunk.Data))
+	report, err := ParseApplyOutput(string(logs))
 	if err != nil {
-		return fmt.Errorf("compiling report of applied changes: %w", err)
+		return nil, fmt.Errorf("compiling report of applied changes: %w", err)
 	}
-	if err := s.db.CreateApplyReport(ctx, run.Apply.JobID(), report); err != nil {
-		return fmt.Errorf("saving applied changes report: %w", err)
-	}
-	if err := svc.CreateApplyReport(context.Background(), s.run.id); err != nil {
-		return err
-	}
+
 	s.run.setState(s.run.applyingState)
-	return nil
+	return &report, nil
 }
 
 func (s *applyingState) Cancel() error {

@@ -12,7 +12,7 @@ func (s *runStateMixin) Apply() error   { return s.err("apply") }
 func (s *runStateMixin) Discard() error { return s.err("discard") }
 func (s *runStateMixin) Start() error   { return s.err("start") }
 func (s *runStateMixin) Finish(RunService) (*ResourceReport, error) {
-	return s.err("finish")
+	return nil, s.err("finish")
 }
 
 func (s *runStateMixin) Discardable() bool { return false }
