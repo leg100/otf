@@ -164,7 +164,6 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 		pgtype.Text{String: opts.Prefix, Status: pgtype.Present},
 		[]string{organizationName},
 	)
-
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
@@ -193,10 +192,8 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 }
 
 func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	q := pggen.NewQuerier(db)
-
 	if spec.ID != nil {
-		result, err := q.FindWorkspaceByID(ctx,
+		result, err := db.FindWorkspaceByID(ctx,
 			includeOrganization(spec.Include),
 			pgtype.Text{String: *spec.ID, Status: pgtype.Present},
 		)
@@ -205,7 +202,7 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 		}
 		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := q.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
+		result, err := db.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
 			Name:                pgtype.Text{String: *spec.Name, Status: pgtype.Present},
 			OrganizationName:    pgtype.Text{String: *spec.OrganizationName, Status: pgtype.Present},
 			IncludeOrganization: includeOrganization(spec.Include),

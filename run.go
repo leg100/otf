@@ -65,26 +65,27 @@ type RunStatus string
 func (r RunStatus) String() string { return string(r) }
 
 type Run struct {
-	id               string
-	createdAt        time.Time
-	isDestroy        bool
-	message          string
-	positionInQueue  int
-	refresh          bool
-	refreshOnly      bool
-	autoApply        bool
-	speculative      bool
-	status           RunStatus
-	statusTimestamps []RunStatusTimestamp
-	replaceAddrs     []string
-	targetAddrs      []string
-	organizationName string
-	workspaceName    string
+	id                     string
+	createdAt              time.Time
+	isDestroy              bool
+	message                string
+	positionInQueue        int
+	refresh                bool
+	refreshOnly            bool
+	autoApply              bool
+	speculative            bool
+	status                 RunStatus
+	statusTimestamps       []RunStatusTimestamp
+	replaceAddrs           []string
+	targetAddrs            []string
+	organizationName       string
+	workspaceName          string
+	workspaceID            string
+	configurationVersionID string
 	// Relations
-	Plan                 *Plan
-	Apply                *Apply
-	Workspace            *Workspace
-	ConfigurationVersion *ConfigurationVersion
+	Plan      *Plan
+	Apply     *Apply
+	workspace *Workspace
 	// Job is the current job the run is performing
 	Job
 }
@@ -103,6 +104,9 @@ func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceName() string                  { return r.workspaceName }
+func (r *Run) WorkspaceID() string                    { return r.workspaceID }
+func (r *Run) Workspace() *Workspace                  { return r.workspace }
+func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
@@ -312,16 +316,25 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply:                r.Apply.ToJSONAPI(req).(*jsonapi.Apply),
-		ConfigurationVersion: r.ConfigurationVersion.ToJSONAPI(req).(*jsonapi.ConfigurationVersion),
-		Plan:                 r.Plan.ToJSONAPI(req).(*jsonapi.Plan),
-		Workspace:            r.Workspace.ToJSONAPI(req).(*jsonapi.Workspace),
+		Apply: r.Apply.ToJSONAPI(req).(*jsonapi.Apply),
+		Plan:  r.Plan.ToJSONAPI(req).(*jsonapi.Plan),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
 			ID:       DefaultUserID,
 			Username: DefaultUsername,
 		},
+		ConfigurationVersion: &jsonapi.ConfigurationVersion{
+			ID: r.configurationVersionID,
+		},
 	}
+	if r.workspace != nil {
+		dto.Workspace = r.workspace.ToJSONAPI(req).(*jsonapi.Workspace)
+	} else {
+		dto.Workspace = &jsonapi.Workspace{
+			ID: r.workspaceID,
+		}
+	}
+
 	for _, rst := range r.StatusTimestamps() {
 		switch rst.Status {
 		case RunPending:
@@ -422,7 +435,7 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.ConfigurationVersionService().Download(ctx, r.ConfigurationVersion.ID())
+	cv, err := env.ConfigurationVersionService().Download(ctx, r.configurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -436,7 +449,7 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.StateVersionService().Current(ctx, r.Workspace.ID())
+	state, err := env.StateVersionService().Current(ctx, r.workspaceID)
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
@@ -495,7 +508,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	_, err = env.StateVersionService().Create(ctx, r.Workspace.ID(), StateVersionCreateOptions{
+	_, err = env.StateVersionService().Create(ctx, r.workspaceID, StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(f)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
 		Lineage: &state.Lineage,

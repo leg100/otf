@@ -115,37 +115,6 @@ func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceDBResult) error {
 	return nil
 }
 
-func UnmarshalWorkspaceDBType(typ pggen.Workspaces) (*Workspace, error) {
-	ws := Workspace{
-		id:                  typ.WorkspaceID.String,
-		createdAt:           typ.CreatedAt.Local(),
-		updatedAt:           typ.UpdatedAt.Local(),
-		allowDestroyPlan:    typ.AllowDestroyPlan,
-		autoApply:           typ.AutoApply,
-		canQueueDestroyPlan: typ.CanQueueDestroyPlan,
-		description:         typ.Description.String,
-		environment:         typ.Environment.String,
-		executionMode:       typ.ExecutionMode.String,
-		fileTriggersEnabled: typ.FileTriggersEnabled,
-		globalRemoteState:   typ.GlobalRemoteState,
-		// Assume workspace is unlocked
-		lock:                       &Unlocked{},
-		migrationEnvironment:       typ.MigrationEnvironment.String,
-		name:                       typ.Name.String,
-		queueAllRuns:               typ.QueueAllRuns,
-		speculativeEnabled:         typ.SpeculativeEnabled,
-		structuredRunOutputEnabled: typ.StructuredRunOutputEnabled,
-		sourceName:                 typ.SourceName.String,
-		sourceURL:                  typ.SourceURL.String,
-		terraformVersion:           typ.TerraformVersion.String,
-		triggerPrefixes:            typ.TriggerPrefixes,
-		workingDirectory:           typ.WorkingDirectory.String,
-		organizationID:             typ.OrganizationID.String,
-	}
-
-	return &ws, nil
-}
-
 func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 	domain := Workspace{
 		id:                         w.ID,

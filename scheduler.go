@@ -59,7 +59,7 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 	if err := s.WorkspaceService.UpdateQueue(run); err != nil {
 		return err
 	}
-	queue, err := s.WorkspaceService.GetQueue(run.Workspace.ID())
+	queue, err := s.WorkspaceService.GetQueue(run.workspaceID)
 	if err != nil {
 		return err
 	}

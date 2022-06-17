@@ -41,7 +41,6 @@ SELECT
     configuration_versions.speculative,
     configuration_versions.status,
     configuration_versions.workspace_id,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(t.*) AS configuration_version_status_timestamps
         FROM configuration_version_status_timestamps t
@@ -71,7 +70,6 @@ SELECT
     configuration_versions.speculative,
     configuration_versions.status,
     configuration_versions.workspace_id,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(t.*) AS configuration_version_status_timestamps
         FROM configuration_version_status_timestamps t
@@ -91,7 +89,6 @@ SELECT
     configuration_versions.speculative,
     configuration_versions.status,
     configuration_versions.workspace_id,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(t.*) AS configuration_version_status_timestamps
         FROM configuration_version_status_timestamps t
@@ -112,7 +109,6 @@ SELECT
     configuration_versions.speculative,
     configuration_versions.status,
     configuration_versions.workspace_id,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(t.*) AS configuration_version_status_timestamps
         FROM configuration_version_status_timestamps t

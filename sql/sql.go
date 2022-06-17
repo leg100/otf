@@ -60,10 +60,6 @@ func includeWorkspace(includes *string) bool {
 	return includeRelation(includes, "workspace")
 }
 
-func includeConfigurationVersion(includes *string) bool {
-	return includeRelation(includes, "configuration_version")
-}
-
 // conn is a postgres connection, i.e. *pgx.Pool, *pgx.Tx, etc
 type conn interface {
 	Begin(ctx context.Context) (pgx.Tx, error)

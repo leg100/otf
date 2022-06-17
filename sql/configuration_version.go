@@ -26,7 +26,7 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 		Source:        pgtype.Text{String: string(cv.Source()), Status: pgtype.Present},
 		Speculative:   cv.Speculative(),
 		Status:        pgtype.Text{String: string(cv.Status()), Status: pgtype.Present},
-		WorkspaceID:   pgtype.Text{String: cv.Workspace.ID(), Status: pgtype.Present},
+		WorkspaceID:   pgtype.Text{String: cv.WorkspaceID(), Status: pgtype.Present},
 	})
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func
 	q := pggen.NewQuerier(tx)
 
 	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, false, pgtype.Text{String: id, Status: pgtype.Present})
+	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, pgtype.Text{String: id, Status: pgtype.Present})
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,6 @@ func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string,
 func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.ConfigurationVersionGetOptions) (*otf.ConfigurationVersion, error) {
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx,
-			includeWorkspace(opts.Include),
 			pgtype.Text{String: *opts.ID, Status: pgtype.Present},
 		)
 		if err != nil {
@@ -118,7 +117,6 @@ func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.Configuratio
 		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx,
-			includeWorkspace(opts.Include),
 			pgtype.Text{String: *opts.WorkspaceID, Status: pgtype.Present},
 		)
 		if err != nil {

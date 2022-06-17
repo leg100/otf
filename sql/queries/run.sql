@@ -65,8 +65,6 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     organizations.name AS organization_name,
-    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -141,8 +139,6 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     organizations.name AS organization_name,
-    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -199,8 +195,6 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     organizations.name AS organization_name,
-    CASE WHEN pggen.arg('include_configuration_version') THEN (configuration_versions.*)::"configuration_versions" END AS configuration_version,
-    CASE WHEN pggen.arg('include_workspace') THEN (workspaces.*)::"workspaces" END AS workspace,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
