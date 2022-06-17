@@ -51,6 +51,8 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 		panic(fmt.Sprintf("cannot create plugin cache dir: %s: %s", PluginCacheDir, err.Error()))
 	}
 	s.environmentVariables = append(os.Environ(), fmt.Sprint("TF_PLUGIN_CACHE_DIR=", PluginCacheDir))
+	s.environmentVariables = append(s.environmentVariables, "TF_IN_AUTOMATION=true")
+	s.environmentVariables = append(s.environmentVariables, "CHECKPOINT_DISABLE=true")
 
 	return s
 }
