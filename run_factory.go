@@ -49,9 +49,10 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.Apply = newApply(&run)
 	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
-	run.setJob()
-	run.updateStatus(RunPending)
-	// apply options
+
+	setupRunStates(&run)
+	run.setState(run.pendingState)
+
 	run.replaceAddrs = opts.ReplaceAddrs
 	run.targetAddrs = opts.TargetAddrs
 	if opts.IsDestroy != nil {
@@ -66,13 +67,24 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	return &run
 }
 
+func setupRunStates(run *Run) {
+	run.pendingState = newPendingState(run)
+	run.planQueuedState = newPlanQueuedState(run)
+	run.planningState = newPlanningState(run)
+	run.plannedState = newPlannedState(run)
+	run.plannedAndFinishedState = newPlannedAndFinishedState(run)
+	run.applyQueuedState = newApplyQueuedState(run)
+	run.applyingState = newApplyingState(run)
+	run.appliedState = newAppliedState(run)
+	run.discardedState = newDiscardedState(run)
+	run.erroredState = newErroredState(run)
+	run.canceledState = newCanceledState(run)
+}
+
 // NewTestRun creates a new run. Expressly for testing purposes
 func NewTestRun(t *testing.T, id, workspaceID string, opts TestRunCreateOptions) *Run {
 	ws := Workspace{id: workspaceID}
 	cv := ConfigurationVersion{id: "cv-123", speculative: opts.Speculative}
 	run := NewRun(&cv, &ws, RunCreateOptions{})
-	if opts.Status != RunStatus("") {
-		run.updateStatus(opts.Status)
-	}
 	return run
 }

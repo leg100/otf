@@ -40,13 +40,14 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	}
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	jobService, err := newJobService(db, logger, eventService, cache)
+	logService, err := newLogService(db, logger, cache)
 	if err != nil {
 		return nil, err
 	}
-	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, jobService, cache)
-	planService := NewPlanService(db, logger)
-	applyService := NewApplyService(db, logger)
+	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, logService, cache)
+	jobService := newJobService(db, logger, eventService, logService, runService)
+	planService := NewPlanService(db, logger, runService)
+	applyService := NewApplyService(db, logger, jobService)
 	userService := NewUserService(logger, db)
 
 	return &Application{

@@ -12,11 +12,13 @@ var _ otf.ApplyService = (*ApplyService)(nil)
 
 type ApplyService struct {
 	db *sql.DB
+	cs otf.ChunkService
 	logr.Logger
 }
 
-func NewApplyService(db *sql.DB, logger logr.Logger) *ApplyService {
+func NewApplyService(db *sql.DB, logger logr.Logger, cs otf.ChunkService) *ApplyService {
 	return &ApplyService{
+		cs:     cs,
 		db:     db,
 		Logger: logger,
 	}

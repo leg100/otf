@@ -2,38 +2,44 @@ package otf
 
 import (
 	"context"
-	"fmt"
 )
 
 type applyingState struct {
 	run *Run
 	*runStateMixin
+	Job
 }
 
 func newApplyingState(r *Run) *applyingState {
 	return &applyingState{
-		run: r,
-		runStateMixin: &runStateMixin{
-			run: r,
-		},
+		run:           r,
+		runStateMixin: &runStateMixin{},
 	}
 }
 
-func (s *applyingState) String() string { return "applying" }
+func (s *applyingState) Status() RunStatus { return RunApplying }
 
-func (s *applyingState) Finish(svc RunService) (*ResourceReport, error) {
-	logs, err := svc.GetApplyLogs(context.Background(), s.run.Apply.JobID())
-	if err != nil {
-		return nil, err
-	}
-	report, err := ParseApplyOutput(string(logs))
-	if err != nil {
-		return nil, fmt.Errorf("compiling report of applied changes: %w", err)
-	}
-
-	s.run.setState(s.run.applyingState)
-	return &report, nil
+func (s *applyingState) Start() error {
+	return ErrJobAlreadyClaimed
 }
+
+func (s *applyingState) Finish(svc ReportService, opts JobFinishOptions) error {
+	if opts.Errored {
+		s.run.setState(s.run.erroredState)
+		s.run.Apply.updateStatus(JobErrored)
+		return nil
+	}
+	report, err := svc.CreateApplyReport(context.Background(), s.run.Apply.ID())
+	if err != nil {
+		return err
+	}
+	s.run.Apply.ResourceReport = &report
+	s.run.setState(s.run.appliedState)
+	s.run.Apply.status = JobFinished
+	return nil
+}
+
+func (s *applyingState) Cancelable() bool { return true }
 
 func (s *applyingState) Cancel() error {
 	s.run.setState(s.run.canceledState)

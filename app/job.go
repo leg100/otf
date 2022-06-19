@@ -2,55 +2,28 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/inmem"
 )
 
-var _ otf.ChunkService = (*jobService)(nil)
-
 type jobService struct {
-	proxy otf.ChunkStore
-	db    otf.DB
+	db otf.DB
+	rs otf.RunService
+
 	otf.EventService
+	otf.ChunkService
 	logr.Logger
 }
 
-func newJobService(db otf.DB, logger logr.Logger, es otf.EventService, cache otf.Cache) (*jobService, error) {
-	proxy, err := inmem.NewChunkProxy(cache, db)
-	if err != nil {
-		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
-	}
+func newJobService(db otf.DB, logger logr.Logger, es otf.EventService, cs otf.ChunkService, rs otf.RunService) *jobService {
 	return &jobService{
 		db:           db,
-		proxy:        proxy,
+		ChunkService: cs,
+		rs:           rs,
 		EventService: es,
 		Logger:       logger,
-	}, nil
-}
-
-// GetChunk reads a chunk of logs for a job.
-func (s jobService) GetChunk(ctx context.Context, jobID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	logs, err := s.proxy.GetChunk(ctx, jobID, opts)
-	if err != nil {
-		s.Error(err, "reading logs", "id", jobID, "offset", opts.Offset, "limit", opts.Limit)
-		return otf.Chunk{}, err
 	}
-	s.V(2).Info("read logs", "id", jobID, "offset", opts.Offset, "limit", opts.Limit)
-	return logs, nil
-}
-
-// PutChunk writes a chunk of logs for a job.
-func (s jobService) PutChunk(ctx context.Context, jobID string, chunk otf.Chunk) error {
-	err := s.proxy.PutChunk(ctx, jobID, chunk)
-	if err != nil {
-		s.Error(err, "writing logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
-		return err
-	}
-	s.V(2).Info("written logs", "id", jobID, "start", chunk.Start, "end", chunk.End)
-	return nil
 }
 
 // Claim a job.
@@ -69,9 +42,8 @@ func (s jobService) Claim(ctx context.Context, jobID string, opts otf.JobClaimOp
 // Finish a job.
 func (s jobService) Finish(ctx context.Context, jobID string, opts otf.JobFinishOptions) (otf.Job, error) {
 	var event *otf.Event
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &jobID}, func(run *otf.Run) (err error) {
-		event, err = run.Finish(opts)
-		return err
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{JobID: &jobID}, func(run *otf.Run) error {
+		return run.Finish(s.rs, opts)
 	})
 	if err != nil {
 		s.Error(err, "finishing job", "id", jobID)

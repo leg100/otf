@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
@@ -21,15 +20,9 @@ type Apply struct {
 	*job
 }
 
-func (a *Apply) ID() string           { return a.id }
-func (a *Apply) String() string       { return a.id }
-func (a *Apply) JobStatus() JobStatus { return a.job.status }
-func (a *Apply) JobStatusTimestamp(status JobStatus) (time.Time, error) {
-	return a.job.StatusTimestamp(status)
-}
-func (a *Apply) JobStatusTimestamps() []JobStatusTimestamp {
-	return a.job.statusTimestamps
-}
+func (a *Apply) ID() string        { return a.id }
+func (a *Apply) String() string    { return a.id }
+func (a *Apply) Status() JobStatus { return a.JobStatus() }
 
 // Do performs a terraform apply
 func (a *Apply) Do(env Environment) error {
@@ -63,7 +56,7 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
 		ID:               a.ID(),
 		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", a.JobID())),
-		Status:           string(a.Status()),
+		Status:           string(a.JobStatus()),
 		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
 	}
 	if a.ResourceReport != nil {
@@ -71,7 +64,7 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 		dto.ResourceChanges = a.Changes
 		dto.ResourceDestructions = a.Destructions
 	}
-	for _, ts := range a.StatusTimestamps() {
+	for _, ts := range a.JobStatusTimestamps() {
 		switch ts.Status {
 		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
@@ -83,6 +76,8 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		case JobUnreachable:
+			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
 	return dto
@@ -90,7 +85,7 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 
 // ApplyService allows interaction with Applies
 type ApplyService interface {
-	Get(ctx context.Context, id string) (*Apply, error)
+	Get(ctx context.Context, applyID string) (*Apply, error)
 }
 
 func newApply(run *Run) *Apply {

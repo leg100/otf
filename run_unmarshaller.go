@@ -51,7 +51,6 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 		positionInQueue:        result.PositionInQueue,
 		refresh:                result.Refresh,
 		refreshOnly:            result.RefreshOnly,
-		status:                 RunStatus(result.Status.String),
 		statusTimestamps:       unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
 		replaceAddrs:           result.ReplaceAddrs,
 		targetAddrs:            result.TargetAddrs,
@@ -89,9 +88,15 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 			},
 		},
 	}
+
+	setupRunStates(&run)
+
+	if err := run.setStateFromStatus(RunStatus(result.Status.String)); err != nil {
+		return nil, err
+	}
+
 	run.Plan.run = &run
 	run.Apply.run = &run
-	run.setJob()
 	return &run, nil
 }
 

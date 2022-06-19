@@ -21,7 +21,7 @@ func TestRunFactory(t *testing.T) {
 			cv:   ConfigurationVersion{id: "cv-123"},
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
-				assert.Equal(t, RunPending, run.status)
+				assert.Equal(t, RunPending, run.Status())
 				assert.NotZero(t, run.createdAt)
 				assert.False(t, run.speculative)
 				assert.True(t, run.refresh)

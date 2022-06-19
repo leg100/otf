@@ -4,87 +4,115 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// TestRun_UpdateStatus tests that UpdateStatus correctly updates the status of
-// the run's plan and apply (there is little point to testing the status of the
-// run itself because there is no conditional logic to this assignment).
-func TestRun_UpdateStatus(t *testing.T) {
+func TestRun_PlanThenApply(t *testing.T) {
+	r := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
+	require.NoError(t, r.Enqueue())
+	require.NoError(t, r.Start())
+
+	// fake some planned changes
+	reportService := &fakeReportService{ResourceReport{Additions: 1}}
+
+	require.NoError(t, r.Finish(reportService, JobFinishOptions{}))
+	require.NoError(t, r.ApplyRun())
+	require.NoError(t, r.Start())
+	require.NoError(t, r.Finish(reportService, JobFinishOptions{}))
+}
+
+func TestRun_PlanOnly(t *testing.T) {
+	r := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{
+		Speculative: true,
+	})
+	require.NoError(t, r.Enqueue())
+	require.NoError(t, r.Start())
+
+	// fake some planned changes
+	reportService := &fakeReportService{ResourceReport{Additions: 1}}
+
+	require.NoError(t, r.Finish(reportService, JobFinishOptions{}))
+	assert.Equal(t, RunPlannedAndFinished, r.Status())
+
+	// ensure it cannot be applied
+	require.Error(t, r.ApplyRun())
+}
+
+func TestRun_States(t *testing.T) {
 	tests := []struct {
-		name            string
-		fromStatus      RunStatus
-		toStatus        RunStatus
-		wantPlanStatus  JobStatus
-		wantApplyStatus JobStatus
+		status      RunStatus
+		cancelable  bool
+		discardable bool
+		confirmable bool
+		done        bool
 	}{
 		{
-			name:            "plan error",
-			fromStatus:      RunPlanning,
-			toStatus:        RunErrored,
-			wantPlanStatus:  JobErrored,
-			wantApplyStatus: JobUnreachable,
+			status:     RunPending,
+			cancelable: true,
 		},
 		{
-			name:            "plan canceled",
-			fromStatus:      RunPlanning,
-			toStatus:        RunCanceled,
-			wantPlanStatus:  JobCanceled,
-			wantApplyStatus: JobUnreachable,
+			status: RunPlanQueued,
 		},
 		{
-			name:            "apply error",
-			fromStatus:      RunApplying,
-			toStatus:        RunErrored,
-			wantApplyStatus: JobErrored,
-			wantPlanStatus:  JobPending,
+			status:     RunPlanning,
+			cancelable: true,
 		},
 		{
-			name:            "apply canceled",
-			fromStatus:      RunApplying,
-			toStatus:        RunCanceled,
-			wantApplyStatus: JobCanceled,
-			wantPlanStatus:  JobPending,
+			status:      RunPlanned,
+			confirmable: true,
+			discardable: true,
+		},
+		{
+			status: RunPlannedAndFinished,
+			done:   true,
+		},
+		{
+			status: RunApplyQueued,
+		},
+		{
+			status:     RunApplying,
+			cancelable: true,
+		},
+		{
+			status: RunApplied,
+			done:   true,
+		},
+		{
+			status: RunErrored,
+			done:   true,
+		},
+		{
+			status: RunDiscarded,
+			done:   true,
+		},
+		{
+			status: RunCanceled,
+			done:   true,
 		},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Run{
-				status: tt.fromStatus,
-				Apply:  &Apply{},
-			}
-			r.Plan = newPlan(r)
-			r.Apply = newApply(r)
+		t.Run(tt.status.String(), func(t *testing.T) {
+			run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
+			run.setStateFromStatus(tt.status)
 
-			r.updateStatus(tt.toStatus)
-
-			assert.Equal(t, tt.wantPlanStatus, r.Plan.status)
-			assert.Equal(t, tt.wantApplyStatus, r.Apply.status)
+			assert.Equal(t, tt.cancelable, run.Cancelable())
+			assert.Equal(t, tt.discardable, run.Discardable())
+			assert.Equal(t, tt.confirmable, run.Confirmable())
+			assert.Equal(t, tt.done, run.Done())
 		})
 	}
 }
 
 func TestRun_ForceCancelAvailableAt(t *testing.T) {
-	run := &Run{
-		status: RunCanceled,
-		statusTimestamps: []RunStatusTimestamp{
-			{
-				Status:    RunCanceled,
-				Timestamp: CurrentTimestamp(),
-			},
-		},
-		Plan:  &Plan{},
-		Apply: &Apply{},
-	}
+	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
+	run.setState(run.canceledState)
 
 	assert.NotZero(t, run.ForceCancelAvailableAt())
 }
 
 func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
-	run := &Run{
-		status: RunPending,
-		Plan:   &Plan{},
-		Apply:  &Apply{},
-	}
+	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
 
 	assert.Zero(t, run.ForceCancelAvailableAt())
 }

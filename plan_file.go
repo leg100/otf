@@ -23,10 +23,6 @@ func (f PlanFormat) CacheKey(id string) string {
 	return fmt.Sprintf("%s.%s", id, f)
 }
 
-func (f PlanFormat) SQLColumn() string {
-	return fmt.Sprintf("plan_%s", f)
-}
-
 // PlanFile represents the schema of a plan file
 type PlanFile struct {
 	ResourceChanges []ResourceChange `json:"resource_changes"`

@@ -12,12 +12,14 @@ var _ otf.PlanService = (*PlanService)(nil)
 
 type PlanService struct {
 	db *sql.DB
+	rs otf.RunService
 	logr.Logger
 }
 
-func NewPlanService(db *sql.DB, logger logr.Logger) *PlanService {
+func NewPlanService(db *sql.DB, logger logr.Logger, rs otf.RunService) *PlanService {
 	return &PlanService{
 		db:     db,
+		rs:     rs,
 		Logger: logger,
 	}
 }

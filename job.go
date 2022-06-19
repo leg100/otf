@@ -29,10 +29,8 @@ type Job interface {
 	// GetID gets the ID of the Job
 	JobID() string
 	JobStatus() JobStatus
-	// Get job status timestamps
 	JobStatusTimestamps() []JobStatusTimestamp
-	// Lookup timestamp for a job status
-	JobStatusTimestamp(status JobStatus) (time.Time, error)
+	JobStatusTimestamp(JobStatus) (time.Time, error)
 }
 
 type JobService interface {
@@ -64,11 +62,11 @@ type job struct {
 	statusTimestamps []JobStatusTimestamp
 }
 
-func (j *job) JobID() string                          { return j.id }
-func (j *job) Status() JobStatus                      { return j.status }
-func (j *job) StatusTimestamps() []JobStatusTimestamp { return j.statusTimestamps }
+func (j *job) JobID() string                             { return j.id }
+func (j *job) JobStatus() JobStatus                      { return j.status }
+func (j *job) JobStatusTimestamps() []JobStatusTimestamp { return j.statusTimestamps }
 
-func (j *job) StatusTimestamp(status JobStatus) (time.Time, error) {
+func (j *job) JobStatusTimestamp(status JobStatus) (time.Time, error) {
 	for _, pst := range j.statusTimestamps {
 		if pst.Status == status {
 			return pst.Timestamp, nil

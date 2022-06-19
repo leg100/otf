@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
@@ -27,15 +26,9 @@ type Plan struct {
 	*job
 }
 
-func (p *Plan) ID() string           { return p.id }
-func (p *Plan) String() string       { return p.id }
-func (p *Plan) JobStatus() JobStatus { return p.job.status }
-func (p *Plan) JobStatusTimestamp(status JobStatus) (time.Time, error) {
-	return p.job.StatusTimestamp(status)
-}
-func (p *Plan) JobStatusTimestamps() []JobStatusTimestamp {
-	return p.job.statusTimestamps
-}
+func (p *Plan) ID() string        { return p.id }
+func (p *Plan) String() string    { return p.id }
+func (p *Plan) Status() JobStatus { return p.JobStatus() }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
@@ -68,31 +61,13 @@ func (p *Plan) Do(env Environment) error {
 	return nil
 }
 
-// Finish updates the run to reflect its plan having finished. An event is
-// returned reflecting the run's new status.
-func (p *Plan) Finish() (*Event, error) {
-	if !p.HasChanges() || p.run.Speculative() {
-		if err := p.run.updateStatus(RunPlannedAndFinished); err != nil {
-			return nil, err
-		}
-		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
-	}
-	if !p.run.autoApply {
-		return &Event{Payload: p.run, Type: EventRunPlanned}, nil
-	}
-	if err := p.run.updateStatus(RunApplyQueued); err != nil {
-		return nil, err
-	}
-	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
-}
-
 // ToJSONAPI assembles a JSON-API DTO.
 func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
 		ID:               p.ID(),
 		HasChanges:       p.HasChanges(),
 		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", p.JobID())),
-		Status:           string(p.Status()),
+		Status:           string(p.JobStatus()),
 		StatusTimestamps: &jsonapi.PlanStatusTimestamps{},
 	}
 	if p.ResourceReport != nil {
@@ -100,7 +75,7 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 		dto.ResourceChanges = p.Changes
 		dto.ResourceDestructions = p.Destructions
 	}
-	for _, ts := range p.StatusTimestamps() {
+	for _, ts := range p.JobStatusTimestamps() {
 		switch ts.Status {
 		case JobCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
@@ -112,6 +87,8 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case JobRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		case JobUnreachable:
+			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
 	return dto
@@ -130,7 +107,7 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 }
 
 type PlanService interface {
-	Get(ctx context.Context, id string) (*Plan, error)
+	Get(ctx context.Context, planID string) (*Plan, error)
 }
 
 func newPlan(run *Run) *Plan {

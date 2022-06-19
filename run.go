@@ -55,8 +55,6 @@ type Run struct {
 	refreshOnly            bool
 	autoApply              bool
 	speculative            bool
-	status                 RunStatus
-	state                  runState
 	statusTimestamps       []RunStatusTimestamp
 	replaceAddrs           []string
 	targetAddrs            []string
@@ -68,19 +66,21 @@ type Run struct {
 	Plan      *Plan
 	Apply     *Apply
 	workspace *Workspace
-	// Job is the current job the run is performing
-	Job
 
-	// states
-	planEnqueuedState       *planQueuedState
+	// available run states
+	pendingState            *pendingState
+	planQueuedState         *planQueuedState
 	planningState           *planningState
 	plannedState            *plannedState
 	canceledState           *canceledState
 	discardedState          *discardedState
+	erroredState            *erroredState
 	plannedAndFinishedState *plannedAndFinishedState
 	applyQueuedState        *applyQueuedState
 	applyingState           *applyingState
 	appliedState            *appliedState
+	// current state
+	runState
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -94,7 +94,6 @@ func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
-func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
@@ -102,29 +101,11 @@ func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) HasChanges() bool                       { return r.Plan.HasChanges() }
 
-// Discard updates the state of a run to reflect it having been discarded.
-func (r *Run) Discard() error {
-	if !r.Discardable() {
-		return ErrRunDiscardNotAllowed
-	}
-	r.updateStatus(RunDiscarded)
-	return nil
-}
-
-// Cancel run.
-func (r *Run) Cancel() error {
-	if !r.Cancelable() {
-		return ErrRunCancelNotAllowed
-	}
-	r.updateStatus(RunCanceled)
-	return nil
-}
-
 func (r *Run) ForceCancelAvailableAt() time.Time {
-	if r.status != RunCanceled {
+	if r.Status() != RunCanceled {
 		return time.Time{}
 	}
-	canceledAt, err := r.StatusTimestamp(r.status)
+	canceledAt, err := r.StatusTimestamp(r.Status())
 	if err != nil {
 		panic("no corresponding timestamp found for canceled status")
 	}
@@ -138,37 +119,7 @@ func (r *Run) ForceCancel() error {
 	if !r.ForceCancelable() {
 		return ErrRunForceCancelNotAllowed
 	}
-	return r.updateStatus(RunForceCanceled)
-}
-
-// Cancelable determines whether run can be cancelled.
-func (r *Run) Cancelable() bool {
-	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
-		return true
-	default:
-		return false
-	}
-}
-
-// Confirmable determines whether run can be confirmed.
-func (r *Run) Confirmable() bool {
-	switch r.Status() {
-	case RunPlanned:
-		return true
-	default:
-		return false
-	}
-}
-
-// Discardable determines whether run can be discarded.
-func (r *Run) Discardable() bool {
-	switch r.Status() {
-	case RunPending, RunPlanned:
-		return true
-	default:
-		return false
-	}
+	return nil
 }
 
 // ForceCancelable determines whether a run can be forcibly cancelled.
@@ -180,27 +131,8 @@ func (r *Run) ForceCancelable() bool {
 	return CurrentTimestamp().After(availAt)
 }
 
-// Done determines whether run has reached an end state, e.g. applied,
-// discarded, etc.
-func (r *Run) Done() bool {
-	switch r.Status() {
-	case RunApplied, RunPlannedAndFinished, RunDiscarded, RunCanceled, RunErrored:
-		return true
-	default:
-		return false
-	}
-}
-
 func (r *Run) Speculative() bool {
 	return r.speculative
-}
-
-func (r *Run) ApplyRun() error {
-	return r.updateStatus(RunApplyQueued)
-}
-
-func (r *Run) EnqueuePlan() error {
-	return r.updateStatus(RunPlanQueued)
 }
 
 func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
@@ -232,42 +164,6 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 		return nil
 	}
 	return ErrWorkspaceLockedByDifferentUser
-}
-
-// Start a run job
-func (r *Run) Start() error {
-	switch r.status {
-	case RunPlanQueued:
-		r.updateStatus(RunPlanning)
-	case RunApplyQueued:
-		r.updateStatus(RunApplying)
-	case RunPlanning, RunApplying:
-		return ErrJobAlreadyClaimed
-	default:
-		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status())
-	}
-	return nil
-}
-
-// Finish updates the run to reflect its plan having finished. An event is
-// returned reflecting the run's new status.
-func (r *Run) Finish(opts JobFinishOptions) (*Event, error) {
-	if opts.Errored {
-		if err := r.updateStatus(RunErrored); err != nil {
-			return nil, err
-		}
-		return &Event{Payload: r, Type: EventRunErrored}, nil
-	}
-	switch r.status {
-	case RunPlanning:
-		r.updateStatus(RunPlanned)
-		return r.Plan.Finish()
-	case RunApplying:
-		r.updateStatus(RunApplied)
-		return &Event{Payload: r, Type: EventRunApplied}, nil
-	default:
-		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.status)
-	}
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -352,53 +248,41 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 }
 
 func (r *Run) setState(s runState) {
-	r.state = s
-}
-
-// updateStatus transitions the state - changes to a run are made only via this
-// method.
-func (r *Run) updateStatus(status RunStatus) error {
-	switch status {
-	case RunPending:
-		r.Plan.updateStatus(JobPending)
-		r.Apply.updateStatus(JobPending)
-	case RunPlanQueued:
-		r.Plan.updateStatus(JobQueued)
-	case RunPlanning:
-		r.Plan.updateStatus(JobRunning)
-	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.updateStatus(JobFinished)
-		r.Apply.updateStatus(JobUnreachable)
-	case RunApplyQueued:
-		r.Apply.updateStatus(JobQueued)
-	case RunApplying:
-		r.Apply.updateStatus(JobRunning)
-	case RunApplied:
-		r.Apply.updateStatus(JobFinished)
-	case RunErrored:
-		switch r.Status() {
-		case RunPlanning:
-			r.Plan.updateStatus(JobErrored)
-			r.Apply.updateStatus(JobUnreachable)
-		case RunApplying:
-			r.Apply.updateStatus(JobErrored)
-		}
-	case RunCanceled:
-		switch r.Status() {
-		case RunPlanQueued, RunPlanning:
-			r.Plan.updateStatus(JobCanceled)
-			r.Apply.updateStatus(JobUnreachable)
-		case RunApplyQueued, RunApplying:
-			r.Apply.updateStatus(JobCanceled)
-		}
-	}
-	r.status = status
+	r.runState = s
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
-		Status:    status,
+		Status:    s.Status(),
 		Timestamp: CurrentTimestamp(),
 	})
-	// set job reflecting new status
-	r.setJob()
+}
+
+// setStateFromStatus sets the current run state from a run status string
+func (r *Run) setStateFromStatus(status RunStatus) error {
+	switch status {
+	case RunPending:
+		r.runState = r.pendingState
+	case RunPlanQueued:
+		r.runState = r.planQueuedState
+	case RunPlanning:
+		r.runState = r.planningState
+	case RunPlanned:
+		r.runState = r.plannedState
+	case RunPlannedAndFinished:
+		r.runState = r.plannedAndFinishedState
+	case RunApplyQueued:
+		r.runState = r.applyQueuedState
+	case RunApplying:
+		r.runState = r.applyingState
+	case RunApplied:
+		r.runState = r.appliedState
+	case RunDiscarded:
+		r.runState = r.discardedState
+	case RunErrored:
+		r.runState = r.erroredState
+	case RunCanceled:
+		r.runState = r.canceledState
+	default:
+		return fmt.Errorf("no run state found corresponding to status %s", status)
+	}
 	return nil
 }
 
@@ -510,18 +394,6 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-// Set appropriate job for run
-func (r *Run) setJob() {
-	switch r.Status() {
-	case RunPlanQueued, RunPlanning:
-		r.Job = r.Plan
-	case RunApplyQueued, RunApplying:
-		r.Job = r.Apply
-	default:
-		r.Job = &noOp{}
-	}
-}
-
 type RunStatusTimestamp struct {
 	Status    RunStatus
 	Timestamp time.Time
@@ -551,12 +423,8 @@ type RunService interface {
 	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
-	// UpdateStatus updates the run status
-	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
-	// CreateApplyReport parses the logs from a successful terraform apply and
-	// persists a resource report to the database.
-	CreateApplyReport(ctx context.Context, runID string) error
-	GetApplyLogs(ctx context.Context, applyID string) ([]byte, error)
+
+	ReportService
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -576,7 +444,6 @@ type RunCreateOptions struct {
 // TestRunCreateOptions is for testing purposes only.
 type TestRunCreateOptions struct {
 	Speculative bool
-	Status      RunStatus
 }
 
 // RunApplyOptions represents the options for applying a run.

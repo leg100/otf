@@ -144,25 +144,48 @@ func (s RunService) GetApplyLogs(ctx context.Context, applyID string) ([]byte, e
 	return chunk.Data, nil
 }
 
-func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
-	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ID: &runID})
+func (s RunService) CreatePlanReport(ctx context.Context, planID string) (otf.ResourceReport, error) {
+	plan, err := s.GetPlanFile(ctx, otf.RunGetOptions{PlanID: &planID}, otf.PlanFormatJSON)
 	if err != nil {
-		return err
+		return otf.ResourceReport{}, err
 	}
-	report, err := otf.ParseApplyOutput(string(chunk.Data))
+	report, err := otf.CompilePlanReport(plan)
 	if err != nil {
-		return fmt.Errorf("compiling report of applied changes: %w", err)
+		s.Error(err, "compiling planned changes report", "id", planID)
+		return otf.ResourceReport{}, err
 	}
-	if err := s.db.CreateApplyReport(ctx, run.Apply.JobID(), report); err != nil {
-		return fmt.Errorf("saving applied changes report: %w", err)
+	if err := s.db.CreatePlanReport(ctx, planID, report); err != nil {
+		s.Error(err, "saving planned changes report", "id", planID)
+		return otf.ResourceReport{}, err
 	}
-	s.V(0).Info("compiled apply report",
-		"id", run.Apply.ID(),
+	s.V(1).Info("created planned changes report",
+		"id", planID,
 		"adds", report.Additions,
 		"changes", report.Changes,
 		"destructions", report.Destructions)
 
-	return nil
+	return otf.ResourceReport{}, nil
+}
+
+func (s RunService) CreateApplyReport(ctx context.Context, applyID string) (otf.ResourceReport, error) {
+	logs, err := s.GetApplyLogs(ctx, applyID)
+	if err != nil {
+		return otf.ResourceReport{}, err
+	}
+	report, err := otf.ParseApplyOutput(string(logs))
+	if err != nil {
+		return otf.ResourceReport{}, fmt.Errorf("compiling report of applied changes: %w", err)
+	}
+	if err := s.db.CreateApplyReport(ctx, applyID, report); err != nil {
+		return otf.ResourceReport{}, fmt.Errorf("saving applied changes report: %w", err)
+	}
+	s.V(0).Info("compiled apply report",
+		"id", applyID,
+		"adds", report.Additions,
+		"changes", report.Changes,
+		"destructions", report.Destructions)
+
+	return otf.ResourceReport{}, nil
 }
 
 func (s RunService) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
@@ -207,19 +230,9 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 	return err
 }
 
-func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.enqueuePlan(ctx, s.db, id)
-	if err != nil {
-		return nil, err
-	}
-
-	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
-	return run, nil
-}
-
-func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*otf.Run, error) {
-	run, err := db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
-		return run.EnqueuePlan()
+func (s RunService) Start(ctx context.Context, runID string) (*otf.Run, error) {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
+		return run.Enqueue()
 	})
 	if err != nil {
 		s.Error(err, "started run", "id", runID)
@@ -227,6 +240,7 @@ func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*
 	}
 	s.V(0).Info("started run", "id", runID)
 
+	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
 	return run, nil
 }
 

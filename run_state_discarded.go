@@ -3,25 +3,16 @@ package otf
 type discardedState struct {
 	run *Run
 	*runStateMixin
+	Job
 }
 
 func newDiscardedState(r *Run) *discardedState {
 	return &discardedState{
-		run: r,
-		runStateMixin: &runStateMixin{
-			run: r,
-		},
+		run:           r,
+		runStateMixin: &runStateMixin{},
 	}
 }
 
-func (s *discardedState) String() string { return "discarded" }
-
-func (s *discardedState) Start() error {
-	s.run.setState(s.run.discardedState)
-	return nil
-}
-
-func (s *discardedState) Cancel() error {
-	s.run.setState(s.run.canceledState)
-	return nil
-}
+func (s *discardedState) Status() RunStatus { return RunDiscarded }
+func (s *discardedState) String() string    { return "discarded" }
+func (s *discardedState) Done() bool        { return true }
