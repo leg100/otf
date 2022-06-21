@@ -8,8 +8,11 @@ type appliedState struct {
 
 func newAppliedState(r *Run) *appliedState {
 	return &appliedState{
-		run:           r,
-		runStateMixin: &runStateMixin{},
+		run: r,
+		runStateMixin: &runStateMixin{
+			final:     true,
+			jobStatus: JobFinished,
+		},
 	}
 }
 

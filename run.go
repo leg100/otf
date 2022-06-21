@@ -247,6 +247,25 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 	return dto
 }
 
+// Start the current phase
+func (r *Run) Start() error {
+	// if current phase state is not JobQueued then error
+
+	// transition run state to <Phase>ing / JobRunning
+
+	return nil
+}
+
+// Finish the current phase
+func (r *Run) Finish() error {
+	// if current phase state is not JobRunning then error
+
+	// transition run state to <Planned/Applied> / JobFinished
+
+	return nil
+}
+
+// setState transitions the run to a new state
 func (r *Run) setState(s runState) {
 	r.runState = s
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{

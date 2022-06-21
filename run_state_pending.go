@@ -8,12 +8,13 @@ type pendingState struct {
 
 func newPendingState(r *Run) *pendingState {
 	return &pendingState{
-		run:           r,
-		runStateMixin: &runStateMixin{},
+		run: r,
+		runStateMixin: &runStateMixin{
+			jobStatus: JobPending,
+		},
 	}
 }
 
-func (s *pendingState) String() string    { return "pending" }
 func (s *pendingState) Status() RunStatus { return RunPending }
 
 func (s *pendingState) Enqueue() error {

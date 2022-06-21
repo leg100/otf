@@ -1,0 +1,14 @@
+a run has many states
+a run has many phases
+a phase has many states
+a run state has a corresponding phase state
+
+a run has an id
+a phase has an id
+
+a run state has actions it either supports or doesn't, e.g. startable, cancelable
+calling an action on a run state it that it doesn't support results in an error
+
+a run state is either a final state or non-final state
+
+on successful completion of a phase a report is produced, e.g. planned or applied changes

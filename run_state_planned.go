@@ -8,12 +8,13 @@ type plannedState struct {
 
 func newPlannedState(r *Run) *plannedState {
 	return &plannedState{
-		run:           r,
-		runStateMixin: &runStateMixin{},
+		run: r,
+		runStateMixin: &runStateMixin{
+			jobStatus: JobFinished,
+		},
 	}
 }
 
-func (s *plannedState) String() string    { return "planned" }
 func (s *plannedState) Status() RunStatus { return RunPlanned }
 func (s *plannedState) Discardable() bool { return true }
 func (s *plannedState) Confirmable() bool { return true }

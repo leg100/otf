@@ -13,7 +13,6 @@ func newPlanQueuedState(r *Run) *planQueuedState {
 	}
 }
 
-func (s *planQueuedState) String() string    { return "plan_queued" }
 func (s *planQueuedState) Status() RunStatus { return RunPlanQueued }
 func (s *planQueuedState) Canceleable() bool { return true }
 

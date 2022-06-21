@@ -20,6 +20,12 @@ const (
 
 var ErrRunInvalidStateTransition = errors.New("invalid run state transition")
 
+type runStateRedux struct {
+	phase  Phase     // phase type
+	status JobStatus // phase state
+	final  bool
+}
+
 type RunStatus string
 
 func (r RunStatus) String() string { return string(r) }

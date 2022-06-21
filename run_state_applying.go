@@ -43,5 +43,6 @@ func (s *applyingState) Cancelable() bool { return true }
 
 func (s *applyingState) Cancel() error {
 	s.run.setState(s.run.canceledState)
+	s.run.Apply.updateStatus(JobCanceled)
 	return nil
 }

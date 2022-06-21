@@ -8,11 +8,13 @@ type discardedState struct {
 
 func newDiscardedState(r *Run) *discardedState {
 	return &discardedState{
-		run:           r,
-		runStateMixin: &runStateMixin{},
+		run: r,
+		runStateMixin: &runStateMixin{
+			final:     true,
+			jobStatus: JobFinished,
+		},
 	}
 }
 
 func (s *discardedState) Status() RunStatus { return RunDiscarded }
-func (s *discardedState) String() string    { return "discarded" }
 func (s *discardedState) Done() bool        { return true }
