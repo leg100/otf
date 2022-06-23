@@ -13,30 +13,16 @@ import (
 
 const insertPlanSQL = `INSERT INTO plans (
     plan_id,
-    job_id,
-    additions,
-    changes,
-    destructions
+    job_id
 ) VALUES (
     $1,
-    $2,
-    $3,
-    $4,
-    $5
+    $2
 );`
 
-type InsertPlanParams struct {
-	PlanID       pgtype.Text
-	JobID        pgtype.Text
-	Additions    int
-	Changes      int
-	Destructions int
-}
-
 // InsertPlan implements Querier.InsertPlan.
-func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertPlan(ctx context.Context, planID pgtype.Text, jobID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlan")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, params.PlanID, params.JobID, params.Additions, params.Changes, params.Destructions)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, planID, jobID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertPlan: %w", err)
 	}
@@ -44,8 +30,8 @@ func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (pg
 }
 
 // InsertPlanBatch implements Querier.InsertPlanBatch.
-func (q *DBQuerier) InsertPlanBatch(batch genericBatch, params InsertPlanParams) {
-	batch.Queue(insertPlanSQL, params.PlanID, params.JobID, params.Additions, params.Changes, params.Destructions)
+func (q *DBQuerier) InsertPlanBatch(batch genericBatch, planID pgtype.Text, jobID pgtype.Text) {
+	batch.Queue(insertPlanSQL, planID, jobID)
 }
 
 // InsertPlanScan implements Querier.InsertPlanScan.
@@ -58,10 +44,11 @@ func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag,
 }
 
 const updatePlannedChangesByIDSQL = `UPDATE plans
-SET
-    additions = $1,
-    changes = $2,
-    destructions = $3
+SET report = (
+    $1,
+    $2,
+    $3
+)
 WHERE plan_id = $4
 RETURNING plan_id
 ;`

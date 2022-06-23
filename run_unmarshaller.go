@@ -26,12 +26,8 @@ type RunDBResult struct {
 	ApplyStatus            pgtype.Text                 `json:"apply_status"`
 	ReplaceAddrs           []string                    `json:"replace_addrs"`
 	TargetAddrs            []string                    `json:"target_addrs"`
-	PlannedAdditions       int                         `json:"planned_additions"`
-	PlannedChanges         int                         `json:"planned_changes"`
-	PlannedDestructions    int                         `json:"planned_destructions"`
-	AppliedAdditions       int                         `json:"applied_additions"`
-	AppliedChanges         int                         `json:"applied_changes"`
-	AppliedDestructions    int                         `json:"applied_destructions"`
+	PlannedChanges         *pggen.Report               `json:"planned_changes"`
+	AppliedChanges         *pggen.Report               `json:"applied_changes"`
 	ConfigurationVersionID pgtype.Text                 `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text                 `json:"workspace_id"`
 	Speculative            bool                        `json:"speculative"`
@@ -69,11 +65,7 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 				status:           JobStatus(result.PlanStatus.String),
 				statusTimestamps: unmarshalJobStatusTimestampDBTypes(result.PlanStatusTimestamps),
 			},
-			ResourceReport: &ResourceReport{
-				Additions:    result.PlannedAdditions,
-				Changes:      result.PlannedChanges,
-				Destructions: result.PlannedDestructions,
-			},
+			ResourceReport: (*ResourceReport)(result.PlannedChanges),
 		},
 		Apply: &Apply{
 			id: result.ApplyID.String,
@@ -82,11 +74,7 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 				status:           JobStatus(result.ApplyStatus.String),
 				statusTimestamps: unmarshalJobStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 			},
-			ResourceReport: &ResourceReport{
-				Additions:    result.AppliedAdditions,
-				Changes:      result.AppliedChanges,
-				Destructions: result.AppliedDestructions,
-			},
+			ResourceReport: (*ResourceReport)(result.AppliedChanges),
 		},
 	}
 	run.Plan.run = &run

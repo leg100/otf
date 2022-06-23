@@ -1,16 +1,10 @@
 -- name: InsertApply :exec
 INSERT INTO applies (
     apply_id,
-    job_id,
-    additions,
-    changes,
-    destructions
+    job_id
 ) VALUES (
     pggen.arg('apply_id'),
-    pggen.arg('job_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
+    pggen.arg('job_id')
 );
 
 -- name: FindRunIDByApplyID :one
@@ -22,10 +16,11 @@ WHERE applies.apply_id = pggen.arg('apply_id')
 
 -- name: UpdateAppliedChangesByID :one
 UPDATE applies
-SET
-    additions = pggen.arg('additions'),
-    changes = pggen.arg('changes'),
-    destructions = pggen.arg('destructions')
+SET report = (
+    pggen.arg('additions'),
+    pggen.arg('changes'),
+    pggen.arg('destructions')
+)
 WHERE apply_id = pggen.arg('apply_id')
 RETURNING apply_id
 ;

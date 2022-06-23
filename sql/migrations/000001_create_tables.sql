@@ -165,23 +165,21 @@ CREATE TABLE IF NOT EXISTS logs (
                 PRIMARY KEY (job_id, chunk_id)
 );
 
+CREATE TYPE report AS (additions INT, changes INT, destructions INT);
+
 CREATE TABLE IF NOT EXISTS plans (
     plan_id                     TEXT            NOT NULL,
     job_id                      TEXT REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     plan_bin                    BYTEA,
     plan_json                   BYTEA,
-    additions                   INTEGER         NOT NULL,
-    changes                     INTEGER         NOT NULL,
-    destructions                INTEGER         NOT NULL,
+    report REPORT,
                                 PRIMARY KEY (plan_id)
 );
 
 CREATE TABLE IF NOT EXISTS applies (
     apply_id          TEXT            NOT NULL,
     job_id            TEXT REFERENCES jobs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    additions         INTEGER         NOT NULL,
-    changes           INTEGER         NOT NULL,
-    destructions      INTEGER         NOT NULL,
+    report REPORT,
                       PRIMARY KEY (apply_id)
 );
 
@@ -223,6 +221,7 @@ DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
 DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS plans;
+DROP TYPE IF EXISTS report;
 DROP TABLE IF EXISTS logs;
 DROP TABLE IF EXISTS job_status_timestamps;
 DROP TABLE IF EXISTS jobs;

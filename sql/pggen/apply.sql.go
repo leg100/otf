@@ -18,10 +18,10 @@ import (
 // calling SendBatch on pgx.Conn, pgxpool.Pool, or pgx.Tx, use the Scan methods
 // to parse the results.
 type Querier interface {
-	InsertApply(ctx context.Context, params InsertApplyParams) (pgconn.CommandTag, error)
+	InsertApply(ctx context.Context, applyID pgtype.Text, jobID pgtype.Text) (pgconn.CommandTag, error)
 	// InsertApplyBatch enqueues a InsertApply query into batch to be executed
 	// later by the batch.
-	InsertApplyBatch(batch genericBatch, params InsertApplyParams)
+	InsertApplyBatch(batch genericBatch, applyID pgtype.Text, jobID pgtype.Text)
 	// InsertApplyScan scans the result of an executed InsertApplyBatch query.
 	InsertApplyScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
@@ -245,10 +245,10 @@ type Querier interface {
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error)
+	InsertPlan(ctx context.Context, planID pgtype.Text, jobID pgtype.Text) (pgconn.CommandTag, error)
 	// InsertPlanBatch enqueues a InsertPlan query into batch to be executed
 	// later by the batch.
-	InsertPlanBatch(batch genericBatch, params InsertPlanParams)
+	InsertPlanBatch(batch genericBatch, planID pgtype.Text, jobID pgtype.Text)
 	// InsertPlanScan scans the result of an executed InsertPlanBatch query.
 	InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
@@ -938,6 +938,13 @@ type Organizations struct {
 	SessionTimeout  int         `json:"session_timeout"`
 }
 
+// Report represents the Postgres composite type "report".
+type Report struct {
+	Additions    int `json:"additions"`
+	Changes      int `json:"changes"`
+	Destructions int `json:"destructions"`
+}
+
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
 type RunStatusTimestamps struct {
 	RunID     pgtype.Text `json:"run_id"`
@@ -1118,6 +1125,17 @@ func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
 	)
 }
 
+// newReport creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'report'.
+func (tr *typeResolver) newReport() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"report",
+		compositeField{"additions", "int4", &pgtype.Int4{}},
+		compositeField{"changes", "int4", &pgtype.Int4{}},
+		compositeField{"destructions", "int4", &pgtype.Int4{}},
+	)
+}
+
 // newRunStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'run_status_timestamps'.
 func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
@@ -1244,30 +1262,16 @@ func (tr *typeResolver) newTokensArray() pgtype.ValueTranscoder {
 
 const insertApplySQL = `INSERT INTO applies (
     apply_id,
-    job_id,
-    additions,
-    changes,
-    destructions
+    job_id
 ) VALUES (
     $1,
-    $2,
-    $3,
-    $4,
-    $5
+    $2
 );`
 
-type InsertApplyParams struct {
-	ApplyID      pgtype.Text
-	JobID        pgtype.Text
-	Additions    int
-	Changes      int
-	Destructions int
-}
-
 // InsertApply implements Querier.InsertApply.
-func (q *DBQuerier) InsertApply(ctx context.Context, params InsertApplyParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertApply(ctx context.Context, applyID pgtype.Text, jobID pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApply")
-	cmdTag, err := q.conn.Exec(ctx, insertApplySQL, params.ApplyID, params.JobID, params.Additions, params.Changes, params.Destructions)
+	cmdTag, err := q.conn.Exec(ctx, insertApplySQL, applyID, jobID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertApply: %w", err)
 	}
@@ -1275,8 +1279,8 @@ func (q *DBQuerier) InsertApply(ctx context.Context, params InsertApplyParams) (
 }
 
 // InsertApplyBatch implements Querier.InsertApplyBatch.
-func (q *DBQuerier) InsertApplyBatch(batch genericBatch, params InsertApplyParams) {
-	batch.Queue(insertApplySQL, params.ApplyID, params.JobID, params.Additions, params.Changes, params.Destructions)
+func (q *DBQuerier) InsertApplyBatch(batch genericBatch, applyID pgtype.Text, jobID pgtype.Text) {
+	batch.Queue(insertApplySQL, applyID, jobID)
 }
 
 // InsertApplyScan implements Querier.InsertApplyScan.
@@ -1321,10 +1325,11 @@ func (q *DBQuerier) FindRunIDByApplyIDScan(results pgx.BatchResults) (pgtype.Tex
 }
 
 const updateAppliedChangesByIDSQL = `UPDATE applies
-SET
-    additions = $1,
-    changes = $2,
-    destructions = $3
+SET report = (
+    $1,
+    $2,
+    $3
+)
 WHERE apply_id = $4
 RETURNING apply_id
 ;`

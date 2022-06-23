@@ -39,13 +39,7 @@ func (p *Plan) JobStatusTimestamps() []JobStatusTimestamp {
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
-	if p.ResourceReport == nil {
-		return false
-	}
-	if p.Additions > 0 || p.Changes > 0 || p.Destructions > 0 {
-		return true
-	}
-	return false
+	return p.ResourceReport != nil && p.ResourceReport.HasChanges()
 }
 
 // Do performs a terraform plan
@@ -135,9 +129,8 @@ type PlanService interface {
 
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:             NewID("plan"),
-		run:            run,
-		job:            newJob(),
-		ResourceReport: &ResourceReport{},
+		id:  NewID("plan"),
+		run: run,
+		job: newJob(),
 	}
 }

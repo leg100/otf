@@ -95,9 +95,8 @@ type ApplyService interface {
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		id:             NewID("apply"),
-		run:            run,
-		job:            newJob(),
-		ResourceReport: &ResourceReport{},
+		id:  NewID("apply"),
+		run: run,
+		job: newJob(),
 	}
 }

@@ -36,13 +36,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
-			PlanID:       String(run.Plan.ID()),
-			JobID:        String(run.Plan.JobID()),
-			Additions:    0,
-			Changes:      0,
-			Destructions: 0,
-		})
+		_, err = db.InsertPlan(ctx, String(run.Plan.ID()), String(run.Plan.JobID()))
 		if err != nil {
 			return err
 		}
@@ -54,13 +48,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
-			ApplyID:      String(run.Apply.ID()),
-			JobID:        String(run.Apply.JobID()),
-			Additions:    0,
-			Changes:      0,
-			Destructions: 0,
-		})
+		_, err = db.InsertApply(ctx, String(run.Apply.ID()), String(run.Apply.JobID()))
 		if err != nil {
 			return err
 		}

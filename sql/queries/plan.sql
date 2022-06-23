@@ -1,24 +1,19 @@
 -- name: InsertPlan :exec
 INSERT INTO plans (
     plan_id,
-    job_id,
-    additions,
-    changes,
-    destructions
+    job_id
 ) VALUES (
     pggen.arg('plan_id'),
-    pggen.arg('job_id'),
-    pggen.arg('additions'),
-    pggen.arg('changes'),
-    pggen.arg('destructions')
+    pggen.arg('job_id')
 );
 
 -- name: UpdatePlannedChangesByID :one
 UPDATE plans
-SET
-    additions = pggen.arg('additions'),
-    changes = pggen.arg('changes'),
-    destructions = pggen.arg('destructions')
+SET report = (
+    pggen.arg('additions'),
+    pggen.arg('changes'),
+    pggen.arg('destructions')
+)
 WHERE plan_id = pggen.arg('plan_id')
 RETURNING plan_id
 ;

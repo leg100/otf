@@ -114,6 +114,13 @@ type ResourceReport struct {
 	Destructions int `json:"destructions"`
 }
 
+func (r ResourceReport) HasChanges() bool {
+	if r.Additions > 0 || r.Changes > 0 || r.Destructions > 0 {
+		return true
+	}
+	return false
+}
+
 // validString checks if the given input is present and non-empty.
 func validString(v *string) bool {
 	return v != nil && *v != ""
