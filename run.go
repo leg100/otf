@@ -80,7 +80,9 @@ type Run struct {
 	applyingState           *applyingState
 	appliedState            *appliedState
 	// current state
-	runState
+	state runState
+	// current phase
+	phase Phase
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -254,6 +256,20 @@ func (r *Run) Start() error {
 	// transition run state to <Phase>ing / JobRunning
 
 	return nil
+}
+
+func (r *Run) Enqueue() error {
+	if r.state.phaseState != JobPending {
+		return ErrRunInvalidStateTransition
+	}
+	r.transition(RunPlanQueuedState)
+
+	return nil
+}
+
+func (r *Run) transition(state runState) {
+	r.state = state
+	// add status timestamp for both run state and phase state
 }
 
 // Finish the current phase

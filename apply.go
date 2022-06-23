@@ -24,6 +24,17 @@ func (a *Apply) ID() string        { return a.id }
 func (a *Apply) String() string    { return a.id }
 func (a *Apply) Status() JobStatus { return a.JobStatus() }
 
+func (a *Apply) State() JobStatus {
+	if a.run.state.phase == ApplyPhase {
+		return a.run.state.phaseState
+	}
+	if a.run.state.phase < ApplyPhase {
+		if a.run.state.final {
+			return JobUnreachable
+		}
+	}
+}
+
 // Do performs a terraform apply
 func (a *Apply) Do(env Environment) error {
 	if err := a.run.setupEnv(env); err != nil {

@@ -1,7 +1,10 @@
 a run has many states
 a run has many phases
 a phase has many states
-a run state has a corresponding phase state
+
+run state is sortable: RunPending is first; final states are last
+
+a run state *may* have a corresponding phase state, i.e. RunPending does not, whereas RunPlanQueued has JobPending. Note: this is the state that is *set* when the run state is set.
 
 a run has an id
 a phase has an id

@@ -20,38 +20,49 @@ const (
 
 var ErrRunInvalidStateTransition = errors.New("invalid run state transition")
 
-type runStateRedux struct {
-	phase  Phase     // phase type
-	status JobStatus // phase state
-	final  bool
+type Phase string
+
+const (
+	PlanPhase Phase = iota
+	ApplyPhase
+)
+
+type runState struct {
+	status     RunStatus
+	phase      Phase     // phase type
+	phaseState JobStatus // phase state
+	final      bool
 }
+
+var (
+	RunPendingState = runState{
+		status:     RunPending,
+		phase:      PlanPhase,
+		phaseState: JobPending,
+	}
+	RunPlanQueuedState = runState{
+		status:     RunPlanQueued,
+		phase:      PlanPhase,
+		phaseState: JobQueued,
+	}
+	RunPlannedAndFinishedState = runState{
+		status:     RunPlannedAndFinished,
+		phase:      PlanPhase,
+		phaseState: JobFinished,
+		final:      true,
+	}
+	RunApplyingState = runState{
+		status:     RunApplying,
+		phase:      ApplyPhase,
+		phaseState: JobRunning,
+	}
+	RunErrorState = runState{
+		status:     RunApplying,
+		phase:      ApplyPhase,
+		phaseState: JobErrored,
+	}
+)
 
 type RunStatus string
 
 func (r RunStatus) String() string { return string(r) }
-
-type runState interface {
-	Status() RunStatus
-	// Start run action (either a plan or an apply)
-	Start() error
-	// Finish run action (either a plan or apply)
-	Finish(ReportService, JobFinishOptions) error
-	// Cancel run action
-	Cancel() error
-	// Discard run action
-	Discard() error
-	// Enqueue action (either an plan or apply depending on current state)
-	Enqueue() error
-	// Apply run action
-	ApplyRun() error
-	// Cancelable determines whether run is in a state to be canceled
-	Cancelable() bool
-	// Confirmable determines whether run is in a state to be confirmed
-	Confirmable() bool
-	// Discardable determines whether run is in a state to be discarded
-	Discardable() bool
-	// Done determines whether run is in a final completed state.
-	Done() bool
-	// run state can have a job associated with it
-	Job
-}
