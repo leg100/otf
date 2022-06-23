@@ -27,5 +27,5 @@ func (s ApplyService) Get(ctx context.Context, id string) (*otf.Apply, error) {
 	if err != nil {
 		return nil, err
 	}
-	return run.Apply, nil
+	return run.Apply(), nil
 }

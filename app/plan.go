@@ -29,5 +29,5 @@ func (s PlanService) Get(ctx context.Context, planID string) (*otf.Plan, error) 
 		return nil, err
 	}
 	s.V(2).Info("retrieved plan", "id", planID)
-	return run.Plan, nil
+	return run.Plan(), nil
 }

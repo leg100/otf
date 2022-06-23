@@ -45,8 +45,8 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	}
 	run.configurationVersionID = cv.ID()
 	run.workspaceID = ws.ID()
-	run.Plan = newPlan(&run)
-	run.Apply = newApply(&run)
+	run.plan = newPlan(&run)
+	run.apply = newApply(&run)
 	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
 	run.setJob()

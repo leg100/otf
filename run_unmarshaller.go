@@ -58,7 +58,7 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 		workspaceID:            result.WorkspaceID.String,
 		workspace:              ws,
 		configurationVersionID: result.ConfigurationVersionID.String,
-		Plan: &Plan{
+		plan: &Plan{
 			id: result.PlanID.String,
 			job: &job{
 				id:               result.PlanJobID.String,
@@ -67,7 +67,7 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 			},
 			ResourceReport: (*ResourceReport)(result.PlannedChanges),
 		},
-		Apply: &Apply{
+		apply: &Apply{
 			id: result.ApplyID.String,
 			job: &job{
 				id:               result.ApplyJobID.String,
@@ -77,8 +77,8 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 			ResourceReport: (*ResourceReport)(result.AppliedChanges),
 		},
 	}
-	run.Plan.run = &run
-	run.Apply.run = &run
+	run.plan.run = &run
+	run.apply.run = &run
 	run.setJob()
 	return &run, nil
 }

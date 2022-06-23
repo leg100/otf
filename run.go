@@ -83,8 +83,8 @@ type Run struct {
 	workspaceID            string
 	configurationVersionID string
 	// Relations
-	Plan      *Plan
-	Apply     *Apply
+	plan      *Plan
+	apply     *Apply
 	workspace *Workspace
 	// Job is the current job the run is performing
 	Job
@@ -107,6 +107,8 @@ func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
 func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
+func (r *Run) Plan() *Plan                            { return r.plan }
+func (r *Run) Apply() *Apply                          { return r.apply }
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
@@ -276,7 +278,7 @@ func (r *Run) Finish(opts JobFinishOptions) (*Event, error) {
 	switch r.status {
 	case RunPlanning:
 		r.updateStatus(RunPlanned)
-		return r.Plan.Finish()
+		return r.plan.Finish()
 	case RunApplying:
 		r.updateStatus(RunApplied)
 		return &Event{Payload: r, Type: EventRunApplied}, nil
@@ -297,7 +299,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		},
 		CreatedAt:              r.CreatedAt(),
 		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
-		HasChanges:             r.Plan.HasChanges(),
+		HasChanges:             r.plan.HasChanges(),
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
 		Permissions: &jsonapi.RunPermissions{
@@ -316,8 +318,8 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply: r.Apply.ToJSONAPI(req).(*jsonapi.Apply),
-		Plan:  r.Plan.ToJSONAPI(req).(*jsonapi.Plan),
+		Apply: r.apply.ToJSONAPI(req).(*jsonapi.Apply),
+		Plan:  r.plan.ToJSONAPI(req).(*jsonapi.Plan),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &jsonapi.User{
 			ID:       DefaultUserID,
@@ -371,36 +373,36 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 func (r *Run) updateStatus(status RunStatus) error {
 	switch status {
 	case RunPending:
-		r.Plan.updateStatus(JobPending)
-		r.Apply.updateStatus(JobPending)
+		r.plan.updateStatus(JobPending)
+		r.apply.updateStatus(JobPending)
 	case RunPlanQueued:
-		r.Plan.updateStatus(JobQueued)
+		r.plan.updateStatus(JobQueued)
 	case RunPlanning:
-		r.Plan.updateStatus(JobRunning)
+		r.plan.updateStatus(JobRunning)
 	case RunPlanned, RunPlannedAndFinished:
-		r.Plan.updateStatus(JobFinished)
-		r.Apply.updateStatus(JobUnreachable)
+		r.plan.updateStatus(JobFinished)
+		r.apply.updateStatus(JobUnreachable)
 	case RunApplyQueued:
-		r.Apply.updateStatus(JobQueued)
+		r.apply.updateStatus(JobQueued)
 	case RunApplying:
-		r.Apply.updateStatus(JobRunning)
+		r.apply.updateStatus(JobRunning)
 	case RunApplied:
-		r.Apply.updateStatus(JobFinished)
+		r.apply.updateStatus(JobFinished)
 	case RunErrored:
 		switch r.Status() {
 		case RunPlanning:
-			r.Plan.updateStatus(JobErrored)
-			r.Apply.updateStatus(JobUnreachable)
+			r.plan.updateStatus(JobErrored)
+			r.apply.updateStatus(JobUnreachable)
 		case RunApplying:
-			r.Apply.updateStatus(JobErrored)
+			r.apply.updateStatus(JobErrored)
 		}
 	case RunCanceled:
 		switch r.Status() {
 		case RunPlanQueued, RunPlanning:
-			r.Plan.updateStatus(JobCanceled)
-			r.Apply.updateStatus(JobUnreachable)
+			r.plan.updateStatus(JobCanceled)
+			r.apply.updateStatus(JobUnreachable)
 		case RunApplyQueued, RunApplying:
-			r.Apply.updateStatus(JobCanceled)
+			r.apply.updateStatus(JobCanceled)
 		}
 	}
 	r.status = status
@@ -471,7 +473,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), file, PlanFormatBinary); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.plan.ID(), file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -483,7 +485,7 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadPlanFile(ctx, r.Plan.ID(), jsonFile, PlanFormatJSON); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.plan.ID(), jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
@@ -525,9 +527,9 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 func (r *Run) setJob() {
 	switch r.Status() {
 	case RunPlanQueued, RunPlanning:
-		r.Job = r.Plan
+		r.Job = r.plan
 	case RunApplyQueued, RunApplying:
-		r.Job = r.Apply
+		r.Job = r.apply
 	default:
 		r.Job = &noOp{}
 	}

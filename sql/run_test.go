@@ -93,11 +93,11 @@ func TestRun_Get(t *testing.T) {
 		},
 		{
 			name: "by plan id",
-			opts: otf.RunGetOptions{PlanID: otf.String(want.Plan.ID())},
+			opts: otf.RunGetOptions{PlanID: otf.String(want.Plan().ID())},
 		},
 		{
 			name: "by apply id",
-			opts: otf.RunGetOptions{ApplyID: otf.String(want.Apply.ID())},
+			opts: otf.RunGetOptions{ApplyID: otf.String(want.Apply().ID())},
 		},
 	}
 	for _, tt := range tests {
@@ -231,12 +231,12 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.CreatePlanReport(context.Background(), run.Plan.ID(), report)
+	err := db.CreatePlanReport(context.Background(), run.Plan().ID(), report)
 	require.NoError(t, err)
 
 	run, err = db.GetRun(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
 	require.NoError(t, err)
 
-	assert.NotNil(t, run.Plan.ResourceReport)
-	assert.Equal(t, &report, run.Plan.ResourceReport)
+	assert.NotNil(t, run.Plan().ResourceReport)
+	assert.Equal(t, &report, run.Plan().ResourceReport)
 }

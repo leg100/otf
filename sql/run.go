@@ -29,36 +29,36 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 			return err
 		}
 		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  String(run.Plan.JobID()),
+			JobID:  String(run.Plan().JobID()),
 			RunID:  String(run.ID()),
-			Status: String(string(run.Plan.Status())),
+			Status: String(string(run.Plan().Status())),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertPlan(ctx, String(run.Plan.ID()), String(run.Plan.JobID()))
+		_, err = db.InsertPlan(ctx, String(run.Plan().ID()), String(run.Plan().JobID()))
 		if err != nil {
 			return err
 		}
 		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  String(run.Apply.JobID()),
+			JobID:  String(run.Apply().JobID()),
 			RunID:  String(run.ID()),
-			Status: String(string(run.Apply.Status())),
+			Status: String(string(run.Apply().Status())),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertApply(ctx, String(run.Apply.ID()), String(run.Apply.JobID()))
+		_, err = db.InsertApply(ctx, String(run.Apply().ID()), String(run.Apply().JobID()))
 		if err != nil {
 			return err
 		}
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := db.insertJobStatusTimestamp(ctx, run.Plan); err != nil {
+		if err := db.insertJobStatusTimestamp(ctx, run.Plan()); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := db.insertJobStatusTimestamp(ctx, run.Apply); err != nil {
+		if err := db.insertJobStatusTimestamp(ctx, run.Apply()); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -86,8 +86,8 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		// Make copies of statuses before update
 		runStatus := run.Status()
-		planStatus := run.Plan.Status()
-		applyStatus := run.Apply.Status()
+		planStatus := run.Plan().Status()
+		applyStatus := run.Apply().Status()
 
 		if err := fn(run); err != nil {
 			return err
@@ -105,26 +105,26 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 			}
 		}
 
-		if run.Plan.Status() != planStatus {
+		if run.Plan().Status() != planStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx, String(string(run.Plan.Status())), String(run.Plan.JobID()))
+			_, err = db.UpdateJobStatus(ctx, String(string(run.Plan().Status())), String(run.Plan().JobID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertJobStatusTimestamp(ctx, run.Plan); err != nil {
+			if err := db.insertJobStatusTimestamp(ctx, run.Plan()); err != nil {
 				return err
 			}
 		}
 
-		if run.Apply.Status() != applyStatus {
+		if run.Apply().Status() != applyStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx, String(string(run.Apply.Status())), String(run.Apply.JobID()))
+			_, err = db.UpdateJobStatus(ctx, String(string(run.Apply().Status())), String(run.Apply().JobID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertJobStatusTimestamp(ctx, run.Apply); err != nil {
+			if err := db.insertJobStatusTimestamp(ctx, run.Apply()); err != nil {
 				return err
 			}
 		}

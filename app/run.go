@@ -141,7 +141,7 @@ func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
 	if err != nil {
 		return err
 	}
-	chunk, err := s.cs.GetChunk(ctx, run.Apply.JobID(), otf.GetChunkOptions{})
+	chunk, err := s.cs.GetChunk(ctx, run.Apply().JobID(), otf.GetChunkOptions{})
 	if err != nil {
 		return err
 	}
@@ -149,11 +149,11 @@ func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
 	if err != nil {
 		return fmt.Errorf("compiling report of applied changes: %w", err)
 	}
-	if err := s.db.CreateApplyReport(ctx, run.Apply.JobID(), report); err != nil {
+	if err := s.db.CreateApplyReport(ctx, run.Apply().JobID(), report); err != nil {
 		return fmt.Errorf("saving applied changes report: %w", err)
 	}
 	s.V(0).Info("compiled apply report",
-		"id", run.Apply.ID(),
+		"id", run.Apply().ID(),
 		"adds", report.Additions,
 		"changes", report.Changes,
 		"destructions", report.Destructions)
@@ -237,7 +237,7 @@ func (s RunService) GetPlanFile(ctx context.Context, spec otf.RunGetOptions, for
 			s.Error(err, "retrieving plan file", "id", spec.String())
 			return nil, err
 		}
-		planID = run.Plan.ID()
+		planID = run.Plan().ID()
 	} else {
 		planID = *spec.PlanID
 	}
