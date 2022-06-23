@@ -11,8 +11,8 @@ type JobWriter struct {
 	// ID of Job to write logs on behalf of.
 	ID string
 
-	// JobService for uploading logs to server
-	JobService
+	// LogService for uploading logs to server
+	LogService
 
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).

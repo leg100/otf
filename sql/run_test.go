@@ -105,6 +105,8 @@ func TestRun_Get(t *testing.T) {
 			got, err := db.GetRun(context.Background(), tt.opts)
 			require.NoError(t, err)
 
+			assert.Equal(t, want.Apply().PhaseStatusTimestamps(), got.Apply().PhaseStatusTimestamps())
+			assert.Equal(t, want.Plan().PhaseStatusTimestamps(), got.Plan().PhaseStatusTimestamps())
 			assert.Equal(t, want, got)
 		})
 	}

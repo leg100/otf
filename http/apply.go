@@ -15,3 +15,11 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	}
 	writeResponse(w, r, apply)
 }
+
+func (s *Server) GetApplyLogs(w http.ResponseWriter, r *http.Request) {
+	getLogs(w, r, s.ApplyService(), mux.Vars(r)["apply_id"])
+}
+
+func (s *Server) UploadApplyLogs(w http.ResponseWriter, r *http.Request) {
+	uploadLogs(w, r, s.ApplyService(), mux.Vars(r)["apply_id"])
+}

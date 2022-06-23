@@ -25,7 +25,6 @@ type Application struct {
 	applyService                otf.ApplyService
 	eventService                otf.EventService
 	userService                 otf.UserService
-	jobService                  otf.JobService
 }
 
 func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*Application, error) {
@@ -40,13 +39,15 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	}
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	jobService, err := newJobService(db, logger, eventService, cache)
+	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
+	planService, err := NewPlanService(db, logger, eventService, cache)
 	if err != nil {
 		return nil, err
 	}
-	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, jobService, cache)
-	planService := NewPlanService(db, logger)
-	applyService := NewApplyService(db, logger)
+	applyService, err := NewApplyService(db, logger, eventService, cache)
+	if err != nil {
+		return nil, err
+	}
 	userService := NewUserService(logger, db)
 
 	return &Application{
@@ -59,46 +60,17 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 		applyService:                applyService,
 		eventService:                eventService,
 		userService:                 userService,
-		jobService:                  jobService,
 	}, nil
 }
 
-func (app *Application) OrganizationService() otf.OrganizationService {
-	return app.organizationService
-}
-
-func (app *Application) WorkspaceService() otf.WorkspaceService {
-	return app.workspaceService
-}
-
-func (app *Application) StateVersionService() otf.StateVersionService {
-	return app.stateVersionService
-}
-
+func (app *Application) OrganizationService() otf.OrganizationService { return app.organizationService }
+func (app *Application) WorkspaceService() otf.WorkspaceService       { return app.workspaceService }
+func (app *Application) StateVersionService() otf.StateVersionService { return app.stateVersionService }
 func (app *Application) ConfigurationVersionService() otf.ConfigurationVersionService {
 	return app.configurationVersionService
 }
-
-func (app *Application) RunService() otf.RunService {
-	return app.runService
-}
-
-func (app *Application) PlanService() otf.PlanService {
-	return app.planService
-}
-
-func (app *Application) ApplyService() otf.ApplyService {
-	return app.applyService
-}
-
-func (app *Application) EventService() otf.EventService {
-	return app.eventService
-}
-
-func (app *Application) UserService() otf.UserService {
-	return app.userService
-}
-
-func (app *Application) JobService() otf.JobService {
-	return app.jobService
-}
+func (app *Application) RunService() otf.RunService     { return app.runService }
+func (app *Application) PlanService() otf.PlanService   { return app.planService }
+func (app *Application) ApplyService() otf.ApplyService { return app.applyService }
+func (app *Application) EventService() otf.EventService { return app.eventService }
+func (app *Application) UserService() otf.UserService   { return app.userService }

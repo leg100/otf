@@ -41,16 +41,14 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
-    plans.job_id AS plan_job_id,
-    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
     runs.status,
-    pj.status      AS plan_status,
-    aj.status      AS apply_status,
+    plans.status      AS plan_status,
+    applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
     plans.report AS planned_changes,
@@ -68,20 +66,20 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = plans.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM plan_status_timestamps st
+        WHERE st.plan_id = plans.plan_id
+        GROUP BY plan_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = applies.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM apply_status_timestamps st
+        WHERE st.apply_id = applies.apply_id
+        GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN (applies JOIN jobs aj USING (job_id)) USING (run_id)
-JOIN (plans JOIN jobs pj USING (job_id)) USING (run_id)
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
@@ -111,16 +109,14 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
-    plans.job_id AS plan_job_id,
-    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
     runs.status,
-    pj.status      AS plan_status,
-    aj.status      AS apply_status,
+    plans.status      AS plan_status,
+    applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
     plans.report AS planned_changes,
@@ -138,20 +134,20 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = plans.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM plan_status_timestamps st
+        WHERE st.plan_id = plans.plan_id
+        GROUP BY plan_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = applies.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM apply_status_timestamps st
+        WHERE st.apply_id = applies.apply_id
+        GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN (applies JOIN jobs aj USING (job_id)) USING (run_id)
-JOIN (plans JOIN jobs pj USING (job_id)) USING (run_id)
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
@@ -163,16 +159,14 @@ SELECT
     runs.run_id,
     plans.plan_id,
     applies.apply_id,
-    plans.job_id AS plan_job_id,
-    applies.job_id AS apply_job_id,
     runs.created_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
     runs.refresh_only,
     runs.status,
-    pj.status        AS plan_status,
-    aj.status        AS apply_status,
+    plans.status        AS plan_status,
+    applies.status        AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
     plans.report AS planned_changes,
@@ -190,20 +184,20 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = plans.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS plan_status_timestamps
+        FROM plan_status_timestamps st
+        WHERE st.plan_id = plans.plan_id
+        GROUP BY plan_id
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS job_status_timestamps
-        FROM job_status_timestamps st
-        WHERE st.job_id = applies.job_id
-        GROUP BY job_id
+        SELECT array_agg(st.*) AS apply_status_timestamps
+        FROM apply_status_timestamps st
+        WHERE st.apply_id = applies.apply_id
+        GROUP BY apply_id
     ) AS apply_status_timestamps
 FROM runs
-JOIN (applies JOIN jobs aj USING (job_id)) USING (run_id)
-JOIN (plans JOIN jobs pj USING (job_id)) USING (run_id)
+JOIN plans USING (run_id)
+JOIN applies USING (run_id)
 JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)

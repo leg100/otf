@@ -28,37 +28,29 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  String(run.Plan().JobID()),
+		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
+			PlanID: String(run.Plan().ID()),
 			RunID:  String(run.ID()),
 			Status: String(string(run.Plan().Status())),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertPlan(ctx, String(run.Plan().ID()), String(run.Plan().JobID()))
-		if err != nil {
-			return err
-		}
-		_, err = db.InsertJob(ctx, pggen.InsertJobParams{
-			JobID:  String(run.Apply().JobID()),
-			RunID:  String(run.ID()),
-			Status: String(string(run.Apply().Status())),
+		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
+			ApplyID: String(run.Apply().ID()),
+			RunID:   String(run.ID()),
+			Status:  String(string(run.Apply().Status())),
 		})
-		if err != nil {
-			return err
-		}
-		_, err = db.InsertApply(ctx, String(run.Apply().ID()), String(run.Apply().JobID()))
 		if err != nil {
 			return err
 		}
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := db.insertJobStatusTimestamp(ctx, run.Plan()); err != nil {
+		if err := db.insertPlanStatusTimestamp(ctx, run.Plan()); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := db.insertJobStatusTimestamp(ctx, run.Apply()); err != nil {
+		if err := db.insertApplyStatusTimestamp(ctx, run.Apply()); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -107,24 +99,24 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 
 		if run.Plan().Status() != planStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx, String(string(run.Plan().Status())), String(run.Plan().JobID()))
+			_, err = db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.Plan().ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertJobStatusTimestamp(ctx, run.Plan()); err != nil {
+			if err := db.insertPlanStatusTimestamp(ctx, run.Plan()); err != nil {
 				return err
 			}
 		}
 
 		if run.Apply().Status() != applyStatus {
 			var err error
-			_, err = db.UpdateJobStatus(ctx, String(string(run.Apply().Status())), String(run.Apply().JobID()))
+			_, err = db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.Apply().ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertJobStatusTimestamp(ctx, run.Apply()); err != nil {
+			if err := db.insertApplyStatusTimestamp(ctx, run.Apply()); err != nil {
 				return err
 			}
 		}
@@ -320,8 +312,6 @@ func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text
 		return db.FindRunIDByPlanID(ctx, String(*opts.PlanID))
 	} else if opts.ApplyID != nil {
 		return db.FindRunIDByApplyID(ctx, String(*opts.ApplyID))
-	} else if opts.JobID != nil {
-		return db.FindRunIDByJobID(ctx, String(*opts.JobID))
 	} else if opts.ID != nil {
 		return String(*opts.ID), nil
 	} else {
@@ -342,14 +332,27 @@ func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error 
 	return err
 }
 
-func (db *DB) insertJobStatusTimestamp(ctx context.Context, job otf.Job) error {
-	ts, err := job.JobStatusTimestamp(job.JobStatus())
+func (db *DB) insertPlanStatusTimestamp(ctx context.Context, phase otf.Phase) error {
+	ts, err := phase.PhaseStatusTimestamp(phase.PhaseStatus())
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertJobStatusTimestamp(ctx, pggen.InsertJobStatusTimestampParams{
-		ID:        String(job.JobID()),
-		Status:    String(string(job.JobStatus())),
+	_, err = db.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
+		PlanID:    String(phase.PhaseID()),
+		Status:    String(string(phase.PhaseStatus())),
+		Timestamp: ts,
+	})
+	return err
+}
+
+func (db *DB) insertApplyStatusTimestamp(ctx context.Context, phase otf.Phase) error {
+	ts, err := phase.PhaseStatusTimestamp(phase.PhaseStatus())
+	if err != nil {
+		return err
+	}
+	_, err = db.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
+		ApplyID:   String(phase.PhaseID()),
+		Status:    String(string(phase.PhaseStatus())),
 		Timestamp: ts,
 	})
 	return err

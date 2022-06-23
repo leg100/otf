@@ -5,6 +5,7 @@ package pggen
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -13,16 +14,24 @@ import (
 
 const insertPlanSQL = `INSERT INTO plans (
     plan_id,
-    job_id
+    run_id,
+    status
 ) VALUES (
     $1,
-    $2
+    $2,
+    $3
 );`
 
+type InsertPlanParams struct {
+	PlanID pgtype.Text
+	RunID  pgtype.Text
+	Status pgtype.Text
+}
+
 // InsertPlan implements Querier.InsertPlan.
-func (q *DBQuerier) InsertPlan(ctx context.Context, planID pgtype.Text, jobID pgtype.Text) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlan")
-	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, planID, jobID)
+	cmdTag, err := q.conn.Exec(ctx, insertPlanSQL, params.PlanID, params.RunID, params.Status)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertPlan: %w", err)
 	}
@@ -30,8 +39,8 @@ func (q *DBQuerier) InsertPlan(ctx context.Context, planID pgtype.Text, jobID pg
 }
 
 // InsertPlanBatch implements Querier.InsertPlanBatch.
-func (q *DBQuerier) InsertPlanBatch(batch genericBatch, planID pgtype.Text, jobID pgtype.Text) {
-	batch.Queue(insertPlanSQL, planID, jobID)
+func (q *DBQuerier) InsertPlanBatch(batch genericBatch, params InsertPlanParams) {
+	batch.Queue(insertPlanSQL, params.PlanID, params.RunID, params.Status)
 }
 
 // InsertPlanScan implements Querier.InsertPlanScan.
@@ -41,6 +50,78 @@ func (q *DBQuerier) InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag,
 		return cmdTag, fmt.Errorf("exec InsertPlanBatch: %w", err)
 	}
 	return cmdTag, err
+}
+
+const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
+    plan_id,
+    status,
+    timestamp
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertPlanStatusTimestampParams struct {
+	PlanID    pgtype.Text
+	Status    pgtype.Text
+	Timestamp time.Time
+}
+
+// InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.
+func (q *DBQuerier) InsertPlanStatusTimestamp(ctx context.Context, params InsertPlanStatusTimestampParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanStatusTimestamp")
+	cmdTag, err := q.conn.Exec(ctx, insertPlanStatusTimestampSQL, params.PlanID, params.Status, params.Timestamp)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertPlanStatusTimestamp: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertPlanStatusTimestampBatch implements Querier.InsertPlanStatusTimestampBatch.
+func (q *DBQuerier) InsertPlanStatusTimestampBatch(batch genericBatch, params InsertPlanStatusTimestampParams) {
+	batch.Queue(insertPlanStatusTimestampSQL, params.PlanID, params.Status, params.Timestamp)
+}
+
+// InsertPlanStatusTimestampScan implements Querier.InsertPlanStatusTimestampScan.
+func (q *DBQuerier) InsertPlanStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertPlanStatusTimestampBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const updatePlanStatusByIDSQL = `UPDATE plans
+SET status = $1
+WHERE plan_id = $2
+RETURNING plan_id
+;`
+
+// UpdatePlanStatusByID implements Querier.UpdatePlanStatusByID.
+func (q *DBQuerier) UpdatePlanStatusByID(ctx context.Context, status pgtype.Text, planID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdatePlanStatusByID")
+	row := q.conn.QueryRow(ctx, updatePlanStatusByIDSQL, status, planID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdatePlanStatusByID: %w", err)
+	}
+	return item, nil
+}
+
+// UpdatePlanStatusByIDBatch implements Querier.UpdatePlanStatusByIDBatch.
+func (q *DBQuerier) UpdatePlanStatusByIDBatch(batch genericBatch, status pgtype.Text, planID pgtype.Text) {
+	batch.Queue(updatePlanStatusByIDSQL, status, planID)
+}
+
+// UpdatePlanStatusByIDScan implements Querier.UpdatePlanStatusByIDScan.
+func (q *DBQuerier) UpdatePlanStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdatePlanStatusByIDBatch row: %w", err)
+	}
+	return item, nil
 }
 
 const updatePlannedChangesByIDSQL = `UPDATE plans
@@ -86,10 +167,9 @@ func (q *DBQuerier) UpdatePlannedChangesByIDScan(results pgx.BatchResults) (pgty
 	return item, nil
 }
 
-const findRunIDByPlanIDSQL = `SELECT jobs.run_id
+const findRunIDByPlanIDSQL = `SELECT run_id
 FROM plans
-JOIN jobs USING(job_id)
-WHERE plans.plan_id = $1
+WHERE plan_id = $1
 ;`
 
 // FindRunIDByPlanID implements Querier.FindRunIDByPlanID.
@@ -240,6 +320,82 @@ func (q *DBQuerier) UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Tex
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdatePlanJSONByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const insertPlanLogChunkSQL = `INSERT INTO plan_logs (
+    plan_id,
+    chunk
+) VALUES (
+    $1,
+    $2
+)
+;`
+
+// InsertPlanLogChunk implements Querier.InsertPlanLogChunk.
+func (q *DBQuerier) InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertPlanLogChunk")
+	cmdTag, err := q.conn.Exec(ctx, insertPlanLogChunkSQL, planID, chunk)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertPlanLogChunk: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertPlanLogChunkBatch implements Querier.InsertPlanLogChunkBatch.
+func (q *DBQuerier) InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Text, chunk []byte) {
+	batch.Queue(insertPlanLogChunkSQL, planID, chunk)
+}
+
+// InsertPlanLogChunkScan implements Querier.InsertPlanLogChunkScan.
+func (q *DBQuerier) InsertPlanLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertPlanLogChunkBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
+const findPlanLogChunksSQL = `SELECT
+    substring(string_agg(chunk, '') FROM $1 FOR $2)
+FROM (
+    SELECT plan_id, chunk
+    FROM plan_logs
+    WHERE plan_id = $3
+    ORDER BY chunk_id
+) c
+GROUP BY plan_id
+;`
+
+type FindPlanLogChunksParams struct {
+	Offset int
+	Limit  int
+	PlanID pgtype.Text
+}
+
+// FindPlanLogChunks implements Querier.FindPlanLogChunks.
+func (q *DBQuerier) FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindPlanLogChunks")
+	row := q.conn.QueryRow(ctx, findPlanLogChunksSQL, params.Offset, params.Limit, params.PlanID)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindPlanLogChunks: %w", err)
+	}
+	return item, nil
+}
+
+// FindPlanLogChunksBatch implements Querier.FindPlanLogChunksBatch.
+func (q *DBQuerier) FindPlanLogChunksBatch(batch genericBatch, params FindPlanLogChunksParams) {
+	batch.Queue(findPlanLogChunksSQL, params.Offset, params.Limit, params.PlanID)
+}
+
+// FindPlanLogChunksScan implements Querier.FindPlanLogChunksScan.
+func (q *DBQuerier) FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error) {
+	row := results.QueryRow()
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindPlanLogChunksBatch row: %w", err)
 	}
 	return item, nil
 }

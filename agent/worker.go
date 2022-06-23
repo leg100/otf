@@ -24,54 +24,53 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // handle executes the incoming job
-func (w *Worker) handle(ctx context.Context, job Job) {
-	log := w.Logger.WithValues("job", job.JobID())
+func (w *Worker) handle(ctx context.Context, run *otf.Run) {
+	log := w.Logger.WithValues("run", run.ID(), "phase", run.PhaseID())
+
+	svc, err := run.Service(w.App)
+	if err != nil {
+		log.Error(err, "looking up service for phase")
+		return
+	}
 
 	env, err := NewEnvironment(
 		log,
 		w.App,
-		job,
+		run.PhaseID(),
+		svc,
 		w.environmentVariables,
 	)
 	if err != nil {
-		log.Error(err, "unable to create execution environment")
+		log.Error(err, "creating execution environment")
 		return
 	}
 
-	// Claim the job before proceeding in case another agent has claimed it.
-	job, err = w.App.JobService().Claim(ctx, job.JobID(), otf.JobClaimOptions{AgentID: DefaultID})
+	// Start the job before proceeding in case another agent has started it.
+	run, err = svc.Start(ctx, run.PhaseID(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
-		log.Error(err, "unable to start job")
+		log.Error(err, "starting phase")
 		return
 	}
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(job.JobID(), env)
-	defer w.CheckOut(job.JobID())
+	w.CheckIn(run.PhaseID(), env)
+	defer w.CheckOut(run.PhaseID())
 
-	log.Info("executing job")
+	log.Info("running phase")
 
-	var finishOptions otf.JobFinishOptions
+	var finishOptions otf.PhaseFinishOptions
 
-	if err := env.Execute(job); err != nil {
-		log.Error(err, "executing job")
+	if err := env.Execute(run); err != nil {
+		log.Error(err, "running phase")
 		finishOptions.Errored = true
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = w.App.JobService().Finish(ctx, job.JobID(), finishOptions)
+	_, err = svc.Finish(ctx, run.PhaseID(), finishOptions)
 	if err != nil {
-		log.Error(err, "finishing job")
+		log.Error(err, "finishing phase")
 	}
 
-	log.Info("finished job")
-}
-
-// Job is a unit of work
-type Job interface {
-	// Do some work in an execution environment
-	Do(otf.Environment) error
-	// GetID gets the ID of the Job
-	JobID() string
+	log.Info("finished phase")
 }

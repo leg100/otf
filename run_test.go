@@ -14,36 +14,36 @@ func TestRun_UpdateStatus(t *testing.T) {
 		name            string
 		fromStatus      RunStatus
 		toStatus        RunStatus
-		wantPlanStatus  JobStatus
-		wantApplyStatus JobStatus
+		wantPlanStatus  PhaseStatus
+		wantApplyStatus PhaseStatus
 	}{
 		{
 			name:            "plan error",
 			fromStatus:      RunPlanning,
 			toStatus:        RunErrored,
-			wantPlanStatus:  JobErrored,
-			wantApplyStatus: JobUnreachable,
+			wantPlanStatus:  PhaseErrored,
+			wantApplyStatus: PhaseUnreachable,
 		},
 		{
 			name:            "plan canceled",
 			fromStatus:      RunPlanning,
 			toStatus:        RunCanceled,
-			wantPlanStatus:  JobCanceled,
-			wantApplyStatus: JobUnreachable,
+			wantPlanStatus:  PhaseCanceled,
+			wantApplyStatus: PhaseUnreachable,
 		},
 		{
 			name:            "apply error",
 			fromStatus:      RunApplying,
 			toStatus:        RunErrored,
-			wantApplyStatus: JobErrored,
-			wantPlanStatus:  JobPending,
+			wantApplyStatus: PhaseErrored,
+			wantPlanStatus:  PhasePending,
 		},
 		{
 			name:            "apply canceled",
 			fromStatus:      RunApplying,
 			toStatus:        RunCanceled,
-			wantApplyStatus: JobCanceled,
-			wantPlanStatus:  JobPending,
+			wantApplyStatus: PhaseCanceled,
+			wantPlanStatus:  PhasePending,
 		},
 	}
 	for _, tt := range tests {

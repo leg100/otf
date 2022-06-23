@@ -15,6 +15,9 @@ type Chunk struct {
 // ChunkService has same signatures as ChunkStore
 type ChunkService ChunkStore
 
+// LogService is an alias for ChunkService
+type LogService ChunkService
+
 // ChunkStore implementations provide a persistent store from and to which chunks
 // of binary objects can be fetched and uploaded.
 type ChunkStore interface {

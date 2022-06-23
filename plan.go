@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
@@ -23,18 +22,14 @@ type Plan struct {
 	*ResourceReport
 	// run is the parent run
 	run *Run
-	// plan is a job
-	*job
+	*phaseMixin
 }
 
-func (p *Plan) ID() string           { return p.id }
-func (p *Plan) String() string       { return p.id }
-func (p *Plan) JobStatus() JobStatus { return p.job.status }
-func (p *Plan) JobStatusTimestamp(status JobStatus) (time.Time, error) {
-	return p.job.StatusTimestamp(status)
-}
-func (p *Plan) JobStatusTimestamps() []JobStatusTimestamp {
-	return p.job.statusTimestamps
+func (p *Plan) ID() string      { return p.id }
+func (p *Plan) PhaseID() string { return p.id }
+func (p *Plan) String() string  { return p.id }
+func (p *Plan) Service(app Application) (PhaseService, error) {
+	return app.PlanService(), nil
 }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
@@ -85,9 +80,9 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
 		ID:               p.ID(),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", p.JobID())),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("plans/%s/logs", p.id)),
 		Status:           string(p.Status()),
-		StatusTimestamps: &jsonapi.PlanStatusTimestamps{},
+		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
 	if p.ResourceReport != nil {
 		dto.ResourceAdditions = p.Additions
@@ -96,15 +91,15 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range p.StatusTimestamps() {
 		switch ts.Status {
-		case JobCanceled:
+		case PhaseCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case JobErrored:
+		case PhaseErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case JobFinished:
+		case PhaseFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case JobQueued:
+		case PhaseQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case JobRunning:
+		case PhaseRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
 		}
 	}
@@ -125,12 +120,13 @@ func (p *Plan) runTerraformPlan(env Environment) error {
 
 type PlanService interface {
 	Get(ctx context.Context, id string) (*Plan, error)
+	PhaseService
 }
 
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:  NewID("plan"),
-		run: run,
-		job: newJob(),
+		id:         NewID("plan"),
+		run:        run,
+		phaseMixin: newPhase(),
 	}
 }

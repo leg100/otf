@@ -13,17 +13,15 @@ var _ otf.RunService = (*RunService)(nil)
 type RunService struct {
 	db    otf.DB
 	es    otf.EventService
-	cs    otf.ChunkService
 	cache otf.Cache
 	logr.Logger
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cs otf.ChunkService, cache otf.Cache) *RunService {
+func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cache otf.Cache) *RunService {
 	return &RunService{
 		db:     db,
 		es:     es,
-		cs:     cs,
 		cache:  cache,
 		Logger: logger,
 		RunFactory: &otf.RunFactory{
@@ -134,31 +132,6 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 	s.es.Publish(otf.Event{Type: otf.EventApplyQueued, Payload: run})
 
 	return err
-}
-
-func (s RunService) CreateApplyReport(ctx context.Context, runID string) error {
-	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ID: &runID})
-	if err != nil {
-		return err
-	}
-	chunk, err := s.cs.GetChunk(ctx, run.Apply().JobID(), otf.GetChunkOptions{})
-	if err != nil {
-		return err
-	}
-	report, err := otf.ParseApplyOutput(string(chunk.Data))
-	if err != nil {
-		return fmt.Errorf("compiling report of applied changes: %w", err)
-	}
-	if err := s.db.CreateApplyReport(ctx, run.Apply().JobID(), report); err != nil {
-		return fmt.Errorf("saving applied changes report: %w", err)
-	}
-	s.V(0).Info("compiled apply report",
-		"id", run.Apply().ID(),
-		"adds", report.Additions,
-		"changes", report.Changes,
-		"destructions", report.Destructions)
-
-	return nil
 }
 
 func (s RunService) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	jsonapi "github.com/leg100/otf/http/dto"
 	httputil "github.com/leg100/otf/http/util"
@@ -18,17 +17,15 @@ type Apply struct {
 	// run is the parent run
 	run *Run
 	// apply is a job
-	*job
+	*phaseMixin
 }
 
-func (a *Apply) ID() string           { return a.id }
-func (a *Apply) String() string       { return a.id }
-func (a *Apply) JobStatus() JobStatus { return a.job.status }
-func (a *Apply) JobStatusTimestamp(status JobStatus) (time.Time, error) {
-	return a.job.StatusTimestamp(status)
-}
-func (a *Apply) JobStatusTimestamps() []JobStatusTimestamp {
-	return a.job.statusTimestamps
+func (a *Apply) ID() string      { return a.id }
+func (a *Apply) PhaseID() string { return a.id }
+func (a *Apply) String() string  { return a.id }
+
+func (a *Apply) Service(app Application) (PhaseService, error) {
+	return app.ApplyService(), nil
 }
 
 // Do performs a terraform apply
@@ -62,9 +59,9 @@ func (a *Apply) runTerraformApply(env Environment) error {
 func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
 		ID:               a.ID(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("jobs/%s/logs", a.JobID())),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("applies/%s/logs", a.id)),
 		Status:           string(a.Status()),
-		StatusTimestamps: &jsonapi.ApplyStatusTimestamps{},
+		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
 	if a.ResourceReport != nil {
 		dto.ResourceAdditions = a.Additions
@@ -73,16 +70,18 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {
-		case JobCanceled:
+		case PhaseCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
-		case JobErrored:
+		case PhaseErrored:
 			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
-		case JobFinished:
+		case PhaseFinished:
 			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case JobQueued:
+		case PhaseQueued:
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case JobRunning:
+		case PhaseRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		case PhaseUnreachable:
+			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
 	return dto
@@ -91,12 +90,16 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 // ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
+	PhaseService
+	// CreateApplyReport parses the logs from a successful terraform apply and
+	// persists a resource report to the database.
+	CreateApplyReport(ctx context.Context, applyID string) error
 }
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		id:  NewID("apply"),
-		run: run,
-		job: newJob(),
+		id:         NewID("apply"),
+		run:        run,
+		phaseMixin: newPhase(),
 	}
 }

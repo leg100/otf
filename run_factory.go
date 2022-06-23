@@ -49,7 +49,7 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.apply = newApply(&run)
 	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
-	run.setJob()
+	run.setPhase()
 	run.updateStatus(RunPending)
 	// apply options
 	run.replaceAddrs = opts.ReplaceAddrs

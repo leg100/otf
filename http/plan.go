@@ -37,3 +37,11 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
+	getLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
+}
+
+func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
+	uploadLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
+}
