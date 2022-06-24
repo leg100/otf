@@ -79,16 +79,14 @@ func (s PlanService) Start(ctx context.Context, planID string, opts otf.PhaseSta
 
 // Finish plan phase.
 func (s PlanService) Finish(ctx context.Context, planID string, opts otf.PhaseFinishOptions) (*otf.Run, error) {
-	var event *otf.Event
-	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) (err error) {
-		event, err = run.Finish(opts)
-		return err
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{PlanID: &planID}, func(run *otf.Run) error {
+		return run.Finish(opts)
 	})
 	if err != nil {
 		s.Error(err, "finishing plan phase", "id", planID)
 		return nil, err
 	}
 	s.V(0).Info("finished plan phase", "id", planID)
-	s.Publish(*event)
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }

@@ -129,7 +129,7 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 
 	s.V(0).Info("applied run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.EventApplyQueued, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -149,7 +149,7 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 
 	s.V(0).Info("discarded run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.EventRunCompleted, Payload: run})
+	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -176,18 +176,8 @@ func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForc
 	return err
 }
 
-func (s RunService) Start(ctx context.Context, id string) (*otf.Run, error) {
-	run, err := s.enqueuePlan(ctx, s.db, id)
-	if err != nil {
-		return nil, err
-	}
-
-	s.es.Publish(otf.Event{Type: otf.EventPlanQueued, Payload: run})
-	return run, nil
-}
-
-func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*otf.Run, error) {
-	run, err := db.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
+func (s RunService) Start(ctx context.Context, runID string) (*otf.Run, error) {
+	run, err := s.UpdateStatus(ctx, otf.RunGetOptions{ID: &runID}, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
@@ -195,6 +185,8 @@ func (s RunService) enqueuePlan(ctx context.Context, db otf.DB, runID string) (*
 		return nil, err
 	}
 	s.V(0).Info("started run", "id", runID)
+
+	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
 }
@@ -268,12 +260,20 @@ func (s RunService) UploadPlanFile(ctx context.Context, planID string, plan []by
 
 // Delete deletes a terraform run.
 func (s RunService) Delete(ctx context.Context, id string) error {
+	// get run first so that we can include it in an event below
+	run, err := s.db.GetRun(ctx, otf.RunGetOptions{ID: &id})
+	if err != nil {
+		return err
+	}
+
 	if err := s.db.DeleteRun(ctx, id); err != nil {
 		s.Error(err, "deleting run", "id", id)
 		return err
 	}
 
 	s.V(0).Info("deleted run", "id", id)
+
+	s.es.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 
 	return nil
 }

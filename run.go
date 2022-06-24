@@ -86,7 +86,7 @@ type Run struct {
 	plan      *Plan
 	apply     *Apply
 	workspace *Workspace
-	// Job is the current job the run is performing
+	// current phase
 	Phase
 }
 
@@ -109,6 +109,10 @@ func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
+
+func (r *Run) Queued() bool {
+	return r.status == RunPlanQueued || r.status == RunApplyQueued
+}
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
@@ -268,22 +272,20 @@ func (r *Run) Start() error {
 
 // Finish updates the run to reflect its plan or apply having finished. An event
 // is returned reflecting the run's new status.
-func (r *Run) Finish(opts PhaseFinishOptions) (*Event, error) {
+func (r *Run) Finish(opts PhaseFinishOptions) error {
 	if opts.Errored {
-		if err := r.updateStatus(RunErrored); err != nil {
-			return nil, err
-		}
-		return &Event{Payload: r, Type: EventRunErrored}, nil
+		return r.updateStatus(RunErrored)
 	}
 	switch r.status {
 	case RunPlanning:
-		r.updateStatus(RunPlanned)
+		if err := r.updateStatus(RunPlanned); err != nil {
+			return err
+		}
 		return r.plan.Finish()
 	case RunApplying:
-		r.updateStatus(RunApplied)
-		return &Event{Payload: r, Type: EventRunApplied}, nil
+		return r.updateStatus(RunApplied)
 	default:
-		return nil, fmt.Errorf("run cannot be finished: invalid status: %s", r.status)
+		return fmt.Errorf("run cannot be finished: invalid status: %s", r.status)
 	}
 }
 

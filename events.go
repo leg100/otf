@@ -1,21 +1,14 @@
 package otf
 
 const (
-	EventOrganizationCreated   EventType = "organization_created"
-	EventOrganizationDeleted   EventType = "organization_deleted"
-	EventWorkspaceCreated      EventType = "workspace_created"
-	EventWorkspaceDeleted      EventType = "workspace_deleted"
-	EventRunCreated            EventType = "run_created"
-	EventRunCompleted          EventType = "run_completed"
-	EventRunCanceled           EventType = "run_canceled"
-	EventRunApplied            EventType = "run_applied"
-	EventRunPlanned            EventType = "run_planned"
-	EventRunPlannedAndFinished EventType = "run_planned_and_finished"
-	EventRunErrored            EventType = "run_errored"
-	EventPlanQueueable         EventType = "plan_queueable"
-	EventPlanQueued            EventType = "plan_queued"
-	EventApplyQueued           EventType = "apply_queued"
-	EventError                 EventType = "error"
+	EventOrganizationCreated EventType = "organization_created"
+	EventOrganizationDeleted EventType = "organization_deleted"
+	EventWorkspaceCreated    EventType = "workspace_created"
+	EventWorkspaceDeleted    EventType = "workspace_deleted"
+	EventRunCreated          EventType = "run_created"
+	EventRunStatusUpdate     EventType = "run_status_update"
+	EventRunDeleted          EventType = "run_deleted"
+	EventError               EventType = "error"
 )
 
 // EventType identifies the type of event

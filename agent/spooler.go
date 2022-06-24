@@ -112,10 +112,10 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	case *otf.Run:
 		s.V(2).Info("received run event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
 
-		switch ev.Type {
-		case otf.EventPlanQueued, otf.EventApplyQueued:
+		if obj.Queued() {
 			s.queue <- obj
-		case otf.EventRunCanceled:
+		}
+		if obj.Status() == otf.RunCanceled {
 			s.cancelations <- obj
 		}
 	}

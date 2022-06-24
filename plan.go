@@ -59,20 +59,14 @@ func (p *Plan) Do(env Environment) error {
 
 // Finish updates the run to reflect its plan having finished. An event is
 // returned reflecting the run's new status.
-func (p *Plan) Finish() (*Event, error) {
+func (p *Plan) Finish() error {
 	if !p.HasChanges() || p.run.Speculative() {
-		if err := p.run.updateStatus(RunPlannedAndFinished); err != nil {
-			return nil, err
-		}
-		return &Event{Payload: p.run, Type: EventRunPlannedAndFinished}, nil
+		return p.run.updateStatus(RunPlannedAndFinished)
 	}
 	if !p.run.autoApply {
-		return &Event{Payload: p.run, Type: EventRunPlanned}, nil
+		return nil
 	}
-	if err := p.run.updateStatus(RunApplyQueued); err != nil {
-		return nil, err
-	}
-	return &Event{Type: EventApplyQueued, Payload: p.run}, nil
+	return p.run.updateStatus(RunApplyQueued)
 }
 
 // ToJSONAPI assembles a JSON-API DTO.

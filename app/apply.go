@@ -77,10 +77,8 @@ func (s ApplyService) Start(ctx context.Context, applyID string, opts otf.PhaseS
 
 // Finish plan phase.
 func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.PhaseFinishOptions) (*otf.Run, error) {
-	var event *otf.Event
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) (err error) {
-		event, err = run.Finish(opts)
-		return err
+		return run.Finish(opts)
 	})
 	if err != nil {
 		s.Error(err, "finishing apply phase", "id", applyID)
@@ -91,8 +89,7 @@ func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.Phase
 	if err := s.CreateApplyReport(ctx, applyID); err != nil {
 		return nil, err
 	}
-
-	s.Publish(*event)
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
