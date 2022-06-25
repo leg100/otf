@@ -40,29 +40,29 @@ func (s ApplyService) Get(ctx context.Context, id string) (*otf.Apply, error) {
 	return run.Apply(), nil
 }
 
-// GetChunk reads a chunk of logs for a plan.
-func (s ApplyService) GetChunk(ctx context.Context, planID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
-	logs, err := s.proxy.GetChunk(ctx, planID, opts)
+// GetChunk reads a chunk of logs for an apply.
+func (s ApplyService) GetChunk(ctx context.Context, applyID string, opts otf.GetChunkOptions) (otf.Chunk, error) {
+	logs, err := s.proxy.GetChunk(ctx, applyID, opts)
 	if err != nil {
-		s.Error(err, "reading logs", "id", planID, "offset", opts.Offset, "limit", opts.Limit)
+		s.Error(err, "reading logs", "id", applyID, "offset", opts.Offset, "limit", opts.Limit)
 		return otf.Chunk{}, err
 	}
-	s.V(2).Info("read logs", "id", planID, "offset", opts.Offset, "limit", opts.Limit)
+	s.V(2).Info("read logs", "id", applyID, "offset", opts.Offset, "limit", opts.Limit)
 	return logs, nil
 }
 
-// PutChunk writes a chunk of logs for a plan.
-func (s ApplyService) PutChunk(ctx context.Context, planID string, chunk otf.Chunk) error {
-	err := s.proxy.PutChunk(ctx, planID, chunk)
+// PutChunk writes a chunk of logs for an apply.
+func (s ApplyService) PutChunk(ctx context.Context, applyID string, chunk otf.Chunk) error {
+	err := s.proxy.PutChunk(ctx, applyID, chunk)
 	if err != nil {
-		s.Error(err, "writing logs", "id", planID, "start", chunk.Start, "end", chunk.End)
+		s.Error(err, "writing logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-	s.V(2).Info("written logs", "id", planID, "start", chunk.Start, "end", chunk.End)
+	s.V(2).Info("written logs", "id", applyID, "start", chunk.Start, "end", chunk.End)
 	return nil
 }
 
-// Start plan phase.
+// Start apply phase.
 func (s ApplyService) Start(ctx context.Context, applyID string, opts otf.PhaseStartOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) error {
 		return run.Start()
@@ -75,7 +75,7 @@ func (s ApplyService) Start(ctx context.Context, applyID string, opts otf.PhaseS
 	return run, nil
 }
 
-// Finish plan phase.
+// Finish apply phase.
 func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ApplyID: &applyID}, func(run *otf.Run) (err error) {
 		return run.Finish(opts)
@@ -86,14 +86,15 @@ func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.Phase
 	}
 	s.V(0).Info("finished apply phase", "id", applyID)
 
-	if err := s.CreateApplyReport(ctx, applyID); err != nil {
+	if err := s.CreateReport(ctx, applyID); err != nil {
 		return nil, err
 	}
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
-func (s ApplyService) CreateApplyReport(ctx context.Context, applyID string) error {
+// CreateReport creates a report of applied changes.
+func (s ApplyService) CreateReport(ctx context.Context, applyID string) error {
 	chunk, err := s.GetChunk(ctx, applyID, otf.GetChunkOptions{})
 	if err != nil {
 		return err

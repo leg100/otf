@@ -91,9 +91,9 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
 	PhaseService
-	// CreateApplyReport parses the logs from a successful terraform apply and
+	// CreateReport parses the logs from a successful terraform apply and
 	// persists a resource report to the database.
-	CreateApplyReport(ctx context.Context, applyID string) error
+	CreateReport(ctx context.Context, applyID string) error
 }
 
 func newApply(run *Run) *Apply {
