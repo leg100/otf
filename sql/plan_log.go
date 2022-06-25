@@ -34,7 +34,7 @@ func (db *planLogStore) GetChunk(ctx context.Context, planID string, opts otf.Ge
 		Limit:  opts.Limit,
 	})
 	if err != nil {
-		return otf.Chunk{}, err
+		return otf.Chunk{}, databaseError(err)
 	}
 	return otf.UnmarshalChunk(chunk), nil
 }

@@ -61,14 +61,13 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 func (s *Supervisor) Start(ctx context.Context) {
 	for i := 0; i < s.concurrency; i++ {
 		w := &Worker{Supervisor: s}
-		w.Start(ctx)
+		go w.Start(ctx)
 	}
 
 	for {
 		select {
-		case run := <-s.GetCancelation():
-			// TODO: support force cancelations too.
-			s.Cancel(run.ID(), false)
+		case cancelation := <-s.GetCancelation():
+			s.Cancel(cancelation.Run.PhaseID(), cancelation.Forceful)
 		case <-ctx.Done():
 			return
 		}

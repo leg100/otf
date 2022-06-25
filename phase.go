@@ -51,8 +51,12 @@ type PhaseStartOptions struct {
 	AgentID string
 }
 
+// PhaseFinishOptions report the status of a phase upon finishing.
 type PhaseFinishOptions struct {
+	// Errored is true if the phase finished unsuccessfully.
 	Errored bool
+	// Canceled is true if the phase was canceled. Errored.
+	Canceled bool
 }
 
 type PhaseStatusTimestamp struct {

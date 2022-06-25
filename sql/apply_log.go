@@ -37,7 +37,7 @@ func (db *applyLogStore) GetChunk(ctx context.Context, applyID string, opts otf.
 		Limit:   opts.Limit,
 	})
 	if err != nil {
-		return otf.Chunk{}, err
+		return otf.Chunk{}, databaseError(err)
 	}
 	return otf.UnmarshalChunk(chunk), nil
 }

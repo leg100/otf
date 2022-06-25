@@ -84,15 +84,20 @@ func TestSpooler_GetRunFromCancelation(t *testing.T) {
 	sub := testSubscription{c: make(chan otf.Event, 1)}
 
 	spooler := &SpoolerDaemon{
-		cancelations: make(chan *otf.Run, 1),
+		cancelations: make(chan Cancelation, 1),
 		Subscriber:   &testSubscriber{sub: sub},
 		Logger:       logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())
 
-	// send event
-	sub.c <- otf.Event{Type: otf.EventRunStatusUpdate, Payload: want}
+	// send and receive cancelation
+	sub.c <- otf.Event{Type: otf.EventRunCancel, Payload: want}
+	got := <-spooler.GetCancelation()
+	assert.Equal(t, Cancelation{Run: want, Forceful: false}, got)
 
-	assert.Equal(t, want, <-spooler.GetCancelation())
+	// send and receive forceful cancelation
+	sub.c <- otf.Event{Type: otf.EventRunForceCancel, Payload: want}
+	got = <-spooler.GetCancelation()
+	assert.Equal(t, Cancelation{Run: want, Forceful: true}, got)
 }

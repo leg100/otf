@@ -12,18 +12,18 @@ var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
 	db    otf.DB
-	es    otf.EventService
 	cache otf.Cache
+	otf.EventService
 	logr.Logger
 	*otf.RunFactory
 }
 
 func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cache otf.Cache) *RunService {
 	return &RunService{
-		db:     db,
-		es:     es,
-		cache:  cache,
-		Logger: logger,
+		db:           db,
+		EventService: es,
+		cache:        cache,
+		Logger:       logger,
 		RunFactory: &otf.RunFactory{
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
@@ -46,7 +46,7 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 	}
 	s.V(1).Info("created run", "id", run.ID())
 
-	s.es.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
 	return run, nil
 }
@@ -89,7 +89,7 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 	for _, r := range existing.Items {
 		spool <- r
 	}
-	sub, err := s.es.Subscribe("run-listwatch")
+	sub, err := s.Subscribe("run-listwatch")
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (s RunService) Apply(ctx context.Context, id string, opts otf.RunApplyOptio
 
 	s.V(0).Info("applied run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
@@ -149,29 +149,49 @@ func (s RunService) Discard(ctx context.Context, id string, opts otf.RunDiscardO
 
 	s.V(0).Info("discarded run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return err
 }
 
-// Cancel enqueues a cancel request to cancel a currently queued or active plan
-// or apply.
+// Cancel a run. The run is canceled immediately if possible; otherwise a
+// cancellation request is enqueued.
 func (s RunService) Cancel(ctx context.Context, id string, opts otf.RunCancelOptions) error {
 	_, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
-		return run.Cancel()
+		enqueue, err := run.Cancel()
+		if err != nil {
+			return err
+		}
+		if enqueue {
+			s.V(0).Info("enqueued cancel request", "id", id)
+			// notify agent which'll send a SIGINT to terraform
+			s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
+		} else {
+			s.V(0).Info("canceled run", "id", id)
+			s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+		}
+		return nil
 	})
-	return err
+	if err != nil {
+		s.Error(err, "canceling run", "id", id)
+		return err
+	}
+	return nil
 }
 
+// ForceCancel forcefully cancels a run.
 func (s RunService) ForceCancel(ctx context.Context, id string, opts otf.RunForceCancelOptions) error {
-	_, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
+	run, err := s.db.UpdateStatus(ctx, otf.RunGetOptions{ID: &id}, func(run *otf.Run) error {
 		return run.ForceCancel()
-
-		// TODO: send KILL signal to running terraform process
-
-		// TODO: unlock workspace - could do this by publishing event and having
-		// workspace scheduler subscribe to event
 	})
+	if err != nil {
+		s.Error(err, "force canceling run", "id", id)
+		return err
+	}
+	s.V(0).Info("force canceled run", "id", id)
+
+	// notify agent which'll send a SIGKILL to terraform
+	s.Publish(otf.Event{Type: otf.EventRunForceCancel, Payload: run})
 
 	return err
 }
@@ -186,7 +206,7 @@ func (s RunService) Start(ctx context.Context, runID string) (*otf.Run, error) {
 	}
 	s.V(0).Info("started run", "id", runID)
 
-	s.es.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
 }
@@ -273,7 +293,7 @@ func (s RunService) Delete(ctx context.Context, id string) error {
 
 	s.V(0).Info("deleted run", "id", id)
 
-	s.es.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
+	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 
 	return nil
 }

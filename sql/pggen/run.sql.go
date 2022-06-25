@@ -15,6 +15,7 @@ import (
 const insertRunSQL = `INSERT INTO runs (
     run_id,
     created_at,
+    force_cancel_available_at,
     is_destroy,
     position_in_queue,
     refresh,
@@ -35,12 +36,14 @@ const insertRunSQL = `INSERT INTO runs (
     $8,
     $9,
     $10,
-    $11
+    $11,
+    $12
 );`
 
 type InsertRunParams struct {
 	ID                     pgtype.Text
 	CreatedAt              time.Time
+	ForceCancelAvailableAt time.Time
 	IsDestroy              bool
 	PositionInQueue        int
 	Refresh                bool
@@ -55,7 +58,7 @@ type InsertRunParams struct {
 // InsertRun implements Querier.InsertRun.
 func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
-	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
+	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.ForceCancelAvailableAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertRun: %w", err)
 	}
@@ -64,7 +67,7 @@ func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgco
 
 // InsertRunBatch implements Querier.InsertRunBatch.
 func (q *DBQuerier) InsertRunBatch(batch genericBatch, params InsertRunParams) {
-	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
+	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.ForceCancelAvailableAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 }
 
 // InsertRunScan implements Querier.InsertRunScan.
@@ -121,6 +124,7 @@ const findRunsSQL = `SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -185,6 +189,7 @@ type FindRunsRow struct {
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
+	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -223,7 +228,7 @@ func (q *DBQuerier) FindRuns(ctx context.Context, params FindRunsParams) ([]Find
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindRuns row: %w", err)
 		}
 		if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -269,7 +274,7 @@ func (q *DBQuerier) FindRunsScan(results pgx.BatchResults) ([]FindRunsRow, error
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
 	for rows.Next() {
 		var item FindRunsRow
-		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 			return nil, fmt.Errorf("scan FindRunsBatch row: %w", err)
 		}
 		if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -344,6 +349,7 @@ const findRunByIDSQL = `SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -393,6 +399,7 @@ type FindRunByIDRow struct {
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
+	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -425,7 +432,7 @@ func (q *DBQuerier) FindRunByID(ctx context.Context, runID pgtype.Text) (FindRun
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindRunByID: %w", err)
 	}
 	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -460,7 +467,7 @@ func (q *DBQuerier) FindRunByIDScan(results pgx.BatchResults) (FindRunByIDRow, e
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByIDBatch row: %w", err)
 	}
 	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -486,6 +493,7 @@ const findRunByIDForUpdateSQL = `SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -536,6 +544,7 @@ type FindRunByIDForUpdateRow struct {
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
 	CreatedAt              time.Time               `json:"created_at"`
+	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -568,7 +577,7 @@ func (q *DBQuerier) FindRunByIDForUpdate(ctx context.Context, runID pgtype.Text)
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("query FindRunByIDForUpdate: %w", err)
 	}
 	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -603,7 +612,7 @@ func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunB
 	runStatusTimestampsArray := q.types.newRunStatusTimestampsArray()
 	planStatusTimestampsArray := q.types.newPlanStatusTimestampsArray()
 	applyStatusTimestampsArray := q.types.newApplyStatusTimestampsArray()
-	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
+	if err := row.Scan(&item.RunID, &item.PlanID, &item.ApplyID, &item.CreatedAt, &item.ForceCancelAvailableAt, &item.IsDestroy, &item.PositionInQueue, &item.Refresh, &item.RefreshOnly, &item.Status, &item.PlanStatus, &item.ApplyStatus, &item.ReplaceAddrs, &item.TargetAddrs, plannedChangesRow, appliedChangesRow, &item.ConfigurationVersionID, &item.WorkspaceID, &item.Speculative, &item.AutoApply, &item.WorkspaceName, &item.OrganizationName, runStatusTimestampsArray, planStatusTimestampsArray, applyStatusTimestampsArray); err != nil {
 		return item, fmt.Errorf("scan FindRunByIDForUpdateBatch row: %w", err)
 	}
 	if err := plannedChangesRow.AssignTo(&item.PlannedChanges); err != nil {
@@ -653,6 +662,39 @@ func (q *DBQuerier) UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, 
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateRunStatusBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const updateRunForceCancelAvailableAtSQL = `UPDATE runs
+SET
+    force_cancel_available_at = $1
+WHERE run_id = $2
+RETURNING run_id
+;`
+
+// UpdateRunForceCancelAvailableAt implements Querier.UpdateRunForceCancelAvailableAt.
+func (q *DBQuerier) UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt time.Time, id pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunForceCancelAvailableAt")
+	row := q.conn.QueryRow(ctx, updateRunForceCancelAvailableAtSQL, forceCancelAvailableAt, id)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query UpdateRunForceCancelAvailableAt: %w", err)
+	}
+	return item, nil
+}
+
+// UpdateRunForceCancelAvailableAtBatch implements Querier.UpdateRunForceCancelAvailableAtBatch.
+func (q *DBQuerier) UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt time.Time, id pgtype.Text) {
+	batch.Queue(updateRunForceCancelAvailableAtSQL, forceCancelAvailableAt, id)
+}
+
+// UpdateRunForceCancelAvailableAtScan implements Querier.UpdateRunForceCancelAvailableAtScan.
+func (q *DBQuerier) UpdateRunForceCancelAvailableAtScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan UpdateRunForceCancelAvailableAtBatch row: %w", err)
 	}
 	return item, nil
 }

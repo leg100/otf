@@ -343,6 +343,13 @@ type Querier interface {
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt time.Time, id pgtype.Text) (pgtype.Text, error)
+	// UpdateRunForceCancelAvailableAtBatch enqueues a UpdateRunForceCancelAvailableAt query into batch to be executed
+	// later by the batch.
+	UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt time.Time, id pgtype.Text)
+	// UpdateRunForceCancelAvailableAtScan scans the result of an executed UpdateRunForceCancelAvailableAtBatch query.
+	UpdateRunForceCancelAvailableAtScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	DeleteRunByID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
 	// DeleteRunByIDBatch enqueues a DeleteRunByID query into batch to be executed
 	// later by the batch.
@@ -806,6 +813,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateRunForceCancelAvailableAtSQL, updateRunForceCancelAvailableAtSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateRunForceCancelAvailableAt': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
 	}
@@ -963,6 +973,7 @@ type RunStatusTimestamps struct {
 type Runs struct {
 	RunID                  pgtype.Text `json:"run_id"`
 	CreatedAt              time.Time   `json:"created_at"`
+	ForceCancelAvailableAt time.Time   `json:"force_cancel_available_at"`
 	IsDestroy              bool        `json:"is_destroy"`
 	PositionInQueue        int         `json:"position_in_queue"`
 	Refresh                bool        `json:"refresh"`
@@ -1172,6 +1183,7 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		"runs",
 		compositeField{"run_id", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"force_cancel_available_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
 		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
 		compositeField{"refresh", "bool", &pgtype.Bool{}},

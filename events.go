@@ -8,6 +8,8 @@ const (
 	EventRunCreated          EventType = "run_created"
 	EventRunStatusUpdate     EventType = "run_status_update"
 	EventRunDeleted          EventType = "run_deleted"
+	EventRunCancel           EventType = "run_cancel"
+	EventRunForceCancel      EventType = "run_force_cancel"
 	EventError               EventType = "error"
 )
 

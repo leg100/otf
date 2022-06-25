@@ -15,6 +15,7 @@ type RunDBResult struct {
 	PlanID                 pgtype.Text                   `json:"plan_id"`
 	ApplyID                pgtype.Text                   `json:"apply_id"`
 	CreatedAt              time.Time                     `json:"created_at"`
+	ForceCancelAvailableAt time.Time                     `json:"force_cancel_available_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
 	PositionInQueue        int                           `json:"position_in_queue"`
 	Refresh                bool                          `json:"refresh"`
@@ -41,6 +42,7 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 	run := Run{
 		id:                     result.RunID.String,
 		createdAt:              result.CreatedAt,
+		forceCancelAvailableAt: result.ForceCancelAvailableAt,
 		isDestroy:              result.IsDestroy,
 		positionInQueue:        result.PositionInQueue,
 		refresh:                result.Refresh,

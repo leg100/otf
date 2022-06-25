@@ -2,6 +2,7 @@
 INSERT INTO runs (
     run_id,
     created_at,
+    force_cancel_available_at,
     is_destroy,
     position_in_queue,
     refresh,
@@ -14,6 +15,7 @@ INSERT INTO runs (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('CreatedAt'),
+    pggen.arg('ForceCancelAvailableAt'),
     pggen.arg('IsDestroy'),
     pggen.arg('PositionInQueue'),
     pggen.arg('Refresh'),
@@ -42,6 +44,7 @@ SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -110,6 +113,7 @@ SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -160,6 +164,7 @@ SELECT
     plans.plan_id,
     applies.apply_id,
     runs.created_at,
+    runs.force_cancel_available_at,
     runs.is_destroy,
     runs.position_in_queue,
     runs.refresh,
@@ -209,6 +214,14 @@ FOR UPDATE
 UPDATE runs
 SET
     status = pggen.arg('status')
+WHERE run_id = pggen.arg('id')
+RETURNING run_id
+;
+
+-- name: UpdateRunForceCancelAvailableAt :one
+UPDATE runs
+SET
+    force_cancel_available_at = pggen.arg('force_cancel_available_at')
 WHERE run_id = pggen.arg('id')
 RETURNING run_id
 ;

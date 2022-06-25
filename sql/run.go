@@ -16,6 +16,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     String(run.ID()),
 			CreatedAt:              run.CreatedAt(),
+			ForceCancelAvailableAt: run.ForceCancelAvailableAt(),
 			IsDestroy:              run.IsDestroy(),
 			Refresh:                run.Refresh(),
 			RefreshOnly:            run.RefreshOnly(),
@@ -76,18 +77,18 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 			return err
 		}
 
-		// Make copies of statuses before update
+		// Make copies of run attributes before update
 		runStatus := run.Status()
 		planStatus := run.Plan().Status()
 		applyStatus := run.Apply().Status()
+		forceCancelAvailableAt := run.ForceCancelAvailableAt()
 
 		if err := fn(run); err != nil {
 			return err
 		}
 
 		if run.Status() != runStatus {
-			var err error
-			_, err = db.UpdateRunStatus(ctx, String(string(run.Status())), String(run.ID()))
+			_, err := db.UpdateRunStatus(ctx, String(string(run.Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
@@ -98,8 +99,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 		}
 
 		if run.Plan().Status() != planStatus {
-			var err error
-			_, err = db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.Plan().ID()))
+			_, err := db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.Plan().ID()))
 			if err != nil {
 				return err
 			}
@@ -110,8 +110,7 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 		}
 
 		if run.Apply().Status() != applyStatus {
-			var err error
-			_, err = db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.Apply().ID()))
+			_, err := db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.Apply().ID()))
 			if err != nil {
 				return err
 			}
@@ -120,6 +119,14 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 				return err
 			}
 		}
+
+		if run.ForceCancelAvailableAt() != forceCancelAvailableAt {
+			_, err := db.UpdateRunForceCancelAvailableAt(ctx, run.ForceCancelAvailableAt(), String(run.ID()))
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 	if err != nil {

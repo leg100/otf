@@ -84,11 +84,15 @@ func (s ApplyService) Finish(ctx context.Context, applyID string, opts otf.Phase
 		s.Error(err, "finishing apply phase", "id", applyID)
 		return nil, err
 	}
-	s.V(0).Info("finished apply phase", "id", applyID)
+	s.V(0).Info("finished apply phase", "id", applyID, "status", run.Status())
 
-	if err := s.CreateReport(ctx, applyID); err != nil {
-		return nil, err
+	// compile report of applied changes only if successful
+	if run.Status() == otf.RunApplied {
+		if err := s.CreateReport(ctx, applyID); err != nil {
+			return nil, err
+		}
 	}
+
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }

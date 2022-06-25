@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestRun_UpdateStatus tests that UpdateStatus correctly updates the status of
@@ -63,28 +64,18 @@ func TestRun_UpdateStatus(t *testing.T) {
 	}
 }
 
-func TestRun_ForceCancelAvailableAt(t *testing.T) {
-	run := &Run{
-		status: RunCanceled,
-		statusTimestamps: []RunStatusTimestamp{
-			{
-				Status:    RunCanceled,
-				Timestamp: CurrentTimestamp(),
-			},
-		},
-		plan:  &Plan{},
-		apply: &Apply{},
-	}
-
-	assert.NotZero(t, run.ForceCancelAvailableAt())
+func TestRun_Cancel_Pending(t *testing.T) {
+	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPending})
+	enqueue, err := run.Cancel()
+	require.NoError(t, err)
+	assert.False(t, enqueue)
+	assert.NotZero(t, run.forceCancelAvailableAt)
 }
 
-func TestRun_ForceCancelAvailableAt_IsZero(t *testing.T) {
-	run := &Run{
-		status: RunPending,
-		plan:   &Plan{},
-		apply:  &Apply{},
-	}
-
-	assert.Zero(t, run.ForceCancelAvailableAt())
+func TestRun_Cancel_Planning(t *testing.T) {
+	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+	enqueue, err := run.Cancel()
+	require.NoError(t, err)
+	assert.True(t, enqueue)
+	assert.NotZero(t, run.forceCancelAvailableAt)
 }

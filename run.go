@@ -67,6 +67,7 @@ func (r RunStatus) String() string { return string(r) }
 type Run struct {
 	id                     string
 	createdAt              time.Time
+	forceCancelAvailableAt time.Time
 	isDestroy              bool
 	message                string
 	positionInQueue        int
@@ -95,12 +96,14 @@ func (r *Run) RunID() string                          { return r.id }
 func (r *Run) CreatedAt() time.Time                   { return r.createdAt }
 func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
+func (r *Run) ForceCancelAvailableAt() time.Time      { return r.forceCancelAvailableAt }
 func (r *Run) Message() string                        { return r.message }
 func (r *Run) OrganizationName() string               { return r.organizationName }
 func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
+func (r *Run) Speculative() bool                      { return r.speculative }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceName() string                  { return r.workspaceName }
@@ -109,6 +112,11 @@ func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
+
+// GetOptions constructs RunGetOptions for retrieving this run.
+func (r *Run) GetOptions() RunGetOptions {
+	return RunGetOptions{ID: &r.id}
+}
 
 func (r *Run) Queued() bool {
 	return r.status == RunPlanQueued || r.status == RunApplyQueued
@@ -123,40 +131,50 @@ func (r *Run) Discard() error {
 	return nil
 }
 
-// Cancel run.
-func (r *Run) Cancel() error {
+// Cancel run. Returns a boolean indicating whether cancel request is
+// immediately canceled (false) or enqueued (true).
+func (r *Run) Cancel() (bool, error) {
 	if !r.Cancelable() {
-		return ErrRunCancelNotAllowed
+		return false, ErrRunCancelNotAllowed
 	}
-	r.updateStatus(RunCanceled)
-	return nil
+	// permit run to be force canceled after a cool off period of 10 seconds has
+	// elapsed.
+	r.forceCancelAvailableAt = CurrentTimestamp().Add(10 * time.Second)
+
+	if r.ImmediatelyCancelable() {
+		return false, r.updateStatus(RunCanceled)
+	}
+	return true, nil
 }
 
-func (r *Run) ForceCancelAvailableAt() time.Time {
-	if r.status != RunCanceled {
-		return time.Time{}
-	}
-	canceledAt, err := r.StatusTimestamp(r.status)
-	if err != nil {
-		panic("no corresponding timestamp found for canceled status")
-	}
-	// Run can be forcefully cancelled after a cool-off period of ten seconds
-	return canceledAt.Add(10 * time.Second)
-}
-
-// ForceCancel updates the state of a run to reflect it having been forcefully
-// cancelled.
+// ForceCancel force cancels a run. A cool-off period of 10 seconds must have
+// elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
-	if !r.ForceCancelable() {
-		return ErrRunForceCancelNotAllowed
+	if !r.forceCancelAvailableAt.IsZero() && time.Now().After(r.forceCancelAvailableAt) {
+		return r.updateStatus(RunCanceled)
 	}
-	return r.updateStatus(RunForceCanceled)
+	return ErrRunForceCancelNotAllowed
 }
 
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
+	return r.ImmediatelyCancelable() || r.InProgress()
+}
+
+// ImmediatelyCancelable determines whether run can be cancelled immediately.
+func (r *Run) ImmediatelyCancelable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+	case RunPending, RunPlanQueued, RunApplyQueued:
+		return true
+	default:
+		return false
+	}
+}
+
+// InProgress indicates whether a plan or apply is currently in progress
+func (r *Run) InProgress() bool {
+	switch r.Status() {
+	case RunPlanning, RunApplying:
 		return true
 	default:
 		return false
@@ -183,24 +201,6 @@ func (r *Run) Discardable() bool {
 	}
 }
 
-// ForceCancelable determines whether a run can be forcibly cancelled.
-func (r *Run) ForceCancelable() bool {
-	availAt := r.ForceCancelAvailableAt()
-	if availAt.IsZero() {
-		return false
-	}
-	return CurrentTimestamp().After(availAt)
-}
-
-// Active determines whether run is currently the active run on a workspace,
-// i.e. it is neither finished nor pending
-func (r *Run) Active() bool {
-	if r.Done() || r.Status() == RunPending {
-		return false
-	}
-	return true
-}
-
 // Done determines whether run has reached an end state, e.g. applied,
 // discarded, etc.
 func (r *Run) Done() bool {
@@ -210,10 +210,6 @@ func (r *Run) Done() bool {
 	default:
 		return false
 	}
-}
-
-func (r *Run) Speculative() bool {
-	return r.speculative
 }
 
 func (r *Run) ApplyRun() error {
@@ -270,9 +266,12 @@ func (r *Run) Start() error {
 	return nil
 }
 
-// Finish updates the run to reflect its plan or apply having finished. An event
-// is returned reflecting the run's new status.
+// Finish updates the run to reflect its plan or apply phase having finished.
 func (r *Run) Finish(opts PhaseFinishOptions) error {
+	// canceled phase may have resulted in an error
+	if opts.Canceled {
+		return r.updateStatus(RunCanceled)
+	}
 	if opts.Errored {
 		return r.updateStatus(RunErrored)
 	}
@@ -296,11 +295,11 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		Actions: &jsonapi.RunActions{
 			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.Confirmable(),
-			IsForceCancelable: r.ForceCancelable(),
+			IsForceCancelable: !r.forceCancelAvailableAt.IsZero(),
 			IsDiscardable:     r.Discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),
-		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
+		ForceCancelAvailableAt: r.forceCancelAvailableAt,
 		HasChanges:             r.plan.HasChanges(),
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),

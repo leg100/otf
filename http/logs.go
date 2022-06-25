@@ -16,7 +16,9 @@ func getLogs(w http.ResponseWriter, r *http.Request, svc otf.LogService, id stri
 		return
 	}
 	chunk, err := svc.GetChunk(r.Context(), id, opts)
-	if err != nil {
+	// ignore not found errors because terraform-cli may call this endpoint
+	// before any logs have been written and it'll exit with an error.
+	if err != nil && err != otf.ErrResourceNotFound {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

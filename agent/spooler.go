@@ -18,7 +18,7 @@ type Spooler interface {
 	GetRun() <-chan *otf.Run
 
 	// GetCancelation receives requests to cancel runs
-	GetCancelation() <-chan *otf.Run
+	GetCancelation() <-chan Cancelation
 }
 
 // SpoolerDaemon implements Spooler, receiving runs with either a queued plan or
@@ -28,7 +28,7 @@ type SpoolerDaemon struct {
 	queue chan *otf.Run
 
 	// Queue of cancelation requests
-	cancelations chan *otf.Run
+	cancelations chan Cancelation
 
 	// Subscriber allows subscribing to stream of events
 	Subscriber
@@ -43,6 +43,11 @@ type RunLister interface {
 
 type Subscriber interface {
 	Subscribe(id string) (otf.Subscription, error)
+}
+
+type Cancelation struct {
+	Run      *otf.Run
+	Forceful bool
 }
 
 const (
@@ -72,7 +77,7 @@ func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemo
 
 	return &SpoolerDaemon{
 		queue:        queue,
-		cancelations: make(chan *otf.Run, SpoolerCapacity),
+		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Subscriber:   sub,
 		Logger:       logger,
 	}, nil
@@ -103,7 +108,7 @@ func (s *SpoolerDaemon) GetRun() <-chan *otf.Run {
 }
 
 // GetCancelation returns a channel of cancelation requests
-func (s *SpoolerDaemon) GetCancelation() <-chan *otf.Run {
+func (s *SpoolerDaemon) GetCancelation() <-chan Cancelation {
 	return s.cancelations
 }
 
@@ -114,9 +119,10 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 
 		if obj.Queued() {
 			s.queue <- obj
-		}
-		if obj.Status() == otf.RunCanceled {
-			s.cancelations <- obj
+		} else if ev.Type == otf.EventRunCancel {
+			s.cancelations <- Cancelation{Run: obj}
+		} else if ev.Type == otf.EventRunForceCancel {
+			s.cancelations <- Cancelation{Run: obj, Forceful: true}
 		}
 	}
 }

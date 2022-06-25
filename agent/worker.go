@@ -57,14 +57,15 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	w.CheckIn(run.PhaseID(), env)
 	defer w.CheckOut(run.PhaseID())
 
-	log.Info("running phase")
+	log.Info("executing phase")
 
 	var finishOptions otf.PhaseFinishOptions
 
 	if err := env.Execute(run); err != nil {
-		log.Error(err, "running phase")
+		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
+	finishOptions.Canceled = env.canceled
 
 	// Regardless of job success, mark job as finished
 	_, err = svc.Finish(ctx, run.PhaseID(), finishOptions)

@@ -16,11 +16,8 @@ import (
 // Environment is an implementation of an execution environment
 var _ otf.Environment = (*Environment)(nil)
 
-// Execution is made available to the Run Job so that it can interact with OTF
-// services and write to the local filesystem, use the logger, etc.
-
-// Environment provides an execution environment for a running a run job,
-// providing a working directory, capturing logs etc.
+// Environment provides an execution environment for a run, providing a working
+// directory, services, capturing logs etc.
 type Environment struct {
 	otf.PhaseService
 
@@ -77,13 +74,13 @@ func NewEnvironment(
 	}, nil
 }
 
-// Execute executes a job and regardless of whether it fails, it'll close the
+// Execute executes a phase and regardless of whether it fails, it'll close the
 // environment logs.
-func (e *Environment) Execute(job Doer) (err error) {
+func (e *Environment) Execute(phase Doer) (err error) {
 	var errors *multierror.Error
 
-	if err := job.Do(e); err != nil {
-		errors = multierror.Append(errors, fmt.Errorf("executing run: %w", err))
+	if err := phase.Do(e); err != nil {
+		errors = multierror.Append(errors, fmt.Errorf("executing phase: %w", err))
 	}
 
 	// Mark the logs as fully uploaded
@@ -136,14 +133,18 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	errWriter := io.MultiWriter(e.out, stderr)
 	cmd.Stderr = errWriter
 
-	e.proc = cmd.Process
-
-	if err := cmd.Run(); err != nil {
-		e.Error(err, "executing command", "stderr", stderr.String(), "path", e.path)
+	if err := cmd.Start(); err != nil {
+		e.Error(err, "starting command", "stderr", stderr.String(), "path", e.path)
 		return err
 	}
+	// store process so that it can be canceled
+	e.proc = cmd.Process
 
-	e.V(2).Info("executed command", "name", name, "args", args, "path", e.path)
+	if err := cmd.Wait(); err != nil {
+		e.Error(err, "running command", "stderr", stderr.String(), "path", e.path)
+		return err
+	}
+	e.V(2).Info("ran command", "name", name, "args", args, "path", e.path)
 
 	return nil
 }
@@ -185,5 +186,7 @@ func (e *Environment) cancelFunc(force bool) {
 }
 
 type Doer interface {
+	// TODO: environment is excessive; can we pass in something that exposes
+	// fewer methods like an 'executor'?
 	Do(otf.Environment) error
 }

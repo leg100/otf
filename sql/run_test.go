@@ -44,35 +44,33 @@ func TestRun_UpdateStatus(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 
-	tests := []struct {
-		name   string
-		update func(run *otf.Run) error
-		want   func(*testing.T, *otf.Run)
-	}{
-		{
-			name: "enqueue plan",
-			update: func(run *otf.Run) error {
-				return run.EnqueuePlan()
-			},
-			want: func(t *testing.T, got *otf.Run) {
-				assert.Equal(t, otf.RunPlanQueued, got.Status())
-				timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
-				assert.NoError(t, err)
-				assert.True(t, timestamp.After(got.CreatedAt()))
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			run := createTestRun(t, db, ws, cv)
-
-			got, err := db.UpdateStatus(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())}, tt.update)
-			require.NoError(t, err)
-
-			tt.want(t, got)
+	t.Run("update status", func(t *testing.T) {
+		run := createTestRun(t, db, ws, cv)
+		got, err := db.UpdateStatus(context.Background(), run.GetOptions(), func(run *otf.Run) error {
+			return run.EnqueuePlan()
 		})
-	}
+		require.NoError(t, err)
+		assert.Equal(t, otf.RunPlanQueued, got.Status())
+		timestamp, err := got.StatusTimestamp(otf.RunPlanQueued)
+		assert.NoError(t, err)
+		assert.True(t, timestamp.After(got.CreatedAt()))
+	})
+
+	t.Run("update status", func(t *testing.T) {
+		run := createTestRun(t, db, ws, cv)
+		got, err := db.UpdateStatus(context.Background(), run.GetOptions(), func(run *otf.Run) error {
+			_, err := run.Cancel()
+			return err
+		})
+		require.NoError(t, err)
+		assert.Equal(t, otf.RunCanceled, got.Status())
+		canceled, err := got.StatusTimestamp(otf.RunCanceled)
+		assert.NoError(t, err)
+		assert.True(t, canceled.After(got.CreatedAt()))
+
+		// force cancel available after a cool down period following cancelation
+		assert.True(t, got.ForceCancelAvailableAt().After(canceled))
+	})
 }
 
 func TestRun_Get(t *testing.T) {
