@@ -17,26 +17,12 @@ import (
 // calling SendBatch on pgx.Conn, pgxpool.Pool, or pgx.Tx, use the Scan methods
 // to parse the results.
 type Querier interface {
-	InsertApply(ctx context.Context, params InsertApplyParams) (pgconn.CommandTag, error)
+	InsertApply(ctx context.Context, runID pgtype.Text, status pgtype.Text) (pgconn.CommandTag, error)
 	// InsertApplyBatch enqueues a InsertApply query into batch to be executed
 	// later by the batch.
-	InsertApplyBatch(batch genericBatch, params InsertApplyParams)
+	InsertApplyBatch(batch genericBatch, runID pgtype.Text, status pgtype.Text)
 	// InsertApplyScan scans the result of an executed InsertApplyBatch query.
 	InsertApplyScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	InsertApplyStatusTimestamp(ctx context.Context, params InsertApplyStatusTimestampParams) (pgconn.CommandTag, error)
-	// InsertApplyStatusTimestampBatch enqueues a InsertApplyStatusTimestamp query into batch to be executed
-	// later by the batch.
-	InsertApplyStatusTimestampBatch(batch genericBatch, params InsertApplyStatusTimestampParams)
-	// InsertApplyStatusTimestampScan scans the result of an executed InsertApplyStatusTimestampBatch query.
-	InsertApplyStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindRunIDByApplyID(ctx context.Context, applyID pgtype.Text) (pgtype.Text, error)
-	// FindRunIDByApplyIDBatch enqueues a FindRunIDByApplyID query into batch to be executed
-	// later by the batch.
-	FindRunIDByApplyIDBatch(batch genericBatch, applyID pgtype.Text)
-	// FindRunIDByApplyIDScan scans the result of an executed FindRunIDByApplyIDBatch query.
-	FindRunIDByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	UpdateAppliedChangesByID(ctx context.Context, params UpdateAppliedChangesByIDParams) (pgtype.Text, error)
 	// UpdateAppliedChangesByIDBatch enqueues a UpdateAppliedChangesByID query into batch to be executed
@@ -45,26 +31,12 @@ type Querier interface {
 	// UpdateAppliedChangesByIDScan scans the result of an executed UpdateAppliedChangesByIDBatch query.
 	UpdateAppliedChangesByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateApplyStatusByID(ctx context.Context, status pgtype.Text, applyID pgtype.Text) (pgtype.Text, error)
+	UpdateApplyStatusByID(ctx context.Context, status pgtype.Text, runID pgtype.Text) (pgtype.Text, error)
 	// UpdateApplyStatusByIDBatch enqueues a UpdateApplyStatusByID query into batch to be executed
 	// later by the batch.
-	UpdateApplyStatusByIDBatch(batch genericBatch, status pgtype.Text, applyID pgtype.Text)
+	UpdateApplyStatusByIDBatch(batch genericBatch, status pgtype.Text, runID pgtype.Text)
 	// UpdateApplyStatusByIDScan scans the result of an executed UpdateApplyStatusByIDBatch query.
 	UpdateApplyStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
-	// InsertApplyLogChunkBatch enqueues a InsertApplyLogChunk query into batch to be executed
-	// later by the batch.
-	InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.Text, chunk []byte)
-	// InsertApplyLogChunkScan scans the result of an executed InsertApplyLogChunkBatch query.
-	InsertApplyLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindApplyLogChunks(ctx context.Context, params FindApplyLogChunksParams) ([]byte, error)
-	// FindApplyLogChunksBatch enqueues a FindApplyLogChunks query into batch to be executed
-	// later by the batch.
-	FindApplyLogChunksBatch(batch genericBatch, params FindApplyLogChunksParams)
-	// FindApplyLogChunksScan scans the result of an executed FindApplyLogChunksBatch query.
-	FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
 	InsertConfigurationVersion(ctx context.Context, params InsertConfigurationVersionParams) (pgconn.CommandTag, error)
 	// InsertConfigurationVersionBatch enqueues a InsertConfigurationVersion query into batch to be executed
@@ -216,24 +188,38 @@ type Querier interface {
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertPlan(ctx context.Context, params InsertPlanParams) (pgconn.CommandTag, error)
+	InsertPhaseStatusTimestamp(ctx context.Context, params InsertPhaseStatusTimestampParams) (pgconn.CommandTag, error)
+	// InsertPhaseStatusTimestampBatch enqueues a InsertPhaseStatusTimestamp query into batch to be executed
+	// later by the batch.
+	InsertPhaseStatusTimestampBatch(batch genericBatch, params InsertPhaseStatusTimestampParams)
+	// InsertPhaseStatusTimestampScan scans the result of an executed InsertPhaseStatusTimestampBatch query.
+	InsertPhaseStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (pgconn.CommandTag, error)
+	// InsertLogChunkBatch enqueues a InsertLogChunk query into batch to be executed
+	// later by the batch.
+	InsertLogChunkBatch(batch genericBatch, params InsertLogChunkParams)
+	// InsertLogChunkScan scans the result of an executed InsertLogChunkBatch query.
+	InsertLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error)
+	// FindLogChunksBatch enqueues a FindLogChunks query into batch to be executed
+	// later by the batch.
+	FindLogChunksBatch(batch genericBatch, params FindLogChunksParams)
+	// FindLogChunksScan scans the result of an executed FindLogChunksBatch query.
+	FindLogChunksScan(results pgx.BatchResults) ([]byte, error)
+
+	InsertPlan(ctx context.Context, runID pgtype.Text, status pgtype.Text) (pgconn.CommandTag, error)
 	// InsertPlanBatch enqueues a InsertPlan query into batch to be executed
 	// later by the batch.
-	InsertPlanBatch(batch genericBatch, params InsertPlanParams)
+	InsertPlanBatch(batch genericBatch, runID pgtype.Text, status pgtype.Text)
 	// InsertPlanScan scans the result of an executed InsertPlanBatch query.
 	InsertPlanScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertPlanStatusTimestamp(ctx context.Context, params InsertPlanStatusTimestampParams) (pgconn.CommandTag, error)
-	// InsertPlanStatusTimestampBatch enqueues a InsertPlanStatusTimestamp query into batch to be executed
-	// later by the batch.
-	InsertPlanStatusTimestampBatch(batch genericBatch, params InsertPlanStatusTimestampParams)
-	// InsertPlanStatusTimestampScan scans the result of an executed InsertPlanStatusTimestampBatch query.
-	InsertPlanStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	UpdatePlanStatusByID(ctx context.Context, status pgtype.Text, planID pgtype.Text) (pgtype.Text, error)
+	UpdatePlanStatusByID(ctx context.Context, status pgtype.Text, runID pgtype.Text) (pgtype.Text, error)
 	// UpdatePlanStatusByIDBatch enqueues a UpdatePlanStatusByID query into batch to be executed
 	// later by the batch.
-	UpdatePlanStatusByIDBatch(batch genericBatch, status pgtype.Text, planID pgtype.Text)
+	UpdatePlanStatusByIDBatch(batch genericBatch, status pgtype.Text, runID pgtype.Text)
 	// UpdatePlanStatusByIDScan scans the result of an executed UpdatePlanStatusByIDBatch query.
 	UpdatePlanStatusByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -244,54 +230,33 @@ type Querier interface {
 	// UpdatePlannedChangesByIDScan scans the result of an executed UpdatePlannedChangesByIDBatch query.
 	UpdatePlannedChangesByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	FindRunIDByPlanID(ctx context.Context, planID pgtype.Text) (pgtype.Text, error)
-	// FindRunIDByPlanIDBatch enqueues a FindRunIDByPlanID query into batch to be executed
-	// later by the batch.
-	FindRunIDByPlanIDBatch(batch genericBatch, planID pgtype.Text)
-	// FindRunIDByPlanIDScan scans the result of an executed FindRunIDByPlanIDBatch query.
-	FindRunIDByPlanIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	GetPlanBinByID(ctx context.Context, planID pgtype.Text) ([]byte, error)
+	GetPlanBinByID(ctx context.Context, runID pgtype.Text) ([]byte, error)
 	// GetPlanBinByIDBatch enqueues a GetPlanBinByID query into batch to be executed
 	// later by the batch.
-	GetPlanBinByIDBatch(batch genericBatch, planID pgtype.Text)
+	GetPlanBinByIDBatch(batch genericBatch, runID pgtype.Text)
 	// GetPlanBinByIDScan scans the result of an executed GetPlanBinByIDBatch query.
 	GetPlanBinByIDScan(results pgx.BatchResults) ([]byte, error)
 
-	GetPlanJSONByID(ctx context.Context, planID pgtype.Text) ([]byte, error)
+	GetPlanJSONByID(ctx context.Context, runID pgtype.Text) ([]byte, error)
 	// GetPlanJSONByIDBatch enqueues a GetPlanJSONByID query into batch to be executed
 	// later by the batch.
-	GetPlanJSONByIDBatch(batch genericBatch, planID pgtype.Text)
+	GetPlanJSONByIDBatch(batch genericBatch, runID pgtype.Text)
 	// GetPlanJSONByIDScan scans the result of an executed GetPlanJSONByIDBatch query.
 	GetPlanJSONByIDScan(results pgx.BatchResults) ([]byte, error)
 
-	UpdatePlanBinByID(ctx context.Context, planBin []byte, planID pgtype.Text) (pgtype.Text, error)
+	UpdatePlanBinByID(ctx context.Context, planBin []byte, runID pgtype.Text) (pgtype.Text, error)
 	// UpdatePlanBinByIDBatch enqueues a UpdatePlanBinByID query into batch to be executed
 	// later by the batch.
-	UpdatePlanBinByIDBatch(batch genericBatch, planBin []byte, planID pgtype.Text)
+	UpdatePlanBinByIDBatch(batch genericBatch, planBin []byte, runID pgtype.Text)
 	// UpdatePlanBinByIDScan scans the result of an executed UpdatePlanBinByIDBatch query.
 	UpdatePlanBinByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdatePlanJSONByID(ctx context.Context, planJSON []byte, planID pgtype.Text) (pgtype.Text, error)
+	UpdatePlanJSONByID(ctx context.Context, planJSON []byte, runID pgtype.Text) (pgtype.Text, error)
 	// UpdatePlanJSONByIDBatch enqueues a UpdatePlanJSONByID query into batch to be executed
 	// later by the batch.
-	UpdatePlanJSONByIDBatch(batch genericBatch, planJSON []byte, planID pgtype.Text)
+	UpdatePlanJSONByIDBatch(batch genericBatch, planJSON []byte, runID pgtype.Text)
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
 	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	InsertPlanLogChunk(ctx context.Context, planID pgtype.Text, chunk []byte) (pgconn.CommandTag, error)
-	// InsertPlanLogChunkBatch enqueues a InsertPlanLogChunk query into batch to be executed
-	// later by the batch.
-	InsertPlanLogChunkBatch(batch genericBatch, planID pgtype.Text, chunk []byte)
-	// InsertPlanLogChunkScan scans the result of an executed InsertPlanLogChunkBatch query.
-	InsertPlanLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
-	FindPlanLogChunks(ctx context.Context, params FindPlanLogChunksParams) ([]byte, error)
-	// FindPlanLogChunksBatch enqueues a FindPlanLogChunks query into batch to be executed
-	// later by the batch.
-	FindPlanLogChunksBatch(batch genericBatch, params FindPlanLogChunksParams)
-	// FindPlanLogChunksScan scans the result of an executed FindPlanLogChunksBatch query.
-	FindPlanLogChunksScan(results pgx.BatchResults) ([]byte, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -680,23 +645,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertApplySQL, insertApplySQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertApply': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertApplyStatusTimestampSQL, insertApplyStatusTimestampSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertApplyStatusTimestamp': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunIDByApplyIDSQL, findRunIDByApplyIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunIDByApplyID': %w", err)
-	}
 	if _, err := p.Prepare(ctx, updateAppliedChangesByIDSQL, updateAppliedChangesByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateAppliedChangesByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updateApplyStatusByIDSQL, updateApplyStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateApplyStatusByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertApplyLogChunkSQL, insertApplyLogChunkSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertApplyLogChunk': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findApplyLogChunksSQL, findApplyLogChunksSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindApplyLogChunks': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertConfigurationVersionSQL, insertConfigurationVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertConfigurationVersion': %w", err)
@@ -758,20 +711,23 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteOrganizationMembershipSQL, deleteOrganizationMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteOrganizationMembership': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertPhaseStatusTimestampSQL, insertPhaseStatusTimestampSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertPhaseStatusTimestamp': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertLogChunkSQL, insertLogChunkSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertLogChunk': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findLogChunksSQL, findLogChunksSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindLogChunks': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertPlanSQL, insertPlanSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPlan': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertPlanStatusTimestampSQL, insertPlanStatusTimestampSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertPlanStatusTimestamp': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updatePlanStatusByIDSQL, updatePlanStatusByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanStatusByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, updatePlannedChangesByIDSQL, updatePlannedChangesByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlannedChangesByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findRunIDByPlanIDSQL, findRunIDByPlanIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindRunIDByPlanID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, getPlanBinByIDSQL, getPlanBinByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'GetPlanBinByID': %w", err)
@@ -784,12 +740,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updatePlanJSONByIDSQL, updatePlanJSONByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanJSONByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, insertPlanLogChunkSQL, insertPlanLogChunkSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertPlanLogChunk': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findPlanLogChunksSQL, findPlanLogChunksSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindPlanLogChunks': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRun': %w", err)
@@ -923,13 +873,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	return nil
 }
 
-// ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
-type ApplyStatusTimestamps struct {
-	ApplyID   pgtype.Text        `json:"apply_id"`
-	Status    pgtype.Text        `json:"status"`
-	Timestamp pgtype.Timestamptz `json:"timestamp"`
-}
-
 // ConfigurationVersionStatusTimestamps represents the Postgres composite type "configuration_version_status_timestamps".
 type ConfigurationVersionStatusTimestamps struct {
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
@@ -947,9 +890,10 @@ type Organizations struct {
 	SessionTimeout  int                `json:"session_timeout"`
 }
 
-// PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
-type PlanStatusTimestamps struct {
-	PlanID    pgtype.Text        `json:"plan_id"`
+// PhaseStatusTimestamps represents the Postgres composite type "phase_status_timestamps".
+type PhaseStatusTimestamps struct {
+	RunID     pgtype.Text        `json:"run_id"`
+	Phase     pgtype.Text        `json:"phase"`
 	Status    pgtype.Text        `json:"status"`
 	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
@@ -1106,17 +1050,6 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	return typ
 }
 
-// newApplyStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'apply_status_timestamps'.
-func (tr *typeResolver) newApplyStatusTimestamps() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"apply_status_timestamps",
-		compositeField{"apply_id", "text", &pgtype.Text{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
-	)
-}
-
 // newConfigurationVersionStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'configuration_version_status_timestamps'.
 func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTranscoder {
@@ -1142,12 +1075,13 @@ func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
 	)
 }
 
-// newPlanStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'plan_status_timestamps'.
-func (tr *typeResolver) newPlanStatusTimestamps() pgtype.ValueTranscoder {
+// newPhaseStatusTimestamps creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'phase_status_timestamps'.
+func (tr *typeResolver) newPhaseStatusTimestamps() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
-		"plan_status_timestamps",
-		compositeField{"plan_id", "text", &pgtype.Text{}},
+		"phase_status_timestamps",
+		compositeField{"run_id", "text", &pgtype.Text{}},
+		compositeField{"phase", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
 	)
@@ -1247,12 +1181,6 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 	)
 }
 
-// newApplyStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_apply_status_timestamps' array type.
-func (tr *typeResolver) newApplyStatusTimestampsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_apply_status_timestamps", "apply_status_timestamps", tr.newApplyStatusTimestamps)
-}
-
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1265,10 +1193,10 @@ func (tr *typeResolver) newOrganizationsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_organizations", "organizations", tr.newOrganizations)
 }
 
-// newPlanStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_plan_status_timestamps' array type.
-func (tr *typeResolver) newPlanStatusTimestampsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_plan_status_timestamps", "plan_status_timestamps", tr.newPlanStatusTimestamps)
+// newPhaseStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_phase_status_timestamps' array type.
+func (tr *typeResolver) newPhaseStatusTimestampsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_phase_status_timestamps", "phase_status_timestamps", tr.newPhaseStatusTimestamps)
 }
 
 // newRunStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
@@ -1296,25 +1224,17 @@ func (tr *typeResolver) newTokensArray() pgtype.ValueTranscoder {
 }
 
 const insertApplySQL = `INSERT INTO applies (
-    apply_id,
     run_id,
     status
 ) VALUES (
     $1,
-    $2,
-    $3
+    $2
 );`
 
-type InsertApplyParams struct {
-	ApplyID pgtype.Text
-	RunID   pgtype.Text
-	Status  pgtype.Text
-}
-
 // InsertApply implements Querier.InsertApply.
-func (q *DBQuerier) InsertApply(ctx context.Context, params InsertApplyParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertApply(ctx context.Context, runID pgtype.Text, status pgtype.Text) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApply")
-	cmdTag, err := q.conn.Exec(ctx, insertApplySQL, params.ApplyID, params.RunID, params.Status)
+	cmdTag, err := q.conn.Exec(ctx, insertApplySQL, runID, status)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertApply: %w", err)
 	}
@@ -1322,8 +1242,8 @@ func (q *DBQuerier) InsertApply(ctx context.Context, params InsertApplyParams) (
 }
 
 // InsertApplyBatch implements Querier.InsertApplyBatch.
-func (q *DBQuerier) InsertApplyBatch(batch genericBatch, params InsertApplyParams) {
-	batch.Queue(insertApplySQL, params.ApplyID, params.RunID, params.Status)
+func (q *DBQuerier) InsertApplyBatch(batch genericBatch, runID pgtype.Text, status pgtype.Text) {
+	batch.Queue(insertApplySQL, runID, status)
 }
 
 // InsertApplyScan implements Querier.InsertApplyScan.
@@ -1335,98 +1255,27 @@ func (q *DBQuerier) InsertApplyScan(results pgx.BatchResults) (pgconn.CommandTag
 	return cmdTag, err
 }
 
-const insertApplyStatusTimestampSQL = `INSERT INTO apply_status_timestamps (
-    apply_id,
-    status,
-    timestamp
-) VALUES (
-    $1,
-    $2,
-    $3
-);`
-
-type InsertApplyStatusTimestampParams struct {
-	ApplyID   pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
-}
-
-// InsertApplyStatusTimestamp implements Querier.InsertApplyStatusTimestamp.
-func (q *DBQuerier) InsertApplyStatusTimestamp(ctx context.Context, params InsertApplyStatusTimestampParams) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyStatusTimestamp")
-	cmdTag, err := q.conn.Exec(ctx, insertApplyStatusTimestampSQL, params.ApplyID, params.Status, params.Timestamp)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertApplyStatusTimestamp: %w", err)
-	}
-	return cmdTag, err
-}
-
-// InsertApplyStatusTimestampBatch implements Querier.InsertApplyStatusTimestampBatch.
-func (q *DBQuerier) InsertApplyStatusTimestampBatch(batch genericBatch, params InsertApplyStatusTimestampParams) {
-	batch.Queue(insertApplyStatusTimestampSQL, params.ApplyID, params.Status, params.Timestamp)
-}
-
-// InsertApplyStatusTimestampScan implements Querier.InsertApplyStatusTimestampScan.
-func (q *DBQuerier) InsertApplyStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertApplyStatusTimestampBatch: %w", err)
-	}
-	return cmdTag, err
-}
-
-const findRunIDByApplyIDSQL = `SELECT run_id
-FROM applies
-WHERE apply_id = $1
-;`
-
-// FindRunIDByApplyID implements Querier.FindRunIDByApplyID.
-func (q *DBQuerier) FindRunIDByApplyID(ctx context.Context, applyID pgtype.Text) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindRunIDByApplyID")
-	row := q.conn.QueryRow(ctx, findRunIDByApplyIDSQL, applyID)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindRunIDByApplyID: %w", err)
-	}
-	return item, nil
-}
-
-// FindRunIDByApplyIDBatch implements Querier.FindRunIDByApplyIDBatch.
-func (q *DBQuerier) FindRunIDByApplyIDBatch(batch genericBatch, applyID pgtype.Text) {
-	batch.Queue(findRunIDByApplyIDSQL, applyID)
-}
-
-// FindRunIDByApplyIDScan implements Querier.FindRunIDByApplyIDScan.
-func (q *DBQuerier) FindRunIDByApplyIDScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan FindRunIDByApplyIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const updateAppliedChangesByIDSQL = `UPDATE applies
 SET report = (
     $1,
     $2,
     $3
 )
-WHERE apply_id = $4
-RETURNING apply_id
+WHERE run_id = $4
+RETURNING run_id
 ;`
 
 type UpdateAppliedChangesByIDParams struct {
 	Additions    int
 	Changes      int
 	Destructions int
-	ApplyID      pgtype.Text
+	RunID        pgtype.Text
 }
 
 // UpdateAppliedChangesByID implements Querier.UpdateAppliedChangesByID.
 func (q *DBQuerier) UpdateAppliedChangesByID(ctx context.Context, params UpdateAppliedChangesByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateAppliedChangesByID")
-	row := q.conn.QueryRow(ctx, updateAppliedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.ApplyID)
+	row := q.conn.QueryRow(ctx, updateAppliedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.RunID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateAppliedChangesByID: %w", err)
@@ -1436,7 +1285,7 @@ func (q *DBQuerier) UpdateAppliedChangesByID(ctx context.Context, params UpdateA
 
 // UpdateAppliedChangesByIDBatch implements Querier.UpdateAppliedChangesByIDBatch.
 func (q *DBQuerier) UpdateAppliedChangesByIDBatch(batch genericBatch, params UpdateAppliedChangesByIDParams) {
-	batch.Queue(updateAppliedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.ApplyID)
+	batch.Queue(updateAppliedChangesByIDSQL, params.Additions, params.Changes, params.Destructions, params.RunID)
 }
 
 // UpdateAppliedChangesByIDScan implements Querier.UpdateAppliedChangesByIDScan.
@@ -1451,14 +1300,14 @@ func (q *DBQuerier) UpdateAppliedChangesByIDScan(results pgx.BatchResults) (pgty
 
 const updateApplyStatusByIDSQL = `UPDATE applies
 SET status = $1
-WHERE apply_id = $2
-RETURNING apply_id
+WHERE run_id = $2
+RETURNING run_id
 ;`
 
 // UpdateApplyStatusByID implements Querier.UpdateApplyStatusByID.
-func (q *DBQuerier) UpdateApplyStatusByID(ctx context.Context, status pgtype.Text, applyID pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) UpdateApplyStatusByID(ctx context.Context, status pgtype.Text, runID pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateApplyStatusByID")
-	row := q.conn.QueryRow(ctx, updateApplyStatusByIDSQL, status, applyID)
+	row := q.conn.QueryRow(ctx, updateApplyStatusByIDSQL, status, runID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateApplyStatusByID: %w", err)
@@ -1467,8 +1316,8 @@ func (q *DBQuerier) UpdateApplyStatusByID(ctx context.Context, status pgtype.Tex
 }
 
 // UpdateApplyStatusByIDBatch implements Querier.UpdateApplyStatusByIDBatch.
-func (q *DBQuerier) UpdateApplyStatusByIDBatch(batch genericBatch, status pgtype.Text, applyID pgtype.Text) {
-	batch.Queue(updateApplyStatusByIDSQL, status, applyID)
+func (q *DBQuerier) UpdateApplyStatusByIDBatch(batch genericBatch, status pgtype.Text, runID pgtype.Text) {
+	batch.Queue(updateApplyStatusByIDSQL, status, runID)
 }
 
 // UpdateApplyStatusByIDScan implements Querier.UpdateApplyStatusByIDScan.
@@ -1477,82 +1326,6 @@ func (q *DBQuerier) UpdateApplyStatusByIDScan(results pgx.BatchResults) (pgtype.
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan UpdateApplyStatusByIDBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const insertApplyLogChunkSQL = `INSERT INTO apply_logs (
-    apply_id,
-    chunk
-) VALUES (
-    $1,
-    $2
-)
-;`
-
-// InsertApplyLogChunk implements Querier.InsertApplyLogChunk.
-func (q *DBQuerier) InsertApplyLogChunk(ctx context.Context, applyID pgtype.Text, chunk []byte) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "InsertApplyLogChunk")
-	cmdTag, err := q.conn.Exec(ctx, insertApplyLogChunkSQL, applyID, chunk)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertApplyLogChunk: %w", err)
-	}
-	return cmdTag, err
-}
-
-// InsertApplyLogChunkBatch implements Querier.InsertApplyLogChunkBatch.
-func (q *DBQuerier) InsertApplyLogChunkBatch(batch genericBatch, applyID pgtype.Text, chunk []byte) {
-	batch.Queue(insertApplyLogChunkSQL, applyID, chunk)
-}
-
-// InsertApplyLogChunkScan implements Querier.InsertApplyLogChunkScan.
-func (q *DBQuerier) InsertApplyLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertApplyLogChunkBatch: %w", err)
-	}
-	return cmdTag, err
-}
-
-const findApplyLogChunksSQL = `SELECT
-    substring(string_agg(chunk, '') FROM $1 FOR $2)
-FROM (
-    SELECT apply_id, chunk
-    FROM apply_logs
-    WHERE apply_id = $3
-    ORDER BY chunk_id
-) c
-GROUP BY apply_id
-;`
-
-type FindApplyLogChunksParams struct {
-	Offset  int
-	Limit   int
-	ApplyID pgtype.Text
-}
-
-// FindApplyLogChunks implements Querier.FindApplyLogChunks.
-func (q *DBQuerier) FindApplyLogChunks(ctx context.Context, params FindApplyLogChunksParams) ([]byte, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindApplyLogChunks")
-	row := q.conn.QueryRow(ctx, findApplyLogChunksSQL, params.Offset, params.Limit, params.ApplyID)
-	item := []byte{}
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindApplyLogChunks: %w", err)
-	}
-	return item, nil
-}
-
-// FindApplyLogChunksBatch implements Querier.FindApplyLogChunksBatch.
-func (q *DBQuerier) FindApplyLogChunksBatch(batch genericBatch, params FindApplyLogChunksParams) {
-	batch.Queue(findApplyLogChunksSQL, params.Offset, params.Limit, params.ApplyID)
-}
-
-// FindApplyLogChunksScan implements Querier.FindApplyLogChunksScan.
-func (q *DBQuerier) FindApplyLogChunksScan(results pgx.BatchResults) ([]byte, error) {
-	row := results.QueryRow()
-	item := []byte{}
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan FindApplyLogChunksBatch row: %w", err)
 	}
 	return item, nil
 }

@@ -49,9 +49,7 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.apply = newApply(&run)
 	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
-	run.setPhase()
 	run.updateStatus(RunPending)
-	// apply options
 	run.replaceAddrs = opts.ReplaceAddrs
 	run.targetAddrs = opts.TargetAddrs
 	if opts.IsDestroy != nil {
@@ -68,7 +66,7 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 
 // NewTestRun creates a new run. Expressly for testing purposes
 func NewTestRun(t *testing.T, id, workspaceID string, opts TestRunCreateOptions) *Run {
-	ws := Workspace{id: workspaceID}
+	ws := Workspace{id: workspaceID, autoApply: opts.AutoApply}
 	cv := ConfigurationVersion{id: "cv-123", speculative: opts.Speculative}
 	run := NewRun(&cv, &ws, RunCreateOptions{})
 	if opts.Status != RunStatus("") {

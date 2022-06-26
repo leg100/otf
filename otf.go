@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -42,8 +43,6 @@ type Application interface {
 	StateVersionService() StateVersionService
 	ConfigurationVersionService() ConfigurationVersionService
 	RunService() RunService
-	PlanService() PlanService
-	ApplyService() ApplyService
 	EventService() EventService
 	UserService() UserService
 }
@@ -61,8 +60,7 @@ type DB interface {
 	StateVersionStore
 	TokenStore
 	ConfigurationVersionStore
-	PlanLogStore() ChunkStore
-	ApplyLogStore() ChunkStore
+	ChunkStore
 }
 
 // Identity is an identifiable oTF entity.
@@ -160,4 +158,15 @@ func GenerateToken() (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// ConvertID converts an ID for use with a different resource, e.g. convert
+// run-123 to plan-123.
+func ConvertID(id, resource string) string {
+	parts := strings.Split(id, "-")
+	// if ID not in expected form then just return it unchanged without error
+	if len(parts) != 2 {
+		return id
+	}
+	return resource + "-" + parts[1]
 }

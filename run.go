@@ -36,12 +36,13 @@ const (
 )
 
 var (
-	ErrStatusTimestampNotFound  = errors.New("corresponding status timestamp not found")
-	ErrRunDiscardNotAllowed     = errors.New("run was not paused for confirmation or priority; discard not allowed")
-	ErrRunCancelNotAllowed      = errors.New("run was not planning or applying; cancel not allowed")
-	ErrRunForceCancelNotAllowed = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
-	ErrInvalidRunGetOptions     = errors.New("invalid run get options")
-	ActiveRun                   = []RunStatus{
+	ErrStatusTimestampNotFound   = errors.New("corresponding status timestamp not found")
+	ErrRunDiscardNotAllowed      = errors.New("run was not paused for confirmation or priority; discard not allowed")
+	ErrRunCancelNotAllowed       = errors.New("run was not planning or applying; cancel not allowed")
+	ErrRunForceCancelNotAllowed  = errors.New("run was not planning or applying, has not been canceled non-forcefully, or the cool-off period has not yet passed")
+	ErrInvalidRunGetOptions      = errors.New("invalid run get options")
+	ErrInvalidRunStateTransition = errors.New("invalid run state transition")
+	ActiveRun                    = []RunStatus{
 		RunApplyQueued,
 		RunApplying,
 		RunConfirmed,
@@ -87,8 +88,6 @@ type Run struct {
 	plan      *Plan
 	apply     *Apply
 	workspace *Workspace
-	// current phase
-	Phase
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -113,27 +112,56 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 
-// GetOptions constructs RunGetOptions for retrieving this run.
-func (r *Run) GetOptions() RunGetOptions {
-	return RunGetOptions{ID: &r.id}
-}
-
 func (r *Run) Queued() bool {
 	return r.status == RunPlanQueued || r.status == RunApplyQueued
 }
 
+func (r *Run) HasChanges() bool {
+	return r.plan.HasChanges()
+}
+
+// discardable determines whether run can be discarded.
+func (r *Run) discardable() bool {
+	switch r.Status() {
+	case RunPending, RunPlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Phase returns the current phase.
+func (r *Run) Phase() PhaseType {
+	switch r.status {
+	case RunPending:
+		return PendingPhase
+	case RunPlanQueued, RunPlanning, RunPlanned:
+		return PlanPhase
+	case RunApplyQueued, RunApplying, RunApplied:
+		return ApplyPhase
+	default:
+		return UnknownPhase
+	}
+}
+
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
-	if !r.Discardable() {
+	if !r.discardable() {
 		return ErrRunDiscardNotAllowed
 	}
 	r.updateStatus(RunDiscarded)
+
+	if r.status == RunPending {
+		r.plan.updateStatus(PhaseUnreachable)
+	}
+	r.apply.updateStatus(PhaseUnreachable)
+
 	return nil
 }
 
-// Cancel run. Returns a boolean indicating whether cancel request is
-// immediately canceled (false) or enqueued (true).
-func (r *Run) Cancel() (bool, error) {
+// Cancel run. Returns a boolean indicating whether a cancel request should be
+// enqueued (for an agent to kill an in progress process)
+func (r *Run) Cancel() (enqueue bool, err error) {
 	if !r.Cancelable() {
 		return false, ErrRunCancelNotAllowed
 	}
@@ -142,40 +170,40 @@ func (r *Run) Cancel() (bool, error) {
 	tenSecondsFromNow := CurrentTimestamp().Add(10 * time.Second)
 	r.forceCancelAvailableAt = &tenSecondsFromNow
 
-	if r.ImmediatelyCancelable() {
-		return false, r.updateStatus(RunCanceled)
+	switch r.status {
+	case RunPending:
+		r.plan.updateStatus(PhaseUnreachable)
+		r.apply.updateStatus(PhaseUnreachable)
+	case RunPlanQueued, RunPlanning:
+		r.plan.updateStatus(PhaseCanceled)
+		r.apply.updateStatus(PhaseUnreachable)
+	case RunApplyQueued, RunApplying:
+		r.apply.updateStatus(PhaseCanceled)
 	}
-	return true, nil
+
+	if r.status == RunPlanning || r.status == RunApplying {
+		enqueue = true
+	}
+
+	r.updateStatus(RunCanceled)
+
+	return enqueue, nil
 }
 
 // ForceCancel force cancels a run. A cool-off period of 10 seconds must have
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
 	if r.forceCancelAvailableAt != nil && time.Now().After(*r.forceCancelAvailableAt) {
-		return r.updateStatus(RunCanceled)
+		r.updateStatus(RunCanceled)
+		return nil
 	}
 	return ErrRunForceCancelNotAllowed
 }
 
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
-	return r.ImmediatelyCancelable() || r.InProgress()
-}
-
-// ImmediatelyCancelable determines whether run can be cancelled immediately.
-func (r *Run) ImmediatelyCancelable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanQueued, RunApplyQueued:
-		return true
-	default:
-		return false
-	}
-}
-
-// InProgress indicates whether a plan or apply is currently in progress
-func (r *Run) InProgress() bool {
-	switch r.Status() {
-	case RunPlanning, RunApplying:
+	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false
@@ -192,14 +220,70 @@ func (r *Run) Confirmable() bool {
 	}
 }
 
-// Discardable determines whether run can be discarded.
-func (r *Run) Discardable() bool {
-	switch r.Status() {
-	case RunPending, RunPlanned:
-		return true
-	default:
-		return false
+// Do executes the current phase
+func (r *Run) Do(env Environment) error {
+	if err := r.setupEnv(env); err != nil {
+		return err
 	}
+	switch r.status {
+	case RunPlanning:
+		return r.doPlan(env)
+	case RunApplying:
+		return r.doApply(env)
+	default:
+		return fmt.Errorf("invalid status: %s", r.status)
+	}
+}
+
+func (r *Run) doPlan(env Environment) error {
+	if err := r.doTerraformPlan(env); err != nil {
+		return err
+	}
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadPlan); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadJSONPlan); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Run) doApply(env Environment) error {
+	if err := env.RunFunc(r.downloadPlanFile); err != nil {
+		return err
+	}
+	if err := r.doTerraformApply(env); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadState); err != nil {
+		return err
+	}
+	return nil
+}
+
+// doTerraformPlan invokes terraform plan
+func (r *Run) doTerraformPlan(env Environment) error {
+	args := []string{
+		"plan",
+	}
+	if r.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, "-out="+PlanFilename)
+	return env.RunCLI("terraform", args...)
+}
+
+// doTerraformApply invokes terraform apply
+func (r *Run) doTerraformApply(env Environment) error {
+	args := []string{"apply"}
+	if r.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, PlanFilename)
+	return env.RunCLI("terraform", args...)
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
@@ -213,12 +297,22 @@ func (r *Run) Done() bool {
 	}
 }
 
-func (r *Run) ApplyRun() error {
-	return r.updateStatus(RunApplyQueued)
+func (r *Run) EnqueuePlan() error {
+	if r.status != RunPending {
+		return fmt.Errorf("cannot enqueue pending run")
+	}
+	r.updateStatus(RunPlanQueued)
+	r.plan.updateStatus(PhaseQueued)
+	return nil
 }
 
-func (r *Run) EnqueuePlan() error {
-	return r.updateStatus(RunPlanQueued)
+func (r *Run) EnqueueApply() error {
+	if r.status != RunPlanned {
+		return fmt.Errorf("cannot apply run")
+	}
+	r.updateStatus(RunApplyQueued)
+	r.apply.updateStatus(PhaseQueued)
+	return nil
 }
 
 func (r *Run) StatusTimestamp(status RunStatus) (time.Time, error) {
@@ -252,41 +346,90 @@ func (r *Run) CanUnlock(requestor Identity, force bool) error {
 	return ErrWorkspaceLockedByDifferentUser
 }
 
-// Start a run job
-func (r *Run) Start() error {
+// Start a run phase
+func (r *Run) Start(phase PhaseType) error {
 	switch r.status {
 	case RunPlanQueued:
-		r.updateStatus(RunPlanning)
+		return r.startPlan()
 	case RunApplyQueued:
-		r.updateStatus(RunApplying)
+		return r.startApply()
 	case RunPlanning, RunApplying:
 		return ErrPhaseAlreadyStarted
 	default:
-		return fmt.Errorf("run cannot be started: invalid status: %s", r.Status())
+		return ErrInvalidRunStateTransition
 	}
 	return nil
 }
 
+func (r *Run) startPlan() error {
+	if r.status != RunPlanQueued {
+		return ErrInvalidRunStateTransition
+	}
+	r.updateStatus(RunPlanning)
+	r.plan.updateStatus(PhaseRunning)
+	return nil
+}
+
+func (r *Run) startApply() error {
+	if r.status != RunApplyQueued {
+		return ErrInvalidRunStateTransition
+	}
+	r.updateStatus(RunApplying)
+	r.apply.updateStatus(PhaseRunning)
+	return nil
+}
+
 // Finish updates the run to reflect its plan or apply phase having finished.
-func (r *Run) Finish(opts PhaseFinishOptions) error {
-	// canceled phase may have resulted in an error
-	if opts.Canceled {
-		return r.updateStatus(RunCanceled)
+func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
+	if r.status == RunCanceled {
+		// run was canceled before the phase finished so nothing more to do.
+		return nil
+	}
+	switch phase {
+	case PlanPhase:
+		return r.finishPlan(opts)
+	case ApplyPhase:
+		return r.finishApply(opts)
+	default:
+		return fmt.Errorf("unknown phase")
+	}
+	return nil
+}
+
+func (r *Run) finishPlan(opts PhaseFinishOptions) error {
+	if r.status != RunPlanning {
+		return ErrInvalidRunStateTransition
 	}
 	if opts.Errored {
-		return r.updateStatus(RunErrored)
+		r.updateStatus(RunErrored)
+		r.plan.updateStatus(PhaseErrored)
+		r.apply.updateStatus(PhaseUnreachable)
 	}
-	switch r.status {
-	case RunPlanning:
-		if err := r.updateStatus(RunPlanned); err != nil {
-			return err
-		}
-		return r.plan.Finish()
-	case RunApplying:
-		return r.updateStatus(RunApplied)
-	default:
-		return fmt.Errorf("run cannot be finished: invalid status: %s", r.status)
+
+	r.updateStatus(RunPlanned)
+	r.plan.updateStatus(PhaseFinished)
+
+	if !r.HasChanges() || r.Speculative() {
+		r.updateStatus(RunPlannedAndFinished)
+		r.apply.updateStatus(PhaseUnreachable)
+	} else if r.autoApply {
+		return r.EnqueueApply()
 	}
+	return nil
+}
+
+func (r *Run) finishApply(opts PhaseFinishOptions) error {
+	if r.status != RunApplying {
+		return ErrInvalidRunStateTransition
+	}
+	if opts.Errored {
+		r.updateStatus(RunErrored)
+		r.apply.updateStatus(PhaseErrored)
+	} else {
+		r.updateStatus(RunApplied)
+		r.apply.updateStatus(PhaseFinished)
+	}
+	return nil
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -297,7 +440,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.Confirmable(),
 			IsForceCancelable: r.forceCancelAvailableAt != nil,
-			IsDiscardable:     r.Discardable(),
+			IsDiscardable:     r.discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),
 		ForceCancelAvailableAt: r.forceCancelAvailableAt,
@@ -370,51 +513,17 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 	return dto
 }
 
-// updateStatus transitions the state - changes to a run are made only via this
-// method.
-func (r *Run) updateStatus(status RunStatus) error {
-	switch status {
-	case RunPending:
-		r.plan.updateStatus(PhasePending)
-		r.apply.updateStatus(PhasePending)
-	case RunPlanQueued:
-		r.plan.updateStatus(PhaseQueued)
-	case RunPlanning:
-		r.plan.updateStatus(PhaseRunning)
-	case RunPlanned, RunPlannedAndFinished:
-		r.plan.updateStatus(PhaseFinished)
-		r.apply.updateStatus(PhaseUnreachable)
-	case RunApplyQueued:
-		r.apply.updateStatus(PhaseQueued)
-	case RunApplying:
-		r.apply.updateStatus(PhaseRunning)
-	case RunApplied:
-		r.apply.updateStatus(PhaseFinished)
-	case RunErrored:
-		switch r.Status() {
-		case RunPlanning:
-			r.plan.updateStatus(PhaseErrored)
-			r.apply.updateStatus(PhaseUnreachable)
-		case RunApplying:
-			r.apply.updateStatus(PhaseErrored)
-		}
-	case RunCanceled:
-		switch r.Status() {
-		case RunPlanQueued, RunPlanning:
-			r.plan.updateStatus(PhaseCanceled)
-			r.apply.updateStatus(PhaseUnreachable)
-		case RunApplyQueued, RunApplying:
-			r.apply.updateStatus(PhaseCanceled)
-		}
-	}
+// IncludeWorkspace adds a workspace for inclusion in the run's JSON-API object.
+func (r *Run) IncludeWorkspace(ws *Workspace) {
+	r.workspace = ws
+}
+
+func (r *Run) updateStatus(status RunStatus) {
 	r.status = status
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
-	// set phase reflecting new status
-	r.setPhase()
-	return nil
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
@@ -475,7 +584,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.RunService().UploadPlanFile(ctx, r.plan.ID(), file, PlanFormatBinary); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.id, file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -487,14 +596,14 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadPlanFile(ctx, r.plan.ID(), jsonFile, PlanFormatJSON); err != nil {
+	if err := env.RunService().UploadPlanFile(ctx, r.id, jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.RunService().GetPlanFile(ctx, RunGetOptions{ID: String(r.ID())}, PlanFormatBinary)
+	plan, err := env.RunService().GetPlanFile(ctx, r.id, PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -525,18 +634,6 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	return nil
 }
 
-// Set appropriate job for run
-func (r *Run) setPhase() {
-	switch r.Status() {
-	case RunPlanQueued, RunPlanning:
-		r.Phase = r.plan
-	case RunApplyQueued, RunApplying:
-		r.Phase = r.apply
-	default:
-		r.Phase = &pendingPhase{}
-	}
-}
-
 type RunStatusTimestamp struct {
 	Status    RunStatus
 	Timestamp time.Time
@@ -554,20 +651,26 @@ type RunService interface {
 	ListWatch(ctx context.Context, opts RunListOptions) (<-chan *Run, error)
 	// Delete deletes a run with the given ID.
 	Delete(ctx context.Context, id string) error
+	// EnqueuePlan enqueues a plan
+	EnqueuePlan(ctx context.Context, id string) (*Run, error)
 	// Apply a run with the given ID.
 	Apply(ctx context.Context, id string, opts RunApplyOptions) error
 	// Discard discards a run with the given ID.
 	Discard(ctx context.Context, id string, opts RunDiscardOptions) error
+	// Cancel run.
 	Cancel(ctx context.Context, id string, opts RunCancelOptions) error
+	// Forcefully cancel a run.
 	ForceCancel(ctx context.Context, id string, opts RunForceCancelOptions) error
-	// Start a run.
-	Start(ctx context.Context, id string) (*Run, error)
+	// Start a run phase.
+	Start(ctx context.Context, id string, phase PhaseType, opts PhaseStartOptions) (*Run, error)
+	// Finish a run phase.
+	Finish(ctx context.Context, id string, phase PhaseType, opts PhaseFinishOptions) (*Run, error)
 	// GetPlanFile retrieves a run's plan file with the requested format.
-	GetPlanFile(ctx context.Context, spec RunGetOptions, format PlanFormat) ([]byte, error)
+	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
-	UploadPlanFile(ctx context.Context, planID string, plan []byte, format PlanFormat) error
-	// UpdateStatus updates the run status
-	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
+	UploadPlanFile(ctx context.Context, id string, plan []byte, format PlanFormat) error
+	// Read and write logs for run phases.
+	LogService
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -588,6 +691,7 @@ type RunCreateOptions struct {
 type TestRunCreateOptions struct {
 	Speculative bool
 	Status      RunStatus
+	AutoApply   bool
 }
 
 // RunApplyOptions represents the options for applying a run.
@@ -617,15 +721,15 @@ type RunDiscardOptions struct {
 // RunStore implementations persist Run objects.
 type RunStore interface {
 	CreateRun(ctx context.Context, run *Run) error
-	GetRun(ctx context.Context, opts RunGetOptions) (*Run, error)
+	GetRun(ctx context.Context, id string) (*Run, error)
 	SetPlanFile(ctx context.Context, id string, file []byte, format PlanFormat) error
 	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
 	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// UpdateStatus updates the run's status, providing a func with which to
 	// perform updates in a transaction.
-	UpdateStatus(ctx context.Context, opts RunGetOptions, fn func(*Run) error) (*Run, error)
-	CreatePlanReport(ctx context.Context, planID string, report ResourceReport) error
-	CreateApplyReport(ctx context.Context, applyID string, report ResourceReport) error
+	UpdateStatus(ctx context.Context, id string, fn func(*Run) error) (*Run, error)
+	CreatePlanReport(ctx context.Context, id string, report ResourceReport) error
+	CreateApplyReport(ctx context.Context, id string, report ResourceReport) error
 	DeleteRun(ctx context.Context, id string) error
 }
 
@@ -646,38 +750,9 @@ func (l *RunList) ToJSONAPI(req *http.Request) any {
 	return dto
 }
 
-// RunGetOptions are options for retrieving a single Run. Either ID or ApplyID
-// or PlanID must be specfiied.
-type RunGetOptions struct {
-	// ID of run to retrieve
-	ID *string
-	// Get run via apply ID
-	ApplyID *string
-	// Get run via plan ID
-	PlanID *string
-	// A list of relations to include. See available resources:
-	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-	Include *string `schema:"include"`
-}
-
-func (o *RunGetOptions) String() string {
-	if o.ID != nil {
-		return *o.ID
-	} else if o.PlanID != nil {
-		return *o.PlanID
-	} else if o.ApplyID != nil {
-		return *o.ApplyID
-	} else {
-		panic("no ID specified")
-	}
-}
-
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
 	ListOptions
-	// A list of relations to include. See available resources:
-	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-	Include *string `schema:"include"`
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []RunStatus
 	// Filter by workspace ID

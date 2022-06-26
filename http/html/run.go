@@ -80,7 +80,7 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	chunk, err := app.PlanService().GetChunk(r.Context(), run.Plan().ID(), otf.GetChunkOptions{})
+	chunk, err := app.RunService().GetChunk(r.Context(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,7 +108,7 @@ func (app *Application) getApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	chunk, err := app.ApplyService().GetChunk(r.Context(), run.Apply().ID(), otf.GetChunkOptions{})
+	chunk, err := app.RunService().GetChunk(r.Context(), run.ID(), otf.ApplyPhase, otf.GetChunkOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

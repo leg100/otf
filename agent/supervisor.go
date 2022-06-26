@@ -67,7 +67,7 @@ func (s *Supervisor) Start(ctx context.Context) {
 	for {
 		select {
 		case cancelation := <-s.GetCancelation():
-			s.Cancel(cancelation.Run.PhaseID(), cancelation.Forceful)
+			s.Cancel(cancelation.Run.ID(), cancelation.Forceful)
 		case <-ctx.Done():
 			return
 		}

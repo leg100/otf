@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -15,66 +14,29 @@ const (
 	JSONPlanFilename   = "plan.out.json"
 )
 
-// Plan represents a Terraform Enterprise plan.
+// Plan is the plan phase of a run
 type Plan struct {
-	id string
-	// Resources is a report of planned resource changes
+	// report of planned resource changes
 	*ResourceReport
-	// run is the parent run
-	run *Run
-	*phaseMixin
+
+	runID string
+	*phaseStatus
 }
 
-func (p *Plan) ID() string      { return p.id }
-func (p *Plan) PhaseID() string { return p.id }
-func (p *Plan) String() string  { return p.id }
-func (p *Plan) Service(app Application) (PhaseService, error) {
-	return app.PlanService(), nil
-}
+func (p *Plan) ID() string       { return p.runID }
+func (p *Plan) Phase() PhaseType { return PlanPhase }
 
 // HasChanges determines whether plan has any changes (adds/changes/deletions).
 func (p *Plan) HasChanges() bool {
 	return p.ResourceReport != nil && p.ResourceReport.HasChanges()
 }
 
-// Do performs a terraform plan
-func (p *Plan) Do(env Environment) error {
-	if err := p.run.setupEnv(env); err != nil {
-		return err
-	}
-	if err := p.runTerraformPlan(env); err != nil {
-		return err
-	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
-		return err
-	}
-	if err := env.RunFunc(p.run.uploadPlan); err != nil {
-		return err
-	}
-	if err := env.RunFunc(p.run.uploadJSONPlan); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Finish updates the run to reflect its plan having finished. An event is
-// returned reflecting the run's new status.
-func (p *Plan) Finish() error {
-	if !p.HasChanges() || p.run.Speculative() {
-		return p.run.updateStatus(RunPlannedAndFinished)
-	}
-	if !p.run.autoApply {
-		return nil
-	}
-	return p.run.updateStatus(RunApplyQueued)
-}
-
 // ToJSONAPI assembles a JSON-API DTO.
 func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
-		ID:               p.ID(),
+		ID:               ConvertID(p.runID, "plan"),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("plans/%s/logs", p.id)),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("runs/%s/logs/plan", p.runID)),
 		Status:           string(p.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
@@ -85,6 +47,8 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range p.StatusTimestamps() {
 		switch ts.Status {
+		case PhasePending:
+			dto.StatusTimestamps.PendingAt = &ts.Timestamp
 		case PhaseCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case PhaseErrored:
@@ -95,32 +59,16 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
 		case PhaseRunning:
 			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		case PhaseUnreachable:
+			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
 		}
 	}
 	return dto
 }
 
-// runTerraformPlan runs a terraform plan
-func (p *Plan) runTerraformPlan(env Environment) error {
-	args := []string{
-		"plan",
-	}
-	if p.run.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, "-out="+PlanFilename)
-	return env.RunCLI("terraform", args...)
-}
-
-type PlanService interface {
-	Get(ctx context.Context, id string) (*Plan, error)
-	PhaseService
-}
-
 func newPlan(run *Run) *Plan {
 	return &Plan{
-		id:         NewID("plan"),
-		run:        run,
-		phaseMixin: newPhase(),
+		runID:       run.id,
+		phaseStatus: newPhaseStatus(),
 	}
 }

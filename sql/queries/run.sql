@@ -39,8 +39,6 @@ INSERT INTO run_status_timestamps (
 -- name: FindRuns :many
 SELECT
     runs.run_id,
-    plans.plan_id,
-    applies.apply_id,
     runs.created_at,
     runs.force_cancel_available_at,
     runs.is_destroy,
@@ -67,16 +65,18 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS plan_status_timestamps
-        FROM plan_status_timestamps st
-        WHERE st.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = plans.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS apply_status_timestamps
-        FROM apply_status_timestamps st
-        WHERE st.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
     ) AS apply_status_timestamps
 FROM runs
 JOIN plans USING (run_id)
@@ -108,8 +108,6 @@ AND runs.status             LIKE ANY(pggen.arg('statuses'))
 -- name: FindRunByID :one
 SELECT
     runs.run_id,
-    plans.plan_id,
-    applies.apply_id,
     runs.created_at,
     runs.force_cancel_available_at,
     runs.is_destroy,
@@ -136,16 +134,18 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS plan_status_timestamps
-        FROM plan_status_timestamps st
-        WHERE st.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = plans.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS apply_status_timestamps
-        FROM apply_status_timestamps st
-        WHERE st.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
     ) AS apply_status_timestamps
 FROM runs
 JOIN plans USING (run_id)
@@ -159,8 +159,6 @@ WHERE runs.run_id = pggen.arg('run_id')
 -- name: FindRunByIDForUpdate :one
 SELECT
     runs.run_id,
-    plans.plan_id,
-    applies.apply_id,
     runs.created_at,
     runs.force_cancel_available_at,
     runs.is_destroy,
@@ -169,7 +167,7 @@ SELECT
     runs.refresh_only,
     runs.status,
     plans.status        AS plan_status,
-    applies.status        AS apply_status,
+    applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
     plans.report AS planned_changes,
@@ -187,16 +185,18 @@ SELECT
         GROUP BY run_id
     ) AS run_status_timestamps,
     (
-        SELECT array_agg(st.*) AS plan_status_timestamps
-        FROM plan_status_timestamps st
-        WHERE st.plan_id = plans.plan_id
-        GROUP BY plan_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = plans.run_id
+        AND   st.phase = 'plan'
+        GROUP BY run_id, phase
     ) AS plan_status_timestamps,
     (
-        SELECT array_agg(st.*) AS apply_status_timestamps
-        FROM apply_status_timestamps st
-        WHERE st.apply_id = applies.apply_id
-        GROUP BY apply_id
+        SELECT array_agg(st.*) AS phase_status_timestamps
+        FROM phase_status_timestamps st
+        WHERE st.run_id = applies.run_id
+        AND   st.phase = 'apply'
+        GROUP BY run_id, phase
     ) AS apply_status_timestamps
 FROM runs
 JOIN plans USING (run_id)

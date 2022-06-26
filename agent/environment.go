@@ -19,8 +19,6 @@ var _ otf.Environment = (*Environment)(nil)
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
 type Environment struct {
-	otf.PhaseService
-
 	runService                  otf.RunService
 	configurationVersionService otf.ConfigurationVersionService
 	stateVersionService         otf.StateVersionService
@@ -49,7 +47,7 @@ func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
 	id string,
-	svc otf.LogService,
+	phase otf.PhaseType,
 	environmentVariables []string) (*Environment, error) {
 
 	path, err := os.MkdirTemp("", "otf-plan")
@@ -59,8 +57,9 @@ func NewEnvironment(
 
 	out := &otf.JobWriter{
 		ID:         id,
+		Phase:      phase,
 		Logger:     logger,
-		LogService: svc,
+		LogService: app.RunService(),
 	}
 
 	return &Environment{
@@ -166,7 +165,6 @@ func (e *Environment) cancelCLI(force bool) {
 	if e.proc == nil {
 		return
 	}
-
 	if force {
 		e.proc.Signal(os.Kill)
 	} else {

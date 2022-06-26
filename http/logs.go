@@ -5,17 +5,19 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 )
 
-func getLogs(w http.ResponseWriter, r *http.Request, svc otf.LogService, id string) {
+func (s *Server) getLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 	var opts otf.GetChunkOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	chunk, err := svc.GetChunk(r.Context(), id, opts)
+	chunk, err := s.RunService().GetChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), opts)
 	// ignore not found errors because terraform-cli may call this endpoint
 	// before any logs have been written and it'll exit with an error.
 	if err != nil && err != otf.ErrResourceNotFound {
@@ -28,7 +30,8 @@ func getLogs(w http.ResponseWriter, r *http.Request, svc otf.LogService, id stri
 	}
 }
 
-func uploadLogs(w http.ResponseWriter, r *http.Request, svc otf.LogService, id string) {
+func (s *Server) putLogs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
@@ -44,7 +47,7 @@ func uploadLogs(w http.ResponseWriter, r *http.Request, svc otf.LogService, id s
 		Start: opts.Start,
 		End:   opts.End,
 	}
-	if err := svc.PutChunk(r.Context(), id, chunk); err != nil {
+	if err := s.RunService().PutChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), chunk); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

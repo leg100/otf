@@ -16,7 +16,7 @@ func TestLog_PutChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.PlanLogStore().PutChunk(context.Background(), run.Plan().ID(), otf.Chunk{Data: []byte("chunk1"), Start: true})
+	err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1"), Start: true})
 	require.NoError(t, err)
 }
 
@@ -27,10 +27,10 @@ func TestLog_GetChunk(t *testing.T) {
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
 
-	err := db.PlanLogStore().PutChunk(context.Background(), run.Plan().ID(), otf.Chunk{Data: []byte("hello"), Start: true})
+	err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("hello"), Start: true})
 	require.NoError(t, err)
 
-	err = db.PlanLogStore().PutChunk(context.Background(), run.Plan().ID(), otf.Chunk{Data: []byte(" world"), End: true})
+	err = db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte(" world"), End: true})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -72,7 +72,7 @@ func TestLog_GetChunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.PlanLogStore().GetChunk(context.Background(), run.Plan().ID(), tt.opts)
+			got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want, got)

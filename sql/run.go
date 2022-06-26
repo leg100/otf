@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -28,29 +27,21 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertPlan(ctx, pggen.InsertPlanParams{
-			PlanID: String(run.Plan().ID()),
-			RunID:  String(run.ID()),
-			Status: String(string(run.Plan().Status())),
-		})
+		_, err = db.InsertPlan(ctx, String(run.ID()), String(string(run.Plan().Status())))
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertApply(ctx, pggen.InsertApplyParams{
-			ApplyID: String(run.Apply().ID()),
-			RunID:   String(run.ID()),
-			Status:  String(string(run.Apply().Status())),
-		})
+		_, err = db.InsertApply(ctx, String(run.ID()), String(string(run.Apply().Status())))
 		if err != nil {
 			return err
 		}
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := db.insertPlanStatusTimestamp(ctx, run.Plan()); err != nil {
+		if err := db.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := db.insertApplyStatusTimestamp(ctx, run.Apply()); err != nil {
+		if err := db.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -58,20 +49,15 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
-func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(*otf.Run) error) (*otf.Run, error) {
+func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) error) (*otf.Run, error) {
 	var run *otf.Run
 	err := db.Tx(ctx, func(tx otf.DB) error {
-		// Get run ID first
-		runID, err := db.getRunID(ctx, opts)
-		if err != nil {
-			return databaseError(err)
-		}
 		// select ...for update
-		result, err := db.FindRunByIDForUpdate(ctx, runID)
+		result, err := db.FindRunByIDForUpdate(ctx, String(runID))
 		if err != nil {
 			return databaseError(err)
 		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result), nil)
+		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 		if err != nil {
 			return err
 		}
@@ -98,23 +84,23 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 		}
 
 		if run.Plan().Status() != planStatus {
-			_, err := db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.Plan().ID()))
+			_, err := db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertPlanStatusTimestamp(ctx, run.Plan()); err != nil {
+			if err := db.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
 				return err
 			}
 		}
 
 		if run.Apply().Status() != applyStatus {
-			_, err := db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.Apply().ID()))
+			_, err := db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertApplyStatusTimestamp(ctx, run.Apply()); err != nil {
+			if err := db.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
 				return err
 			}
 		}
@@ -134,9 +120,9 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 	return run, nil
 }
 
-func (db *DB) CreatePlanReport(ctx context.Context, planID string, report otf.ResourceReport) error {
+func (db *DB) CreatePlanReport(ctx context.Context, runID string, report otf.ResourceReport) error {
 	_, err := db.UpdatePlannedChangesByID(ctx, pggen.UpdatePlannedChangesByIDParams{
-		PlanID:       String(planID),
+		RunID:        String(runID),
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -147,9 +133,9 @@ func (db *DB) CreatePlanReport(ctx context.Context, planID string, report otf.Re
 	return err
 }
 
-func (db *DB) CreateApplyReport(ctx context.Context, applyID string, report otf.ResourceReport) error {
+func (db *DB) CreateApplyReport(ctx context.Context, runID string, report otf.ResourceReport) error {
 	_, err := db.UpdateAppliedChangesByID(ctx, pggen.UpdateAppliedChangesByIDParams{
-		ApplyID:      String(applyID),
+		RunID:        String(runID),
 		Additions:    report.Additions,
 		Changes:      report.Changes,
 		Destructions: report.Destructions,
@@ -192,19 +178,6 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
 	})
-	if includeWorkspace(opts.Include) {
-		if opts.WorkspaceID != nil {
-			db.FindWorkspaceByIDBatch(batch, false,
-				String(*opts.WorkspaceID))
-		} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-			db.FindWorkspaceByNameBatch(batch, pggen.FindWorkspaceByNameParams{
-				Name:             String(*opts.WorkspaceName),
-				OrganizationName: String(*opts.OrganizationName),
-			})
-		} else {
-			return nil, fmt.Errorf("cannot include workspace without specifying workspace")
-		}
-	}
 
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
@@ -218,32 +191,9 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		return nil, err
 	}
 
-	var ws *otf.Workspace
-	if includeWorkspace(opts.Include) {
-		if opts.WorkspaceID != nil {
-			result, err := db.FindWorkspaceByIDScan(results)
-			if err != nil {
-				return nil, err
-			}
-			ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
-			if err != nil {
-				return nil, err
-			}
-		} else if opts.OrganizationName != nil && opts.WorkspaceName != nil {
-			result, err := db.FindWorkspaceByNameScan(results)
-			if err != nil {
-				return nil, err
-			}
-			ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	var items []*otf.Run
 	for _, r := range rows {
-		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r), ws)
+		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -257,38 +207,22 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 }
 
 // GetRun retrieves a run using the get options
-func (db *DB) GetRun(ctx context.Context, opts otf.RunGetOptions) (*otf.Run, error) {
-	// Get run ID first
-	runID, err := db.getRunID(ctx, opts)
+func (db *DB) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+	result, err := db.FindRunByID(ctx, String(runID))
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	result, err := db.FindRunByID(ctx, runID)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	var ws *otf.Workspace
-	if includeWorkspace(opts.Include) {
-		result, err := db.FindWorkspaceByID(ctx, false, result.WorkspaceID)
-		if err != nil {
-			return nil, databaseError(err)
-		}
-		ws, err = otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return otf.UnmarshalRunDBResult(otf.RunDBResult(result), ws)
+	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
 }
 
 // SetPlanFile writes a plan file to the db
-func (db *DB) SetPlanFile(ctx context.Context, planID string, file []byte, format otf.PlanFormat) error {
+func (db *DB) SetPlanFile(ctx context.Context, runID string, file []byte, format otf.PlanFormat) error {
 	switch format {
 	case otf.PlanFormatBinary:
-		_, err := db.UpdatePlanBinByID(ctx, file, String(planID))
+		_, err := db.UpdatePlanBinByID(ctx, file, String(runID))
 		return err
 	case otf.PlanFormatJSON:
-		_, err := db.UpdatePlanJSONByID(ctx, file, String(planID))
+		_, err := db.UpdatePlanJSONByID(ctx, file, String(runID))
 		return err
 	default:
 		return fmt.Errorf("unknown plan format: %s", string(format))
@@ -313,18 +247,6 @@ func (db *DB) DeleteRun(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *DB) getRunID(ctx context.Context, opts otf.RunGetOptions) (pgtype.Text, error) {
-	if opts.PlanID != nil {
-		return db.FindRunIDByPlanID(ctx, String(*opts.PlanID))
-	} else if opts.ApplyID != nil {
-		return db.FindRunIDByApplyID(ctx, String(*opts.ApplyID))
-	} else if opts.ID != nil {
-		return String(*opts.ID), nil
-	} else {
-		return pgtype.Text{}, fmt.Errorf("no ID specified")
-	}
-}
-
 func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error {
 	ts, err := run.StatusTimestamp(run.Status())
 	if err != nil {
@@ -338,27 +260,15 @@ func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error 
 	return err
 }
 
-func (db *DB) insertPlanStatusTimestamp(ctx context.Context, phase otf.Phase) error {
-	ts, err := phase.PhaseStatusTimestamp(phase.PhaseStatus())
+func (db *DB) insertPhaseStatusTimestamp(ctx context.Context, phase otf.Phase) error {
+	ts, err := phase.StatusTimestamp(phase.Status())
 	if err != nil {
 		return err
 	}
-	_, err = db.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
-		PlanID:    String(phase.PhaseID()),
-		Status:    String(string(phase.PhaseStatus())),
-		Timestamp: Timestamptz(ts),
-	})
-	return err
-}
-
-func (db *DB) insertApplyStatusTimestamp(ctx context.Context, phase otf.Phase) error {
-	ts, err := phase.PhaseStatusTimestamp(phase.PhaseStatus())
-	if err != nil {
-		return err
-	}
-	_, err = db.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
-		ApplyID:   String(phase.PhaseID()),
-		Status:    String(string(phase.PhaseStatus())),
+	_, err = db.InsertPhaseStatusTimestamp(ctx, pggen.InsertPhaseStatusTimestampParams{
+		RunID:     String(phase.ID()),
+		Phase:     String(string(phase.Phase())),
+		Status:    String(string(phase.Status())),
 		Timestamp: Timestamptz(ts),
 	})
 	return err

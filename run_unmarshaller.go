@@ -10,8 +10,6 @@ import (
 // RunDBResult is the database record for a run
 type RunDBResult struct {
 	RunID                  pgtype.Text                   `json:"run_id"`
-	PlanID                 pgtype.Text                   `json:"plan_id"`
-	ApplyID                pgtype.Text                   `json:"apply_id"`
 	CreatedAt              pgtype.Timestamptz            `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
 	IsDestroy              bool                          `json:"is_destroy"`
@@ -32,11 +30,11 @@ type RunDBResult struct {
 	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
-	PlanStatusTimestamps   []pggen.PlanStatusTimestamps  `json:"plan_status_timestamps"`
-	ApplyStatusTimestamps  []pggen.ApplyStatusTimestamps `json:"apply_status_timestamps"`
+	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
+	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 }
 
-func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
+func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
 		id:                     result.RunID.String,
 		createdAt:              result.CreatedAt.Time,
@@ -53,19 +51,18 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 		workspaceName:          result.WorkspaceName.String,
 		organizationName:       result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
-		workspace:              ws,
 		configurationVersionID: result.ConfigurationVersionID.String,
 		plan: &Plan{
-			id: result.PlanID.String,
-			phaseMixin: &phaseMixin{
+			runID: result.RunID.String,
+			phaseStatus: &phaseStatus{
 				status:           PhaseStatus(result.PlanStatus.String),
 				statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
 			},
 			ResourceReport: (*ResourceReport)(result.PlannedChanges),
 		},
 		apply: &Apply{
-			id: result.ApplyID.String,
-			phaseMixin: &phaseMixin{
+			runID: result.RunID.String,
+			phaseStatus: &phaseStatus{
 				status:           PhaseStatus(result.ApplyStatus.String),
 				statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
 			},
@@ -75,9 +72,6 @@ func UnmarshalRunDBResult(result RunDBResult, ws *Workspace) (*Run, error) {
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
 		run.forceCancelAvailableAt = &result.ForceCancelAvailableAt.Time
 	}
-	run.plan.run = &run
-	run.apply.run = &run
-	run.setPhase()
 	return &run, nil
 }
 
@@ -91,7 +85,7 @@ func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (times
 	return timestamps
 }
 
-func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
+func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),
@@ -101,7 +95,7 @@ func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PlanStatusTimestamps) (tim
 	return timestamps
 }
 
-func unmarshalApplyStatusTimestampDBTypes(typs []pggen.ApplyStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
+func unmarshalApplyStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),

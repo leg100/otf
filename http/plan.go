@@ -15,19 +15,22 @@ type PlanFileOptions struct {
 }
 
 func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	plan, err := s.PlanService().Get(r.Context(), vars["id"])
+	planID := mux.Vars(r)["plan_id"]
+	runID := otf.ConvertID(planID, "run")
+
+	run, err := s.RunService().Get(r.Context(), runID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, plan)
+	writeResponse(w, r, run.Plan())
 }
 
 func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	json, err := s.RunService().GetPlanFile(r.Context(), otf.RunGetOptions{PlanID: &id}, otf.PlanFormatJSON)
+	planID := mux.Vars(r)["plan_id"]
+	runID := otf.ConvertID(planID, "run")
+
+	json, err := s.RunService().GetPlanFile(r.Context(), runID, otf.PlanFormatJSON)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -36,12 +39,4 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func (s *Server) GetPlanLogs(w http.ResponseWriter, r *http.Request) {
-	getLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
-}
-
-func (s *Server) UploadPlanLogs(w http.ResponseWriter, r *http.Request) {
-	uploadLogs(w, r, s.PlanService(), mux.Vars(r)["plan_id"])
 }

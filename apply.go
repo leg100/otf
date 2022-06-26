@@ -9,57 +9,23 @@ import (
 	httputil "github.com/leg100/otf/http/util"
 )
 
-// Apply represents a terraform apply
+// Apply is the apply phase of a run
 type Apply struct {
-	id string
 	// ResourcesReport is a report of applied resource changes
 	*ResourceReport
-	// run is the parent run
-	run *Run
-	// apply is a job
-	*phaseMixin
+
+	runID string
+	*phaseStatus
 }
 
-func (a *Apply) ID() string      { return a.id }
-func (a *Apply) PhaseID() string { return a.id }
-func (a *Apply) String() string  { return a.id }
-
-func (a *Apply) Service(app Application) (PhaseService, error) {
-	return app.ApplyService(), nil
-}
-
-// Do performs a terraform apply
-func (a *Apply) Do(env Environment) error {
-	if err := a.run.setupEnv(env); err != nil {
-		return err
-	}
-	if err := env.RunFunc(a.run.downloadPlanFile); err != nil {
-		return err
-	}
-	if err := a.runTerraformApply(env); err != nil {
-		return err
-	}
-	if err := env.RunFunc(a.run.uploadState); err != nil {
-		return err
-	}
-	return nil
-}
-
-// runTerraformApply runs a terraform apply
-func (a *Apply) runTerraformApply(env Environment) error {
-	args := []string{"apply"}
-	if a.run.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, PlanFilename)
-	return env.RunCLI("terraform", args...)
-}
+func (a *Apply) ID() string       { return a.runID }
+func (a *Apply) Phase() PhaseType { return ApplyPhase }
 
 // ToJSONAPI assembles a JSONAPI DTO.
 func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
-		ID:               a.ID(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("applies/%s/logs", a.id)),
+		ID:               ConvertID(a.runID, "apply"),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("runs/%s/logs/apply", a.runID)),
 		Status:           string(a.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
@@ -70,6 +36,8 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {
+		case PhasePending:
+			dto.StatusTimestamps.PendingAt = &ts.Timestamp
 		case PhaseCanceled:
 			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
 		case PhaseErrored:
@@ -90,16 +58,11 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 // ApplyService allows interaction with Applies
 type ApplyService interface {
 	Get(ctx context.Context, id string) (*Apply, error)
-	PhaseService
-	// CreateReport parses the logs from a successful terraform apply and
-	// persists a resource report to the database.
-	CreateReport(ctx context.Context, applyID string) error
 }
 
 func newApply(run *Run) *Apply {
 	return &Apply{
-		id:         NewID("apply"),
-		run:        run,
-		phaseMixin: newPhase(),
+		runID:       run.id,
+		phaseStatus: newPhaseStatus(),
 	}
 }

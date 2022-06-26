@@ -30,7 +30,7 @@ func TestRun_Timestamps(t *testing.T) {
 	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 
-	got, err := db.GetRun(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
+	got, err := db.GetRun(context.Background(), run.ID())
 	require.NoError(t, err)
 
 	assert.Equal(t, run.CreatedAt(), got.CreatedAt())
@@ -46,7 +46,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(context.Background(), run.GetOptions(), func(run *otf.Run) error {
+		got, err := db.UpdateStatus(context.Background(), run.ID(), func(run *otf.Run) error {
 			return run.EnqueuePlan()
 		})
 		require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(context.Background(), run.GetOptions(), func(run *otf.Run) error {
+		got, err := db.UpdateStatus(context.Background(), run.ID(), func(run *otf.Run) error {
 			_, err := run.Cancel()
 			return err
 		})
@@ -81,42 +81,11 @@ func TestRun_Get(t *testing.T) {
 
 	want := createTestRun(t, db, ws, cv)
 
-	tests := []struct {
-		name string
-		opts otf.RunGetOptions
-	}{
-		{
-			name: "by id",
-			opts: otf.RunGetOptions{ID: otf.String(want.ID())},
-		},
-		{
-			name: "by plan id",
-			opts: otf.RunGetOptions{PlanID: otf.String(want.Plan().ID())},
-		},
-		{
-			name: "by apply id",
-			opts: otf.RunGetOptions{ApplyID: otf.String(want.Apply().ID())},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetRun(context.Background(), tt.opts)
-			require.NoError(t, err)
+	got, err := db.GetRun(context.Background(), want.ID())
+	require.NoError(t, err)
 
-			assert.Equal(t, want.Apply().PhaseStatusTimestamps(), got.Apply().PhaseStatusTimestamps())
-			assert.Equal(t, want.Plan().PhaseStatusTimestamps(), got.Plan().PhaseStatusTimestamps())
-			assert.Equal(t, want, got)
-		})
-	}
-
-	t.Run("include workspace", func(t *testing.T) {
-		got, err := db.GetRun(context.Background(), otf.RunGetOptions{
-			ID:      otf.String(want.ID()),
-			Include: otf.String("workspace"),
-		})
-		require.NoError(t, err)
-		assert.Equal(t, ws, got.Workspace())
-	})
+	assert.Equal(t, want.ForceCancelAvailableAt(), got.ForceCancelAvailableAt())
+	assert.Equal(t, want, got)
 }
 
 func TestRun_List(t *testing.T) {
@@ -194,19 +163,6 @@ func TestRun_List(t *testing.T) {
 				assert.Equal(t, 0, len(l.Items))
 			},
 		},
-		{
-			name: "include workspace",
-			opts: otf.RunListOptions{
-				OrganizationName: otf.String(org1.Name()),
-				WorkspaceName:    otf.String(ws1.Name()),
-				Include:          otf.String("workspace"),
-			},
-			want: func(t *testing.T, l *otf.RunList) {
-				assert.Equal(t, 2, len(l.Items))
-				assert.Equal(t, ws1, l.Items[0].Workspace())
-				assert.Equal(t, ws1, l.Items[1].Workspace())
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -231,10 +187,10 @@ func TestRun_CreatePlanReport(t *testing.T) {
 		Destructions: 99,
 	}
 
-	err := db.CreatePlanReport(context.Background(), run.Plan().ID(), report)
+	err := db.CreatePlanReport(context.Background(), run.ID(), report)
 	require.NoError(t, err)
 
-	run, err = db.GetRun(context.Background(), otf.RunGetOptions{ID: otf.String(run.ID())})
+	run, err = db.GetRun(context.Background(), run.ID())
 	require.NoError(t, err)
 
 	assert.NotNil(t, run.Plan().ResourceReport)

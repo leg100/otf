@@ -22,9 +22,9 @@ type LogService ChunkService
 // of binary objects can be fetched and uploaded.
 type ChunkStore interface {
 	// GetChunk fetches a blob chunk for entity with id
-	GetChunk(ctx context.Context, id string, opts GetChunkOptions) (Chunk, error)
+	GetChunk(ctx context.Context, id string, phase PhaseType, opts GetChunkOptions) (Chunk, error)
 	// PutChunk uploads a blob chunk for entity with id
-	PutChunk(ctx context.Context, id string, chunk Chunk) error
+	PutChunk(ctx context.Context, id string, phase PhaseType, chunk Chunk) error
 }
 
 type GetChunkOptions struct {

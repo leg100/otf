@@ -1,12 +1,17 @@
 package otf
 
 import (
-	"context"
 	"errors"
 	"time"
 )
 
 const (
+	PendingPhase PhaseType = "pending"
+	PlanPhase    PhaseType = "plan"
+	ApplyPhase   PhaseType = "apply"
+	FinalPhase   PhaseType = "final"
+	UnknownPhase PhaseType = "unknown"
+
 	PhasePending     PhaseStatus = "pending"
 	PhaseQueued      PhaseStatus = "queued"
 	PhaseRunning     PhaseStatus = "running"
@@ -24,28 +29,19 @@ type PhaseStatus string
 
 // Phase is a section of work performed by a run.
 type Phase interface {
-	// Do some work in an execution environment
-	Do(Environment) error
-	// GetID gets the ID of the Job
-	PhaseID() string
-	PhaseStatus() PhaseStatus
+	// Run ID
+	ID() string
+	// phase type
+	Phase() PhaseType
+	// current phase status
+	Status() PhaseStatus
 	// Get job status timestamps
-	PhaseStatusTimestamps() []PhaseStatusTimestamp
-	PhaseStatusTimestamp(PhaseStatus) (time.Time, error)
-	// Service provides an appropriate application service to interact with the
-	// phase
-	Service(Application) (PhaseService, error)
+	StatusTimestamps() []PhaseStatusTimestamp
+	// Lookup timestamp for status
+	StatusTimestamp(PhaseStatus) (time.Time, error)
 }
 
-type PhaseService interface {
-	// Start a phase. ErrJobAlreadyStarted is returned if phase has already been
-	// started.
-	Start(ctx context.Context, id string, opts PhaseStartOptions) (*Run, error)
-	// Finish is called by an agent when it finishes a job.
-	Finish(ctx context.Context, id string, opts PhaseFinishOptions) (*Run, error)
-	// Retrieve and upload chunks of logs for jobs
-	ChunkService
-}
+type PhaseType string
 
 type PhaseStartOptions struct {
 	AgentID string
@@ -55,8 +51,6 @@ type PhaseStartOptions struct {
 type PhaseFinishOptions struct {
 	// Errored is true if the phase finished unsuccessfully.
 	Errored bool
-	// Canceled is true if the phase was canceled. Errored.
-	Canceled bool
 }
 
 type PhaseStatusTimestamp struct {
@@ -64,17 +58,16 @@ type PhaseStatusTimestamp struct {
 	Timestamp time.Time
 }
 
-type phaseMixin struct {
+// phaseStatus is a mixin providing status functionality for a phase
+type phaseStatus struct {
 	status           PhaseStatus
 	statusTimestamps []PhaseStatusTimestamp
 }
 
-func (p *phaseMixin) Status() PhaseStatus                           { return p.status }
-func (p *phaseMixin) StatusTimestamps() []PhaseStatusTimestamp      { return p.statusTimestamps }
-func (p *phaseMixin) PhaseStatus() PhaseStatus                      { return p.status }
-func (p *phaseMixin) PhaseStatusTimestamps() []PhaseStatusTimestamp { return p.statusTimestamps }
+func (p *phaseStatus) Status() PhaseStatus                      { return p.status }
+func (p *phaseStatus) StatusTimestamps() []PhaseStatusTimestamp { return p.statusTimestamps }
 
-func (p *phaseMixin) PhaseStatusTimestamp(status PhaseStatus) (time.Time, error) {
+func (p *phaseStatus) StatusTimestamp(status PhaseStatus) (time.Time, error) {
 	for _, rst := range p.statusTimestamps {
 		if rst.Status == status {
 			return rst.Timestamp, nil
@@ -83,7 +76,7 @@ func (p *phaseMixin) PhaseStatusTimestamp(status PhaseStatus) (time.Time, error)
 	return time.Time{}, ErrStatusTimestampNotFound
 }
 
-func (p *phaseMixin) updateStatus(status PhaseStatus) {
+func (p *phaseStatus) updateStatus(status PhaseStatus) {
 	p.status = status
 	p.statusTimestamps = append(p.statusTimestamps, PhaseStatusTimestamp{
 		Status:    status,
@@ -91,14 +84,8 @@ func (p *phaseMixin) updateStatus(status PhaseStatus) {
 	})
 }
 
-func newPhase() *phaseMixin {
-	p := &phaseMixin{
-		status: PhasePending,
-	}
+func newPhaseStatus() *phaseStatus {
+	p := &phaseStatus{}
+	p.updateStatus(PhasePending)
 	return p
-}
-
-// pendingPhase is the initial phase of a run.
-type pendingPhase struct {
-	Phase
 }

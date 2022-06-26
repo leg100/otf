@@ -132,6 +132,14 @@ CREATE TABLE IF NOT EXISTS run_status_timestamps (
                 PRIMARY KEY (run_id, status)
 );
 
+CREATE TABLE IF NOT EXISTS phases (
+    phase TEXT PRIMARY KEY
+);
+
+INSERT INTO phases (phase) VALUES
+    ('plan'),
+    ('apply');
+
 CREATE TABLE IF NOT EXISTS phase_statuses (
     status TEXT PRIMARY KEY
 );
@@ -148,49 +156,35 @@ INSERT INTO phase_statuses (status) VALUES
 CREATE TYPE report AS (additions INT, changes INT, destructions INT);
 
 CREATE TABLE IF NOT EXISTS plans (
-    plan_id       TEXT NOT NULL,
     run_id        TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     status        TEXT REFERENCES phase_statuses NOT NULL,
     plan_bin      BYTEA,
     plan_json     BYTEA,
     report        REPORT,
-                  PRIMARY KEY (plan_id)
+                  PRIMARY KEY (run_id)
 );
 
 CREATE TABLE IF NOT EXISTS applies (
-    apply_id    TEXT NOT NULL,
     run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     status      TEXT REFERENCES phase_statuses NOT NULL,
     report      REPORT,
-                PRIMARY KEY (apply_id)
+                PRIMARY KEY (run_id)
 );
 
-CREATE TABLE IF NOT EXISTS plan_logs (
-    plan_id     TEXT REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+CREATE TABLE IF NOT EXISTS logs (
+    run_id      TEXT REFERENCES runs ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    phase       TEXT REFERENCES phases ON UPDATE CASCADE NOT NULL,
     chunk_id    INT GENERATED ALWAYS AS IDENTITY,
     chunk       BYTEA   NOT NULL,
-                PRIMARY KEY (plan_id, chunk_id)
+                PRIMARY KEY (run_id, phase, chunk_id)
 );
 
-CREATE TABLE IF NOT EXISTS apply_logs (
-    apply_id    TEXT REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    chunk_id    INT GENERATED ALWAYS AS IDENTITY,
-    chunk       BYTEA   NOT NULL,
-                PRIMARY KEY (apply_id, chunk_id)
-);
-
-CREATE TABLE IF NOT EXISTS plan_status_timestamps (
-    plan_id     TEXT        REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+CREATE TABLE IF NOT EXISTS phase_status_timestamps (
+    run_id      TEXT        REFERENCES plans ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+    phase       TEXT        REFERENCES phases ON UPDATE CASCADE NOT NULL,
     status      TEXT        REFERENCES phase_statuses NOT NULL,
     timestamp   TIMESTAMPTZ NOT NULL,
-                PRIMARY KEY (plan_id, status)
-);
-
-CREATE TABLE IF NOT EXISTS apply_status_timestamps (
-    apply_id    TEXT         REFERENCES applies ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-    status      TEXT         REFERENCES phase_statuses NOT NULL,
-    timestamp   TIMESTAMPTZ  NOT NULL,
-                PRIMARY KEY (apply_id, status)
+                PRIMARY KEY (run_id, phase, status)
 );
 
 CREATE TABLE IF NOT EXISTS state_versions (
@@ -215,14 +209,13 @@ CREATE TABLE IF NOT EXISTS state_version_outputs (
 -- +goose Down
 DROP TABLE IF EXISTS state_version_outputs;
 DROP TABLE IF EXISTS state_versions;
-DROP TABLE IF EXISTS apply_logs;
-DROP TABLE IF EXISTS plan_logs;
-DROP TABLE IF EXISTS apply_status_timestamps;
-DROP TABLE IF EXISTS plan_status_timestamps;
+DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS phase_status_timestamps;
 DROP TABLE IF EXISTS applies;
 DROP TABLE IF EXISTS plans;
 DROP TYPE IF EXISTS report;
 DROP TABLE IF EXISTS phase_statuses;
+DROP TABLE IF EXISTS phases;
 DROP TABLE IF EXISTS run_status_timestamps;
 DROP TABLE IF EXISTS runs;
 DROP TABLE IF EXISTS run_statuses;

@@ -6,10 +6,13 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// JobWriter writes logs on behalf of a job.
+// JobWriter writes logs on behalf of a run phase.
 type JobWriter struct {
-	// ID of Job to write logs on behalf of.
+	// ID of run to write logs on behalf of.
 	ID string
+
+	// run phase
+	Phase PhaseType
 
 	// LogService for uploading logs to server
 	LogService
@@ -30,7 +33,7 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 		chunk.Start = true
 	}
 
-	if err := w.PutChunk(context.Background(), w.ID, chunk); err != nil {
+	if err := w.PutChunk(context.Background(), w.ID, w.Phase, chunk); err != nil {
 		w.Error(err, "unable to write logs")
 		w.started = false
 		return 0, err
@@ -47,7 +50,7 @@ func (w *JobWriter) Close() error {
 		chunk.Start = true
 	}
 
-	if err := w.PutChunk(context.Background(), w.ID, chunk); err != nil {
+	if err := w.PutChunk(context.Background(), w.ID, w.Phase, chunk); err != nil {
 		w.Error(err, "unable to close logs")
 
 		return err

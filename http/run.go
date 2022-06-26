@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
@@ -53,16 +54,16 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
-	s.listRuns(w, r, otf.RunListOptions{})
+	s.listRuns(w, r, RunListOptions{})
 }
 
 func (s *Server) GetRunsQueue(w http.ResponseWriter, r *http.Request) {
-	s.listRuns(w, r, otf.RunListOptions{
+	s.listRuns(w, r, RunListOptions{
 		Statuses: []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
 	})
 }
 
-func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunListOptions) {
+func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOptions) {
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -71,10 +72,30 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	rl, err := s.RunService().List(r.Context(), opts)
+	rl, err := s.RunService().List(r.Context(), otf.RunListOptions{
+		ListOptions: opts.ListOptions,
+		Statuses:    opts.Statuses,
+		WorkspaceID: opts.WorkspaceID,
+	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
+	}
+	if opts.Include != nil {
+		for _, include := range strings.Split(*opts.Include, ",") {
+			if include == "workspace" {
+				ws, err := s.WorkspaceService().Get(r.Context(), otf.WorkspaceSpec{
+					ID: opts.WorkspaceID,
+				})
+				if err != nil {
+					writeError(w, http.StatusNotFound, err)
+					return
+				}
+				for _, run := range rl.Items {
+					run.IncludeWorkspace(ws)
+				}
+			}
+		}
 	}
 	writeResponse(w, r, rl)
 }
@@ -147,32 +168,22 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (s *Server) GetPlanFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	var opts PlanFileOptions
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
+// RunGetOptions are options for retrieving a single Run. Either ID or ApplyID
+// or PlanID must be specfiied.
+type RunGetOptions struct {
+	// A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
-func (s *Server) GetJSONPlanByRunID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	opts := PlanFileOptions{Format: otf.PlanFormatJSON}
-	s.getPlanFile(w, r, otf.RunGetOptions{ID: &id}, opts)
-}
-
-func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request, spec otf.RunGetOptions, opts PlanFileOptions) {
-	json, err := s.RunService().GetPlanFile(r.Context(), spec, opts.Format)
-	if err != nil {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
-	if _, err := w.Write(json); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// RunListOptions are options for paginating and filtering a list of runs
+type RunListOptions struct {
+	otf.ListOptions
+	// A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include *string `schema:"include"`
+	// Filter by run statuses (with an implicit OR condition)
+	Statuses []otf.RunStatus
+	// Filter by workspace ID
+	WorkspaceID *string `schema:"workspace_id"`
 }

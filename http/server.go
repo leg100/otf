@@ -97,13 +97,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	router.HandleFunc("/state-versions/{id}/download", s.DownloadStateVersion).Methods("GET")
 	router.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion).Methods("PUT")
-	router.HandleFunc("/runs/{id}/plan", s.GetPlanFile).Methods("GET")
 
-	router.HandleFunc("/plans/{plan_id}/logs", s.GetPlanLogs).Methods("GET")
-	router.HandleFunc("/plans/{plan_id}/logs", s.UploadPlanLogs).Methods("PUT")
-
-	router.HandleFunc("/applies/{apply_id}/logs", s.GetApplyLogs).Methods("GET")
-	router.HandleFunc("/applies/{apply_id}/logs", s.UploadApplyLogs).Methods("PUT")
+	router.HandleFunc("/runs/{run_id}/logs/{phase}", s.getLogs).Methods("GET")
+	router.HandleFunc("/runs/{run_id}/logs/{phase}", s.putLogs).Methods("PUT")
 
 	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
 
@@ -161,15 +157,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	sub.HandleFunc("/runs/{id}/actions/discard", s.DiscardRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/cancel", s.CancelRun).Methods("POST")
 	sub.HandleFunc("/runs/{id}/actions/force-cancel", s.ForceCancelRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/plan/json-output", s.GetJSONPlanByRunID).Methods("GET")
 	sub.HandleFunc("/organizations/{organization_name}/runs/queue", s.GetRunsQueue).Methods("GET")
 
 	// Plan routes
-	sub.HandleFunc("/plans/{id}", s.GetPlan).Methods("GET")
-	sub.HandleFunc("/plans/{id}/json-output", s.GetPlanJSON).Methods("GET")
+	sub.HandleFunc("/plans/{plan_id}", s.GetPlan).Methods("GET")
+	sub.HandleFunc("/plans/{plan_id}/json-output", s.GetPlanJSON).Methods("GET")
 
 	// Apply routes
-	sub.HandleFunc("/applies/{id}", s.GetApply).Methods("GET")
+	sub.HandleFunc("/applies/{apply_id}", s.GetApply).Methods("GET")
 
 	http.Handle("/", router)
 

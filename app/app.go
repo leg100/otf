@@ -21,8 +21,6 @@ type Application struct {
 	stateVersionService         otf.StateVersionService
 	configurationVersionService otf.ConfigurationVersionService
 	runService                  otf.RunService
-	planService                 otf.PlanService
-	applyService                otf.ApplyService
 	eventService                otf.EventService
 	userService                 otf.UserService
 }
@@ -39,12 +37,7 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	}
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	runService := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
-	planService, err := NewPlanService(db, logger, eventService, cache)
-	if err != nil {
-		return nil, err
-	}
-	applyService, err := NewApplyService(db, logger, eventService, cache)
+	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +49,6 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 		stateVersionService:         stateVersionService,
 		configurationVersionService: configurationVersionService,
 		runService:                  runService,
-		planService:                 planService,
-		applyService:                applyService,
 		eventService:                eventService,
 		userService:                 userService,
 	}, nil
@@ -70,7 +61,5 @@ func (app *Application) ConfigurationVersionService() otf.ConfigurationVersionSe
 	return app.configurationVersionService
 }
 func (app *Application) RunService() otf.RunService     { return app.runService }
-func (app *Application) PlanService() otf.PlanService   { return app.planService }
-func (app *Application) ApplyService() otf.ApplyService { return app.applyService }
 func (app *Application) EventService() otf.EventService { return app.eventService }
 func (app *Application) UserService() otf.UserService   { return app.userService }

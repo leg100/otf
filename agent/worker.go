@@ -25,19 +25,13 @@ func (w *Worker) Start(ctx context.Context) {
 
 // handle executes the incoming job
 func (w *Worker) handle(ctx context.Context, run *otf.Run) {
-	log := w.Logger.WithValues("run", run.ID(), "phase", run.PhaseID())
-
-	svc, err := run.Service(w.App)
-	if err != nil {
-		log.Error(err, "looking up service for phase")
-		return
-	}
+	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
 
 	env, err := NewEnvironment(
 		log,
 		w.App,
-		run.PhaseID(),
-		svc,
+		run.ID(),
+		run.Phase(),
 		w.environmentVariables,
 	)
 	if err != nil {
@@ -46,7 +40,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	// Start the job before proceeding in case another agent has started it.
-	run, err = svc.Start(ctx, run.PhaseID(), otf.PhaseStartOptions{AgentID: DefaultID})
+	run, err = w.App.RunService().Start(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		log.Error(err, "starting phase")
 		return
@@ -54,8 +48,8 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
-	w.CheckIn(run.PhaseID(), env)
-	defer w.CheckOut(run.PhaseID())
+	w.CheckIn(run.ID(), env)
+	defer w.CheckOut(run.ID())
 
 	log.Info("executing phase")
 
@@ -65,10 +59,9 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
-	finishOptions.Canceled = env.canceled
 
 	// Regardless of job success, mark job as finished
-	_, err = svc.Finish(ctx, run.PhaseID(), finishOptions)
+	_, err = w.App.RunService().Finish(ctx, run.ID(), run.Phase(), finishOptions)
 	if err != nil {
 		log.Error(err, "finishing phase")
 	}
