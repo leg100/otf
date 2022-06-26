@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -29,7 +28,7 @@ const insertTokenSQL = `INSERT INTO tokens (
 type InsertTokenParams struct {
 	TokenID     pgtype.Text
 	Token       pgtype.Text
-	CreatedAt   time.Time
+	CreatedAt   pgtype.Timestamptz
 	Description pgtype.Text
 	UserID      pgtype.Text
 }

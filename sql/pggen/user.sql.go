@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -26,8 +25,8 @@ const insertUserSQL = `INSERT INTO users (
 
 type InsertUserParams struct {
 	ID        pgtype.Text
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 	Username  pgtype.Text
 }
 
@@ -67,13 +66,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUsersRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUsers implements Querier.FindUsers.
@@ -161,13 +160,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByIDRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUserByID implements Querier.FindUserByID.
@@ -233,13 +232,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByUsernameRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUserByUsername implements Querier.FindUserByUsername.
@@ -305,13 +304,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUserBySessionTokenRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUserBySessionToken implements Querier.FindUserBySessionToken.
@@ -377,13 +376,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUserByAuthenticationToken implements Querier.FindUserByAuthenticationToken.
@@ -449,13 +448,13 @@ GROUP BY u.user_id
 ;`
 
 type FindUserByAuthenticationTokenIDRow struct {
-	UserID        pgtype.Text     `json:"user_id"`
-	Username      pgtype.Text     `json:"username"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	Sessions      []Sessions      `json:"sessions"`
-	Tokens        []Tokens        `json:"tokens"`
-	Organizations []Organizations `json:"organizations"`
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Sessions      []Sessions         `json:"sessions"`
+	Tokens        []Tokens           `json:"tokens"`
+	Organizations []Organizations    `json:"organizations"`
 }
 
 // FindUserByAuthenticationTokenID implements Querier.FindUserByAuthenticationTokenID.

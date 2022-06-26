@@ -17,9 +17,9 @@ func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 	_, err := db.InsertSession(ctx, pggen.InsertSessionParams{
 		Token:     String(session.Token),
 		Address:   String(session.Address),
-		Expiry:    session.Expiry,
+		Expiry:    Timestamptz(session.Expiry),
 		UserID:    String(session.UserID),
-		CreatedAt: session.CreatedAt(),
+		CreatedAt: Timestamptz(session.CreatedAt()),
 	})
 	return err
 }

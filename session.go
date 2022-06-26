@@ -71,8 +71,8 @@ type SessionStore interface {
 func UnmarshalSessionDBType(typ pggen.Sessions) (*Session, error) {
 	session := Session{
 		Token:     typ.Token.String,
-		createdAt: typ.CreatedAt,
-		Expiry:    typ.Expiry,
+		createdAt: typ.CreatedAt.Time,
+		Expiry:    typ.Expiry.Time,
 		UserID:    typ.UserID.String,
 		SessionData: SessionData{
 			Address: typ.Address.String,

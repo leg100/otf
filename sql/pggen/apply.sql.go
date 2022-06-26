@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -343,10 +342,10 @@ type Querier interface {
 	// UpdateRunStatusScan scans the result of an executed UpdateRunStatusBatch query.
 	UpdateRunStatusScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt time.Time, id pgtype.Text) (pgtype.Text, error)
+	UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error)
 	// UpdateRunForceCancelAvailableAtBatch enqueues a UpdateRunForceCancelAvailableAt query into batch to be executed
 	// later by the batch.
-	UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt time.Time, id pgtype.Text)
+	UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text)
 	// UpdateRunForceCancelAvailableAtScan scans the result of an executed UpdateRunForceCancelAvailableAtBatch query.
 	UpdateRunForceCancelAvailableAtScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -364,10 +363,10 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateSessionExpiry(ctx context.Context, expiry time.Time, token pgtype.Text) (pgtype.Text, error)
+	UpdateSessionExpiry(ctx context.Context, expiry pgtype.Timestamptz, token pgtype.Text) (pgtype.Text, error)
 	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
 	// later by the batch.
-	UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token pgtype.Text)
+	UpdateSessionExpiryBatch(batch genericBatch, expiry pgtype.Timestamptz, token pgtype.Text)
 	// UpdateSessionExpiryScan scans the result of an executed UpdateSessionExpiryBatch query.
 	UpdateSessionExpiryScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -926,33 +925,33 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 
 // ApplyStatusTimestamps represents the Postgres composite type "apply_status_timestamps".
 type ApplyStatusTimestamps struct {
-	ApplyID   pgtype.Text `json:"apply_id"`
-	Status    pgtype.Text `json:"status"`
-	Timestamp time.Time   `json:"timestamp"`
+	ApplyID   pgtype.Text        `json:"apply_id"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 // ConfigurationVersionStatusTimestamps represents the Postgres composite type "configuration_version_status_timestamps".
 type ConfigurationVersionStatusTimestamps struct {
-	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
-	Status                 pgtype.Text `json:"status"`
-	Timestamp              time.Time   `json:"timestamp"`
+	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
+	Status                 pgtype.Text        `json:"status"`
+	Timestamp              pgtype.Timestamptz `json:"timestamp"`
 }
 
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
-	OrganizationID  pgtype.Text `json:"organization_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // PlanStatusTimestamps represents the Postgres composite type "plan_status_timestamps".
 type PlanStatusTimestamps struct {
-	PlanID    pgtype.Text `json:"plan_id"`
-	Status    pgtype.Text `json:"status"`
-	Timestamp time.Time   `json:"timestamp"`
+	PlanID    pgtype.Text        `json:"plan_id"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 // Report represents the Postgres composite type "report".
@@ -964,34 +963,34 @@ type Report struct {
 
 // RunStatusTimestamps represents the Postgres composite type "run_status_timestamps".
 type RunStatusTimestamps struct {
-	RunID     pgtype.Text `json:"run_id"`
-	Status    pgtype.Text `json:"status"`
-	Timestamp time.Time   `json:"timestamp"`
+	RunID     pgtype.Text        `json:"run_id"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 // Runs represents the Postgres composite type "runs".
 type Runs struct {
-	RunID                  pgtype.Text `json:"run_id"`
-	CreatedAt              time.Time   `json:"created_at"`
-	ForceCancelAvailableAt time.Time   `json:"force_cancel_available_at"`
-	IsDestroy              bool        `json:"is_destroy"`
-	PositionInQueue        int         `json:"position_in_queue"`
-	Refresh                bool        `json:"refresh"`
-	RefreshOnly            bool        `json:"refresh_only"`
-	ReplaceAddrs           []string    `json:"replace_addrs"`
-	TargetAddrs            []string    `json:"target_addrs"`
-	Status                 pgtype.Text `json:"status"`
-	WorkspaceID            pgtype.Text `json:"workspace_id"`
-	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
+	RunID                  pgtype.Text        `json:"run_id"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	ForceCancelAvailableAt pgtype.Timestamptz `json:"force_cancel_available_at"`
+	IsDestroy              bool               `json:"is_destroy"`
+	PositionInQueue        int                `json:"position_in_queue"`
+	Refresh                bool               `json:"refresh"`
+	RefreshOnly            bool               `json:"refresh_only"`
+	ReplaceAddrs           []string           `json:"replace_addrs"`
+	TargetAddrs            []string           `json:"target_addrs"`
+	Status                 pgtype.Text        `json:"status"`
+	WorkspaceID            pgtype.Text        `json:"workspace_id"`
+	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
 }
 
 // Sessions represents the Postgres composite type "sessions".
 type Sessions struct {
-	Token     pgtype.Text `json:"token"`
-	CreatedAt time.Time   `json:"created_at"`
-	Address   pgtype.Text `json:"address"`
-	Expiry    time.Time   `json:"expiry"`
-	UserID    pgtype.Text `json:"user_id"`
+	Token     pgtype.Text        `json:"token"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Address   pgtype.Text        `json:"address"`
+	Expiry    pgtype.Timestamptz `json:"expiry"`
+	UserID    pgtype.Text        `json:"user_id"`
 }
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
@@ -1006,19 +1005,19 @@ type StateVersionOutputs struct {
 
 // Tokens represents the Postgres composite type "tokens".
 type Tokens struct {
-	TokenID     pgtype.Text `json:"token_id"`
-	Token       pgtype.Text `json:"token"`
-	CreatedAt   time.Time   `json:"created_at"`
-	Description pgtype.Text `json:"description"`
-	UserID      pgtype.Text `json:"user_id"`
+	TokenID     pgtype.Text        `json:"token_id"`
+	Token       pgtype.Text        `json:"token"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description pgtype.Text        `json:"description"`
+	UserID      pgtype.Text        `json:"user_id"`
 }
 
 // Users represents the Postgres composite type "users".
 type Users struct {
-	UserID    pgtype.Text `json:"user_id"`
-	Username  pgtype.Text `json:"username"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	UserID    pgtype.Text        `json:"user_id"`
+	Username  pgtype.Text        `json:"username"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1349,7 +1348,7 @@ const insertApplyStatusTimestampSQL = `INSERT INTO apply_status_timestamps (
 type InsertApplyStatusTimestampParams struct {
 	ApplyID   pgtype.Text
 	Status    pgtype.Text
-	Timestamp time.Time
+	Timestamp pgtype.Timestamptz
 }
 
 // InsertApplyStatusTimestamp implements Querier.InsertApplyStatusTimestamp.

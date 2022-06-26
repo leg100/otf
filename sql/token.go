@@ -14,7 +14,7 @@ func (db *DB) CreateToken(ctx context.Context, token *otf.Token) error {
 		Token:       String(token.Token()),
 		Description: String(token.Description()),
 		UserID:      String(token.UserID()),
-		CreatedAt:   token.CreatedAt(),
+		CreatedAt:   Timestamptz(token.CreatedAt()),
 	})
 	return err
 }

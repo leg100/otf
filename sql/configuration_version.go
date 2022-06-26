@@ -20,7 +20,7 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 
 	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 		ID:            String(cv.ID()),
-		CreatedAt:     cv.CreatedAt(),
+		CreatedAt:     Timestamptz(cv.CreatedAt()),
 		AutoQueueRuns: cv.AutoQueueRuns(),
 		Source:        String(string(cv.Source())),
 		Speculative:   cv.Speculative(),
@@ -36,7 +36,7 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 	if err != nil {
 		return err
 	}
-	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp)
+	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
 
 	return tx.Commit(ctx)
 }

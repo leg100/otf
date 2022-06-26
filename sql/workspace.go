@@ -13,8 +13,8 @@ import (
 func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
 		ID:                         String(ws.ID()),
-		CreatedAt:                  ws.CreatedAt(),
-		UpdatedAt:                  ws.UpdatedAt(),
+		CreatedAt:                  Timestamptz(ws.CreatedAt()),
+		UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
 		Name:                       String(ws.Name()),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
@@ -60,7 +60,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 	// persist update
 	_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
 		ID:                         String(ws.ID()),
-		UpdatedAt:                  ws.UpdatedAt(),
+		UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
 		AllowDestroyPlan:           ws.AllowDestroyPlan(),
 		Description:                String(ws.Description()),
 		ExecutionMode:              String(string(ws.ExecutionMode())),

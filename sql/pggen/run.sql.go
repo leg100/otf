@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -15,7 +14,6 @@ import (
 const insertRunSQL = `INSERT INTO runs (
     run_id,
     created_at,
-    force_cancel_available_at,
     is_destroy,
     position_in_queue,
     refresh,
@@ -36,14 +34,12 @@ const insertRunSQL = `INSERT INTO runs (
     $8,
     $9,
     $10,
-    $11,
-    $12
+    $11
 );`
 
 type InsertRunParams struct {
 	ID                     pgtype.Text
-	CreatedAt              time.Time
-	ForceCancelAvailableAt time.Time
+	CreatedAt              pgtype.Timestamptz
 	IsDestroy              bool
 	PositionInQueue        int
 	Refresh                bool
@@ -58,7 +54,7 @@ type InsertRunParams struct {
 // InsertRun implements Querier.InsertRun.
 func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertRun")
-	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.ForceCancelAvailableAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
+	cmdTag, err := q.conn.Exec(ctx, insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertRun: %w", err)
 	}
@@ -67,7 +63,7 @@ func (q *DBQuerier) InsertRun(ctx context.Context, params InsertRunParams) (pgco
 
 // InsertRunBatch implements Querier.InsertRunBatch.
 func (q *DBQuerier) InsertRunBatch(batch genericBatch, params InsertRunParams) {
-	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.ForceCancelAvailableAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
+	batch.Queue(insertRunSQL, params.ID, params.CreatedAt, params.IsDestroy, params.PositionInQueue, params.Refresh, params.RefreshOnly, params.Status, params.ReplaceAddrs, params.TargetAddrs, params.ConfigurationVersionID, params.WorkspaceID)
 }
 
 // InsertRunScan implements Querier.InsertRunScan.
@@ -92,7 +88,7 @@ const insertRunStatusTimestampSQL = `INSERT INTO run_status_timestamps (
 type InsertRunStatusTimestampParams struct {
 	ID        pgtype.Text
 	Status    pgtype.Text
-	Timestamp time.Time
+	Timestamp pgtype.Timestamptz
 }
 
 // InsertRunStatusTimestamp implements Querier.InsertRunStatusTimestamp.
@@ -188,8 +184,8 @@ type FindRunsRow struct {
 	RunID                  pgtype.Text             `json:"run_id"`
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
-	CreatedAt              time.Time               `json:"created_at"`
-	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
+	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
+	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -398,8 +394,8 @@ type FindRunByIDRow struct {
 	RunID                  pgtype.Text             `json:"run_id"`
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
-	CreatedAt              time.Time               `json:"created_at"`
-	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
+	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
+	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -543,8 +539,8 @@ type FindRunByIDForUpdateRow struct {
 	RunID                  pgtype.Text             `json:"run_id"`
 	PlanID                 pgtype.Text             `json:"plan_id"`
 	ApplyID                pgtype.Text             `json:"apply_id"`
-	CreatedAt              time.Time               `json:"created_at"`
-	ForceCancelAvailableAt time.Time               `json:"force_cancel_available_at"`
+	CreatedAt              pgtype.Timestamptz      `json:"created_at"`
+	ForceCancelAvailableAt pgtype.Timestamptz      `json:"force_cancel_available_at"`
 	IsDestroy              bool                    `json:"is_destroy"`
 	PositionInQueue        int                     `json:"position_in_queue"`
 	Refresh                bool                    `json:"refresh"`
@@ -674,7 +670,7 @@ RETURNING run_id
 ;`
 
 // UpdateRunForceCancelAvailableAt implements Querier.UpdateRunForceCancelAvailableAt.
-func (q *DBQuerier) UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt time.Time, id pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) UpdateRunForceCancelAvailableAt(ctx context.Context, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateRunForceCancelAvailableAt")
 	row := q.conn.QueryRow(ctx, updateRunForceCancelAvailableAtSQL, forceCancelAvailableAt, id)
 	var item pgtype.Text
@@ -685,7 +681,7 @@ func (q *DBQuerier) UpdateRunForceCancelAvailableAt(ctx context.Context, forceCa
 }
 
 // UpdateRunForceCancelAvailableAtBatch implements Querier.UpdateRunForceCancelAvailableAtBatch.
-func (q *DBQuerier) UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt time.Time, id pgtype.Text) {
+func (q *DBQuerier) UpdateRunForceCancelAvailableAtBatch(batch genericBatch, forceCancelAvailableAt pgtype.Timestamptz, id pgtype.Text) {
 	batch.Queue(updateRunForceCancelAvailableAtSQL, forceCancelAvailableAt, id)
 }
 

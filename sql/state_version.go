@@ -21,7 +21,7 @@ func (db *DB) CreateStateVersion(ctx context.Context, workspaceID string, sv *ot
 
 	_, err = q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
 		ID:          String(sv.ID()),
-		CreatedAt:   sv.CreatedAt(),
+		CreatedAt:   Timestamptz(sv.CreatedAt()),
 		Serial:      int(sv.Serial()),
 		State:       sv.State(),
 		WorkspaceID: String(workspaceID),

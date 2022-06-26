@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -62,8 +61,8 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
 
 type InsertWorkspaceParams struct {
 	ID                         pgtype.Text
-	CreatedAt                  time.Time
-	UpdatedAt                  time.Time
+	CreatedAt                  pgtype.Timestamptz
+	UpdatedAt                  pgtype.Timestamptz
 	AllowDestroyPlan           bool
 	AutoApply                  bool
 	CanQueueDestroyPlan        bool
@@ -134,34 +133,34 @@ type FindWorkspacesParams struct {
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                pgtype.Text    `json:"workspace_id"`
-	CreatedAt                  time.Time      `json:"created_at"`
-	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
-	AutoApply                  bool           `json:"auto_apply"`
-	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text    `json:"description"`
-	Environment                pgtype.Text    `json:"environment"`
-	ExecutionMode              pgtype.Text    `json:"execution_mode"`
-	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
-	Name                       pgtype.Text    `json:"name"`
-	QueueAllRuns               bool           `json:"queue_all_runs"`
-	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 pgtype.Text    `json:"source_name"`
-	SourceURL                  pgtype.Text    `json:"source_url"`
-	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text    `json:"terraform_version"`
-	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text    `json:"working_directory"`
-	OrganizationID             pgtype.Text    `json:"organization_id"`
-	LockRunID                  pgtype.Text    `json:"lock_run_id"`
-	LockUserID                 pgtype.Text    `json:"lock_user_id"`
-	OrganizationName           pgtype.Text    `json:"organization_name"`
-	UserLock                   *Users         `json:"user_lock"`
-	RunLock                    *Runs          `json:"run_lock"`
-	Organization               *Organizations `json:"organization"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
+	Organization               *Organizations     `json:"organization"`
 }
 
 // FindWorkspaces implements Querier.FindWorkspaces.
@@ -320,34 +319,34 @@ type FindWorkspaceByNameParams struct {
 }
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                pgtype.Text    `json:"workspace_id"`
-	CreatedAt                  time.Time      `json:"created_at"`
-	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
-	AutoApply                  bool           `json:"auto_apply"`
-	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text    `json:"description"`
-	Environment                pgtype.Text    `json:"environment"`
-	ExecutionMode              pgtype.Text    `json:"execution_mode"`
-	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
-	Name                       pgtype.Text    `json:"name"`
-	QueueAllRuns               bool           `json:"queue_all_runs"`
-	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 pgtype.Text    `json:"source_name"`
-	SourceURL                  pgtype.Text    `json:"source_url"`
-	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text    `json:"terraform_version"`
-	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text    `json:"working_directory"`
-	OrganizationID             pgtype.Text    `json:"organization_id"`
-	LockRunID                  pgtype.Text    `json:"lock_run_id"`
-	LockUserID                 pgtype.Text    `json:"lock_user_id"`
-	OrganizationName           pgtype.Text    `json:"organization_name"`
-	UserLock                   *Users         `json:"user_lock"`
-	RunLock                    *Runs          `json:"run_lock"`
-	Organization               *Organizations `json:"organization"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
+	Organization               *Organizations     `json:"organization"`
 }
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
@@ -412,34 +411,34 @@ LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = $2;`
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                pgtype.Text    `json:"workspace_id"`
-	CreatedAt                  time.Time      `json:"created_at"`
-	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
-	AutoApply                  bool           `json:"auto_apply"`
-	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text    `json:"description"`
-	Environment                pgtype.Text    `json:"environment"`
-	ExecutionMode              pgtype.Text    `json:"execution_mode"`
-	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
-	Name                       pgtype.Text    `json:"name"`
-	QueueAllRuns               bool           `json:"queue_all_runs"`
-	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 pgtype.Text    `json:"source_name"`
-	SourceURL                  pgtype.Text    `json:"source_url"`
-	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text    `json:"terraform_version"`
-	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text    `json:"working_directory"`
-	OrganizationID             pgtype.Text    `json:"organization_id"`
-	LockRunID                  pgtype.Text    `json:"lock_run_id"`
-	LockUserID                 pgtype.Text    `json:"lock_user_id"`
-	OrganizationName           pgtype.Text    `json:"organization_name"`
-	UserLock                   *Users         `json:"user_lock"`
-	RunLock                    *Runs          `json:"run_lock"`
-	Organization               *Organizations `json:"organization"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
+	Organization               *Organizations     `json:"organization"`
 }
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
@@ -505,34 +504,34 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w;`
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                pgtype.Text    `json:"workspace_id"`
-	CreatedAt                  time.Time      `json:"created_at"`
-	UpdatedAt                  time.Time      `json:"updated_at"`
-	AllowDestroyPlan           bool           `json:"allow_destroy_plan"`
-	AutoApply                  bool           `json:"auto_apply"`
-	CanQueueDestroyPlan        bool           `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text    `json:"description"`
-	Environment                pgtype.Text    `json:"environment"`
-	ExecutionMode              pgtype.Text    `json:"execution_mode"`
-	FileTriggersEnabled        bool           `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool           `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text    `json:"migration_environment"`
-	Name                       pgtype.Text    `json:"name"`
-	QueueAllRuns               bool           `json:"queue_all_runs"`
-	SpeculativeEnabled         bool           `json:"speculative_enabled"`
-	SourceName                 pgtype.Text    `json:"source_name"`
-	SourceURL                  pgtype.Text    `json:"source_url"`
-	StructuredRunOutputEnabled bool           `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text    `json:"terraform_version"`
-	TriggerPrefixes            []string       `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text    `json:"working_directory"`
-	OrganizationID             pgtype.Text    `json:"organization_id"`
-	LockRunID                  pgtype.Text    `json:"lock_run_id"`
-	LockUserID                 pgtype.Text    `json:"lock_user_id"`
-	OrganizationName           pgtype.Text    `json:"organization_name"`
-	UserLock                   *Users         `json:"user_lock"`
-	RunLock                    *Runs          `json:"run_lock"`
-	Organization               *Organizations `json:"organization"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
+	Organization               *Organizations     `json:"organization"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
@@ -612,7 +611,7 @@ type UpdateWorkspaceByIDParams struct {
 	TerraformVersion           pgtype.Text
 	TriggerPrefixes            []string
 	WorkingDirectory           pgtype.Text
-	UpdatedAt                  time.Time
+	UpdatedAt                  pgtype.Timestamptz
 	ID                         pgtype.Text
 }
 

@@ -1,15 +1,13 @@
 package otf
 
 import (
-	"time"
-
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 )
 
 type ConfigurationVersionDBResult struct {
 	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
-	CreatedAt                            time.Time                                    `json:"created_at"`
+	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
 	AutoQueueRuns                        bool                                         `json:"auto_queue_runs"`
 	Source                               pgtype.Text                                  `json:"source"`
 	Speculative                          bool                                         `json:"speculative"`
@@ -21,7 +19,7 @@ type ConfigurationVersionDBResult struct {
 func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		id:               result.ConfigurationVersionID.String,
-		createdAt:        result.CreatedAt,
+		createdAt:        result.CreatedAt.Time,
 		autoQueueRuns:    result.AutoQueueRuns,
 		speculative:      result.Speculative,
 		source:           ConfigurationSource(result.Source.String),
@@ -36,7 +34,7 @@ func unmarshalConfigurationVersionStatusTimestampDBTypes(typs []pggen.Configurat
 	for _, ty := range typs {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Local(),
+			Timestamp: ty.Timestamp.Time,
 		})
 	}
 	return timestamps

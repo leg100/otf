@@ -15,8 +15,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 	return db.Tx(ctx, func(tx otf.DB) error {
 		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     String(run.ID()),
-			CreatedAt:              run.CreatedAt(),
-			ForceCancelAvailableAt: run.ForceCancelAvailableAt(),
+			CreatedAt:              Timestamptz(run.CreatedAt()),
 			IsDestroy:              run.IsDestroy(),
 			Refresh:                run.Refresh(),
 			RefreshOnly:            run.RefreshOnly(),
@@ -120,8 +119,8 @@ func (db *DB) UpdateStatus(ctx context.Context, opts otf.RunGetOptions, fn func(
 			}
 		}
 
-		if run.ForceCancelAvailableAt() != forceCancelAvailableAt {
-			_, err := db.UpdateRunForceCancelAvailableAt(ctx, run.ForceCancelAvailableAt(), String(run.ID()))
+		if run.ForceCancelAvailableAt() != forceCancelAvailableAt && run.ForceCancelAvailableAt() != nil {
+			_, err := db.UpdateRunForceCancelAvailableAt(ctx, Timestamptz(*run.ForceCancelAvailableAt()), String(run.ID()))
 			if err != nil {
 				return err
 			}
@@ -334,7 +333,7 @@ func (db *DB) insertRunStatusTimestamp(ctx context.Context, run *otf.Run) error 
 	_, err = db.InsertRunStatusTimestamp(ctx, pggen.InsertRunStatusTimestampParams{
 		ID:        String(run.ID()),
 		Status:    String(string(run.Status())),
-		Timestamp: ts,
+		Timestamp: Timestamptz(ts),
 	})
 	return err
 }
@@ -347,7 +346,7 @@ func (db *DB) insertPlanStatusTimestamp(ctx context.Context, phase otf.Phase) er
 	_, err = db.InsertPlanStatusTimestamp(ctx, pggen.InsertPlanStatusTimestampParams{
 		PlanID:    String(phase.PhaseID()),
 		Status:    String(string(phase.PhaseStatus())),
-		Timestamp: ts,
+		Timestamp: Timestamptz(ts),
 	})
 	return err
 }
@@ -360,7 +359,7 @@ func (db *DB) insertApplyStatusTimestamp(ctx context.Context, phase otf.Phase) e
 	_, err = db.InsertApplyStatusTimestamp(ctx, pggen.InsertApplyStatusTimestampParams{
 		ApplyID:   String(phase.PhaseID()),
 		Status:    String(string(phase.PhaseStatus())),
-		Timestamp: ts,
+		Timestamp: Timestamptz(ts),
 	})
 	return err
 }

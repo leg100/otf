@@ -67,7 +67,7 @@ func (r RunStatus) String() string { return string(r) }
 type Run struct {
 	id                     string
 	createdAt              time.Time
-	forceCancelAvailableAt time.Time
+	forceCancelAvailableAt *time.Time
 	isDestroy              bool
 	message                string
 	positionInQueue        int
@@ -96,7 +96,7 @@ func (r *Run) RunID() string                          { return r.id }
 func (r *Run) CreatedAt() time.Time                   { return r.createdAt }
 func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
-func (r *Run) ForceCancelAvailableAt() time.Time      { return r.forceCancelAvailableAt }
+func (r *Run) ForceCancelAvailableAt() *time.Time     { return r.forceCancelAvailableAt }
 func (r *Run) Message() string                        { return r.message }
 func (r *Run) OrganizationName() string               { return r.organizationName }
 func (r *Run) Refresh() bool                          { return r.refresh }
@@ -139,7 +139,8 @@ func (r *Run) Cancel() (bool, error) {
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
 	// elapsed.
-	r.forceCancelAvailableAt = CurrentTimestamp().Add(10 * time.Second)
+	tenSecondsFromNow := CurrentTimestamp().Add(10 * time.Second)
+	r.forceCancelAvailableAt = &tenSecondsFromNow
 
 	if r.ImmediatelyCancelable() {
 		return false, r.updateStatus(RunCanceled)
@@ -150,7 +151,7 @@ func (r *Run) Cancel() (bool, error) {
 // ForceCancel force cancels a run. A cool-off period of 10 seconds must have
 // elapsed following a cancelation request before a run can be force canceled.
 func (r *Run) ForceCancel() error {
-	if !r.forceCancelAvailableAt.IsZero() && time.Now().After(r.forceCancelAvailableAt) {
+	if r.forceCancelAvailableAt != nil && time.Now().After(*r.forceCancelAvailableAt) {
 		return r.updateStatus(RunCanceled)
 	}
 	return ErrRunForceCancelNotAllowed
@@ -295,7 +296,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 		Actions: &jsonapi.RunActions{
 			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.Confirmable(),
-			IsForceCancelable: !r.forceCancelAvailableAt.IsZero(),
+			IsForceCancelable: r.forceCancelAvailableAt != nil,
 			IsDiscardable:     r.Discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),

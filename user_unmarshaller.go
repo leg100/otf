@@ -1,8 +1,6 @@
 package otf
 
 import (
-	"time"
-
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -10,8 +8,8 @@ import (
 type UserDBResult struct {
 	UserID        pgtype.Text           `json:"user_id"`
 	Username      pgtype.Text           `json:"username"`
-	CreatedAt     time.Time             `json:"created_at"`
-	UpdatedAt     time.Time             `json:"updated_at"`
+	CreatedAt     pgtype.Timestamptz    `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz    `json:"updated_at"`
 	Sessions      []pggen.Sessions      `json:"sessions"`
 	Tokens        []pggen.Tokens        `json:"tokens"`
 	Organizations []pggen.Organizations `json:"organizations"`
@@ -20,8 +18,8 @@ type UserDBResult struct {
 func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 	user := User{
 		id:        row.UserID.String,
-		createdAt: row.CreatedAt,
-		updatedAt: row.UpdatedAt,
+		createdAt: row.CreatedAt.Time,
+		updatedAt: row.UpdatedAt.Time,
 		username:  row.Username.String,
 	}
 	for _, typ := range row.Organizations {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -17,6 +18,11 @@ import (
 // String converts a go-string into a postgres non-null string
 func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
+}
+
+// Timestamptz converts a go-time into a postgres non-null timestamptz
+func Timestamptz(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Status: pgtype.Present}
 }
 
 func databaseError(err error) error {

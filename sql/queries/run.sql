@@ -2,7 +2,6 @@
 INSERT INTO runs (
     run_id,
     created_at,
-    force_cancel_available_at,
     is_destroy,
     position_in_queue,
     refresh,
@@ -15,7 +14,6 @@ INSERT INTO runs (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('CreatedAt'),
-    pggen.arg('ForceCancelAvailableAt'),
     pggen.arg('IsDestroy'),
     pggen.arg('PositionInQueue'),
     pggen.arg('Refresh'),

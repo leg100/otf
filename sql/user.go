@@ -19,8 +19,8 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 	_, err = q.InsertUser(ctx, pggen.InsertUserParams{
 		ID:        String(user.ID()),
 		Username:  String(user.Username()),
-		CreatedAt: user.CreatedAt(),
-		UpdatedAt: user.UpdatedAt(),
+		CreatedAt: Timestamptz(user.CreatedAt()),
+		UpdatedAt: Timestamptz(user.UpdatedAt()),
 	})
 	if err != nil {
 		return err

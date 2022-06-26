@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -28,7 +27,7 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
 
 type InsertStateVersionParams struct {
 	ID          pgtype.Text
-	CreatedAt   time.Time
+	CreatedAt   pgtype.Timestamptz
 	Serial      int
 	State       []byte
 	WorkspaceID pgtype.Text
@@ -81,7 +80,7 @@ type FindStateVersionsByWorkspaceNameParams struct {
 
 type FindStateVersionsByWorkspaceNameRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
-	CreatedAt           time.Time             `json:"created_at"`
+	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
 	Serial              int                   `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
@@ -189,7 +188,7 @@ GROUP BY state_versions.state_version_id
 
 type FindStateVersionByIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
-	CreatedAt           time.Time             `json:"created_at"`
+	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
 	Serial              int                   `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`
@@ -242,7 +241,7 @@ ORDER BY state_versions.serial DESC, state_versions.created_at DESC
 
 type FindStateVersionLatestByWorkspaceIDRow struct {
 	StateVersionID      pgtype.Text           `json:"state_version_id"`
-	CreatedAt           time.Time             `json:"created_at"`
+	CreatedAt           pgtype.Timestamptz    `json:"created_at"`
 	Serial              int                   `json:"serial"`
 	State               []byte                `json:"state"`
 	WorkspaceID         pgtype.Text           `json:"workspace_id"`

@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -28,9 +27,9 @@ const insertSessionSQL = `INSERT INTO sessions (
 
 type InsertSessionParams struct {
 	Token     pgtype.Text
-	CreatedAt time.Time
+	CreatedAt pgtype.Timestamptz
 	Address   pgtype.Text
-	Expiry    time.Time
+	Expiry    pgtype.Timestamptz
 	UserID    pgtype.Text
 }
 
@@ -66,7 +65,7 @@ RETURNING token
 ;`
 
 // UpdateSessionExpiry implements Querier.UpdateSessionExpiry.
-func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, token pgtype.Text) (pgtype.Text, error) {
+func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry pgtype.Timestamptz, token pgtype.Text) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateSessionExpiry")
 	row := q.conn.QueryRow(ctx, updateSessionExpirySQL, expiry, token)
 	var item pgtype.Text
@@ -77,7 +76,7 @@ func (q *DBQuerier) UpdateSessionExpiry(ctx context.Context, expiry time.Time, t
 }
 
 // UpdateSessionExpiryBatch implements Querier.UpdateSessionExpiryBatch.
-func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry time.Time, token pgtype.Text) {
+func (q *DBQuerier) UpdateSessionExpiryBatch(batch genericBatch, expiry pgtype.Timestamptz, token pgtype.Text) {
 	batch.Queue(updateSessionExpirySQL, expiry, token)
 }
 

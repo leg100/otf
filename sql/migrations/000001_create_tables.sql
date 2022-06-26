@@ -112,7 +112,7 @@ INSERT INTO run_statuses (status) VALUES
 CREATE TABLE IF NOT EXISTS runs (
     run_id                          TEXT,
     created_at                      TIMESTAMPTZ     NOT NULL,
-    force_cancel_available_at       TIMESTAMPTZ     NOT NULL,
+    force_cancel_available_at       TIMESTAMPTZ,
     is_destroy                      BOOLEAN         NOT NULL,
     position_in_queue               INTEGER         NOT NULL,
     refresh                         BOOLEAN         NOT NULL,

@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -65,7 +64,7 @@ const insertPlanStatusTimestampSQL = `INSERT INTO plan_status_timestamps (
 type InsertPlanStatusTimestampParams struct {
 	PlanID    pgtype.Text
 	Status    pgtype.Text
-	Timestamp time.Time
+	Timestamp pgtype.Timestamptz
 }
 
 // InsertPlanStatusTimestamp implements Querier.InsertPlanStatusTimestamp.

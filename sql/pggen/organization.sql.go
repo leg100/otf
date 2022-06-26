@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -15,12 +14,12 @@ import (
 const findOrganizationByNameSQL = `SELECT * FROM organizations WHERE name = $1;`
 
 type FindOrganizationByNameRow struct {
-	OrganizationID  pgtype.Text `json:"organization_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // FindOrganizationByName implements Querier.FindOrganizationByName.
@@ -56,12 +55,12 @@ FOR UPDATE
 ;`
 
 type FindOrganizationByNameForUpdateRow struct {
-	OrganizationID  pgtype.Text `json:"organization_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // FindOrganizationByNameForUpdate implements Querier.FindOrganizationByNameForUpdate.
@@ -95,12 +94,12 @@ FROM organizations
 LIMIT $1 OFFSET $2;`
 
 type FindOrganizationsRow struct {
-	OrganizationID  pgtype.Text `json:"organization_id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
-	Name            pgtype.Text `json:"name"`
-	SessionRemember int         `json:"session_remember"`
-	SessionTimeout  int         `json:"session_timeout"`
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
 }
 
 // FindOrganizations implements Querier.FindOrganizations.
@@ -198,8 +197,8 @@ const insertOrganizationSQL = `INSERT INTO organizations (
 
 type InsertOrganizationParams struct {
 	ID              pgtype.Text
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 	Name            pgtype.Text
 	SessionRemember int
 	SessionTimeout  int
@@ -242,7 +241,7 @@ type UpdateOrganizationByNameParams struct {
 	NewName         pgtype.Text
 	SessionRemember int
 	SessionTimeout  int
-	UpdatedAt       time.Time
+	UpdatedAt       pgtype.Timestamptz
 	Name            pgtype.Text
 }
 

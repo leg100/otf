@@ -13,8 +13,8 @@ func (db *DB) CreateOrganization(ctx context.Context, org *otf.Organization) err
 	q := pggen.NewQuerier(db)
 	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              String(org.ID()),
-		CreatedAt:       org.CreatedAt(),
-		UpdatedAt:       org.UpdatedAt(),
+		CreatedAt:       Timestamptz(org.CreatedAt()),
+		UpdatedAt:       Timestamptz(org.UpdatedAt()),
 		Name:            String(org.Name()),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
@@ -51,7 +51,7 @@ func (db *DB) UpdateOrganization(ctx context.Context, name string, fn func(*otf.
 		NewName:         String(org.Name()),
 		SessionRemember: org.SessionRemember(),
 		SessionTimeout:  org.SessionTimeout(),
-		UpdatedAt:       org.UpdatedAt(),
+		UpdatedAt:       Timestamptz(org.UpdatedAt()),
 	})
 	if err != nil {
 		return nil, err

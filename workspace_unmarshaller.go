@@ -2,7 +2,6 @@ package otf
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/http/dto"
@@ -11,8 +10,8 @@ import (
 
 type WorkspaceDBResult struct {
 	WorkspaceID                pgtype.Text          `json:"workspace_id"`
-	CreatedAt                  time.Time            `json:"created_at"`
-	UpdatedAt                  time.Time            `json:"updated_at"`
+	CreatedAt                  pgtype.Timestamptz   `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz   `json:"updated_at"`
 	AllowDestroyPlan           bool                 `json:"allow_destroy_plan"`
 	AutoApply                  bool                 `json:"auto_apply"`
 	CanQueueDestroyPlan        bool                 `json:"can_queue_destroy_plan"`
@@ -43,8 +42,8 @@ type WorkspaceDBResult struct {
 func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	ws := Workspace{
 		id:                         row.WorkspaceID.String,
-		createdAt:                  row.CreatedAt,
-		updatedAt:                  row.UpdatedAt,
+		createdAt:                  row.CreatedAt.Time,
+		updatedAt:                  row.UpdatedAt.Time,
 		allowDestroyPlan:           row.AllowDestroyPlan,
 		autoApply:                  row.AutoApply,
 		canQueueDestroyPlan:        row.CanQueueDestroyPlan,

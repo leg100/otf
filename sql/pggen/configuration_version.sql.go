@@ -5,7 +5,6 @@ package pggen
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -32,7 +31,7 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
 
 type InsertConfigurationVersionParams struct {
 	ID            pgtype.Text
-	CreatedAt     time.Time
+	CreatedAt     pgtype.Timestamptz
 	AutoQueueRuns bool
 	Source        pgtype.Text
 	Speculative   bool
@@ -76,9 +75,9 @@ const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_
 RETURNING *;`
 
 type InsertConfigurationVersionStatusTimestampRow struct {
-	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
-	Status                 pgtype.Text `json:"status"`
-	Timestamp              time.Time   `json:"timestamp"`
+	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
+	Status                 pgtype.Text        `json:"status"`
+	Timestamp              pgtype.Timestamptz `json:"timestamp"`
 }
 
 // InsertConfigurationVersionStatusTimestamp implements Querier.InsertConfigurationVersionStatusTimestamp.
@@ -135,7 +134,7 @@ type FindConfigurationVersionsByWorkspaceIDParams struct {
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {
 	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
-	CreatedAt                            time.Time                              `json:"created_at"`
+	CreatedAt                            pgtype.Timestamptz                     `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -251,7 +250,7 @@ WHERE configuration_version_id = $1;`
 
 type FindConfigurationVersionByIDRow struct {
 	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
-	CreatedAt                            time.Time                              `json:"created_at"`
+	CreatedAt                            pgtype.Timestamptz                     `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -315,7 +314,7 @@ ORDER BY configuration_versions.created_at DESC;`
 
 type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
-	CreatedAt                            time.Time                              `json:"created_at"`
+	CreatedAt                            pgtype.Timestamptz                     `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`
@@ -379,7 +378,7 @@ FOR UPDATE;`
 
 type FindConfigurationVersionByIDForUpdateRow struct {
 	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
-	CreatedAt                            time.Time                              `json:"created_at"`
+	CreatedAt                            pgtype.Timestamptz                     `json:"created_at"`
 	AutoQueueRuns                        bool                                   `json:"auto_queue_runs"`
 	Source                               pgtype.Text                            `json:"source"`
 	Speculative                          bool                                   `json:"speculative"`

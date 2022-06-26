@@ -180,7 +180,7 @@ func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
 // StateVersionDBRow is the state version postgres record.
 type StateVersionDBRow struct {
 	StateVersionID      pgtype.Text                 `json:"state_version_id"`
-	CreatedAt           time.Time                   `json:"created_at"`
+	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
 	Serial              int                         `json:"serial"`
 	State               []byte                      `json:"state"`
 	WorkspaceID         pgtype.Text                 `json:"workspace_id"`
@@ -191,7 +191,7 @@ type StateVersionDBRow struct {
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
 		id:        row.StateVersionID.String,
-		createdAt: row.CreatedAt,
+		createdAt: row.CreatedAt.Time,
 		serial:    int64(row.Serial),
 		state:     row.State,
 	}
