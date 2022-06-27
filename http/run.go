@@ -73,9 +73,10 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts RunListOp
 		return
 	}
 	rl, err := s.RunService().List(r.Context(), otf.RunListOptions{
-		ListOptions: opts.ListOptions,
-		Statuses:    opts.Statuses,
-		WorkspaceID: opts.WorkspaceID,
+		ListOptions:      opts.ListOptions,
+		Statuses:         opts.Statuses,
+		WorkspaceID:      opts.WorkspaceID,
+		OrganizationName: opts.OrganizationName,
 	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
@@ -186,4 +187,6 @@ type RunListOptions struct {
 	Statuses []otf.RunStatus
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`
+	// Filter by organization name
+	OrganizationName *string `schema:"organization_name"`
 }
