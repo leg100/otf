@@ -66,8 +66,8 @@ func TestOTF(t *testing.T) {
 		chdir(t, root)
 		cmd := exec.Command("terraform", "plan", "-no-color")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 	})
 
@@ -75,8 +75,8 @@ func TestOTF(t *testing.T) {
 		chdir(t, root)
 		cmd := exec.Command("terraform", "apply", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
 		t.Log(string(out))
+		require.NoError(t, err)
 		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 	})
 
