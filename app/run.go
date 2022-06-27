@@ -86,7 +86,6 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 // ListWatch lists runs and then watches for changes to runs. Note: The options
 // filter the list but not the watch.
 func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
-	// retrieve incomplete runs from db
 	existing, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -245,22 +244,6 @@ func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byt
 
 	s.V(1).Info("uploaded plan file", "id", runID, "format", format)
 
-	if format == otf.PlanFormatJSON {
-		report, err := otf.CompilePlanReport(plan)
-		if err != nil {
-			s.Error(err, "compiling planned changes report", "id", runID)
-			return err
-		}
-		if err := s.db.CreatePlanReport(ctx, runID, report); err != nil {
-			s.Error(err, "saving planned changes report", "id", runID)
-			return err
-		}
-		s.V(1).Info("created planned changes report", "id", runID,
-			"adds", report.Additions,
-			"changes", report.Changes,
-			"destructions", report.Destructions)
-	}
-
 	if err := s.cache.Set(format.CacheKey(runID), plan); err != nil {
 		return fmt.Errorf("caching plan: %w", err)
 	}
@@ -298,8 +281,18 @@ func (s RunService) Start(ctx context.Context, runID string, phase otf.PhaseType
 	return run, nil
 }
 
-// Finish phase.
+// Finish phase. Creates a report of changes before updating the status of the
+// run.
 func (s RunService) Finish(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+	var report otf.ResourceReport
+	if !opts.Errored {
+		var err error
+		report, err = s.CreateReport(ctx, runID, phase)
+		if err != nil {
+			s.Error(err, "creating report", "id", runID, "phase", phase)
+			opts.Errored = true
+		}
+	}
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.Finish(phase, opts)
 	})
@@ -307,9 +300,25 @@ func (s RunService) Finish(ctx context.Context, runID string, phase otf.PhaseTyp
 		s.Error(err, "finishing "+string(phase), "id", runID)
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID)
+	s.V(0).Info("finished "+string(phase), "id", runID,
+		"additions", report.Additions,
+		"changes", report.Changes,
+		"destructions", report.Destructions,
+	)
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
+}
+
+// CreateReport creates a report of changes for the phase.
+func (s RunService) CreateReport(ctx context.Context, runID string, phase otf.PhaseType) (otf.ResourceReport, error) {
+	switch phase {
+	case otf.PlanPhase:
+		return s.createPlanReport(ctx, runID)
+	case otf.ApplyPhase:
+		return s.createApplyReport(ctx, runID)
+	default:
+		return otf.ResourceReport{}, fmt.Errorf("unknown supported phase for creating report: %s", phase)
+	}
 }
 
 // GetChunk reads a chunk of logs for a phase.
@@ -332,4 +341,34 @@ func (s RunService) PutChunk(ctx context.Context, runID string, phase otf.PhaseT
 	}
 	s.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 	return nil
+}
+
+func (s RunService) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
+	plan, err := s.GetPlanFile(ctx, runID, otf.PlanFormatJSON)
+	if err != nil {
+		return otf.ResourceReport{}, err
+	}
+	report, err := otf.CompilePlanReport(plan)
+	if err != nil {
+		return otf.ResourceReport{}, err
+	}
+	if err := s.db.CreatePlanReport(ctx, runID, report); err != nil {
+		return otf.ResourceReport{}, err
+	}
+	return report, nil
+}
+
+func (s RunService) createApplyReport(ctx context.Context, runID string) (otf.ResourceReport, error) {
+	logs, err := s.GetChunk(ctx, runID, otf.ApplyPhase, otf.GetChunkOptions{})
+	if err != nil {
+		return otf.ResourceReport{}, err
+	}
+	report, err := otf.ParseApplyOutput(string(logs.Data))
+	if err != nil {
+		return otf.ResourceReport{}, err
+	}
+	if err := s.db.CreateApplyReport(ctx, runID, report); err != nil {
+		return otf.ResourceReport{}, err
+	}
+	return report, nil
 }

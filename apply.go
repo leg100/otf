@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -53,11 +52,6 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 		}
 	}
 	return dto
-}
-
-// ApplyService allows interaction with Applies
-type ApplyService interface {
-	Get(ctx context.Context, id string) (*Apply, error)
 }
 
 func newApply(run *Run) *Apply {
