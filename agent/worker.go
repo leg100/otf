@@ -42,7 +42,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	// Start the job before proceeding in case another agent has started it.
 	run, err = w.App.RunService().Start(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
-		log.Error(err, "starting phase")
+		// bail out without error - the error is logged server-side
 		return
 	}
 
@@ -51,20 +51,16 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	w.CheckIn(run.ID(), env)
 	defer w.CheckOut(run.ID())
 
-	log.Info("executing phase")
-
 	var finishOptions otf.PhaseFinishOptions
 
 	if err := env.Execute(run); err != nil {
-		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
 
 	// Regardless of job success, mark job as finished
 	_, err = w.App.RunService().Finish(ctx, run.ID(), run.Phase(), finishOptions)
 	if err != nil {
-		log.Error(err, "finishing phase")
+		// bail out without error - the error is logged server-side
+		return
 	}
-
-	log.Info("finished phase")
 }

@@ -124,6 +124,7 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 	return spool, nil
 }
 
+// Apply enqueues an apply for the run.
 func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.EnqueueApply()
@@ -140,6 +141,7 @@ func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOp
 	return err
 }
 
+// Discard the run.
 func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.Discard()
@@ -197,15 +199,16 @@ func (s RunService) ForceCancel(ctx context.Context, runID string, opts otf.RunF
 	return err
 }
 
+// EnqueuePlan enqueues a plan for the run.
 func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.EnqueuePlan()
 	})
 	if err != nil {
-		s.Error(err, "started run", "id", runID)
+		s.Error(err, "enqueuing plan", "id", runID)
 		return nil, err
 	}
-	s.V(0).Info("started run", "id", runID)
+	s.V(0).Info("enqueued plan", "id", runID)
 
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
@@ -240,7 +243,7 @@ func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byt
 		return err
 	}
 
-	s.V(0).Info("uploaded plan file", "id", runID, "format", format)
+	s.V(1).Info("uploaded plan file", "id", runID, "format", format)
 
 	if format == otf.PlanFormatJSON {
 		report, err := otf.CompilePlanReport(plan)
@@ -281,35 +284,35 @@ func (s RunService) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Start plan phase.
+// Start phase.
 func (s RunService) Start(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.Start(phase)
 	})
 	if err != nil {
-		s.Error(err, "starting phase", "id", runID, "phase", phase)
+		s.Error(err, "starting "+string(phase), "id", runID)
 		return nil, err
 	}
-	s.V(0).Info("started phase", "id", runID, "phase", phase)
+	s.V(0).Info("started "+string(phase), "id", runID)
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
-// Finish plan phase.
+// Finish phase.
 func (s RunService) Finish(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.Finish(phase, opts)
 	})
 	if err != nil {
-		s.Error(err, "finishing phase", "id", runID, "phase", phase)
+		s.Error(err, "finishing "+string(phase), "id", runID)
 		return nil, err
 	}
-	s.V(0).Info("finished phase", "id", runID, "phase", phase)
+	s.V(0).Info("finished "+string(phase), "id", runID)
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return run, nil
 }
 
-// GetChunk reads a chunk of logs for a plan.
+// GetChunk reads a chunk of logs for a phase.
 func (s RunService) GetChunk(ctx context.Context, runID string, phase otf.PhaseType, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	logs, err := s.proxy.GetChunk(ctx, runID, phase, opts)
 	if err != nil {
@@ -320,7 +323,7 @@ func (s RunService) GetChunk(ctx context.Context, runID string, phase otf.PhaseT
 	return logs, nil
 }
 
-// PutChunk writes a chunk of logs for a plan.
+// PutChunk writes a chunk of logs for a phase.
 func (s RunService) PutChunk(ctx context.Context, runID string, phase otf.PhaseType, chunk otf.Chunk) error {
 	err := s.proxy.PutChunk(ctx, runID, phase, chunk)
 	if err != nil {
