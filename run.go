@@ -120,16 +120,6 @@ func (r *Run) HasChanges() bool {
 	return r.plan.HasChanges()
 }
 
-// discardable determines whether run can be discarded.
-func (r *Run) discardable() bool {
-	switch r.Status() {
-	case RunPending, RunPlanned:
-		return true
-	default:
-		return false
-	}
-}
-
 // Phase returns the current phase.
 func (r *Run) Phase() PhaseType {
 	switch r.status {
@@ -162,7 +152,7 @@ func (r *Run) Discard() error {
 // Cancel run. Returns a boolean indicating whether a cancel request should be
 // enqueued (for an agent to kill an in progress process)
 func (r *Run) Cancel() (enqueue bool, err error) {
-	if !r.Cancelable() {
+	if !r.cancelable() {
 		return false, ErrRunCancelNotAllowed
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
@@ -200,26 +190,6 @@ func (r *Run) ForceCancel() error {
 	return ErrRunForceCancelNotAllowed
 }
 
-// Cancelable determines whether run can be cancelled.
-func (r *Run) Cancelable() bool {
-	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
-		return true
-	default:
-		return false
-	}
-}
-
-// Confirmable determines whether run can be confirmed.
-func (r *Run) Confirmable() bool {
-	switch r.Status() {
-	case RunPlanned:
-		return true
-	default:
-		return false
-	}
-}
-
 // Do executes the current phase
 func (r *Run) Do(env Environment) error {
 	if err := r.setupEnv(env); err != nil {
@@ -233,57 +203,6 @@ func (r *Run) Do(env Environment) error {
 	default:
 		return fmt.Errorf("invalid status: %s", r.status)
 	}
-}
-
-func (r *Run) doPlan(env Environment) error {
-	if err := r.doTerraformPlan(env); err != nil {
-		return err
-	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadPlan); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadJSONPlan); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Run) doApply(env Environment) error {
-	if err := env.RunFunc(r.downloadPlanFile); err != nil {
-		return err
-	}
-	if err := r.doTerraformApply(env); err != nil {
-		return err
-	}
-	if err := env.RunFunc(r.uploadState); err != nil {
-		return err
-	}
-	return nil
-}
-
-// doTerraformPlan invokes terraform plan
-func (r *Run) doTerraformPlan(env Environment) error {
-	args := []string{
-		"plan",
-	}
-	if r.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, "-out="+PlanFilename)
-	return env.RunCLI("terraform", args...)
-}
-
-// doTerraformApply invokes terraform apply
-func (r *Run) doTerraformApply(env Environment) error {
-	args := []string{"apply"}
-	if r.isDestroy {
-		args = append(args, "-destroy")
-	}
-	args = append(args, PlanFilename)
-	return env.RunCLI("terraform", args...)
 }
 
 // Done determines whether run has reached an end state, e.g. applied,
@@ -361,24 +280,6 @@ func (r *Run) Start(phase PhaseType) error {
 	return nil
 }
 
-func (r *Run) startPlan() error {
-	if r.status != RunPlanQueued {
-		return ErrInvalidRunStateTransition
-	}
-	r.updateStatus(RunPlanning)
-	r.plan.updateStatus(PhaseRunning)
-	return nil
-}
-
-func (r *Run) startApply() error {
-	if r.status != RunApplyQueued {
-		return ErrInvalidRunStateTransition
-	}
-	r.updateStatus(RunApplying)
-	r.apply.updateStatus(PhaseRunning)
-	return nil
-}
-
 // Finish updates the run to reflect its plan or apply phase having finished.
 func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	if r.status == RunCanceled {
@@ -396,49 +297,13 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	return nil
 }
 
-func (r *Run) finishPlan(opts PhaseFinishOptions) error {
-	if r.status != RunPlanning {
-		return ErrInvalidRunStateTransition
-	}
-	if opts.Errored {
-		r.updateStatus(RunErrored)
-		r.plan.updateStatus(PhaseErrored)
-		r.apply.updateStatus(PhaseUnreachable)
-	}
-
-	r.updateStatus(RunPlanned)
-	r.plan.updateStatus(PhaseFinished)
-
-	if !r.HasChanges() || r.Speculative() {
-		r.updateStatus(RunPlannedAndFinished)
-		r.apply.updateStatus(PhaseUnreachable)
-	} else if r.autoApply {
-		return r.EnqueueApply()
-	}
-	return nil
-}
-
-func (r *Run) finishApply(opts PhaseFinishOptions) error {
-	if r.status != RunApplying {
-		return ErrInvalidRunStateTransition
-	}
-	if opts.Errored {
-		r.updateStatus(RunErrored)
-		r.apply.updateStatus(PhaseErrored)
-	} else {
-		r.updateStatus(RunApplied)
-		r.apply.updateStatus(PhaseFinished)
-	}
-	return nil
-}
-
 // ToJSONAPI assembles a JSON-API DTO.
 func (r *Run) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
-			IsCancelable:      r.Cancelable(),
-			IsConfirmable:     r.Confirmable(),
+			IsCancelable:      r.cancelable(),
+			IsConfirmable:     r.confirmable(),
 			IsForceCancelable: r.forceCancelAvailableAt != nil,
 			IsDiscardable:     r.discardable(),
 		},
@@ -518,12 +383,147 @@ func (r *Run) IncludeWorkspace(ws *Workspace) {
 	r.workspace = ws
 }
 
+func (r *Run) startPlan() error {
+	if r.status != RunPlanQueued {
+		return ErrInvalidRunStateTransition
+	}
+	r.updateStatus(RunPlanning)
+	r.plan.updateStatus(PhaseRunning)
+	return nil
+}
+
+func (r *Run) startApply() error {
+	if r.status != RunApplyQueued {
+		return ErrInvalidRunStateTransition
+	}
+	r.updateStatus(RunApplying)
+	r.apply.updateStatus(PhaseRunning)
+	return nil
+}
+
+func (r *Run) finishPlan(opts PhaseFinishOptions) error {
+	if r.status != RunPlanning {
+		return ErrInvalidRunStateTransition
+	}
+	if opts.Errored {
+		r.updateStatus(RunErrored)
+		r.plan.updateStatus(PhaseErrored)
+		r.apply.updateStatus(PhaseUnreachable)
+	}
+
+	r.updateStatus(RunPlanned)
+	r.plan.updateStatus(PhaseFinished)
+
+	if !r.HasChanges() || r.Speculative() {
+		r.updateStatus(RunPlannedAndFinished)
+		r.apply.updateStatus(PhaseUnreachable)
+	} else if r.autoApply {
+		return r.EnqueueApply()
+	}
+	return nil
+}
+
+func (r *Run) finishApply(opts PhaseFinishOptions) error {
+	if r.status != RunApplying {
+		return ErrInvalidRunStateTransition
+	}
+	if opts.Errored {
+		r.updateStatus(RunErrored)
+		r.apply.updateStatus(PhaseErrored)
+	} else {
+		r.updateStatus(RunApplied)
+		r.apply.updateStatus(PhaseFinished)
+	}
+	return nil
+}
+
 func (r *Run) updateStatus(status RunStatus) {
 	r.status = status
 	r.statusTimestamps = append(r.statusTimestamps, RunStatusTimestamp{
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
+}
+
+// discardable determines whether run can be discarded.
+func (r *Run) discardable() bool {
+	switch r.Status() {
+	case RunPending, RunPlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+// cancelable determines whether run can be cancelled.
+func (r *Run) cancelable() bool {
+	switch r.Status() {
+	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+		return true
+	default:
+		return false
+	}
+}
+
+// confirmable determines whether run can be confirmed.
+func (r *Run) confirmable() bool {
+	switch r.Status() {
+	case RunPlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *Run) doPlan(env Environment) error {
+	if err := r.doTerraformPlan(env); err != nil {
+		return err
+	}
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadPlan); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadJSONPlan); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Run) doApply(env Environment) error {
+	if err := env.RunFunc(r.downloadPlanFile); err != nil {
+		return err
+	}
+	if err := r.doTerraformApply(env); err != nil {
+		return err
+	}
+	if err := env.RunFunc(r.uploadState); err != nil {
+		return err
+	}
+	return nil
+}
+
+// doTerraformPlan invokes terraform plan
+func (r *Run) doTerraformPlan(env Environment) error {
+	args := []string{
+		"plan",
+	}
+	if r.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, "-out="+PlanFilename)
+	return env.RunCLI("terraform", args...)
+}
+
+// doTerraformApply invokes terraform apply
+func (r *Run) doTerraformApply(env Environment) error {
+	args := []string{"apply"}
+	if r.isDestroy {
+		args = append(args, "-destroy")
+	}
+	args = append(args, PlanFilename)
+	return env.RunCLI("terraform", args...)
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
