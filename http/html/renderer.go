@@ -20,16 +20,7 @@ const (
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
 
-var (
-	// template functions
-	funcs = sprig.HtmlFuncMap()
-)
-
 func init() {
-	// make version available to templates
-	funcs["version"] = func() string { return otf.Version }
-	// make path helpers available to templates
-	addHelpersToFuncMap(funcs)
 }
 
 // renderer is capable of locating and rendering a template.
@@ -43,8 +34,8 @@ type embeddedRenderer struct {
 	cache map[string]*template.Template
 }
 
-// devRenderer renders templates located on disk. No cache is used; ideal for
-// development purposes with something like livereload.
+// devRenderer renders templates located on disk. The cache is rebuilt every
+// time a template is rendered. For development purposes.
 type devRenderer struct{}
 
 func newRenderer(devMode bool) (renderer, error) {
@@ -55,10 +46,9 @@ func newRenderer(devMode bool) (renderer, error) {
 }
 
 func newEmbeddedRenderer() (*embeddedRenderer, error) {
-	static := &cacheBuster{embedded}
+	buster := &cacheBuster{embedded}
 
-	funcs["addHash"] = static.Path
-	cache, err := newTemplateCache(embedded, funcs)
+	cache, err := newTemplateCache(embedded, buster)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +65,9 @@ func (r *embeddedRenderer) renderTemplate(name string, w io.Writer, data any) er
 }
 
 func (r *devRenderer) renderTemplate(name string, w io.Writer, data any) error {
-	static := &cacheBuster{localDisk}
+	buster := &cacheBuster{localDisk}
 
-	funcs["addHash"] = static.Path
-	cache, err := newTemplateCache(localDisk, funcs)
+	cache, err := newTemplateCache(localDisk, buster)
 	if err != nil {
 		return err
 	}
@@ -105,13 +94,22 @@ func renderTemplateFromCache(cache map[string]*template.Template, name string, w
 }
 
 // newTemplateCache populates a cache of templates.
-func newTemplateCache(templates fs.FS, funcs template.FuncMap) (map[string]*template.Template, error) {
+func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
 	pages, err := fs.Glob(templates, contentTemplatesGlob)
 	if err != nil {
 		return nil, err
 	}
+
+	// template functions
+	funcs := sprig.HtmlFuncMap()
+	// func to append hash to asset links
+	funcs["addHash"] = buster.Path
+	// make version available to templates
+	funcs["version"] = func() string { return otf.Version }
+	// make path helpers available to templates
+	addHelpersToFuncMap(funcs)
 
 	for _, page := range pages {
 		name := filepath.Base(page)

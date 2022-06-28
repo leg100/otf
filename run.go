@@ -120,6 +120,10 @@ func (r *Run) HasChanges() bool {
 	return r.plan.HasChanges()
 }
 
+func (r *Run) PlanOnly() bool {
+	return r.status == RunPlannedAndFinished
+}
+
 // Phase returns the current phase.
 func (r *Run) Phase() PhaseType {
 	switch r.status {
@@ -753,6 +757,8 @@ func (l *RunList) ToJSONAPI(req *http.Request) any {
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
 	ListOptions
+	// Order: oldest first or newest first
+	Order ListOrder
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []RunStatus
 	// Filter by workspace ID

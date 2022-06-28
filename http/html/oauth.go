@@ -24,7 +24,7 @@ type oauthResponse struct {
 	State    string
 
 	Error            string
-	ErrorDescription string
+	ErrorDescription string `schema:"error_description"`
 	ErrorURI         string `schema:"error_uri"`
 }
 
@@ -52,16 +52,19 @@ func (o *oauth) requestHandler(w http.ResponseWriter, r *http.Request) {
 // responseHandler completes the oauth flow, handling the callback response and
 // exchanging its auth code for a token.
 func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
+	var resp oauthResponse
+	if err := decode.Query(&resp, r.URL.Query()); err != nil {
+		return nil, err
+	}
+	if resp.Error != "" {
+		return nil, fmt.Errorf("%s: %s\n\nSee %s", resp.Error, resp.ErrorDescription, resp.ErrorURI)
+	}
+
 	cookie, err := r.Cookie(oauthCookieName)
 	if err != nil {
 		return nil, err
 	}
 	cookieState := cookie.Value
-
-	var resp oauthResponse
-	if err := decode.Query(&resp, r.URL.Query()); err != nil {
-		return nil, err
-	}
 
 	// CSRF protection - verify state in the cookie matches the state in the
 	// callback response

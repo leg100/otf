@@ -11,18 +11,12 @@
 {{ end }}
 
 {{ define "content" }}
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-      </tr>
-    </thead>
-    <tbody>
-    {{ range .Content.List.Items }}
-      <tr>
-          <td><a href="{{ getWorkspacePath . }}">{{ .Name }}</a></td>
-        </tr>
-      {{ end }}
-    </tbody>
-  </table>
+  {{ range .Content.List.Items }}
+  <div class="item">
+    <div class="item-heading">
+      <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
+    </div>
+    <div class="id"><a class="identifier" href="{{ getWorkspacePath . }}">{{ .ID }}</a></div>
+  </div>
+  {{ end }}
 {{ end }}

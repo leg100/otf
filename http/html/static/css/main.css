@@ -2,58 +2,55 @@
   outline: 0px solid #000;
 }
 
+:root {
+  --faint-grey: #edeaea;
+  /* Padding around header and main elements */
+  --body-gutter: 0.5em;
+  --site-width: 72em;
+  /* site font is the sans serif family */
+  --site-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+  /* alternative site font is the monospace family */
+  --alt-font: Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace;
+}
+
 body {
-  font-family: Roboto,Helvetica Neue,sans-serif;
+  font-family: var(--site-font);
 
   /*
-   * two vertically stacked items straddling full height of viewport:
-   * - div.body-container
+   * body contains three rows straddling the full height of viewport:
+   * - header
+   * - main
    * - footer
    */
   display: flex;
   flex-direction: column;
+
+  /* push footer to bottom of viewport */
   min-height: 100vh;
 }
 
-/*
- * Container for both header and main elements.
- */
-.body-container {
-  width: 100%;
-  max-width: 76em;
-
-  /* Center horizontally with a small gap at top and bottom */
-  margin: 0 auto;
-
-  /* Small gutter around edge */
-  padding: 0.5em;
-
-  /* Force footer down to bottom of viewport */
-  flex-grow: 1;
-
-  /*
-   * two vertically stacked items:
-   * - header
-   * - main
-   */
-  display: flex;
-  flex-direction: column;
-  gap: 0.6em;
-
-  /* Absolute positioned items are positioned relative to this container */
-  position: relative;
-}
-
-header nav {
-  font-family: 'Courier New', Courier, monospace;
+header {
+  /* faint grey background */
+  background-color: var(--faint-grey);
 }
 
 main {
-  /* Consume all remaining space below the header */
+  width: 100%;
+
+  /* Consume space between header and footer */
   flex-grow: 1;
 
-  /* vertical stack of:
-   * - h2
+  /* applies to both header and main */
+  max-width: var(--site-width);
+
+  /* Center horizontally */
+  margin: 0 auto;
+
+  /* Small gutter around edge */
+  padding: var(--body-gutter);
+
+  /* two rows:
+   * - div.content-header
    * - div.content
    */
   display: flex;
@@ -61,18 +58,72 @@ main {
   gap: 1em;
 }
 
+/* site footer containing version info */
 footer {
   border-top: 1px solid #ccc;
   padding: 0.5em;
   text-align: center;
   font-size: 0.8em;
+  font-family: var(--alt-font);
 }
 
-/* Unset browser style-sheet */
+/* Unset browser list style */
 ul, ol {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+header nav {
+  /* Small gutter around edge */
+  padding: var(--body-gutter);
+
+  font-family: var(--alt-font);
+
+  max-width: var(--site-width);
+
+  /* Center horizontally */
+  margin: 0 auto;
+}
+
+/*
+ * navbar = logo + navigation links
+ */
+.navbar {
+  display: flex;
+  gap: 2em;
+}
+
+/* the little black rectangular main logo in the top left */
+.logo {
+  flex: initial;
+  padding: 0.4em;
+  line-height: 1em;
+  background-color: black;
+  color: white;
+  font-weight: 900;
+}
+
+.logo a:hover {
+  color: white;
+}
+
+.navbar .nav-links {
+  /* nav-links consume remainder of navbar */
+  flex-grow: 1;
+}
+
+.navbar .nav-links ul {
+  display: flex;
+  gap: 1em;
+}
+
+/*
+ * current organization link is left-aligned, next to logo, whereas
+ * remainder of links are right-aligned
+ */
+.navbar .nav-links li.current-organization {
+  margin-right: auto;
 }
 
 /* main-form is a form that is the main content of a page */
@@ -114,102 +165,37 @@ label {
   margin-right: .75em;
 }
 
+/* Remove differentiated styling for visited links */
 a, a:visited, a:active {
   text-decoration: none;
   color: inherit;
 }
 
+/* Retain old-school blue underlining */
 a:hover {
   text-decoration: underline;
   color: blue;
 }
 
-table {
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse;
-}
-
-thead {
-  border-bottom: 2px solid;
-  background-color: lightgrey;
-}
-
-th, td {
-  text-align: left;
-  padding: 0.2em .5em;
-}
-
-thead th:nth-child(1) {
-  width: 25%;
-}
-
-thead th:nth-child(2) {
-  width: 20%;
-}
-
-thead th:nth-child(3) {
-  width: 10%;
-}
-
-thead th:nth-child(4) {
-  width: 10%;
-}
-
+/* the identifier for a resource, de-emphasised because it's not
+ * usually relevant to the user */
 .identifier {
-  font-family: 'Courier New', Courier, monospace;
-}
-
-/*
- * navbar = logo + navigation links
- */
-.navbar {
-  display: flex;
-  align-items: baseline;
-  gap: 2em;
-}
-
-.logo {
-  flex: initial;
-  padding: 0.4em;
-  line-height: 1em;
-  background-color: black;
-  color: white;
-  font-weight: 900;
-}
-
-.logo a:hover {
-  color: white;
-}
-
-.navbar .nav-links {
-  /* nav-links consume remainder of navbar */
-  flex-grow: 1;
-}
-
-.navbar .nav-links ul {
-  display: flex;
-  gap: 1em;
-}
-
-/*
- * current organization link is left-aligned, next to logo, whereas
- * remainder of links are right-aligned
- */
-.navbar .nav-links li.current-organization {
-  margin-right: auto;
+  font-family: var(--alt-font);
+  font-size: 0.8rem;
 }
 
 /* content-header: title + links */
 .content-header {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 1em;
+
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #edeaea;
 }
 
 .container-header-title {
   font-size: 1.5em;
-
   display: flex;
 }
 
@@ -228,6 +214,7 @@ thead th:nth-child(4) {
   justify-content: flex-end;
 }
 
+/* center content e.g. the login prompt */
 .center {
   flex: 1;
 
@@ -242,76 +229,13 @@ thead th:nth-child(4) {
 	border-width: 1px;
 }
 
-.sidebar {
-  margin-right: 1em;
-}
-
-.sidebar ul {
-  padding: 0;
-  margin-top: 0;
-}
-
-.sidebar li {
-  padding: 0.5em;
-}
-
-.sidebar li:first-child {
-  margin-right: auto;
-}
-
-.breadcrumbs {
-  background-color: #405D7D;
-  color: #fff;
-}
-
-.breadcrumbs a:hover {
-  color: lightgrey;
-  text-decoration: none;
-}
-
-.breadcrumbs ol {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0.3em 0;
-  align-items: baseline;
-  font-size: 0.8em;
-}
-
-/*
- * Separate breadcrumbs with a ">" symbol and pad both sides
- */
-.breadcrumbs li::before {
-  content: ">";
-}
-
-.breadcrumbs li:first-child::before {
-  content: "";
-}
-
-.breadcrumbs li:first-child a {
-  padding-left: 0em;
-  padding-right: 0.5em;
-}
-
-.breadcrumbs li a {
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-}
-
-/* Flash alert message in bottom left corner on top of any other content */
+/* Flash alert message box */
 .flash {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  z-index: 999;
-
   background: #ddf4ff;
   border-color: rgba(84, 174, 255, 0.4);
-  padding: 10px 16px;
+  padding: 5px;
   border-style: solid;
   border-width: 1px;
-  margin: 10px;
 }
 
 .flash-error {
@@ -330,64 +254,103 @@ thead th:nth-child(4) {
 .term-container {
   padding: 1em;
   border-radius: 0px;
-  font-family: ui-monospace,
-             Menlo, Monaco,
-             "Cascadia Mono", "Segoe UI Mono",
-             "Roboto Mono",
-             "Oxygen Mono",
-             "Ubuntu Monospace",
-             "Source Code Pro",
-             "Fira Mono",
-             "Droid Sans Mono",
-             "Courier New", monospace;
+  font-family: var(--alt-font);
   font-size: 1rem;
 }
 
 /*
- * Upstream strangely disables bold because it looks "wierd"
+ * terminal-to-html strangely disables bold because it looks "wierd"
  */
 .term-fg1 {
   font-weight: bold;
 }
 
+/* Workspace lock status and toggle button */
 .workspace-lock {
   display: flex;
+  align-items: center;
   gap: 0.5em;
 }
 
-.workspace-lock .workspace-lock-status-locked {
-  background: #ff7070;
-  color: white;
-  font-weight: 700;
+.workspace-lock form {
+  /* vertically aligns status field and button */
+  display: flex;
 }
 
-/*
- * Delete buttons
- */
+.workspace-lock-status-locked {
+  background: #ffd7b6;
+}
+
+.workspace-lock-status-unlocked {
+  background: #d4fdd4;
+}
+
+/* button that carries out destructive action */
 button.delete {
-  border: solid 1px #9f2937;
-  background: #c73445;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1rem;
+  background: #ed6969;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 600;
+  line-height: 1.5rem;
 }
 
 button.delete:hover {
-  color: #f9ecee;
+  background: #e46060;
 }
 
-.smallcaps {
-  font-variant: small-caps;
-  font-size: 1.5rem;
+
+/* color-coded run status field */
+.status {
+  font-size: 1.1rem;
+  font-weight: bolder;
 }
 
 .status-planned_and_finished {
-  background: #ff933f;
-  color: white;
+  background: #bbf8ff;
 }
 
 .status-applied {
-  background: lightgreen;
-  color: black;
+  background: #bfffbf;
 }
 
+/* item is the standard container for an item in a listing,
+ * e.g. a run in a list of runs */
+.item {
+  border: solid 1px #000;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.item-heading {
+  display: flex;
+  column-gap: 10px;
+  align-items: center;
+  padding-bottom: 10px;
+}
+
+.item-heading .status-ago {
+  margin-left: auto;
+}
+
+.item-content {
+  display: flex;
+  column-gap: 10px;
+  align-items: center;
+}
+
+/* content menu is a row list of various elements that make up the
+ * main content of some pages, e.g. workspace info
+ */
+.content-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+/* data is a nugget of factual information, e.g. terraform version */
+.data {
+  font-family: var(--alt-font);
+  /* light grey background */
+  background: #e7e7e7;
+}

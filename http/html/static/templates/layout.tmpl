@@ -7,61 +7,63 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
+  <script src="{{ addHash "/static/js/htmx.min.js" }}"></script>
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
-  <div class="body-container">
-    <header>
-      <nav class="navbar">
-        <div class="logo">
-          <a href="/">oTF</a></strong>
-        </div>
-        <div class="nav-links">
-          <ul>
-            {{ with .CurrentUser }}
-            <li class="current-organization">
-              {{ if $.CurrentOrganization }}
-              <a href="{{ getOrganizationPath $.CurrentOrganization }}">
-                {{ template "building_icon" }}
-                <span>{{ $.CurrentOrganization.OrganizationName }}</span>
-              </a>
-              {{ end }}
-            </li>
-            <li>
-              <a href="{{ listOrganizationPath }}">organizations</a>
-            </li>
-            <li class="profile">
-              <a href="{{ getProfilePath }}"><span class="current-user">{{ .Username }}</span></a>
-            </li>
+  <header>
+    <nav class="navbar">
+      <div class="logo">
+        <a href="/">oTF</a>
+      </div>
+      <div class="nav-links">
+        <ul>
+          {{ with .CurrentUser }}
+          <li class="current-organization">
+            {{ if $.CurrentOrganization }}
+            <a href="{{ getOrganizationPath $.CurrentOrganization }}">
+              {{ template "building_icon" }}
+              <span>{{ $.CurrentOrganization.OrganizationName }}</span>
+            </a>
             {{ end }}
-          </ul>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-    {{ block "container" . }}
-      <div class="content-header">
-        <div class="container-header-title">
-          <strong>{{ template "container-header" . }}</strong>
-        </div>
-        <div class="container-header-actions">
-          {{ block "container-header-actions" . }}{{ end }}
-        </div>
-        <div class="container-header-links">
-          {{ block "container-header-links" . }}{{ end }}
-        </div>
+          </li>
+          <li>
+            <a href="{{ listOrganizationPath }}">organizations</a>
+          </li>
+          <li class="profile">
+            <a href="{{ getProfilePath }}"><span class="current-user">{{ .Username }}</span></a>
+          </li>
+          {{ end }}
+        </ul>
       </div>
-
-      {{ template "flash" . }}
-
-      <div class="content">
-        {{ block "content" . }}{{ end }}
+    </nav>
+  </header>
+  <main>
+  {{ block "container" . }}
+    <div class="content-header">
+      <div class="container-header-title">
+        <strong>{{ template "container-header" . }}</strong>
       </div>
-    {{ end }}
-    </main>
-  </div>
-  <footer><a href="https://github.com/leg100/otf">{{ .Version }}</a></footer>
+      <div class="container-header-actions">
+        {{ block "container-header-actions" . }}{{ end }}
+      </div>
+      <ul class="container-header-links">
+        {{ block "container-header-links" . }}{{ end }}
+      </ul>
+    </div>
+
+    {{ block "content-menu" . }}{{ end }}
+
+    {{ template "flash" . }}
+
+    <div class="content">
+      {{ block "content" . }}{{ end }}
+    </div>
+  {{ end }}
+  </main>
+  <footer>
+    <a href="https://github.com/leg100/otf">{{ .Version }}</a>
+  </footer>
 </body>
 </html>
 {{ end }}

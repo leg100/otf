@@ -90,7 +90,12 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 	if err != nil {
 		return nil, err
 	}
-	spool := make(chan *otf.Run, len(existing.Items))
+	// reverse items from earliest first to oldest first
+	var oldest []*otf.Run
+	for _, r := range existing.Items {
+		oldest = append([]*otf.Run{r}, oldest...)
+	}
+	spool := make(chan *otf.Run, len(oldest))
 	for _, r := range existing.Items {
 		spool <- r
 	}

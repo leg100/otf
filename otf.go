@@ -170,3 +170,13 @@ func ConvertID(id, resource string) string {
 	}
 	return resource + "-" + parts[1]
 }
+
+const (
+	// oldest item first in list
+	OldestFirst ListOrder = iota
+	// newest item first in list
+	NewestFirst
+)
+
+// ListOrder is the requested order of items in a list
+type ListOrder int

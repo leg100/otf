@@ -13,33 +13,22 @@
 {{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Address</th>
-        <th scope="col">Active</th>
-        <th scope="col">Revoke</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Content.Sessions }}
-      <tr>
-        <td>{{ .Address }}</td>
-
-        {{ if eq .Token $.CurrentSession.Token }}
-        <td>&#10004;</td>
-        <td></td>
-        {{ else }}
-        <td></td>
-        <td>
-          <form action="{{ revokeSessionPath }}" method="POST">
-            <button>Revoke</button>
-            <input type="hidden" name="token" value="{{ .Token }}">
-          </form>
-        </td>
-        {{ end }}
-      </tr>
+  {{ range .Content.Sessions }}
+  <div class="item">
+    <div class="item-heading">
+      <span>{{ .Address }}</span>
+      {{ if eq .Token $.CurrentSession.Token }} &#10004; {{ end }}
+      <span class="status-ago">Created {{ ago .CreatedAt }} ago</span>
+    </div>
+    <div class="item-content">
+      <span class="identifier">{{ .Token }}</span>
+      {{ if ne .Token $.CurrentSession.Token }}
+      <form action="{{ revokeSessionPath }}" method="POST">
+        <button class="delete">Revoke</button>
+        <input type="hidden" name="token" value="{{ .Token }}">
+      </form>
       {{ end }}
-    </tbody>
-  </table>
+    </div>
+  </div>
+  {{ end }}
 {{ end }}

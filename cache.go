@@ -18,4 +18,6 @@ type Cache interface {
 
 func ConfigVersionCacheKey(id string) string { return fmt.Sprintf("%s.tar.gz", id) }
 func StateVersionCacheKey(id string) string  { return fmt.Sprintf("%s.json", id) }
-func LogCacheKey(id string) string           { return fmt.Sprintf("%s.log", id) }
+func LogCacheKey(runID string, phase PhaseType) string {
+	return fmt.Sprintf("%s.%s.log", runID, string(phase))
+}

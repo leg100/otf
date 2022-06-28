@@ -11,26 +11,19 @@
 {{ end }}
 
 {{ define "content" }}
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">ID</th>
-        <th scope="col">Status</th>
-        <th scope="col">Plan</th>
-        <th scope="col">Apply</th>
-        <th scope="col">Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Content.List.Items }}
-        <tr>
-          <td><a class="identifier" href="{{ getRunPath . }}">{{ .ID }}</a></td>
-          <td><span class="status-{{ .Status }}">{{ .Status }}</span></td>
-          <td><a href="{{ getPlanPath . }}">logs</a></td>
-          <td><a href="{{ getApplyPath . }}">logs</a></td>
-          <td>{{ ago .CreatedAt }} ago</td>
-        </tr>
+  {{ range .Content.List.Items }}
+  <div class="item">
+    <div class="item-heading">
+      <span class="smallcaps status"><span class="status-{{ .Status }}">{{ .Status.String | replace "_" " "}}</span></span>
+      <span>|</span>
+      <span><a href="{{ getPlanPath . }}">plan</a></span>
+      {{ if not .PlanOnly }}
+        <span>|</span>
+        <span><a href="{{ getApplyPath . }}">apply</a></span>
       {{ end }}
-    </tbody>
-  </table>
+      <span class="status-ago">{{ ago .CreatedAt }} ago</span>
+    </div>
+    <div class="id"><a class="identifier" href="{{ getRunPath . }}">{{ .ID }}</a></div>
+  </div>
+  {{ end }}
 {{ end }}

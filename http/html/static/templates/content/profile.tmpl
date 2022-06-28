@@ -7,7 +7,7 @@
 {{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  <p>You are logged in as {{ .Content.Username }}</p>
+  <p>You are logged in as <span class="data">{{ .Content.Username }}</span></p>
   <form action="{{ logoutPath }}" method="POST">
     <button type="submit">logout</button>
   </form>

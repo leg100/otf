@@ -11,18 +11,12 @@
 {{ define "container-header" }}organizations{{ end }}
 
 {{ define "content" }}
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Content.Items }}
-      <tr>
-        <td><a href="{{ getOrganizationPath . }}">{{ .Name }}</a></td>
-      </tr>
-      {{ end }}
-    </tbody>
-  </table>
+  {{ range .Content.Items }}
+  <div class="item">
+    <div class="item-heading">
+    <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
+    </div>
+    <div class="id"><a class="identifier" href="{{ getOrganizationPath . }}">{{ .ID }}</a></div>
+  </div>
+  {{ end }}
 {{ end }}

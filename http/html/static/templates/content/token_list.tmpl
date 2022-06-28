@@ -15,28 +15,19 @@
 {{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Description</th>
-        <th scope="col">Created</th>
-        <th scope="col">Delete</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Content.Tokens }}
-      <tr>
-        <td>{{ .Description }}</td>
-
-        <td>{{ ago .CreatedAt }} ago</td>
-        <td>
-          <form action="{{ deleteTokenPath }}" method="POST">
-            <button>{{ template "trash_icon" }}</button>
-            <input type="hidden" name="id" value="{{ .ID }}">
-          </form>
-        </td>
-      </tr>
-      {{ end }}
-    </tbody>
-  </table>
+  {{ range .Content.Tokens }}
+  <div class="item">
+    <div class="item-heading">
+      <span class="status">{{ .Description }}</span>
+      <span class="status-ago">{{ ago .CreatedAt }} ago</span>
+    </div>
+    <div class="item-content">
+      <span class="identifier">{{ .ID }}</span>
+      <form action="{{ deleteTokenPath }}" method="POST">
+        <button class="delete">delete</button>
+        <input type="hidden" name="id" value="{{ .ID }}">
+      </form>
+    </div>
+  </div>
+  {{ end }}
 {{ end }}

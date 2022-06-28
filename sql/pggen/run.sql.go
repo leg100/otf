@@ -167,7 +167,7 @@ WHERE
 AND workspaces.workspace_id LIKE ANY($2)
 AND workspaces.name         LIKE ANY($3)
 AND runs.status             LIKE ANY($4)
-ORDER BY runs.created_at ASC
+ORDER BY runs.created_at DESC
 LIMIT $5 OFFSET $6
 ;`
 

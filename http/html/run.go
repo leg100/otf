@@ -12,7 +12,6 @@ import (
 )
 
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
-	// get runs
 	var opts otf.RunListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)

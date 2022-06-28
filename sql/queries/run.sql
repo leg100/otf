@@ -89,7 +89,7 @@ WHERE
 AND workspaces.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name         LIKE ANY(pggen.arg('workspace_names'))
 AND runs.status             LIKE ANY(pggen.arg('statuses'))
-ORDER BY runs.created_at ASC
+ORDER BY runs.created_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
 

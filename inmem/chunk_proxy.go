@@ -22,7 +22,7 @@ func NewChunkProxy(cache otf.Cache, backend otf.ChunkStore) (otf.ChunkStore, err
 // using the backend store.
 func (c *ChunkProxy) GetChunk(ctx context.Context, id string, phase otf.PhaseType, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	// Try the cache first
-	if chunk, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
+	if chunk, err := c.cache.Get(otf.LogCacheKey(id, phase)); err == nil {
 		return otf.UnmarshalChunk(chunk).Cut(opts)
 	}
 
@@ -33,7 +33,7 @@ func (c *ChunkProxy) GetChunk(ctx context.Context, id string, phase otf.PhaseTyp
 	}
 
 	// Cache it
-	if err := c.cache.Set(otf.LogCacheKey(id), chunk.Marshal()); err != nil {
+	if err := c.cache.Set(otf.LogCacheKey(id, phase), chunk.Marshal()); err != nil {
 		return otf.Chunk{}, err
 	}
 
@@ -50,17 +50,17 @@ func (c *ChunkProxy) PutChunk(ctx context.Context, id string, phase otf.PhaseTyp
 
 	// First chunk can safely be written straight to cache
 	if chunk.Start {
-		return c.cache.Set(otf.LogCacheKey(id), chunk.Marshal())
+		return c.cache.Set(otf.LogCacheKey(id, phase), chunk.Marshal())
 	}
 
 	// Otherwise, append chunk to cache
-	if previous, err := c.cache.Get(otf.LogCacheKey(id)); err == nil {
-		return c.cache.Set(otf.LogCacheKey(id), append(previous, chunk.Marshal()...))
+	if previous, err := c.cache.Get(otf.LogCacheKey(id, phase)); err == nil {
+		return c.cache.Set(otf.LogCacheKey(id, phase), append(previous, chunk.Marshal()...))
 	}
 
 	// Cache needs re-populating from store
 	if all, err := c.backend.GetChunk(ctx, id, phase, otf.GetChunkOptions{}); err == nil {
-		return c.cache.Set(otf.LogCacheKey(id), all.Marshal())
+		return c.cache.Set(otf.LogCacheKey(id, phase), all.Marshal())
 	} else {
 		return err
 	}
