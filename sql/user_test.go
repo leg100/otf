@@ -51,30 +51,41 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 
 func TestUser_Get(t *testing.T) {
 	db := newTestDB(t)
-	user := createTestUser(t, db)
-	session := createTestSession(t, db, user.ID())
-	// ...and token
-	token := createTestToken(t, db, user.ID(), "testing")
+
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+
+	user := createTestUser(t, db, otf.WithOrganizationMemberships(org1, org2))
+
+	session1 := createTestSession(t, db, user.ID())
+	_ = createTestSession(t, db, user.ID())
+
+	token1 := createTestToken(t, db, user.ID(), "testing")
+	_ = createTestToken(t, db, user.ID(), "testing")
 
 	tests := []struct {
 		name string
 		spec otf.UserSpec
 	}{
 		{
+			name: "id",
+			spec: otf.UserSpec{UserID: otf.String(user.ID())},
+		},
+		{
 			name: "username",
 			spec: otf.UserSpec{Username: otf.String(user.Username())},
 		},
 		{
 			name: "session token",
-			spec: otf.UserSpec{SessionToken: &session.Token},
+			spec: otf.UserSpec{SessionToken: &session1.Token},
 		},
 		{
 			name: "auth token ID",
-			spec: otf.UserSpec{AuthenticationTokenID: otf.String(token.ID())},
+			spec: otf.UserSpec{AuthenticationTokenID: otf.String(token1.ID())},
 		},
 		{
 			name: "auth token",
-			spec: otf.UserSpec{AuthenticationToken: otf.String(token.Token())},
+			spec: otf.UserSpec{AuthenticationToken: otf.String(token1.Token())},
 		},
 	}
 	for _, tt := range tests {
@@ -83,6 +94,12 @@ func TestUser_Get(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, got.ID(), user.ID())
+			assert.Equal(t, got.Username(), user.Username())
+			assert.Equal(t, got.CreatedAt(), user.CreatedAt())
+			assert.Equal(t, got.UpdatedAt(), user.UpdatedAt())
+			assert.Equal(t, 2, len(got.Organizations))
+			assert.Equal(t, 2, len(got.Sessions))
+			assert.Equal(t, 2, len(got.Tokens))
 		})
 	}
 

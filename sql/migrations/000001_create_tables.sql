@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at              TIMESTAMPTZ NOT NULL,
     updated_at              TIMESTAMPTZ NOT NULL,
                             PRIMARY KEY (user_id),
+                            -- TODO: username is not unique, only unique to an organization
                             UNIQUE (username)
 );
 

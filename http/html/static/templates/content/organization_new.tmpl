@@ -5,7 +5,7 @@
 {{ define "container-header" }}Organizations > New{{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ .Path "createOrganization" }}" method="POST">
+  <form class="main-form" action="{{ createOrganizationPath }}" method="POST">
     <ul>
       <li class="field">
         <label for="name">Name</label>

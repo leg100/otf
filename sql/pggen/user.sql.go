@@ -148,13 +148,24 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 }
 
 const findUserByIDSQL = `SELECT u.*,
-    array_remove(array_agg(s), NULL) AS sessions,
-    array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
+    (
+        SELECT array_remove(array_agg(s), NULL)
+        FROM sessions s
+        WHERE s.user_id = u.user_id
+        AND s.expiry > current_timestamp
+    ) AS sessions,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM tokens t
+        WHERE t.user_id = u.user_id
+    ) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations
 FROM users u
-LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
-LEFT JOIN tokens t ON u.user_id = t.user_id
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
 WHERE u.user_id = $1
 GROUP BY u.user_id
 ;`
@@ -220,13 +231,24 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 }
 
 const findUserByUsernameSQL = `SELECT u.*,
-    array_remove(array_agg(s), NULL) AS sessions,
-    array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
+    (
+        SELECT array_remove(array_agg(s), NULL)
+        FROM sessions s
+        WHERE s.user_id = u.user_id
+        AND s.expiry > current_timestamp
+    ) AS sessions,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM tokens t
+        WHERE t.user_id = u.user_id
+    ) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations
 FROM users u
-LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
-LEFT JOIN tokens t ON u.user_id = t.user_id
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
 WHERE u.username = $1
 GROUP BY u.user_id
 ;`
@@ -292,13 +314,25 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 }
 
 const findUserBySessionTokenSQL = `SELECT u.*,
-    array_remove(array_agg(s), NULL) AS sessions,
-    array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
+    (
+        SELECT array_remove(array_agg(s), NULL)
+        FROM sessions s
+        WHERE s.user_id = u.user_id
+        AND s.expiry > current_timestamp
+    ) AS sessions,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM tokens t
+        WHERE t.user_id = u.user_id
+    ) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations
 FROM users u
-LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
-LEFT JOIN tokens t ON u.user_id = t.user_id
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
 WHERE s.token = $1
 GROUP BY u.user_id
 ;`
@@ -363,14 +397,26 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 	return item, nil
 }
 
-const findUserByAuthenticationTokenSQL = `SELECT u.*,
-    array_remove(array_agg(s), NULL) AS sessions,
-    array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
-FROM users u
-LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+const findUserByAuthenticationTokenSQL = `select u.*,
+    (
+        select array_remove(array_agg(s), null)
+        from sessions s
+        where s.user_id = u.user_id
+        and s.expiry > current_timestamp
+    ) as sessions,
+    (
+        select array_remove(array_agg(t), null)
+        from tokens t
+        where t.user_id = u.user_id
+    ) as tokens,
+    (
+        select array_remove(array_agg(o), null)
+        from organizations o
+        left join organization_memberships om using (organization_id)
+        where om.user_id = u.user_id
+    ) as organizations
+from users u
 LEFT JOIN tokens t ON u.user_id = t.user_id
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
 WHERE t.token = $1
 GROUP BY u.user_id
 ;`
@@ -436,13 +482,25 @@ func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) 
 }
 
 const findUserByAuthenticationTokenIDSQL = `SELECT u.*,
-    array_remove(array_agg(s), NULL) AS sessions,
-    array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
+    (
+        SELECT array_remove(array_agg(s), NULL)
+        FROM sessions s
+        WHERE s.user_id = u.user_id
+        AND s.expiry > current_timestamp
+    ) AS sessions,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM tokens t
+        WHERE t.user_id = u.user_id
+    ) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations
 FROM users u
-LEFT JOIN sessions s USING(user_id)
-LEFT JOIN tokens t ON u.user_id = t.user_id
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+JOIN tokens t ON u.user_id = t.user_id
 WHERE t.token_id = $1
 GROUP BY u.user_id
 ;`

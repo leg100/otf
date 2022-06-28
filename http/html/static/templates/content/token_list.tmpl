@@ -30,7 +30,7 @@
 
         <td>{{ ago .CreatedAt }} ago</td>
         <td>
-          <form action="{{ deleteTokenPath .Token }}" method="POST">
+          <form action="{{ deleteTokenPath }}" method="POST">
             <button>{{ template "trash_icon" }}</button>
             <input type="hidden" name="id" value="{{ .ID }}">
           </form>

@@ -1,10 +1,11 @@
 package html
 
 import (
-	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -69,6 +70,7 @@ func TestApp(t *testing.T) {
 		path     string
 		method   string
 		redirect string
+		form     url.Values
 	}{
 		{
 			method: "GET",
@@ -104,12 +106,39 @@ func TestApp(t *testing.T) {
 			method: "GET",
 			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID(),
 		},
+		{
+			method: "GET",
+			path:   "/profile",
+		},
+		{
+			method: "GET",
+			path:   "/profile/sessions",
+		},
+		{
+			method: "GET",
+			path:   "/profile/tokens",
+		},
+		{
+			method: "GET",
+			path:   "/profile/tokens/new",
+		},
+		{
+			method: "POST",
+			path:   "/profile/tokens/create",
+			form: url.Values{
+				"description": []string{"abcdef"},
+			},
+			redirect: "/profile/tokens",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			// make request
-			buf := new(bytes.Buffer)
-			req, err := http.NewRequest(tt.method, srv.URL+tt.path, buf)
+			var reader io.Reader
+			if tt.method == "POST" {
+				reader = strings.NewReader(tt.form.Encode())
+			}
+			req, err := http.NewRequest(tt.method, srv.URL+tt.path, reader)
 			require.NoError(t, err)
 			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 			res, err := client.Do(req)

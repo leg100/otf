@@ -32,7 +32,7 @@
         {{ else }}
         <td></td>
         <td>
-          <form action="{{ $.Path "revokeSession" }}" method="POST">
+          <form action="{{ revokeSessionPath }}" method="POST">
             <button>Revoke</button>
             <input type="hidden" name="token" value="{{ .Token }}">
           </form>

@@ -39,6 +39,10 @@ func (u *fakeUserService) Get(context.Context, otf.UserSpec) (*otf.User, error) 
 	return u.fakeUser, nil
 }
 
+func (u *fakeUserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+	return otf.NewToken(user.ID(), opts.Description)
+}
+
 type fakeOrganizationService struct {
 	fakeOrganization *otf.Organization
 	otf.OrganizationService

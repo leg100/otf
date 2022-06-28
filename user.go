@@ -140,7 +140,6 @@ type UserSpec struct {
 }
 
 type TokenCreateOptions struct {
-	UserID      string
 	Description string
 }
 
