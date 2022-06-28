@@ -157,27 +157,24 @@ func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDisca
 	return err
 }
 
-// Cancel a run. The run is canceled immediately if possible; otherwise a
-// cancellation request is enqueued.
+// Cancel a run. If a run is in progress then a cancelation signal will be sent
+// out.
 func (s RunService) Cancel(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
-	_, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
-		enqueue, err := run.Cancel()
-		if err != nil {
-			return err
-		}
-		if enqueue {
-			s.V(0).Info("enqueued cancel request", "id", runID)
-			// notify agent which'll send a SIGINT to terraform
-			s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
-		}
-		s.V(0).Info("canceled run", "id", runID)
-		s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
-		return nil
+	var enqueue bool
+	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) (err error) {
+		enqueue, err = run.Cancel()
+		return err
 	})
 	if err != nil {
 		s.Error(err, "canceling run", "id", runID)
 		return err
 	}
+	s.V(0).Info("canceled run", "id", runID)
+	if enqueue {
+		// notify agent which'll send a SIGINT to terraform
+		s.Publish(otf.Event{Type: otf.EventRunCancel, Payload: run})
+	}
+	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 	return nil
 }
 
