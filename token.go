@@ -49,9 +49,9 @@ func NewToken(uid, description string) (*Token, error) {
 
 func unmarshalTokenDBType(typ pggen.Tokens) (*Token, error) {
 	token := Token{
-		id:          typ.UserID.String,
+		id:          typ.TokenID.String,
 		createdAt:   typ.CreatedAt.Time,
-		token:       typ.TokenID.String,
+		token:       typ.Token.String,
 		description: typ.Description.String,
 		userID:      typ.UserID.String,
 	}

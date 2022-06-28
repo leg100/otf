@@ -130,6 +130,14 @@ func TestApp(t *testing.T) {
 			},
 			redirect: "/profile/tokens",
 		},
+		{
+			method: "POST",
+			path:   "/profile/tokens/delete",
+			form: url.Values{
+				"id": []string{"ut-fake"},
+			},
+			redirect: "/profile/tokens",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
@@ -140,23 +148,31 @@ func TestApp(t *testing.T) {
 			}
 			req, err := http.NewRequest(tt.method, srv.URL+tt.path, reader)
 			require.NoError(t, err)
+			if tt.method == "POST" {
+				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			}
 			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
 			res, err := client.Do(req)
 			require.NoError(t, err)
 			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
 
 			// check response
 			if tt.redirect != "" {
-				assert.Equal(t, 302, res.StatusCode)
-				loc, err := res.Location()
-				require.NoError(t, err)
-				assert.Equal(t, tt.redirect, loc.Path)
+				if assert.Equal(t, 302, res.StatusCode) {
+					loc, err := res.Location()
+					require.NoError(t, err)
+					assert.Equal(t, tt.redirect, loc.Path)
+				} else {
+					t.Log(string(body))
+				}
 			} else {
-				assert.Equal(t, 200, res.StatusCode)
+				if !assert.Equal(t, 200, res.StatusCode) {
+					t.Log(string(body))
+				}
 			}
 			if res.StatusCode == 500 {
-				body, err := io.ReadAll(res.Body)
-				require.NoError(t, err)
 				t.Logf("received http 500; body:\n%s\n", (string(body)))
 			}
 			//assert.Equal(t, "", string(body))

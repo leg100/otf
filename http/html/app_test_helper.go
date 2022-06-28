@@ -43,6 +43,8 @@ func (u *fakeUserService) CreateToken(ctx context.Context, user *otf.User, opts 
 	return otf.NewToken(user.ID(), opts.Description)
 }
 
+func (u *fakeUserService) DeleteToken(context.Context, *otf.User, string) error { return nil }
+
 type fakeOrganizationService struct {
 	fakeOrganization *otf.Organization
 	otf.OrganizationService
