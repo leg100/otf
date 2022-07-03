@@ -16,7 +16,7 @@
     <div class="item-heading">
     <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
     </div>
-    <div class="id"><a class="identifier" href="{{ getOrganizationPath . }}">{{ .ID }}</a></div>
+    {{ template "identifier" . }}
   </div>
   {{ end }}
 {{ end }}

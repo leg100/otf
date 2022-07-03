@@ -22,7 +22,7 @@
       <span class="status-ago">{{ ago .CreatedAt }} ago</span>
     </div>
     <div class="item-content">
-      <span class="identifier">{{ .ID }}</span>
+      {{ template "identifier" . }}
       <form action="{{ deleteTokenPath }}" method="POST">
         <button class="delete">delete</button>
         <input type="hidden" name="id" value="{{ .ID }}">

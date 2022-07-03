@@ -42,6 +42,7 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 }
 
 func (s *Session) CreatedAt() time.Time { return s.createdAt }
+func (s *Session) ID() string           { return s.Token }
 
 // SessionData is various session data serialised to the session store as JSON.
 type SessionData struct {

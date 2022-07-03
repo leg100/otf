@@ -91,6 +91,7 @@ header nav {
  */
 .navbar {
   display: flex;
+  align-items: center;
   gap: 2em;
 }
 
@@ -111,6 +112,7 @@ header nav {
 .navbar .nav-links {
   /* nav-links consume remainder of navbar */
   flex-grow: 1;
+  align-items: center;
 }
 
 .navbar .nav-links ul {
@@ -182,6 +184,19 @@ a:hover {
 .identifier {
   font-family: var(--alt-font);
   font-size: 0.8rem;
+}
+
+.identifier-container {
+  display: flex;
+  gap: 0.5em;
+
+  font-family: var(--alt-font);
+  font-size: 0.8rem;
+}
+
+/* identifier copied to clipboard notification */
+.identifier-container .copied-notification {
+  background: paleturquoise;
 }
 
 /* content-header: title + links */
