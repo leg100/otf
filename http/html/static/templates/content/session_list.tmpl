@@ -18,7 +18,7 @@
     <div class="item-heading">
       <span>{{ .Address }}</span>
       {{ if eq .Token $.CurrentSession.Token }} &#10004; {{ end }}
-      <span class="status-ago">Created {{ ago .CreatedAt }} ago</span>
+      <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
     </div>
     <div class="item-content">
       {{ template "identifier" . }}

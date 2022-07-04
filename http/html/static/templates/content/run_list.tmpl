@@ -21,7 +21,7 @@
         <span>|</span>
         <span><a href="{{ getApplyPath . }}">apply</a></span>
       {{ end }}
-      <span class="status-ago">{{ ago .CreatedAt }} ago</span>
+      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
     </div>
     {{ template "identifier" . }}
   </div>

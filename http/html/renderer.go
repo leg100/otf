@@ -8,7 +8,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/Masterminds/sprig"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/leg100/otf"
 )
 
