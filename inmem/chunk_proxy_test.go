@@ -58,7 +58,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 			require.NoError(t, err)
 
 			// expect cache to have identical content to store
-			assert.Equal(t, string(backend.store[id].Marshal()), string(cache.cache[otf.LogCacheKey(id)]))
+			assert.Equal(t, string(backend.store[id].Marshal()), string(cache.cache[otf.LogCacheKey(id, otf.PlanPhase)]))
 		})
 	}
 }
@@ -72,7 +72,7 @@ func TestChunkProxy_GetChunk_FromCache(t *testing.T) {
 	proxy, err := NewChunkProxy(cache, store)
 	require.NoError(t, err)
 
-	cache.cache[otf.LogCacheKey(id)] = []byte("\x02abcdefghijkl\x03")
+	cache.cache[otf.LogCacheKey(id, otf.PlanPhase)] = []byte("\x02abcdefghijkl\x03")
 
 	chunk, err := proxy.GetChunk(context.Background(), id, otf.PlanPhase, otf.GetChunkOptions{})
 	require.NoError(t, err)
@@ -95,5 +95,5 @@ func TestChunkProxy_GetChunk_FromStore(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "abcdefghijkl", string(chunk.Data))
-	assert.Equal(t, "abcdefghijkl", string(cache.cache["key.log"]))
+	assert.Equal(t, "abcdefghijkl", string(cache.cache["key.plan.log"]))
 }

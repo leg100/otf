@@ -20,9 +20,6 @@ const (
 	partialTemplatesGlob = "static/templates/partials/*.tmpl"
 )
 
-func init() {
-}
-
 // renderer is capable of locating and rendering a template.
 type renderer interface {
 	renderTemplate(name string, w io.Writer, data any) error
