@@ -18,12 +18,6 @@ func (w organizationRequest) OrganizationName() string {
 }
 
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
-	// default to 10 organizations per page
-	opts := otf.OrganizationListOptions{
-		ListOptions: otf.ListOptions{
-			PageSize: 10,
-		},
-	}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
