@@ -10,13 +10,9 @@
   </form>
 {{ end }}
 
-{{ define "content" }}
-  {{ range .Content.List.Items }}
-  <div class="item">
-    <div class="item-heading">
-      <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
-    </div>
-    {{ template "identifier" . }}
-  </div>
-  {{ end }}
+{{ define "content-list-item" }}
+<div class="item-heading">
+  <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
+</div>
+{{ template "identifier" . }}
 {{ end }}

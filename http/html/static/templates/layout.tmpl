@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
-  <script src="{{ addHash "/static/js/htmx.min.js" }}"></script>
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
@@ -58,6 +57,19 @@
 
     <div class="content">
       {{ block "content" . }}{{ end }}
+      {{ block "content-list" . }}
+        <div class="content-list">
+          {{ range .Content.List.Items }}
+          <div class="item">
+            {{ block "content-list-item" . }}{{ end }}
+          </div>
+          {{ end }}
+          <div class="content-list-footer">
+            <a href="">Last Page</a>
+            <a href="">Next Page</a>
+          </div>
+        </div>
+      {{ end }}
     </div>
   {{ end }}
   </main>
@@ -65,6 +77,5 @@
     <a href="https://github.com/leg100/otf">{{ .Version }}</a>
   </footer>
 </body>
-<script src="{{ addHash "/static/js/main.js" }}"></script>
 </html>
 {{ end }}

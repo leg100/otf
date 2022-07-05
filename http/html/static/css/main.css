@@ -329,6 +329,19 @@ button.delete:hover {
   background: #bfffbf;
 }
 
+/* main content container for list items */
+.content-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.content-list-footer {
+  display: flex;
+  padding: 10px;
+  justify-content: end;
+  gap: 1em;
+}
+
 /* item is the standard container for an item in a listing,
  * e.g. a run in a list of runs */
 .item {

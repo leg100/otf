@@ -4,6 +4,12 @@ import (
 	"math"
 )
 
+const (
+	DefaultPageNumber = 1
+	DefaultPageSize   = 20
+	MaxPageSize       = 100
+)
+
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {
 	CurrentPage  int
@@ -44,8 +50,21 @@ func (o *ListOptions) GetLimit() int {
 	return o.PageSize
 }
 
-// SanitizeListOptions ensures list options adhere to mins and maxs
-func SanitizeListOptions(opts *ListOptions) {
+// NewPagination constructs a Pagination obj.
+func NewPagination(opts ListOptions, count int) *Pagination {
+	sanitizeListOptions(&opts)
+
+	return &Pagination{
+		CurrentPage:  opts.PageNumber,
+		PreviousPage: previousPage(opts.PageNumber),
+		NextPage:     nextPage(opts, count),
+		TotalPages:   totalPages(count, opts.PageSize),
+		TotalCount:   count,
+	}
+}
+
+// sanitizeListOptions ensures list options adhere to mins and maxs
+func sanitizeListOptions(opts *ListOptions) {
 	if opts.PageNumber == 0 {
 		opts.PageNumber = 1
 	}
@@ -55,19 +74,6 @@ func SanitizeListOptions(opts *ListOptions) {
 		opts.PageSize = MaxPageSize
 	case opts.PageSize <= 0:
 		opts.PageSize = DefaultPageSize
-	}
-}
-
-// NewPagination constructs a Pagination obj.
-func NewPagination(opts ListOptions, count int) *Pagination {
-	SanitizeListOptions(&opts)
-
-	return &Pagination{
-		CurrentPage:  opts.PageNumber,
-		PreviousPage: previousPage(opts.PageNumber),
-		NextPage:     nextPage(opts, count),
-		TotalPages:   totalPages(count, opts.PageSize),
-		TotalCount:   count,
 	}
 }
 

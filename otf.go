@@ -14,10 +14,6 @@ import (
 )
 
 const (
-	DefaultPageNumber = 1
-	DefaultPageSize   = 20
-	MaxPageSize       = 100
-
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
 
 	// ChunkMaxLimit is maximum permissible size of a chunk
