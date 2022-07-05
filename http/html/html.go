@@ -7,16 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leg100/otf"
 )
-
-const (
-	defaultPageSize = 10
-)
-
-type pagination struct {
-	*otf.Pagination
-}
 
 func param(r *http.Request, key string) string {
 	vars := mux.Vars(r)

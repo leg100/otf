@@ -18,6 +18,7 @@ func (w organizationRequest) OrganizationName() string {
 }
 
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
+	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return

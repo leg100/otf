@@ -65,7 +65,7 @@ func (o *ListOptions) GetOffset() int {
 // GetLimit calculates the limit for use in SQL queries.
 func (o *ListOptions) GetLimit() int {
 	if o.PageSize == 0 {
-		return math.MaxInt
+		return DefaultPageSize
 	} else if o.PageSize > MaxPageSize {
 		return MaxPageSize
 	}

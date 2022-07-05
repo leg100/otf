@@ -56,7 +56,8 @@ func (u *fakeOrganizationService) Get(ctx context.Context, name string) (*otf.Or
 
 func (u *fakeOrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return &otf.OrganizationList{
-		Items: []*otf.Organization{u.fakeOrganization},
+		Items:      []*otf.Organization{u.fakeOrganization},
+		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}, nil
 }
 
@@ -71,7 +72,8 @@ func (u *fakeWorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) 
 
 func (u *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
-		Items: []*otf.Workspace{u.fakeWorkspace},
+		Items:      []*otf.Workspace{u.fakeWorkspace},
+		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}, nil
 }
 
@@ -90,6 +92,7 @@ func (u *fakeRunService) Get(context.Context, string) (*otf.Run, error) {
 
 func (u *fakeRunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
-		Items: []*otf.Run{u.fakeRun},
+		Items:      []*otf.Run{u.fakeRun},
+		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}, nil
 }
