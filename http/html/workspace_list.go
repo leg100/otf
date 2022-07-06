@@ -7,11 +7,11 @@ import (
 // workspaceList exposes a list of workspaces to a template
 type workspaceList struct {
 	*otf.WorkspaceList
-	opts otf.WorkspaceListOptions
+	otf.WorkspaceListOptions
 }
 
 // OrganizationName makes the organization name for a workspace listing
 // available to a template
 func (l workspaceList) OrganizationName() string {
-	return *l.opts.OrganizationName
+	return *l.WorkspaceListOptions.OrganizationName
 }

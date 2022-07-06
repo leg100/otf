@@ -8,10 +8,10 @@
     No items currently exist.
   {{ end }}
   <div class="content-list-footer">
-    {{ if .Content.HasPrevPage }}
+    {{ if .Content.PrevPage }}
     <a href="{{ urlJoin (dict "path" $.CurrentPath "query" .Content.PrevPageQuery) }}">Previous Page</a>
     {{ end }}
-    {{ if .Content.HasNextPage }}
+    {{ if .Content.NextPage }}
     <a href="{{ urlJoin (dict "path" $.CurrentPath "query" .Content.NextPageQuery) }}">Next Page</a>
     {{ end }}
   </div>

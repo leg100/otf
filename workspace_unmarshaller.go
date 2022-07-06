@@ -149,10 +149,10 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 	return &domain
 }
 
+// UnmarshalWorkspaceListJSONAPI converts a DTO into a workspace list
 func UnmarshalWorkspaceListJSONAPI(json *dto.WorkspaceList) *WorkspaceList {
-	pagination := Pagination(*json.Pagination)
 	wl := WorkspaceList{
-		Pagination: &pagination,
+		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
 	}
 	for _, i := range json.Items {
 		wl.Items = append(wl.Items, UnmarshalWorkspaceJSONAPI(i))

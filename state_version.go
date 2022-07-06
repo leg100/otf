@@ -66,7 +66,7 @@ type StateVersionList struct {
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *StateVersionList) ToJSONAPI(req *http.Request) any {
 	obj := &jsonapi.StateVersionList{
-		Pagination: (*jsonapi.Pagination)(l.Pagination),
+		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
 		obj.Items = append(obj.Items, item.ToJSONAPI(req).(*jsonapi.StateVersion))

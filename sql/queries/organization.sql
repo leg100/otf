@@ -13,6 +13,7 @@ FOR UPDATE
 -- name: FindOrganizations :many
 SELECT *
 FROM organizations
+ORDER BY updated_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset');
 
 -- name: CountOrganizations :one

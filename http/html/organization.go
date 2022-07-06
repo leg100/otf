@@ -8,6 +8,12 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// organizationList exposes organization listing info to a template
+type organizationList struct {
+	*otf.OrganizationList
+	otf.OrganizationListOptions
+}
+
 // organizationRequest provides metadata about a request for a organization
 type organizationRequest struct {
 	r *http.Request
@@ -28,7 +34,7 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("organization_list.tmpl", w, r, organizations)
+	app.render("organization_list.tmpl", w, r, organizationList{organizations, opts})
 }
 
 func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {

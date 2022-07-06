@@ -279,7 +279,7 @@ type WorkspaceList struct {
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.WorkspaceList{
-		Pagination: (*jsonapi.Pagination)(l.Pagination),
+		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
 		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Workspace))
@@ -317,14 +317,12 @@ type WorkspaceStore interface {
 type WorkspaceListOptions struct {
 	// Pagination
 	ListOptions
-
 	// Filter workspaces with name matching prefix.
 	Prefix string `schema:"search[name],omitempty"`
-
 	// OrganizationName filters workspaces by organization name. Required.
 	OrganizationName *string `schema:"organization_name,omitempty"`
-
-	// A list of relations to include. See available resources https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
+	// A list of relations to include. See available resources
+	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`
 }
 

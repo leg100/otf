@@ -9,9 +9,7 @@ import (
 )
 
 func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
-	var (
-		opts otf.WorkspaceListOptions
-	)
+	var opts otf.WorkspaceListOptions
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -22,13 +20,19 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			list, err := client.Workspaces().List(cmd.Context(), opts)
-			if err != nil {
-				return err
-			}
-
-			for _, ws := range list.Items {
-				fmt.Println(ws.Name())
+			for {
+				list, err := client.Workspaces().List(cmd.Context(), opts)
+				if err != nil {
+					return err
+				}
+				for _, ws := range list.Items {
+					fmt.Println(ws.Name())
+				}
+				if list.NextPage() != nil {
+					opts.PageNumber = *list.NextPage()
+				} else {
+					break
+				}
 			}
 
 			return nil

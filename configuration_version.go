@@ -102,7 +102,7 @@ func (cv *ConfigurationVersion) ToJSONAPI(req *http.Request) any {
 // ToJSONAPI assembles a JSONAPI DTO
 func (l *ConfigurationVersionList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.ConfigurationVersionList{
-		Pagination: (*jsonapi.Pagination)(l.Pagination),
+		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
 		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.ConfigurationVersion))

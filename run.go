@@ -746,7 +746,7 @@ type RunList struct {
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *RunList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.RunList{
-		Pagination: (*jsonapi.Pagination)(l.Pagination),
+		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
 		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Run))
@@ -757,8 +757,6 @@ func (l *RunList) ToJSONAPI(req *http.Request) any {
 // RunListOptions are options for paginating and filtering a list of runs
 type RunListOptions struct {
 	ListOptions
-	// Order: oldest first or newest first
-	Order ListOrder
 	// Filter by run statuses (with an implicit OR condition)
 	Statuses []RunStatus
 	// Filter by workspace ID
@@ -767,6 +765,9 @@ type RunListOptions struct {
 	OrganizationName *string `schema:"organization_name"`
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name"`
+	// A list of relations to include. See available resources:
+	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
+	Include *string `schema:"include"`
 }
 
 // LogFields provides fields for logging
