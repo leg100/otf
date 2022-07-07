@@ -90,6 +90,18 @@ func TestApp(t *testing.T) {
 			path:   "/organizations/org-fake/workspaces/new",
 		},
 		{
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake/edit",
+		},
+		{
+			method: "POST",
+			path:   "/organizations/org-fake/workspaces/ws-fake/update",
+			form: url.Values{
+				"description": []string{"abcdef"},
+			},
+			redirect: "/organizations/org-fake/workspaces/ws-fake/edit",
+		},
+		{
 			method:   "POST",
 			path:     "/organizations/org-fake/workspaces/create",
 			redirect: "/organizations/org-fake/workspaces/ws-fake",

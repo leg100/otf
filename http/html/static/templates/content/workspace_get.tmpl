@@ -7,10 +7,7 @@
 {{ end }}
 
 {{ define "container-header-links" }}
-<li>queue</li>
-<li><a href="{{ listRunPath .Content }}">runs</a></li>
-<li>variables</li>
-<li>settings</li>
+  {{ template "workspace-header-links" . }}
 {{ end }}
 
 {{ define "content" }}

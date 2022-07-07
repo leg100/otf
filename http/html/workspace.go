@@ -111,6 +111,11 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 	}
+	if err := opts.Valid(); err != nil {
+		flashError(w, err.Error())
+		http.Redirect(w, r, editWorkspacePath(workspaceRequest{r}), http.StatusFound)
+		return
+	}
 	workspace, err := app.WorkspaceService().Update(r.Context(), spec, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

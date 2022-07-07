@@ -10,6 +10,10 @@
   runs
 {{ end }}
 
+{{ define "container-header-links" }}
+  {{ template "workspace-header-links" . }}
+{{ end }}
+
 {{ define "content" }}
   {{ template "content-list" . }}
 {{ end }}

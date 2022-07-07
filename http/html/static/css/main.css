@@ -74,6 +74,11 @@ ul, ol {
   padding: 0;
 }
 
+/* Unset browser fieldset style */
+fieldset {
+  margin: 0
+}
+
 header nav {
   /* Small gutter around edge */
   padding: var(--body-gutter);
@@ -227,6 +232,10 @@ a:hover {
 
   /* Links are right-aligned */
   justify-content: flex-end;
+}
+
+.container-header-links .active {
+  text-decoration: underline;
 }
 
 /* center content e.g. the login prompt */

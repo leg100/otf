@@ -230,14 +230,14 @@ type WorkspaceUpdateOptions struct {
 	AutoApply                  *bool
 	Name                       *string
 	Description                *string
-	ExecutionMode              *string
+	ExecutionMode              *string `schema:"execution_mode"`
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	Operations                 *bool
 	QueueAllRuns               *bool
 	SpeculativeEnabled         *bool
 	StructuredRunOutputEnabled *bool
-	TerraformVersion           *string
+	TerraformVersion           *string `schema:"terraform_version"`
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
 }

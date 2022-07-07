@@ -70,6 +70,10 @@ func (u *fakeWorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) 
 	return u.fakeWorkspace, nil
 }
 
+func (u *fakeWorkspaceService) Update(context.Context, otf.WorkspaceSpec, otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	return u.fakeWorkspace, nil
+}
+
 func (u *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{u.fakeWorkspace},
