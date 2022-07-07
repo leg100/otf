@@ -28,6 +28,9 @@ e2e: build
 unit:
 	go test $$(go list ./... | grep -v e2e)
 
+.PHONY: test
+test: lint unit go-tfe-tests e2e
+
 .PHONY: build
 build:
 	CGO_ENABLED=0 go build -o _build/ -ldflags $(LD_FLAGS) ./...
