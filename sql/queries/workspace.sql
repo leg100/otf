@@ -60,6 +60,7 @@ LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND   o.name LIKE ANY(pggen.arg('organization_names'))
+ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
 ;

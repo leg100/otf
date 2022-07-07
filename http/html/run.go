@@ -26,13 +26,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("run_list.tmpl", w, r, struct {
-		List      *otf.RunList
-		Workspace workspaceRoute
-	}{
-		List:      runs,
-		Workspace: workspaceRequest{r},
-	})
+	app.render("run_list.tmpl", w, r, runList{runs, opts})
 }
 
 func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {

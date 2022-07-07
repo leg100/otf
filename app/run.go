@@ -83,22 +83,35 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 	return rl, nil
 }
 
-// ListWatch lists runs and then watches for changes to runs. Note: The options
-// filter the list but not the watch.
+// ListWatch lists runs and then watches for changes to runs. The run listing is
+// ordered by creation date, oldest first. Note: The options filter the list but
+// not the watch.
 func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
-	existing, err := s.db.ListRuns(ctx, opts)
-	if err != nil {
-		return nil, err
+	// retrieve existing runs, page by page
+	var existing []*otf.Run
+	for {
+		page, err := s.db.ListRuns(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		existing = append(existing, page.Items...)
+		if page.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *page.NextPage()
 	}
-	// reverse items from earliest first to oldest first
+	// db returns runs ordered by creation date, newest first, but we want
+	// oldest first, so we reverse the order
 	var oldest []*otf.Run
-	for _, r := range existing.Items {
+	for _, r := range existing {
 		oldest = append([]*otf.Run{r}, oldest...)
 	}
+	// send the retrieved runs down the channel to be returned to caller
 	spool := make(chan *otf.Run, len(oldest))
-	for _, r := range existing.Items {
+	for _, r := range oldest {
 		spool <- r
 	}
+	// the same channel receives run events from here-in on
 	sub, err := s.Subscribe("run-listwatch")
 	if err != nil {
 		return nil, err

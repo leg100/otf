@@ -53,7 +53,7 @@ type OrganizationList struct {
 // ToJSONAPI assembles a JSON-API DTO.
 func (l *OrganizationList) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.OrganizationList{
-		Pagination: (*jsonapi.Pagination)(l.Pagination),
+		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
 		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Organization))

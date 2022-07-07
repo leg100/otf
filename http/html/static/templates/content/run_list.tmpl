@@ -3,27 +3,27 @@
 {{ define "title" }}Runs{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content.Workspace }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content.Workspace }}">{{ .Content.Workspace.WorkspaceName }}</a>
+  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
   /
   runs
 {{ end }}
 
 {{ define "content" }}
-  {{ range .Content.List.Items }}
-  <div class="item">
-    <div class="item-heading">
-      <span class="smallcaps status"><span class="status-{{ .Status }}">{{ .Status.String | replace "_" " "}}</span></span>
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item-heading">
+    <span class="smallcaps status"><span class="status-{{ .Status }}">{{ .Status.String | replace "_" " "}}</span></span>
+    <span>|</span>
+    <span><a href="{{ getPlanPath . }}">plan</a></span>
+    {{ if not .PlanOnly }}
       <span>|</span>
-      <span><a href="{{ getPlanPath . }}">plan</a></span>
-      {{ if not .PlanOnly }}
-        <span>|</span>
-        <span><a href="{{ getApplyPath . }}">apply</a></span>
-      {{ end }}
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
-    </div>
-    {{ template "identifier" . }}
+      <span><a href="{{ getApplyPath . }}">apply</a></span>
+    {{ end }}
+    <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
   </div>
-  {{ end }}
+  {{ template "identifier" . }}
 {{ end }}

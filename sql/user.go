@@ -82,7 +82,7 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
+		return otf.UnmarshalUserDBResult(otf.UserDBResult(result), otf.WithActiveSession(*spec.SessionToken))
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

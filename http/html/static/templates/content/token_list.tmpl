@@ -15,19 +15,19 @@
 {{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  {{ range .Content.Tokens }}
-  <div class="item">
-    <div class="item-heading">
-      <span class="status">{{ .Description }}</span>
-      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
-    </div>
-    <div class="item-content">
-      {{ template "identifier" . }}
-      <form action="{{ deleteTokenPath }}" method="POST">
-        <button class="delete">delete</button>
-        <input type="hidden" name="id" value="{{ .ID }}">
-      </form>
-    </div>
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item-heading">
+    <span class="status">{{ .Description }}</span>
+    <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
   </div>
-  {{ end }}
+  <div class="item-content">
+    {{ template "identifier" . }}
+    <form action="{{ deleteTokenPath }}" method="POST">
+      <button class="delete">delete</button>
+      <input type="hidden" name="id" value="{{ .ID }}">
+    </form>
+  </div>
 {{ end }}

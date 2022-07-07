@@ -91,6 +91,7 @@ func (q *DBQuerier) FindOrganizationByNameForUpdateScan(results pgx.BatchResults
 
 const findOrganizationsSQL = `SELECT *
 FROM organizations
+ORDER BY updated_at DESC
 LIMIT $1 OFFSET $2;`
 
 type FindOrganizationsRow struct {

@@ -6,12 +6,17 @@ import (
 	"github.com/leg100/otf"
 )
 
-type testRunLister struct {
+type testRunService struct {
 	runs []*otf.Run
+
+	otf.RunService
 }
 
-func (l *testRunLister) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
-	return &otf.RunList{Items: l.runs}, nil
+func (l *testRunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+	return &otf.RunList{
+		Items:      l.runs,
+		Pagination: otf.NewPagination(otf.ListOptions{}, 1),
+	}, nil
 }
 
 type testSubscriber struct {

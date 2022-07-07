@@ -120,6 +120,7 @@ LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name LIKE $2 || '%'
 AND   o.name LIKE ANY($3)
+ORDER BY w.updated_at DESC
 LIMIT $4
 OFFSET $5
 ;`

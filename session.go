@@ -24,6 +24,8 @@ type Session struct {
 	createdAt time.Time
 	// Session belongs to a user
 	UserID string
+	// whether session is the active session for a user.
+	active bool
 }
 
 func NewSession(uid string, data *SessionData) (*Session, error) {
@@ -43,6 +45,7 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 
 func (s *Session) CreatedAt() time.Time { return s.createdAt }
 func (s *Session) ID() string           { return s.Token }
+func (s *Session) Active() bool         { return s.active }
 
 // SessionData is various session data serialised to the session store as JSON.
 type SessionData struct {

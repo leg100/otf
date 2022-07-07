@@ -31,12 +31,19 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 	}
 
 	// Create workspace queues
-	listing, err := svc.List(context.Background(), otf.WorkspaceListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for _, ws := range listing.Items {
-		svc.WorkspaceQueueManager.Create(ws.ID())
+	opts := otf.WorkspaceListOptions{}
+	for {
+		listing, err := svc.List(context.Background(), opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, ws := range listing.Items {
+			svc.WorkspaceQueueManager.Create(ws.ID())
+		}
+		if listing.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *listing.NextPage()
 	}
 
 	return svc, nil

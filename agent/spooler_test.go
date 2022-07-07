@@ -15,7 +15,7 @@ func TestSpooler_New(t *testing.T) {
 	want := otf.NewTestRun(t, "run-123", "ws-123", otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
 
 	spooler, err := NewSpooler(
-		&testRunLister{runs: []*otf.Run{want}},
+		&testRunService{runs: []*otf.Run{want}},
 		&testSubscriber{},
 		logr.Discard(),
 	)

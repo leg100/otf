@@ -11,12 +11,12 @@
 {{ define "container-header" }}organizations{{ end }}
 
 {{ define "content" }}
-  {{ range .Content.Items }}
-  <div class="item">
-    <div class="item-heading">
-    <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
-    </div>
-    {{ template "identifier" . }}
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item-heading">
+  <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
   </div>
-  {{ end }}
+  {{ template "identifier" . }}
 {{ end }}
