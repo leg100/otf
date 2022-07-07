@@ -20,7 +20,9 @@
 
 {{ define "content-list-item" }}
   <div class="item-heading">
-    <span class="smallcaps status"><span class="status-{{ .Status }}">{{ .Status.String | replace "_" " "}}</span></span>
+    <span class="status status-{{ .Status }}">
+      <a href="{{ getRunPath . }}">{{ .Status.String | replace "_" " "}}</a>
+    </span>
     <span>|</span>
     <span><a href="{{ getPlanPath . }}">plan</a></span>
     {{ if not .PlanOnly }}

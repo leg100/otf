@@ -11,3 +11,16 @@
   /
   {{ .Content.ID }}
 {{ end }}
+
+{{ define "content" }}
+  <div class="content-menu">
+    <div>
+      <span><a href="{{ getPlanPath .Content }}">plan</a></span>
+    </div>
+    {{ if not .Content.PlanOnly }}
+    <div>
+      <span><a href="{{ getApplyPath .Content }}">apply</a></span>
+    </div>
+    {{ end }}
+  </div>
+{{ end }}

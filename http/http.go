@@ -19,15 +19,6 @@ var (
 	encoder = schema.NewEncoder()
 )
 
-// ListOptions is used to specify pagination options when making API requests.
-// Pagination allows breaking up large result sets into chunks, or "pages".
-type ListOptions struct {
-	// The page number to request. The results vary based on the PageSize.
-	PageNumber int `schema:"page[number],omitempty"`
-	// The number of elements returned in a single page.
-	PageSize int `schema:"page[size],omitempty"`
-}
-
 // SanitizeHostname ensures hostname is in the format <host>:<port>
 func SanitizeHostname(hostname string) (string, error) {
 	u, err := url.ParseRequestURI(hostname)
