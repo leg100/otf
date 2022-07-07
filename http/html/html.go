@@ -7,9 +7,16 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 )
 
-//go:generate go run path_helpers.go
+const (
+	defaultPageSize = 10
+)
+
+type pagination struct {
+	*otf.Pagination
+}
 
 func param(r *http.Request, key string) string {
 	vars := mux.Vars(r)

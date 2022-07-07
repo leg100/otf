@@ -15,7 +15,7 @@ type UserDBResult struct {
 	Organizations []pggen.Organizations `json:"organizations"`
 }
 
-func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
+func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, error) {
 	user := User{
 		id:        row.UserID.String,
 		createdAt: row.CreatedAt.Time,
@@ -29,7 +29,6 @@ func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 		}
 		user.Organizations = append(user.Organizations, org)
 	}
-
 	for _, typ := range row.Sessions {
 		sess, err := UnmarshalSessionDBType(typ)
 		if err != nil {
@@ -37,13 +36,15 @@ func UnmarshalUserDBResult(row UserDBResult) (*User, error) {
 		}
 		user.Sessions = append(user.Sessions, sess)
 	}
-
 	for _, typ := range row.Tokens {
 		token, err := unmarshalTokenDBType(typ)
 		if err != nil {
 			return nil, err
 		}
 		user.Tokens = append(user.Tokens, token)
+	}
+	for _, o := range opts {
+		o(&user)
 	}
 
 	return &user, nil

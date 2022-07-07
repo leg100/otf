@@ -42,10 +42,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_list.tmpl", w, r, struct {
-		Organization organizationRoute
-		List         *otf.WorkspaceList
-	}{organizationRequest{r}, workspaces})
+	app.render("workspace_list.tmpl", w, r, workspaceList{workspaces, opts})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {

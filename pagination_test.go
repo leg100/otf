@@ -19,8 +19,8 @@ func TestPagination(t *testing.T) {
 			count: 5,
 			want: Pagination{
 				CurrentPage:  1,
-				PreviousPage: 1,
-				NextPage:     1,
+				PreviousPage: nil,
+				NextPage:     nil,
 				TotalCount:   5,
 				TotalPages:   1,
 			},
@@ -31,8 +31,8 @@ func TestPagination(t *testing.T) {
 			count: 101,
 			want: Pagination{
 				CurrentPage:  3,
-				PreviousPage: 2,
-				NextPage:     4,
+				PreviousPage: Int(2),
+				NextPage:     Int(4),
 				TotalCount:   101,
 				TotalPages:   6,
 			},
@@ -43,8 +43,8 @@ func TestPagination(t *testing.T) {
 			count: 0,
 			want: Pagination{
 				CurrentPage:  1,
-				PreviousPage: 1,
-				NextPage:     1,
+				PreviousPage: nil,
+				NextPage:     nil,
 				TotalCount:   0,
 				TotalPages:   1,
 			},

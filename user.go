@@ -49,6 +49,15 @@ func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
 
+func (u *User) ActiveSession() *Session {
+	for _, s := range u.Sessions {
+		if s.active {
+			return s
+		}
+	}
+	return nil
+}
+
 // SyncOrganizationMemberships synchronises a user's organization memberships,
 // taking an authoritative list of memberships and ensuring its memberships
 // match, adding and removing memberships accordingly.
@@ -180,6 +189,16 @@ type NewUserOption func(*User)
 func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 	return func(user *User) {
 		user.Organizations = memberships
+	}
+}
+
+func WithActiveSession(token string) NewUserOption {
+	return func(user *User) {
+		for _, session := range user.Sessions {
+			if session.Token == token {
+				session.active = true
+			}
+		}
 	}
 }
 

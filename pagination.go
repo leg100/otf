@@ -2,21 +2,46 @@ package otf
 
 import (
 	"math"
+	"net/url"
+	"strconv"
 )
 
 const (
 	DefaultPageNumber = 1
-	DefaultPageSize   = 20
+	DefaultPageSize   = 10
 	MaxPageSize       = 100
 )
 
 // Pagination is used to return the pagination details of an API request.
 type Pagination struct {
 	CurrentPage  int
-	PreviousPage int
-	NextPage     int
+	PreviousPage *int
+	NextPage     *int
 	TotalPages   int
 	TotalCount   int
+}
+
+func (p *Pagination) HasNextPage() bool { return p.NextPage != nil }
+func (p *Pagination) HasPrevPage() bool { return p.PreviousPage != nil }
+
+func (p *Pagination) NextPageQuery() string {
+	if p.NextPage == nil {
+		return ""
+	}
+	q := url.Values{}
+	q.Add("page[number]", strconv.Itoa(*p.NextPage))
+	q.Add("page[size]", strconv.Itoa(DefaultPageSize))
+	return q.Encode()
+}
+
+func (p *Pagination) PrevPageQuery() string {
+	if p.PreviousPage == nil {
+		return ""
+	}
+	q := url.Values{}
+	q.Add("page[number]", strconv.Itoa(*p.PreviousPage))
+	q.Add("page[size]", strconv.Itoa(DefaultPageSize))
+	return q.Encode()
 }
 
 // ListOptions is used to specify pagination options when making API requests.
@@ -81,16 +106,16 @@ func totalPages(totalCount, pageSize int) int {
 	return int(math.Max(1, math.Ceil(float64(totalCount)/float64(pageSize))))
 }
 
-func previousPage(currentPage int) int {
+func previousPage(currentPage int) *int {
 	if currentPage > 1 {
-		return currentPage - 1
+		return Int(currentPage - 1)
 	}
-	return 1
+	return nil
 }
 
-func nextPage(opts ListOptions, count int) int {
+func nextPage(opts ListOptions, count int) *int {
 	if opts.PageNumber < totalPages(count, opts.PageSize) {
-		return opts.PageNumber + 1
+		return Int(opts.PageNumber + 1)
 	}
-	return 1
+	return nil
 }

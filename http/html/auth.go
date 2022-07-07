@@ -110,7 +110,10 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("session_list.tmpl", w, r, user)
+	app.render("session_list.tmpl", w, r, sessionList{
+		Pagination: &otf.Pagination{},
+		Items:      user.Sessions,
+	})
 }
 
 func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +146,10 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("token_list.tmpl", w, r, user)
+	app.render("token_list.tmpl", w, r, tokenList{
+		Pagination: &otf.Pagination{},
+		Items:      user.Tokens,
+	})
 }
 
 func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {

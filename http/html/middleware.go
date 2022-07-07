@@ -34,9 +34,8 @@ func (app *Application) authenticateUser(next http.Handler) http.Handler {
 			http.Redirect(w, r, loginPath(), http.StatusFound)
 			return
 		}
-		session := getActiveSession(user, cookie.Value)
 		ctx := context.WithValue(r.Context(), userCtxKey, user)
-		ctx = context.WithValue(ctx, sessionCtxKey, session)
+		ctx = context.WithValue(ctx, sessionCtxKey, user.ActiveSession())
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -67,13 +66,4 @@ func setOrganization(next http.Handler) http.Handler {
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
-}
-
-func getActiveSession(user *otf.User, token string) *otf.Session {
-	for _, session := range user.Sessions {
-		if session.Token == token {
-			return session
-		}
-	}
-	panic("no active session found")
 }
