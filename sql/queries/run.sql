@@ -85,10 +85,11 @@ JOIN configuration_versions USING(configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE
-    organizations.name      LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name         LIKE ANY(pggen.arg('workspace_names'))
-AND runs.status             LIKE ANY(pggen.arg('statuses'))
+    organizations.name                       LIKE ANY(pggen.arg('organization_names'))
+AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
+AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
+AND runs.status                              LIKE ANY(pggen.arg('statuses'))
+AND configuration_versions.speculative::text LIKE ANY(pggen.arg('speculative'))
 ORDER BY runs.created_at DESC
 LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 ;
@@ -96,13 +97,15 @@ LIMIT pggen.arg('limit') OFFSET pggen.arg('offset')
 -- name: CountRuns :one
 SELECT count(*)
 FROM runs
-JOIN workspaces USING(workspace_id)
-JOIN organizations USING(organization_id)
+JOIN workspaces             USING(workspace_id)
+JOIN configuration_versions USING(configuration_version_id)
+JOIN organizations          USING(organization_id)
 WHERE
-    organizations.name      LIKE ANY(pggen.arg('organization_names'))
-AND workspaces.workspace_id LIKE ANY(pggen.arg('workspace_ids'))
-AND workspaces.name         LIKE ANY(pggen.arg('workspace_names'))
-AND runs.status             LIKE ANY(pggen.arg('statuses'))
+    organizations.name                       LIKE ANY(pggen.arg('organization_names'))
+AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
+AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
+AND runs.status                              LIKE ANY(pggen.arg('statuses'))
+AND configuration_versions.speculative::text LIKE ANY(pggen.arg('speculative'))
 ;
 
 -- name: FindRunByID :one

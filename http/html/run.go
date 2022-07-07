@@ -12,7 +12,10 @@ import (
 )
 
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
-	var opts otf.RunListOptions
+	opts := otf.RunListOptions{
+		// We don't list speculative runs on the UI
+		Speculative: otf.Bool(false),
+	}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return

@@ -56,8 +56,8 @@ func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
 	return ws
 }
 
-func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cv, err := otf.NewConfigurationVersion(ws.ID(), otf.ConfigurationVersionCreateOptions{})
+func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
+	cv, err := otf.NewConfigurationVersion(ws.ID(), opts)
 	require.NoError(t, err)
 	return cv
 }
@@ -109,8 +109,20 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	return ws
 }
 
-func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace) *otf.ConfigurationVersion {
-	cv := newTestConfigurationVersion(t, ws)
+type createConfigurationVersionOption func(*otf.ConfigurationVersionCreateOptions)
+
+func speculative() createConfigurationVersionOption {
+	return func(opts *otf.ConfigurationVersionCreateOptions) {
+		opts.Speculative = otf.Bool(true)
+	}
+}
+
+func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...createConfigurationVersionOption) *otf.ConfigurationVersion {
+	var createOpts otf.ConfigurationVersionCreateOptions
+	for _, o := range opts {
+		o(&createOpts)
+	}
+	cv := newTestConfigurationVersion(t, ws, createOpts)
 	err := db.CreateConfigurationVersion(context.Background(), cv)
 	require.NoError(t, err)
 

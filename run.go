@@ -765,6 +765,8 @@ type RunListOptions struct {
 	OrganizationName *string `schema:"organization_name"`
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name"`
+	// Filter by speculative or non-speculative
+	Speculative *bool
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
 	Include *string `schema:"include"`

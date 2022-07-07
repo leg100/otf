@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -164,11 +165,16 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 	if len(opts.Statuses) > 0 {
 		statuses = convertStatusSliceToStringSlice(opts.Statuses)
 	}
+	speculative := "%"
+	if opts.Speculative != nil {
+		speculative = strconv.FormatBool(*opts.Speculative)
+	}
 	db.FindRunsBatch(batch, pggen.FindRunsParams{
 		OrganizationNames: []string{organizationName},
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
+		Speculative:       []string{speculative},
 		Limit:             opts.GetLimit(),
 		Offset:            opts.GetOffset(),
 	})
@@ -177,6 +183,7 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 		WorkspaceNames:    []string{workspaceName},
 		WorkspaceIds:      []string{workspaceID},
 		Statuses:          statuses,
+		Speculative:       []string{speculative},
 	})
 
 	results := db.SendBatch(ctx, batch)

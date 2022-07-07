@@ -95,7 +95,7 @@ func TestRun_List(t *testing.T) {
 	ws1 := createTestWorkspace(t, db, org1)
 	ws2 := createTestWorkspace(t, db, org2)
 	cv1 := createTestConfigurationVersion(t, db, ws1)
-	cv2 := createTestConfigurationVersion(t, db, ws2)
+	cv2 := createTestConfigurationVersion(t, db, ws2, speculative())
 
 	run1 := createTestRun(t, db, ws1, cv1)
 	run2 := createTestRun(t, db, ws1, cv1)
@@ -161,6 +161,24 @@ func TestRun_List(t *testing.T) {
 			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name()), Statuses: []otf.RunStatus{otf.RunPlanned}},
 			want: func(t *testing.T, l *otf.RunList) {
 				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name: "filter out speculative runs in org1",
+			opts: otf.RunListOptions{OrganizationName: otf.String(org1.Name()), Speculative: otf.Bool(false)},
+			want: func(t *testing.T, l *otf.RunList) {
+				// org1 has no speculative runs, so should return both runs
+				assert.Equal(t, 2, len(l.Items))
+				assert.Equal(t, 2, l.TotalCount())
+			},
+		},
+		{
+			name: "filter out speculative runs in org2",
+			opts: otf.RunListOptions{OrganizationName: otf.String(org2.Name()), Speculative: otf.Bool(false)},
+			want: func(t *testing.T, l *otf.RunList) {
+				// org2 only has speculative runs, so should return zero
+				assert.Equal(t, 0, len(l.Items))
+				assert.Equal(t, 0, l.TotalCount())
 			},
 		},
 	}

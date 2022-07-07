@@ -71,6 +71,7 @@ func String(str string) *string { return &str }
 func Int(i int) *int            { return &i }
 func Int64(i int64) *int64      { return &i }
 func UInt(i uint) *uint         { return &i }
+func Bool(b bool) *bool         { return &b }
 
 // CurrentTimestamp is *the* way to get a current timestamps in oTF and
 // time.Now() should be avoided. We want timestamps to be rounded to nearest
