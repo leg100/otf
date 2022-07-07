@@ -3,8 +3,8 @@
 {{ define "title" }}Login{{ end }}
 
 {{ define "container" }}
+  {{ template "flash" . }}
   <div class="center">
-    {{ template "flash" . }}
 
     <a href="/github/login">
       {{ template "github_icon" }}
