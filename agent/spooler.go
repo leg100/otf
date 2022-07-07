@@ -62,19 +62,32 @@ var (
 )
 
 // NewSpooler is a constructor for a Spooler pre-populated with queued runs
-func NewSpooler(rl RunLister, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
-	// TODO: order runs by created_at date
-	runs, err := rl.List(context.Background(), otf.RunListOptions{Statuses: QueuedStatuses})
-	if err != nil {
-		return nil, err
+func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
+	// retrieve existing runs, page by page
+	var existing []*otf.Run
+	for {
+		opts := otf.RunListOptions{Statuses: QueuedStatuses}
+		page, err := svc.List(context.Background(), opts)
+		if err != nil {
+			return nil, err
+		}
+		existing = append(existing, page.Items...)
+		if page.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *page.NextPage()
 	}
-
+	// svc returns runs ordered by creation date, newest first, but we want
+	// oldest first, so we reverse the order
+	var oldest []*otf.Run
+	for _, r := range existing {
+		oldest = append([]*otf.Run{r}, oldest...)
+	}
 	// Populate queue
 	queue := make(chan *otf.Run, SpoolerCapacity)
-	for _, r := range runs.Items {
+	for _, r := range oldest {
 		queue <- r
 	}
-
 	return &SpoolerDaemon{
 		queue:        queue,
 		cancelations: make(chan Cancelation, SpoolerCapacity),

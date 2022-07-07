@@ -183,12 +183,23 @@ func TestWorkspace_List(t *testing.T) {
 			},
 		},
 		{
+			name: "paginated results ordered by updated_at",
+			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Equal(t, 1, len(l.Items))
+				// results are in descending order so we expect ws2 to be listed
+				// first.
+				assert.Equal(t, ws2, l.Items[0])
+				assert.Equal(t, 2, l.TotalCount())
+			},
+		},
+		{
 			name: "stray pagination",
 			opts: otf.WorkspaceListOptions{OrganizationName: otf.String(org.Name()), ListOptions: otf.ListOptions{PageNumber: 999, PageSize: 10}},
 			want: func(t *testing.T, l *otf.WorkspaceList) {
 				// zero results but count should ignore pagination
 				assert.Equal(t, 0, len(l.Items))
-				assert.Equal(t, 2, l.TotalCount)
+				assert.Equal(t, 2, l.TotalCount())
 			},
 		},
 	}

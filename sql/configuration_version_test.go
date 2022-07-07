@@ -84,7 +84,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			workspaceID: ws.ID(),
 			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Equal(t, 2, len(got.Items))
-				assert.Equal(t, 2, got.TotalCount)
+				assert.Equal(t, 2, got.TotalCount())
 				assert.Contains(t, got.Items, cv1)
 				assert.Contains(t, got.Items, cv2)
 			},
@@ -95,7 +95,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			opts:        otf.ConfigurationVersionListOptions{ListOptions: otf.ListOptions{PageNumber: 1, PageSize: 1}},
 			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Equal(t, 1, len(got.Items))
-				assert.Equal(t, 2, got.TotalCount)
+				assert.Equal(t, 2, got.TotalCount())
 			},
 		},
 		{
@@ -105,7 +105,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				// Zero items but total count should ignore pagination
 				assert.Equal(t, 0, len(got.Items))
-				assert.Equal(t, 2, got.TotalCount)
+				assert.Equal(t, 2, got.TotalCount())
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func TestConfigurationVersion_List(t *testing.T) {
 			workspaceID: "ws-non-existent",
 			want: func(t *testing.T, got *otf.ConfigurationVersionList) {
 				assert.Empty(t, got.Items)
-				assert.Equal(t, 0, got.TotalCount)
+				assert.Equal(t, 0, got.TotalCount())
 			},
 		},
 	}
