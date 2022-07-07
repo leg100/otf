@@ -42,7 +42,7 @@ func Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	cmd.AddCommand(LoginCommand(store, cfg.Address))
+	cmd.AddCommand(LoginCommand(store, &cfg.Address))
 	cmd.AddCommand(OrganizationCommand(cfg))
 	cmd.AddCommand(WorkspaceCommand(cfg))
 
