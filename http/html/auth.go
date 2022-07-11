@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/decode"
 )
 
 // githubLogin is called upon a successful Github login. A new user is created

@@ -170,6 +170,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		// Apply routes
 		r.GET("/applies/{apply_id}", s.GetApply)
+
+		// User routes
+		r.GET("/account/details", s.GetCurrentUser)
 	})
 
 	http.Handle("/", r)

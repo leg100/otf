@@ -31,7 +31,7 @@ func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 		}
 
 		// check if user token
-		_, err := m.svc.Get(r.Context(), otf.UserSpec{AuthenticationToken: &token})
+		user, err := m.svc.Get(r.Context(), otf.UserSpec{AuthenticationToken: &token})
 		if err == otf.ErrResourceNotFound {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -40,6 +40,9 @@ func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 			return
 		}
 
+		// add user to context for upstream handlers to consume
+		ctx := addUserToContext(r.Context(), user)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

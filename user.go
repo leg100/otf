@@ -2,7 +2,10 @@ package otf
 
 import (
 	"context"
+	"net/http"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -103,6 +106,14 @@ func (u *User) CanUnlock(requestor Identity, force bool) error {
 	}
 	// any other entity cannot unlock
 	return ErrWorkspaceUnlockDenied
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (u *User) ToJSONAPI(req *http.Request) any {
+	return &jsonapi.User{
+		ID:       u.id,
+		Username: u.username,
+	}
 }
 
 // UserService provides methods to interact with user accounts and their
