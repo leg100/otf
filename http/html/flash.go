@@ -3,6 +3,7 @@ package html
 import (
 	"encoding/base64"
 	"encoding/json"
+	"html/template"
 	"net/http"
 	"time"
 )
@@ -19,6 +20,8 @@ type flash struct {
 	Type    flashType
 	Message string
 }
+
+func (f *flash) HTML() template.HTML { return template.HTML(f.Message) }
 
 type flashType string
 
