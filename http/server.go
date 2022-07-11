@@ -40,6 +40,9 @@ type ServerConfig struct {
 	CertFile, KeyFile string
 
 	EnableRequestLogging bool
+
+	// site authentication token
+	SiteToken string
 }
 
 // Server provides an HTTP/S server
@@ -108,6 +111,12 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// JSON-API API endpoints
 	japi := r.Headers("Accept", jsonapi.MediaType).PathPrefix("/api/v2")
 	japi.Sub(func(r *html.Router) {
+		// Ensure request has valid API token
+		r.Use((&authTokenMiddleware{
+			svc:       app.UserService(),
+			siteToken: cfg.SiteToken,
+		}).handler)
+
 		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
