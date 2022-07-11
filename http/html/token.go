@@ -3,6 +3,7 @@ package html
 import (
 	"bytes"
 	"net/http"
+	"sort"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
@@ -46,6 +47,10 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// display tokens by creation date, newest first
+	sort.Slice(user.Tokens, func(i, j int) bool {
+		return user.Tokens[i].CreatedAt().After(user.Tokens[j].CreatedAt())
+	})
 	app.render("token_list.tmpl", w, r, tokenList{
 		Pagination: &otf.Pagination{},
 		Items:      user.Tokens,
