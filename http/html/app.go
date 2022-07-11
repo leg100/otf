@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 )
 
@@ -25,7 +24,7 @@ type Application struct {
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxrouter *mux.Router) error {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, router *Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -44,12 +43,12 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, muxr
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 	}
-	app.addRoutes(&router{Router: muxrouter})
+	app.addRoutes(router)
 	return nil
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) addRoutes(r *router) {
+func (app *Application) addRoutes(r *Router) {
 	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
 
 	// Static assets (JS, CSS, etc).
@@ -60,57 +59,57 @@ func (app *Application) addRoutes(r *router) {
 	r.StrictSlash(true)
 
 	// routes that don't require authentication.
-	r.sub(func(r *router) {
-		r.get("/login", app.loginHandler).Name("login")
+	r.Sub(func(r *Router) {
+		r.GET("/login", app.loginHandler)
 		// github routes
-		r.sub(func(r *router) {
-			r.get("/github/login", app.oauth.requestHandler)
-			r.get(githubCallbackPath, app.githubLogin)
+		r.Sub(func(r *Router) {
+			r.GET("/github/login", app.oauth.requestHandler)
+			r.GET(githubCallbackPath, app.githubLogin)
 		})
 	})
 	// routes that require authentication.
-	r.sub(func(r *router) {
+	r.Sub(func(r *Router) {
 		r.Use(app.authenticateUser)
 		r.Use(setOrganization)
 
-		r.pst("/logout", app.logoutHandler).Name("logout")
-		r.get("/profile", app.profileHandler).Name("getProfile")
-		r.get("/profile/sessions", app.sessionsHandler).Name("listSession")
-		r.pst("/profile/sessions/revoke", app.revokeSessionHandler).Name("revokeSession")
+		r.PST("/logout", app.logoutHandler)
+		r.GET("/profile", app.profileHandler)
+		r.GET("/profile/sessions", app.sessionsHandler)
+		r.PST("/profile/sessions/revoke", app.revokeSessionHandler)
 
-		r.get("/profile/tokens", app.tokensHandler).Name("listToken")
-		r.pst("/profile/tokens/delete", app.deleteTokenHandler).Name("deleteToken")
-		r.get("/profile/tokens/new", app.newTokenHandler).Name("newToken")
-		r.pst("/profile/tokens/create", app.createTokenHandler).Name("createToken")
+		r.GET("/profile/tokens", app.tokensHandler)
+		r.PST("/profile/tokens/delete", app.deleteTokenHandler)
+		r.GET("/profile/tokens/new", app.newTokenHandler)
+		r.PST("/profile/tokens/create", app.createTokenHandler)
 
-		r.get("/organizations", app.listOrganizations).Name("listOrganization")
-		r.get("/organizations/new", app.newOrganization).Name("newOrganization")
-		r.pst("/organizations/create", app.createOrganization).Name("createOrganization")
-		r.get("/organizations/{organization_name}", app.getOrganization).Name("getOrganization")
-		r.get("/organizations/{organization_name}/overview", app.getOrganizationOverview).Name("getOrganizationOverview")
-		r.get("/organizations/{organization_name}/edit", app.editOrganization).Name("editOrganization")
-		r.pst("/organizations/{organization_name}/update", app.updateOrganization).Name("updateOrganization")
-		r.pst("/organizations/{organization_name}/delete", app.deleteOrganization).Name("deleteOrganization")
+		r.GET("/organizations", app.listOrganizations)
+		r.GET("/organizations/new", app.newOrganization)
+		r.PST("/organizations/create", app.createOrganization)
+		r.GET("/organizations/{organization_name}", app.getOrganization)
+		r.GET("/organizations/{organization_name}/overview", app.getOrganizationOverview)
+		r.GET("/organizations/{organization_name}/edit", app.editOrganization)
+		r.PST("/organizations/{organization_name}/update", app.updateOrganization)
+		r.PST("/organizations/{organization_name}/delete", app.deleteOrganization)
 
-		r.get("/organizations/{organization_name}/workspaces", app.listWorkspaces).Name("listWorkspace")
-		r.get("/organizations/{organization_name}/workspaces/new", app.newWorkspace).Name("newWorkspace")
-		r.pst("/organizations/{organization_name}/workspaces/create", app.createWorkspace).Name("createWorkspace")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace).Name("getWorkspace")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace).Name("editWorkspace")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace).Name("updateWorkspace")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace).Name("deleteWorkspace")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace).Name("lockWorkspace")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace).Name("unlockWorkspace")
+		r.GET("/organizations/{organization_name}/workspaces", app.listWorkspaces)
+		r.GET("/organizations/{organization_name}/workspaces/new", app.newWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/create", app.createWorkspace)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/edit", app.editWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/update", app.updateWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
 
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns).Name("listRun")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun).Name("newRun")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun).Name("createRun")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun).Name("getRun")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan).Name("getPlan")
-		r.get("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply).Name("getApply")
-		r.pst("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun).Name("deleteRun")
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 
 		// this handles the link the terraform CLI shows during a plan/apply.
-		r.get("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)
+		r.GET("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)
 	})
 }

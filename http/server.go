@@ -13,7 +13,6 @@ import (
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
@@ -77,96 +76,94 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		httputil.SSL = true
 	}
 
-	router := mux.NewRouter()
+	r := html.NewRouter()
 
 	// Catch panics and return 500s
-	router.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
+	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
 	// Optionally enable HTTP request logging
 	if cfg.EnableRequestLogging {
-		router.Use(s.loggingMiddleware)
+		r.Use(s.loggingMiddleware)
 	}
 
 	// Add web app routes.
-	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, router); err != nil {
+	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, r); err != nil {
 		return nil, err
 	}
 
-	router.HandleFunc("/.well-known/terraform.json", s.WellKnown)
-	router.HandleFunc("/metrics/cache.json", s.CacheStats)
+	r.GET("/.well-known/terraform.json", s.WellKnown)
+	r.GET("/metrics/cache.json", s.CacheStats)
 
-	router.HandleFunc("/state-versions/{id}/download", s.DownloadStateVersion).Methods("GET")
-	router.HandleFunc("/configuration-versions/{id}/upload", s.UploadConfigurationVersion).Methods("PUT")
+	r.GET("/state-versions/{id}/download", s.DownloadStateVersion)
+	r.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion)
 
-	router.HandleFunc("/runs/{run_id}/logs/{phase}", s.getLogs).Methods("GET")
-	router.HandleFunc("/runs/{run_id}/logs/{phase}", s.putLogs).Methods("PUT")
+	r.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
+	r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
 
-	router.HandleFunc("/healthz", GetHealthz).Methods("GET")
+	r.GET("/healthz", GetHealthz)
 
 	// Websocket connections
-	s.registerEventRoutes(router)
+	s.registerEventRoutes(r)
 
-	// Filter json-api requests
-	sub := router.Headers("Accept", jsonapi.MediaType).Subrouter()
+	// JSON-API API endpoints
+	japi := r.Headers("Accept", jsonapi.MediaType).PathPrefix("/api/v2")
+	japi.Sub(func(r *html.Router) {
+		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
 
-	// Filter api v2 requests
-	sub = sub.PathPrefix("/api/v2").Subrouter()
+		// Organization routes
+		r.GET("/organizations", s.ListOrganizations)
+		r.PST("/organizations", s.CreateOrganization)
+		r.GET("/organizations/{name}", s.GetOrganization)
+		r.PTC("/organizations/{name}", s.UpdateOrganization)
+		r.DEL("/organizations/{name}", s.DeleteOrganization)
+		r.GET("/organizations/{name}/entitlement-set", s.GetEntitlements)
 
-	sub.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
+		// Workspace routes
+		r.GET("/organizations/{organization_name}/workspaces", s.ListWorkspaces)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces", s.CreateWorkspace)
+		r.PTC("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace)
+		r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace)
+		r.PTC("/workspaces/{id}", s.UpdateWorkspace)
+		r.GET("/workspaces/{id}", s.GetWorkspace)
+		r.DEL("/workspaces/{id}", s.DeleteWorkspace)
+		r.PST("/workspaces/{id}/actions/lock", s.LockWorkspace)
+		r.PST("/workspaces/{id}/actions/unlock", s.UnlockWorkspace)
+
+		// StateVersion routes
+		r.PST("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion)
+		r.GET("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion)
+		r.GET("/state-versions/{id}", s.GetStateVersion)
+		r.GET("/state-versions", s.ListStateVersions)
+
+		// ConfigurationVersion routes
+		r.PST("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
+		r.GET("/configuration-versions/{id}", s.GetConfigurationVersion)
+		r.GET("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
+
+		// Run routes
+		r.PST("/runs", s.CreateRun)
+		r.PST("/runs/{id}/actions/apply", s.ApplyRun)
+		r.GET("/workspaces/{workspace_id}/runs", s.ListRuns)
+		r.GET("/runs/{id}", s.GetRun)
+		r.PST("/runs/{id}/actions/discard", s.DiscardRun)
+		r.PST("/runs/{id}/actions/cancel", s.CancelRun)
+		r.PST("/runs/{id}/actions/force-cancel", s.ForceCancelRun)
+		r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
+
+		// Plan routes
+		r.GET("/plans/{plan_id}", s.GetPlan)
+		r.GET("/plans/{plan_id}/json-output", s.GetPlanJSON)
+
+		// Apply routes
+		r.GET("/applies/{apply_id}", s.GetApply)
 	})
 
-	// Organization routes
-	sub.HandleFunc("/organizations", s.ListOrganizations).Methods("GET")
-	sub.HandleFunc("/organizations", s.CreateOrganization).Methods("POST")
-	sub.HandleFunc("/organizations/{name}", s.GetOrganization).Methods("GET")
-	sub.HandleFunc("/organizations/{name}", s.UpdateOrganization).Methods("PATCH")
-	sub.HandleFunc("/organizations/{name}", s.DeleteOrganization).Methods("DELETE")
-	sub.HandleFunc("/organizations/{name}/entitlement-set", s.GetEntitlements).Methods("GET")
-
-	// Workspace routes
-	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.ListWorkspaces).Methods("GET")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace).Methods("GET")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces", s.CreateWorkspace).Methods("POST")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace).Methods("PATCH")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace).Methods("DELETE")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace).Methods("POST")
-	sub.HandleFunc("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace).Methods("POST")
-	sub.HandleFunc("/workspaces/{id}", s.UpdateWorkspace).Methods("PATCH")
-	sub.HandleFunc("/workspaces/{id}", s.GetWorkspace).Methods("GET")
-	sub.HandleFunc("/workspaces/{id}", s.DeleteWorkspace).Methods("DELETE")
-	sub.HandleFunc("/workspaces/{id}/actions/lock", s.LockWorkspace).Methods("POST")
-	sub.HandleFunc("/workspaces/{id}/actions/unlock", s.UnlockWorkspace).Methods("POST")
-
-	// StateVersion routes
-	sub.HandleFunc("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion).Methods("POST")
-	sub.HandleFunc("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion).Methods("GET")
-	sub.HandleFunc("/state-versions/{id}", s.GetStateVersion).Methods("GET")
-	sub.HandleFunc("/state-versions", s.ListStateVersions).Methods("GET")
-
-	// ConfigurationVersion routes
-	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion).Methods("POST")
-	sub.HandleFunc("/configuration-versions/{id}", s.GetConfigurationVersion).Methods("GET")
-	sub.HandleFunc("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions).Methods("GET")
-
-	// Run routes
-	sub.HandleFunc("/runs", s.CreateRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/apply", s.ApplyRun).Methods("POST")
-	sub.HandleFunc("/workspaces/{workspace_id}/runs", s.ListRuns).Methods("GET")
-	sub.HandleFunc("/runs/{id}", s.GetRun).Methods("GET")
-	sub.HandleFunc("/runs/{id}/actions/discard", s.DiscardRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/cancel", s.CancelRun).Methods("POST")
-	sub.HandleFunc("/runs/{id}/actions/force-cancel", s.ForceCancelRun).Methods("POST")
-	sub.HandleFunc("/organizations/{organization_name}/runs/queue", s.GetRunsQueue).Methods("GET")
-
-	// Plan routes
-	sub.HandleFunc("/plans/{plan_id}", s.GetPlan).Methods("GET")
-	sub.HandleFunc("/plans/{plan_id}/json-output", s.GetPlanJSON).Methods("GET")
-
-	// Apply routes
-	sub.HandleFunc("/applies/{apply_id}", s.GetApply).Methods("GET")
-
-	http.Handle("/", router)
+	http.Handle("/", r)
 
 	return s, nil
 }

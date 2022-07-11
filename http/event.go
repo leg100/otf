@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 )
 
 // registerEventRoutes is a helper function to register event routes.
-func (s *Server) registerEventRoutes(r *mux.Router) {
+func (s *Server) registerEventRoutes(r *html.Router) {
 	r.HandleFunc("/events", s.handleEvents)
 }
 

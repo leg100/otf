@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ func TestApp(t *testing.T) {
 		},
 	}
 	// Add web app routes.
-	router := mux.NewRouter()
+	router := NewRouter()
 	err = AddRoutes(logr.Discard(), Config{}, app, router)
 	require.NoError(t, err)
 	// setup server
