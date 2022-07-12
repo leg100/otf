@@ -8,7 +8,7 @@ import (
 
 // Entitlements represents the entitlements of an organization. Unlike TFE/TFC,
 // OTF is free and therefore the user is entitled to all currently supported
-// services.  Entitlements represents the entitlements of an organization.
+// services.
 type Entitlements struct {
 	ID                    string
 	Agents                bool
