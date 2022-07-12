@@ -123,8 +123,13 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
+	user, err := userFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	opts := otf.WorkspaceLockOptions{
-		Requestor: &otf.AnonymousUser,
+		Requestor: user,
 	}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
@@ -147,8 +152,13 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
+	user, err := userFromContext(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	opts := otf.WorkspaceUnlockOptions{
-		Requestor: &otf.AnonymousUser,
+		Requestor: user,
 	}
 	spec := otf.WorkspaceSpec{}
 	if err := decode.Route(&spec, r); err != nil {

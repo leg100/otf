@@ -9,16 +9,12 @@ import (
 )
 
 const (
-	AnonymousUsername = "anonymous"
-	DefaultUserID     = "user-123"
-	DefaultUsername   = "otf"
-	// Session data keys
-	UsernameSessionKey = "username"
-	AddressSessionKey  = "ip_address"
+	DefaultUserID   = "user-123"
+	DefaultUsername = "otf"
 )
 
 var (
-	AnonymousUser = User{id: "user-anonymous", username: "anonymous"}
+	SiteAdmin = User{id: "user-site-admin", username: "site-admin"}
 )
 
 // User represents an oTF user account.

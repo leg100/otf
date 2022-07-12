@@ -94,47 +94,44 @@ func TestWorkspace_Lock(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()
 	org := createTestOrganization(t, db)
+	user := createTestUser(t, db)
+
+	lockOpts := otf.WorkspaceLockOptions{
+		Requestor: user,
+	}
+
+	unlockOpts := otf.WorkspaceUnlockOptions{
+		Requestor: user,
+	}
 
 	t.Run("lock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		got, err := db.LockWorkspace(ctx, ws.SpecID(), lockOpts)
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("lock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		got, err := db.LockWorkspace(ctx, ws.SpecName(), lockOpts)
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		_, err := db.LockWorkspace(ctx, ws.SpecID(), lockOpts)
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), unlockOpts)
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
 
 	t.Run("unlock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		_, err := db.LockWorkspace(ctx, ws.SpecName(), lockOpts)
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{
-			Requestor: &otf.AnonymousUser,
-		})
+		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), unlockOpts)
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})

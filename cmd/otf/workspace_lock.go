@@ -22,9 +22,7 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err := client.Workspaces().Lock(cmd.Context(), spec, otf.WorkspaceLockOptions{
-				Requestor: &otf.AnonymousUser,
-			})
+			ws, err := client.Workspaces().Lock(cmd.Context(), spec, otf.WorkspaceLockOptions{})
 			if err != nil {
 				return err
 			}
