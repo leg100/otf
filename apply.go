@@ -29,9 +29,9 @@ func (a *Apply) ToJSONAPI(req *http.Request) any {
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
 	if a.ResourceReport != nil {
-		dto.ResourceAdditions = a.Additions
-		dto.ResourceChanges = a.Changes
-		dto.ResourceDestructions = a.Destructions
+		dto.Additions = &a.Additions
+		dto.Changes = &a.Changes
+		dto.Destructions = &a.Destructions
 	}
 	for _, ts := range a.StatusTimestamps() {
 		switch ts.Status {

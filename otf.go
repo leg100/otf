@@ -103,9 +103,9 @@ func GenerateRandomString(size int) string {
 // ResourceReport reports a summary of additions, changes, and deletions of
 // resources in a plan or an apply.
 type ResourceReport struct {
-	Additions    int `json:"additions"`
-	Changes      int `json:"changes"`
-	Destructions int `json:"destructions"`
+	Additions    int
+	Changes      int
+	Destructions int
 }
 
 func (r ResourceReport) HasChanges() bool {
