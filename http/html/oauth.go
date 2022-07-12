@@ -62,7 +62,7 @@ func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
 
 	cookie, err := r.Cookie(oauthCookieName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("missing state cookie (the cookie expires after 60 seconds)")
 	}
 	cookieState := cookie.Value
 

@@ -5,11 +5,11 @@ INSERT INTO users (
     created_at,
     updated_at
 ) VALUES (
-    'user-anonymous',
-    'anonymous',
+    'user-site-admin',
+    'site-admin',
     now(),
     now()
 );
 
 -- +goose Down
-DELETE FROM users WHERE user_id = 'user-anonymous';
+DELETE FROM users WHERE user_id = 'user-site-admin';

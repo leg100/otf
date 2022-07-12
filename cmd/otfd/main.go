@@ -153,6 +153,7 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.ApplicationConfig.Github.ClientID, "github-client-id", "", "Github Client ID")
 	flags.StringVar(&cfg.ApplicationConfig.Github.ClientSecret, "github-client-secret", "", "Github Client Secret")
 	flags.StringVar(&cfg.ApplicationConfig.Github.Hostname, "github-hostname", "github.com", "Github hostname")
+	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 
 	return &cfg
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/decode"
 )
 
 // githubLogin is called upon a successful Github login. A new user is created
@@ -114,61 +113,6 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		Pagination: &otf.Pagination{},
 		Items:      user.Sessions,
 	})
-}
-
-func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("token_new.tmpl", w, r, nil)
-}
-
-func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var opts otf.TokenCreateOptions
-	if err := decode.Form(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	token, err := app.UserService().CreateToken(r.Context(), user, &opts)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "created token: "+token.Token())
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
-}
-
-func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	app.render("token_list.tmpl", w, r, tokenList{
-		Pagination: &otf.Pagination{},
-		Items:      user.Tokens,
-	})
-}
-
-func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	id := r.FormValue("id")
-	if id == "" {
-		writeError(w, "missing id", http.StatusUnprocessableEntity)
-		return
-	}
-	if err := app.UserService().DeleteToken(r.Context(), user, id); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
 }
 
 func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {

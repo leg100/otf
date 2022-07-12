@@ -2,20 +2,19 @@ package otf
 
 import (
 	"context"
+	"net/http"
 	"time"
+
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
-	AnonymousUsername = "anonymous"
-	DefaultUserID     = "user-123"
-	DefaultUsername   = "otf"
-	// Session data keys
-	UsernameSessionKey = "username"
-	AddressSessionKey  = "ip_address"
+	DefaultUserID   = "user-123"
+	DefaultUsername = "otf"
 )
 
 var (
-	AnonymousUser = User{id: "user-anonymous", username: "anonymous"}
+	SiteAdmin = User{id: "user-site-admin", username: "site-admin"}
 )
 
 // User represents an oTF user account.
@@ -103,6 +102,14 @@ func (u *User) CanUnlock(requestor Identity, force bool) error {
 	}
 	// any other entity cannot unlock
 	return ErrWorkspaceUnlockDenied
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (u *User) ToJSONAPI(req *http.Request) any {
+	return &jsonapi.User{
+		ID:       u.id,
+		Username: u.username,
+	}
 }
 
 // UserService provides methods to interact with user accounts and their

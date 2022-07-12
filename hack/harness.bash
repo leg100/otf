@@ -13,6 +13,7 @@ export PATH=$PWD/_build:$PATH
 export OTF_SSL=true
 export OTF_CERT_FILE=./e2e/fixtures/cert.crt
 export OTF_KEY_FILE=./e2e/fixtures/key.pem
+export OTF_SITE_TOKEN=be68d73c52054e21685a53c483275e054f05c7844907c103ca2792d7cf9fe642
 
 # Track whether this script started otfd
 started=0

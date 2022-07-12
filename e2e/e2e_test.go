@@ -6,7 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
+	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -34,17 +36,37 @@ resource "null_resource" "e2e" {}
 }
 
 func TestOTF(t *testing.T) {
+	tfpath, err := exec.LookPath("terraform")
+	require.NoError(t, err)
+
 	// Create TF config
 	root := t.TempDir()
 	organization := uuid.NewString()
-	err := os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0600)
+	err = os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0600)
 	require.NoError(t, err)
 
-	t.Run("login", func(t *testing.T) {
-		cmd := exec.Command(client, "login")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
+	t.Run("terraform login", func(t *testing.T) {
+		// nullifying PATH ensures `terraform login` skips opening a browser
+		// window
+		t.Setenv("PATH", "")
+
+		token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
+		if !foundToken {
+			t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
+		}
+
+		chdir(t, root)
+
+		e, tferr, err := expect.Spawn(fmt.Sprintf("%s login localhost:8080", tfpath), time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
 		require.NoError(t, err)
+		defer e.Close()
+
+		e.ExpectBatch([]expect.Batcher{
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
+			&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
+		}, time.Minute)
+		require.NoError(t, <-tferr)
 	})
 
 	t.Run("create organization", func(t *testing.T) {
@@ -56,7 +78,7 @@ func TestOTF(t *testing.T) {
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
-		cmd := exec.Command("terraform", "init", "-no-color")
+		cmd := exec.Command(tfpath, "init", "-no-color")
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
@@ -64,7 +86,7 @@ func TestOTF(t *testing.T) {
 
 	t.Run("terraform plan", func(t *testing.T) {
 		chdir(t, root)
-		cmd := exec.Command("terraform", "plan", "-no-color")
+		cmd := exec.Command(tfpath, "plan", "-no-color")
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
@@ -73,7 +95,7 @@ func TestOTF(t *testing.T) {
 
 	t.Run("terraform apply", func(t *testing.T) {
 		chdir(t, root)
-		cmd := exec.Command("terraform", "apply", "-no-color", "-auto-approve")
+		cmd := exec.Command(tfpath, "apply", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
@@ -82,7 +104,7 @@ func TestOTF(t *testing.T) {
 
 	t.Run("terraform destroy", func(t *testing.T) {
 		chdir(t, root)
-		cmd := exec.Command("terraform", "destroy", "-no-color", "-auto-approve")
+		cmd := exec.Command(tfpath, "destroy", "-no-color", "-auto-approve")
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err)
 		t.Log(string(out))

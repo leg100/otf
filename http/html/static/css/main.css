@@ -199,8 +199,8 @@ a:hover {
   font-size: 0.8rem;
 }
 
-/* identifier copied to clipboard notification */
-.identifier-container .copied-notification {
+/* notification to user that content has been copied to clipboard */
+.copied-notification {
   background: paleturquoise;
 }
 
