@@ -222,7 +222,7 @@ func (r *Run) Done() bool {
 
 func (r *Run) EnqueuePlan() error {
 	if r.status != RunPending {
-		return fmt.Errorf("cannot enqueue pending run")
+		return fmt.Errorf("cannot enqueue run with non-pending status")
 	}
 	r.updateStatus(RunPlanQueued)
 	r.plan.updateStatus(PhaseQueued)
