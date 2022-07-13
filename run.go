@@ -492,6 +492,9 @@ func (r *Run) doPlan(env Environment) error {
 	if err := env.RunFunc(r.uploadJSONPlan); err != nil {
 		return err
 	}
+	if err := env.RunFunc(r.uploadLockFile); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -543,6 +546,12 @@ func (r *Run) setupEnv(env Environment) error {
 	}
 	if err := env.RunFunc(r.downloadState); err != nil {
 		return err
+	}
+	// terraform apply verifies jj
+	if r.status == RunApplying {
+		if err := env.RunFunc(r.downloadLockFile); err != nil {
+			return err
+		}
 	}
 	if err := env.RunCLI("terraform", "init"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
@@ -602,6 +611,25 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	}
 	if err := env.RunService().UploadPlanFile(ctx, r.id, jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
+	}
+	return nil
+}
+
+func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
+	lockFile, err := env.RunService().GetLockFile(ctx, r.id)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(env.Path(), LockFilename), lockFile, 0644)
+}
+
+func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
+	lockFile, err := os.ReadFile(filepath.Join(env.Path(), LockFilename))
+	if err != nil {
+		return err
+	}
+	if err := env.RunService().UploadLockFile(ctx, r.id, lockFile); err != nil {
+		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
@@ -673,6 +701,10 @@ type RunService interface {
 	GetPlanFile(ctx context.Context, id string, format PlanFormat) ([]byte, error)
 	// UploadPlanFile saves a run's plan file with the requested format.
 	UploadPlanFile(ctx context.Context, id string, plan []byte, format PlanFormat) error
+	// GetLockFile retrieves a run's lock file (.terraform.lock.hcl)
+	GetLockFile(ctx context.Context, id string) ([]byte, error)
+	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
+	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 	// Read and write logs for run phases.
 	LogService
 }
@@ -701,7 +733,7 @@ type TestRunCreateOptions struct {
 // RunApplyOptions represents the options for applying a run.
 type RunApplyOptions struct {
 	// An optional comment about the run.
-	Comment *string `jsonapi:"attr,comment,omitempty"`
+	Comment *string `json:"comment,omitempty"`
 }
 
 // RunCancelOptions represents the options for canceling a run.

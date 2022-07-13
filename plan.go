@@ -12,6 +12,7 @@ const (
 	LocalStateFilename = "terraform.tfstate"
 	PlanFilename       = "plan.out"
 	JSONPlanFilename   = "plan.out.json"
+	LockFilename       = ".terraform.lock.hcl"
 )
 
 // Plan is the plan phase of a run
