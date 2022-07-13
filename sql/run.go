@@ -253,7 +253,7 @@ func (db *DB) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
 	return db.Querier.GetLockFile(ctx, String(runID))
 }
 
-// SetLockFile retrieves the lock file for the run
+// SetLockFile sets the lock file for the run
 func (db *DB) SetLockFile(ctx context.Context, runID string, lockFile []byte) error {
 	_, err := db.PutLockFile(ctx, lockFile, String(runID))
 	return err
