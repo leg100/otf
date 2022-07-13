@@ -55,7 +55,7 @@ func (v *view) PopFlash() *flash {
 }
 
 func (v *view) CurrentUser() *otf.User {
-	user, err := userFromContext(v.request.Context())
+	user, err := otf.UserFromContext(v.request.Context())
 	if err != nil {
 		return nil
 	}

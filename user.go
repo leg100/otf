@@ -48,6 +48,18 @@ func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
 
+func (u *User) CanAccess(res Resource) bool {
+	if u.id == "user-site-admin" {
+		return true
+	}
+	for _, org := range u.Organizations {
+		if org.ID() == res.OrganizationID() {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) ActiveSession() *Session {
 	for _, s := range u.Sessions {
 		if s.active {
