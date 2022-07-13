@@ -103,32 +103,6 @@ func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
 	app.render("profile.tmpl", w, r, user)
 }
 
-func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	app.render("session_list.tmpl", w, r, sessionList{
-		Pagination: &otf.Pagination{},
-		Items:      user.Sessions,
-	})
-}
-
-func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Request) {
-	token := r.FormValue("token")
-	if token == "" {
-		writeError(w, "missing token", http.StatusUnprocessableEntity)
-		return
-	}
-	if err := app.UserService().DeleteSession(r.Context(), token); err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "Revoked session")
-	http.Redirect(w, r, listSessionPath(), http.StatusFound)
-}
-
 // synchroniseOrganizations ensures an otf user's organization memberships match
 // their github user's organization memberships
 func synchroniseOrganizations(

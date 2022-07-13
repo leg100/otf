@@ -9,6 +9,14 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// tokenList exposes a list of tokens to a template
+type tokenList struct {
+	// list template expects pagination object but we don't paginate token
+	// listing
+	*otf.Pagination
+	Items []*otf.Token
+}
+
 func (app *Application) newTokenHandler(w http.ResponseWriter, r *http.Request) {
 	app.render("token_new.tmpl", w, r, nil)
 }
