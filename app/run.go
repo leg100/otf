@@ -247,10 +247,8 @@ func (s RunService) GetPlanFile(ctx context.Context, runID string, format otf.Pl
 	return file, nil
 }
 
-// UploadPlanFile persists a run's plan file. The plan file is expected to have
-// been produced using `terraform plan`. If the plan file is JSON serialized
-// then its parsed for a summary of planned changes and the Plan object is
-// updated accordingly.
+// UploadPlanFile persists a run's plan file. The plan format should be either
+// be binary or json.
 func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byte, format otf.PlanFormat) error {
 	if err := s.db.SetPlanFile(ctx, runID, plan, format); err != nil {
 		s.Error(err, "uploading plan file", "id", runID, "format", format)
@@ -263,6 +261,37 @@ func (s RunService) UploadPlanFile(ctx context.Context, runID string, plan []byt
 		return fmt.Errorf("caching plan: %w", err)
 	}
 
+	return nil
+}
+
+// GetLockFile returns the lock file for the run.
+func (s RunService) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+	if plan, err := s.cache.Get(otf.LockFileCacheKey(runID)); err == nil {
+		return plan, nil
+	}
+	// Cache is empty; retrieve from DB
+	file, err := s.db.GetLockFile(ctx, runID)
+	if err != nil {
+		s.Error(err, "retrieving lock file", "id", runID)
+		return nil, err
+	}
+	// Cache plan before returning
+	if err := s.cache.Set(otf.LockFileCacheKey(runID), file); err != nil {
+		return nil, fmt.Errorf("caching lock file: %w", err)
+	}
+	return file, nil
+}
+
+// UploadLockFile persists the lock file for a run.
+func (s RunService) UploadLockFile(ctx context.Context, runID string, plan []byte) error {
+	if err := s.db.SetLockFile(ctx, runID, plan); err != nil {
+		s.Error(err, "uploading lock file", "id", runID)
+		return err
+	}
+	s.V(2).Info("uploaded lock file", "id", runID)
+	if err := s.cache.Set(otf.LockFileCacheKey(runID), plan); err != nil {
+		return fmt.Errorf("caching plan: %w", err)
+	}
 	return nil
 }
 

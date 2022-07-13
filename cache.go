@@ -21,3 +21,4 @@ func StateVersionCacheKey(id string) string  { return fmt.Sprintf("%s.json", id)
 func LogCacheKey(runID string, phase PhaseType) string {
 	return fmt.Sprintf("%s.%s.log", runID, string(phase))
 }
+func LockFileCacheKey(id string) string { return fmt.Sprintf("%s.terraform.lock.hcl", id) }

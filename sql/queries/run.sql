@@ -211,6 +211,19 @@ WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE
 ;
 
+-- name: PutLockFile :one
+UPDATE runs
+SET lock_file = pggen.arg('lock_file')
+WHERE run_id = pggen.arg('run_id')
+RETURNING run_id
+;
+
+-- name: GetLockFile :one
+SELECT lock_file
+FROM runs
+WHERE run_id = pggen.arg('run_id')
+;
+
 -- name: UpdateRunStatus :one
 UPDATE runs
 SET
