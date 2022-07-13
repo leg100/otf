@@ -628,6 +628,69 @@ func (q *DBQuerier) FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunB
 	return item, nil
 }
 
+const putLockFileSQL = `UPDATE runs
+SET lock_file = $1
+WHERE run_id = $2
+RETURNING run_id
+;`
+
+// PutLockFile implements Querier.PutLockFile.
+func (q *DBQuerier) PutLockFile(ctx context.Context, lockFile []byte, runID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "PutLockFile")
+	row := q.conn.QueryRow(ctx, putLockFileSQL, lockFile, runID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query PutLockFile: %w", err)
+	}
+	return item, nil
+}
+
+// PutLockFileBatch implements Querier.PutLockFileBatch.
+func (q *DBQuerier) PutLockFileBatch(batch genericBatch, lockFile []byte, runID pgtype.Text) {
+	batch.Queue(putLockFileSQL, lockFile, runID)
+}
+
+// PutLockFileScan implements Querier.PutLockFileScan.
+func (q *DBQuerier) PutLockFileScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan PutLockFileBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const getLockFileSQL = `SELECT lock_file
+FROM runs
+WHERE run_id = $1
+;`
+
+// GetLockFile implements Querier.GetLockFile.
+func (q *DBQuerier) GetLockFile(ctx context.Context, runID pgtype.Text) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "GetLockFile")
+	row := q.conn.QueryRow(ctx, getLockFileSQL, runID)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query GetLockFile: %w", err)
+	}
+	return item, nil
+}
+
+// GetLockFileBatch implements Querier.GetLockFileBatch.
+func (q *DBQuerier) GetLockFileBatch(batch genericBatch, runID pgtype.Text) {
+	batch.Queue(getLockFileSQL, runID)
+}
+
+// GetLockFileScan implements Querier.GetLockFileScan.
+func (q *DBQuerier) GetLockFileScan(results pgx.BatchResults) ([]byte, error) {
+	row := results.QueryRow()
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan GetLockFileBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const updateRunStatusSQL = `UPDATE runs
 SET
     status = $1

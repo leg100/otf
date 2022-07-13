@@ -248,6 +248,17 @@ func (db *DB) GetPlanFile(ctx context.Context, runID string, format otf.PlanForm
 	}
 }
 
+// GetLockFile retrieves the lock file for the run
+func (db *DB) GetLockFile(ctx context.Context, runID string) ([]byte, error) {
+	return db.Querier.GetLockFile(ctx, String(runID))
+}
+
+// SetLockFile sets the lock file for the run
+func (db *DB) SetLockFile(ctx context.Context, runID string, lockFile []byte) error {
+	_, err := db.PutLockFile(ctx, lockFile, String(runID))
+	return err
+}
+
 // DeleteRun deletes a run from the DB
 func (db *DB) DeleteRun(ctx context.Context, id string) error {
 	_, err := db.DeleteRunByID(ctx, String(id))

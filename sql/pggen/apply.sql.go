@@ -300,6 +300,20 @@ type Querier interface {
 	// FindRunByIDForUpdateScan scans the result of an executed FindRunByIDForUpdateBatch query.
 	FindRunByIDForUpdateScan(results pgx.BatchResults) (FindRunByIDForUpdateRow, error)
 
+	PutLockFile(ctx context.Context, lockFile []byte, runID pgtype.Text) (pgtype.Text, error)
+	// PutLockFileBatch enqueues a PutLockFile query into batch to be executed
+	// later by the batch.
+	PutLockFileBatch(batch genericBatch, lockFile []byte, runID pgtype.Text)
+	// PutLockFileScan scans the result of an executed PutLockFileBatch query.
+	PutLockFileScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	GetLockFile(ctx context.Context, runID pgtype.Text) ([]byte, error)
+	// GetLockFileBatch enqueues a GetLockFile query into batch to be executed
+	// later by the batch.
+	GetLockFileBatch(batch genericBatch, runID pgtype.Text)
+	// GetLockFileScan scans the result of an executed GetLockFileBatch query.
+	GetLockFileScan(results pgx.BatchResults) ([]byte, error)
+
 	UpdateRunStatus(ctx context.Context, status pgtype.Text, id pgtype.Text) (pgtype.Text, error)
 	// UpdateRunStatusBatch enqueues a UpdateRunStatus query into batch to be executed
 	// later by the batch.
@@ -759,6 +773,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findRunByIDForUpdateSQL, findRunByIDForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindRunByIDForUpdate': %w", err)
 	}
+	if _, err := p.Prepare(ctx, putLockFileSQL, putLockFileSQL); err != nil {
+		return fmt.Errorf("prepare query 'PutLockFile': %w", err)
+	}
+	if _, err := p.Prepare(ctx, getLockFileSQL, getLockFileSQL); err != nil {
+		return fmt.Errorf("prepare query 'GetLockFile': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateRunStatusSQL, updateRunStatusSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateRunStatus': %w", err)
 	}
@@ -923,6 +943,7 @@ type Runs struct {
 	RefreshOnly            bool               `json:"refresh_only"`
 	ReplaceAddrs           []string           `json:"replace_addrs"`
 	TargetAddrs            []string           `json:"target_addrs"`
+	LockFile               []byte             `json:"lock_file"`
 	Status                 pgtype.Text        `json:"status"`
 	WorkspaceID            pgtype.Text        `json:"workspace_id"`
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
@@ -1123,6 +1144,7 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		compositeField{"refresh_only", "bool", &pgtype.Bool{}},
 		compositeField{"replace_addrs", "_text", &pgtype.TextArray{}},
 		compositeField{"target_addrs", "_text", &pgtype.TextArray{}},
+		compositeField{"lock_file", "bytea", &pgtype.Bytea{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
