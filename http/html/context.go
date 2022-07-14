@@ -16,12 +16,20 @@ const (
 	organizationCtxKey
 )
 
+func addUserToContext(ctx context.Context, user *otf.User) context.Context {
+	return context.WithValue(ctx, userCtxKey, user)
+}
+
 func userFromContext(ctx context.Context) (*otf.User, error) {
 	user, ok := ctx.Value(userCtxKey).(*otf.User)
 	if !ok {
 		return nil, fmt.Errorf("no user in context")
 	}
 	return user, nil
+}
+
+func addSessionToContext(ctx context.Context, sess *otf.Session) context.Context {
+	return context.WithValue(ctx, sessionCtxKey, sess)
 }
 
 func sessionFromContext(ctx context.Context) (*otf.Session, error) {

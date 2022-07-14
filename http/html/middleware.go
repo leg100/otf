@@ -1,7 +1,6 @@
 package html
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,26 +18,34 @@ func (c *currentOrganization) OrganizationName() string {
 
 // authUser middleware ensures the request has a valid session cookie, attaching
 // a session and user to the request context.
-func (app *Application) authenticateUser(next http.Handler) http.Handler {
+type authMiddleware struct {
+	users otf.UserService
+}
+
+func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
 		if err == http.ErrNoCookie {
-			http.Redirect(w, r, loginPath(), http.StatusFound)
+			sendUserToLoginPage(w, r)
 			return
 		}
-		user, err := app.UserService().Get(r.Context(), otf.UserSpec{
+		user, err := m.users.Get(r.Context(), otf.UserSpec{
 			SessionToken: &cookie.Value,
 		})
 		if err != nil {
 			flashError(w, "unable to find user: "+err.Error())
-			http.Redirect(w, r, loginPath(), http.StatusFound)
+			sendUserToLoginPage(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
-		ctx = context.WithValue(ctx, sessionCtxKey, user.ActiveSession())
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+		ctx := addUserToContext(r.Context(), user)
+		ctx = addSessionToContext(ctx, user.ActiveSession())
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
+	setCookie(w, pathCookie, r.URL.Path, nil)
+	http.Redirect(w, r, loginPath(), http.StatusFound)
 }
 
 // setOrganization ensures the session's organization reflects the most recently

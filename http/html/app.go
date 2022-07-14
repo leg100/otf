@@ -69,7 +69,7 @@ func (app *Application) addRoutes(r *Router) {
 	})
 	// routes that require authentication.
 	r.Sub(func(r *Router) {
-		r.Use(app.authenticateUser)
+		r.Use((&authMiddleware{app.UserService()}).authenticate)
 		r.Use(setOrganization)
 
 		r.PST("/logout", app.logoutHandler)
@@ -111,5 +111,8 @@ func (app *Application) addRoutes(r *Router) {
 
 		// this handles the link the terraform CLI shows during a plan/apply.
 		r.GET("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)
+
+		// terraform login opens a browser to this page
+		r.GET("/app/settings/tokens", app.tokensHandler)
 	})
 }

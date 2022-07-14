@@ -6,8 +6,12 @@ import (
 )
 
 const (
-	sessionCookie      = "session"
+	// session cookie stores the session identifier
+	sessionCookie = "session"
+	//organizationCookie stores the current organization for the session
 	organizationCookie = "organization"
+	// path cookie stores the last path the user attempted to access
+	pathCookie = "path"
 )
 
 // setCookie sets a cookie on the http response. A nil expiry sets no expiry,

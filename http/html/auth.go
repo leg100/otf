@@ -67,14 +67,20 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create session and redirect user to their profile
 	session, err := app.UserService().CreateSession(r.Context(), user, data)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	setCookie(w, sessionCookie, session.Token, &session.Expiry)
-	http.Redirect(w, r, getProfilePath(), http.StatusFound)
+
+	// Return to user to the original path they attempted to access
+	if cookie, err := r.Cookie(pathCookie); err == nil {
+		setCookie(w, pathCookie, "", &time.Time{})
+		http.Redirect(w, r, cookie.Value, http.StatusFound)
+	} else {
+		http.Redirect(w, r, getProfilePath(), http.StatusFound)
+	}
 }
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {

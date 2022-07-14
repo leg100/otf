@@ -9,9 +9,38 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_AuthenticateUser(t *testing.T) {
+	upstream := func(w http.ResponseWriter, r *http.Request) {
+		// implicitly respond with 200 OK
+	}
+	mw := (&authMiddleware{
+		users: &fakeUserService{fakeUser: otf.NewUser("user-fake")},
+	}).authenticate(http.HandlerFunc(upstream))
+
+	t.Run("with session", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "/", nil)
+		r.AddCookie(&http.Cookie{Name: sessionCookie, Value: "anythingwilldo"})
+		mw.ServeHTTP(w, r)
+		assert.Equal(t, 200, w.Code)
+	})
+
+	t.Run("without session", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "/", nil)
+		// deliberately omit session cookie
+		mw.ServeHTTP(w, r)
+		assert.Equal(t, 302, w.Code)
+		loc, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, loginPath(), loc.Path)
+	})
+}
 
 func Test_SetOrganization(t *testing.T) {
 	tests := []struct {
