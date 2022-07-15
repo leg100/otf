@@ -12,6 +12,9 @@ import (
 var _ otf.RunService = (*RunService)(nil)
 
 type RunService struct {
+	// map run id to workspace id
+	mapper map[string]string
+
 	db    otf.DB
 	cache otf.Cache
 	proxy otf.ChunkStore
@@ -25,7 +28,7 @@ func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs 
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
-	return &RunService{
+	svc := &RunService{
 		db:           db,
 		EventService: es,
 		cache:        cache,
@@ -35,7 +38,29 @@ func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs 
 			WorkspaceService:            wss,
 			ConfigurationVersionService: cvs,
 		},
-	}, nil
+	}
+
+	// Populate mapper
+	opts := otf.RunListOptions{}
+	for {
+		listing, err := svc.List(context.Background(), opts)
+		if err != nil {
+			return nil, err
+		}
+		if svc.mapper == nil {
+			// allocate map now we know how many runs there are
+			svc.mapper = make(map[string]string, listing.TotalCount())
+		}
+		for _, run := range listing.Items {
+			svc.mapper[run.ID()] = run.WorkspaceID()
+		}
+		if listing.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *listing.NextPage()
+	}
+
+	return svc, nil
 }
 
 // Create constructs and persists a new run object to the db, before scheduling
@@ -52,6 +77,9 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 		return nil, err
 	}
 	s.V(1).Info("created run", "id", run.ID())
+
+	// Add mapping
+	s.mapper[run.ID()] = run.WorkspaceID()
 
 	s.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
@@ -307,6 +335,8 @@ func (s RunService) Delete(ctx context.Context, runID string) error {
 		return err
 	}
 	s.V(0).Info("deleted run", "id", runID)
+	// Delete mapping
+	delete(s.mapper, runID)
 	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 	return nil
 }

@@ -12,6 +12,11 @@ import (
 var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
+	// map workspace id to organization id
+	mapper map[string]string
+	// map workspace name to workspace id
+	nameMapper map[string]string
+
 	db *sql.DB
 	f  otf.WorkspaceFactory
 	es otf.EventService
@@ -30,15 +35,25 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 		WorkspaceQueueManager: inmem.NewWorkspaceQueueManager(),
 	}
 
-	// Create workspace queues
+	// Create workspace queues and populate mappers
 	opts := otf.WorkspaceListOptions{}
 	for {
 		listing, err := svc.List(context.Background(), opts)
 		if err != nil {
 			return nil, err
 		}
+		if svc.mapper == nil {
+			// allocate map now we know how many workspaces there are
+			svc.mapper = make(map[string]string, listing.TotalCount())
+		}
+		if svc.nameMapper == nil {
+			// allocate map now we know how many workspaces there are
+			svc.nameMapper = make(map[string]string, listing.TotalCount())
+		}
 		for _, ws := range listing.Items {
 			svc.WorkspaceQueueManager.Create(ws.ID())
+			svc.mapper[ws.ID()] = ws.OrganizationID()
+			svc.nameMapper[ws.Name()] = ws.ID()
 		}
 		if listing.NextPage() == nil {
 			break
@@ -61,6 +76,10 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 		return nil, err
 	}
 
+	// Create mappings
+	s.nameMapper[ws.Name()] = ws.ID()
+	s.mapper[ws.ID()] = ws.OrganizationID()
+
 	// create workspace queue
 	s.WorkspaceQueueManager.Create(ws.ID())
 
@@ -77,12 +96,20 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 		return nil, err
 	}
 
+	var oldName string
 	ws, err := s.db.UpdateWorkspace(ctx, spec, func(ws *otf.Workspace) error {
+		oldName = ws.Name()
 		return ws.UpdateWithOptions(ctx, opts)
 	})
 	if err != nil {
 		s.Error(err, "updating workspace", spec.LogFields()...)
 		return nil, err
+	}
+
+	// update mapper if name changed
+	if ws.Name() != oldName {
+		s.nameMapper[ws.Name()] = ws.ID()
+		delete(s.nameMapper, oldName)
 	}
 
 	s.V(0).Info("updated workspace", spec.LogFields()...)
@@ -171,6 +198,10 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 		s.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name())
 		return err
 	}
+
+	// Remove mappings
+	delete(s.mapper, ws.ID())
+	delete(s.nameMapper, ws.Name())
 
 	// delete workspace queue
 	s.WorkspaceQueueManager.Delete(ws.ID())

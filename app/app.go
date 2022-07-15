@@ -30,7 +30,10 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	eventService := inmem.NewEventService(logger)
 
 	// Setup services
-	orgService := NewOrganizationService(db, logger, eventService)
+	orgService, err := NewOrganizationService(db, logger, eventService)
+	if err != nil {
+		return nil, err
+	}
 	workspaceService, err := NewWorkspaceService(db, logger, orgService, eventService)
 	if err != nil {
 		return nil, err
