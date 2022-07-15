@@ -33,7 +33,7 @@ func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Sc
 	return s, nil
 }
 
-func (s *Scheduler) CanAccess(Resource) bool {
+func (s *Scheduler) CanAccess(organizationName *string) bool {
 	// Scheduler can access anything
 	return true
 }

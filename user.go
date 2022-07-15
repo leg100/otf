@@ -14,7 +14,8 @@ const (
 )
 
 var (
-	SiteAdmin = User{id: "user-site-admin", username: "site-admin"}
+	SiteAdminID = "user-site-admin"
+	SiteAdmin   = User{id: SiteAdminID, username: "site-admin"}
 )
 
 // User represents an oTF user account.
@@ -48,12 +49,18 @@ func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
 
-func (u *User) CanAccess(res Resource) bool {
-	if u.id == "user-site-admin" {
+func (u *User) CanAccess(organizationName *string) bool {
+	// Site admin can access any organization
+	if u.id == SiteAdminID {
 		return true
 	}
+	// Normal users cannot access *any* organization...
+	if organizationName == nil {
+		return false
+	}
+	// ...but they can access an organization they are a member of.
 	for _, org := range u.Organizations {
-		if org.ID() == res.OrganizationID() {
+		if org.Name() == *organizationName {
 			return true
 		}
 	}

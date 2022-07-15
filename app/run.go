@@ -15,6 +15,8 @@ type RunService struct {
 	// map run id to workspace id
 	mapper map[string]string
 
+	m *Mapper
+
 	db    otf.DB
 	cache otf.Cache
 	proxy otf.ChunkStore
@@ -66,6 +68,17 @@ func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs 
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
 func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
+	// we want the organization name in order to determine whether the subject
+	// is permitted to create a run. so if the spec contains that, use that,
+	// otherwise the spec should contain a workspace id, with which we use as a
+	// key in the workspace mapper to lookup the associated organizaton name.
+	if spec.OrganizationName != nil {
+		if !otf.CanAccess(ctx, *spec.OrganizationName) {
+			return nil, otf.ErrAccessNotPermitted
+		}
+	}
+	// TODO: use workspace ID with workspace mapper
+
 	run, err := s.New(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "constructing new run")
@@ -88,6 +101,10 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 
 // Get retrieves a run from the db.
 func (s RunService) Get(ctx context.Context, runID string) (*otf.Run, error) {
+	if !s.m.CanAccessRun(ctx, runID) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
 		s.Error(err, "retrieving run", "id", runID)
@@ -100,6 +117,13 @@ func (s RunService) Get(ctx context.Context, runID string) (*otf.Run, error) {
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
 func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+	// Restrict access based on whether the list is filtered by organization and
+	// the name of the organization, e.g. normal users can only access the
+	// organizations they are a member of.
+	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	rl, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing runs")
@@ -115,6 +139,9 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 // ordered by creation date, oldest first. Note: The options filter the list but
 // not the watch.
 func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
+	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
 	// retrieve existing runs, page by page
 	var existing []*otf.Run
 	for {
@@ -171,6 +198,9 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 
 // Apply enqueues an apply for the run.
 func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
+	if !s.m.CanAccessRun(ctx, runID) {
+		return otf.ErrAccessNotPermitted
+	}
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.EnqueueApply()
 	})
@@ -188,6 +218,9 @@ func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOp
 
 // Discard the run.
 func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
+	if !s.m.CanAccessRun(ctx, runID) {
+		return otf.ErrAccessNotPermitted
+	}
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 		return run.Discard()
 	})
@@ -206,6 +239,9 @@ func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDisca
 // Cancel a run. If a run is in progress then a cancelation signal will be sent
 // out.
 func (s RunService) Cancel(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
+	if !s.m.CanAccessRun(ctx, runID) {
+		return otf.ErrAccessNotPermitted
+	}
 	var enqueue bool
 	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) (err error) {
 		enqueue, err = run.Cancel()

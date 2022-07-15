@@ -45,23 +45,17 @@ func UserFromContext(ctx context.Context) (*User, error) {
 // Subject is an entity attempting to carry out an action on a resource.
 type Subject interface {
 	// CanAccess determines if the subject is allowed to access the resource.
-	CanAccess(Resource) bool
-}
-
-// Resource is an identifable otf resource to which a subject can be permitted
-// to invoke actions on.
-type Resource interface {
-	// OrganizationID is the id of the organization the resource belongs to.
-	// Every resource belongs to an organization (or *is* an organization).
-	OrganizationID() string
+	CanAccess(organizationName *string) bool
 }
 
 // CanAccess is a convenience function that extracts a subject from the context
-// and checks whether it is allowed to access the resource.
-func CanAccess(ctx context.Context, res Resource) bool {
+// and checks whether it is allowed to access the named organization. A nil
+// organization name means *any* organization, i.e. is the subject allowed to
+// access any organization.
+func CanAccess(ctx context.Context, organizationName *string) bool {
 	subj, err := SubjectFromContext(ctx)
 	if err != nil {
 		return false
 	}
-	return subj.CanAccess(res)
+	return subj.CanAccess(organizationName)
 }

@@ -11,7 +11,6 @@ import (
 var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	// map org name to org id
 	mapper map[string]string
 
 	db *sql.DB

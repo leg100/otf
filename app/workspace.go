@@ -12,7 +12,7 @@ import (
 var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	// map workspace id to organization id
+	// map workspace id to organization name
 	mapper map[string]string
 	// map workspace name to workspace id
 	nameMapper map[string]string
@@ -52,7 +52,7 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 		}
 		for _, ws := range listing.Items {
 			svc.WorkspaceQueueManager.Create(ws.ID())
-			svc.mapper[ws.ID()] = ws.OrganizationID()
+			svc.mapper[ws.ID()] = ws.OrganizationName()
 			svc.nameMapper[ws.Name()] = ws.ID()
 		}
 		if listing.NextPage() == nil {
@@ -78,7 +78,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 
 	// Create mappings
 	s.nameMapper[ws.Name()] = ws.ID()
-	s.mapper[ws.ID()] = ws.OrganizationID()
+	s.mapper[ws.ID()] = ws.OrganizationName()
 
 	// create workspace queue
 	s.WorkspaceQueueManager.Create(ws.ID())
