@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS runs (
     replace_addrs                   TEXT[],
     target_addrs                    TEXT[],
     lock_file                       BYTEA,
-    status                          TEXT REFERENCES run_statuses  NOT NULL,
+    status                          TEXT REFERENCES run_statuses NOT NULL,
     workspace_id                    TEXT REFERENCES workspaces ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     configuration_version_id        TEXT REFERENCES configuration_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                                     PRIMARY KEY (run_id)

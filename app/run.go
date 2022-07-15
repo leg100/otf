@@ -296,17 +296,17 @@ func (s RunService) UploadLockFile(ctx context.Context, runID string, plan []byt
 }
 
 // Delete deletes a terraform run.
-func (s RunService) Delete(ctx context.Context, id string) error {
+func (s RunService) Delete(ctx context.Context, runID string) error {
 	// get run first so that we can include it in an event below
-	run, err := s.db.GetRun(ctx, id)
+	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
 		return err
 	}
-	if err := s.db.DeleteRun(ctx, id); err != nil {
-		s.Error(err, "deleting run", "id", id)
+	if err := s.db.DeleteRun(ctx, runID); err != nil {
+		s.Error(err, "deleting run", "id", runID)
 		return err
 	}
-	s.V(0).Info("deleted run", "id", id)
+	s.V(0).Info("deleted run", "id", runID)
 	s.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 	return nil
 }

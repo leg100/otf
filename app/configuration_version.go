@@ -49,13 +49,13 @@ func (s ConfigurationVersionService) List(ctx context.Context, workspaceID strin
 	return cvl, nil
 }
 
-func (s ConfigurationVersionService) Get(ctx context.Context, id string) (*otf.ConfigurationVersion, error) {
-	cv, err := s.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &id})
+func (s ConfigurationVersionService) Get(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
+	cv, err := s.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
-		s.Error(err, "retrieving configuration version", "id", id)
+		s.Error(err, "retrieving configuration version", "id", cvID)
 		return nil, err
 	}
-	s.V(2).Info("retrieved configuration version", "id", id)
+	s.V(2).Info("retrieved configuration version", "id", cvID)
 	return cv, nil
 }
 
@@ -70,36 +70,36 @@ func (s ConfigurationVersionService) GetLatest(ctx context.Context, workspaceID 
 }
 
 // Upload a configuration version tarball
-func (s ConfigurationVersionService) Upload(ctx context.Context, id string, config []byte) error {
-	err := s.db.UploadConfigurationVersion(context.Background(), id, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
+func (s ConfigurationVersionService) Upload(ctx context.Context, cvID string, config []byte) error {
+	err := s.db.UploadConfigurationVersion(context.Background(), cvID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		return cv.Upload(context.Background(), config, uploader)
 	})
 	if err != nil {
 		s.Error(err, "uploading configuration")
 		return err
 	}
-	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), config); err != nil {
+	if err := s.cache.Set(otf.ConfigVersionCacheKey(cvID), config); err != nil {
 		return fmt.Errorf("caching configuration version tarball: %w", err)
 	}
 	if err != nil {
 		s.Error(err, "uploading configuration")
 		return err
 	}
-	s.V(2).Info("uploaded configuration", "id", id, "bytes", len(config))
+	s.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return nil
 }
 
-func (s ConfigurationVersionService) Download(ctx context.Context, id string) ([]byte, error) {
-	if config, err := s.cache.Get(otf.ConfigVersionCacheKey(id)); err == nil {
+func (s ConfigurationVersionService) Download(ctx context.Context, cvID string) ([]byte, error) {
+	if config, err := s.cache.Get(otf.ConfigVersionCacheKey(cvID)); err == nil {
 		return config, nil
 	}
-	config, err := s.db.GetConfig(context.Background(), id)
+	config, err := s.db.GetConfig(context.Background(), cvID)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cache.Set(otf.ConfigVersionCacheKey(id), config); err != nil {
+	if err := s.cache.Set(otf.ConfigVersionCacheKey(cvID), config); err != nil {
 		return nil, fmt.Errorf("caching configuration version tarball: %w", err)
 	}
-	s.V(2).Info("uploaded configuration", "id", id, "bytes", len(config))
+	s.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return config, nil
 }

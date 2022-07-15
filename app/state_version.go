@@ -65,30 +65,30 @@ func (s StateVersionService) Current(ctx context.Context, workspaceID string) (*
 	return sv, nil
 }
 
-func (s StateVersionService) Get(ctx context.Context, id string) (*otf.StateVersion, error) {
-	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{ID: &id})
+func (s StateVersionService) Get(ctx context.Context, svID string) (*otf.StateVersion, error) {
+	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{ID: &svID})
 	if err != nil {
-		s.Error(err, "retrieving state version", "id", id)
+		s.Error(err, "retrieving state version", "id", svID)
 		return nil, err
 	}
-	s.V(2).Info("retrieved state version", "id", id)
+	s.V(2).Info("retrieved state version", "id", svID)
 	return sv, nil
 }
 
 // Download state itself.
-func (s StateVersionService) Download(ctx context.Context, id string) ([]byte, error) {
-	if state, err := s.cache.Get(otf.StateVersionCacheKey(id)); err == nil {
-		s.V(2).Info("downloaded state", "id", id)
+func (s StateVersionService) Download(ctx context.Context, svID string) ([]byte, error) {
+	if state, err := s.cache.Get(otf.StateVersionCacheKey(svID)); err == nil {
+		s.V(2).Info("downloaded state", "id", svID)
 		return state, nil
 	}
-	state, err := s.db.GetState(ctx, id)
+	state, err := s.db.GetState(ctx, svID)
 	if err != nil {
-		s.Error(err, "downloading state", "id", id)
+		s.Error(err, "downloading state", "id", svID)
 		return nil, err
 	}
-	if err := s.cache.Set(otf.StateVersionCacheKey(id), state); err != nil {
+	if err := s.cache.Set(otf.StateVersionCacheKey(svID), state); err != nil {
 		return nil, fmt.Errorf("caching state: %w", err)
 	}
-	s.V(2).Info("downloaded state", "id", id)
+	s.V(2).Info("downloaded state", "id", svID)
 	return state, nil
 }

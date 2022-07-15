@@ -26,8 +26,6 @@ func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService)
 }
 
 func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	// TODO: check whether org already exists first
-
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
 		return nil, err
@@ -93,8 +91,8 @@ func (s OrganizationService) Delete(ctx context.Context, name string) error {
 	return s.db.DeleteOrganization(ctx, name)
 }
 
-func (s OrganizationService) GetEntitlements(ctx context.Context, name string) (*otf.Entitlements, error) {
-	org, err := s.Get(ctx, name)
+func (s OrganizationService) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
+	org, err := s.Get(ctx, organizationName)
 	if err != nil {
 		return nil, err
 	}
