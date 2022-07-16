@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -12,11 +13,7 @@ import (
 var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
-	// map workspace id to organization name
-	mapper map[string]string
-	// map workspace name to workspace id
-	nameMapper map[string]string
-
+	m  *Mapper
 	db *sql.DB
 	f  otf.WorkspaceFactory
 	es otf.EventService
@@ -26,9 +23,10 @@ type WorkspaceService struct {
 	logr.Logger
 }
 
-func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationService, es otf.EventService) (*WorkspaceService, error) {
+func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationService, es otf.EventService, mapper *Mapper) (*WorkspaceService, error) {
 	svc := &WorkspaceService{
 		db:                    db,
+		m:                     mapper,
 		es:                    es,
 		f:                     otf.WorkspaceFactory{OrganizationService: os},
 		Logger:                logger,
@@ -38,22 +36,13 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 	// Create workspace queues and populate mappers
 	opts := otf.WorkspaceListOptions{}
 	for {
-		listing, err := svc.List(context.Background(), opts)
+		listing, err := svc.List(otf.ContextWithAppUser(), opts)
 		if err != nil {
-			return nil, err
-		}
-		if svc.mapper == nil {
-			// allocate map now we know how many workspaces there are
-			svc.mapper = make(map[string]string, listing.TotalCount())
-		}
-		if svc.nameMapper == nil {
-			// allocate map now we know how many workspaces there are
-			svc.nameMapper = make(map[string]string, listing.TotalCount())
+			return nil, fmt.Errorf("populating workspace mapper: %w", err)
 		}
 		for _, ws := range listing.Items {
 			svc.WorkspaceQueueManager.Create(ws.ID())
-			svc.mapper[ws.ID()] = ws.OrganizationName()
-			svc.nameMapper[ws.Name()] = ws.ID()
+			svc.m.AddWorkspace(ws)
 		}
 		if listing.NextPage() == nil {
 			break
@@ -65,6 +54,10 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 }
 
 func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+	if !otf.CanAccess(ctx, &opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	ws, err := s.f.NewWorkspace(ctx, opts)
 	if err != nil {
 		s.Error(err, "constructing workspace", "name", opts.Name)
@@ -77,8 +70,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 	}
 
 	// Create mappings
-	s.nameMapper[ws.Name()] = ws.ID()
-	s.mapper[ws.ID()] = ws.OrganizationName()
+	s.m.AddWorkspace(ws)
 
 	// create workspace queue
 	s.WorkspaceQueueManager.Create(ws.ID())
@@ -91,6 +83,10 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 }
 
 func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	if !s.m.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	if err := opts.Valid(); err != nil {
 		s.Error(err, "updating workspace")
 		return nil, err
@@ -108,8 +104,7 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 
 	// update mapper if name changed
 	if ws.Name() != oldName {
-		s.nameMapper[ws.Name()] = ws.ID()
-		delete(s.nameMapper, oldName)
+		s.m.UpdateWorkspace(oldName, ws)
 	}
 
 	s.V(0).Info("updated workspace", spec.LogFields()...)
@@ -122,12 +117,20 @@ func (s WorkspaceService) UpdateQueue(run *otf.Run) error {
 }
 
 func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	return s.db.ListWorkspaces(ctx, opts)
 }
 
 // ListWatch lists workspaces and then watches for changes to workspaces. Note:
 // The options filter the list but not the watch.
 func (s WorkspaceService) ListWatch(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
+	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	// retrieve workspaces from db
 	existing, err := s.db.ListWorkspaces(ctx, opts)
 	if err != nil {
@@ -167,6 +170,10 @@ func (s WorkspaceService) ListWatch(ctx context.Context, opts otf.WorkspaceListO
 }
 
 func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	if !s.m.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	if err := spec.Valid(); err != nil {
 		s.Error(err, "retrieving workspace")
 		return nil, err
@@ -188,6 +195,10 @@ func (s WorkspaceService) GetQueue(workspaceID string) ([]*otf.Run, error) {
 }
 
 func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
+	if !s.m.CanAccessWorkspace(ctx, spec) {
+		return otf.ErrAccessNotPermitted
+	}
+
 	// Get workspace so we can publish it in an event after we delete it
 	ws, err := s.db.GetWorkspace(ctx, spec)
 	if err != nil {
@@ -200,8 +211,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	}
 
 	// Remove mappings
-	delete(s.mapper, ws.ID())
-	delete(s.nameMapper, ws.Name())
+	s.m.RemoveWorkspace(ws)
 
 	// delete workspace queue
 	s.WorkspaceQueueManager.Delete(ws.ID())
@@ -214,6 +224,10 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 }
 
 func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	if !s.m.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	ws, err := s.db.LockWorkspace(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "locking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
@@ -226,6 +240,10 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts
 }
 
 func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	if !s.m.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	ws, err := s.db.UnlockWorkspace(ctx, spec, opts)
 	if err != nil {
 		s.Error(err, "unlocking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)

@@ -13,8 +13,6 @@ type Scheduler struct {
 	incoming <-chan *Run
 	WorkspaceService
 	logr.Logger
-
-	ctx context.Context
 }
 
 // NewScheduler constructs and initialises the scheduler.
@@ -24,7 +22,6 @@ func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Sc
 		WorkspaceService: app.WorkspaceService(),
 		Logger:           logger,
 	}
-	s.ctx = AddSubjectToContext(ctx, s)
 	lw, err := app.RunService().ListWatch(ctx, RunListOptions{Statuses: IncompleteRun})
 	if err != nil {
 		return nil, err
@@ -33,19 +30,14 @@ func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Sc
 	return s, nil
 }
 
-func (s *Scheduler) CanAccess(organizationName *string) bool {
-	// Scheduler can access anything
-	return true
-}
-
 // Start starts the scheduler daemon. Should be invoked in a go routine.
-func (s *Scheduler) Start() {
+func (s *Scheduler) Start(ctx context.Context) {
 	for {
 		select {
-		case <-s.ctx.Done():
+		case <-ctx.Done():
 			return
 		case run := <-s.incoming:
-			if err := s.handleRun(s.ctx, run); err != nil {
+			if err := s.handleRun(ctx, run); err != nil {
 				s.Error(err, "scheduling run", "run", run.ID())
 			}
 		}

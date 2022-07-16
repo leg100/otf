@@ -11,8 +11,6 @@ import (
 var _ otf.OrganizationService = (*OrganizationService)(nil)
 
 type OrganizationService struct {
-	mapper map[string]string
-
 	db *sql.DB
 	es otf.EventService
 
@@ -25,27 +23,6 @@ func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService)
 		es:     es,
 		Logger: logger,
 	}
-
-	// Populate mapper
-	opts := otf.OrganizationListOptions{}
-	for {
-		listing, err := svc.List(context.Background(), opts)
-		if err != nil {
-			return nil, err
-		}
-		if svc.mapper == nil {
-			// allocate map now we know how many runs there are
-			svc.mapper = make(map[string]string, listing.TotalCount())
-		}
-		for _, org := range listing.Items {
-			svc.mapper[org.Name()] = org.ID()
-		}
-		if listing.NextPage() == nil {
-			break
-		}
-		opts.PageNumber = *listing.NextPage()
-	}
-
 	return svc, nil
 }
 
@@ -59,8 +36,6 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		s.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
-
-	s.mapper[org.Name()] = org.ID()
 
 	s.es.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
@@ -84,6 +59,10 @@ func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.Organiz
 }
 
 func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
+	if !otf.CanAccess(ctx, &name) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	org, err := s.db.GetOrganization(ctx, name)
 	if err != nil {
 		s.Error(err, "retrieving organization", "name", name)
@@ -100,17 +79,16 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 }
 
 func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+	if !otf.CanAccess(ctx, &name) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	org, err := s.db.UpdateOrganization(ctx, name, func(org *otf.Organization) error {
 		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
 	if err != nil {
 		s.Error(err, "updating organization", "name", name)
 		return nil, err
-	}
-	// update mapping if name changed
-	if org.Name() != name {
-		s.mapper[org.Name()] = org.ID()
-		delete(s.mapper, name)
 	}
 
 	s.V(2).Info("updated organization", "name", name, "id", org.ID())
@@ -119,15 +97,22 @@ func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.
 }
 
 func (s OrganizationService) Delete(ctx context.Context, name string) error {
+	if !otf.CanAccess(ctx, &name) {
+		return otf.ErrAccessNotPermitted
+	}
+
 	err := s.db.DeleteOrganization(ctx, name)
 	if err != nil {
 		return err
 	}
-	delete(s.mapper, name)
 	return nil
 }
 
 func (s OrganizationService) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
+	if !otf.CanAccess(ctx, &organizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+
 	org, err := s.Get(ctx, organizationName)
 	if err != nil {
 		return nil, err

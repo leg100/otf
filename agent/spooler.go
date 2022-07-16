@@ -61,13 +61,13 @@ var (
 	QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
 )
 
-// NewSpooler is a constructor for a Spooler pre-populated with queued runs
+// NewSpooler populates a Spooler with queued runs
 func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
 	// retrieve existing runs, page by page
 	var existing []*otf.Run
 	for {
 		opts := otf.RunListOptions{Statuses: QueuedStatuses}
-		page, err := svc.List(context.Background(), opts)
+		page, err := svc.List(otf.ContextWithAppUser(), opts)
 		if err != nil {
 			return nil, err
 		}
