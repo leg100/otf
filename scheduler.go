@@ -65,7 +65,7 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 	}
 	if len(queue) > 0 && queue[0].Status() == RunPending {
 		// enqueue plan for pending run at head of queue
-		_, err := s.RunService.EnqueuePlan(ctx, run.ID())
+		_, err := s.RunService.EnqueuePlan(ctx, queue[0].ID())
 		if err != nil {
 			return err
 		}
