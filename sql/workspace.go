@@ -108,6 +108,15 @@ func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts ot
 	return ws, tx.Commit(ctx)
 }
 
+// SetLatestRun sets the ID of the latest run for the specified workspace.
+func (db *DB) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
+	_, err := db.UpdateWorkspaceLatestRun(ctx, String(runID), String(workspaceID))
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
+}
+
 // UnlockWorkspace unlocks the specified workspace; the caller has the
 // opportunity to check the current locker passed into the provided callback. If
 // an error is returned the unlock will not go ahead.

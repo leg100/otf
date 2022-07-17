@@ -561,6 +561,13 @@ type Querier interface {
 	// UpdateWorkspaceLockByIDScan scans the result of an executed UpdateWorkspaceLockByIDBatch query.
 	UpdateWorkspaceLockByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	UpdateWorkspaceLatestRun(ctx context.Context, runID pgtype.Text, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// UpdateWorkspaceLatestRunBatch enqueues a UpdateWorkspaceLatestRun query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceLatestRunBatch(batch genericBatch, runID pgtype.Text, workspaceID pgtype.Text)
+	// UpdateWorkspaceLatestRunScan scans the result of an executed UpdateWorkspaceLatestRunBatch query.
+	UpdateWorkspaceLatestRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	// DeleteOrganization deletes an organization by id.
 	// DeleteWorkspaceByID deletes a workspace by id.
 	//
@@ -883,6 +890,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updateWorkspaceLockByIDSQL, updateWorkspaceLockByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateWorkspaceLockByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceLatestRunSQL, updateWorkspaceLatestRunSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceLatestRun': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)

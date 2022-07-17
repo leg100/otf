@@ -144,6 +144,11 @@ SET
     lock_run_id = pggen.arg('run_id')
 WHERE workspace_id = pggen.arg('workspace_id');
 
+-- name: UpdateWorkspaceLatestRun :exec
+UPDATE workspaces
+SET latest_run_id = pggen.arg('run_id')
+WHERE workspace_id = pggen.arg('workspace_id');
+
 -- DeleteOrganization deletes an organization by id.
 -- DeleteWorkspaceByID deletes a workspace by id.
 --
