@@ -82,21 +82,6 @@ func (m *Mapper) CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec)
 	return otf.CanAccess(ctx, &orgName)
 }
 
-// LookupWorkspaceID uses the workspace spec to return a workspace ID,
-// regardless of whether the spec specifies an ID or not.
-func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) (string, bool) {
-	if spec.OrganizationName != nil {
-		return *spec.OrganizationName, true
-	} else if spec.ID != nil {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-
-		return m.workspaceIDs[*spec.ID], true
-	} else {
-		return "", false
-	}
-}
-
 func (m *Mapper) lookupRunOrganization(runID string) (string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
