@@ -59,3 +59,19 @@ func CanAccess(ctx context.Context, organizationName *string) bool {
 	}
 	return subj.CanAccess(organizationName)
 }
+
+// IsAdmin determines if the caller is an admin, i.e. the app/agent/site-admin,
+// but not a normal user. Returns false if the context contains no subject.
+func IsAdmin(ctx context.Context) bool {
+	subj, err := SubjectFromContext(ctx)
+	if err != nil {
+		// unauthenticated call
+		return false
+	}
+	if user, ok := subj.(*User); ok && !user.SiteAdmin() {
+		// is normal user
+		return false
+	}
+	// call is authenticated and the subject is not a normal user
+	return true
+}

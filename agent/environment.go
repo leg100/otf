@@ -175,13 +175,13 @@ func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 func (e *Environment) printRedErrorMessage(err error) {
 	fmt.Fprintln(e.out)
 
-	// Print "Error" in bright red, overriding the behaviour to disable
-	// colors on a non-tty output
+	// Print "Error:" in bright red, overriding the behaviour to disable colors
+	// on a non-tty output
 	red := color.New(color.FgHiRed)
 	red.EnableColor()
-	red.Fprintf(e.out, "Error: ")
+	red.Fprint(e.out, "Error: ")
 
-	fmt.Fprintf(e.out, err.Error())
+	fmt.Fprint(e.out, err.Error())
 	fmt.Fprintln(e.out)
 }
 

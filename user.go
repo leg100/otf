@@ -48,10 +48,11 @@ func (u *User) Username() string     { return u.username }
 func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
+func (u *User) SiteAdmin() bool      { return u.id == SiteAdminID }
 
 func (u *User) CanAccess(organizationName *string) bool {
 	// Site admin can access any organization
-	if u.id == SiteAdminID {
+	if u.SiteAdmin() {
 		return true
 	}
 	// Normal users cannot access *any* organization...

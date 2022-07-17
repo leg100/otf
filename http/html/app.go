@@ -83,8 +83,6 @@ func (app *Application) addRoutes(r *Router) {
 		r.PST("/profile/tokens/create", app.createTokenHandler)
 
 		r.GET("/organizations", app.listOrganizations)
-		r.GET("/organizations/new", app.newOrganization)
-		r.PST("/organizations/create", app.createOrganization)
 		r.GET("/organizations/{organization_name}", app.getOrganization)
 		r.GET("/organizations/{organization_name}/overview", app.getOrganizationOverview)
 		r.GET("/organizations/{organization_name}/edit", app.editOrganization)
