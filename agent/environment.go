@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/fatih/color"
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
@@ -157,8 +158,24 @@ func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 	// Create and store cancel func so func's context can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
+	if err := fn(e.ctx, e); err != nil {
+		e.printRedErrorMessage(err)
+		return err
+	}
+	return nil
+}
 
-	return fn(ctx, e)
+func (e *Environment) printRedErrorMessage(err error) {
+	fmt.Fprintln(e.out)
+
+	// Print "Error" in bright red, overriding the behaviour to disable
+	// colors on a non-tty output
+	red := color.New(color.FgHiRed)
+	red.EnableColor()
+	red.Fprintf(e.out, "Error: ")
+
+	fmt.Fprintf(e.out, err.Error())
+	fmt.Fprintln(e.out)
 }
 
 func (e *Environment) cancelCLI(force bool) {
