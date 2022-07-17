@@ -9,7 +9,7 @@ import (
 
 func TestRun_States(t *testing.T) {
 	t.Run("pending", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
+		run := NewTestRun(t, TestRunCreateOptions{})
 
 		require.Equal(t, RunPending, run.status)
 		require.Equal(t, PhasePending, run.plan.status)
@@ -17,7 +17,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue plan", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{})
+		run := NewTestRun(t, TestRunCreateOptions{})
 
 		require.NoError(t, run.EnqueuePlan())
 
@@ -27,7 +27,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start plan", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanQueued})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanQueued})
 
 		require.NoError(t, run.Start(PlanPhase))
 
@@ -37,7 +37,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanning})
 
 		require.NoError(t, run.Finish(PlanPhase, PhaseFinishOptions{}))
 
@@ -47,7 +47,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with errors", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanning})
 
 		require.NoError(t, run.Finish(PlanPhase, PhaseFinishOptions{Errored: true}))
 
@@ -57,7 +57,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanning})
 
 		run.plan.ResourceReport = &ResourceReport{Additions: 1}
 
@@ -69,7 +69,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{
+		run := NewTestRun(t, TestRunCreateOptions{
 			Status:    RunPlanning,
 			AutoApply: true,
 		})
@@ -84,7 +84,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("enqueue apply", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanned})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanned})
 
 		require.NoError(t, run.EnqueueApply())
 
@@ -93,7 +93,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("start apply", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunApplyQueued})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunApplyQueued})
 
 		require.NoError(t, run.Start(ApplyPhase))
 
@@ -102,7 +102,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunApplying})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunApplying})
 
 		require.NoError(t, run.Finish(ApplyPhase, PhaseFinishOptions{}))
 
@@ -111,7 +111,7 @@ func TestRun_States(t *testing.T) {
 	})
 
 	t.Run("finish apply with errors", func(t *testing.T) {
-		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunApplying})
+		run := NewTestRun(t, TestRunCreateOptions{Status: RunApplying})
 
 		require.NoError(t, run.Finish(ApplyPhase, PhaseFinishOptions{Errored: true}))
 
@@ -121,7 +121,7 @@ func TestRun_States(t *testing.T) {
 }
 
 func TestRun_Cancel_Pending(t *testing.T) {
-	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPending})
+	run := NewTestRun(t, TestRunCreateOptions{Status: RunPending})
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)
 	assert.False(t, enqueue)
@@ -129,7 +129,7 @@ func TestRun_Cancel_Pending(t *testing.T) {
 }
 
 func TestRun_Cancel_Planning(t *testing.T) {
-	run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+	run := NewTestRun(t, TestRunCreateOptions{Status: RunPlanning})
 	enqueue, err := run.Cancel()
 	require.NoError(t, err)
 	assert.True(t, enqueue)

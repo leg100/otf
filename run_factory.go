@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"testing"
 )
 
 // RunFactory is a factory for constructing Run objects.
@@ -62,15 +61,4 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 		run.refresh = *opts.Refresh
 	}
 	return &run
-}
-
-// NewTestRun creates a new run. Expressly for testing purposes
-func NewTestRun(t *testing.T, id, workspaceID string, opts TestRunCreateOptions) *Run {
-	ws := Workspace{id: workspaceID, autoApply: opts.AutoApply}
-	cv := ConfigurationVersion{id: "cv-123", speculative: opts.Speculative}
-	run := NewRun(&cv, &ws, RunCreateOptions{})
-	if opts.Status != RunStatus("") {
-		run.updateStatus(opts.Status)
-	}
-	return run
 }
