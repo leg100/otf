@@ -156,7 +156,7 @@ func (r *Run) Discard() error {
 // Cancel run. Returns a boolean indicating whether a cancel request should be
 // enqueued (for an agent to kill an in progress process)
 func (r *Run) Cancel() (enqueue bool, err error) {
-	if !r.cancelable() {
+	if !r.Cancelable() {
 		return false, ErrRunCancelNotAllowed
 	}
 	// permit run to be force canceled after a cool off period of 10 seconds has
@@ -306,7 +306,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Run{
 		ID: r.ID(),
 		Actions: &jsonapi.RunActions{
-			IsCancelable:      r.cancelable(),
+			IsCancelable:      r.Cancelable(),
 			IsConfirmable:     r.confirmable(),
 			IsForceCancelable: r.forceCancelAvailableAt != nil,
 			IsDiscardable:     r.discardable(),
@@ -459,8 +459,8 @@ func (r *Run) discardable() bool {
 	}
 }
 
-// cancelable determines whether run can be cancelled.
-func (r *Run) cancelable() bool {
+// Cancelable determines whether run can be cancelled.
+func (r *Run) Cancelable() bool {
 	switch r.Status() {
 	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
 		return true

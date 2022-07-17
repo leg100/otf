@@ -134,3 +134,12 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
 }
+
+func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
+	err := app.RunService().Cancel(r.Context(), mux.Vars(r)["run_id"], otf.RunCancelOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
+}

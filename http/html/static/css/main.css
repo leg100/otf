@@ -373,7 +373,8 @@ button.delete:hover {
 .item-content {
   display: flex;
   column-gap: 10px;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 /* content menu is a row list of various elements that make up the

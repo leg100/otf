@@ -108,6 +108,7 @@ func (app *Application) addRoutes(r *Router) {
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
 
 		// this handles the link the terraform CLI shows during a plan/apply.
 		r.GET("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)

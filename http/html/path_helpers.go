@@ -158,6 +158,10 @@ func deleteRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/delete", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
+func cancelRunPath(run runRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/cancel", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+}
+
 func addHelpersToFuncMap(m template.FuncMap) {
 	m["loginPath"] = loginPath
 	m["logoutPath"] = logoutPath
@@ -192,4 +196,5 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["getPlanPath"] = getPlanPath
 	m["getApplyPath"] = getApplyPath
 	m["deleteRunPath"] = deleteRunPath
+	m["cancelRunPath"] = cancelRunPath
 }
