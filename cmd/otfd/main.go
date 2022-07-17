@@ -40,6 +40,9 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
+	// all calls to services must be authenticated with the app user
+	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
+
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -95,13 +98,13 @@ func run(ctx context.Context, args []string) error {
 	// Setup application services
 	app, err := app.NewApplication(logger, db, cache)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up services: %w", err)
 	}
 
 	// run scheduler
 	scheduler, err := otf.NewScheduler(ctx, logger, app)
 	if err != nil {
-		return err
+		return fmt.Errorf("starting scheduler: %w", err)
 	}
 	go scheduler.Start(ctx)
 

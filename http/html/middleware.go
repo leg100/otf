@@ -37,7 +37,7 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			sendUserToLoginPage(w, r)
 			return
 		}
-		ctx := addUserToContext(r.Context(), user)
+		ctx := otf.AddSubjectToContext(r.Context(), user)
 		ctx = addSessionToContext(ctx, user.ActiveSession())
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

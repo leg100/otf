@@ -16,7 +16,7 @@ type sessionList struct {
 }
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

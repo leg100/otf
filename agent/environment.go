@@ -42,6 +42,10 @@ type Environment struct {
 	out io.WriteCloser
 
 	environmentVariables []string
+
+	// Environment context - should contain subject for authenticating to
+	// services
+	ctx context.Context
 }
 
 func NewEnvironment(
@@ -49,6 +53,7 @@ func NewEnvironment(
 	app otf.Application,
 	id string,
 	phase otf.PhaseType,
+	ctx context.Context,
 	environmentVariables []string) (*Environment, error) {
 
 	path, err := os.MkdirTemp("", "otf-plan")
@@ -63,6 +68,9 @@ func NewEnvironment(
 		LogService: app.RunService(),
 	}
 
+	// Create and store cancel func so func's context can be canceled
+	ctx, cancel := context.WithCancel(ctx)
+
 	return &Environment{
 		Logger:                      logger,
 		runService:                  app.RunService(),
@@ -71,6 +79,8 @@ func NewEnvironment(
 		out:                         out,
 		path:                        path,
 		environmentVariables:        environmentVariables,
+		cancel:                      cancel,
+		ctx:                         ctx,
 	}, nil
 }
 
@@ -155,9 +165,6 @@ func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 		return fmt.Errorf("execution canceled")
 	}
 
-	// Create and store cancel func so func's context can be canceled
-	ctx, cancel := context.WithCancel(context.Background())
-	e.cancel = cancel
 	if err := fn(e.ctx, e); err != nil {
 		e.printRedErrorMessage(err)
 		return err
@@ -168,13 +175,13 @@ func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 func (e *Environment) printRedErrorMessage(err error) {
 	fmt.Fprintln(e.out)
 
-	// Print "Error" in bright red, overriding the behaviour to disable
-	// colors on a non-tty output
+	// Print "Error:" in bright red, overriding the behaviour to disable colors
+	// on a non-tty output
 	red := color.New(color.FgHiRed)
 	red.EnableColor()
-	red.Fprintf(e.out, "Error: ")
+	red.Fprint(e.out, "Error: ")
 
-	fmt.Fprintf(e.out, err.Error())
+	fmt.Fprint(e.out, err.Error())
 	fmt.Fprintln(e.out)
 }
 

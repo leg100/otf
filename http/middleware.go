@@ -30,7 +30,7 @@ func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 		}
 
 		// add user to context for upstream handlers to consume
-		ctx := addUserToContext(r.Context(), user)
+		ctx := otf.AddSubjectToContext(r.Context(), user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

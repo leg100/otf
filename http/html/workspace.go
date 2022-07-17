@@ -147,7 +147,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	user, err := userFromContext(r.Context())
+	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -163,7 +163,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -12,7 +12,8 @@ import (
 // githubLogin is called upon a successful Github login. A new user is created
 // if they don't already exist.
 func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	// service calls are made using the privileged app user
+	ctx := otf.AddSubjectToContext(r.Context(), &otf.AppUser{})
 
 	// If the OAuth handshake returns an error, return the user to the login
 	// page along with a flash alert.
@@ -101,7 +102,7 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) profileHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := otf.SubjectFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

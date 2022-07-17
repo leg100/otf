@@ -168,12 +168,10 @@ func ConvertID(id, resource string) string {
 	return resource + "-" + parts[1]
 }
 
-const (
-	// oldest item first in list
-	OldestFirst ListOrder = iota
-	// newest item first in list
-	NewestFirst
-)
+type AppUser struct{}
 
-// ListOrder is the requested order of items in a list
-type ListOrder int
+func (*AppUser) CanAccess(*string) bool { return true }
+
+func ContextWithAppUser() context.Context {
+	return AddSubjectToContext(context.Background(), &AppUser{})
+}

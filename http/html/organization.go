@@ -37,30 +37,6 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 	app.render("organization_list.tmpl", w, r, organizationList{organizations, opts})
 }
 
-func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {
-	app.render("organization_new.tmpl", w, r, nil)
-}
-
-func (app *Application) createOrganization(w http.ResponseWriter, r *http.Request) {
-	var opts otf.OrganizationCreateOptions
-	if err := decode.Form(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	org, err := app.OrganizationService().Create(r.Context(), opts)
-	if err == otf.ErrResourcesAlreadyExists {
-		flashError(w, "organization already exists: "+*opts.Name)
-		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
-		return
-	}
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "created organization: "+org.Name())
-	http.Redirect(w, r, getOrganizationPath(org), http.StatusFound)
-}
-
 // Get lists the workspaces for the org.
 func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, listWorkspacePath(organizationRequest{r}), http.StatusFound)

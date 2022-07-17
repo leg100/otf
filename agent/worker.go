@@ -32,6 +32,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		w.App,
 		run.ID(),
 		run.Phase(),
+		ctx,
 		w.environmentVariables,
 	)
 	if err != nil {

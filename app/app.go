@@ -29,15 +29,21 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	// Setup event broker
 	eventService := inmem.NewEventService(logger)
 
+	// Setup ID mapper
+	mapper := NewMapper()
+
 	// Setup services
-	orgService := NewOrganizationService(db, logger, eventService)
-	workspaceService, err := NewWorkspaceService(db, logger, orgService, eventService)
+	orgService, err := NewOrganizationService(db, logger, eventService)
+	if err != nil {
+		return nil, err
+	}
+	workspaceService, err := NewWorkspaceService(db, logger, orgService, eventService, mapper)
 	if err != nil {
 		return nil, err
 	}
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache)
+	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache, mapper)
 	if err != nil {
 		return nil, err
 	}

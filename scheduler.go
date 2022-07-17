@@ -17,16 +17,17 @@ type Scheduler struct {
 
 // NewScheduler constructs and initialises the scheduler.
 func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Scheduler, error) {
+	s := &Scheduler{
+		RunService:       app.RunService(),
+		WorkspaceService: app.WorkspaceService(),
+		Logger:           logger,
+	}
 	lw, err := app.RunService().ListWatch(ctx, RunListOptions{Statuses: IncompleteRun})
 	if err != nil {
 		return nil, err
 	}
-	return &Scheduler{
-		RunService:       app.RunService(),
-		WorkspaceService: app.WorkspaceService(),
-		Logger:           logger,
-		incoming:         lw,
-	}, nil
+	s.incoming = lw
+	return s, nil
 }
 
 // Start starts the scheduler daemon. Should be invoked in a go routine.

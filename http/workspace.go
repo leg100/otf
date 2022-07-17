@@ -123,7 +123,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -152,7 +152,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromContext(r.Context())
+	user, err := otf.UserFromContext(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
