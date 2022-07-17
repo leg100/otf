@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,31 +19,43 @@ func Test_AuthMiddleware(t *testing.T) {
 	}).handler(http.HandlerFunc(upstream))
 
 	tests := []struct {
-		name  string
-		token string
+		name string
+		// add bearer token to http request; nil omits the token
+		token *string
 		want  int
 	}{
 		{
 			name:  "valid user token",
-			token: "validUserToken",
+			token: otf.String("validUserToken"),
 			want:  http.StatusOK,
 		},
 		{
 			name:  "valid site token",
-			token: "validSiteToken",
+			token: otf.String("validSiteToken"),
 			want:  http.StatusOK,
 		},
 		{
 			name:  "invalid token",
-			token: "invalidToken",
+			token: otf.String("invalidToken"),
 			want:  http.StatusUnauthorized,
+		},
+		{
+			name:  "malformed token",
+			token: otf.String("malfo rmedto ken"),
+			want:  http.StatusUnauthorized,
+		},
+		{
+			name: "missing token",
+			want: http.StatusUnauthorized,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", "/", nil)
-			r.Header.Add("Authorization", "Bearer "+tt.token)
+			if tt.token != nil {
+				r.Header.Add("Authorization", "Bearer "+*tt.token)
+			}
 			mw.ServeHTTP(w, r)
 			assert.Equal(t, tt.want, w.Code)
 		})

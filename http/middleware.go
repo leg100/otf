@@ -16,9 +16,14 @@ type authTokenMiddleware struct {
 
 func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hdr := strings.Split(r.Header.Get("Authorization"), "Bearer ")
+		authHdr := r.Header.Get("Authorization")
+		if authHdr == "" {
+			http.Error(w, "missing token", http.StatusUnauthorized)
+			return
+		}
+		hdr := strings.Split(authHdr, "Bearer ")
 		if len(hdr) != 2 {
-			http.Error(w, "malformed token", http.StatusUnprocessableEntity)
+			http.Error(w, "malformed token", http.StatusUnauthorized)
 			return
 		}
 		token := hdr[1]
