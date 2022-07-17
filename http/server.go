@@ -108,6 +108,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// Websocket connections
 	s.registerEventRoutes(r)
 
+	r.GET("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	// JSON-API API endpoints
 	japi := r.Headers("Accept", jsonapi.MediaType).PathPrefix("/api/v2")
 	japi.Sub(func(r *html.Router) {
@@ -116,10 +120,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			svc:       app.UserService(),
 			siteToken: cfg.SiteToken,
 		}).handler)
-
-		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
 
 		// Organization routes
 		r.GET("/organizations", s.ListOrganizations)
