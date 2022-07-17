@@ -23,6 +23,10 @@ function cleanup()
 {
     if [[ $started -eq 1 ]]; then
         pkill otfd
+        # wait til it's dead
+        while pgrep otfd; do
+            sleep 1
+        done
     fi
 }
 trap cleanup EXIT
