@@ -46,6 +46,16 @@ func TestRun_States(t *testing.T) {
 		require.Equal(t, PhaseUnreachable, run.apply.status)
 	})
 
+	t.Run("finish plan with errors", func(t *testing.T) {
+		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
+
+		require.NoError(t, run.Finish(PlanPhase, PhaseFinishOptions{Errored: true}))
+
+		require.Equal(t, RunErrored, run.status)
+		require.Equal(t, PhaseErrored, run.plan.status)
+		require.Equal(t, PhaseUnreachable, run.apply.status)
+	})
+
 	t.Run("finish plan with changes", func(t *testing.T) {
 		run := NewTestRun(t, "run-123", "ws-123", TestRunCreateOptions{Status: RunPlanning})
 

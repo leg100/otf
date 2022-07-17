@@ -413,6 +413,7 @@ func (r *Run) finishPlan(opts PhaseFinishOptions) error {
 		r.updateStatus(RunErrored)
 		r.plan.updateStatus(PhaseErrored)
 		r.apply.updateStatus(PhaseUnreachable)
+		return nil
 	}
 
 	r.updateStatus(RunPlanned)
