@@ -79,6 +79,12 @@ fieldset {
   margin: 0
 }
 
+/* Reset browser heading styles */
+h1,h2,h3 {
+  margin-block-start: 0.5em;
+  margin-block-end: 0.5em;
+}
+
 header nav {
   /* Small gutter around edge */
   padding: var(--body-gutter);
@@ -287,6 +293,18 @@ a:hover {
  */
 .term-fg1 {
   font-weight: bold;
+}
+
+/* Workspace information at the top of the workspace page */
+.workspace-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+}
+
+/* Workspace delete button shifted to the far right to de-emphasise */
+.workspace-info .workspace-delete-button {
+  margin-left: auto;
 }
 
 /* Workspace lock status and toggle button */

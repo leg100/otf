@@ -17,18 +17,20 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item-heading">
-    <span>{{ .Address }}</span>
-    {{ if .Active }} &#10004; {{ end }}
-    <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
-  </div>
-  <div class="item-content">
-    {{ template "identifier" . }}
-    {{ if not .Active }}
-    <form action="{{ revokeSessionPath }}" method="POST">
-      <button class="delete">Revoke</button>
-      <input type="hidden" name="token" value="{{ .Token }}">
-    </form>
-    {{ end }}
+  <div class="item">
+    <div class="item-heading">
+      <span>{{ .Address }}</span>
+      {{ if .Active }} &#10004; {{ end }}
+      <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
+    </div>
+    <div class="item-content">
+      {{ template "identifier" . }}
+      {{ if not .Active }}
+      <form action="{{ revokeSessionPath }}" method="POST">
+        <button class="delete">Revoke</button>
+        <input type="hidden" name="token" value="{{ .Token }}">
+      </form>
+      {{ end }}
+    </div>
   </div>
 {{ end }}

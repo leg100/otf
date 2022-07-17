@@ -9,8 +9,10 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item-heading">
-  <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
+  <div class="item">
+    <div class="item-heading">
+    <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
+    </div>
+    {{ template "identifier" . }}
   </div>
-  {{ template "identifier" . }}
 {{ end }}

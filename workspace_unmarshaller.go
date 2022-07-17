@@ -65,6 +65,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		workingDirectory:           row.WorkingDirectory.String,
 		organizationID:             row.OrganizationID.String,
 		organizationName:           row.OrganizationName.String,
+		latestRunID:                &row.LatestRunID.String,
 	}
 
 	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {

@@ -48,6 +48,7 @@ type Workspace struct {
 	organizationID             string
 	organizationName           string
 	organization               *Organization
+	latestRunID                *string
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -76,6 +77,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
 func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
+func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 
 func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}

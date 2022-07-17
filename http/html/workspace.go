@@ -79,12 +79,26 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspace, err := app.WorkspaceService().Get(r.Context(), spec)
+	ws, err := app.WorkspaceService().Get(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_get.tmpl", w, r, workspace)
+	var latest *otf.Run
+	if ws.LatestRunID() != nil {
+		latest, err = app.RunService().Get(r.Context(), *ws.LatestRunID())
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	app.render("workspace_get.tmpl", w, r, struct {
+		*otf.Workspace
+		LatestRun *otf.Run
+	}{
+		Workspace: ws,
+		LatestRun: latest,
+	})
 }
 
 func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
