@@ -21,6 +21,8 @@ type Application struct {
 	pathPrefix string
 	// view engine populates and renders templates
 	*viewEngine
+	// logger for logging messages
+	logr.Logger
 }
 
 // AddRoutes adds routes for the html web app.
@@ -42,6 +44,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
+		Logger:       logger,
 	}
 	app.addRoutes(router)
 	return nil
@@ -99,10 +102,12 @@ func (app *Application) addRoutes(r *Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
 
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_id}/latest", app.watchLatestRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/watch", app.watchRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)

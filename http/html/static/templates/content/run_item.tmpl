@@ -1,0 +1,22 @@
+<div class="item">
+  <div class="item-heading">
+    <span class="status status-{{ .Status }}">
+      <a href="{{ getRunPath . }}">{{ .Status.String | replace "_" " "}}</a>
+    </span>
+    <span>|</span>
+    <span><a href="{{ getPlanPath . }}">plan</a></span>
+    {{ if not .PlanOnly }}
+      <span>|</span>
+      <span><a href="{{ getApplyPath . }}">apply</a></span>
+    {{ end }}
+    <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+  </div>
+  <div class="item-content">
+  {{ template "identifier" . }}
+  {{ if .Cancelable }}
+    <form action="{{ cancelRunPath . }}" method="POST">
+      <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+    </form>
+  {{ end }}
+  </div>
+</div>

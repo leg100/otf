@@ -718,6 +718,8 @@ type RunService interface {
 	GetLockFile(ctx context.Context, id string) ([]byte, error)
 	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
+	// Watch for updates to the latest run for a workspace
+	WatchLatest(ctx context.Context, workspaceID string) (<-chan *Run, error)
 	// Read and write logs for run phases.
 	LogService
 }

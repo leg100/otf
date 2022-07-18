@@ -138,6 +138,10 @@ func getRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
+func watchRunPath(run runRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/watch", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+}
+
 func getPlanPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/plan", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
@@ -183,6 +187,7 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["newRunPath"] = newRunPath
 	m["createRunPath"] = createRunPath
 	m["getRunPath"] = getRunPath
+	m["watchRunPath"] = watchRunPath
 	m["getPlanPath"] = getPlanPath
 	m["getApplyPath"] = getApplyPath
 	m["deleteRunPath"] = deleteRunPath

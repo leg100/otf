@@ -14,21 +14,23 @@ var _ otf.RunService = (*RunService)(nil)
 type RunService struct {
 	*inmem.Mapper
 
-	db    otf.DB
-	cache otf.Cache
-	proxy otf.ChunkStore
+	latest otf.LatestRunManager
+	db     otf.DB
+	cache  otf.Cache
+	proxy  otf.ChunkStore
 	otf.EventService
 	logr.Logger
 	*otf.RunFactory
 }
 
-func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cache otf.Cache, mapper *inmem.Mapper) (*RunService, error) {
+func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs otf.ConfigurationVersionService, es otf.EventService, cache otf.Cache, mapper *inmem.Mapper, latest otf.LatestRunManager) (*RunService, error) {
 	proxy, err := inmem.NewChunkProxy(cache, db)
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
 	svc := &RunService{
 		Mapper:       mapper,
+		latest:       latest,
 		db:           db,
 		EventService: es,
 		cache:        cache,
@@ -258,7 +260,11 @@ func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, er
 		run, err = tx.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 			return run.EnqueuePlan(ctx, tx)
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		s.latest.Set(ctx, run.WorkspaceID(), run)
+		return nil
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", runID)
@@ -269,6 +275,15 @@ func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, er
 	s.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
+}
+
+// WatchLatest watches for updates to the latest run for the specified
+// workspace.
+func (s RunService) WatchLatest(ctx context.Context, workspaceName string) (<-chan *otf.Run, error) {
+	if !s.CanAccessRun(ctx, workspaceName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	return s.latest.Watch(ctx, workspaceName)
 }
 
 // GetPlanFile returns the plan file for the run.

@@ -32,7 +32,6 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
-	// Setup services
 	orgService, err := NewOrganizationService(db, logger, eventService)
 	if err != nil {
 		return nil, err
@@ -41,9 +40,16 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	if err != nil {
 		return nil, err
 	}
+
+	// Setup latest run manager
+	latest, err := inmem.NewLatestRunManager(workspaceService, eventService)
+	if err != nil {
+		return nil, err
+	}
+
 	stateVersionService := NewStateVersionService(db, logger, cache)
 	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache, mapper)
+	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache, mapper, latest)
 	if err != nil {
 		return nil, err
 	}

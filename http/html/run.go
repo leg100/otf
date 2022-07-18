@@ -1,6 +1,7 @@
 package html
 
 import (
+	"bytes"
 	"html/template"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/r3labs/sse/v2"
 )
 
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +70,40 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.render("run_get.tmpl", w, r, run)
+}
+
+func (app *Application) watchRun(w http.ResponseWriter, r *http.Request) {
+	server := sse.New()
+	server.CreateStream("messages")
+
+	sub, err := app.EventService().Subscribe("watch-run-")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	go func() {
+		for {
+			select {
+			case ev := <-sub.C():
+				run, ok := ev.Payload.(*otf.Run)
+				if !ok {
+					continue
+				}
+				if run.ID() != mux.Vars(r)["run_id"] {
+					continue
+				}
+				buf := new(bytes.Buffer)
+				if err := app.renderTemplate("run_item.tmpl", buf, run); err != nil {
+					app.Error(err, "rendering template for watched run")
+					continue
+				}
+				server.Publish("messages", &sse.Event{Data: buf.Bytes()})
+			case <-r.Context().Done():
+				return
+			}
+		}
+	}()
+	server.ServeHTTP(w, r)
 }
 
 func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {

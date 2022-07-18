@@ -19,6 +19,8 @@ type WorkspaceService struct {
 	db     *sql.DB
 	f      otf.WorkspaceFactory
 	es     otf.EventService
+	latest otf.LatestRunManager
+
 	otf.WorkspaceQueue
 
 	logr.Logger
