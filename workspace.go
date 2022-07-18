@@ -79,6 +79,15 @@ func (ws *Workspace) OrganizationID() string           { return ws.organizationI
 func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 
+// QualifiedName returns the workspace's qualified name including the name of
+// its organization
+func (ws *Workspace) QualifiedName() WorkspaceQualifiedName {
+	return WorkspaceQualifiedName{
+		Organization: ws.OrganizationName(),
+		Name:         ws.Name(),
+	}
+}
+
 func (ws *Workspace) SpecID() WorkspaceSpec {
 	return WorkspaceSpec{ID: &ws.id}
 }
@@ -224,6 +233,13 @@ func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
 	}
 	return dto
+}
+
+// WorkspaceQualifiedName is the workspace's fully qualified name including the
+// name of its organization
+type WorkspaceQualifiedName struct {
+	Organization string
+	Name         string
 }
 
 // WorkspaceUpdateOptions represents the options for updating a workspace.

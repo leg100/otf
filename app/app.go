@@ -30,7 +30,7 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 	eventService := inmem.NewEventService(logger)
 
 	// Setup ID mapper
-	mapper := NewMapper()
+	mapper := inmem.NewMapper()
 
 	// Setup services
 	orgService, err := NewOrganizationService(db, logger, eventService)
@@ -48,6 +48,11 @@ func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*
 		return nil, err
 	}
 	userService := NewUserService(logger, db)
+
+	// Populate mappings with identifiers
+	if err := mapper.Populate(workspaceService, runService); err != nil {
+		return nil, err
+	}
 
 	return &Application{
 		organizationService:         orgService,
