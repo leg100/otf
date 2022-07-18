@@ -15,6 +15,7 @@ func TestMapper(t *testing.T) {
 	ws1, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{Name: "test-ws"})
 	require.NoError(t, err)
 	cv1, err := otf.NewConfigurationVersion(ws1.ID(), otf.ConfigurationVersionCreateOptions{})
+	require.NoError(t, err)
 	run1 := otf.NewRun(cv1, ws1, otf.RunCreateOptions{})
 
 	m := NewMapper()
