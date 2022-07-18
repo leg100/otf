@@ -33,6 +33,7 @@ type WorkspaceDBResult struct {
 	OrganizationID             pgtype.Text          `json:"organization_id"`
 	LockRunID                  pgtype.Text          `json:"lock_run_id"`
 	LockUserID                 pgtype.Text          `json:"lock_user_id"`
+	LatestRunID                pgtype.Text          `json:"latest_run_id"`
 	OrganizationName           pgtype.Text          `json:"organization_name"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
 	RunLock                    *pggen.Runs          `json:"run_lock"`
@@ -64,6 +65,10 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 		workingDirectory:           row.WorkingDirectory.String,
 		organizationID:             row.OrganizationID.String,
 		organizationName:           row.OrganizationName.String,
+	}
+
+	if row.LatestRunID.Status == pgtype.Present {
+		ws.latestRunID = &row.LatestRunID.String
 	}
 
 	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {

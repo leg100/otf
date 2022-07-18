@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -28,7 +29,7 @@ func TestWorkspaceQueue(t *testing.T) {
 		q.Update(run)
 		assert.Equal(t, run, q.Get()[0])
 
-		assert.NoError(t, run.EnqueuePlan())
+		assert.NoError(t, run.EnqueuePlan(context.Background(), &otf.FakeLatestRunSetter{}))
 		q.Update(run)
 		assert.Equal(t, run, q.Get()[0])
 	})

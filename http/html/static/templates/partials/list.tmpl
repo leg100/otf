@@ -1,9 +1,7 @@
 {{ define "content-list" }}
 <div class="content-list">
   {{ range .Content.Items }}
-  <div class="item">
     {{ block "content-list-item" . }}{{ end }}
-  </div>
   {{ else }}
     No items currently exist.
   {{ end }}

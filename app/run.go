@@ -268,8 +268,13 @@ func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, er
 	if !s.m.CanAccessRun(ctx, runID) {
 		return nil, otf.ErrAccessNotPermitted
 	}
-	run, err := s.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
-		return run.EnqueuePlan()
+
+	var run *otf.Run
+	err := s.db.Tx(ctx, func(tx otf.DB) (err error) {
+		run, err = tx.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+			return run.EnqueuePlan(ctx, tx)
+		})
+		return err
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", runID)
