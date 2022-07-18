@@ -269,16 +269,12 @@ func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, er
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	// Update DB to both update the run status and set latest run on workspace
 	var run *otf.Run
 	err := s.db.Tx(ctx, func(tx otf.DB) (err error) {
 		run, err = tx.UpdateStatus(ctx, runID, func(run *otf.Run) error {
-			return run.EnqueuePlan()
+			return run.EnqueuePlan(ctx, tx)
 		})
-		if err != nil {
-			return err
-		}
-		return tx.SetLatestRun(ctx, run.WorkspaceID(), runID)
+		return err
 	})
 	if err != nil {
 		s.Error(err, "enqueuing plan", "id", runID)
