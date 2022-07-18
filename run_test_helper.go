@@ -2,6 +2,6 @@ package otf
 
 import "context"
 
-type fakeLatestRunSetter struct{}
+type FakeLatestRunSetter struct{}
 
-func (f *fakeLatestRunSetter) SetLatestRun(context.Context, string, string) error { return nil }
+func (f *FakeLatestRunSetter) SetLatestRun(context.Context, string, string) error { return nil }

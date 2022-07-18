@@ -20,7 +20,7 @@ func TestRun_States(t *testing.T) {
 	t.Run("enqueue plan", func(t *testing.T) {
 		run := NewTestRun(t, TestRunCreateOptions{})
 
-		require.NoError(t, run.EnqueuePlan(context.Background(), &fakeLatestRunSetter{}))
+		require.NoError(t, run.EnqueuePlan(context.Background(), &FakeLatestRunSetter{}))
 
 		require.Equal(t, RunPlanQueued, run.status)
 		require.Equal(t, PhaseQueued, run.plan.status)
