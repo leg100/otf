@@ -220,6 +220,8 @@ func (r *Run) Done() bool {
 	}
 }
 
+// EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
+// run for its workspace (speculative runs are ignored).
 func (r *Run) EnqueuePlan(ctx context.Context, setter LatestRunSetter) error {
 	if r.status != RunPending {
 		return fmt.Errorf("cannot enqueue run with non-pending status")
