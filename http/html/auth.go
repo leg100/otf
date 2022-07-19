@@ -49,7 +49,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get named user; if not exist create user
-	user, err := app.UserService().EnsureCreated(ctx, *guser.Login)
+	user, err := app.UserService().EnsureCreatedUser(ctx, *guser.Login)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -122,7 +122,7 @@ func synchroniseOrganizations(
 	var orgs []*otf.Organization
 
 	for _, githubOrganization := range githubOrganization {
-		org, err := organizationService.EnsureCreated(ctx, otf.OrganizationCreateOptions{
+		org, err := organizationService.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
 			Name: githubOrganization.Login,
 		})
 		if err != nil {

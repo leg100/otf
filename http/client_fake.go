@@ -32,7 +32,7 @@ type FakeOrganizationsClient struct {
 	otf.OrganizationService
 }
 
-func (f *FakeOrganizationsClient) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (f *FakeOrganizationsClient) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	return otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String(uuid.NewString())})
 }
 
@@ -41,25 +41,25 @@ type FakeWorkspacesClient struct {
 	workspace *otf.Workspace
 }
 
-func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *FakeWorkspacesClient) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{f.workspace},
 		Pagination: otf.NewPagination(otf.ListOptions{}, 1),
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (f *FakeWorkspacesClient) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }

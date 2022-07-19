@@ -18,7 +18,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
-	run, err := s.RunService().Get(r.Context(), runID)
+	run, err := s.RunService().GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

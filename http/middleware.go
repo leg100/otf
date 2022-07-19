@@ -49,5 +49,5 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (*otf.U
 	}
 
 	// check if user token
-	return m.svc.Get(ctx, otf.UserSpec{AuthenticationToken: &token})
+	return m.svc.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
 }

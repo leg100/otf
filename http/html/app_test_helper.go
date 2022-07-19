@@ -35,7 +35,7 @@ type fakeUserService struct {
 	otf.UserService
 }
 
-func (u *fakeUserService) Get(context.Context, otf.UserSpec) (*otf.User, error) {
+func (u *fakeUserService) GetUser(context.Context, otf.UserSpec) (*otf.User, error) {
 	return u.fakeUser, nil
 }
 
@@ -50,11 +50,11 @@ type fakeOrganizationService struct {
 	otf.OrganizationService
 }
 
-func (u *fakeOrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
+func (u *fakeOrganizationService) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	return u.fakeOrganization, nil
 }
 
-func (u *fakeOrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (u *fakeOrganizationService) ListOrganization(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return &otf.OrganizationList{
 		Items:      []*otf.Organization{u.fakeOrganization},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
@@ -66,22 +66,22 @@ type fakeWorkspaceService struct {
 	otf.WorkspaceService
 }
 
-func (u *fakeWorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (u *fakeWorkspaceService) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 
-func (u *fakeWorkspaceService) Update(context.Context, otf.WorkspaceSpec, otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (u *fakeWorkspaceService) UpdateWorkspace(context.Context, otf.WorkspaceSpec, otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 
-func (u *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (u *fakeWorkspaceService) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{u.fakeWorkspace},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}, nil
 }
 
-func (u *fakeWorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (u *fakeWorkspaceService) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 
@@ -90,11 +90,11 @@ type fakeRunService struct {
 	otf.RunService
 }
 
-func (u *fakeRunService) Get(context.Context, string) (*otf.Run, error) {
+func (u *fakeRunService) GetRun(context.Context, string) (*otf.Run, error) {
 	return u.fakeRun, nil
 }
 
-func (u *fakeRunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (u *fakeRunService) ListRun(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      []*otf.Run{u.fakeRun},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),

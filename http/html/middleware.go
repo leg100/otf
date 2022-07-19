@@ -29,7 +29,7 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			sendUserToLoginPage(w, r)
 			return
 		}
-		user, err := m.users.Get(r.Context(), otf.UserSpec{
+		user, err := m.users.GetUser(r.Context(), otf.UserSpec{
 			SessionToken: &cookie.Value,
 		})
 		if err != nil {

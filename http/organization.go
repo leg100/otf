@@ -16,7 +16,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.OrganizationService().Create(r.Context(), otf.OrganizationCreateOptions{
+	org, err := s.OrganizationService().CreateOrganization(r.Context(), otf.OrganizationCreateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -30,7 +30,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	org, err := s.OrganizationService().Get(r.Context(), vars["name"])
+	org, err := s.OrganizationService().GetOrganization(r.Context(), vars["name"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -44,7 +44,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.OrganizationService().List(r.Context(), opts)
+	org, err := s.OrganizationService().ListOrganization(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -59,7 +59,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.OrganizationService().Update(r.Context(), name, &otf.OrganizationUpdateOptions{
+	org, err := s.OrganizationService().UpdateOrganization(r.Context(), name, &otf.OrganizationUpdateOptions{
 		Name:            opts.Name,
 		SessionRemember: opts.SessionRemember,
 		SessionTimeout:  opts.SessionTimeout,
@@ -73,7 +73,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
-	if err := s.OrganizationService().Delete(r.Context(), name); err != nil {
+	if err := s.OrganizationService().DeleteOrganization(r.Context(), name); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

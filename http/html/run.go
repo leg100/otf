@@ -24,7 +24,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	runs, err := app.RunService().List(r.Context(), opts)
+	runs, err := app.RunService().ListRun(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -53,7 +53,7 @@ func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ws := workspaceRequest{r}.Spec()
-	created, err := app.RunService().Create(r.Context(), ws, opts)
+	created, err := app.RunService().CreateRun(r.Context(), ws, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -62,7 +62,7 @@ func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
-	run, err := app.RunService().Get(r.Context(), mux.Vars(r)["run_id"])
+	run, err := app.RunService().GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -71,7 +71,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
-	run, err := app.RunService().Get(r.Context(), mux.Vars(r)["run_id"])
+	run, err := app.RunService().GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -99,7 +99,7 @@ func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getApply(w http.ResponseWriter, r *http.Request) {
-	run, err := app.RunService().Get(r.Context(), mux.Vars(r)["run_id"])
+	run, err := app.RunService().GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -127,7 +127,7 @@ func (app *Application) getApply(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
-	err := app.RunService().Delete(r.Context(), mux.Vars(r)["run_id"])
+	err := app.RunService().DeleteRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -136,7 +136,7 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
-	err := app.RunService().Cancel(r.Context(), mux.Vars(r)["run_id"], otf.RunCancelOptions{})
+	err := app.RunService().CancelRun(r.Context(), mux.Vars(r)["run_id"], otf.RunCancelOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -17,7 +17,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	sv, err := s.StateVersionService().Create(r.Context(), vars["workspace_id"], otf.StateVersionCreateOptions{
+	sv, err := s.StateVersionService().CreateStateVersion(r.Context(), vars["workspace_id"], otf.StateVersionCreateOptions{
 		Lineage: opts.Lineage,
 		Serial:  opts.Serial,
 		State:   opts.State,
@@ -35,7 +35,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	svl, err := s.StateVersionService().List(r.Context(), opts)
+	svl, err := s.StateVersionService().ListStateVersion(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -45,7 +45,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sv, err := s.StateVersionService().Current(r.Context(), vars["workspace_id"])
+	sv, err := s.StateVersionService().CurrentStateVersion(r.Context(), vars["workspace_id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -55,7 +55,7 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sv, err := s.StateVersionService().Get(r.Context(), vars["id"])
+	sv, err := s.StateVersionService().GetStateVersion(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -65,7 +65,7 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	resp, err := s.StateVersionService().Download(r.Context(), vars["id"])
+	resp, err := s.StateVersionService().DownloadState(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
