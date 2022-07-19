@@ -40,22 +40,6 @@ func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs 
 		},
 	}
 
-	// Populate mapper
-	opts := otf.RunListOptions{}
-	for {
-		listing, err := svc.List(otf.ContextWithAppUser(), opts)
-		if err != nil {
-			return nil, fmt.Errorf("populating run mapper: %w", err)
-		}
-		for _, run := range listing.Items {
-			svc.Mapper.AddRun(run)
-		}
-		if listing.NextPage() == nil {
-			break
-		}
-		opts.PageNumber = *listing.NextPage()
-	}
-
 	return svc, nil
 }
 

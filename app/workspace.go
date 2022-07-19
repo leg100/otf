@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -32,24 +31,6 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 		Logger:                logger,
 		WorkspaceQueueManager: inmem.NewWorkspaceQueueManager(),
 	}
-
-	// Create workspace queues and populate mappers
-	opts := otf.WorkspaceListOptions{}
-	for {
-		listing, err := svc.List(otf.ContextWithAppUser(), opts)
-		if err != nil {
-			return nil, fmt.Errorf("populating workspace mapper: %w", err)
-		}
-		for _, ws := range listing.Items {
-			svc.WorkspaceQueueManager.Create(ws.ID())
-			svc.Mapper.AddWorkspace(ws)
-		}
-		if listing.NextPage() == nil {
-			break
-		}
-		opts.PageNumber = *listing.NextPage()
-	}
-
 	return svc, nil
 }
 
