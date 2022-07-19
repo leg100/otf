@@ -19,7 +19,7 @@ func newRunMapper() *runMapper {
 	}
 }
 
-func (m *runMapper) populate(svc otf.RunService) (*runMapper, error) {
+func (m *runMapper) populate(svc otf.RunService) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -28,7 +28,7 @@ func (m *runMapper) populate(svc otf.RunService) (*runMapper, error) {
 	for {
 		listing, err := svc.List(otf.ContextWithAppUser(), opts)
 		if err != nil {
-			return nil, fmt.Errorf("populating workspace mapper: %w", err)
+			return fmt.Errorf("populating workspace mapper: %w", err)
 		}
 		if !allocated {
 			m.idWorkspaceMap = make(map[string]string, listing.TotalCount())
@@ -42,7 +42,7 @@ func (m *runMapper) populate(svc otf.RunService) (*runMapper, error) {
 		}
 		opts.PageNumber = *listing.NextPage()
 	}
-	return m, nil
+	return nil
 }
 
 func (m *runMapper) add(run *otf.Run) {

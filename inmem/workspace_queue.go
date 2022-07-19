@@ -68,6 +68,31 @@ func NewWorkspaceQueueManager() *WorkspaceQueueManager {
 	return &WorkspaceQueueManager{queues: make(map[string]*WorkspaceQueue)}
 }
 
+// Populate creates queues for each workspace.
+func (m *WorkspaceQueueManager) Populate(svc otf.WorkspaceService) error {
+	opts := otf.WorkspaceListOptions{}
+	var allocated bool
+	for {
+		listing, err := svc.List(otf.ContextWithAppUser(), opts)
+		if err != nil {
+			return fmt.Errorf("populating workspace mapper: %w", err)
+		}
+		if !allocated {
+			m.queues = make(map[string]*WorkspaceQueue, listing.TotalCount())
+			allocated = true
+		}
+		for _, ws := range listing.Items {
+			m.Create(ws.ID())
+		}
+		if listing.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *listing.NextPage()
+	}
+	return nil
+}
+
+// Create a new queue for the workspace with the given ID.
 func (m *WorkspaceQueueManager) Create(workspaceID string) {
 	m.queues[workspaceID] = NewWorkspaceQueue()
 }

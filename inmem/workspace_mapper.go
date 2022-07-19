@@ -22,14 +22,13 @@ func newWorkspaceMapper() *workspaceMapper {
 	}
 }
 
-// newWorkspaceMapper populates workspace mapper
-func (m *workspaceMapper) populate(svc otf.WorkspaceService) (*workspaceMapper, error) {
+func (m *workspaceMapper) populate(svc otf.WorkspaceService) error {
 	opts := otf.WorkspaceListOptions{}
 	var allocated bool
 	for {
 		listing, err := svc.List(otf.ContextWithAppUser(), opts)
 		if err != nil {
-			return nil, fmt.Errorf("populating workspace mapper: %w", err)
+			return fmt.Errorf("populating workspace mapper: %w", err)
 		}
 		if !allocated {
 			m.idOrgMap = make(map[string]string, listing.TotalCount())
@@ -44,7 +43,7 @@ func (m *workspaceMapper) populate(svc otf.WorkspaceService) (*workspaceMapper, 
 		}
 		opts.PageNumber = *listing.NextPage()
 	}
-	return m, nil
+	return nil
 }
 
 func (m *workspaceMapper) add(ws *otf.Workspace) {

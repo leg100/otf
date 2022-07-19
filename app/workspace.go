@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -13,24 +14,31 @@ var _ otf.WorkspaceService = (*WorkspaceService)(nil)
 
 type WorkspaceService struct {
 	*inmem.Mapper
-	db *sql.DB
-	f  otf.WorkspaceFactory
-	es otf.EventService
+
+	queues *inmem.WorkspaceQueueManager
+	db     *sql.DB
+	f      otf.WorkspaceFactory
+	es     otf.EventService
 	otf.WorkspaceQueue
-	*inmem.WorkspaceQueueManager
 
 	logr.Logger
 }
 
 func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationService, es otf.EventService, mapper *inmem.Mapper) (*WorkspaceService, error) {
 	svc := &WorkspaceService{
-		db:                    db,
-		Mapper:                mapper,
-		es:                    es,
-		f:                     otf.WorkspaceFactory{OrganizationService: os},
-		Logger:                logger,
-		WorkspaceQueueManager: inmem.NewWorkspaceQueueManager(),
+		db:     db,
+		Mapper: mapper,
+		es:     es,
+		f:      otf.WorkspaceFactory{OrganizationService: os},
+		Logger: logger,
 	}
+
+	queues := inmem.NewWorkspaceQueueManager()
+	if err := queues.Populate(svc); err != nil {
+		return nil, fmt.Errorf("populating workspace queues: %w", err)
+	}
+	svc.queues = queues
+
 	return svc, nil
 }
 
@@ -53,8 +61,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 	// Create mappings
 	s.AddWorkspace(ws)
 
-	// create workspace queue
-	s.WorkspaceQueueManager.Create(ws.ID())
+	s.queues.Create(ws.ID())
 
 	s.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.OrganizationID())
 
@@ -94,7 +101,7 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 }
 
 func (s WorkspaceService) UpdateQueue(run *otf.Run) error {
-	return s.WorkspaceQueueManager.Update(run.WorkspaceID(), run)
+	return s.queues.Update(run.WorkspaceID(), run)
 }
 
 func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
@@ -172,7 +179,7 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 }
 
 func (s WorkspaceService) GetQueue(workspaceID string) ([]*otf.Run, error) {
-	return s.WorkspaceQueueManager.Get(workspaceID)
+	return s.queues.Get(workspaceID)
 }
 
 func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
@@ -194,8 +201,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	// Remove mappings
 	s.RemoveWorkspace(ws)
 
-	// delete workspace queue
-	s.WorkspaceQueueManager.Delete(ws.ID())
+	s.queues.Delete(ws.ID())
 
 	s.es.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
