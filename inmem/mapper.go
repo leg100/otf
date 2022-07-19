@@ -62,8 +62,18 @@ func (m *Mapper) RemoveWorkspace(ws *otf.Workspace) {
 	m.workspaces.remove(ws)
 }
 
-func (m *Mapper) LookupWorkspaceID(org, name string) string {
-	return m.workspaces.lookupID(org, name)
+// LookupWorkspaceID looks up the ID corresponding to the given spec. If the
+// spec already contains an ID then that is returned, otherwise the mapper looks
+// up the ID corresponding to the given organization and workspace name. If the
+// spec is invalid, then an empty string is returned.
+func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
+	if spec.ID != nil {
+		return *spec.ID
+	} else if spec.OrganizationName != nil && spec.Name != nil {
+		return m.workspaces.lookupID(*spec.OrganizationName, *spec.Name)
+	} else {
+		return ""
+	}
 }
 
 // CanAccessRun determines if the caller is permitted to access the run

@@ -46,10 +46,12 @@ func NewLatestRunManager(svc otf.WorkspaceService, events otf.EventService) (*La
 	return m, nil
 }
 
+// Set sets the latest run for a workspace.
 func (m *LatestRunManager) Set(ctx context.Context, workspaceID string, run *otf.Run) {
 	m.mapping[workspaceID] = otf.String(run.ID())
 }
 
+// Watch returns a channel of updates to the latest run for a workspace.
 func (m *LatestRunManager) Watch(ctx context.Context, workspaceID string) (<-chan *otf.Run, error) {
 	sub, err := m.events.Subscribe("latest")
 	if err != nil {

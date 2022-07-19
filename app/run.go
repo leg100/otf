@@ -279,11 +279,11 @@ func (s RunService) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, er
 
 // WatchLatest watches for updates to the latest run for the specified
 // workspace.
-func (s RunService) WatchLatest(ctx context.Context, workspaceName string) (<-chan *otf.Run, error) {
-	if !s.CanAccessRun(ctx, workspaceName) {
+func (s RunService) WatchLatest(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Run, error) {
+	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}
-	return s.latest.Watch(ctx, workspaceName)
+	return s.latest.Watch(ctx, s.LookupWorkspaceID(spec))
 }
 
 // GetPlanFile returns the plan file for the run.

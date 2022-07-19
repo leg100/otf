@@ -72,11 +72,17 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	app.render("run_get.tmpl", w, r, run)
 }
 
-func (app *Application) watchRun(w http.ResponseWriter, r *http.Request) {
+func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
+	var spec otf.WorkspaceSpec
+	if err := decode.Route(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
 	server := sse.New()
 	server.CreateStream("messages")
 
-	sub, err := app.EventService().Subscribe("watch-run-")
+	updates, err := app.RunService().WatchLatest(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -84,14 +90,7 @@ func (app *Application) watchRun(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for {
 			select {
-			case ev := <-sub.C():
-				run, ok := ev.Payload.(*otf.Run)
-				if !ok {
-					continue
-				}
-				if run.ID() != mux.Vars(r)["run_id"] {
-					continue
-				}
+			case run := <-updates:
 				buf := new(bytes.Buffer)
 				if err := app.renderTemplate("run_item.tmpl", buf, run); err != nil {
 					app.Error(err, "rendering template for watched run")
