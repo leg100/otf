@@ -27,7 +27,7 @@ func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService)
 }
 
 // Create an organization. Needs admin permission.
-func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -50,7 +50,7 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 }
 
 // EnsureCreated idempotently creates an organization. Needs admin permission.
-func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (s OrganizationService) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -65,11 +65,11 @@ func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.Organiz
 		return nil, err
 	}
 
-	return s.Create(ctx, opts)
+	return s.CreateOrganization(ctx, opts)
 }
 
 // Get retrieves an organization by name.
-func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
+func (s OrganizationService) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	if !otf.CanAccess(ctx, &name) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -87,7 +87,7 @@ func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organiz
 
 // List organizations. If the caller is a normal user then only list their
 // organizations; otherwise list all.
-func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (s OrganizationService) ListOrganization(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 	return s.db.ListOrganizations(ctx, opts)
 }
 
-func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (s OrganizationService) UpdateOrganization(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	if !otf.CanAccess(ctx, &name) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -116,7 +116,7 @@ func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.
 	return org, nil
 }
 
-func (s OrganizationService) Delete(ctx context.Context, name string) error {
+func (s OrganizationService) DeleteOrganization(ctx context.Context, name string) error {
 	if !otf.CanAccess(ctx, &name) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -133,7 +133,7 @@ func (s OrganizationService) GetEntitlements(ctx context.Context, organizationNa
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	org, err := s.Get(ctx, organizationName)
+	org, err := s.GetOrganization(ctx, organizationName)
 	if err != nil {
 		return nil, err
 	}

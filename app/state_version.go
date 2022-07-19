@@ -26,7 +26,7 @@ func NewStateVersionService(db *sql.DB, logger logr.Logger, cache otf.Cache) *St
 	}
 }
 
-func (s StateVersionService) Create(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
+func (s StateVersionService) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
 	sv, err := otf.NewStateVersion(opts)
 	if err != nil {
 		s.Error(err, "constructing state version")
@@ -45,7 +45,7 @@ func (s StateVersionService) Create(ctx context.Context, workspaceID string, opt
 	return sv, nil
 }
 
-func (s StateVersionService) List(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (s StateVersionService) ListStateVersion(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	svl, err := s.db.ListStateVersions(ctx, opts)
 	if err != nil {
 		s.Error(err, "listing state versions", opts.LogFields()...)
@@ -55,7 +55,7 @@ func (s StateVersionService) List(ctx context.Context, opts otf.StateVersionList
 	return svl, nil
 }
 
-func (s StateVersionService) Current(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
+func (s StateVersionService) CurrentStateVersion(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
 	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving current state version", "workspace_id", workspaceID)
@@ -65,7 +65,7 @@ func (s StateVersionService) Current(ctx context.Context, workspaceID string) (*
 	return sv, nil
 }
 
-func (s StateVersionService) Get(ctx context.Context, svID string) (*otf.StateVersion, error) {
+func (s StateVersionService) GetStateVersion(ctx context.Context, svID string) (*otf.StateVersion, error) {
 	sv, err := s.db.GetStateVersion(ctx, otf.StateVersionGetOptions{ID: &svID})
 	if err != nil {
 		s.Error(err, "retrieving state version", "id", svID)
@@ -76,7 +76,7 @@ func (s StateVersionService) Get(ctx context.Context, svID string) (*otf.StateVe
 }
 
 // Download state itself.
-func (s StateVersionService) Download(ctx context.Context, svID string) ([]byte, error) {
+func (s StateVersionService) DownloadState(ctx context.Context, svID string) ([]byte, error) {
 	if state, err := s.cache.Get(otf.StateVersionCacheKey(svID)); err == nil {
 		s.V(2).Info("downloaded state", "id", svID)
 		return state, nil

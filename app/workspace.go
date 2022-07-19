@@ -42,7 +42,7 @@ func NewWorkspaceService(db *sql.DB, logger logr.Logger, os otf.OrganizationServ
 	return svc, nil
 }
 
-func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	if !otf.CanAccess(ctx, &opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -70,7 +70,7 @@ func (s WorkspaceService) Create(ctx context.Context, opts otf.WorkspaceCreateOp
 	return ws, nil
 }
 
-func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -100,11 +100,11 @@ func (s WorkspaceService) Update(ctx context.Context, spec otf.WorkspaceSpec, op
 	return ws, nil
 }
 
-func (s WorkspaceService) UpdateQueue(run *otf.Run) error {
+func (s WorkspaceService) UpdateWorkspaceQueue(run *otf.Run) error {
 	return s.queues.Update(run.WorkspaceID(), run)
 }
 
-func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (s WorkspaceService) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -114,7 +114,7 @@ func (s WorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOption
 
 // ListWatch lists workspaces and then watches for changes to workspaces. Note:
 // The options filter the list but not the watch.
-func (s WorkspaceService) ListWatch(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
+func (s WorkspaceService) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -157,7 +157,7 @@ func (s WorkspaceService) ListWatch(ctx context.Context, opts otf.WorkspaceListO
 	return spool, nil
 }
 
-func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (s WorkspaceService) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -178,11 +178,11 @@ func (s WorkspaceService) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 	return ws, nil
 }
 
-func (s WorkspaceService) GetQueue(workspaceID string) ([]*otf.Run, error) {
+func (s WorkspaceService) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
 	return s.queues.Get(workspaceID)
 }
 
-func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
+func (s WorkspaceService) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -210,7 +210,7 @@ func (s WorkspaceService) Delete(ctx context.Context, spec otf.WorkspaceSpec) er
 	return nil
 }
 
-func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -226,7 +226,7 @@ func (s WorkspaceService) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts
 	return ws, nil
 }
 
-func (s WorkspaceService) Unlock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (s WorkspaceService) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}

@@ -23,7 +23,7 @@ func NewUserService(logger logr.Logger, db *sql.DB) *UserService {
 	}
 }
 
-func (s UserService) Create(ctx context.Context, username string) (*otf.User, error) {
+func (s UserService) CreateUser(ctx context.Context, username string) (*otf.User, error) {
 	user := otf.NewUser(username)
 
 	if err := s.db.CreateUser(ctx, user); err != nil {
@@ -37,7 +37,7 @@ func (s UserService) Create(ctx context.Context, username string) (*otf.User, er
 }
 
 // EnsureCreated retrieves the user or creates the user if they don't exist.
-func (s UserService) EnsureCreated(ctx context.Context, username string) (*otf.User, error) {
+func (s UserService) EnsureCreatedUser(ctx context.Context, username string) (*otf.User, error) {
 	user, err := s.db.GetUser(ctx, otf.UserSpec{Username: &username})
 	if err == nil {
 		return user, nil
@@ -47,7 +47,7 @@ func (s UserService) EnsureCreated(ctx context.Context, username string) (*otf.U
 		return nil, err
 	}
 
-	return s.Create(ctx, username)
+	return s.CreateUser(ctx, username)
 }
 
 func (s UserService) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
@@ -78,7 +78,7 @@ func (s UserService) CreateSession(ctx context.Context, user *otf.User, data *ot
 	return session, nil
 }
 
-func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
+func (s UserService) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	user, err := s.db.GetUser(ctx, spec)
 	if err != nil {
 		s.Error(err, "retrieving user", spec.KeyValue()...)
@@ -92,7 +92,7 @@ func (s UserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, err
 
 func (s UserService) DeleteSession(ctx context.Context, token string) error {
 	// Retrieve user purely for logging purposes
-	user, err := s.Get(ctx, otf.UserSpec{SessionToken: &token})
+	user, err := s.GetUser(ctx, otf.UserSpec{SessionToken: &token})
 	if err != nil {
 		return err
 	}

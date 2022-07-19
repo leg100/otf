@@ -22,7 +22,7 @@ func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Sc
 		WorkspaceService: app.WorkspaceService(),
 		Logger:           logger,
 	}
-	lw, err := app.RunService().ListWatch(ctx, RunListOptions{Statuses: IncompleteRun})
+	lw, err := app.RunService().ListWatchRun(ctx, RunListOptions{Statuses: IncompleteRun})
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +57,10 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 	// enqueue run and see if the run at the front of the queue needs starting.
-	if err := s.WorkspaceService.UpdateQueue(run); err != nil {
+	if err := s.WorkspaceService.UpdateWorkspaceQueue(run); err != nil {
 		return err
 	}
-	queue, err := s.WorkspaceService.GetQueue(run.workspaceID)
+	queue, err := s.WorkspaceService.GetWorkspaceQueue(run.workspaceID)
 	if err != nil {
 		return err
 	}

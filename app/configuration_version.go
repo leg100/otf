@@ -25,7 +25,7 @@ func NewConfigurationVersionService(db *sql.DB, logger logr.Logger, cache otf.Ca
 	}
 }
 
-func (s ConfigurationVersionService) Create(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) CreateConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
 	cv, err := otf.NewConfigurationVersion(workspaceID, opts)
 	if err != nil {
 		s.Error(err, "constructing configuration version", "id", cv.ID())
@@ -39,7 +39,7 @@ func (s ConfigurationVersionService) Create(ctx context.Context, workspaceID str
 	return cv, nil
 }
 
-func (s ConfigurationVersionService) List(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (s ConfigurationVersionService) ListConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	cvl, err := s.db.ListConfigurationVersions(ctx, workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
 		s.Error(err, "listing configuration versions")
@@ -49,7 +49,7 @@ func (s ConfigurationVersionService) List(ctx context.Context, workspaceID strin
 	return cvl, nil
 }
 
-func (s ConfigurationVersionService) Get(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) GetConfigurationVersion(ctx context.Context, cvID string) (*otf.ConfigurationVersion, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{ID: &cvID})
 	if err != nil {
 		s.Error(err, "retrieving configuration version", "id", cvID)
@@ -59,7 +59,7 @@ func (s ConfigurationVersionService) Get(ctx context.Context, cvID string) (*otf
 	return cv, nil
 }
 
-func (s ConfigurationVersionService) GetLatest(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
+func (s ConfigurationVersionService) GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*otf.ConfigurationVersion, error) {
 	cv, err := s.db.GetConfigurationVersion(ctx, otf.ConfigurationVersionGetOptions{WorkspaceID: &workspaceID})
 	if err != nil {
 		s.Error(err, "retrieving latest configuration version", "workspace_id", workspaceID)
@@ -70,7 +70,7 @@ func (s ConfigurationVersionService) GetLatest(ctx context.Context, workspaceID 
 }
 
 // Upload a configuration version tarball
-func (s ConfigurationVersionService) Upload(ctx context.Context, cvID string, config []byte) error {
+func (s ConfigurationVersionService) UploadConfig(ctx context.Context, cvID string, config []byte) error {
 	err := s.db.UploadConfigurationVersion(context.Background(), cvID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		return cv.Upload(context.Background(), config, uploader)
 	})
@@ -89,7 +89,7 @@ func (s ConfigurationVersionService) Upload(ctx context.Context, cvID string, co
 	return nil
 }
 
-func (s ConfigurationVersionService) Download(ctx context.Context, cvID string) ([]byte, error) {
+func (s ConfigurationVersionService) DownloadConfig(ctx context.Context, cvID string) ([]byte, error) {
 	if config, err := s.cache.Get(otf.ConfigVersionCacheKey(cvID)); err == nil {
 		return config, nil
 	}

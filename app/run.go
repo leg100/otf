@@ -45,7 +45,7 @@ func NewRunService(db otf.DB, logger logr.Logger, wss otf.WorkspaceService, cvs 
 
 // Create constructs and persists a new run object to the db, before scheduling
 // the run.
-func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
+func (s RunService) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
 	if !s.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -70,7 +70,7 @@ func (s RunService) Create(ctx context.Context, spec otf.WorkspaceSpec, opts otf
 }
 
 // Get retrieves a run from the db.
-func (s RunService) Get(ctx context.Context, runID string) (*otf.Run, error) {
+func (s RunService) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	if !s.CanAccessRun(ctx, runID) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -86,7 +86,7 @@ func (s RunService) Get(ctx context.Context, runID string) (*otf.Run, error) {
 }
 
 // List retrieves multiple run objs. Use opts to filter and paginate the list.
-func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (s RunService) ListRun(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -105,7 +105,7 @@ func (s RunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.Run
 // ListWatch lists runs and then watches for changes to runs. The run listing is
 // ordered by creation date, oldest first. Note: The options filter the list but
 // not the watch.
-func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
+func (s RunService) ListWatchRun(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -164,7 +164,7 @@ func (s RunService) ListWatch(ctx context.Context, opts otf.RunListOptions) (<-c
 }
 
 // Apply enqueues an apply for the run.
-func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
+func (s RunService) ApplyRun(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
 	if !s.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -184,7 +184,7 @@ func (s RunService) Apply(ctx context.Context, runID string, opts otf.RunApplyOp
 }
 
 // Discard the run.
-func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
+func (s RunService) DiscardRun(ctx context.Context, runID string, opts otf.RunDiscardOptions) error {
 	if !s.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -205,7 +205,7 @@ func (s RunService) Discard(ctx context.Context, runID string, opts otf.RunDisca
 
 // Cancel a run. If a run is in progress then a cancelation signal will be sent
 // out.
-func (s RunService) Cancel(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
+func (s RunService) CancelRun(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
 	if !s.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -228,7 +228,7 @@ func (s RunService) Cancel(ctx context.Context, runID string, opts otf.RunCancel
 }
 
 // ForceCancel forcefully cancels a run.
-func (s RunService) ForceCancel(ctx context.Context, runID string, opts otf.RunForceCancelOptions) error {
+func (s RunService) ForceCancelRun(ctx context.Context, runID string, opts otf.RunForceCancelOptions) error {
 	if !s.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -354,7 +354,7 @@ func (s RunService) UploadLockFile(ctx context.Context, runID string, plan []byt
 }
 
 // Delete deletes a terraform run.
-func (s RunService) Delete(ctx context.Context, runID string) error {
+func (s RunService) DeleteRun(ctx context.Context, runID string) error {
 	if !s.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
 	}
@@ -375,7 +375,7 @@ func (s RunService) Delete(ctx context.Context, runID string) error {
 }
 
 // Start phase.
-func (s RunService) Start(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
+func (s RunService) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
 	if !s.CanAccessRun(ctx, runID) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -394,7 +394,7 @@ func (s RunService) Start(ctx context.Context, runID string, phase otf.PhaseType
 
 // Finish phase. Creates a report of changes before updating the status of the
 // run.
-func (s RunService) Finish(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
+func (s RunService) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	if !s.CanAccessRun(ctx, runID) {
 		return nil, otf.ErrAccessNotPermitted
 	}

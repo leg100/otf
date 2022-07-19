@@ -306,18 +306,18 @@ func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
 }
 
 type WorkspaceService interface {
-	Create(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
-	Get(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
-	List(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
+	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	ListWorkspace(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	// List and watch workspaces
-	ListWatch(ctx context.Context, opts WorkspaceListOptions) (<-chan *Workspace, error)
-	Update(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
-	Lock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	Unlock(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
-	Delete(ctx context.Context, spec WorkspaceSpec) error
+	ListWatchWorkspace(ctx context.Context, opts WorkspaceListOptions) (<-chan *Workspace, error)
+	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
+	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
-	GetQueue(workspaceID string) ([]*Run, error)
-	UpdateQueue(run *Run) error
+	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
+	UpdateWorkspaceQueue(run *Run) error
 }
 
 type WorkspaceStore interface {
