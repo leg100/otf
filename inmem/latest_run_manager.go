@@ -13,7 +13,7 @@ var _ otf.LatestRunManager = (*LatestRunManager)(nil)
 type LatestRunManager struct {
 	// mapping of workspace ID to ID of latest run - nil means the workspace
 	// does not have a latest run
-	mapping map[string]*string
+	latest map[string]*string
 
 	// for subscribing to run events to relay to Watch() consumers
 	events otf.EventService
@@ -31,11 +31,11 @@ func NewLatestRunManager(svc otf.WorkspaceService, events otf.EventService) (*La
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest runs: %w", err)
 		}
-		if m.mapping == nil {
-			m.mapping = make(map[string]*string, listing.TotalCount())
+		if m.latest == nil {
+			m.latest = make(map[string]*string, listing.TotalCount())
 		}
 		for _, ws := range listing.Items {
-			m.mapping[ws.ID()] = ws.LatestRunID()
+			m.latest[ws.ID()] = ws.LatestRunID()
 		}
 		if listing.NextPage() == nil {
 			break
@@ -48,7 +48,7 @@ func NewLatestRunManager(svc otf.WorkspaceService, events otf.EventService) (*La
 
 // Set sets the latest run for a workspace.
 func (m *LatestRunManager) Set(ctx context.Context, workspaceID string, run *otf.Run) {
-	m.mapping[workspaceID] = otf.String(run.ID())
+	m.latest[workspaceID] = otf.String(run.ID())
 }
 
 // Watch returns a channel of updates to the latest run for a workspace.
@@ -79,7 +79,7 @@ func (m *LatestRunManager) Watch(ctx context.Context, workspaceID string) (<-cha
 					// skip runs for a different workspace
 					continue
 				}
-				if otf.String(run.ID()) == m.mapping[workspaceID] {
+				if run.ID() == *m.latest[workspaceID] {
 					c <- run
 				}
 			}

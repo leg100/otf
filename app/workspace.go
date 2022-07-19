@@ -21,8 +21,6 @@ type WorkspaceService struct {
 	es     otf.EventService
 	latest otf.LatestRunManager
 
-	otf.WorkspaceQueue
-
 	logr.Logger
 }
 
