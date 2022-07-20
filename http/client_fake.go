@@ -45,7 +45,7 @@ func (f *FakeWorkspacesClient) GetWorkspace(ctx context.Context, spec otf.Worksp
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *FakeWorkspacesClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{f.workspace},
 		Pagination: otf.NewPagination(otf.ListOptions{}, 1),

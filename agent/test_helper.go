@@ -12,7 +12,7 @@ type testRunService struct {
 	otf.RunService
 }
 
-func (l *testRunService) ListRun(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (l *testRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      l.runs,
 		Pagination: otf.NewPagination(otf.ListOptions{}, 1),

@@ -67,7 +67,7 @@ func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*Spoole
 	var existing []*otf.Run
 	for {
 		opts := otf.RunListOptions{Statuses: QueuedStatuses}
-		page, err := svc.ListRun(otf.ContextWithAppUser(), opts)
+		page, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
 		if err != nil {
 			return nil, err
 		}

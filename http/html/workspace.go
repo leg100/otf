@@ -37,7 +37,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspaces, err := app.ListWorkspace(r.Context(), opts)
+	workspaces, err := app.ListWorkspaces(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

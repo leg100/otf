@@ -44,7 +44,7 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.Application.ListOrganization(r.Context(), opts)
+	org, err := s.Application.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

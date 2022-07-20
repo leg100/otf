@@ -70,7 +70,7 @@ type OrganizationService interface {
 	CreateOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 	EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error)
 	GetOrganization(ctx context.Context, name string) (*Organization, error)
-	ListOrganization(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 	UpdateOrganization(ctx context.Context, name string, opts *OrganizationUpdateOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	GetEntitlements(ctx context.Context, name string) (*Entitlements, error)

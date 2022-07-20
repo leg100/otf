@@ -26,7 +26,7 @@ func (m *runMapper) populate(svc otf.RunService) error {
 	opts := otf.RunListOptions{}
 	var allocated bool
 	for {
-		listing, err := svc.ListRun(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
 		if err != nil {
 			return fmt.Errorf("populating workspace mapper: %w", err)
 		}

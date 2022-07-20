@@ -21,7 +21,7 @@ func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceI
 	return cv, nil
 }
 
-func (a *Application) ListConfigurationVersion(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
+func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	cvl, err := a.db.ListConfigurationVersions(ctx, workspaceID, otf.ConfigurationVersionListOptions{ListOptions: opts.ListOptions})
 	if err != nil {
 		a.Error(err, "listing configuration versions")

@@ -66,9 +66,9 @@ func (a *Application) GetOrganization(ctx context.Context, name string) (*otf.Or
 	return org, nil
 }
 
-// ListOrganization organizations. If the caller is a normal user then only list
-// their organizations; otherwise list all.
-func (a *Application) ListOrganization(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+// ListOrganizations lists organizations. If the caller is a normal user then
+// only list their organizations; otherwise list all.
+func (a *Application) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

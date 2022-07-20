@@ -43,7 +43,7 @@ func (u *fakeOrganizationService) GetOrganization(ctx context.Context, name stri
 	return u.fakeOrganization, nil
 }
 
-func (u *fakeOrganizationService) ListOrganization(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+func (u *fakeOrganizationService) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	return &otf.OrganizationList{
 		Items:      []*otf.Organization{u.fakeOrganization},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
@@ -63,7 +63,7 @@ func (u *fakeWorkspaceService) UpdateWorkspace(context.Context, otf.WorkspaceSpe
 	return u.fakeWorkspace, nil
 }
 
-func (u *fakeWorkspaceService) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (u *fakeWorkspaceService) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{u.fakeWorkspace},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
@@ -83,7 +83,7 @@ func (u *fakeRunService) GetRun(context.Context, string) (*otf.Run, error) {
 	return u.fakeRun, nil
 }
 
-func (u *fakeRunService) ListRun(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (u *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      []*otf.Run{u.fakeRun},
 		Pagination: otf.NewPagination(opts.ListOptions, 1),

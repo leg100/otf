@@ -72,7 +72,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	rl, err := s.Application.ListRun(r.Context(), opts)
+	rl, err := s.Application.ListRuns(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

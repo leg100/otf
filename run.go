@@ -691,7 +691,7 @@ type RunService interface {
 	// Get retrieves a run with the given ID.
 	GetRun(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
-	ListRun(ctx context.Context, opts RunListOptions) (*RunList, error)
+	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
 	// List and watch runs
 	ListWatchRun(ctx context.Context, opts RunListOptions) (<-chan *Run, error)
 	// Delete deletes a run with the given ID.

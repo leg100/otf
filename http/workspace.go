@@ -77,7 +77,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.Application.ListWorkspace(r.Context(), opts)
+	ws, err := s.Application.ListWorkspaces(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

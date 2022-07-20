@@ -68,7 +68,7 @@ func (a *Application) UpdateWorkspaceQueue(run *otf.Run) error {
 	return a.queues.Update(run.WorkspaceID(), run)
 }
 
-func (a *Application) ListWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}

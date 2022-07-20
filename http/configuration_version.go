@@ -47,7 +47,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cvl, err := s.Application.ListConfigurationVersion(r.Context(), vars["workspace_id"], opts)
+	cvl, err := s.Application.ListConfigurationVersions(r.Context(), vars["workspace_id"], opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

@@ -26,7 +26,7 @@ func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string
 	return sv, nil
 }
 
-func (a *Application) ListStateVersion(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
+func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	svl, err := a.db.ListStateVersions(ctx, opts)
 	if err != nil {
 		a.Error(err, "listing state versions", opts.LogFields()...)

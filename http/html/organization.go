@@ -29,7 +29,7 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	organizations, err := app.ListOrganization(r.Context(), opts)
+	organizations, err := app.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

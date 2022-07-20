@@ -79,7 +79,7 @@ type StateVersionService interface {
 	CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error)
 	GetStateVersion(ctx context.Context, id string) (*StateVersion, error)
 	DownloadState(ctx context.Context, id string) ([]byte, error)
-	ListStateVersion(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 type StateVersionStore interface {

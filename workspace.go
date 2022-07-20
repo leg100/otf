@@ -308,7 +308,7 @@ func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
 type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
-	ListWorkspace(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	// List and watch workspaces
 	ListWatchWorkspace(ctx context.Context, opts WorkspaceListOptions) (<-chan *Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)

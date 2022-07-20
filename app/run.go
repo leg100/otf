@@ -49,9 +49,9 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error
 	return run, nil
 }
 
-// ListRun retrieves multiple run objs. Use opts to filter and paginate the
+// ListRuns retrieves multiple run objs. Use opts to filter and paginate the
 // list.
-func (a *Application) ListRun(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}

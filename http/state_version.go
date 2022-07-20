@@ -35,7 +35,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	svl, err := s.Application.ListStateVersion(r.Context(), opts)
+	svl, err := s.Application.ListStateVersions(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

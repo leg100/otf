@@ -24,7 +24,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	runs, err := app.ListRun(r.Context(), opts)
+	runs, err := app.ListRuns(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

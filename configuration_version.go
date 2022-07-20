@@ -139,7 +139,7 @@ type ConfigurationVersionService interface {
 	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
 	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	ListConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 
 	// Upload handles verification and upload of the config tarball, updating
 	// the config version upon success or failure.
