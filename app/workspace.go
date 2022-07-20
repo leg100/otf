@@ -112,8 +112,8 @@ func (s WorkspaceService) ListWorkspace(ctx context.Context, opts otf.WorkspaceL
 	return s.db.ListWorkspaces(ctx, opts)
 }
 
-// ListWatch lists workspaces and then watches for changes to workspaces. Note:
-// The options filter the list but not the watch.
+// ListWatchWorkspace lists workspaces and then watches for changes to
+// workspaces. Note: The options filter the list but not the watch.
 func (s WorkspaceService) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted

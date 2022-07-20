@@ -69,7 +69,7 @@ func (s ConfigurationVersionService) GetLatestConfigurationVersion(ctx context.C
 	return cv, nil
 }
 
-// Upload a configuration version tarball
+// UploadConfig saves a configuration tarball to the db
 func (s ConfigurationVersionService) UploadConfig(ctx context.Context, cvID string, config []byte) error {
 	err := s.db.UploadConfigurationVersion(context.Background(), cvID, func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		return cv.Upload(context.Background(), config, uploader)

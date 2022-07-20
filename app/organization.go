@@ -26,7 +26,7 @@ func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService)
 	return svc, nil
 }
 
-// Create an organization. Needs admin permission.
+// CreateOrganization creates an organization. Needs admin permission.
 func (s OrganizationService) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
@@ -49,7 +49,8 @@ func (s OrganizationService) CreateOrganization(ctx context.Context, opts otf.Or
 	return org, nil
 }
 
-// EnsureCreated idempotently creates an organization. Needs admin permission.
+// EnsureCreatedOrganization idempotently creates an organization. Needs admin
+// permission.
 func (s OrganizationService) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
@@ -68,7 +69,7 @@ func (s OrganizationService) EnsureCreatedOrganization(ctx context.Context, opts
 	return s.CreateOrganization(ctx, opts)
 }
 
-// Get retrieves an organization by name.
+// GetOrganization retrieves an organization by name.
 func (s OrganizationService) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	if !otf.CanAccess(ctx, &name) {
 		return nil, otf.ErrAccessNotPermitted
@@ -85,8 +86,8 @@ func (s OrganizationService) GetOrganization(ctx context.Context, name string) (
 	return org, nil
 }
 
-// List organizations. If the caller is a normal user then only list their
-// organizations; otherwise list all.
+// ListOrganization organizations. If the caller is a normal user then only list
+// their organizations; otherwise list all.
 func (s OrganizationService) ListOrganization(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {

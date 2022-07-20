@@ -17,8 +17,8 @@ type organizations struct {
 	otf.OrganizationService
 }
 
-// Create a new organization with the given options.
-func (s *organizations) Create(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
+// CreateOrganization creates a new organization with the given options.
+func (s *organizations) CreateOrganization(ctx context.Context, options otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if err := options.Validate(); err != nil {
 		return nil, err
 	}

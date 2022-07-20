@@ -75,7 +75,7 @@ func (s StateVersionService) GetStateVersion(ctx context.Context, svID string) (
 	return sv, nil
 }
 
-// Download state itself.
+// DownloadState retrieves base64-encoded terraform state from the db
 func (s StateVersionService) DownloadState(ctx context.Context, svID string) ([]byte, error) {
 	if state, err := s.cache.Get(otf.StateVersionCacheKey(svID)); err == nil {
 		s.V(2).Info("downloaded state", "id", svID)

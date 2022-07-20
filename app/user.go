@@ -36,7 +36,7 @@ func (s UserService) CreateUser(ctx context.Context, username string) (*otf.User
 	return user, nil
 }
 
-// EnsureCreated retrieves the user or creates the user if they don't exist.
+// EnsureCreatedUser retrieves the user or creates the user if they don't exist.
 func (s UserService) EnsureCreatedUser(ctx context.Context, username string) (*otf.User, error) {
 	user, err := s.db.GetUser(ctx, otf.UserSpec{Username: &username})
 	if err == nil {
