@@ -20,7 +20,7 @@ var (
 
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
-	App otf.Application
+	otf.Application
 
 	// concurrency is the max number of concurrent workers
 	concurrency int
@@ -40,7 +40,7 @@ type Supervisor struct {
 func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, concurrency int) *Supervisor {
 	s := &Supervisor{
 		Spooler:     spooler,
-		App:         app,
+		Application: app,
 		Logger:      logger,
 		AgentID:     DefaultID,
 		concurrency: concurrency,

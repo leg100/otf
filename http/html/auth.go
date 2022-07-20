@@ -49,13 +49,13 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get named user; if not exist create user
-	user, err := app.UserService().EnsureCreatedUser(ctx, *guser.Login)
+	user, err := app.EnsureCreatedUser(ctx, *guser.Login)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = synchroniseOrganizations(ctx, app.UserService(), app.OrganizationService(), user, githubOrganizations...)
+	err = synchroniseOrganizations(ctx, app, app, user, githubOrganizations...)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := app.UserService().CreateSession(r.Context(), user, data)
+	session, err := app.CreateSession(r.Context(), user, data)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,7 +94,7 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.UserService().DeleteSession(r.Context(), session.Token); err != nil {
+	if err := app.DeleteSession(r.Context(), session.Token); err != nil {
 		return
 	}
 	setCookie(w, sessionCookie, session.Token, &time.Time{})

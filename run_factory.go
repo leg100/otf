@@ -10,9 +10,9 @@ type RunFactory struct {
 	WorkspaceService            WorkspaceService
 }
 
-// New constructs a new run at the beginning of its lifecycle using the provided
-// options.
-func (f *RunFactory) New(ctx context.Context, workspaceSpec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
+// NewRun constructs a new run at the beginning of its lifecycle using the
+// provided options.
+func (f *RunFactory) NewRun(ctx context.Context, workspaceSpec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
 	ws, err := f.WorkspaceService.GetWorkspace(ctx, workspaceSpec)
 	if err != nil {
 		return nil, err

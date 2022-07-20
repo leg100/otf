@@ -15,7 +15,7 @@ type Worker struct {
 func (w *Worker) Start(ctx context.Context) {
 	for {
 		select {
-		case job := <-w.GetRun():
+		case job := <-w.Spooler.GetRun():
 			w.handle(ctx, job)
 		case <-ctx.Done():
 			return
@@ -29,7 +29,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	env, err := NewEnvironment(
 		log,
-		w.App,
+		w.Application,
 		run.ID(),
 		run.Phase(),
 		ctx,
@@ -41,7 +41,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	// Start the job before proceeding in case another agent has started it.
-	run, err = w.App.RunService().StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	run, err = w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
 		// bail out without error - the error is logged server-side
 		return
@@ -59,7 +59,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 
 	// Regardless of job success, mark job as finished
-	_, err = w.App.RunService().FinishPhase(ctx, run.ID(), run.Phase(), finishOptions)
+	_, err = w.FinishPhase(ctx, run.ID(), run.Phase(), finishOptions)
 	if err != nil {
 		// bail out without error - the error is logged server-side
 		return

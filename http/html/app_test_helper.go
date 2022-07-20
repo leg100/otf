@@ -6,28 +6,17 @@ import (
 	"github.com/leg100/otf"
 )
 
+var _ otf.Application = (*fakeApp)(nil)
+
 type fakeApp struct {
-	otf.Application
-	fakeUserService         *fakeUserService
-	fakeOrganizationService *fakeOrganizationService
-	fakeWorkspaceService    *fakeWorkspaceService
-	fakeRunService          *fakeRunService
-}
+	*fakeOrganizationService
+	*fakeWorkspaceService
+	*fakeRunService
+	*fakeUserService
 
-func (a fakeApp) UserService() otf.UserService {
-	return a.fakeUserService
-}
-
-func (a fakeApp) OrganizationService() otf.OrganizationService {
-	return a.fakeOrganizationService
-}
-
-func (a fakeApp) WorkspaceService() otf.WorkspaceService {
-	return a.fakeWorkspaceService
-}
-
-func (a fakeApp) RunService() otf.RunService {
-	return a.fakeRunService
+	otf.StateVersionService
+	otf.ConfigurationVersionService
+	otf.EventService
 }
 
 type fakeUserService struct {

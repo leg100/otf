@@ -17,7 +17,7 @@ func (s *Server) getLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	chunk, err := s.RunService().GetChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), opts)
+	chunk, err := s.Application.GetChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), opts)
 	// ignore not found errors because terraform-cli may call this endpoint
 	// before any logs have been written and it'll exit with an error.
 	if err != nil && err != otf.ErrResourceNotFound {
@@ -47,7 +47,7 @@ func (s *Server) putLogs(w http.ResponseWriter, r *http.Request) {
 		Start: opts.Start,
 		End:   opts.End,
 	}
-	if err := s.RunService().PutChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), chunk); err != nil {
+	if err := s.Application.PutChunk(r.Context(), vars["run_id"], otf.PhaseType(vars["phase"]), chunk); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

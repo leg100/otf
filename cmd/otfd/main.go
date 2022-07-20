@@ -109,7 +109,7 @@ func run(ctx context.Context, args []string) error {
 	go scheduler.Start(ctx)
 
 	// Run agent in background
-	agent, err := agent.NewAgent(logger, app, app.EventService())
+	agent, err := agent.NewAgent(logger, app, app)
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)
 	}

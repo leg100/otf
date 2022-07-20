@@ -574,7 +574,7 @@ func (r *Run) setupEnv(env Environment) error {
 
 func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 	// Download config
-	cv, err := env.ConfigurationVersionService().DownloadConfig(ctx, r.configurationVersionID)
+	cv, err := env.DownloadConfig(ctx, r.configurationVersionID)
 	if err != nil {
 		return fmt.Errorf("unable to download config: %w", err)
 	}
@@ -588,13 +588,13 @@ func (r *Run) downloadConfig(ctx context.Context, env Environment) error {
 // downloadState downloads current state to disk. If there is no state yet
 // nothing will be downloaded and no error will be reported.
 func (r *Run) downloadState(ctx context.Context, env Environment) error {
-	state, err := env.StateVersionService().CurrentStateVersion(ctx, r.workspaceID)
+	state, err := env.CurrentStateVersion(ctx, r.workspaceID)
 	if errors.Is(err, ErrResourceNotFound) {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("retrieving current state version: %w", err)
 	}
-	statefile, err := env.StateVersionService().DownloadState(ctx, state.ID())
+	statefile, err := env.DownloadState(ctx, state.ID())
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
@@ -610,7 +610,7 @@ func (r *Run) uploadPlan(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	if err := env.RunService().UploadPlanFile(ctx, r.id, file, PlanFormatBinary); err != nil {
+	if err := env.UploadPlanFile(ctx, r.id, file, PlanFormatBinary); err != nil {
 		return fmt.Errorf("unable to upload plan: %w", err)
 	}
 
@@ -622,14 +622,14 @@ func (r *Run) uploadJSONPlan(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadPlanFile(ctx, r.id, jsonFile, PlanFormatJSON); err != nil {
+	if err := env.UploadPlanFile(ctx, r.id, jsonFile, PlanFormatJSON); err != nil {
 		return fmt.Errorf("unable to upload JSON plan: %w", err)
 	}
 	return nil
 }
 
 func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
-	lockFile, err := env.RunService().GetLockFile(ctx, r.id)
+	lockFile, err := env.GetLockFile(ctx, r.id)
 	if err != nil {
 		return err
 	}
@@ -641,14 +641,14 @@ func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if err := env.RunService().UploadLockFile(ctx, r.id, lockFile); err != nil {
+	if err := env.UploadLockFile(ctx, r.id, lockFile); err != nil {
 		return fmt.Errorf("unable to upload lock file: %w", err)
 	}
 	return nil
 }
 
 func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
-	plan, err := env.RunService().GetPlanFile(ctx, r.id, PlanFormatBinary)
+	plan, err := env.GetPlanFile(ctx, r.id, PlanFormatBinary)
 	if err != nil {
 		return err
 	}
@@ -666,7 +666,7 @@ func (r *Run) uploadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	_, err = env.StateVersionService().CreateStateVersion(ctx, r.workspaceID, StateVersionCreateOptions{
+	_, err = env.CreateStateVersion(ctx, r.workspaceID, StateVersionCreateOptions{
 		State:   String(base64.StdEncoding.EncodeToString(f)),
 		MD5:     String(fmt.Sprintf("%x", md5.Sum(f))),
 		Lineage: &state.Lineage,
