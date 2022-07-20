@@ -14,6 +14,7 @@ type fakeApp struct {
 	*fakeRunService
 	*fakeUserService
 
+	// TODO: stubbed until tests are implemented
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService

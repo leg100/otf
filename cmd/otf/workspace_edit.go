@@ -27,7 +27,7 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			ws, err := client.Workspaces().UpdateWorkspace(cmd.Context(), spec, opts)
+			ws, err := client.UpdateWorkspace(cmd.Context(), spec, opts)
 			if err != nil {
 				return err
 			}

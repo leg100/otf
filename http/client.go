@@ -26,9 +26,9 @@ const (
 	DefaultAddress = "localhost:8080"
 )
 
+// Client implements all the application services, for client-side usage.
 type Client interface {
-	Organizations() otf.OrganizationService
-	Workspaces() otf.WorkspaceService
+	otf.Application
 }
 
 type client struct {
@@ -41,20 +41,7 @@ type client struct {
 	retryServerErrors bool
 	remoteAPIVersion  string
 
-	ConfigurationVersionService otf.ConfigurationVersionService
-	EventService                otf.EventService
-	OrganizationService         otf.OrganizationService
-	RunService                  otf.RunService
-	StateVersionService         otf.StateVersionService
-	WorkspaceService            otf.WorkspaceService
-}
-
-func (c *client) Organizations() otf.OrganizationService {
-	return c.OrganizationService
-}
-
-func (c *client) Workspaces() otf.WorkspaceService {
-	return c.WorkspaceService
+	otf.Application
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {

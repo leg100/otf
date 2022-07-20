@@ -24,7 +24,7 @@ func WorkspaceShowCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			ws, err := client.Workspaces().GetWorkspace(cmd.Context(), spec)
+			ws, err := client.GetWorkspace(cmd.Context(), spec)
 			if err != nil {
 				return err
 			}
