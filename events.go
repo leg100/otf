@@ -10,7 +10,6 @@ const (
 	EventRunDeleted          EventType = "run_deleted"
 	EventRunCancel           EventType = "run_cancel"
 	EventRunForceCancel      EventType = "run_force_cancel"
-	EventRunLatestUpdate     EventType = "run_latest_update"
 	EventError               EventType = "error"
 )
 
