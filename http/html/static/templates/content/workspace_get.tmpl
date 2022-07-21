@@ -30,7 +30,9 @@
     {{ with .Content.LatestRun }}
       <div>
         <h3>Latest Run</h3>
+        <div hx-ext="sse" sse-connect="{{ watchLatestRunPath . }}?stream=messages" sse-swap="message">
         {{ template "run-item" . }}
+        </div>
       </div>
     {{ end }}
   </div>

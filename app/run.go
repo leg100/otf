@@ -219,8 +219,8 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	}
 
 	var run *otf.Run
-	err := a.db.Tx(ctx, func(tx otf.DB) (err error) {
-		run, err = tx.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	err := a.Tx(ctx, func(tx *Application) (err error) {
+		run, err = tx.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 			return run.EnqueuePlan(ctx, tx)
 		})
 		return err
@@ -234,6 +234,15 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	a.Publish(otf.Event{Type: otf.EventRunStatusUpdate, Payload: run})
 
 	return run, nil
+}
+
+// WatchLatest watches for updates to the latest run for the specified
+// workspace.
+func (a *Application) WatchLatest(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Run, error) {
+	if !a.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	return a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
 }
 
 // GetPlanFile returns the plan file for the run.

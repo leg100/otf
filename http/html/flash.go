@@ -64,6 +64,8 @@ func popFlashFunc(w http.ResponseWriter, r *http.Request) func() *flash {
 		// reliant on middleware catching panic and sending HTTP500 to user
 		panic("unmarshalling flash message: " + err.Error())
 	}
+	// purge cookie from client
 	setCookie(w, flashCookie, "", &time.Time{})
+
 	return func() *flash { return &f }
 }

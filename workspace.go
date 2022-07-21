@@ -336,6 +336,11 @@ type LatestRunSetter interface {
 	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
+type LatestRunManager interface {
+	Set(ctx context.Context, workspaceID string, runID string)
+	Watch(ctx context.Context, workspaceID string) (<-chan *Run, error)
+}
+
 // WorkspaceListOptions are options for paginating and filtering a list of
 // Workspaces
 type WorkspaceListOptions struct {

@@ -205,3 +205,21 @@ func (a *Application) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 
 	return ws, nil
 }
+
+func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
+	if !a.CanAccessWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}) {
+		return otf.ErrAccessNotPermitted
+	}
+
+	// Persist update to db
+	if err := a.db.SetLatestRun(ctx, workspaceID, runID); err != nil {
+		a.Error(err, "setting latest run", "workspace", workspaceID, "run", runID)
+		return err
+	}
+
+	// Inform the latest run manager too so that it can notify clients of change
+	a.latest.Set(ctx, workspaceID, runID)
+
+	a.V(1).Info("set latest run", "workspace", workspaceID, "run", runID)
+	return nil
+}
