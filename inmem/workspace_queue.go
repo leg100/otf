@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-// WorkspaceQueue is an in-memory workspace queue
+// WorkspaceQueue is an in-memory workspace queue. Not concurrency-safe.
 type WorkspaceQueue struct {
 	// Ordered map implementation
 	mapping map[string]int
@@ -27,8 +27,7 @@ func (q *WorkspaceQueue) Update(run *otf.Run) {
 	}
 	if pos := q.position(run); pos >= 0 {
 		if run.Done() {
-			// remove from queue
-			q.order = append(q.order[:pos], q.order[pos+1:]...)
+			q.remove(pos)
 		} else {
 			// update run in-place
 			q.order[pos] = run
@@ -48,6 +47,17 @@ func (q *WorkspaceQueue) Get() []*otf.Run {
 func (q *WorkspaceQueue) add(run *otf.Run) {
 	q.order = append(q.order, run)
 	q.mapping[run.ID()] = len(q.order) - 1
+}
+
+func (q *WorkspaceQueue) remove(pos int) {
+	// remove run from queue
+	q.order = append(q.order[:pos], q.order[pos+1:]...)
+	// we need to rebuild the map of positions as they may all now be incorrect
+	newMapping := make(map[string]int, len(q.order))
+	for pos, run := range q.order {
+		newMapping[run.ID()] = pos
+	}
+	q.mapping = newMapping
 }
 
 func (q *WorkspaceQueue) position(run *otf.Run) int {
