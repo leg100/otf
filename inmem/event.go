@@ -59,7 +59,7 @@ func (e *EventService) Unsubscribe(sub *Subscription) {
 	defer e.mu.Unlock()
 	e.unsubscribe(sub)
 
-	e.Info("subscription deleted", "subscriber", sub.id)
+	e.Info("deleted subscription", "subscriber", sub.id)
 }
 
 func (e *EventService) unsubscribe(sub *Subscription) {
