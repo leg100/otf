@@ -27,7 +27,7 @@ func TestMapper(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("lookup workspace ID", func(t *testing.T) {
-		assert.Equal(t, ws1.ID(), m.LookupWorkspaceID("test-org", "test-ws"))
+		assert.Equal(t, ws1.ID(), m.LookupWorkspaceID(ws1.SpecName()))
 	})
 
 	t.Run("authorized user", func(t *testing.T) {

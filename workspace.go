@@ -337,7 +337,7 @@ type LatestRunSetter interface {
 }
 
 type LatestRunManager interface {
-	Set(ctx context.Context, workspaceID string, run *Run)
+	Set(ctx context.Context, workspaceID string, runID string)
 	Watch(ctx context.Context, workspaceID string) (<-chan *Run, error)
 }
 

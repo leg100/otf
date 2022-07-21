@@ -4,6 +4,7 @@ Package app implements services, co-ordinating between the layers of the project
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/allegro/bigcache"
@@ -16,6 +17,8 @@ var (
 	_ otf.Application = (*Application)(nil)
 )
 
+// Application encompasses services for interacting between components of the
+// otf server
 type Application struct {
 	db     otf.DB
 	cache  otf.Cache
@@ -30,6 +33,8 @@ type Application struct {
 	logr.Logger
 }
 
+// NewApplication constructs an application, initialising various services and
+// daemons.
 func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
 	// Setup event broker
 	events := inmem.NewEventService(logger)
@@ -75,4 +80,25 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	app.queues = queues
 
 	return app, nil
+}
+
+// Tx provides a callback in which all db interactions are wrapped within a
+// transaction. Useful for ensuring multiple service calls succeed together.
+func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) error {
+	return a.db.Tx(ctx, func(db otf.DB) error {
+		// make a copy of the app and assign a db tx wrapper
+		appTx := &Application{
+			EventService:     a.EventService,
+			Mapper:           a.Mapper,
+			cache:            a.cache,
+			Logger:           a.Logger,
+			WorkspaceFactory: a.WorkspaceFactory,
+			RunFactory:       a.RunFactory,
+			latest:           a.latest,
+			proxy:            a.proxy,
+			queues:           a.queues,
+			db:               db,
+		}
+		return tx(appTx)
+	})
 }

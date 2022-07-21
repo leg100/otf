@@ -219,15 +219,11 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	}
 
 	var run *otf.Run
-	err := a.db.Tx(ctx, func(tx otf.DB) (err error) {
-		run, err = tx.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	err := a.Tx(ctx, func(tx *Application) (err error) {
+		run, err = tx.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
 			return run.EnqueuePlan(ctx, tx)
 		})
-		if err != nil {
-			return err
-		}
-		a.latest.Set(ctx, run.WorkspaceID(), run)
-		return nil
+		return err
 	})
 	if err != nil {
 		a.Error(err, "enqueuing plan", "id", runID)

@@ -82,7 +82,7 @@ func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	server := sse.New()
 	server.CreateStream("messages")
 
-	updates, err := app.RunService().WatchLatest(r.Context(), spec)
+	updates, err := app.WatchLatest(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
