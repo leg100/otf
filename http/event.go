@@ -37,7 +37,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// Ignore all incoming messages.
 	go ignoreWebSocketReaders(conn)
 	// Subscribe to all events for the current user.
-	sub, err := s.EventService().Subscribe(otf.NewID("sub"))
+	sub, err := s.Application.Subscribe(otf.NewID("sub"))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

@@ -75,11 +75,11 @@ func (l *StateVersionList) ToJSONAPI(req *http.Request) any {
 }
 
 type StateVersionService interface {
-	Create(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
-	Current(ctx context.Context, workspaceID string) (*StateVersion, error)
-	Get(ctx context.Context, id string) (*StateVersion, error)
-	Download(ctx context.Context, id string) ([]byte, error)
-	List(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
+	CreateStateVersion(ctx context.Context, workspaceID string, opts StateVersionCreateOptions) (*StateVersion, error)
+	CurrentStateVersion(ctx context.Context, workspaceID string) (*StateVersion, error)
+	GetStateVersion(ctx context.Context, id string) (*StateVersion, error)
+	DownloadState(ctx context.Context, id string) ([]byte, error)
+	ListStateVersions(ctx context.Context, opts StateVersionListOptions) (*StateVersionList, error)
 }
 
 type StateVersionStore interface {

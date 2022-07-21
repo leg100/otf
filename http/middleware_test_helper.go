@@ -12,7 +12,7 @@ type fakeUserService struct {
 	otf.UserService
 }
 
-func (svc *fakeUserService) Get(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
+func (svc *fakeUserService) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	if spec.AuthenticationToken == nil {
 		return nil, otf.ErrResourceNotFound
 	}

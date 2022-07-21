@@ -37,7 +37,7 @@ func TestApp(t *testing.T) {
 	require.NoError(t, err)
 	token := session.Token
 	// setup services
-	app := fakeApp{
+	app := &fakeApp{
 		fakeUserService: &fakeUserService{
 			fakeUser: fakeUser,
 		},

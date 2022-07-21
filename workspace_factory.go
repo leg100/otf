@@ -9,7 +9,7 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	org, err := f.OrganizationService.Get(ctx, opts.OrganizationName)
+	org, err := f.OrganizationService.GetOrganization(ctx, opts.OrganizationName)
 	if err != nil {
 		return nil, err
 	}

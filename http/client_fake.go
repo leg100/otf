@@ -14,52 +14,57 @@ type FakeClientFactory struct {
 }
 
 func (f FakeClientFactory) NewClient() (Client, error) {
-	return &FakeClient{workspaces: f.Workspace}, nil
+	return &FakeClient{
+		fakeWorkspacesClient: &fakeWorkspacesClient{
+			workspace: f.Workspace,
+		},
+	}, nil
 }
 
 type FakeClient struct {
-	Client
-	workspaces *otf.Workspace
+	*fakeOrganizationsClient
+	*fakeWorkspacesClient
+
+	// TODO: stubbed until implemented
+	otf.UserService
+	otf.RunService
+	otf.StateVersionService
+	otf.ConfigurationVersionService
+	otf.EventService
 }
 
-func (f FakeClient) Organizations() otf.OrganizationService { return &FakeOrganizationsClient{} }
-
-func (f FakeClient) Workspaces() otf.WorkspaceService {
-	return &FakeWorkspacesClient{workspace: f.workspaces}
-}
-
-type FakeOrganizationsClient struct {
+type fakeOrganizationsClient struct {
 	otf.OrganizationService
 }
 
-func (f *FakeOrganizationsClient) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+func (f *fakeOrganizationsClient) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	return otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String(uuid.NewString())})
 }
 
-type FakeWorkspacesClient struct {
+type fakeWorkspacesClient struct {
 	otf.WorkspaceService
 	workspace *otf.Workspace
 }
 
-func (f *FakeWorkspacesClient) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeWorkspacesClient) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *fakeWorkspacesClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      []*otf.Workspace{f.workspace},
 		Pagination: otf.NewPagination(otf.ListOptions{}, 1),
 	}, nil
 }
 
-func (f *FakeWorkspacesClient) Update(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (f *fakeWorkspacesClient) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) Lock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (f *fakeWorkspacesClient) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }
 
-func (f *FakeWorkspacesClient) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (f *fakeWorkspacesClient) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
 }

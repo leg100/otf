@@ -135,12 +135,13 @@ func (u *User) ToJSONAPI(req *http.Request) any {
 // UserService provides methods to interact with user accounts and their
 // sessions.
 type UserService interface {
-	// Create creates a user with the given username.
-	Create(ctx context.Context, username string) (*User, error)
-	// EnsureCreated retrieves a user; if they don't exist they'll be created.
-	EnsureCreated(ctx context.Context, username string) (*User, error)
+	// CreateUser creates a user with the given username.
+	CreateUser(ctx context.Context, username string) (*User, error)
+	// EnsureCreatedUser retrieves a user; if they don't exist they'll be
+	// created.
+	EnsureCreatedUser(ctx context.Context, username string) (*User, error)
 	// Get retrieves a user according to the spec.
-	Get(ctx context.Context, spec UserSpec) (*User, error)
+	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 	// DeleteSession deletes the session with the given token

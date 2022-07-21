@@ -3,31 +3,11 @@ package app
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/sql"
 )
 
-var _ otf.OrganizationService = (*OrganizationService)(nil)
-
-type OrganizationService struct {
-	db *sql.DB
-	es otf.EventService
-
-	logr.Logger
-}
-
-func NewOrganizationService(db *sql.DB, logger logr.Logger, es otf.EventService) (*OrganizationService, error) {
-	svc := &OrganizationService{
-		db:     db,
-		es:     es,
-		Logger: logger,
-	}
-	return svc, nil
-}
-
-// Create an organization. Needs admin permission.
-func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+// CreateOrganization creates an organization. Needs admin permission.
+func (a *Application) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
 	}
@@ -37,57 +17,58 @@ func (s OrganizationService) Create(ctx context.Context, opts otf.OrganizationCr
 		return nil, err
 	}
 
-	if err := s.db.CreateOrganization(ctx, org); err != nil {
-		s.Error(err, "creating organization", "id", org.ID())
+	if err := a.db.CreateOrganization(ctx, org); err != nil {
+		a.Error(err, "creating organization", "id", org.ID())
 		return nil, err
 	}
 
-	s.es.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
+	a.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	s.V(0).Info("created organization", "id", org.ID(), "name", org.Name())
+	a.V(0).Info("created organization", "id", org.ID(), "name", org.Name())
 
 	return org, nil
 }
 
-// EnsureCreated idempotently creates an organization. Needs admin permission.
-func (s OrganizationService) EnsureCreated(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+// EnsureCreatedOrganization idempotently creates an organization. Needs admin
+// permission.
+func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
 	if !otf.IsAdmin(ctx) {
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	org, err := s.db.GetOrganization(ctx, *opts.Name)
+	org, err := a.db.GetOrganization(ctx, *opts.Name)
 	if err == nil {
 		return org, nil
 	}
 
 	if err != otf.ErrResourceNotFound {
-		s.Error(err, "retrieving organization", "name", *opts.Name)
+		a.Error(err, "retrieving organization", "name", *opts.Name)
 		return nil, err
 	}
 
-	return s.Create(ctx, opts)
+	return a.CreateOrganization(ctx, opts)
 }
 
-// Get retrieves an organization by name.
-func (s OrganizationService) Get(ctx context.Context, name string) (*otf.Organization, error) {
+// GetOrganization retrieves an organization by name.
+func (a *Application) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	if !otf.CanAccess(ctx, &name) {
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	org, err := s.db.GetOrganization(ctx, name)
+	org, err := a.db.GetOrganization(ctx, name)
 	if err != nil {
-		s.Error(err, "retrieving organization", "name", name)
+		a.Error(err, "retrieving organization", "name", name)
 		return nil, err
 	}
 
-	s.V(2).Info("retrieved organization", "name", name, "id", org.ID())
+	a.V(2).Info("retrieved organization", "name", name, "id", org.ID())
 
 	return org, nil
 }
 
-// List organizations. If the caller is a normal user then only list their
-// organizations; otherwise list all.
-func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
+// ListOrganizations lists organizations. If the caller is a normal user then
+// only list their organizations; otherwise list all.
+func (a *Application) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -95,45 +76,45 @@ func (s OrganizationService) List(ctx context.Context, opts otf.OrganizationList
 	if user, ok := subj.(*otf.User); ok && !user.SiteAdmin() {
 		return newOrganizationList(opts, user.Organizations), nil
 	}
-	return s.db.ListOrganizations(ctx, opts)
+	return a.db.ListOrganizations(ctx, opts)
 }
 
-func (s OrganizationService) Update(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
+func (a *Application) UpdateOrganization(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
 	if !otf.CanAccess(ctx, &name) {
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	org, err := s.db.UpdateOrganization(ctx, name, func(org *otf.Organization) error {
+	org, err := a.db.UpdateOrganization(ctx, name, func(org *otf.Organization) error {
 		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
 	if err != nil {
-		s.Error(err, "updating organization", "name", name)
+		a.Error(err, "updating organization", "name", name)
 		return nil, err
 	}
 
-	s.V(2).Info("updated organization", "name", name, "id", org.ID())
+	a.V(2).Info("updated organization", "name", name, "id", org.ID())
 
 	return org, nil
 }
 
-func (s OrganizationService) Delete(ctx context.Context, name string) error {
+func (a *Application) DeleteOrganization(ctx context.Context, name string) error {
 	if !otf.CanAccess(ctx, &name) {
 		return otf.ErrAccessNotPermitted
 	}
 
-	err := s.db.DeleteOrganization(ctx, name)
+	err := a.db.DeleteOrganization(ctx, name)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s OrganizationService) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
+func (a *Application) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
 	if !otf.CanAccess(ctx, &organizationName) {
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	org, err := s.Get(ctx, organizationName)
+	org, err := a.GetOrganization(ctx, organizationName)
 	if err != nil {
 		return nil, err
 	}

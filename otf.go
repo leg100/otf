@@ -34,13 +34,13 @@ var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
 // Application provides access to the oTF application services
 type Application interface {
-	OrganizationService() OrganizationService
-	WorkspaceService() WorkspaceService
-	StateVersionService() StateVersionService
-	ConfigurationVersionService() ConfigurationVersionService
-	RunService() RunService
-	EventService() EventService
-	UserService() UserService
+	OrganizationService
+	WorkspaceService
+	StateVersionService
+	ConfigurationVersionService
+	RunService
+	EventService
+	UserService
 }
 
 // DB provides access to oTF database

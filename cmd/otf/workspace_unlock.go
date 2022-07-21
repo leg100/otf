@@ -22,7 +22,7 @@ func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ws, err := client.Workspaces().Unlock(cmd.Context(), spec, otf.WorkspaceUnlockOptions{})
+			ws, err := client.UnlockWorkspace(cmd.Context(), spec, otf.WorkspaceUnlockOptions{})
 			if err != nil {
 				return err
 			}

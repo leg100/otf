@@ -120,13 +120,6 @@ func (config *Config) NewClient() (Client, error) {
 	// Save the API version so we can return it from the RemoteAPIVersion method
 	// later.
 	client.remoteAPIVersion = meta.APIVersion
-	client.ConfigurationVersionService = &configurationVersions{client: client}
-	client.EventService = &events{client: client}
-	client.OrganizationService = &organizations{client: client}
-	//client.Runs = &runs{client: client} client.StateVersionOutputs =
-	//&stateVersionOutputs{client: client}
-	client.StateVersionService = &stateVersions{client: client}
-	client.WorkspaceService = &workspaces{client: client}
 	return client, nil
 }
 

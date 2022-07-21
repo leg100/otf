@@ -12,7 +12,7 @@ type fakeWorkspaceService struct {
 	otf.WorkspaceService
 }
 
-func (f *fakeWorkspaceService) List(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *fakeWorkspaceService) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
@@ -25,7 +25,7 @@ type fakeRunService struct {
 	otf.RunService
 }
 
-func (f *fakeRunService) List(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (f *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),

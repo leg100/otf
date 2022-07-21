@@ -19,7 +19,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cv, err := s.ConfigurationVersionService().Create(r.Context(), vars["workspace_id"], otf.ConfigurationVersionCreateOptions{
+	cv, err := s.Application.CreateConfigurationVersion(r.Context(), vars["workspace_id"], otf.ConfigurationVersionCreateOptions{
 		AutoQueueRuns: opts.AutoQueueRuns,
 		Speculative:   opts.Speculative,
 	})
@@ -32,7 +32,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	cv, err := s.ConfigurationVersionService().Get(r.Context(), vars["id"])
+	cv, err := s.Application.GetConfigurationVersion(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -47,7 +47,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cvl, err := s.ConfigurationVersionService().List(r.Context(), vars["workspace_id"], opts)
+	cvl, err := s.Application.ListConfigurationVersions(r.Context(), vars["workspace_id"], opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -62,7 +62,7 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.ConfigurationVersionService().Upload(r.Context(), vars["id"], buf.Bytes()); err != nil {
+	if err := s.Application.UploadConfig(r.Context(), vars["id"], buf.Bytes()); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

@@ -4,11 +4,12 @@ Package app implements services, co-ordinating between the layers of the project
 package app
 
 import (
+	"fmt"
+
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/sql"
 )
 
 var (
@@ -16,67 +17,62 @@ var (
 )
 
 type Application struct {
-	organizationService         otf.OrganizationService
-	workspaceService            otf.WorkspaceService
-	stateVersionService         otf.StateVersionService
-	configurationVersionService otf.ConfigurationVersionService
-	runService                  otf.RunService
-	eventService                otf.EventService
-	userService                 otf.UserService
+	db     otf.DB
+	cache  otf.Cache
+	proxy  otf.ChunkStore
+	queues *inmem.WorkspaceQueueManager
+	latest *inmem.LatestRunManager
+
+	*otf.RunFactory
+	*otf.WorkspaceFactory
+	*inmem.Mapper
+	otf.EventService
+	logr.Logger
 }
 
-func NewApplication(logger logr.Logger, db *sql.DB, cache *bigcache.BigCache) (*Application, error) {
+func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
 	// Setup event broker
-	eventService := inmem.NewEventService(logger)
+	events := inmem.NewEventService(logger)
 
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
-	orgService, err := NewOrganizationService(db, logger, eventService)
-	if err != nil {
-		return nil, err
+	app := &Application{
+		EventService: events,
+		Mapper:       mapper,
+		cache:        cache,
+		db:           db,
+		Logger:       logger,
 	}
-	workspaceService, err := NewWorkspaceService(db, logger, orgService, eventService, mapper)
-	if err != nil {
-		return nil, err
+	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
+	app.RunFactory = &otf.RunFactory{
+		WorkspaceService:            app,
+		ConfigurationVersionService: app,
 	}
 
 	// Setup latest run manager
-	latest, err := inmem.NewLatestRunManager(workspaceService, eventService)
+	latest, err := inmem.NewLatestRunManager(app, app)
 	if err != nil {
 		return nil, err
 	}
+	app.latest = latest
 
-	stateVersionService := NewStateVersionService(db, logger, cache)
-	configurationVersionService := NewConfigurationVersionService(db, logger, cache)
-	runService, err := NewRunService(db, logger, workspaceService, configurationVersionService, eventService, cache, mapper, latest)
+	proxy, err := inmem.NewChunkProxy(cache, db)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
-	userService := NewUserService(logger, db)
+	app.proxy = proxy
 
 	// Populate mappings with identifiers
-	if err := mapper.Populate(workspaceService, runService); err != nil {
+	if err := mapper.Populate(app, app); err != nil {
 		return nil, err
 	}
 
-	return &Application{
-		organizationService:         orgService,
-		workspaceService:            workspaceService,
-		stateVersionService:         stateVersionService,
-		configurationVersionService: configurationVersionService,
-		runService:                  runService,
-		eventService:                eventService,
-		userService:                 userService,
-	}, nil
-}
+	queues := inmem.NewWorkspaceQueueManager()
+	if err := queues.Populate(app); err != nil {
+		return nil, fmt.Errorf("populating workspace queues: %w", err)
+	}
+	app.queues = queues
 
-func (app *Application) OrganizationService() otf.OrganizationService { return app.organizationService }
-func (app *Application) WorkspaceService() otf.WorkspaceService       { return app.workspaceService }
-func (app *Application) StateVersionService() otf.StateVersionService { return app.stateVersionService }
-func (app *Application) ConfigurationVersionService() otf.ConfigurationVersionService {
-	return app.configurationVersionService
+	return app, nil
 }
-func (app *Application) RunService() otf.RunService     { return app.runService }
-func (app *Application) EventService() otf.EventService { return app.eventService }
-func (app *Application) UserService() otf.UserService   { return app.userService }

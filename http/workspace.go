@@ -23,7 +23,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().Create(r.Context(), otf.WorkspaceCreateOptions{
+	ws, err := s.Application.CreateWorkspace(r.Context(), otf.WorkspaceCreateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -59,7 +59,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().Get(r.Context(), spec)
+	ws, err := s.Application.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -77,7 +77,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().List(r.Context(), opts)
+	ws, err := s.Application.ListWorkspaces(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -100,7 +100,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().Update(r.Context(), spec, otf.WorkspaceUpdateOptions{
+	ws, err := s.Application.UpdateWorkspace(r.Context(), spec, otf.WorkspaceUpdateOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -140,7 +140,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().Lock(r.Context(), spec, opts)
+	ws, err := s.Application.LockWorkspace(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyLocked {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -165,7 +165,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.WorkspaceService().Unlock(r.Context(), spec, opts)
+	ws, err := s.Application.UnlockWorkspace(r.Context(), spec, opts)
 	if err == otf.ErrWorkspaceAlreadyUnlocked {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -182,7 +182,7 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.WorkspaceService().Delete(r.Context(), spec); err != nil {
+	if err := s.Application.DeleteWorkspace(r.Context(), spec); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

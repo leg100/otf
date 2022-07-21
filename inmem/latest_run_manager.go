@@ -27,7 +27,7 @@ func NewLatestRunManager(svc otf.WorkspaceService, events otf.EventService) (*La
 	// Retrieve latest run for each workspace
 	opts := otf.WorkspaceListOptions{}
 	for {
-		listing, err := svc.List(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListWorkspaces(otf.ContextWithAppUser(), opts)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest runs: %w", err)
 		}

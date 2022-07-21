@@ -117,7 +117,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	japi.Sub(func(r *html.Router) {
 		// Ensure request has valid API token
 		r.Use((&authTokenMiddleware{
-			svc:       app.UserService(),
+			svc:       app,
 			siteToken: cfg.SiteToken,
 		}).handler)
 

@@ -10,10 +10,10 @@ type RunFactory struct {
 	WorkspaceService            WorkspaceService
 }
 
-// New constructs a new run at the beginning of its lifecycle using the provided
-// options.
-func (f *RunFactory) New(ctx context.Context, workspaceSpec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
-	ws, err := f.WorkspaceService.Get(ctx, workspaceSpec)
+// NewRun constructs a new run at the beginning of its lifecycle using the
+// provided options.
+func (f *RunFactory) NewRun(ctx context.Context, workspaceSpec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
+	ws, err := f.WorkspaceService.GetWorkspace(ctx, workspaceSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +28,9 @@ func (f *RunFactory) New(ctx context.Context, workspaceSpec WorkspaceSpec, opts 
 func (f *RunFactory) getConfigurationVersion(ctx context.Context, workspaceID string, cvID *string) (*ConfigurationVersion, error) {
 	if cvID == nil {
 		// CV ID not provided, get workspace's latest CV
-		return f.ConfigurationVersionService.GetLatest(ctx, workspaceID)
+		return f.ConfigurationVersionService.GetLatestConfigurationVersion(ctx, workspaceID)
 	}
-	return f.ConfigurationVersionService.Get(ctx, *cvID)
+	return f.ConfigurationVersionService.GetConfigurationVersion(ctx, *cvID)
 }
 
 // NewRun creates a new run with defaults.

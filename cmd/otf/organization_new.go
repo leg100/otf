@@ -23,7 +23,7 @@ func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			org, err := client.Organizations().Create(cmd.Context(), opts)
+			org, err := client.CreateOrganization(cmd.Context(), opts)
 			if err != nil {
 				return err
 			}

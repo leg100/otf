@@ -9,28 +9,22 @@ import (
 	"github.com/leg100/otf"
 )
 
-// events implements otf.EventService.
-type events struct {
-	client *client
-	otf.EventService
-}
-
 type subscription struct {
 	conn *websocket.Conn
 	ch   chan otf.Event
 }
 
-func (e *events) Subscribe(id string) (otf.Subscription, error) {
-	u := url.URL{Scheme: "wss", Host: e.client.baseURL.Host, Path: "/events"}
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+func (c *client) Subscribe(id string) (otf.Subscription, error) {
+	u := url.URL{Scheme: "wss", Host: c.baseURL.Host, Path: "/events"}
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	ch := make(chan otf.Event)
 	go func() {
-		defer c.Close()
+		defer conn.Close()
 		for {
-			_, msg, err := c.ReadMessage()
+			_, msg, err := conn.ReadMessage()
 			if err != nil {
 				ch <- otf.Event{Type: otf.EventError, Payload: fmt.Sprintf("websocket read error: %s\n", err.Error())}
 				return
@@ -43,7 +37,7 @@ func (e *events) Subscribe(id string) (otf.Subscription, error) {
 			ch <- ev
 		}
 	}()
-	return &subscription{conn: c, ch: ch}, nil
+	return &subscription{conn: conn, ch: ch}, nil
 }
 
 func (s *subscription) C() <-chan otf.Event {

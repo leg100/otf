@@ -53,7 +53,7 @@ func TestRunFactory(t *testing.T) {
 				WorkspaceService:            &fakeRunFactoryWorkspaceService{ws: &tt.ws},
 				ConfigurationVersionService: &fakeRunFactoryConfigurationVersionService{cv: &tt.cv},
 			}
-			run, err := f.New(context.Background(), tt.ws.SpecID(), tt.opts)
+			run, err := f.NewRun(context.Background(), tt.ws.SpecID(), tt.opts)
 			tt.want(t, run, err)
 		})
 	}
