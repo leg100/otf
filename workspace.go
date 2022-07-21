@@ -318,6 +318,8 @@ type WorkspaceService interface {
 
 	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
 	UpdateWorkspaceQueue(run *Run) error
+
+	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
 type WorkspaceStore interface {

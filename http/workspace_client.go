@@ -165,6 +165,10 @@ func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
 	return fmt.Errorf("unimplemented")
 }
 
+func (c *client) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
+	return fmt.Errorf("unimplemented")
+}
+
 // getWorkspacePath generates a URL path for a workspace according to whether
 // the spec specifies an ID, or an organization and workspace name.
 func getWorkspacePath(spec otf.WorkspaceSpec) (string, error) {

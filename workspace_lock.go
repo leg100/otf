@@ -8,6 +8,9 @@ var (
 	ErrWorkspaceAlreadyUnlocked       = errors.New("workspace already unlocked")
 	ErrWorkspaceUnlockDenied          = errors.New("unauthorized to unlock workspace")
 	ErrWorkspaceInvalidLock           = errors.New("invalid workspace lock")
+
+	EventWorkspaceLocked   EventType = "workspace_locked"
+	EventWorkspaceUnlocked EventType = "workspace_unlocked"
 )
 
 type WorkspaceLock interface {

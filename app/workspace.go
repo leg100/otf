@@ -187,6 +187,8 @@ func (a *Application) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec,
 
 	a.V(1).Info("locked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 
+	a.Publish(otf.Event{Type: otf.EventWorkspaceLocked, Payload: ws})
+
 	return ws, nil
 }
 
@@ -203,9 +205,12 @@ func (a *Application) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 
 	a.V(1).Info("unlocked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
 
+	a.Publish(otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
+
 	return ws, nil
 }
 
+// SetLatestRun sets the latest run for the workspace
 func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
 	if !a.CanAccessWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}) {
 		return otf.ErrAccessNotPermitted
@@ -214,6 +219,21 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 	// Persist update to db
 	if err := a.db.SetLatestRun(ctx, workspaceID, runID); err != nil {
 		a.Error(err, "setting latest run", "workspace", workspaceID, "run", runID)
+		return err
+	}
+
+	// Retrieve run so that it can be passed to lock method below.
+	run, err := a.GetRun(ctx, runID)
+	if err != nil {
+		a.Error(err, "retrieving run", "run", runID)
+		return err
+	}
+
+	// Lock the workspace
+	_, err = a.LockWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}, otf.WorkspaceLockOptions{
+		Requestor: run,
+	})
+	if err != nil {
 		return err
 	}
 

@@ -230,7 +230,9 @@ func (r *Run) EnqueuePlan(ctx context.Context, setter LatestRunSetter) error {
 	r.plan.updateStatus(PhaseQueued)
 
 	if !r.Speculative() {
-		return setter.SetLatestRun(ctx, r.WorkspaceID(), r.ID())
+		if err := setter.SetLatestRun(ctx, r.WorkspaceID(), r.ID()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
