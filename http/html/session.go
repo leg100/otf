@@ -37,7 +37,7 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		writeError(w, "missing token", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.UserService().DeleteSession(r.Context(), token); err != nil {
+	if err := app.DeleteSession(r.Context(), token); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

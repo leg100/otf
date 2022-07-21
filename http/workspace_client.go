@@ -10,31 +10,19 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
-// Compile-time proof of interface implementation.
-var _ otf.WorkspaceService = (*workspaces)(nil)
-
-// workspaces implements WorkspaceService.
-type workspaces struct {
-	client *client
-
-	// TODO: implement all of otf.WorkspaceService's methods
-	otf.WorkspaceService
-}
-
-// Create is used to create a new workspace.
-func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (c *client) CreateWorkspace(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
 
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
-	req, err := s.client.newRequest("POST", u, &options)
+	req, err := c.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &dto.Workspace{}
-	err = s.client.do(ctx, req, w)
+	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -42,20 +30,21 @@ func (s *workspaces) Create(ctx context.Context, options otf.WorkspaceCreateOpti
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-// Retrieve a workspace either by its ID, or by organization and workspace name.
-func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+// GetWorkspace retrieves a workspace either by its ID, or by organization and
+// workspace name.
+func (c *client) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := s.client.newRequest("GET", path, nil)
+	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &dto.Workspace{}
-	err = s.client.do(ctx, req, w)
+	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -67,16 +56,15 @@ func (s *workspaces) Get(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Work
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-// List all the workspaces within an organization.
-func (s *workspaces) List(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
-	req, err := s.client.newRequest("GET", u, &options)
+	req, err := c.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err
 	}
 
 	wl := &dto.WorkspaceList{}
-	err = s.client.do(ctx, req, wl)
+	err = c.do(ctx, req, wl)
 	if err != nil {
 		return nil, err
 	}
@@ -84,20 +72,20 @@ func (s *workspaces) List(ctx context.Context, options otf.WorkspaceListOptions)
 	return otf.UnmarshalWorkspaceListJSONAPI(wl), nil
 }
 
-// Update settings of an existing workspace.
-func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+// UpdateWorkspace updates the settings of an existing workspace.
+func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := s.client.newRequest("PATCH", path, &options)
+	req, err := c.newRequest("PATCH", path, &options)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &dto.Workspace{}
-	err = s.client.do(ctx, req, w)
+	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -105,23 +93,21 @@ func (s *workspaces) Update(ctx context.Context, spec otf.WorkspaceSpec, options
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-// Delete a workspace by its name.
-func (s *workspaces) Delete(ctx context.Context, spec otf.WorkspaceSpec) error {
+func (c *client) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return err
 	}
 
-	req, err := s.client.newRequest("DELETE", path, nil)
+	req, err := c.newRequest("DELETE", path, nil)
 	if err != nil {
 		return err
 	}
 
-	return s.client.do(ctx, req, nil)
+	return c.do(ctx, req, nil)
 }
 
-// Lock a workspace by its ID.
-func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	var path string
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
@@ -130,13 +116,13 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
-	req, err := s.client.newRequest("POST", path, &opts)
+	req, err := c.newRequest("POST", path, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &dto.Workspace{}
-	err = s.client.do(ctx, req, w)
+	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +130,7 @@ func (s *workspaces) Lock(ctx context.Context, spec otf.WorkspaceSpec, opts otf.
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-// Unlock a workspace by its ID.
-func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	var path string
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
@@ -154,18 +139,30 @@ func (s *workspaces) Unlock(ctx context.Context, spec otf.WorkspaceSpec, _ otf.W
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
-	req, err := s.client.newRequest("POST", path, nil)
+	req, err := c.newRequest("POST", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	w := &dto.Workspace{}
-	err = s.client.do(ctx, req, w)
+	err = c.do(ctx, req, w)
 	if err != nil {
 		return nil, err
 	}
 
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+}
+
+func (c *client) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (c *client) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
+	return fmt.Errorf("unimplemented")
 }
 
 // getWorkspacePath generates a URL path for a workspace according to whether

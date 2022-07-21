@@ -38,7 +38,7 @@ func NewAgent(logger logr.Logger, app otf.Application, sub Subscriber) (*Agent, 
 
 	logger = logger.WithValues("component", "agent")
 
-	spooler, err := NewSpooler(app.RunService(), sub, logger)
+	spooler, err := NewSpooler(app, sub, logger)
 	if err != nil {
 		return nil, err
 	}

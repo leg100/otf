@@ -37,7 +37,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspaces, err := app.WorkspaceService().List(r.Context(), opts)
+	workspaces, err := app.ListWorkspaces(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -59,7 +59,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspace, err := app.WorkspaceService().Create(r.Context(), opts)
+	workspace, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourcesAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
 		http.Redirect(w, r, newWorkspacePath(organizationRequest{r}), http.StatusFound)
@@ -79,14 +79,14 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.WorkspaceService().Get(r.Context(), spec)
+	ws, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var latest *otf.Run
 	if ws.LatestRunID() != nil {
-		latest, err = app.RunService().Get(r.Context(), *ws.LatestRunID())
+		latest, err = app.GetRun(r.Context(), *ws.LatestRunID())
 		if err != nil {
 			writeError(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -107,7 +107,7 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspace, err := app.WorkspaceService().Get(r.Context(), spec)
+	workspace, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -130,7 +130,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		http.Redirect(w, r, editWorkspacePath(workspaceRequest{r}), http.StatusFound)
 		return
 	}
-	workspace, err := app.WorkspaceService().Update(r.Context(), spec, opts)
+	workspace, err := app.UpdateWorkspace(r.Context(), spec, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -146,7 +146,7 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	err := app.WorkspaceService().Delete(r.Context(), spec)
+	err := app.DeleteWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -166,7 +166,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.WorkspaceService().Lock(r.Context(), spec, otf.WorkspaceLockOptions{
+	ws, err := app.LockWorkspace(r.Context(), spec, otf.WorkspaceLockOptions{
 		Requestor: user,
 	})
 	if err != nil {
@@ -187,7 +187,7 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.WorkspaceService().Unlock(r.Context(), spec, otf.WorkspaceUnlockOptions{
+	ws, err := app.UnlockWorkspace(r.Context(), spec, otf.WorkspaceUnlockOptions{
 		Requestor: user,
 	})
 	if err != nil {

@@ -69,7 +69,7 @@ func (app *Application) addRoutes(r *Router) {
 	})
 	// routes that require authentication.
 	r.Sub(func(r *Router) {
-		r.Use((&authMiddleware{app.UserService()}).authenticate)
+		r.Use((&authMiddleware{app}).authenticate)
 		r.Use(setOrganization)
 
 		r.PST("/logout", app.logoutHandler)

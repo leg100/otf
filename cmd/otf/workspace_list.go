@@ -21,7 +21,7 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 			}
 
 			for {
-				list, err := client.Workspaces().List(cmd.Context(), opts)
+				list, err := client.ListWorkspaces(cmd.Context(), opts)
 				if err != nil {
 					return err
 				}

@@ -9,20 +9,18 @@ import (
 // Scheduler is responsible for starting runs i.e. the first step, enqueuing the
 // plan
 type Scheduler struct {
-	RunService
+	Application
 	incoming <-chan *Run
-	WorkspaceService
 	logr.Logger
 }
 
 // NewScheduler constructs and initialises the scheduler.
 func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Scheduler, error) {
 	s := &Scheduler{
-		RunService:       app.RunService(),
-		WorkspaceService: app.WorkspaceService(),
-		Logger:           logger,
+		Application: app,
+		Logger:      logger,
 	}
-	lw, err := app.RunService().ListWatch(ctx, RunListOptions{Statuses: IncompleteRun})
+	lw, err := app.ListWatchRun(ctx, RunListOptions{Statuses: IncompleteRun})
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +46,7 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 	if run.Speculative() {
 		if run.Status() == RunPending {
 			// immediately enqueue plan for pending speculative runs
-			_, err := s.RunService.EnqueuePlan(ctx, run.ID())
+			_, err := s.EnqueuePlan(ctx, run.ID())
 			if err != nil {
 				return err
 			}
@@ -57,16 +55,16 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 	// enqueue run and see if the run at the front of the queue needs starting.
-	if err := s.WorkspaceService.UpdateQueue(run); err != nil {
+	if err := s.UpdateWorkspaceQueue(run); err != nil {
 		return err
 	}
-	queue, err := s.WorkspaceService.GetQueue(run.workspaceID)
+	queue, err := s.GetWorkspaceQueue(run.workspaceID)
 	if err != nil {
 		return err
 	}
 	if len(queue) > 0 && queue[0].Status() == RunPending {
 		// enqueue plan for pending run at head of queue
-		_, err := s.RunService.EnqueuePlan(ctx, queue[0].ID())
+		_, err := s.EnqueuePlan(ctx, queue[0].ID())
 		if err != nil {
 			return err
 		}

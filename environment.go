@@ -8,11 +8,11 @@ import "context"
 // handle canceling them if necessary.
 type Environment interface {
 	Path() string
-	ConfigurationVersionService() ConfigurationVersionService
-	StateVersionService() StateVersionService
-	RunService() RunService
 	RunCLI(name string, args ...string) error
 	RunFunc(fn EnvironmentFunc) error
+
+	// All app services should be made available to the environment
+	Application
 }
 
 // EnvironmentFunc is a go func that is invoked within an environment (and with

@@ -11,7 +11,7 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 	applyID := mux.Vars(r)["apply_id"]
 	runID := otf.ConvertID(applyID, "run")
 
-	run, err := s.RunService().Get(r.Context(), runID)
+	run, err := s.Application.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

@@ -136,17 +136,17 @@ type ConfigurationVersionCreateOptions struct {
 }
 
 type ConfigurationVersionService interface {
-	Create(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
-	Get(ctx context.Context, id string) (*ConfigurationVersion, error)
-	GetLatest(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
-	List(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
+	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
+	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
+	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)
 
 	// Upload handles verification and upload of the config tarball, updating
 	// the config version upon success or failure.
-	Upload(ctx context.Context, id string, config []byte) error
+	UploadConfig(ctx context.Context, id string, config []byte) error
 
 	// Download retrieves the config tarball for the given config version ID.
-	Download(ctx context.Context, id string) ([]byte, error)
+	DownloadConfig(ctx context.Context, id string) ([]byte, error)
 }
 
 type ConfigurationVersionStore interface {

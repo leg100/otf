@@ -20,9 +20,7 @@ var _ otf.Environment = (*Environment)(nil)
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
 type Environment struct {
-	runService                  otf.RunService
-	configurationVersionService otf.ConfigurationVersionService
-	stateVersionService         otf.StateVersionService
+	otf.Application
 
 	logr.Logger
 
@@ -65,22 +63,20 @@ func NewEnvironment(
 		ID:         id,
 		Phase:      phase,
 		Logger:     logger,
-		LogService: app.RunService(),
+		LogService: app,
 	}
 
 	// Create and store cancel func so func's context can be canceled
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &Environment{
-		Logger:                      logger,
-		runService:                  app.RunService(),
-		configurationVersionService: app.ConfigurationVersionService(),
-		stateVersionService:         app.StateVersionService(),
-		out:                         out,
-		path:                        path,
-		environmentVariables:        environmentVariables,
-		cancel:                      cancel,
-		ctx:                         ctx,
+		Logger:               logger,
+		Application:          app,
+		out:                  out,
+		path:                 path,
+		environmentVariables: environmentVariables,
+		cancel:               cancel,
+		ctx:                  ctx,
 	}, nil
 }
 
@@ -99,18 +95,6 @@ func (e *Environment) Execute(phase Doer) (err error) {
 	}
 
 	return errors.ErrorOrNil()
-}
-
-func (e *Environment) ConfigurationVersionService() otf.ConfigurationVersionService {
-	return e.configurationVersionService
-}
-
-func (e *Environment) StateVersionService() otf.StateVersionService {
-	return e.stateVersionService
-}
-
-func (e *Environment) RunService() otf.RunService {
-	return e.runService
 }
 
 func (e *Environment) Path() string {

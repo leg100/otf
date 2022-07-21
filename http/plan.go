@@ -18,7 +18,7 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
-	run, err := s.RunService().Get(r.Context(), runID)
+	run, err := s.Application.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -30,7 +30,7 @@ func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
-	json, err := s.RunService().GetPlanFile(r.Context(), runID, otf.PlanFormatJSON)
+	json, err := s.Application.GetPlanFile(r.Context(), runID, otf.PlanFormatJSON)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

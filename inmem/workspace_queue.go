@@ -73,7 +73,7 @@ func (m *WorkspaceQueueManager) Populate(svc otf.WorkspaceService) error {
 	opts := otf.WorkspaceListOptions{}
 	var allocated bool
 	for {
-		listing, err := svc.List(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListWorkspaces(otf.ContextWithAppUser(), opts)
 		if err != nil {
 			return fmt.Errorf("populating workspace mapper: %w", err)
 		}

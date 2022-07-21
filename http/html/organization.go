@@ -29,7 +29,7 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	organizations, err := app.OrganizationService().List(r.Context(), opts)
+	organizations, err := app.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -43,7 +43,7 @@ func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) getOrganizationOverview(w http.ResponseWriter, r *http.Request) {
-	org, err := app.OrganizationService().Get(r.Context(), mux.Vars(r)["organization_name"])
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (app *Application) getOrganizationOverview(w http.ResponseWriter, r *http.R
 }
 
 func (app *Application) editOrganization(w http.ResponseWriter, r *http.Request) {
-	organization, err := app.OrganizationService().Get(r.Context(), mux.Vars(r)["organization_name"])
+	organization, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,7 +66,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	org, err := app.OrganizationService().Update(r.Context(), mux.Vars(r)["organization_name"], &opts)
+	org, err := app.UpdateOrganization(r.Context(), mux.Vars(r)["organization_name"], &opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -77,7 +77,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {
 	organizationName := mux.Vars(r)["organization_name"]
-	err := app.OrganizationService().Delete(r.Context(), organizationName)
+	err := app.DeleteOrganization(r.Context(), organizationName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

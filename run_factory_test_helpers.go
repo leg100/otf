@@ -30,7 +30,7 @@ type fakeRunFactoryWorkspaceService struct {
 	WorkspaceService
 }
 
-func (f *fakeRunFactoryWorkspaceService) Get(context.Context, WorkspaceSpec) (*Workspace, error) {
+func (f *fakeRunFactoryWorkspaceService) GetWorkspace(context.Context, WorkspaceSpec) (*Workspace, error) {
 	return f.ws, nil
 }
 
@@ -39,10 +39,10 @@ type fakeRunFactoryConfigurationVersionService struct {
 	ConfigurationVersionService
 }
 
-func (f *fakeRunFactoryConfigurationVersionService) Get(context.Context, string) (*ConfigurationVersion, error) {
+func (f *fakeRunFactoryConfigurationVersionService) GetConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }
 
-func (f *fakeRunFactoryConfigurationVersionService) GetLatest(context.Context, string) (*ConfigurationVersion, error) {
+func (f *fakeRunFactoryConfigurationVersionService) GetLatestConfigurationVersion(context.Context, string) (*ConfigurationVersion, error) {
 	return f.cv, nil
 }

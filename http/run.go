@@ -27,7 +27,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.RunService().Create(r.Context(), workspace, otf.RunCreateOptions{
+	run, err := s.Application.CreateRun(r.Context(), workspace, otf.RunCreateOptions{
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
 		RefreshOnly:            opts.RefreshOnly,
@@ -45,7 +45,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	run, err := s.RunService().Get(r.Context(), vars["id"])
+	run, err := s.Application.GetRun(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -72,7 +72,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	rl, err := s.RunService().List(r.Context(), opts)
+	rl, err := s.Application.ListRuns(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -80,7 +80,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 	if opts.Include != nil {
 		for _, include := range strings.Split(*opts.Include, ",") {
 			if include == "workspace" {
-				ws, err := s.WorkspaceService().Get(r.Context(), otf.WorkspaceSpec{
+				ws, err := s.Application.GetWorkspace(r.Context(), otf.WorkspaceSpec{
 					ID: opts.WorkspaceID,
 				})
 				if err != nil {
@@ -103,7 +103,7 @@ func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.RunService().Apply(r.Context(), vars["id"], opts); err != nil {
+	if err := s.Application.ApplyRun(r.Context(), vars["id"], opts); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
@@ -117,7 +117,7 @@ func (s *Server) DiscardRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().Discard(r.Context(), vars["id"], opts)
+	err := s.Application.DiscardRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunDiscardNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -135,7 +135,7 @@ func (s *Server) CancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().Cancel(r.Context(), vars["id"], opts)
+	err := s.Application.CancelRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunCancelNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return
@@ -153,7 +153,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.RunService().ForceCancel(r.Context(), vars["id"], opts)
+	err := s.Application.ForceCancelRun(r.Context(), vars["id"], opts)
 	if err == otf.ErrRunForceCancelNotAllowed {
 		writeError(w, http.StatusConflict, err)
 		return
