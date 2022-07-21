@@ -53,7 +53,7 @@ func (m *LatestRunManager) Set(ctx context.Context, workspaceID string, runID st
 
 // Watch returns a channel of updates to the latest run for a workspace.
 func (m *LatestRunManager) Watch(ctx context.Context, workspaceID string) (<-chan *otf.Run, error) {
-	sub, err := m.events.Subscribe("latest")
+	sub, err := m.events.Subscribe("watch-latest-run-" + otf.GenerateRandomString(4))
 	if err != nil {
 		return nil, err
 	}

@@ -92,12 +92,12 @@ func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 			select {
 			case run := <-updates:
 				buf := new(bytes.Buffer)
-				app.Info("run update", "id", run.ID(), "status", run.Status(), "org", run.OrganizationName(), "workspace", run.WorkspaceName(), "run_id", run.RunID())
-				var iface any = run
-				if err := app.renderTemplate("run_item.tmpl", buf, iface); err != nil {
+				if err := app.renderTemplate("run_item.tmpl", buf, run); err != nil {
 					app.Error(err, "rendering template for watched run")
 					continue
 				}
+				// remove newlines otherwise sse interprets each line as a new
+				// event
 				content := strings.ReplaceAll(buf.String(), "\n", "")
 				server.Publish("messages", &sse.Event{Data: []byte(content)})
 			case <-r.Context().Done():
