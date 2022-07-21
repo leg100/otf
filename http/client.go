@@ -41,7 +41,14 @@ type client struct {
 	retryServerErrors bool
 	remoteAPIVersion  string
 
-	otf.Application
+	otf.OrganizationService
+
+	// TODO: stubbed until implemented
+	otf.UserService
+	otf.RunService
+	otf.StateVersionService
+	otf.ConfigurationVersionService
+	otf.EventService
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {

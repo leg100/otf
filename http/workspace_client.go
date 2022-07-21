@@ -56,7 +56,7 @@ func (c *client) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) ListWorkspace(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
 	req, err := c.newRequest("GET", u, &options)
 	if err != nil {
@@ -151,6 +151,18 @@ func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ 
 	}
 
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+}
+
+func (c *client) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (c *client) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
+	return fmt.Errorf("unimplemented")
 }
 
 // getWorkspacePath generates a URL path for a workspace according to whether

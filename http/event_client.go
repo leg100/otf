@@ -9,12 +9,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// events implements otf.EventService.
-type events struct {
-	client *client
-	otf.EventService
-}
-
 type subscription struct {
 	conn *websocket.Conn
 	ch   chan otf.Event
