@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/leg100/otf"
 )
@@ -430,6 +431,12 @@ func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.Phas
 	}
 	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 	return nil
+}
+
+// Tail logs for a phase. Offset specifies the number of bytes into the logs
+// from which to start tailing.
+func (a *Application) Tail(ctx context.Context, runID string, phase otf.PhaseType, offset int) (io.ReadCloser, error) {
+	// register hook
 }
 
 func (a *Application) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {

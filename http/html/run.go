@@ -108,60 +108,52 @@ func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 	server.ServeHTTP(w, r)
 }
 
-func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
-	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
+func (app *Application) getPhase(phase string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PhaseType(phase), otf.GetChunkOptions{})
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		app.render("phase_get.tmpl", w, r, struct {
+			Run   *otf.Run
+			Logs  template.HTML
+			Phase string
+		}{
+			Run:   run,
+			Logs:  logsToHTML(chunk.Data),
+			Phase: phase,
+		})
 	}
-	chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// convert to string
-	logs := string(chunk.Data)
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	// convert ANSI escape sequences to HTML
-	logs = string(term2html.Render([]byte(logs)))
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	app.render("plan_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
-	}{
-		Run:  run,
-		Logs: template.HTML(logs),
-	})
 }
 
-func (app *Application) getApply(w http.ResponseWriter, r *http.Request) {
-	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
+func (app *Application) tailPhase(phase string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PhaseType(phase), otf.GetChunkOptions{})
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		app.render("phase_get.tmpl", w, r, struct {
+			Run   *otf.Run
+			Logs  template.HTML
+			Phase string
+		}{
+			Run:   run,
+			Logs:  logsToHTML(chunk.Data),
+			Phase: phase,
+		})
 	}
-	chunk, err := app.GetChunk(r.Context(), run.ID(), otf.ApplyPhase, otf.GetChunkOptions{})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// convert to string
-	logs := string(chunk.Data)
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	// convert ANSI escape sequences to HTML
-	logs = string(term2html.Render([]byte(logs)))
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	app.render("apply_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
-	}{
-		Run:  run,
-		Logs: template.HTML(logs),
-	})
 }
 
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
@@ -180,4 +172,17 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
+}
+
+func logsToHTML(data []byte) template.HTML {
+	// convert to string
+	logs := string(data)
+	// trim leading and trailing white space
+	logs = strings.TrimSpace(logs)
+	// convert ANSI escape sequences to HTML
+	logs = string(term2html.Render([]byte(logs)))
+	// trim leading and trailing white space
+	logs = strings.TrimSpace(logs)
+
+	return template.HTML(logs)
 }

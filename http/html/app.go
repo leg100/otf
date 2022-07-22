@@ -107,8 +107,9 @@ func (app *Application) addRoutes(r *Router) {
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPlan)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getApply)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPhase("plan"))
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getPhase("apply"))
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailPhase)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
 
