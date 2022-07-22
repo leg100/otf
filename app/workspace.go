@@ -179,13 +179,18 @@ func (a *Application) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec,
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	ws, err := a.db.LockWorkspace(ctx, spec, opts)
+	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
-		a.Error(err, "locking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+		a.Error(err, "extracting subject from context")
 		return nil, err
 	}
 
-	a.V(1).Info("locked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+	ws, err := a.db.LockWorkspace(ctx, spec, opts)
+	if err != nil {
+		a.Error(err, "locking workspace", append(spec.LogFields(), "subject", subj.String())...)
+		return nil, err
+	}
+	a.V(1).Info("locked workspace", append(spec.LogFields(), "requestor", subj.String())...)
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceLocked, Payload: ws})
 
@@ -197,13 +202,18 @@ func (a *Application) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	ws, err := a.db.UnlockWorkspace(ctx, spec, opts)
+	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
-		a.Error(err, "unlocking workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+		a.Error(err, "extracting subject from context")
 		return nil, err
 	}
 
-	a.V(1).Info("unlocked workspace", append(spec.LogFields(), "requestor", opts.Requestor.String())...)
+	ws, err := a.db.UnlockWorkspace(ctx, spec, opts)
+	if err != nil {
+		a.Error(err, "unlocking workspace", append(spec.LogFields(), "subject", subj.String())...)
+		return nil, err
+	}
+	a.V(1).Info("unlocked workspace", append(spec.LogFields(), "subject", subj.String())...)
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceUnlocked, Payload: ws})
 
@@ -229,10 +239,9 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 		return err
 	}
 
-	// Lock the workspace
-	_, err = a.LockWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}, otf.WorkspaceLockOptions{
-		Requestor: run,
-	})
+	// Lock the workspace on behalf of the run
+	ctx = otf.AddSubjectToContext(ctx, run)
+	_, err = a.LockWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}, otf.WorkspaceLockOptions{})
 	if err != nil {
 		return err
 	}

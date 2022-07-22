@@ -92,46 +92,38 @@ func TestWorkspace_Get(t *testing.T) {
 
 func TestWorkspace_Lock(t *testing.T) {
 	db := newTestDB(t)
-	ctx := context.Background()
 	org := createTestOrganization(t, db)
 	user := createTestUser(t, db)
-
-	lockOpts := otf.WorkspaceLockOptions{
-		Requestor: user,
-	}
-
-	unlockOpts := otf.WorkspaceUnlockOptions{
-		Requestor: user,
-	}
+	ctx := otf.AddSubjectToContext(context.Background(), user)
 
 	t.Run("lock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecID(), lockOpts)
+		got, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("lock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecName(), lockOpts)
+		got, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecID(), lockOpts)
+		_, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), unlockOpts)
+		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
 
 	t.Run("unlock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecName(), lockOpts)
+		_, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), unlockOpts)
+		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})

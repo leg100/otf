@@ -113,9 +113,8 @@ func (s *Scheduler) handleRun(ctx context.Context, run *Run) error {
 		return err
 	}
 	if run.Done() && len(queue) == 0 {
-		_, err = s.UnlockWorkspace(ctx, WorkspaceSpec{ID: String(run.WorkspaceID())}, WorkspaceUnlockOptions{
-			Requestor: run,
-		})
+		ctx = AddSubjectToContext(ctx, run)
+		_, err = s.UnlockWorkspace(ctx, WorkspaceSpec{ID: String(run.WorkspaceID())}, WorkspaceUnlockOptions{})
 		if err != nil {
 			return err
 		}

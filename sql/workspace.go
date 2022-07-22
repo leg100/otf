@@ -80,6 +80,11 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 
 // LockWorkspace locks the specified workspace.
 func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	subj, err := otf.LockFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -92,7 +97,7 @@ func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts ot
 		return nil, databaseError(err)
 	}
 	// lock the workspace
-	if err := ws.Lock(opts.Requestor); err != nil {
+	if err := ws.Lock(subj); err != nil {
 		return nil, err
 	}
 	// persist to db
@@ -121,6 +126,11 @@ func (db *DB) SetLatestRun(ctx context.Context, workspaceID, runID string) error
 // opportunity to check the current locker passed into the provided callback. If
 // an error is returned the unlock will not go ahead.
 func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	subj, err := otf.LockFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -133,7 +143,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts 
 		return nil, databaseError(err)
 	}
 	// unlock workspace
-	if err := ws.Unlock(opts.Requestor, opts.Force); err != nil {
+	if err := ws.Unlock(subj, opts.Force); err != nil {
 		return nil, err
 	}
 	// persist to db

@@ -34,7 +34,7 @@ type Workspace struct {
 	executionMode              string
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
-	lock                       WorkspaceLock
+	lock                       WorkspaceLockState
 	migrationEnvironment       string
 	name                       string
 	queueAllRuns               bool
@@ -65,7 +65,7 @@ func (ws *Workspace) Description() string              { return ws.description }
 func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
-func (ws *Workspace) GetLock() WorkspaceLock           { return ws.lock }
+func (ws *Workspace) GetLock() WorkspaceLockState      { return ws.lock }
 func (ws *Workspace) MigrationEnvironment() string     { return ws.migrationEnvironment }
 func (ws *Workspace) QueueAllRuns() bool               { return ws.queueAllRuns }
 func (ws *Workspace) SourceName() string               { return ws.sourceName }
@@ -102,8 +102,8 @@ func (ws *Workspace) Locked() bool {
 	return !ok
 }
 
-// Lock the workspace with the given lock
-func (ws *Workspace) Lock(lock WorkspaceLock) error {
+// Lock transfers a workspace into the given lock state
+func (ws *Workspace) Lock(lock WorkspaceLockState) error {
 	if err := ws.lock.CanLock(lock); err != nil {
 		return err
 	}
@@ -274,16 +274,12 @@ func (o WorkspaceUpdateOptions) Valid() error {
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The lock requesting to lock the workspace
-	Requestor WorkspaceLock
 }
 
 // WorkspaceUnlockOptions represents the options for unlocking a workspace.
 type WorkspaceUnlockOptions struct {
 	// Specifies the reason for locking the workspace.
 	Reason *string `jsonapi:"attr,reason,omitempty"`
-	// The identity requesting to unlock the workspace.
-	Requestor Identity
 	// Force unlock of workspace
 	Force bool
 }

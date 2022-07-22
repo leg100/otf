@@ -161,14 +161,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	user, err := otf.UserFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	ws, err := app.LockWorkspace(r.Context(), spec, otf.WorkspaceLockOptions{
-		Requestor: user,
-	})
+	ws, err := app.LockWorkspace(r.Context(), spec, otf.WorkspaceLockOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -177,19 +170,12 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	user, err := otf.UserFromContext(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	var spec otf.WorkspaceSpec
 	if err := decode.Route(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.UnlockWorkspace(r.Context(), spec, otf.WorkspaceUnlockOptions{
-		Requestor: user,
-	})
+	ws, err := app.UnlockWorkspace(r.Context(), spec, otf.WorkspaceUnlockOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

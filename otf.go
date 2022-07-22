@@ -171,6 +171,8 @@ func ConvertID(id, resource string) string {
 type AppUser struct{}
 
 func (*AppUser) CanAccess(*string) bool { return true }
+func (*AppUser) String() string         { return "app-user" }
+func (*AppUser) ID() string             { return "app-user" }
 
 func ContextWithAppUser() context.Context {
 	return AddSubjectToContext(context.Background(), &AppUser{})

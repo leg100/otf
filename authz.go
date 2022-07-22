@@ -42,10 +42,21 @@ func UserFromContext(ctx context.Context) (*User, error) {
 	return user, nil
 }
 
+// LockFromContext retrieves a workspace lock from a context
+func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
+	lock, ok := ctx.Value(subjectCtxKey).(WorkspaceLockState)
+	if !ok {
+		return nil, fmt.Errorf("no lock subject in context")
+	}
+	return lock, nil
+}
+
 // Subject is an entity attempting to carry out an action on a resource.
 type Subject interface {
 	// CanAccess determines if the subject is allowed to access the resource.
 	CanAccess(organizationName *string) bool
+
+	Identity
 }
 
 // CanAccess is a convenience function that extracts a subject from the context

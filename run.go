@@ -112,6 +112,12 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 
+// CanAccess always return true - some actions are invoked on behalf of a run,
+// e.g. locking a workpace for a run
+func (r *Run) CanAccess(organizationName *string) bool {
+	return true
+}
+
 func (r *Run) Queued() bool {
 	return r.status == RunPlanQueued || r.status == RunApplyQueued
 }

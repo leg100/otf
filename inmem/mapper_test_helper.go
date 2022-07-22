@@ -37,6 +37,9 @@ type fakeSubject struct {
 	memberOrg string
 }
 
+func (*fakeSubject) String() string { return "fake-subject" }
+func (*fakeSubject) ID() string     { return "fake-subject" }
+
 func (f *fakeSubject) CanAccess(org *string) bool {
 	return *org == f.memberOrg
 }

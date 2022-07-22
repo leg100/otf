@@ -13,18 +13,21 @@ var (
 	EventWorkspaceUnlocked EventType = "workspace_unlocked"
 )
 
-type WorkspaceLock interface {
-	// CanLock checks whether lock can be locked by requestor
-	CanLock(requestor Identity) error
-	// CanUnlock checks whether lock can be unlocked by requestor
-	CanUnlock(requestor Identity, force bool) error
-	// A lock is identifiable
+// WorkspaceLockState is the state a workspace lock is currently in (i.e.
+// unlocked, run-locked, or user-locked)
+type WorkspaceLockState interface {
+	// CanLock checks whether it can be locked by subject
+	CanLock(subject Identity) error
+	// CanUnlock checks whether it can be unlocked by subject
+	CanUnlock(subject Identity, force bool) error
+	// A lock state has an identity, i.e. the name of the run or user that has
+	// locked the workspace
 	Identity
 }
 
 // Unlocked is an unlocked workspace lock
 type Unlocked struct {
-	// no identity
+	// zero identity because an unlocked workspace lock state has no identity
 	Identity
 }
 
