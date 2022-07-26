@@ -94,10 +94,12 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	app.render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
-		LatestRun *otf.Run
+		LatestRun      *otf.Run
+		LatestStreamID string
 	}{
-		Workspace: ws,
-		LatestRun: latest,
+		Workspace:      ws,
+		LatestRun:      latest,
+		LatestStreamID: "latest-" + otf.GenerateRandomString(5),
 	})
 }
 

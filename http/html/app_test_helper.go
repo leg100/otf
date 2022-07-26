@@ -90,3 +90,7 @@ func (u *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) 
 		Pagination: otf.NewPagination(opts.ListOptions, 1),
 	}, nil
 }
+
+func (u *fakeRunService) GetChunk(context.Context, string, otf.PhaseType, otf.GetChunkOptions) (otf.Chunk, error) {
+	return otf.Chunk{Data: []byte("fake-logs")}, nil
+}

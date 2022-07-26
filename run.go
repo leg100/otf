@@ -730,6 +730,13 @@ type RunService interface {
 	WatchLatest(ctx context.Context, spec WorkspaceSpec) (<-chan *Run, error)
 	// Read and write logs for run phases.
 	LogService
+	// Tail logs of a run phase on behalf of a client
+	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (TailClient, error)
+}
+
+type TailClient interface {
+	Read() <-chan []byte
+	Close()
 }
 
 // RunCreateOptions represents the options for creating a new run. See

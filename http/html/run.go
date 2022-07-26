@@ -13,6 +13,20 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
+// LatestOptions are the options for watching the latest run for a workspace
+type LatestOptions struct {
+	// StreamID is the ID of the SSE stream
+	StreamID string `schema:"stream,required"`
+}
+
+// TailOptions are the options for tailing logs for a run phase
+type TailOptions struct {
+	// Offset is number of bytes into logs to start tailing from
+	Offset int `schema:"offset,required"`
+	// StreamID is the ID of the SSE stream
+	StreamID string `schema:"stream,required"`
+}
+
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 	opts := otf.RunListOptions{
 		// We don't list speculative runs on the UI
@@ -78,18 +92,24 @@ func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	server := sse.New()
-	server.CreateStream("messages")
-
+	var opts LatestOptions
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	updates, err := app.WatchLatest(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	app.Server.CreateStream(opts.StreamID)
+	defer app.Server.RemoveStream(opts.StreamID)
 	go func() {
 		for {
 			select {
+			case <-r.Context().Done():
+				return
 			case run := <-updates:
 				buf := new(bytes.Buffer)
 				if err := app.renderTemplate("run_item.tmpl", buf, run); err != nil {
@@ -99,69 +119,82 @@ func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
 				// remove newlines otherwise sse interprets each line as a new
 				// event
 				content := strings.ReplaceAll(buf.String(), "\n", "")
-				server.Publish("messages", &sse.Event{Data: []byte(content)})
-			case <-r.Context().Done():
-				return
+				app.Server.Publish("messages", &sse.Event{Data: []byte(content)})
 			}
 		}
 	}()
-	server.ServeHTTP(w, r)
+	app.Server.ServeHTTP(w, r)
 }
 
-func (app *Application) getPlan(w http.ResponseWriter, r *http.Request) {
-	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
+func (app *Application) getPhase(phase string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PhaseType(phase), otf.GetChunkOptions{})
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		app.render("phase_get.tmpl", w, r, struct {
+			Run      *otf.Run
+			Logs     template.HTML
+			Phase    string
+			Offset   int
+			StreamID string
+		}{
+			Run:   run,
+			Logs:  logsToHTML(chunk.Data),
+			Phase: phase,
+			// Add one to account for start marker
+			Offset: len(chunk.Data) + 1,
+			// Setup SSE stream with unique name because stream is unique to client
+			StreamID: "tail-" + otf.GenerateRandomString(5),
+		})
 	}
-	chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// convert to string
-	logs := string(chunk.Data)
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	// convert ANSI escape sequences to HTML
-	logs = string(term2html.Render([]byte(logs)))
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	app.render("plan_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
-	}{
-		Run:  run,
-		Logs: template.HTML(logs),
-	})
 }
 
-func (app *Application) getApply(w http.ResponseWriter, r *http.Request) {
-	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
+func (app *Application) tailPhase(phase string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var opts TailOptions
+		if err := decode.Query(&opts, r.URL.Query()); err != nil {
+			writeError(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		client, err := app.Tail(r.Context(), run.ID(), otf.PhaseType(phase), opts.Offset)
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		app.Server.CreateStream(opts.StreamID)
+		defer app.Server.RemoveStream(opts.StreamID)
+		go func() {
+			for {
+				select {
+				case <-r.Context().Done():
+					client.Close()
+					return
+				case chunk, ok := <-client.Read():
+					if !ok {
+						return
+					}
+					html := string(term2html.Render(chunk))
+					html = strings.ReplaceAll(html, "\n", "<br>")
+					html = html + "<br>"
+					app.Server.Publish(opts.StreamID, &sse.Event{Data: []byte(html)})
+				}
+			}
+		}()
+		app.Server.ServeHTTP(w, r)
 	}
-	chunk, err := app.GetChunk(r.Context(), run.ID(), otf.ApplyPhase, otf.GetChunkOptions{})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// convert to string
-	logs := string(chunk.Data)
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	// convert ANSI escape sequences to HTML
-	logs = string(term2html.Render([]byte(logs)))
-	// trim leading and trailing white space
-	logs = strings.TrimSpace(logs)
-	app.render("apply_get.tmpl", w, r, struct {
-		Run  *otf.Run
-		Logs template.HTML
-	}{
-		Run:  run,
-		Logs: template.HTML(logs),
-	})
 }
 
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
@@ -180,4 +213,17 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
+}
+
+func logsToHTML(data []byte) template.HTML {
+	// convert to string
+	logs := string(data)
+	// trim leading and trailing white space
+	logs = strings.TrimSpace(logs)
+	// convert ANSI escape sequences to HTML
+	logs = string(term2html.Render([]byte(logs)))
+	// trim leading and trailing white space
+	logs = strings.TrimSpace(logs)
+
+	return template.HTML(logs)
 }

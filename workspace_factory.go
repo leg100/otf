@@ -76,6 +76,9 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 	if opts.WorkingDirectory != nil {
 		ws.workingDirectory = *opts.WorkingDirectory
 	}
+	if opts.LatestRunID != nil {
+		ws.latestRunID = opts.LatestRunID
+	}
 	return &ws, nil
 }
 
@@ -98,6 +101,9 @@ type WorkspaceCreateOptions struct {
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
 	OrganizationName           string `schema:"organization_name"`
+
+	// Options for testing purposes only
+	LatestRunID *string
 }
 
 func (o WorkspaceCreateOptions) Valid() error {

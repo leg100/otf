@@ -20,9 +20,10 @@ func TestApp(t *testing.T) {
 		Name: otf.String("org-fake"),
 	})
 	require.NoError(t, err)
-	// setup workspace
+	// setup workspaces
 	fakeWorkspace, err := otf.NewWorkspace(fakeOrganization, otf.WorkspaceCreateOptions{
-		Name: "ws-fake",
+		Name:        "ws-fake",
+		LatestRunID: otf.String("run-123"),
 	})
 	require.NoError(t, err)
 	// setup configuration version
@@ -119,6 +120,14 @@ func TestApp(t *testing.T) {
 		},
 		{
 			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID() + "/plan",
+		},
+		{
+			method: "GET",
+			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID() + "/apply",
+		},
+		{
+			method: "GET",
 			path:   "/profile",
 		},
 		{
@@ -169,24 +178,18 @@ func TestApp(t *testing.T) {
 			body, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
 
+			t.Log(string(body))
+
 			// check response
 			if tt.redirect != "" {
 				if assert.Equal(t, 302, res.StatusCode) {
 					loc, err := res.Location()
 					require.NoError(t, err)
 					assert.Equal(t, tt.redirect, loc.Path)
-				} else {
-					t.Log(string(body))
 				}
 			} else {
-				if !assert.Equal(t, 200, res.StatusCode) {
-					t.Log(string(body))
-				}
+				assert.Equal(t, 200, res.StatusCode)
 			}
-			if res.StatusCode == 500 {
-				t.Logf("received http 500; body:\n%s\n", (string(body)))
-			}
-			//assert.Equal(t, "", string(body))
 		})
 	}
 }
