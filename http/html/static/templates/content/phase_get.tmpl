@@ -15,5 +15,8 @@
 {{ end }}
 
 {{ define "content" }}
-  <div class="term-container">{{- .Content.Logs -}}</div>
+  <div class="term-container">
+    {{- .Content.Logs }}
+    <span hx-ext="sse" sse-connect="{{ tailPhasePath .Content.Run .Content.Phase }}?stream={{ .Content.StreamID }}&offset={{ .Content.Offset }}" sse-swap="message" hx-swap="beforeend scroll:bottom"></span>
+  </div>
 {{ end }}

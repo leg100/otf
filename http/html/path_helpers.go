@@ -3,6 +3,7 @@ package html
 import (
 	"fmt"
 	"html/template"
+	"path"
 )
 
 // organizationRoute provides info about a route for an organization resource
@@ -150,6 +151,10 @@ func getApplyPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
+func tailPhasePath(run runRoute, phase string) string {
+	return path.Join(getRunPath(run), phase, "tail")
+}
+
 func deleteRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/delete", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
@@ -190,6 +195,7 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["watchLatestRunPath"] = watchLatestRunPath
 	m["getPlanPath"] = getPlanPath
 	m["getApplyPath"] = getApplyPath
+	m["tailPhasePath"] = tailPhasePath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
 }

@@ -25,6 +25,12 @@ var (
 	ErrPhaseAlreadyStarted = errors.New("phase already started")
 )
 
+// PhaseSpec specifies a phase of a run
+type PhaseSpec struct {
+	RunID string
+	Phase PhaseType
+}
+
 type PhaseStatus string
 
 // Phase is a section of work performed by a run.

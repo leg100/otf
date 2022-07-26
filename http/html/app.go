@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/r3labs/sse/v2"
 )
 
 const DefaultPathPrefix = "/"
@@ -23,6 +24,8 @@ type Application struct {
 	*viewEngine
 	// logger for logging messages
 	logr.Logger
+	// server-side-events server
+	*sse.Server
 }
 
 // AddRoutes adds routes for the html web app.
@@ -45,6 +48,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 		Logger:       logger,
+		Server:       sse.New(),
 	}
 	app.addRoutes(router)
 	return nil
@@ -109,7 +113,8 @@ func (app *Application) addRoutes(r *Router) {
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPhase("plan"))
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getPhase("apply"))
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailPhase)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan/tail", app.tailPhase("plan"))
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply/tail", app.tailPhase("apply"))
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
 
