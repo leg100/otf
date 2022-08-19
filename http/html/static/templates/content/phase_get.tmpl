@@ -15,8 +15,19 @@
 {{ end }}
 
 {{ define "content" }}
-  <div class="term-container">
+  <div _="on htmx:sseMessage log the event">
+  <div _="on htmx:sseMessage[message==message] go to bottom of me" class="term-container">
     {{- .Content.Logs }}
-    <span hx-ext="sse" sse-connect="{{ tailPhasePath .Content.Run .Content.Phase }}?stream={{ .Content.StreamID }}&offset={{ .Content.Offset }}" sse-swap="message" hx-swap="beforeend scroll:bottom"></span>
-  </div>
+<span hx-ext="sse" sse-connect="{{ tailPhasePath .Content.Run .Content.Phase }}?stream={{ .Content.StreamID }}&offset={{ .Content.Offset }}" sse-swap="message" hx-swap="beforeend"></span></div>
+{{ end }}
+
+{{ define "container-header-links" }}
+  {{ $links := dict "plan" (getPlanPath .Content.Run) "apply" (getApplyPath .Content.Run) }}
+  {{ range $txt, $link := $links }}
+    {{ if eq $.CurrentPath $link }}
+      <li><a class="active" href="{{ $link }}">{{ $txt }}</a></li>
+    {{ else }}
+      <li><a href="{{ $link }}">{{ $txt }}</a></li>
+    {{ end }}
+  {{ end }}
 {{ end }}

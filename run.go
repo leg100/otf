@@ -130,6 +130,12 @@ func (r *Run) PlanOnly() bool {
 	return r.status == RunPlannedAndFinished
 }
 
+// HasApply determines whether the run has started applying yet.
+func (r *Run) HasApply() bool {
+	_, err := r.Apply().StatusTimestamp(PhaseRunning)
+	return err == nil
+}
+
 // Phase returns the current phase.
 func (r *Run) Phase() PhaseType {
 	switch r.status {

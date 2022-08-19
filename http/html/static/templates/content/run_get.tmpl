@@ -12,15 +12,20 @@
   {{ .Content.ID }}
 {{ end }}
 
-{{ define "content" }}
-  <div class="content-menu">
-    <div>
-      <span><a href="{{ getPlanPath .Content }}">plan</a></span>
-    </div>
-    {{ if not .Content.PlanOnly }}
-    <div>
-      <span><a href="{{ getApplyPath .Content }}">apply</a></span>
-    </div>
+{{ define "container-header-links" }}
+  {{ $links := dict "plan" (getPlanPath .Content) "apply" (getApplyPath .Content) }}
+  {{ range $txt, $link := $links }}
+    {{ if eq $.CurrentPath $link }}
+      <li><a class="active" href="{{ $link }}">{{ $txt }}</a></li>
+    {{ else }}
+      <li><a href="{{ $link }}">{{ $txt }}</a></li>
     {{ end }}
-  </div>
+  {{ end }}
 {{ end }}
+
+{{ define "content" }}
+  <span class="status status-{{ .Content.Status }}">
+    <a href="{{ getRunPath .Content }}">{{ .Content.Status.String | replace "_" " "}}</a>
+  </span>
+{{ end }}
+
