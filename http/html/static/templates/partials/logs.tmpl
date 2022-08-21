@@ -1,0 +1,5 @@
+{{ define "logs" }}
+<div _="on htmx:sseMessage[message==message] go to bottom of me" class="term-container">
+  {{- .Existing }}
+<span hx-ext="sse" sse-connect="{{ .TailURL }}" sse-swap="message" hx-swap="beforeend"></span></div>
+{{ end }}

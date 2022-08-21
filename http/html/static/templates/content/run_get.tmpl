@@ -3,17 +3,17 @@
 {{ define "title" }}{{ .Content.Run.ID }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content.Run }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ getWorkspacePath .Content.Run }}">{{ .Content.Run.WorkspaceName }}</a>
   /
-  <a href="{{ listRunPath .Content }}">runs</a>
+  <a href="{{ listRunPath .Content.Run }}">runs</a>
   /
-  {{ .Content.ID }}
+  {{ .Content.Run.ID }}
 {{ end }}
 
 {{ define "container-header-links" }}
-  {{ $links := dict "plan" (getPlanPath .Content) "apply" (getApplyPath .Content) }}
+  {{ $links := dict "plan" (getPlanPath .Content.Run) "apply" (getApplyPath .Content.Run) }}
   {{ range $txt, $link := $links }}
     {{ if eq $.CurrentPath $link }}
       <li><a class="active" href="{{ $link }}">{{ $txt }}</a></li>
@@ -24,8 +24,16 @@
 {{ end }}
 
 {{ define "content" }}
-  <span class="status status-{{ .Content.Status }}">
-    <a href="{{ getRunPath .Content }}">{{ .Content.Status.String | replace "_" " "}}</a>
+  <span class="status status-{{ .Content.Run.Status }}">
+    <a href="{{ getRunPath .Content.Run }}">{{ .Content.Run.Status.String | replace "_" " "}}</a>
   </span>
+  <div>
+    <span>Plan</span>
+    {{ template "logs" .Content.PlanLogs }}
+  </div>
+  <div>
+    <span>Apply</span>
+    {{ template "logs" .Content.ApplyLogs }}
+  </div>
 {{ end }}
 

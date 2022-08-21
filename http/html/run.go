@@ -2,8 +2,11 @@ package html
 
 import (
 	"bytes"
+	"context"
 	"html/template"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -17,6 +20,11 @@ import (
 type LatestOptions struct {
 	// StreamID is the ID of the SSE stream
 	StreamID string `schema:"stream,required"`
+}
+
+type Logs struct {
+	Existing template.HTML
+	TailURL  string
 }
 
 // TailOptions are the options for tailing logs for a run phase
@@ -83,7 +91,27 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("run_get.tmpl", w, r, run)
+
+	planLogs, err := app.getLogs(r.Context(), run, "plan")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	applyLogs, err := app.getLogs(r.Context(), run, "apply")
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.render("run_get.tmpl", w, r, struct {
+		Run       *otf.Run
+		PlanLogs  Logs
+		ApplyLogs Logs
+	}{
+		Run:       run,
+		PlanLogs:  planLogs,
+		ApplyLogs: applyLogs,
+	})
 }
 
 func (app *Application) watchLatestRun(w http.ResponseWriter, r *http.Request) {
@@ -133,25 +161,21 @@ func (app *Application) getPhase(phase string) http.HandlerFunc {
 			writeError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		chunk, err := app.GetChunk(r.Context(), run.ID(), otf.PhaseType(phase), otf.GetChunkOptions{})
+
+		logs, err := app.getLogs(r.Context(), run, phase)
 		if err != nil {
 			writeError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		app.render("phase_get.tmpl", w, r, struct {
-			Run      *otf.Run
-			Logs     template.HTML
-			Phase    string
-			Offset   int
-			StreamID string
+			Run   *otf.Run
+			Phase string
+			Logs  Logs
 		}{
 			Run:   run,
-			Logs:  logsToHTML(chunk.Data),
 			Phase: phase,
-			// Add one to account for start marker
-			Offset: len(chunk.Data) + 1,
-			// Setup SSE stream with unique name because stream is unique to client
-			StreamID: "tail-" + otf.GenerateRandomString(5),
+			Logs:  logs,
 		})
 	}
 }
@@ -215,6 +239,28 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
 }
 
+// getLogs retrieves both (a) existing logs for a run phase, and (b) a url for
+// tailing the logs thereafter using SSE
+func (app *Application) getLogs(ctx context.Context, run *otf.Run, phase string) (Logs, error) {
+	// get existing logs thus far received. if none are found then don't treat
+	// that as an error because it merely means no logs have yet been received
+	// and that is ok.
+	chunk, err := app.GetChunk(ctx, run.ID(), otf.PhaseType(phase), otf.GetChunkOptions{})
+	if err != nil && err != otf.ErrResourceNotFound {
+		return Logs{}, err
+	}
+
+	// Add one to account for start marker
+	offset := len(chunk.Data) + 1
+	// Setup SSE stream with unique name because stream is unique to client
+	streamID := "tail-" + otf.GenerateRandomString(5)
+
+	return Logs{
+		Existing: logsToHTML(chunk.Data),
+		TailURL:  tailLogsURL(run, phase, offset, streamID),
+	}, nil
+}
+
 func logsToHTML(data []byte) template.HTML {
 	// convert to string
 	logs := string(data)
@@ -226,4 +272,14 @@ func logsToHTML(data []byte) template.HTML {
 	logs = strings.TrimSpace(logs)
 
 	return template.HTML(logs)
+}
+
+func tailLogsURL(run *otf.Run, phase string, offset int, streamID string) string {
+	return (&url.URL{
+		Path: tailPhasePath(run, phase),
+		RawQuery: url.Values{
+			"offset": []string{strconv.Itoa(offset)},
+			"stream": []string{streamID},
+		}.Encode(),
+	}).String()
 }
