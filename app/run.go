@@ -453,10 +453,10 @@ func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.Phas
 	// pass chunk onto tail server for relaying onto clients
 	err := a.tailServer.PutChunk(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, chunk)
 	if err != nil {
-		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End, "data", string(chunk.Data))
+		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
-	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End, "data", string(chunk.Data))
+	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 
 	return nil
 }

@@ -46,6 +46,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 	sseServer := sse.New()
 	// delegate responsibility to sse lib to create/delete streams
 	sseServer.AutoStream = true
+	// we don't use last-event-item functionality so turn it off
 	sseServer.AutoReplay = false
 
 	app := &Application{
