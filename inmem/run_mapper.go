@@ -23,7 +23,7 @@ func (m *runMapper) populate(svc otf.RunService) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	opts := otf.RunListOptions{}
+	opts := otf.RunListOptions{ListOptions: otf.ListOptions{PageSize: 100}}
 	var allocated bool
 	for {
 		listing, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
