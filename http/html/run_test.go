@@ -17,10 +17,10 @@ import (
 func Test_TailLogs(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
 
-	// setup channel - send one chunk and then close
-	chunk := make(chan []byte, 1000)
-	chunk <- []byte("some logs")
-	close(chunk)
+	// setup channel - send a chunk and then close
+	chunks := make(chan []byte, 1)
+	chunks <- []byte("some logs")
+	close(chunks)
 
 	// setup SSE server
 	srv := sse.New()
@@ -32,7 +32,7 @@ func Test_TailLogs(t *testing.T) {
 		Server: srv,
 		Application: &fakeTailApp{
 			run:    run,
-			client: &fakeTailClient{chunk},
+			chunks: chunks,
 		},
 		Logger: logr.Discard(),
 	}
@@ -67,7 +67,7 @@ event: finished
 
 type fakeTailApp struct {
 	run    *otf.Run
-	client *fakeTailClient
+	chunks chan []byte
 
 	otf.Application
 }
@@ -76,16 +76,6 @@ func (f *fakeTailApp) GetRun(context.Context, string) (*otf.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakeTailApp) Tail(context.Context, string, otf.PhaseType, int) (otf.TailClient, error) {
-	return f.client, nil
+func (f *fakeTailApp) Tail(context.Context, string, otf.PhaseType, int) (<-chan []byte, error) {
+	return f.chunks, nil
 }
-
-type fakeTailClient struct {
-	chunk chan []byte
-}
-
-func (f *fakeTailClient) Read() <-chan []byte {
-	return f.chunk
-}
-
-func (f *fakeTailClient) Close() {}

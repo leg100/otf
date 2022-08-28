@@ -253,7 +253,7 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 	return nil
 }
 
-// Watch returns a stream of events for runs belonging to the specified workspace.
+// WatchWorkspace returns a stream of events for runs belonging to the specified workspace.
 func (a *Application) WatchWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
 	if !a.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted

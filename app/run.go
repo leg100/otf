@@ -236,15 +236,6 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	return run, nil
 }
 
-// WatchLatest watches for updates to the latest run for the specified
-// workspace.
-func (a *Application) WatchLatest(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Run, error) {
-	if !a.CanAccessWorkspace(ctx, spec) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-	return a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
-}
-
 // Watch watches for updates to the specified run
 func (a *Application) Watch(ctx context.Context, runID string) (<-chan *otf.Run, error) {
 	if !a.CanAccessRun(ctx, runID) {
@@ -273,42 +264,6 @@ func (a *Application) Watch(ctx context.Context, runID string) (<-chan *otf.Run,
 				}
 				if run.ID() == runID {
 					c <- run
-				}
-			}
-		}
-	}()
-
-	return c, nil
-}
-
-// Watch watches for updates to runs belonging to the specified workspace.
-func (a *Application) WatchWorkspaceRuns(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
-	if !a.CanAccessWorkspace(ctx, spec) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-	sub, err := a.EventService.Subscribe("watch-ws-runs-" + otf.GenerateRandomString(6))
-	if err != nil {
-		return nil, err
-	}
-	c := make(chan *otf.Event)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				sub.Close()
-				return
-			case event, ok := <-sub.C():
-				if !ok {
-					// sender closed channel
-					return
-				}
-				run, ok := event.Payload.(*otf.Run)
-				if !ok {
-					// skip non-run events
-					continue
-				}
-				if run.WorkspaceID() == a.LookupWorkspaceID(spec) {
-					c <- &event
 				}
 			}
 		}
