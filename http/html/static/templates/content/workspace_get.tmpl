@@ -11,12 +11,8 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/hyperscript">
-    eventsource RunUpdates from {{ watchWorkspacePath .Content }}?stream={{ randAlphaNum 6 }}
-      on run_latest_update as json
-        put it["html"] into #latest-run
-      end
-    end
+  <script type="text/javascript">
+    watchWorkspaceUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
   </script>
   <div class="content-menu">
     <div class="workspace-info">

@@ -96,3 +96,54 @@ function setupTail(path, phase, offset, stream) {
         source.close();
     });
 }
+
+function watchRunUpdates(path, stream, run) {
+    const url = `${path}?stream=${stream}&run-id=${run}`;
+    var source = new EventSource(url);
+
+    source.addEventListener("run-status-update", (e) => {
+        const obj = JSON.parse(e.data);
+
+        const runStatus = document.getElementById(obj.id + '-status-');
+        elem.outerHTML = obj['run-status']
+
+        const planStatus = document.getElementById('plan-status');
+        elem.outerHTML = obj['plan-status']
+
+        const applyStatus = document.getElementById('apply-status');
+        elem.outerHTML = obj['apply-status']
+    });
+}
+
+function watchWorkspaceUpdates(path, stream) {
+    const url = `${path}?stream=${stream}`;
+    var source = new EventSource(url);
+
+    source.addEventListener("run-latest-update", (e) => {
+        const obj = JSON.parse(e.data);
+
+        const latestRunElem = document.getElementById('latest-run');
+        latestRunElem.outerHTML = obj['html']
+    });
+}
+
+function watchRuns(path, stream) {
+    const url = `${path}?stream=${stream}`;
+    var source = new EventSource(url);
+
+    const listElem = document.getElementById('content-list');
+
+    source.addEventListener('run_created', (e) => {
+        const obj = JSON.parse(e.data);
+
+        listElem.insertAdjacentHTML("afterbegin", obj.html);
+    });
+
+    source.addEventListener('run_status_update', (e) => {
+        const obj = JSON.parse(e.data);
+
+        const runElem = document.getElementById(obj.id);
+        runElem.remove();
+        listElem.insertAdjacentHTML("afterbegin", obj.html);
+    });
+}

@@ -508,16 +508,16 @@ func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.Phas
 
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (a *Application) Tail(ctx context.Context, runID string, phase otf.PhaseType, offset int) (otf.TailClient, error) {
+func (a *Application) Tail(ctx context.Context, runID string, phase otf.PhaseType, offset int) (<-chan []byte, error) {
 	// register hook
-	client, err := a.tailServer.Tail(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, offset)
+	c, err := a.tailServer.Tail(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, offset)
 	if err != nil {
 		a.Error(err, "tailing logs", "id", runID, "phase", phase)
 		return nil, err
 	}
 	a.V(2).Info("tailing logs", "id", runID, "phase", phase)
 
-	return client, nil
+	return c, nil
 }
 
 func (a *Application) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {

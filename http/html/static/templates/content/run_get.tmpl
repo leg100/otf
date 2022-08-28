@@ -2,6 +2,10 @@
 
 {{ define "title" }}{{ .Content.Run.ID }}{{ end }}
 
+{{ define "stylesheet" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
+{{ end }}
+
 {{ define "container-header" }}
   <a href="{{ listWorkspacePath .Content.Run }}">workspaces</a>
   /
@@ -13,14 +17,8 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/hyperscript">
-    eventsource RunUpdates from {{ watchWorkspacePath .Content.Run }}?stream={{ randAlphaNum 6 }}&run-id={{ .Content.Run.ID }}
-      on run_status_update as json
-        put it["run-status"] into #{it["id"] + "-status"}.outerHTML
-        put it["plan-status"] into #plan-status.outerHTML
-        put it["apply-status"] into #apply-status.outerHTML
-      end
-    end
+  <script type="text/javascript">
+    watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
   </script>
   {{ template "run-status" .Content.Run }} {{ template "identifier" .Content.Run }}
   <div id="plan" class="item">

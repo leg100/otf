@@ -26,7 +26,9 @@ type JobWriter struct {
 
 // Write uploads a chunk of logs to the server.
 func (w *JobWriter) Write(p []byte) (int, error) {
-	chunk := Chunk{Data: p}
+	data := make([]byte, len(p))
+	copy(data, p)
+	chunk := Chunk{Data: data}
 
 	if !w.started {
 		w.started = true

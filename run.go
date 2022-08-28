@@ -483,7 +483,7 @@ func (r *Run) discardable() bool {
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+	case RunPending, RunPlanQueued, RunPlanning, RunPlanned, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false
@@ -740,13 +740,8 @@ type RunService interface {
 	WatchWorkspaceRuns(ctx context.Context, spec WorkspaceSpec) (<-chan *Event, error)
 	// Read and write logs for run phases.
 	LogService
-	// Tail logs of a run phase on behalf of a client
-	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (TailClient, error)
-}
-
-type TailClient interface {
-	Read() <-chan []byte
-	Close()
+	// Tail logs of a run phase
+	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (<-chan []byte, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

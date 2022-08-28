@@ -123,7 +123,7 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	client, err := app.Tail(r.Context(), mux.Vars(r)["run_id"], opts.Phase, opts.Offset)
+	ch, err := app.Tail(r.Context(), mux.Vars(r)["run_id"], opts.Phase, opts.Offset)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,15 +131,9 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		// keep running tally of offset
 		offset := opts.Offset
-
 		for {
 			select {
-			case <-r.Context().Done():
-				app.Info("closing client")
-				client.Close()
-				return
-			case chunk, ok := <-client.Read():
-				app.Info("relaying chunk to client", "data", string(chunk), "phase", opts.Phase, "offset", offset, "stream", opts.StreamID)
+			case chunk, ok := <-ch:
 				if !ok {
 					// no more logs
 					app.Server.Publish(opts.StreamID, &sse.Event{
@@ -166,6 +160,8 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 					Data:  js,
 					Event: []byte("new-log-chunk"),
 				})
+			case <-r.Context().Done():
+				return
 			}
 		}
 	}()

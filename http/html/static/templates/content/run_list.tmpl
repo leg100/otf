@@ -15,17 +15,8 @@
 {{ end }}
 
 {{ define "content" }}
-  <script type="text/hyperscript">
-    eventsource RunUpdates from {{ watchWorkspacePath .Content }}?stream={{ randAlphaNum 6 }}
-      on run_created as json
-        put it["html"] at start of #content-list
-      end
-
-      on run_status_update as json
-        remove #{it["id"]}
-        put it["html"] at start of #content-list
-      end
-    end
+  <script type="text/javascript">
+    watchRuns({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
   </script>
   {{ template "content-list" . }}
 {{ end }}
