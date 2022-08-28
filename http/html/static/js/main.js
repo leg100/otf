@@ -119,11 +119,11 @@ function watchWorkspaceUpdates(path, stream) {
     const url = `${path}?stream=${stream}`;
     var source = new EventSource(url);
 
-    source.addEventListener("run-latest-update", (e) => {
+    source.addEventListener("run_latest_update", (e) => {
         const obj = JSON.parse(e.data);
 
         const latestRunElem = document.getElementById('latest-run');
-        latestRunElem.outerHTML = obj['html']
+        latestRunElem.innerHTML = obj['html']
     });
 }
 

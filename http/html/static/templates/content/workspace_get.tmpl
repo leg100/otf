@@ -12,7 +12,9 @@
 
 {{ define "content" }}
   <script type="text/javascript">
-    watchWorkspaceUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
+    window.addEventListener('load', (e) => {
+      watchWorkspaceUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
+    });
   </script>
   <div class="content-menu">
     <div class="workspace-info">
@@ -34,7 +36,7 @@
       <div>
         <h3>Latest Run</h3>
         <div id="latest-run">
-        {{ template "run-item" . }}
+          {{ template "run-item" . }}
         </div>
       </div>
     {{ end }}

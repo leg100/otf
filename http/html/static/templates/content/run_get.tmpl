@@ -18,7 +18,9 @@
 
 {{ define "content" }}
   <script type="text/javascript">
-    watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
+    window.addEventListener('load', (e) => {
+      watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
+    });
   </script>
   {{ template "run-status" .Content.Run }} {{ template "identifier" .Content.Run }}
   <div id="plan" class="item">
