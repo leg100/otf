@@ -33,6 +33,8 @@ type PhaseSpec struct {
 
 type PhaseStatus string
 
+func (r PhaseStatus) String() string { return string(r) }
+
 // Phase is a section of work performed by a run.
 type Phase interface {
 	// Run ID

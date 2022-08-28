@@ -130,6 +130,12 @@ func (r *Run) PlanOnly() bool {
 	return r.status == RunPlannedAndFinished
 }
 
+// HasApply determines whether the run has started applying yet.
+func (r *Run) HasApply() bool {
+	_, err := r.Apply().StatusTimestamp(PhaseRunning)
+	return err == nil
+}
+
 // Phase returns the current phase.
 func (r *Run) Phase() PhaseType {
 	switch r.status {
@@ -477,7 +483,7 @@ func (r *Run) discardable() bool {
 // Cancelable determines whether run can be cancelled.
 func (r *Run) Cancelable() bool {
 	switch r.Status() {
-	case RunPending, RunPlanQueued, RunPlanning, RunApplyQueued, RunApplying:
+	case RunPending, RunPlanQueued, RunPlanning, RunPlanned, RunApplyQueued, RunApplying:
 		return true
 	default:
 		return false
@@ -726,17 +732,12 @@ type RunService interface {
 	GetLockFile(ctx context.Context, id string) ([]byte, error)
 	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-	// Watch for updates to the latest run for a workspace
-	WatchLatest(ctx context.Context, spec WorkspaceSpec) (<-chan *Run, error)
+	// Watch for updates to the specified run
+	Watch(ctx context.Context, id string) (<-chan *Run, error)
 	// Read and write logs for run phases.
 	LogService
-	// Tail logs of a run phase on behalf of a client
-	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (TailClient, error)
-}
-
-type TailClient interface {
-	Read() <-chan []byte
-	Close()
+	// Tail logs of a run phase
+	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (<-chan []byte, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

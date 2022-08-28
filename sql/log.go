@@ -10,7 +10,8 @@ import (
 
 // PutChunk persists a plan log chunk to the DB.
 func (db *DB) PutChunk(ctx context.Context, runID string, phase otf.PhaseType, chunk otf.Chunk) error {
-	if len(chunk.Data) == 0 {
+	if !chunk.Start && !chunk.End && len(chunk.Data) == 0 {
+		// skip empty, marker-less chunks
 		return nil
 	}
 	_, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
@@ -29,8 +30,10 @@ func (db *DB) GetChunk(ctx context.Context, runID string, phase otf.PhaseType, o
 		opts.Limit = math.MaxInt32
 	}
 	chunk, err := db.FindLogChunks(ctx, pggen.FindLogChunksParams{
-		RunID:  String(runID),
-		Phase:  String(string(phase)),
+		RunID: String(runID),
+		Phase: String(string(phase)),
+		// TODO: we add one here because postgres' substr() starts from 1 not 0
+		// - we should probably move this to the SQL itself
 		Offset: opts.Offset + 1,
 		Limit:  opts.Limit,
 	})

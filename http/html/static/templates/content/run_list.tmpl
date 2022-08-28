@@ -15,6 +15,11 @@
 {{ end }}
 
 {{ define "content" }}
+  <script type="text/javascript">
+    window.addEventListener('load', (e) => {
+      watchRuns({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
+    });
+  </script>
   {{ template "content-list" . }}
 {{ end }}
 

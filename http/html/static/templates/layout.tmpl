@@ -4,12 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="htmx-config" content='{"defaultFocusScroll":true}'>
   <link rel="stylesheet" href="{{ addHash "/static/css/sanitize.css" }}">
-  <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
+  {{ block "stylesheet" . }}{{ end }}
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
-  <script src="{{ addHash "/static/js/htmx.v1.8.0.min.js" }}"></script>
-  <script src="{{ addHash "/static/js/htmx-sse.v1.8.0.js" }}"></script>
+  <script src="{{ addHash "/static/js/main.js" }}"></script>
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
@@ -67,6 +65,5 @@
     <a href="https://github.com/leg100/otf">{{ .Version }}</a>
   </footer>
 </body>
-<script src="{{ addHash "/static/js/main.js" }}"></script>
 </html>
 {{ end }}

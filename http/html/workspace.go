@@ -1,10 +1,13 @@
 package html
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/r3labs/sse/v2"
 )
 
 // workspaceRequest provides metadata about a request for a workspace
@@ -183,4 +186,94 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
+	var spec otf.WorkspaceSpec
+	if err := decode.Route(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	opts := struct {
+		StreamID string  `schema:"stream,required"`
+		RunID    *string `schema:"run-id"`
+	}{}
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	events, err := app.WatchWorkspace(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	go func() {
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case event := <-events:
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				if run.Speculative() {
+					// we never show speculative runs in Web UI
+					continue
+				}
+				if opts.RunID != nil && run.ID() != *opts.RunID {
+					// skip events that don't match the client's optional run ID filter
+					continue
+				}
+				// render HTML snippets and send as payload in SSE event
+				item := new(bytes.Buffer)
+				if err := app.renderTemplate("run_item.tmpl", item, run); err != nil {
+					app.Error(err, "rendering template for run item")
+					continue
+				}
+				runStatus := new(bytes.Buffer)
+				if err := app.renderTemplate("run_status.tmpl", runStatus, run); err != nil {
+					app.Error(err, "rendering run status template")
+					continue
+				}
+				planStatus := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", planStatus, run.Plan()); err != nil {
+					app.Error(err, "rendering plan status template")
+					continue
+				}
+				applyStatus := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", applyStatus, run.Apply()); err != nil {
+					app.Error(err, "rendering apply status template")
+					continue
+				}
+				js, err := json.Marshal(struct {
+					ID string `json:"id"`
+					// the run item box
+					RunItem string `json:"html"`
+					// the color-coded run status
+					RunStatus string `json:"run-status"`
+					// the color-coded plan status
+					PlanStatus string `json:"plan-status"`
+					// the color-coded apply status
+					ApplyStatus string `json:"apply-status"`
+				}{
+					ID:          run.ID(),
+					RunItem:     item.String(),
+					RunStatus:   runStatus.String(),
+					PlanStatus:  planStatus.String(),
+					ApplyStatus: applyStatus.String(),
+				})
+				if err != nil {
+					app.Error(err, "marshalling watched run", "run", run.ID())
+					continue
+				}
+				app.Server.Publish(opts.StreamID, &sse.Event{
+					Data:  js,
+					Event: []byte(event.Type),
+				})
+			}
+		}
+	}()
+	app.Server.ServeHTTP(w, r)
 }

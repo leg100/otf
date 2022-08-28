@@ -11,6 +11,11 @@
 {{ end }}
 
 {{ define "content" }}
+  <script type="text/javascript">
+    window.addEventListener('load', (e) => {
+      watchWorkspaceUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
+    });
+  </script>
   <div class="content-menu">
     <div class="workspace-info">
       <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
@@ -30,8 +35,8 @@
     {{ with .Content.LatestRun }}
       <div>
         <h3>Latest Run</h3>
-        <div hx-ext="sse" sse-connect="{{ watchLatestRunPath . }}?stream={{ $.Content.LatestStreamID }}" sse-swap="message">
-        {{ template "run-item" . }}
+        <div id="latest-run">
+          {{ template "run-item" . }}
         </div>
       </div>
     {{ end }}

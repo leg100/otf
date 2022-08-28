@@ -236,13 +236,40 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	return run, nil
 }
 
-// WatchLatest watches for updates to the latest run for the specified
-// workspace.
-func (a *Application) WatchLatest(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Run, error) {
-	if !a.CanAccessWorkspace(ctx, spec) {
+// Watch watches for updates to the specified run
+func (a *Application) Watch(ctx context.Context, runID string) (<-chan *otf.Run, error) {
+	if !a.CanAccessRun(ctx, runID) {
 		return nil, otf.ErrAccessNotPermitted
 	}
-	return a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
+	sub, err := a.EventService.Subscribe("watch-run-" + otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
+	c := make(chan *otf.Run)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				sub.Close()
+				return
+			case event, ok := <-sub.C():
+				if !ok {
+					// sender closed channel
+					return
+				}
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				if run.ID() == runID {
+					c <- run
+				}
+			}
+		}
+	}()
+
+	return c, nil
 }
 
 // GetPlanFile returns the plan file for the run.
@@ -423,31 +450,29 @@ func (a *Application) GetChunk(ctx context.Context, runID string, phase otf.Phas
 
 // PutChunk writes a chunk of logs for a phase.
 func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.PhaseType, chunk otf.Chunk) error {
-	err := a.proxy.PutChunk(ctx, runID, phase, chunk)
+	// pass chunk onto tail server for relaying onto clients
+	err := a.tailServer.PutChunk(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, chunk)
 	if err != nil {
 		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 		return err
 	}
 	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
 
-	// pass chunk onto tail server for relaying onto clients
-	a.tailServer.PutChunk(otf.PhaseSpec{RunID: runID, Phase: phase}, chunk)
-
 	return nil
 }
 
 // Tail logs for a phase. Offset specifies the number of bytes into the logs
 // from which to start tailing.
-func (a *Application) Tail(ctx context.Context, runID string, phase otf.PhaseType, offset int) (otf.TailClient, error) {
+func (a *Application) Tail(ctx context.Context, runID string, phase otf.PhaseType, offset int) (<-chan []byte, error) {
 	// register hook
-	client, err := a.tailServer.Tail(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, offset)
+	c, err := a.tailServer.Tail(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, offset)
 	if err != nil {
 		a.Error(err, "tailing logs", "id", runID, "phase", phase)
 		return nil, err
 	}
 	a.V(2).Info("tailing logs", "id", runID, "phase", phase)
 
-	return client, nil
+	return c, nil
 }
 
 func (a *Application) createPlanReport(ctx context.Context, runID string) (otf.ResourceReport, error) {

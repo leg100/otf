@@ -41,6 +41,14 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 	if err != nil {
 		return err
 	}
+
+	// Setup SSE server
+	sseServer := sse.New()
+	// delegate responsibility to sse lib to create/delete streams
+	sseServer.AutoStream = true
+	// we don't use last-event-item functionality so turn it off
+	sseServer.AutoReplay = false
+
 	app := &Application{
 		Application:  services,
 		oauth:        oauthApp,
@@ -48,7 +56,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 		Logger:       logger,
-		Server:       sse.New(),
+		Server:       sseServer,
 	}
 	app.addRoutes(router)
 	return nil
@@ -106,15 +114,12 @@ func (app *Application) addRoutes(r *Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
 
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/latest", app.watchLatestRun)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan", app.getPhase("plan"))
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.getPhase("apply"))
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/plan/tail", app.tailPhase("plan"))
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply/tail", app.tailPhase("apply"))
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
 

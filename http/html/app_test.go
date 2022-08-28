@@ -120,14 +120,6 @@ func TestApp(t *testing.T) {
 		},
 		{
 			method: "GET",
-			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID() + "/plan",
-		},
-		{
-			method: "GET",
-			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID() + "/apply",
-		},
-		{
-			method: "GET",
 			path:   "/profile",
 		},
 		{

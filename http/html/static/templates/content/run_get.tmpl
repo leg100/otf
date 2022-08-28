@@ -2,25 +2,54 @@
 
 {{ define "title" }}{{ .Content.Run.ID }}{{ end }}
 
+{{ define "stylesheet" }}
+  <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
+{{ end }}
+
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content.Run }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ getWorkspacePath .Content.Run }}">{{ .Content.Run.WorkspaceName }}</a>
   /
-  <a href="{{ listRunPath .Content }}">runs</a>
+  <a href="{{ listRunPath .Content.Run }}">runs</a>
   /
-  {{ .Content.ID }}
+  {{ .Content.Run.ID }}
 {{ end }}
 
 {{ define "content" }}
-  <div class="content-menu">
-    <div>
-      <span><a href="{{ getPlanPath .Content }}">plan</a></span>
+  <script type="text/javascript">
+    window.addEventListener('load', (e) => {
+      watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
+    });
+  </script>
+  {{ template "run-status" .Content.Run }} {{ template "identifier" .Content.Run }}
+  <div id="plan" class="item">
+    <div class="item-heading">
+      <span class="inline-heading">plan</span>
+      {{ template "phase-status" .Content.Run.Plan }}
     </div>
-    {{ if not .Content.PlanOnly }}
     <div>
-      <span><a href="{{ getApplyPath .Content }}">apply</a></span>
+      <div class="term-container">
+        {{- .Content.PlanLogs.Existing }}<div id="tailed-plan-logs"></div></div>
     </div>
-    {{ end }}
   </div>
+  <div id="apply" class="item">
+    <div class="item-heading">
+      <span class="inline-heading">apply</span>
+      {{ template "phase-status" .Content.Run.Apply }}
+    </div>
+    <div class="term-container">
+      {{- .Content.ApplyLogs.Existing }}<div id="tailed-apply-logs"></div></div>
+  </div>
+  {{ if not .Content.PlanLogs.End }}
+    <script type="text/javascript">
+      setupTail({{ tailRunPath .Content.Run }}, 'plan', {{ .Content.PlanLogs.Offset }}, {{ randAlphaNum 6 }});
+    </script>
+  {{ end }}
+  {{ if not .Content.ApplyLogs.End }}
+    <script type="text/javascript">
+      setupTail({{ tailRunPath .Content.Run }}, 'apply', {{ .Content.ApplyLogs.Offset }}, {{ randAlphaNum 6 }});
+    </script>
+  {{ end }}
 {{ end }}
+

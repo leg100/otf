@@ -169,6 +169,10 @@ func (c *client) SetLatestRun(ctx context.Context, workspaceID, runID string) er
 	return fmt.Errorf("unimplemented")
 }
 
+func (c *client) WatchWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
 // getWorkspacePath generates a URL path for a workspace according to whether
 // the spec specifies an ID, or an organization and workspace name.
 func getWorkspacePath(spec otf.WorkspaceSpec) (string, error) {

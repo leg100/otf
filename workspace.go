@@ -314,6 +314,9 @@ type WorkspaceService interface {
 
 	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
 	UpdateWorkspaceQueue(run *Run) error
+	// WatchWorkspace returns a stream of events for runs belonging to the
+	// workspace
+	WatchWorkspace(ctx context.Context, spec WorkspaceSpec) (<-chan *Event, error)
 
 	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }

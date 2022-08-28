@@ -18,19 +18,19 @@ type Server struct {
 	mu sync.Mutex
 
 	// database of phases and list of clients for each phase
-	db map[otf.PhaseSpec][]*Client
+	db map[otf.PhaseSpec][]*client
 }
 
 func NewServer(svc otf.ChunkService) *Server {
 	return &Server{
 		svc: svc,
-		db:  make(map[otf.PhaseSpec][]*Client),
+		db:  make(map[otf.PhaseSpec][]*client),
 	}
 }
 
 // Tail provides a client that follows logs for the given phase and from the
 // given offset onwards.
-func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (*Client, error) {
+func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (<-chan []byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -38,80 +38,96 @@ func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (*Cli
 	prev, err := s.svc.GetChunk(ctx, spec.RunID, spec.Phase, otf.GetChunkOptions{
 		Offset: offset,
 	})
-	if err != nil {
+	if err != nil && err != otf.ErrResourceNotFound {
 		return nil, err
 	}
 
-	client := &Client{
-		server: s,
-		phase:  spec,
-		buffer: make(chan []byte, 99999),
+	c := &client{
+		phase: spec,
+		ch:    make(chan []byte, 99999),
 	}
-	// send logs from db to client
 	if len(prev.Data) > 0 {
-		client.buffer <- prev.Data
+		// send logs from db to client
+		c.ch <- prev.Data
 	}
-	// and inform client there are no more logs by closing channel
 	if prev.End {
-		close(client.buffer)
+		// inform client there are no more logs by closing channel
+		close(c.ch)
 		// we don't need to store client in db
-		return client, nil
+		return c.ch, nil
 	}
 
 	// store client in db so that we can send it more logs later
 	clients, ok := s.db[spec]
 	if !ok {
 		// this is the first client tailing this phase
-		s.db[spec] = []*Client{client}
+		s.db[spec] = []*client{c}
 	} else {
 		// there are other clients tailing this phase too
-		s.db[spec] = append(clients, client)
+		s.db[spec] = append(clients, c)
 	}
 
-	return client, nil
+	// remove client if it disconnects etc
+	go func() {
+		<-ctx.Done()
+		s.removeClient(c)
+	}()
+
+	return c.ch, nil
 }
 
-// PutChunk should be called whenever a chunk of logs is written to the system,
-// so that clients receive a copy.
-func (t *Server) PutChunk(spec otf.PhaseSpec, chunk otf.Chunk) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+// PutChunk forwards the chunk to both the backend service and to tailing clients.
+func (s *Server) PutChunk(ctx context.Context, spec otf.PhaseSpec, chunk otf.Chunk) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	clients, ok := t.db[spec]
+	// forward to backend service
+	if err := s.svc.PutChunk(ctx, spec.RunID, spec.Phase, chunk); err != nil {
+		return err
+	}
+
+	clients, ok := s.db[spec]
 	if !ok {
 		// no clients tailing this run
-		return
+		return nil
 	}
 	for _, c := range clients {
-		c.buffer <- chunk.Data
+		if len(chunk.Data) > 0 {
+			c.ch <- chunk.Data
+		}
 		if chunk.End {
-			// inform clients this is the last chunk so they know not to tail
+			// inform client this is the last chunk so they know not to tail
 			// logs anymore
-			close(c.buffer)
+			close(c.ch)
 		}
 	}
+	if chunk.End {
+		// no more logs so remove clients from db
+		delete(s.db, spec)
+	}
+	return nil
 }
 
-func (t *Server) removeClient(client *Client) {
+func (t *Server) removeClient(c *client) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	clients, ok := t.db[client.phase]
+	clients, ok := t.db[c.phase]
 	if !ok {
 		// client is referring to non-existent phase, do nothing
 		return
 	}
 	// find client
 	for idx, existing := range clients {
-		if existing == client {
+		if existing == c {
 			// remove client
 			clients = append(clients[:idx], clients[idx+1:]...)
-			t.db[client.phase] = clients
+			t.db[c.phase] = clients
 			break
 		}
 	}
 	// if last client was deleted then remove entry for this phase
 	if len(clients) == 0 {
-		delete(t.db, client.phase)
+		delete(t.db, c.phase)
 	}
 }
