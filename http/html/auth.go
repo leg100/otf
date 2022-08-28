@@ -36,12 +36,6 @@ func (app *Application) githubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(githubOrganizations) == 0 {
-		flashError(w, "no github organizations found")
-		http.Redirect(w, r, loginPath(), http.StatusFound)
-		return
-	}
-
 	guser, err := client.GetUser(ctx, "")
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -121,6 +115,7 @@ func synchroniseOrganizations(
 
 	var orgs []*otf.Organization
 
+	// Sync orgs
 	for _, githubOrganization := range githubOrganization {
 		org, err := organizationService.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
 			Name: githubOrganization.Login,
@@ -130,9 +125,15 @@ func synchroniseOrganizations(
 		}
 		orgs = append(orgs, org)
 	}
+	// A user also gets their own personal organization that matches their
+	// username
+	org, err := organizationService.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+		Name: otf.String(user.Username()),
+	})
+	orgs = append(orgs, org)
 
-	_, err := userService.SyncOrganizationMemberships(ctx, user, orgs)
-	if err != nil {
+	// Sync memberships
+	if _, err = userService.SyncOrganizationMemberships(ctx, user, orgs); err != nil {
 		return err
 	}
 
