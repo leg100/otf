@@ -5,12 +5,14 @@ const (
 	EventOrganizationDeleted EventType = "organization_deleted"
 	EventWorkspaceCreated    EventType = "workspace_created"
 	EventWorkspaceDeleted    EventType = "workspace_deleted"
-	EventRunCreated          EventType = "run_created"
-	EventRunStatusUpdate     EventType = "run_status_update"
-	EventRunDeleted          EventType = "run_deleted"
-	EventRunCancel           EventType = "run_cancel"
-	EventRunForceCancel      EventType = "run_force_cancel"
-	EventError               EventType = "error"
+	// EventLatestRunUpdate is an update to the "latest" run for a workspace
+	EventLatestRunUpdate EventType = "run_latest_update"
+	EventRunCreated      EventType = "run_created"
+	EventRunStatusUpdate EventType = "run_status_update"
+	EventRunDeleted      EventType = "run_deleted"
+	EventRunCancel       EventType = "run_cancel"
+	EventRunForceCancel  EventType = "run_force_cancel"
+	EventError           EventType = "error"
 )
 
 // EventType identifies the type of event

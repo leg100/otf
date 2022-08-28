@@ -11,6 +11,13 @@
 {{ end }}
 
 {{ define "content" }}
+  <script type="text/hyperscript">
+    eventsource RunUpdates from {{ watchWorkspacePath .Content }}?stream={{ randAlphaNum 6 }}
+      on run_latest_update as json
+        put it["html"] into #latest-run
+      end
+    end
+  </script>
   <div class="content-menu">
     <div class="workspace-info">
       <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
@@ -30,7 +37,7 @@
     {{ with .Content.LatestRun }}
       <div>
         <h3>Latest Run</h3>
-        <div hx-ext="sse" sse-connect="{{ watchLatestRunPath . }}?stream={{ $.Content.LatestStreamID }}" sse-swap="message">
+        <div id="latest-run">
         {{ template "run-item" . }}
         </div>
       </div>

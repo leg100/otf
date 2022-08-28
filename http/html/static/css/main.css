@@ -139,6 +139,10 @@ header nav {
   margin-right: auto;
 }
 
+.inline-heading {
+  font-weight: 700;
+}
+
 /* main-form is a form that is the main content of a page */
 .main-form {
   width: 500px;
@@ -346,6 +350,7 @@ button.delete:hover {
 .status {
   font-size: 1.1rem;
   font-weight: bolder;
+  transition: all 800ms ease-in;
 }
 
 .status-planned_and_finished {
@@ -353,6 +358,17 @@ button.delete:hover {
 }
 
 .status-applied {
+  background: #bfffbf;
+}
+
+/* color-coded phase status field */
+.phase-status {
+  font-size: 0.9rem;
+  font-weight: bolder;
+  transition: all 800ms ease-in;
+}
+
+.phase-status-finished {
   background: #bfffbf;
 }
 
@@ -380,7 +396,7 @@ button.delete:hover {
 .item-heading {
   display: flex;
   column-gap: 10px;
-  align-items: center;
+  align-items: baseline;
   padding-bottom: 10px;
 }
 

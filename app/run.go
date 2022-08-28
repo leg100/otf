@@ -245,6 +245,78 @@ func (a *Application) WatchLatest(ctx context.Context, spec otf.WorkspaceSpec) (
 	return a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
 }
 
+// Watch watches for updates to the specified run
+func (a *Application) Watch(ctx context.Context, runID string) (<-chan *otf.Run, error) {
+	if !a.CanAccessRun(ctx, runID) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	sub, err := a.EventService.Subscribe("watch-run-" + otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
+	c := make(chan *otf.Run)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				sub.Close()
+				return
+			case event, ok := <-sub.C():
+				if !ok {
+					// sender closed channel
+					return
+				}
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				if run.ID() == runID {
+					c <- run
+				}
+			}
+		}
+	}()
+
+	return c, nil
+}
+
+// Watch watches for updates to runs belonging to the specified workspace.
+func (a *Application) WatchWorkspaceRuns(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
+	if !a.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	sub, err := a.EventService.Subscribe("watch-ws-runs-" + otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
+	c := make(chan *otf.Event)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				sub.Close()
+				return
+			case event, ok := <-sub.C():
+				if !ok {
+					// sender closed channel
+					return
+				}
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				if run.WorkspaceID() == a.LookupWorkspaceID(spec) {
+					c <- &event
+				}
+			}
+		}
+	}()
+
+	return c, nil
+}
+
 // GetPlanFile returns the plan file for the run.
 func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	if !a.CanAccessRun(ctx, runID) {
@@ -423,15 +495,13 @@ func (a *Application) GetChunk(ctx context.Context, runID string, phase otf.Phas
 
 // PutChunk writes a chunk of logs for a phase.
 func (a *Application) PutChunk(ctx context.Context, runID string, phase otf.PhaseType, chunk otf.Chunk) error {
-	err := a.proxy.PutChunk(ctx, runID, phase, chunk)
+	// pass chunk onto tail server for relaying onto clients
+	err := a.tailServer.PutChunk(ctx, otf.PhaseSpec{RunID: runID, Phase: phase}, chunk)
 	if err != nil {
-		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End)
+		a.Error(err, "writing logs", "id", runID, "start", chunk.Start, "end", chunk.End, "data", string(chunk.Data))
 		return err
 	}
-	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End)
-
-	// pass chunk onto tail server for relaying onto clients
-	a.tailServer.PutChunk(otf.PhaseSpec{RunID: runID, Phase: phase}, chunk)
+	a.V(2).Info("written logs", "id", runID, "start", chunk.Start, "end", chunk.End, "data", string(chunk.Data))
 
 	return nil
 }

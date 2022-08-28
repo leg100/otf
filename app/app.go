@@ -82,7 +82,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	app.queues = queues
 
 	// Initialise tail server for tailing logs on behalf of clients
-	app.tailServer = tail.NewServer(app)
+	app.tailServer = tail.NewServer(db, logger)
 
 	return app, nil
 }

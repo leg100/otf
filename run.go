@@ -734,6 +734,10 @@ type RunService interface {
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
 	// Watch for updates to the latest run for a workspace
 	WatchLatest(ctx context.Context, spec WorkspaceSpec) (<-chan *Run, error)
+	// Watch for updates to the specified run
+	Watch(ctx context.Context, id string) (<-chan *Run, error)
+	// Watch events for runs belonging to the specified workspace
+	WatchWorkspaceRuns(ctx context.Context, spec WorkspaceSpec) (<-chan *Event, error)
 	// Read and write logs for run phases.
 	LogService
 	// Tail logs of a run phase on behalf of a client

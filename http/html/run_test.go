@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/r3labs/sse/v2"
@@ -21,13 +22,19 @@ func Test_TailLogs(t *testing.T) {
 	chunk <- []byte("some logs")
 	close(chunk)
 
+	// setup SSE server
+	srv := sse.New()
+	srv.AutoStream = true
+	srv.AutoReplay = false
+
 	// fake app
 	app := &Application{
-		Server: sse.New(),
+		Server: srv,
 		Application: &fakeTailApp{
 			run:    run,
 			client: &fakeTailClient{chunk},
 		},
+		Logger: logr.Discard(),
 	}
 
 	// setup req and resp
@@ -37,15 +44,25 @@ func Test_TailLogs(t *testing.T) {
 	r.URL.RawQuery = url.Values{
 		"offset": []string{"0"},
 		"stream": []string{"tail-123"},
+		"phase":  []string{"plan"},
 	}.Encode()
 
 	// run handler in bg and wait for it to respond
-	go app.tailPhase("plan")(w, r)
+	go app.tailRun(w, r)
 
 	time.Sleep(time.Second)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, "id: 0\ndata: some logs<br>\n\n", w.Body.String())
+	want := `id: 
+data: {"offset":9,"html":"some logs\u003cbr\u003e"}
+event: new-log-chunk
+
+id: 
+data: no more logs
+event: finished
+
+`
+	assert.Equal(t, want, w.Body.String())
 }
 
 type fakeTailApp struct {

@@ -252,3 +252,50 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 	a.V(1).Info("set latest run", "workspace", workspaceID, "run", runID)
 	return nil
 }
+
+// Watch returns a stream of events for runs belonging to the specified workspace.
+func (a *Application) WatchWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
+	if !a.CanAccessWorkspace(ctx, spec) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	sub, err := a.EventService.Subscribe("watch-ws-" + otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
+	// we also return events relating to the latest run for a workspace
+	latest, err := a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
+	if err != nil {
+		return nil, err
+	}
+	c := make(chan *otf.Event)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				sub.Close()
+				return
+			case event, ok := <-sub.C():
+				if !ok {
+					// sender closed channel
+					return
+				}
+				run, ok := event.Payload.(*otf.Run)
+				if !ok {
+					// skip non-run events
+					continue
+				}
+				if run.WorkspaceID() == a.LookupWorkspaceID(spec) {
+					c <- &event
+				}
+			case run, ok := <-latest:
+				if !ok {
+					// sender closed channel
+					return
+				}
+				c <- &otf.Event{Payload: run, Type: otf.EventLatestRunUpdate}
+			}
+		}
+	}()
+
+	return c, nil
+}

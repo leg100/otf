@@ -21,6 +21,18 @@ func TestServer_New(t *testing.T) {
 	assert.Equal(t, "cat sat on the mat", string(buf))
 }
 
+func TestServer_MultipleChunks(t *testing.T) {
+	srv := NewServer(&fakeChunkService{
+		chunk: otf.Chunk{Data: []byte("cat sat on the mat")},
+	})
+
+	client, err := srv.Tail(context.Background(), otf.PhaseSpec{RunID: "run-123", Phase: otf.PlanPhase}, 0)
+	require.NoError(t, err)
+
+	buf := <-client.buffer
+	assert.Equal(t, "cat sat on the mat", string(buf))
+}
+
 func TestServer_New_LastChunk(t *testing.T) {
 	srv := NewServer(&fakeChunkService{
 		chunk: otf.Chunk{
@@ -35,6 +47,8 @@ func TestServer_New_LastChunk(t *testing.T) {
 }
 
 func TestServer_PutChunk(t *testing.T) {
+	ctx := context.Background()
+
 	srv := NewServer(&fakeChunkService{
 		chunk: otf.Chunk{
 			Data: []byte("cat sat on the mat"),
@@ -42,14 +56,14 @@ func TestServer_PutChunk(t *testing.T) {
 	})
 
 	spec := otf.PhaseSpec{RunID: "run-123", Phase: otf.PlanPhase}
-	client, err := srv.Tail(context.Background(), spec, 0)
+	client, err := srv.Tail(ctx, spec, 0)
 	require.NoError(t, err)
 	// There should be one client in the db
 	assert.Equal(t, 1, len(srv.db))
 
 	assert.Equal(t, "cat sat on the mat", string(<-client.Read()))
 
-	srv.PutChunk(spec, otf.Chunk{Data: []byte(" and died the next day"), End: true})
+	srv.PutChunk(ctx, spec, otf.Chunk{Data: []byte(" and died the next day"), End: true})
 	assert.Equal(t, " and died the next day", string(<-client.Read()))
 	assert.Nil(t, <-client.Read())
 
@@ -59,9 +73,12 @@ func TestServer_PutChunk(t *testing.T) {
 
 type fakeChunkService struct {
 	chunk otf.Chunk
-	otf.ChunkService
 }
 
 func (f *fakeChunkService) GetChunk(context.Context, string, otf.PhaseType, otf.GetChunkOptions) (otf.Chunk, error) {
 	return f.chunk, nil
+}
+
+func (f *fakeChunkService) PutChunk(context.Context, string, otf.PhaseType, otf.Chunk) error {
+	return nil
 }

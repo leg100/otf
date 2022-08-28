@@ -1,5 +1,5 @@
 {{ define "content-list" }}
-<div class="content-list">
+<div id="content-list" class="content-list">
   {{ range .Content.Items }}
     {{ block "content-list-item" . }}{{ end }}
   {{ else }}

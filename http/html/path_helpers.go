@@ -139,20 +139,12 @@ func getRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
-func watchLatestRunPath(run workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/latest", run.OrganizationName(), run.WorkspaceName())
+func watchWorkspacePath(ws workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/watch", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func getPlanPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/plan", run.OrganizationName(), run.WorkspaceName(), run.RunID())
-}
-
-func getApplyPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", run.OrganizationName(), run.WorkspaceName(), run.RunID())
-}
-
-func tailPhasePath(run runRoute, phase string) string {
-	return path.Join(getRunPath(run), phase, "tail")
+func tailRunPath(run runRoute) string {
+	return path.Join(getRunPath(run), "tail")
 }
 
 func deleteRunPath(run runRoute) string {
@@ -192,10 +184,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["newRunPath"] = newRunPath
 	m["createRunPath"] = createRunPath
 	m["getRunPath"] = getRunPath
-	m["watchLatestRunPath"] = watchLatestRunPath
-	m["getPlanPath"] = getPlanPath
-	m["getApplyPath"] = getApplyPath
-	m["tailPhasePath"] = tailPhasePath
+	m["watchWorkspacePath"] = watchWorkspacePath
+	m["tailRunPath"] = tailRunPath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
 }

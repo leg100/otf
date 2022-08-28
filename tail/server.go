@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 )
 
@@ -19,12 +20,15 @@ type Server struct {
 
 	// database of phases and list of clients for each phase
 	db map[otf.PhaseSpec][]*Client
+
+	logger logr.Logger
 }
 
-func NewServer(svc otf.ChunkService) *Server {
+func NewServer(svc otf.ChunkService, logger logr.Logger) *Server {
 	return &Server{
-		svc: svc,
-		db:  make(map[otf.PhaseSpec][]*Client),
+		svc:    svc,
+		db:     make(map[otf.PhaseSpec][]*Client),
+		logger: logger,
 	}
 }
 
@@ -38,7 +42,7 @@ func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (*Cli
 	prev, err := s.svc.GetChunk(ctx, spec.RunID, spec.Phase, otf.GetChunkOptions{
 		Offset: offset,
 	})
-	if err != nil {
+	if err != nil && err != otf.ErrResourceNotFound {
 		return nil, err
 	}
 
@@ -47,12 +51,13 @@ func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (*Cli
 		phase:  spec,
 		buffer: make(chan []byte, 99999),
 	}
-	// send logs from db to client
 	if len(prev.Data) > 0 {
+		// send logs from db to client
 		client.buffer <- prev.Data
+		s.logger.Info("sending interim chunk to client", "data", string(prev.Data))
 	}
-	// and inform client there are no more logs by closing channel
 	if prev.End {
+		// inform client there are no more logs by closing channel
 		close(client.buffer)
 		// we don't need to store client in db
 		return client, nil
@@ -71,25 +76,33 @@ func (s *Server) Tail(ctx context.Context, spec otf.PhaseSpec, offset int) (*Cli
 	return client, nil
 }
 
-// PutChunk should be called whenever a chunk of logs is written to the system,
-// so that clients receive a copy.
-func (t *Server) PutChunk(spec otf.PhaseSpec, chunk otf.Chunk) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+// PutChunk forwards the chunk to both the backend service and to tailing clients.
+func (s *Server) PutChunk(ctx context.Context, spec otf.PhaseSpec, chunk otf.Chunk) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	clients, ok := t.db[spec]
+	// forward to backend service
+	if err := s.svc.PutChunk(ctx, spec.RunID, spec.Phase, chunk); err != nil {
+		return err
+	}
+
+	clients, ok := s.db[spec]
 	if !ok {
 		// no clients tailing this run
-		return
+		return nil
 	}
 	for _, c := range clients {
-		c.buffer <- chunk.Data
+		if len(chunk.Data) > 0 {
+			s.logger.Info("sending chunk to client", "data", string(chunk.Data), "client", c)
+			c.buffer <- chunk.Data
+		}
 		if chunk.End {
-			// inform clients this is the last chunk so they know not to tail
+			// inform client this is the last chunk so they know not to tail
 			// logs anymore
 			close(c.buffer)
 		}
 	}
+	return nil
 }
 
 func (t *Server) removeClient(client *Client) {

@@ -14,10 +14,42 @@ func TestLog_PutChunk(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
-	run := createTestRun(t, db, ws, cv)
 
-	err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1"), Start: true})
-	require.NoError(t, err)
+	t.Run("first chunk", func(t *testing.T) {
+		run := createTestRun(t, db, ws, cv)
+
+		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1"), Start: true})
+		require.NoError(t, err)
+
+		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, otf.Chunk{Start: true, Data: []byte("chunk1")}, got)
+	})
+
+	t.Run("middle chunk", func(t *testing.T) {
+		run := createTestRun(t, db, ws, cv)
+
+		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1")})
+		require.NoError(t, err)
+
+		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, otf.Chunk{Data: []byte("chunk1")}, got)
+	})
+
+	t.Run("last chunk with no data", func(t *testing.T) {
+		run := createTestRun(t, db, ws, cv)
+
+		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{End: true})
+		require.NoError(t, err)
+
+		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, otf.Chunk{Data: []byte{}, End: true}, got)
+	})
 }
 
 func TestLog_GetChunk(t *testing.T) {

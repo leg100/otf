@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="{{ addHash "/static/css/main.css" }}">
   <script src="{{ addHash "/static/js/htmx.v1.8.0.min.js" }}"></script>
   <script src="{{ addHash "/static/js/htmx-sse.v1.8.0.js" }}"></script>
-  <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
+  <script src="https://unpkg.com/hyperscript.org@0.9.5"></script>
+  <script src="https://unpkg.com/hyperscript.org@0.9.5/dist/eventsource.min.js"></script>
+  <script src="{{ addHash "/static/js/main.js" }}"></script>
   <title>{{ template "title" }} | oTF</title>
 </head>
 <body>
@@ -68,6 +70,5 @@
     <a href="https://github.com/leg100/otf">{{ .Version }}</a>
   </footer>
 </body>
-<script src="{{ addHash "/static/js/main.js" }}"></script>
 </html>
 {{ end }}
