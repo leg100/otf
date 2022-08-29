@@ -106,7 +106,7 @@ func (e *Environment) Execute(phase Doer) (err error) {
 	var errors *multierror.Error
 
 	if err := phase.Do(e); err != nil {
-		errors = multierror.Append(errors, fmt.Errorf("executing phase: %w", err))
+		errors = multierror.Append(errors, err)
 	}
 
 	// Mark the logs as fully uploaded
