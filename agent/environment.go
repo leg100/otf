@@ -142,12 +142,12 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		Filters: filters.NewArgs(filters.Arg("reference", otf.DefaultTerraformImage)),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("listing images: %w", err)
 	}
 	if len(images) == 0 {
 		_, err = e.client.ImagePull(e.ctx, otf.DefaultTerraformImage, types.ImagePullOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("pulling image: %w", err)
 		}
 	}
 
@@ -180,12 +180,12 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		"",
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating container: %w", err)
 	}
 	e.containerID = resp.ID
 
 	if err := e.client.ContainerStart(e.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		return err
+		return fmt.Errorf("starting container: %w", err)
 	}
 
 	out, err := e.client.ContainerLogs(e.ctx, resp.ID, types.ContainerLogsOptions{
@@ -193,7 +193,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		Follow:     true,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("tailing container logs: %w", err)
 	}
 
 	// send both stdout and stderr to our environment output, and retain a copy
@@ -202,7 +202,7 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	errWriter := io.MultiWriter(e.out, stderr)
 	_, err = stdcopy.StdCopy(e.out, errWriter, out)
 	if err != nil {
-		return err
+		return fmt.Errorf("copying container logs: %w", err)
 	}
 
 	exit, errC := e.client.ContainerWait(e.ctx, resp.ID, container.WaitConditionNotRunning)
