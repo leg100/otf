@@ -35,6 +35,8 @@ func TestEnvironment_Cancel(t *testing.T) {
 }
 
 func TestEnvironment_Container(t *testing.T) {
+	t.Log("this test may take a while because it may download a docker image")
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -61,7 +63,7 @@ func TestEnvironment_Container(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tt.wantOut, out.String())
+			assert.Contains(t, out.String(), tt.wantOut)
 		})
 	}
 }

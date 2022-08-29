@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/fatih/color"
 	"github.com/go-logr/logr"
@@ -145,9 +146,16 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		return fmt.Errorf("listing images: %w", err)
 	}
 	if len(images) == 0 {
-		_, err = e.client.ImagePull(e.ctx, otf.DefaultTerraformImage, types.ImagePullOptions{})
+		// No image found; pull it
+		resp, err := e.client.ImagePull(e.ctx, otf.DefaultTerraformImage, types.ImagePullOptions{})
 		if err != nil {
 			return fmt.Errorf("pulling image: %w", err)
+		}
+		defer resp.Close()
+		// Relay download progress to the env output
+		err = jsonmessage.DisplayJSONMessagesStream(resp, e.out, 0, false, nil)
+		if err != nil {
+			return fmt.Errorf("displaying image pull output: %w", err)
 		}
 	}
 

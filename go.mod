@@ -28,6 +28,7 @@ require (
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/mattn/go-isatty v0.0.14
+	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/r3labs/sse/v2 v2.8.1
 	github.com/rs/zerolog v1.23.0
@@ -39,6 +40,7 @@ require (
 )
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
