@@ -3,19 +3,29 @@ package agent
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/mount"
+	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/fatih/color"
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
 )
 
-// Environment is an implementation of an execution environment
-var _ otf.Environment = (*Environment)(nil)
+var (
+	// Environment is an implementation of an execution environment
+	_ otf.Environment = (*Environment)(nil)
+
+	ErrNonZeroExitCode = errors.New("non-zero exit code")
+)
 
 // Environment provides an execution environment for a run, providing a working
 // directory, services, capturing logs etc.
@@ -33,8 +43,11 @@ type Environment struct {
 	// Cancel context func for currently running func
 	cancel context.CancelFunc
 
-	// Current process
-	proc *os.Process
+	// Docker client for talking to server API
+	client *dockerclient.Client
+
+	// ID of currently running container.
+	containerID string
 
 	// CLI process output is written to this
 	out io.WriteCloser
@@ -49,7 +62,7 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	id string,
+	runID string,
 	phase otf.PhaseType,
 	ctx context.Context,
 	environmentVariables []string) (*Environment, error) {
@@ -60,13 +73,19 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         id,
+		ID:         runID,
 		Phase:      phase,
 		Logger:     logger,
 		LogService: app,
 	}
 
-	// Create and store cancel func so func's context can be canceled
+	client, err := dockerclient.NewClientWithOpts(
+		dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+
+	// create cancel func so that blocking tasks can be canceled
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &Environment{
@@ -75,6 +94,7 @@ func NewEnvironment(
 		out:                  out,
 		path:                 path,
 		environmentVariables: environmentVariables,
+		client:               client,
 		cancel:               cancel,
 		ctx:                  ctx,
 	}, nil
@@ -105,11 +125,11 @@ func (e *Environment) Path() string {
 // or not. Performed on a best-effort basis - the func or process may have
 // finished before they are cancelled, in which case only the next func or
 // process will be stopped from executing.
-func (e *Environment) Cancel(force bool) {
+func (e *Environment) Cancel(force bool) error {
 	e.canceled = true
 
-	e.cancelCLI(force)
 	e.cancelFunc(force)
+	return e.cancelCLI(force)
 }
 
 // RunCLI executes a CLI process in the executor.
@@ -118,27 +138,86 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		return fmt.Errorf("execution canceled")
 	}
 
-	cmd := exec.Command(name, args...)
-	cmd.Dir = e.path
-	cmd.Stdout = e.out
-	cmd.Env = e.environmentVariables
+	images, err := e.client.ImageList(e.ctx, types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", otf.DefaultTerraformImage)),
+	})
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		_, err = e.client.ImagePull(e.ctx, otf.DefaultTerraformImage, types.ImagePullOptions{})
+		if err != nil {
+			return err
+		}
+	}
 
+	resp, err := e.client.ContainerCreate(
+		e.ctx,
+		&container.Config{
+			Entrypoint: []string{name},
+			Image:      otf.DefaultTerraformImage,
+			Cmd:        args,
+			Env:        e.environmentVariables,
+			Tty:        false,
+			WorkingDir: "/workspace",
+		},
+		&container.HostConfig{
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: e.path,
+					Target: "/workspace",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: PluginCacheDir,
+					Target: PluginCacheDir,
+				},
+			},
+		},
+		nil,
+		nil,
+		"",
+	)
+	if err != nil {
+		return err
+	}
+	e.containerID = resp.ID
+
+	if err := e.client.ContainerStart(e.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+
+	out, err := e.client.ContainerLogs(e.ctx, resp.ID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		Follow:     true,
+	})
+	if err != nil {
+		return err
+	}
+
+	// send both stdout and stderr to our environment output, and retain a copy
+	// of stderr for logging alongside any error
 	stderr := new(bytes.Buffer)
 	errWriter := io.MultiWriter(e.out, stderr)
-	cmd.Stderr = errWriter
-
-	if err := cmd.Start(); err != nil {
-		e.Error(err, "starting command", "stderr", stderr.String(), "path", e.path)
+	_, err = stdcopy.StdCopy(e.out, errWriter, out)
+	if err != nil {
 		return err
 	}
-	// store process so that it can be canceled
-	e.proc = cmd.Process
 
-	if err := cmd.Wait(); err != nil {
-		e.Error(err, "running command", "stderr", stderr.String(), "path", e.path)
-		return err
+	exit, errC := e.client.ContainerWait(e.ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errC:
+		if err != nil {
+			return fmt.Errorf("waiting for container: %w", err)
+		}
+	case code := <-exit:
+		if code.StatusCode != 0 {
+			err := fmt.Errorf("%w: %d", ErrNonZeroExitCode, code.StatusCode)
+			e.Error(err, "", "code", code.StatusCode, "stderr", stderr.String())
+			return err
+		}
 	}
-	e.V(2).Info("ran command", "name", name, "args", args, "path", e.path)
 
 	return nil
 }
@@ -169,14 +248,11 @@ func (e *Environment) printRedErrorMessage(err error) {
 	fmt.Fprintln(e.out)
 }
 
-func (e *Environment) cancelCLI(force bool) {
-	if e.proc == nil {
-		return
-	}
+func (e *Environment) cancelCLI(force bool) error {
 	if force {
-		e.proc.Signal(os.Kill)
+		return e.client.ContainerKill(context.Background(), e.containerID, "KILL")
 	} else {
-		e.proc.Signal(os.Interrupt)
+		return e.client.ContainerKill(context.Background(), e.containerID, "INT")
 	}
 }
 

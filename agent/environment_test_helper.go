@@ -1,6 +1,10 @@
 package agent
 
-import "github.com/leg100/otf"
+import (
+	"bytes"
+
+	"github.com/leg100/otf"
+)
 
 type fakeJob struct {
 	cmd  string
@@ -19,5 +23,17 @@ func (discard) Write(p []byte) (int, error) {
 }
 
 func (discard) Close() error {
+	return nil
+}
+
+type fakeWriteCloser struct {
+	*bytes.Buffer
+}
+
+func (f *fakeWriteCloser) Write(p []byte) (int, error) {
+	return f.Buffer.Write(p)
+}
+
+func (*fakeWriteCloser) Close() error {
 	return nil
 }
