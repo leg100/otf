@@ -101,17 +101,17 @@ function watchRunUpdates(path, stream, run) {
     const url = `${path}?stream=${stream}&run-id=${run}`;
     var source = new EventSource(url);
 
-    source.addEventListener("run-status-update", (e) => {
+    source.addEventListener("run_status_update", (e) => {
         const obj = JSON.parse(e.data);
 
-        const runStatus = document.getElementById(obj.id + '-status-');
-        elem.outerHTML = obj['run-status']
+        const runStatus = document.getElementById(obj.id + '-status');
+        runStatus.outerHTML = obj['run-status']
 
         const planStatus = document.getElementById('plan-status');
-        elem.outerHTML = obj['plan-status']
+        planStatus.outerHTML = obj['plan-status']
 
         const applyStatus = document.getElementById('apply-status');
-        elem.outerHTML = obj['apply-status']
+        applyStatus.outerHTML = obj['apply-status']
     });
 }
 
