@@ -55,6 +55,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	var finishOptions otf.PhaseFinishOptions
 
 	if err := env.Execute(run); err != nil {
+		w.Error(err, "execution failed")
 		finishOptions.Errored = true
 	}
 

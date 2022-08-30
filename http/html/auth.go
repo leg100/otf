@@ -130,6 +130,9 @@ func synchroniseOrganizations(
 	org, err := organizationService.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
 		Name: otf.String(user.Username()),
 	})
+	if err != nil {
+		return err
+	}
 	orgs = append(orgs, org)
 
 	// Sync memberships
