@@ -133,7 +133,7 @@ func (e *Environment) Cancel(force bool) error {
 	return e.cancelCLI(force)
 }
 
-// RunCLI executes a CLI process in the executor.
+// RunCLI executes a CLI process in a container
 func (e *Environment) RunCLI(name string, args ...string) error {
 	if e.canceled {
 		return fmt.Errorf("execution canceled")

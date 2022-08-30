@@ -22,7 +22,7 @@ go-tfe-tests: build
 
 .PHONY: e2e
 e2e: build
-	./hack/harness.bash go test -v ./e2e -failfast -timeout 30s
+	./hack/harness.bash go test -v ./e2e -failfast -timeout 60s
 
 .PHONY: unit
 unit:
