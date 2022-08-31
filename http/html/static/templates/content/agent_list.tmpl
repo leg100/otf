@@ -1,0 +1,24 @@
+{{ template "layout" . }}
+
+{{ define "title" }}agents{{ end }}
+
+{{ define "container-header" }}agents{{ end }}
+
+{{ define "container-header-actions" }}
+  <form action="{{ newAgentPath .Content }}" method="GET">
+    <button type="submit">New Agent</button>
+  </form>
+{{ end }}
+
+{{ define "content" }}
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+      <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
+    </div>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}

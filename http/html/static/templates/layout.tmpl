@@ -40,17 +40,21 @@
   </header>
   <main>
   {{ block "container" . }}
-    <div class="content-header">
-      <div class="container-header-title">
-        <strong>{{ template "container-header" . }}</strong>
+    {{ block "content-header" . }}
+      <div class="content-header">
+        {{ block "container-header-container" . }}
+        <div class="container-header-title">
+          <strong>{{ block "container-header" . }}{{ end }}</strong>
+        </div>
+        {{ end }}
+        <div class="container-header-actions">
+          {{ block "container-header-actions" . }}{{ end }}
+        </div>
+        <ul class="container-header-links">
+          {{ block "container-header-links" . }}{{ end }}
+        </ul>
       </div>
-      <div class="container-header-actions">
-        {{ block "container-header-actions" . }}{{ end }}
-      </div>
-      <ul class="container-header-links">
-        {{ block "container-header-links" . }}{{ end }}
-      </ul>
-    </div>
+    {{ end }}
 
     {{ block "content-menu" . }}{{ end }}
 

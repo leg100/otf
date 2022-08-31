@@ -155,6 +155,14 @@ func cancelRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/cancel", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
+func listAgentPath(route organizationRoute) string {
+	return fmt.Sprintf("/organizations/%s/agents", route.OrganizationName())
+}
+
+func newAgentPath(route organizationRoute) string {
+	return fmt.Sprintf("/organizations/%snew", route.OrganizationName())
+}
+
 func addHelpersToFuncMap(m template.FuncMap) {
 	m["loginPath"] = loginPath
 	m["logoutPath"] = logoutPath
@@ -188,4 +196,6 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["tailRunPath"] = tailRunPath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
+	m["newAgentPath"] = newAgentPath
+	m["listAgentPath"] = listAgentPath
 }

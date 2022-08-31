@@ -43,6 +43,7 @@ type Application interface {
 	RunService
 	EventService
 	UserService
+	AgentTokenService
 }
 
 // DB provides access to oTF database

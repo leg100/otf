@@ -2,15 +2,17 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/leg100/otf"
 )
 
-// authToken checks the request has a valid api token
+// authTokenMiddleware checks the request has a valid api token
 type authTokenMiddleware struct {
-	svc       otf.UserService
+	otf.UserService
+	otf.AgentTokenStore
 	siteToken string
 }
 
@@ -40,7 +42,7 @@ func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 	})
 }
 
-func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (*otf.User, error) {
+func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Subject, error) {
 	// check if site admin token
 	if m.siteToken != "" {
 		if m.siteToken == token {
@@ -49,5 +51,16 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (*otf.U
 	}
 
 	// check if user token
-	return m.svc.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
+	user, err := m.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
+	if err == nil {
+		return user, nil
+	}
+
+	// check if agent token
+	agentToken, err := m.GetAgentToken(ctx, token)
+	if err == nil {
+		return agentToken, nil
+	}
+
+	return nil, fmt.Errorf("token is invalid")
 }
