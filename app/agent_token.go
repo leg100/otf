@@ -29,14 +29,16 @@ func (a *Application) ListAgentTokens(ctx context.Context, organizationName stri
 	return tokens, nil
 }
 
-func (a *Application) GetAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
-	token, err := a.db.GetAgentToken(ctx, id)
+func (a *Application) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+	at, err := a.db.GetAgentToken(ctx, token)
 	if err != nil {
-		a.Error(err, "retrieving agent token", "id", id)
+		// we can't reveal any info because all we have is the
+		// authentication token which is sensitive.
+		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
 	}
-	a.V(0).Info("retrieved agent token", "organization", token.OrganizationName(), "id", token.ID())
-	return token, nil
+	a.V(0).Info("retrieved agent token", "organization", at.OrganizationName(), "id", at.ID())
+	return at, nil
 }
 
 func (a *Application) DeleteAgentToken(ctx context.Context, id string) error {

@@ -21,3 +21,20 @@ func (svc *fakeUserService) GetUser(ctx context.Context, spec otf.UserSpec) (*ot
 	}
 	return nil, nil
 }
+
+type fakeAgentTokenService struct {
+	token string
+	otf.AgentTokenService
+}
+
+func (f *fakeAgentTokenService) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+
+	if token != f.token {
+		return nil, otf.ErrResourceNotFound
+	}
+
+	return otf.NewAgentToken(otf.AgentTokenCreateOptions{
+		OrganizationName: "fake-org",
+		Description:      "fake token",
+	})
+}

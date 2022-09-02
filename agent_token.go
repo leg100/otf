@@ -81,15 +81,19 @@ func UnmarshalAgentTokenDBResult(row AgentTokenRow) *AgentToken {
 // AgentTokenService provides access to agent tokens
 type AgentTokenService interface {
 	CreateAgentToken(ctx context.Context, opts AgentTokenCreateOptions) (*AgentToken, error)
-	GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	// GetAgentToken retrieves agent token using its cryptographic
+	// authentication token.
+	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
 	DeleteAgentToken(ctx context.Context, id string) error
 }
 
 // AgentTokenStore persists agent authentication tokens.
 type AgentTokenStore interface {
-	CreateAgentToken(ctx context.Context, token *AgentToken) error
-	GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	CreateAgentToken(ctx context.Context, at *AgentToken) error
+	// GetAgentToken retrieves agent token using its cryptographic
+	// authentication token.
+	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
 	DeleteAgentToken(ctx context.Context, id string) error
 }

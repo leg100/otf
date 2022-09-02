@@ -14,8 +14,9 @@ func Test_AuthMiddleware(t *testing.T) {
 		// implicitly respond with 200 OK
 	}
 	mw := (&authTokenMiddleware{
-		UserService: &fakeUserService{token: "validUserToken"},
-		siteToken:   "validSiteToken",
+		UserService:       &fakeUserService{token: "validUserToken"},
+		AgentTokenService: &fakeAgentTokenService{token: "validAgentToken"},
+		siteToken:         "validSiteToken",
 	}).handler(http.HandlerFunc(upstream))
 
 	tests := []struct {
@@ -32,6 +33,11 @@ func Test_AuthMiddleware(t *testing.T) {
 		{
 			name:  "valid site token",
 			token: otf.String("validSiteToken"),
+			want:  http.StatusOK,
+		},
+		{
+			name:  "valid agent token",
+			token: otf.String("validAgentToken"),
 			want:  http.StatusOK,
 		},
 		{
