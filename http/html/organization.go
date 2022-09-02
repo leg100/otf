@@ -37,12 +37,7 @@ func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request
 	app.render("organization_list.tmpl", w, r, organizationList{organizations, opts})
 }
 
-// Get lists the workspaces for the org.
 func (app *Application) getOrganization(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, listWorkspacePath(organizationRequest{r}), http.StatusFound)
-}
-
-func (app *Application) getOrganizationOverview(w http.ResponseWriter, r *http.Request) {
 	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

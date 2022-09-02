@@ -8,15 +8,27 @@ import (
 )
 
 // CreateAgentToken inserts an agent token, associating it with an organization
-func (db *DB) CreateAgentToken(ctx context.Context, token *otf.Token) error {
-	_, err := db.InsertToken(ctx, pggen.InsertTokenParams{
-		TokenID:     String(token.ID()),
-		Token:       String(token.Token()),
-		Description: String(token.Description()),
-		UserID:      String(token.UserID()),
-		CreatedAt:   Timestamptz(token.CreatedAt()),
+func (db *DB) CreateAgentToken(ctx context.Context, token *otf.AgentToken) error {
+	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
+		TokenID:          String(token.ID()),
+		Token:            String(token.Token()),
+		Description:      String(token.Description()),
+		OrganizationName: String(token.OrganizationName()),
+		CreatedAt:        Timestamptz(token.CreatedAt()),
 	})
 	return err
+}
+
+func (db *DB) ListAgentTokens(ctx context.Context, organizationName string) ([]*otf.AgentToken, error) {
+	rows, err := db.FindAgentTokens(ctx, String(organizationName))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	var unmarshalled []*otf.AgentToken
+	for _, r := range rows {
+		unmarshalled = append(unmarshalled, otf.UnmarshalAgentTokenDBResult(otf.AgentTokenRow(r)))
+	}
+	return unmarshalled, nil
 }
 
 func (db *DB) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
@@ -24,12 +36,12 @@ func (db *DB) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken,
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalAgentTokenDBResult(r)
+	return otf.UnmarshalAgentTokenDBResult(otf.AgentTokenRow(r)), nil
 }
 
 // DeleteAgentToken deletes an agent token.
 func (db *DB) DeleteAgentToken(ctx context.Context, id string) error {
-	_, err := db.DeleteTokenByID(ctx, String(id))
+	_, err := db.DeleteAgentTokenByID(ctx, String(id))
 	if err != nil {
 		return databaseError(err)
 	}

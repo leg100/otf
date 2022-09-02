@@ -15,29 +15,36 @@ import (
 )
 
 func TestApp(t *testing.T) {
-	// setup org
+	// construct fakes
 	fakeOrganization, err := otf.NewOrganization(otf.OrganizationCreateOptions{
 		Name: otf.String("org-fake"),
 	})
 	require.NoError(t, err)
-	// setup workspaces
+
 	fakeWorkspace, err := otf.NewWorkspace(fakeOrganization, otf.WorkspaceCreateOptions{
 		Name:        "ws-fake",
 		LatestRunID: otf.String("run-123"),
 	})
 	require.NoError(t, err)
-	// setup configuration version
+
 	fakeCV, err := otf.NewConfigurationVersion(fakeWorkspace.ID(), otf.ConfigurationVersionCreateOptions{})
 	require.NoError(t, err)
-	// setup run
+
 	fakeRun := otf.NewRun(fakeCV, fakeWorkspace, otf.RunCreateOptions{})
 	require.NoError(t, err)
-	// setup user
+
 	fakeUser := otf.NewUser("fake")
 	session, err := fakeUser.AttachNewSession(&otf.SessionData{Address: "127.0.0.1"})
 	require.NoError(t, err)
 	token := session.Token
-	// setup services
+
+	fakeAgentToken, err := otf.NewAgentToken(otf.AgentTokenCreateOptions{
+		Description:      "fake-token",
+		OrganizationName: "org-fake",
+	})
+	require.NoError(t, err)
+
+	// construct services
 	app := &fakeApp{
 		fakeUserService: &fakeUserService{
 			fakeUser: fakeUser,
@@ -50,6 +57,9 @@ func TestApp(t *testing.T) {
 		},
 		fakeRunService: &fakeRunService{
 			fakeRun: fakeRun,
+		},
+		fakeAgentTokenService: &fakeAgentTokenService{
+			fakeAgentToken: fakeAgentToken,
 		},
 	}
 	// Add web app routes.
@@ -77,9 +87,8 @@ func TestApp(t *testing.T) {
 			path:   "/organizations",
 		},
 		{
-			method:   "GET",
-			path:     "/organizations/org-fake",
-			redirect: "/organizations/org-fake/workspaces",
+			method: "GET",
+			path:   "/organizations/org-fake",
 		},
 		{
 			method: "GET",
@@ -150,9 +159,33 @@ func TestApp(t *testing.T) {
 			},
 			redirect: "/profile/tokens",
 		},
+		{
+			method: "GET",
+			path:   "/organizations/fake-org/agent-tokens",
+		},
+		{
+			method: "GET",
+			path:   "/organizations/fake-org/agent-tokens/new",
+		},
+		{
+			method: "POST",
+			path:   "/organizations/fake-org/agent-tokens/create",
+			form: url.Values{
+				"description": []string{"abcdef"},
+			},
+			redirect: "/organizations/fake-org/agent-tokens",
+		},
+		{
+			method: "POST",
+			path:   "/organizations/fake-org/agent-tokens/delete",
+			form: url.Values{
+				"id": []string{"ut-fake"},
+			},
+			redirect: "/organizations/fake-org/agent-tokens",
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
 			// make request
 			var reader io.Reader
 			if tt.method == "POST" {

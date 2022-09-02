@@ -5,54 +5,91 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/jackc/pgtype"
 )
 
 // AgentToken is an authentication token for an agent.
 type AgentToken struct {
-	id        string
-	createdAt time.Time
-	token     string
-	// Token belongs to an organization
-	organizationID string
+	id               string
+	createdAt        time.Time
+	token            string
+	description      string
+	organizationName string
 }
 
-func (t *AgentToken) ID() string             { return t.id }
-func (t *AgentToken) Token() string          { return t.token }
-func (t *AgentToken) CreatedAt() time.Time   { return t.createdAt }
-func (t *AgentToken) OrganizationID() string { return t.organizationID }
+func (t *AgentToken) ID() string               { return t.id }
+func (t *AgentToken) String() string           { return t.id }
+func (t *AgentToken) Token() string            { return t.token }
+func (t *AgentToken) CreatedAt() time.Time     { return t.createdAt }
+func (t *AgentToken) Description() string      { return t.description }
+func (t *AgentToken) OrganizationName() string { return t.organizationName }
 
-// AgentTokenService shares same method signatures as AgentTokenStore
-type AgentTokenService AgentTokenStore
-
-// AgentTokenStore persists agent authentication tokens.
-type AgentTokenStore interface {
-	CreateAgentToken(ctx context.Context, token *Token) error
-	GetAgentToken(ctx context.Context, id string) (*Token, error)
-	DeleteAgentToken(ctx context.Context, id string) error
+// CanAccess implements the Subject interface - an agent can only acccess its
+// organization resources.
+func (t *AgentToken) CanAccess(organizationName *string) bool {
+	if organizationName == nil {
+		return false
+	}
+	return t.organizationName == *organizationName
 }
 
-func NewAgentToken(organizationID string) (*AgentToken, error) {
+type AgentTokenCreateOptions struct {
+	OrganizationName string
+	Description      string
+}
+
+func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
+	if opts.OrganizationName == "" {
+		return nil, fmt.Errorf("organization name cannot be an empty string")
+	}
+	if opts.Description == "" {
+		return nil, fmt.Errorf("description cannot be an empty string")
+	}
 	t, err := GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
 	token := AgentToken{
-		id:             NewID("at"),
-		createdAt:      CurrentTimestamp(),
-		token:          t,
-		organizationID: organizationID,
+		id:               NewID("at"),
+		createdAt:        CurrentTimestamp(),
+		token:            t,
+		description:      opts.Description,
+		organizationName: opts.OrganizationName,
 	}
 	return &token, nil
 }
 
+type AgentTokenRow struct {
+	TokenID          pgtype.Text        `json:"token_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Description      pgtype.Text        `json:"description"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
 // UnmarshalAgentTokenDBResult unmarshals a row from the database.
-func UnmarshalAgentTokenDBResult(typ pggen.FindAgentTokenRow) (*AgentToken, error) {
-	token := AgentToken{
-		id:             typ.TokenID.String,
-		createdAt:      typ.CreatedAt.Time,
-		token:          typ.Token.String,
-		organizationID: typ.OrganizationID.String,
+func UnmarshalAgentTokenDBResult(row AgentTokenRow) *AgentToken {
+	return &AgentToken{
+		id:               row.TokenID.String,
+		createdAt:        row.CreatedAt.Time,
+		token:            row.Token.String,
+		description:      row.Description.String,
+		organizationName: row.OrganizationName.String,
 	}
-	return &token, nil
+}
+
+// AgentTokenService provides access to agent tokens
+type AgentTokenService interface {
+	CreateAgentToken(ctx context.Context, opts AgentTokenCreateOptions) (*AgentToken, error)
+	GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
+	DeleteAgentToken(ctx context.Context, id string) error
+}
+
+// AgentTokenStore persists agent authentication tokens.
+type AgentTokenStore interface {
+	CreateAgentToken(ctx context.Context, token *AgentToken) error
+	GetAgentToken(ctx context.Context, id string) (*AgentToken, error)
+	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
+	DeleteAgentToken(ctx context.Context, id string) error
 }

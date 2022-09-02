@@ -13,6 +13,7 @@ type fakeApp struct {
 	*fakeWorkspaceService
 	*fakeRunService
 	*fakeUserService
+	*fakeAgentTokenService
 
 	// TODO: stubbed until tests are implemented
 	otf.StateVersionService
@@ -93,4 +94,25 @@ func (u *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) 
 
 func (u *fakeRunService) GetChunk(context.Context, string, otf.PhaseType, otf.GetChunkOptions) (otf.Chunk, error) {
 	return otf.Chunk{Data: []byte("fake-logs")}, nil
+}
+
+type fakeAgentTokenService struct {
+	fakeAgentToken *otf.AgentToken
+	otf.AgentTokenService
+}
+
+func (f *fakeAgentTokenService) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+	return otf.NewAgentToken(opts)
+}
+
+func (f *fakeAgentTokenService) GetAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
+	return f.fakeAgentToken, nil
+}
+
+func (f *fakeAgentTokenService) ListAgentTokens(ctx context.Context, _ string) ([]*otf.AgentToken, error) {
+	return []*otf.AgentToken{f.fakeAgentToken}, nil
+}
+
+func (f *fakeAgentTokenService) DeleteAgentToken(ctx context.Context, id string) error {
+	return nil
 }

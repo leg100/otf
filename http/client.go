@@ -49,6 +49,7 @@ type client struct {
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService
+	otf.AgentTokenService
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {

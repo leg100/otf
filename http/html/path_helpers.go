@@ -63,16 +63,28 @@ func createTokenPath() string {
 	return "/profile/tokens/create"
 }
 
+func listAgentTokenPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "agent-tokens")
+}
+
+func deleteAgentTokenPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "agent-tokens", "delete")
+}
+
+func createAgentTokenPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "agent-tokens", "create")
+}
+
+func newAgentTokenPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "agent-tokens", "new")
+}
+
 func listOrganizationPath() string {
 	return "/organizations"
 }
 
 func getOrganizationPath(name organizationRoute) string {
 	return fmt.Sprintf("/organizations/%s", name.OrganizationName())
-}
-
-func getOrganizationOverviewPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/overview", name.OrganizationName())
 }
 
 func editOrganizationPath(name organizationRoute) string {
@@ -155,14 +167,6 @@ func cancelRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/cancel", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
-func listAgentPath(route organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/agents", route.OrganizationName())
-}
-
-func newAgentPath(route organizationRoute) string {
-	return fmt.Sprintf("/organizations/%snew", route.OrganizationName())
-}
-
 func addHelpersToFuncMap(m template.FuncMap) {
 	m["loginPath"] = loginPath
 	m["logoutPath"] = logoutPath
@@ -175,7 +179,6 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["createTokenPath"] = createTokenPath
 	m["listOrganizationPath"] = listOrganizationPath
 	m["getOrganizationPath"] = getOrganizationPath
-	m["getOrganizationOverviewPath"] = getOrganizationOverviewPath
 	m["editOrganizationPath"] = editOrganizationPath
 	m["updateOrganizationPath"] = updateOrganizationPath
 	m["deleteOrganizationPath"] = deleteOrganizationPath
@@ -196,6 +199,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["tailRunPath"] = tailRunPath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
-	m["newAgentPath"] = newAgentPath
-	m["listAgentPath"] = listAgentPath
+	m["listAgentTokenPath"] = listAgentTokenPath
+	m["deleteAgentTokenPath"] = deleteAgentTokenPath
+	m["createAgentTokenPath"] = createAgentTokenPath
+	m["newAgentTokenPath"] = newAgentTokenPath
 }

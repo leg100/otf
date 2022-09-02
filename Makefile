@@ -98,4 +98,9 @@ sql:
 # Migrate SQL schema
 .PHONY: migrate
 migrate:
-	GOOSE_DRIVER=postgres goose -v -dir ./sql/migrations up
+	GOOSE_DRIVER=postgres goose -dir ./sql/migrations up
+
+# Redo SQL schema migration
+.PHONY: migrate-redo
+migrate-redo:
+	GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo

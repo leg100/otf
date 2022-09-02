@@ -12,7 +12,7 @@ import (
 // authTokenMiddleware checks the request has a valid api token
 type authTokenMiddleware struct {
 	otf.UserService
-	otf.AgentTokenStore
+	otf.AgentTokenService
 	siteToken string
 }
 
@@ -62,5 +62,5 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Su
 		return agentToken, nil
 	}
 
-	return nil, fmt.Errorf("token is invalid")
+	return nil, fmt.Errorf("invalid token")
 }

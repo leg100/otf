@@ -60,6 +60,7 @@ type DB interface {
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore
+	AgentTokenStore
 }
 
 // Identity is an identifiable oTF entity.
