@@ -81,7 +81,7 @@ func UnmarshalAgentTokenDBResult(row AgentTokenRow) *AgentToken {
 // AgentTokenService provides access to agent tokens
 type AgentTokenService interface {
 	CreateAgentToken(ctx context.Context, opts AgentTokenCreateOptions) (*AgentToken, error)
-	// GetAgentToken retrieves agent token using its cryptographic
+	// GetAgentToken retrieves AgentToken using its cryptographic
 	// authentication token.
 	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
