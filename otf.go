@@ -43,6 +43,7 @@ type Application interface {
 	RunService
 	EventService
 	UserService
+	AgentTokenService
 }
 
 // DB provides access to oTF database
@@ -59,6 +60,7 @@ type DB interface {
 	TokenStore
 	ConfigurationVersionStore
 	ChunkStore
+	AgentTokenStore
 }
 
 // Identity is an identifiable oTF entity.

@@ -397,7 +397,7 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 	return item, nil
 }
 
-const findUserByAuthenticationTokenSQL = `select u.*,
+const findUserByAuthenticationTokenSQL = `SELECT u.*,
     (
         select array_remove(array_agg(s), null)
         from sessions s
@@ -415,7 +415,7 @@ const findUserByAuthenticationTokenSQL = `select u.*,
         left join organization_memberships om using (organization_id)
         where om.user_id = u.user_id
     ) as organizations
-from users u
+FROM users u
 LEFT JOIN tokens t ON u.user_id = t.user_id
 WHERE t.token = $1
 GROUP BY u.user_id

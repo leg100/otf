@@ -94,3 +94,13 @@ sql:
 		--acronym json
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen
+
+# Migrate SQL schema
+.PHONY: migrate
+migrate:
+	GOOSE_DRIVER=postgres goose -dir ./sql/migrations up
+
+# Redo SQL schema migration
+.PHONY: migrate-redo
+migrate-redo:
+	GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo

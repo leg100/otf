@@ -97,9 +97,13 @@ func (app *Application) addRoutes(r *Router) {
 		r.GET("/profile/tokens/new", app.newTokenHandler)
 		r.PST("/profile/tokens/create", app.createTokenHandler)
 
+		r.GET("/organizations/{organization_name}/agent-tokens", app.listAgentTokens)
+		r.PST("/organizations/{organization_name}/agent-tokens/delete", app.deleteAgentToken)
+		r.PST("/organizations/{organization_name}/agent-tokens/create", app.createAgentToken)
+		r.GET("/organizations/{organization_name}/agent-tokens/new", app.newAgentToken)
+
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/{organization_name}", app.getOrganization)
-		r.GET("/organizations/{organization_name}/overview", app.getOrganizationOverview)
 		r.GET("/organizations/{organization_name}/edit", app.editOrganization)
 		r.PST("/organizations/{organization_name}/update", app.updateOrganization)
 		r.PST("/organizations/{organization_name}/delete", app.deleteOrganization)

@@ -97,7 +97,7 @@ GROUP BY u.user_id
 ;
 
 -- name: FindUserByAuthenticationToken :one
-select u.*,
+SELECT u.*,
     (
         select array_remove(array_agg(s), null)
         from sessions s
@@ -115,7 +115,7 @@ select u.*,
         left join organization_memberships om using (organization_id)
         where om.user_id = u.user_id
     ) as organizations
-from users u
+FROM users u
 LEFT JOIN tokens t ON u.user_id = t.user_id
 WHERE t.token = pggen.arg('token')
 GROUP BY u.user_id

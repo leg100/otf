@@ -2,12 +2,11 @@
 
 {{ define "title" }}{{ .Content.Name }}{{ end }}
 
-{{ define "sidebar" }}{{ template "organization_sidebar" . }}{{ end }}
+{{ define "content-header" }}{{ "" }}{{ end }}
 
 {{ define "content" }}
-  <p><strong>Name</strong></p>
-  <p>{{ .Content.Name }}</p>
-  <form class="main-form" action="{{ deleteOrganizationPath .Content }}" method="POST">
-      <button>Delete organization</button>
-  </form>
+  <div class="content-menu">
+    <span class="content-menu-item"><a href="{{ listWorkspacePath .Content }}">workspaces</a></span>
+    <span class="content-menu-item"><a href="{{ listAgentTokenPath .Content }}">agents</a></span>
+  </div>
 {{ end }}

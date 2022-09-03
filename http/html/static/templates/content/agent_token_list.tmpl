@@ -1,0 +1,31 @@
+{{ template "layout" . }}
+
+{{ define "title" }}agent tokens{{ end }}
+
+{{ define "container-header" }}agent tokens{{ end }}
+
+{{ define "container-header-actions" }}
+  <form action="{{ newAgentTokenPath .Content }}" method="GET">
+    <button type="submit">New Agent Token</button>
+  </form>
+{{ end }}
+
+{{ define "content" }}
+  {{ template "content-list" . }}
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+      <span class="status">{{ .Description }}</span>
+      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+    </div>
+    <div class="item-content">
+      {{ template "identifier" . }}
+      <form action="{{ deleteAgentTokenPath . }}" method="POST">
+        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        <input type="hidden" name="id" value="{{ .ID }}">
+      </form>
+    </div>
+  </div>
+{{ end }}

@@ -420,6 +420,11 @@ button.delete:hover {
   gap: 1em;
 }
 
+.content-menu-item {
+  font-size: 1.5em;
+  font-weight: bolder;
+}
+
 /* data is a nugget of factual information, e.g. terraform version */
 .data {
   font-family: var(--alt-font);

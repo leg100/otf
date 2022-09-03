@@ -28,7 +28,6 @@ require (
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/mattn/go-isatty v0.0.14
-	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/r3labs/sse/v2 v2.8.1
 	github.com/rs/zerolog v1.23.0
@@ -70,6 +69,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
