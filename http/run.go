@@ -1,7 +1,9 @@
 package http
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -11,6 +13,10 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/dto"
 )
+
+type uploadPlanFileOptions struct {
+	Format otf.PlanFormat `schema:"format,required"`
+}
 
 func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 	opts := dto.RunCreateOptions{}
@@ -158,6 +164,72 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, err)
 		return
 	} else if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request) {
+	opts := uploadPlanFileOptions{}
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	vars := mux.Vars(r)
+	file, err := s.Application.GetPlanFile(r.Context(), vars["run_id"], opts.Format)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if _, err := w.Write(file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
+	opts := uploadPlanFileOptions{}
+	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	vars := mux.Vars(r)
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	err := s.Application.UploadPlanFile(r.Context(), vars["run_id"], buf.Bytes(), opts.Format)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (s *Server) getLockFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	file, err := s.Application.GetLockFile(r.Context(), vars["run_id"])
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if _, err := w.Write(file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) uploadLockFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, r.Body); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	err := s.Application.UploadLockFile(r.Context(), vars["run_id"], buf.Bytes())
+	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
