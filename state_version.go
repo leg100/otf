@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/http/dto"
 	jsonapi "github.com/leg100/otf/http/dto"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
@@ -199,4 +200,11 @@ func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error)
 		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputDBType(r))
 	}
 	return &sv, nil
+}
+
+func UnmarshalStateVersionJSONAPI(w *dto.StateVersion) *StateVersion {
+	return &StateVersion{
+		id:        w.ID,
+		createdAt: w.CreatedAt,
+	}
 }
