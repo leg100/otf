@@ -706,8 +706,6 @@ type RunService interface {
 	GetRun(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
 	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-	// List and watch runs
-	ListWatchRun(ctx context.Context, opts RunListOptions) (<-chan *Run, error)
 	// Delete deletes a run with the given ID.
 	DeleteRun(ctx context.Context, id string) error
 	// EnqueuePlan enqueues a plan

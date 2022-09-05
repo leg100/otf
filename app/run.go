@@ -67,67 +67,6 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 	return rl, nil
 }
 
-// ListWatchRun lists runs and then watches for changes to runs. The run listing
-// is ordered by creation date, oldest first. Note: The options filter the list
-// but not the watch.
-func (a *Application) ListWatchRun(ctx context.Context, opts otf.RunListOptions) (<-chan *otf.Run, error) {
-	if !otf.CanAccess(ctx, opts.OrganizationName) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-	// retrieve existing runs, page by page
-	var existing []*otf.Run
-	for {
-		page, err := a.db.ListRuns(ctx, opts)
-		if err != nil {
-			return nil, err
-		}
-		existing = append(existing, page.Items...)
-		if page.NextPage() == nil {
-			break
-		}
-		opts.PageNumber = *page.NextPage()
-	}
-	// db returns runs ordered by creation date, newest first, but we want
-	// oldest first, so we reverse the order
-	var oldest []*otf.Run
-	for _, r := range existing {
-		oldest = append([]*otf.Run{r}, oldest...)
-	}
-	// send the retrieved runs down the channel to be returned to caller
-	spool := make(chan *otf.Run, len(oldest))
-	for _, r := range oldest {
-		spool <- r
-	}
-	// the same channel receives run events from here-in on
-	sub, err := a.Subscribe("run-listwatch")
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				// context cancelled; shutdown spooler
-				close(spool)
-				return
-			case event, ok := <-sub.C():
-				if !ok {
-					// sender closed channel; shutdown spooler
-					close(spool)
-					return
-				}
-				run, ok := event.Payload.(*otf.Run)
-				if !ok {
-					// skip non-run events
-					continue
-				}
-				spool <- run
-			}
-		}
-	}()
-	return spool, nil
-}
-
 // ApplyRun enqueues an apply for the run.
 func (a *Application) ApplyRun(ctx context.Context, runID string, opts otf.RunApplyOptions) error {
 	if !a.CanAccessRun(ctx, runID) {

@@ -76,51 +76,6 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 	return a.db.ListWorkspaces(ctx, opts)
 }
 
-// ListWatchWorkspace lists workspaces and then watches for changes to
-// workspaces. Note: The options filter the list but not the watch.
-func (a *Application) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
-	if !otf.CanAccess(ctx, opts.OrganizationName) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-
-	// retrieve workspaces from db
-	existing, err := a.db.ListWorkspaces(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	spool := make(chan *otf.Workspace, len(existing.Items))
-	for _, r := range existing.Items {
-		spool <- r
-	}
-	sub, err := a.Subscribe("workspace-listwatch")
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				// context cancelled; shutdown spooler
-				close(spool)
-				return
-			case event, ok := <-sub.C():
-				if !ok {
-					// sender closed channel; shutdown spooler
-					close(spool)
-					return
-				}
-				ws, ok := event.Payload.(*otf.Workspace)
-				if !ok {
-					// skip non-workspace events
-					continue
-				}
-				spool <- ws
-			}
-		}
-	}()
-	return spool, nil
-}
-
 func (a *Application) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if !a.CanAccessWorkspace(ctx, spec) {
 		return nil, otf.ErrAccessNotPermitted
@@ -251,51 +206,4 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 
 	a.V(1).Info("set latest run", "workspace", workspaceID, "run", runID)
 	return nil
-}
-
-// WatchWorkspace returns a stream of events for runs belonging to the specified workspace.
-func (a *Application) WatchWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
-	if !a.CanAccessWorkspace(ctx, spec) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-	sub, err := a.EventService.Subscribe("watch-ws-" + otf.GenerateRandomString(6))
-	if err != nil {
-		return nil, err
-	}
-	// we also return events relating to the latest run for a workspace
-	latest, err := a.latest.Watch(ctx, a.LookupWorkspaceID(spec))
-	if err != nil {
-		return nil, err
-	}
-	c := make(chan *otf.Event)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				sub.Close()
-				return
-			case event, ok := <-sub.C():
-				if !ok {
-					// sender closed channel
-					return
-				}
-				run, ok := event.Payload.(*otf.Run)
-				if !ok {
-					// skip non-run events
-					continue
-				}
-				if run.WorkspaceID() == a.LookupWorkspaceID(spec) {
-					c <- &event
-				}
-			case run, ok := <-latest:
-				if !ok {
-					// sender closed channel
-					return
-				}
-				c <- &otf.Event{Payload: run, Type: otf.EventLatestRunUpdate}
-			}
-		}
-	}()
-
-	return c, nil
 }

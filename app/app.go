@@ -90,7 +90,7 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		// make a copy of the app and assign a db tx wrapper
 		appTx := &Application{
-			EventService:     a.EventService,
+			PubSubService:    a.PubSubService,
 			Mapper:           a.Mapper,
 			cache:            a.cache,
 			Logger:           a.Logger,
