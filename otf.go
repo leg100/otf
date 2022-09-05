@@ -42,6 +42,7 @@ type Application interface {
 	EventService
 	UserService
 	AgentTokenService
+	LatestRunService
 }
 
 // DB provides access to oTF database

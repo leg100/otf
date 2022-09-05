@@ -116,10 +116,10 @@ function watchRunUpdates(path, stream, run) {
 }
 
 function watchWorkspaceUpdates(path, stream) {
-    const url = `${path}?stream=${stream}`;
+    const url = `${path}?stream=${stream}&latest=true`;
     var source = new EventSource(url);
 
-    source.addEventListener("run_latest_update", (e) => {
+    source.addEventListener("run_status_update", (e) => {
         const obj = JSON.parse(e.data);
 
         const latestRunElem = document.getElementById('latest-run');

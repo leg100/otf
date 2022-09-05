@@ -312,7 +312,6 @@ type WorkspaceService interface {
 
 	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
 	UpdateWorkspaceQueue(run *Run) error
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
 type WorkspaceStore interface {
@@ -327,13 +326,17 @@ type WorkspaceStore interface {
 	LatestRunSetter
 }
 
-type LatestRunSetter interface {
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
+// LatestRunService provides interaction with the 'latest' run for a workspace,
+// i.e. the current or most recently active, non-speculative, run.
+type LatestRunService interface {
+	LatestRunSetter
+	// GetLatestRun retrieves the ID of the latest run for a workspace.
+	GetLatestRun(ctx context.Context, workspaceID string) (string, bool)
 }
 
-type LatestRunManager interface {
-	Set(ctx context.Context, workspaceID string, runID string)
-	Watch(ctx context.Context, workspaceID string) (<-chan *Run, error)
+type LatestRunSetter interface {
+	// SetLatestRun sets the ID of the latest run for a workspace.
+	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

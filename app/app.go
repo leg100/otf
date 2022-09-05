@@ -25,8 +25,8 @@ type Application struct {
 	cache      otf.Cache
 	proxy      otf.ChunkStore
 	queues     *inmem.WorkspaceQueueManager
-	latest     *inmem.LatestRunManager
 	tailServer *tail.Server
+	latest     *inmem.LatestRunManager
 
 	*otf.RunFactory
 	*otf.WorkspaceFactory
@@ -55,7 +55,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	}
 
 	// Setup latest run manager
-	latest, err := inmem.NewLatestRunManager(app, app)
+	latest, err := inmem.NewLatestRunManager(app)
 	if err != nil {
 		return nil, err
 	}

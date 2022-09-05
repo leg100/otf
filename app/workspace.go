@@ -202,8 +202,15 @@ func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID strin
 	}
 
 	// Inform the latest run manager too so that it can notify clients of change
-	a.latest.Set(ctx, workspaceID, runID)
+	if err := a.latest.SetLatestRun(ctx, workspaceID, runID); err != nil {
+		return err
+	}
 
 	a.V(1).Info("set latest run", "workspace", workspaceID, "run", runID)
 	return nil
+}
+
+// GetLatestRun gets the latest run for a workspace.
+func (a *Application) GetLatestRun(ctx context.Context, workspaceID string) (string, bool) {
+	return a.latest.GetLatestRun(ctx, workspaceID)
 }
