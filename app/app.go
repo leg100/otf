@@ -25,31 +25,28 @@ type Application struct {
 	cache      otf.Cache
 	proxy      otf.ChunkStore
 	queues     *inmem.WorkspaceQueueManager
-	latest     *inmem.LatestRunManager
 	tailServer *tail.Server
+	latest     *inmem.LatestRunManager
 
 	*otf.RunFactory
 	*otf.WorkspaceFactory
 	*inmem.Mapper
-	otf.EventService
+	otf.PubSubService
 	logr.Logger
 }
 
 // NewApplication constructs an application, initialising various services and
 // daemons.
 func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
-	// Setup event broker
-	events := inmem.NewEventService(logger)
-
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
 	app := &Application{
-		EventService: events,
-		Mapper:       mapper,
-		cache:        cache,
-		db:           db,
-		Logger:       logger,
+		PubSubService: inmem.NewPubSub(logger),
+		Mapper:        mapper,
+		cache:         cache,
+		db:            db,
+		Logger:        logger,
 	}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{
@@ -58,7 +55,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	}
 
 	// Setup latest run manager
-	latest, err := inmem.NewLatestRunManager(app, app)
+	latest, err := inmem.NewLatestRunManager(app)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +90,7 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		// make a copy of the app and assign a db tx wrapper
 		appTx := &Application{
-			EventService:     a.EventService,
+			PubSubService:    a.PubSubService,
 			Mapper:           a.Mapper,
 			cache:            a.cache,
 			Logger:           a.Logger,

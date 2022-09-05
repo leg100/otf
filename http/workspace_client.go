@@ -153,10 +153,6 @@ func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ 
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) ListWatchWorkspace(ctx context.Context, opts otf.WorkspaceListOptions) (<-chan *otf.Workspace, error) {
-	return nil, fmt.Errorf("unimplemented")
-}
-
 func (c *client) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
@@ -167,10 +163,6 @@ func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
 
 func (c *client) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
 	return fmt.Errorf("unimplemented")
-}
-
-func (c *client) WatchWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (<-chan *otf.Event, error) {
-	return nil, fmt.Errorf("unimplemented")
 }
 
 // getWorkspacePath generates a URL path for a workspace according to whether
