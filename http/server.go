@@ -105,9 +105,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	r.GET("/healthz", GetHealthz)
 
-	// Websocket connections
-	s.registerEventRoutes(r)
-
 	r.GET("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
