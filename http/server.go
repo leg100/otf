@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
+	"github.com/r3labs/sse/v2"
 
 	"net"
 	"net/http"
@@ -58,6 +59,9 @@ type Server struct {
 	otf.Application
 
 	CacheService *bigcache.BigCache
+
+	// server-side-events server
+	eventsServer *sse.Server
 }
 
 // NewServer is the constructor for Server
@@ -68,6 +72,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 	}
+
+	// Setup SSE server
+	s.eventsServer = sse.New()
+	// we don't use last-event-item functionality so turn it off
+	s.eventsServer.AutoReplay = false
+	// encode payloads into base64 otherwise the JSON string payloads corrupt
+	// the SSE protocol
+	s.eventsServer.EncodeBase64 = true
 
 	// Validate SSL params
 	if cfg.SSL {
