@@ -42,7 +42,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	mapper := inmem.NewMapper()
 
 	app := &Application{
-		PubSubService: inmem.NewPubSub(logger),
+		PubSubService: inmem.NewPubSub(),
 		Mapper:        mapper,
 		cache:         cache,
 		db:            db,

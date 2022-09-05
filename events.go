@@ -38,7 +38,7 @@ type PubSubService interface {
 	// on Subscription. This seems like a cleaner solution with less cleanup
 	// because the caller in many cases is having itself to handle a canceled
 	// context from its parent caller and then call Close().
-	Subscribe(id string) (Subscription, error)
+	Subscribe(ctx context.Context) <-chan Event
 }
 
 // EventService allows interacting with events. Access is authenticated.
@@ -52,15 +52,6 @@ type EventService interface {
 	// ensure only events they are permitted to access are sent, otherwise Watch
 	// will deny access.
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
-}
-
-// Subscription represents a stream of events for a subscriber
-type Subscription interface {
-	// Event stream for all subscriber's event.
-	C() <-chan Event
-
-	// Closes the event stream channel and disconnects from the event service.
-	Close() error
 }
 
 // WatchOptions filter the events returned by the Watch endpoint. Either:
