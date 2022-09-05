@@ -19,7 +19,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 	}
 
 	// channel for relaying events from subscription to caller
-	ch := make(chan otf.Event, 0)
+	ch := make(chan otf.Event)
 
 	sub, err := a.Subscribe("watch-" + otf.GenerateRandomString(6))
 	if err != nil {

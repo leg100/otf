@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
@@ -189,21 +190,17 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	type watchOptions struct {
-		otf.WatchOptions
-		StreamID string  `schema:"stream,required"`
-		RunID    *string `schema:"run-id"`
-	}
-	opts := watchOptions{}
-	if err := decode.Route(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+	streamID := r.URL.Query().Get("stream")
+	if streamID == "" {
+		writeError(w, "missing required query parameter: stream", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	events, err := app.Watch(r.Context(), opts.WatchOptions)
+	runID := r.URL.Query().Get("run-id")
+
+	events, err := app.Watch(r.Context(), otf.WatchOptions{
+		WorkspaceName:    otf.String(mux.Vars(r)["workspace_name"]),
+		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -213,7 +210,10 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-r.Context().Done():
 				return
-			case event := <-events:
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
 				run, ok := event.Payload.(*otf.Run)
 				if !ok {
 					// skip non-run events
@@ -223,7 +223,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					// we never show speculative runs in Web UI
 					continue
 				}
-				if opts.RunID != nil && run.ID() != *opts.RunID {
+				if runID != "" && runID == run.ID() {
 					// skip events that don't match the client's optional run ID filter
 					continue
 				}
@@ -269,7 +269,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					app.Error(err, "marshalling watched run", "run", run.ID())
 					continue
 				}
-				app.Server.Publish(opts.StreamID, &sse.Event{
+				app.Server.Publish(streamID, &sse.Event{
 					Data:  js,
 					Event: []byte(event.Type),
 				})
