@@ -24,8 +24,6 @@ const (
 
 	// ChunkEndMarker is the special byte that suffixes the last chunk
 	ChunkEndMarker = byte(3)
-
-	DefaultTerraformImage = "hashicorp/terraform:" + DefaultTerraformVersion
 )
 
 // A regular expression used to validate common string ID patterns.

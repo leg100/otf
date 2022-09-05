@@ -4,7 +4,7 @@ import "sync"
 
 // Cancelable is something that is cancelable, either forcefully or gracefully.
 type Cancelable interface {
-	Cancel(force bool) error
+	Cancel(force bool)
 }
 
 // Terminator handles canceling items using their ID
