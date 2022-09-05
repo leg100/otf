@@ -93,6 +93,6 @@ func (f *fakeSchedulerApp) UnlockWorkspace(context.Context, WorkspaceSpec, Works
 	return nil, nil
 }
 
-func (f *fakeSchedulerApp) Subscribe(context.Context) <-chan Event {
-	return make(chan Event)
+func (f *fakeSchedulerApp) Watch(context.Context, WatchOptions) (<-chan Event, error) {
+	return make(chan Event), nil
 }

@@ -37,8 +37,6 @@ type PubSubService interface {
 
 // EventService allows interacting with events. Access is authenticated.
 type EventService interface {
-	// TODO: remove - this is not authenticated
-	PubSubService
 	// Watch provides access to a stream of events. The WatchOptions filters
 	// events. The caller must ensure WatchOptions are specified in accordance
 	// with their access, i.e. Watch is not clever enough to send all events the

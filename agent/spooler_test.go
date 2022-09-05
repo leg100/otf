@@ -16,7 +16,7 @@ func TestSpooler_New(t *testing.T) {
 
 	spooler, err := NewSpooler(
 		&testRunService{runs: []*otf.Run{want}},
-		&testSubscriber{},
+		&testWatcher{},
 		logr.Discard(),
 	)
 	require.NoError(t, err)
@@ -27,8 +27,8 @@ func TestSpooler_New(t *testing.T) {
 // TestSpooler_Start starts the spooler and immediately cancels it.
 func TestSpooler_Start(t *testing.T) {
 	spooler := &SpoolerDaemon{
-		Subscriber: &testSubscriber{},
-		Logger:     logr.Discard(),
+		Watcher: &testWatcher{},
+		Logger:  logr.Discard(),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,9 +63,9 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 	ch := make(chan otf.Event, 1)
 
 	spooler := &SpoolerDaemon{
-		queue:      make(chan *otf.Run, 1),
-		Subscriber: &testSubscriber{ch: ch},
-		Logger:     logr.Discard(),
+		queue:   make(chan *otf.Run, 1),
+		Watcher: &testWatcher{ch: ch},
+		Logger:  logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())
@@ -85,7 +85,7 @@ func TestSpooler_GetRunFromCancelation(t *testing.T) {
 
 	spooler := &SpoolerDaemon{
 		cancelations: make(chan Cancelation, 1),
-		Subscriber:   &testSubscriber{ch: ch},
+		Watcher:      &testWatcher{ch: ch},
 		Logger:       logr.Discard(),
 	}
 

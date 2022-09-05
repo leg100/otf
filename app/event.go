@@ -18,26 +18,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 		return nil, otf.ErrAccessNotPermitted
 	}
 
-	// channel for relaying events from subscription to caller
-	ch := make(chan otf.Event)
-
-	sub := a.Subscribe(ctx)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				close(ch)
-				return
-			case event, ok := <-sub:
-				if !ok {
-					close(ch)
-					return
-				}
-				ch <- event
-			}
-		}
-	}()
-	return ch, nil
+	return a.Subscribe(ctx), nil
 }
 
 func canAccessWatch(ctx context.Context, mapper *inmem.Mapper, opts otf.WatchOptions) (bool, error) {

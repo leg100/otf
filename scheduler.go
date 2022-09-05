@@ -44,7 +44,10 @@ func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Sc
 	}
 
 	// subscribe to updates to runs and workspace unlock events
-	sub := app.Subscribe(ctx)
+	sub, err := app.Watch(ctx, WatchOptions{})
+	if err != nil {
+		return nil, err
+	}
 
 	// feed in both existing runs and updates to the scheduler for processing
 	go func() {
