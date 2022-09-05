@@ -172,6 +172,9 @@ func ConvertID(id, resource string) string {
 	return resource + "-" + parts[1]
 }
 
+// AppUser identifies the otf app itself for purposes of authentication. Some
+// processes require more privileged access than the invoking user possesses, so
+// it is necessary to escalate privileges by "sudo'ing" to this user.
 type AppUser struct{}
 
 func (*AppUser) CanAccess(*string) bool { return true }

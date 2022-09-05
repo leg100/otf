@@ -31,25 +31,22 @@ type Application struct {
 	*otf.RunFactory
 	*otf.WorkspaceFactory
 	*inmem.Mapper
-	otf.EventService
+	otf.PubSubService
 	logr.Logger
 }
 
 // NewApplication constructs an application, initialising various services and
 // daemons.
 func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
-	// Setup event broker
-	events := inmem.NewEventService(logger)
-
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
 	app := &Application{
-		EventService: events,
-		Mapper:       mapper,
-		cache:        cache,
-		db:           db,
-		Logger:       logger,
+		PubSubService: inmem.NewPubSub(logger),
+		Mapper:        mapper,
+		cache:         cache,
+		db:            db,
+		Logger:        logger,
 	}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{

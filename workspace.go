@@ -305,8 +305,6 @@ type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	// List and watch workspaces
-	ListWatchWorkspace(ctx context.Context, opts WorkspaceListOptions) (<-chan *Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
 	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
@@ -314,10 +312,6 @@ type WorkspaceService interface {
 
 	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
 	UpdateWorkspaceQueue(run *Run) error
-	// WatchWorkspace returns a stream of events for runs belonging to the
-	// workspace
-	WatchWorkspace(ctx context.Context, spec WorkspaceSpec) (<-chan *Event, error)
-
 	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 

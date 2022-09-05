@@ -236,42 +236,6 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	return run, nil
 }
 
-// Watch watches for updates to the specified run
-func (a *Application) Watch(ctx context.Context, runID string) (<-chan *otf.Run, error) {
-	if !a.CanAccessRun(ctx, runID) {
-		return nil, otf.ErrAccessNotPermitted
-	}
-	sub, err := a.EventService.Subscribe("watch-run-" + otf.GenerateRandomString(6))
-	if err != nil {
-		return nil, err
-	}
-	c := make(chan *otf.Run)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				sub.Close()
-				return
-			case event, ok := <-sub.C():
-				if !ok {
-					// sender closed channel
-					return
-				}
-				run, ok := event.Payload.(*otf.Run)
-				if !ok {
-					// skip non-run events
-					continue
-				}
-				if run.ID() == runID {
-					c <- run
-				}
-			}
-		}
-	}()
-
-	return c, nil
-}
-
 // GetPlanFile returns the plan file for the run.
 func (a *Application) GetPlanFile(ctx context.Context, runID string, format otf.PlanFormat) ([]byte, error) {
 	if !a.CanAccessRun(ctx, runID) {

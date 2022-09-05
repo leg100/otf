@@ -189,20 +189,21 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	type watchOptions struct {
+		otf.WatchOptions
+		StreamID string  `schema:"stream,required"`
+		RunID    *string `schema:"run-id"`
+	}
+	opts := watchOptions{}
+	if err := decode.Route(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	opts := struct {
-		StreamID string  `schema:"stream,required"`
-		RunID    *string `schema:"run-id"`
-	}{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	events, err := app.WatchWorkspace(r.Context(), spec)
+	events, err := app.Watch(r.Context(), opts.WatchOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

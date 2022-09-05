@@ -209,6 +209,8 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 
 func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if spec.ID != nil {
+		// TODO: always include the organization regardless of whether caller
+		// specified it. The complexity isn't worth the performance saving.
 		result, err := db.FindWorkspaceByID(ctx, includeOrganization(spec.Include), String(*spec.ID))
 		if err != nil {
 			return nil, databaseError(err)
