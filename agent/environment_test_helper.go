@@ -1,10 +1,6 @@
 package agent
 
-import (
-	"bytes"
-
-	"github.com/leg100/otf"
-)
+import "github.com/leg100/otf"
 
 type fakeJob struct {
 	cmd  string
@@ -15,14 +11,13 @@ func (j *fakeJob) Do(e otf.Environment) error {
 	return e.RunCLI(j.cmd, j.args...)
 }
 
-type fakeWriteCloser struct {
-	*bytes.Buffer
+// discard is a no-op io.WriteCloser
+type discard struct{}
+
+func (discard) Write(p []byte) (int, error) {
+	return len(p), nil
 }
 
-func (f *fakeWriteCloser) Write(p []byte) (int, error) {
-	return f.Buffer.Write(p)
-}
-
-func (*fakeWriteCloser) Close() error {
+func (discard) Close() error {
 	return nil
 }

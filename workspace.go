@@ -305,8 +305,6 @@ type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
-	// List and watch workspaces
-	ListWatchWorkspace(ctx context.Context, opts WorkspaceListOptions) (<-chan *Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
 	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
@@ -314,11 +312,6 @@ type WorkspaceService interface {
 
 	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
 	UpdateWorkspaceQueue(run *Run) error
-	// WatchWorkspace returns a stream of events for runs belonging to the
-	// workspace
-	WatchWorkspace(ctx context.Context, spec WorkspaceSpec) (<-chan *Event, error)
-
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
 type WorkspaceStore interface {
@@ -333,13 +326,17 @@ type WorkspaceStore interface {
 	LatestRunSetter
 }
 
-type LatestRunSetter interface {
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
+// LatestRunService provides interaction with the 'latest' run for a workspace,
+// i.e. the current or most recently active, non-speculative, run.
+type LatestRunService interface {
+	LatestRunSetter
+	// GetLatestRun retrieves the ID of the latest run for a workspace.
+	GetLatestRun(ctx context.Context, workspaceID string) (string, bool)
 }
 
-type LatestRunManager interface {
-	Set(ctx context.Context, workspaceID string, runID string)
-	Watch(ctx context.Context, workspaceID string) (<-chan *Run, error)
+type LatestRunSetter interface {
+	// SetLatestRun sets the ID of the latest run for a workspace.
+	SetLatestRun(ctx context.Context, workspaceID, runID string) error
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

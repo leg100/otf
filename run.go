@@ -706,8 +706,6 @@ type RunService interface {
 	GetRun(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
 	ListRuns(ctx context.Context, opts RunListOptions) (*RunList, error)
-	// List and watch runs
-	ListWatchRun(ctx context.Context, opts RunListOptions) (<-chan *Run, error)
 	// Delete deletes a run with the given ID.
 	DeleteRun(ctx context.Context, id string) error
 	// EnqueuePlan enqueues a plan
@@ -732,8 +730,6 @@ type RunService interface {
 	GetLockFile(ctx context.Context, id string) ([]byte, error)
 	// UploadLockFile saves a run's lock file (.terraform.lock.hcl)
 	UploadLockFile(ctx context.Context, id string, lockFile []byte) error
-	// Watch for updates to the specified run
-	Watch(ctx context.Context, id string) (<-chan *Run, error)
 	// Read and write logs for run phases.
 	LogService
 	// Tail logs of a run phase

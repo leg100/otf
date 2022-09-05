@@ -7,26 +7,25 @@ import (
 	"github.com/leg100/otf"
 )
 
-// EventBufferSize is the buffer size of the channel for each subscription.
-const EventBufferSize = 16
+// SubBufferSize is the buffer size of the channel for each subscription.
+const SubBufferSize = 16
 
-var _ otf.EventService = (*EventService)(nil)
+var _ otf.PubSubService = (*PubSub)(nil)
 
-type EventService struct {
+type PubSub struct {
 	mu   sync.Mutex
 	subs map[string]*Subscription
 	logr.Logger
 }
 
-// NewEventService returns a new instance of EventService.
-func NewEventService(logger logr.Logger) *EventService {
-	return &EventService{
+func NewPubSub(logger logr.Logger) *PubSub {
+	return &PubSub{
 		subs:   make(map[string]*Subscription),
 		Logger: logger.WithValues("component", "event_service"),
 	}
 }
 
-func (e *EventService) Publish(event otf.Event) {
+func (e *PubSub) Publish(event otf.Event) {
 	for _, sub := range e.subs {
 		select {
 		case sub.c <- event:
@@ -36,11 +35,11 @@ func (e *EventService) Publish(event otf.Event) {
 	}
 }
 
-func (e *EventService) Subscribe(id string) (otf.Subscription, error) {
+func (e *PubSub) Subscribe(id string) (otf.Subscription, error) {
 	// Create new subscription
 	sub := &Subscription{
 		service: e,
-		c:       make(chan otf.Event, EventBufferSize),
+		c:       make(chan otf.Event, SubBufferSize),
 		id:      id,
 	}
 
@@ -54,7 +53,7 @@ func (e *EventService) Subscribe(id string) (otf.Subscription, error) {
 }
 
 // Unsubscribe disconnects sub from the service.
-func (e *EventService) Unsubscribe(sub *Subscription) {
+func (e *PubSub) Unsubscribe(sub *Subscription) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.unsubscribe(sub)
@@ -62,7 +61,7 @@ func (e *EventService) Unsubscribe(sub *Subscription) {
 	e.Info("deleted subscription", "subscriber", sub.id)
 }
 
-func (e *EventService) unsubscribe(sub *Subscription) {
+func (e *PubSub) unsubscribe(sub *Subscription) {
 	// Only close the underlying channel once. Otherwise Go will panic.
 	sub.once.Do(func() {
 		close(sub.c)
@@ -73,8 +72,8 @@ func (e *EventService) unsubscribe(sub *Subscription) {
 
 // Subscription represents a stream of events.
 type Subscription struct {
-	service *EventService // service subscription was created from
-	id      string        // Uniquely identifies subscription
+	service *PubSub // service subscription was created from
+	id      string  // Uniquely identifies subscription
 
 	c    chan otf.Event // channel of events
 	once sync.Once      // ensures c only closed once

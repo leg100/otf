@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
@@ -189,20 +190,16 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+	streamID := r.URL.Query().Get("stream")
+	if streamID == "" {
+		writeError(w, "missing required query parameter: stream", http.StatusUnprocessableEntity)
 		return
 	}
-	opts := struct {
-		StreamID string  `schema:"stream,required"`
-		RunID    *string `schema:"run-id"`
-	}{}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	events, err := app.WatchWorkspace(r.Context(), spec)
+
+	events, err := app.Watch(r.Context(), otf.WatchOptions{
+		WorkspaceName:    otf.String(mux.Vars(r)["workspace_name"]),
+		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -212,20 +209,51 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-r.Context().Done():
 				return
-			case event := <-events:
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
 				run, ok := event.Payload.(*otf.Run)
 				if !ok {
 					// skip non-run events
 					continue
 				}
-				if run.Speculative() {
-					// we never show speculative runs in Web UI
+
+				// Handle query parameters which filter run events: 'latest'
+				// specifies that the client is only interested in event
+				// concerning the latest run for the workspace; 'run-id' -
+				// mutually exclusive with 'latest' - specifies that that the
+				// client is only interested in events concerning the run with
+				// that ID, and that is permitted to include a run which is
+				// speculative (because web site shows speculative runs on the
+				// run page but no where else); and if neither of those are
+				// specified then events for all runs that are not speculative
+				// are relayed (e.g. for web page that shows list of runs).
+				if r.URL.Query().Get("latest") != "" {
+					latest, exists := app.GetLatestRun(r.Context(), run.WorkspaceID())
+					if !exists {
+						// There is no latest run for the workspace matching the
+						// workspace of the run in the event. This means all
+						// runs thus far have been speculative (which do not count) and
+						// that the event is for a speculative run too. In which
+						// case skip this event.
+						continue
+					}
+					if latest != run.ID() {
+						// skip: event is for a run which is not the latest
+						continue
+					}
+				} else if runID := r.URL.Query().Get("run-id"); runID != "" {
+					if runID != run.ID() {
+						// skip: event is for a run which does not match the
+						// filter
+						continue
+					}
+				} else if run.Speculative() {
+					// skip: event for speculative run
 					continue
 				}
-				if opts.RunID != nil && run.ID() != *opts.RunID {
-					// skip events that don't match the client's optional run ID filter
-					continue
-				}
+
 				// render HTML snippets and send as payload in SSE event
 				item := new(bytes.Buffer)
 				if err := app.renderTemplate("run_item.tmpl", item, run); err != nil {
@@ -268,7 +296,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					app.Error(err, "marshalling watched run", "run", run.ID())
 					continue
 				}
-				app.Server.Publish(opts.StreamID, &sse.Event{
+				app.Server.Publish(streamID, &sse.Event{
 					Data:  js,
 					Event: []byte(event.Type),
 				})
