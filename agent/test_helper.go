@@ -20,17 +20,9 @@ func (l *testRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) 
 }
 
 type testSubscriber struct {
-	sub testSubscription
+	ch chan otf.Event
 }
 
-func (s *testSubscriber) Subscribe(id string) (otf.Subscription, error) {
-	return &s.sub, nil
+func (s *testSubscriber) Subscribe(_ context.Context) <-chan otf.Event {
+	return s.ch
 }
-
-type testSubscription struct {
-	c chan otf.Event
-}
-
-func (s *testSubscription) C() <-chan otf.Event { return s.c }
-
-func (s *testSubscription) Close() error { return nil }

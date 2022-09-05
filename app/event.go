@@ -21,21 +21,15 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 	// channel for relaying events from subscription to caller
 	ch := make(chan otf.Event)
 
-	sub, err := a.Subscribe("watch-" + otf.GenerateRandomString(6))
-	if err != nil {
-		return nil, err
-	}
+	sub := a.Subscribe(ctx)
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				// context cancelled; close sender and receiver
-				sub.Close()
 				close(ch)
 				return
-			case event, ok := <-sub.C():
+			case event, ok := <-sub:
 				if !ok {
-					// sender closed channel; inform receiver
 					close(ch)
 					return
 				}

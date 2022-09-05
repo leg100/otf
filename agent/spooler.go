@@ -42,7 +42,7 @@ type RunLister interface {
 }
 
 type Subscriber interface {
-	Subscribe(id string) (otf.Subscription, error)
+	Subscribe(context.Context) <-chan otf.Event
 }
 
 type Cancelation struct {
@@ -98,18 +98,12 @@ func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*Spoole
 
 // Start starts the spooler
 func (s *SpoolerDaemon) Start(ctx context.Context) error {
-	sub, err := s.Subscribe(DefaultID)
-	if err != nil {
-		return err
-	}
-
-	defer sub.Close()
-
+	sub := s.Subscribe(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case event := <-sub.C():
+		case event := <-sub:
 			s.handleEvent(event)
 		}
 	}
