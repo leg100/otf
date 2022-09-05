@@ -32,12 +32,6 @@ type PubSubService interface {
 	// Publish an event
 	Publish(Event)
 	// Subscribe creates a subscription to a stream of errors
-	//
-	// TODO: add context param and return channel instead of Subscription. The
-	// caller is then expected to cancel the context instead of calling Close()
-	// on Subscription. This seems like a cleaner solution with less cleanup
-	// because the caller in many cases is having itself to handle a canceled
-	// context from its parent caller and then call Close().
 	Subscribe(ctx context.Context) <-chan Event
 }
 
