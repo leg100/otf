@@ -40,7 +40,9 @@ func TestWatchClient(t *testing.T) {
 		baseURL:  u,
 		insecure: true,
 	}
-	events, err := client.Watch(context.Background(), otf.WatchOptions{})
+	ctx, cancel := context.WithCancel(context.Background())
+	events, err := client.Watch(ctx, otf.WatchOptions{})
+	defer cancel()
 	require.NoError(t, err)
 
 	// check event type is what we expect
