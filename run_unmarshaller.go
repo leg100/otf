@@ -2,6 +2,7 @@ package otf
 
 import (
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/http/dto"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -73,6 +74,31 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		run.forceCancelAvailableAt = &result.ForceCancelAvailableAt.Time
 	}
 	return &run, nil
+}
+
+func UnmarshalRunJSONAPI(d *dto.Run) *Run {
+	run := &Run{
+		id:                     d.ID,
+		createdAt:              d.CreatedAt,
+		forceCancelAvailableAt: d.ForceCancelAvailableAt,
+		isDestroy:              d.IsDestroy,
+		message:                d.Message,
+		positionInQueue:        d.PositionInQueue,
+		refresh:                d.Refresh,
+		refreshOnly:            d.RefreshOnly,
+		status:                 RunStatus(d.Status),
+		// TODO: unmarshal timestamps
+		replaceAddrs:           d.ReplaceAddrs,
+		targetAddrs:            d.TargetAddrs,
+		workspaceName:          d.Workspace.Name,
+		workspaceID:            d.Workspace.ID,
+		configurationVersionID: d.ConfigurationVersion.ID,
+		// Relations
+		workspace: UnmarshalWorkspaceJSONAPI(d.Workspace),
+		// TODO: unmarshal plan and apply relations
+	}
+
+	return run
 }
 
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

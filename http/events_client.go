@@ -23,12 +23,12 @@ func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 	err = client.SubscribeRawWithContext(ctx, func(msg *sse.Event) {
 		event := string(msg.Event)
 		if strings.HasPrefix(event, "run_") {
+			// bytes -> DTO
 			dto := dto.Run{}
 			err := jsonapi.UnmarshalPayload(bytes.NewReader(msg.Data), &dto)
 			// handle error
+			// DTO -> Domain
 		}
-		// bytes -> DTO
-		// DTO -> Domain
 	})
 	return ch, err
 }
