@@ -9,7 +9,7 @@ import (
 	"net/url"
 )
 
-// Whether or not oTF is running with SSL enabled.
+// SSL toggles whether or not oTF is running with SSL enabled.
 //
 // TODO: replace with something that doesn't involve package variables!
 var SSL bool
