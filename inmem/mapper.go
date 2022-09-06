@@ -42,23 +42,28 @@ func (m *Mapper) Populate(ws otf.WorkspaceService, rs otf.RunService) error {
 	return nil
 }
 
-func (m *Mapper) AddRun(run *otf.Run) {
+// MapRun adds a mapping for a run
+func (m *Mapper) MapRun(run *otf.Run) {
 	m.runs.add(run)
 }
 
-func (m *Mapper) RemoveRun(run *otf.Run) {
+// UnmapRun removes the mapping for a run
+func (m *Mapper) UnmapRun(run *otf.Run) {
 	m.runs.remove(run)
 }
 
-func (m *Mapper) AddWorkspace(ws *otf.Workspace) {
+// MapWorkspace adds a mapping for a workspace
+func (m *Mapper) MapWorkspace(ws *otf.Workspace) {
 	m.workspaces.add(ws)
 }
 
-func (m *Mapper) UpdateWorkspace(oldName string, ws *otf.Workspace) {
+// RemapWorkspace updates a mapping for a workspace
+func (m *Mapper) RemapWorkspace(oldName string, ws *otf.Workspace) {
 	m.workspaces.update(oldName, ws)
 }
 
-func (m *Mapper) RemoveWorkspace(ws *otf.Workspace) {
+// UnmapWorkspace removes a mapping for the workspace
+func (m *Mapper) UnmapWorkspace(ws *otf.Workspace) {
 	m.workspaces.remove(ws)
 }
 

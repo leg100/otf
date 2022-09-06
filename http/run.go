@@ -177,7 +177,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vars := mux.Vars(r)
-	file, err := s.Application.GetPlanFile(r.Context(), vars["run_id"], opts.Format)
+	file, err := s.GetPlanFile(r.Context(), vars["run_id"], opts.Format)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -200,7 +200,7 @@ func (s *Server) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.Application.UploadPlanFile(r.Context(), vars["run_id"], buf.Bytes(), opts.Format)
+	err := s.UploadPlanFile(r.Context(), vars["run_id"], buf.Bytes(), opts.Format)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -210,7 +210,7 @@ func (s *Server) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getLockFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	file, err := s.Application.GetLockFile(r.Context(), vars["run_id"])
+	file, err := s.GetLockFile(r.Context(), vars["run_id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -228,7 +228,7 @@ func (s *Server) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	err := s.Application.UploadLockFile(r.Context(), vars["run_id"], buf.Bytes())
+	err := s.UploadLockFile(r.Context(), vars["run_id"], buf.Bytes())
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

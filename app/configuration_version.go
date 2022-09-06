@@ -63,10 +63,6 @@ func (a *Application) UploadConfig(ctx context.Context, cvID string, config []by
 	if err := a.cache.Set(otf.ConfigVersionCacheKey(cvID), config); err != nil {
 		return fmt.Errorf("caching configuration version tarball: %w", err)
 	}
-	if err != nil {
-		a.Error(err, "uploading configuration")
-		return err
-	}
 	a.V(2).Info("uploaded configuration", "id", cvID, "bytes", len(config))
 	return nil
 }

@@ -65,7 +65,7 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	resp, err := s.Application.DownloadState(r.Context(), vars["id"])
+	resp, err := s.DownloadState(r.Context(), vars["id"])
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return

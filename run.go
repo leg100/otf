@@ -301,7 +301,6 @@ func (r *Run) Start(phase PhaseType) error {
 	default:
 		return ErrInvalidRunStateTransition
 	}
-	return nil
 }
 
 // Finish updates the run to reflect its plan or apply phase having finished.
@@ -318,7 +317,6 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	default:
 		return fmt.Errorf("unknown phase")
 	}
-	return nil
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
