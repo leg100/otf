@@ -202,9 +202,11 @@ func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error)
 	return &sv, nil
 }
 
-func UnmarshalStateVersionJSONAPI(w *dto.StateVersion) *StateVersion {
+func UnmarshalStateVersionJSONAPI(d *dto.StateVersion) *StateVersion {
 	return &StateVersion{
-		id:        w.ID,
-		createdAt: w.CreatedAt,
+		id:        d.ID,
+		createdAt: d.CreatedAt,
+		serial:    d.Serial,
+		// TODO: unmarshal outputs
 	}
 }
