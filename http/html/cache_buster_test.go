@@ -52,8 +52,8 @@ func newTestFilesystem(t *testing.T, pathsAndContents ...string) fs.FS {
 	for i := 0; i < len(pathsAndContents); i += 2 {
 		path := filepath.Join(dir, pathsAndContents[i])
 
-		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
-		require.NoError(t, os.WriteFile(path, []byte(pathsAndContents[i+1]), 0644))
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(pathsAndContents[i+1]), 0o644))
 	}
 
 	return os.DirFS(dir)

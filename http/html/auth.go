@@ -111,8 +111,8 @@ func synchroniseOrganizations(
 	userService otf.UserService,
 	organizationService otf.OrganizationService,
 	user *otf.User,
-	githubOrganization ...*github.Organization) error {
-
+	githubOrganization ...*github.Organization,
+) error {
 	var orgs []*otf.Organization
 
 	// Sync orgs

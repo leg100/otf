@@ -28,7 +28,6 @@ type fakeAgentTokenService struct {
 }
 
 func (f *fakeAgentTokenService) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
-
 	if token != f.token {
 		return nil, otf.ErrResourceNotFound
 	}

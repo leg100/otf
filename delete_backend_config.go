@@ -35,7 +35,7 @@ func deleteBackendConfigFromDirectory(ctx context.Context, dir string) error {
 		}
 
 		if deleted {
-			if err := os.WriteFile(path, out, 0644); err != nil {
+			if err := os.WriteFile(path, out, 0o644); err != nil {
 				return err
 			}
 		}

@@ -14,9 +14,7 @@ import (
 	"github.com/leg100/otf/tail"
 )
 
-var (
-	_ otf.Application = (*Application)(nil)
-)
+var _ otf.Application = (*Application)(nil)
 
 // Application encompasses services for interacting between components of the
 // otf server

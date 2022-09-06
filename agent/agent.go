@@ -35,7 +35,6 @@ type Agent struct {
 
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, app otf.Application, sub Watcher) (*Agent, error) {
-
 	logger = logger.WithValues("component", "agent")
 
 	spooler, err := NewSpooler(app, sub, logger)

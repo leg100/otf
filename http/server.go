@@ -3,14 +3,13 @@ package http
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
 	"github.com/r3labs/sse/v2"
-
-	"net"
-	"net/http"
-	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"

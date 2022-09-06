@@ -4,13 +4,11 @@ import (
 	"time"
 )
 
-var (
-	DefaultOrganizationPermissions = OrganizationPermissions{
-		CanCreateWorkspace: true,
-		CanUpdate:          true,
-		CanDestroy:         true,
-	}
-)
+var DefaultOrganizationPermissions = OrganizationPermissions{
+	CanCreateWorkspace: true,
+	CanUpdate:          true,
+	CanDestroy:         true,
+}
 
 // Organization JSON-API representation
 type Organization struct {

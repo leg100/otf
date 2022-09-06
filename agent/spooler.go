@@ -55,11 +55,9 @@ const (
 	SpoolerCapacity = 100
 )
 
-var (
-	// QueuedStatuses are the list of run statuses that indicate it is in a
-	// queued state
-	QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
-)
+// QueuedStatuses are the list of run statuses that indicate it is in a
+// queued state
+var QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
 
 // NewSpooler populates a Spooler with queued runs
 func NewSpooler(svc otf.RunService, watcher Watcher, logger logr.Logger) (*SpoolerDaemon, error) {

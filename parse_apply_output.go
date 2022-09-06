@@ -6,9 +6,7 @@ import (
 	"strconv"
 )
 
-var (
-	applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.`)
-)
+var applyChangesRegex = regexp.MustCompile(`(?m)^Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed.`)
 
 func ParseApplyOutput(output string) (ResourceReport, error) {
 	matches := applyChangesRegex.FindStringSubmatch(output)

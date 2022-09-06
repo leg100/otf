@@ -8,9 +8,7 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-var (
-	DefaultSessionCleanupInterval = 5 * time.Minute
-)
+var DefaultSessionCleanupInterval = 5 * time.Minute
 
 // CreateSession inserts the session, associating it with the user.
 func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {

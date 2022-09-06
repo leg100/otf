@@ -42,7 +42,7 @@ func TestOTF(t *testing.T) {
 	// Create TF config
 	root := t.TempDir()
 	organization := uuid.NewString()
-	err = os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0600)
+	err = os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0o600)
 	require.NoError(t, err)
 
 	t.Run("terraform login", func(t *testing.T) {

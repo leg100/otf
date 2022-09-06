@@ -23,10 +23,8 @@ const (
 	DefaultLogLevel = "info"
 )
 
-var (
-	// dbConnStr is the postgres connection string
-	dbConnStr string
-)
+// dbConnStr is the postgres connection string
+var dbConnStr string
 
 func main() {
 	// Configure ^C to terminate program

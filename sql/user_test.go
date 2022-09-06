@@ -102,7 +102,6 @@ func TestUser_Get(t *testing.T) {
 			assert.Equal(t, 2, len(got.Tokens))
 		})
 	}
-
 }
 
 func TestUser_Get_NotFound(t *testing.T) {

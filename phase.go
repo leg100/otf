@@ -21,9 +21,7 @@ const (
 	PhaseUnreachable PhaseStatus = "unreachable"
 )
 
-var (
-	ErrPhaseAlreadyStarted = errors.New("phase already started")
-)
+var ErrPhaseAlreadyStarted = errors.New("phase already started")
 
 // PhaseSpec specifies a phase of a run
 type PhaseSpec struct {

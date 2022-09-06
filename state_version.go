@@ -15,9 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	ErrInvalidStateVersionGetOptions = errors.New("invalid state version get options")
-)
+var ErrInvalidStateVersionGetOptions = errors.New("invalid state version get options")
 
 // StateVersion represents a Terraform Enterprise state version.
 type StateVersion struct {

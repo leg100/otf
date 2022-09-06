@@ -17,9 +17,7 @@ const (
 	DefaultExecutionMode       = "remote"
 )
 
-var (
-	ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
-)
+var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {

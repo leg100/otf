@@ -8,7 +8,7 @@ import (
 const (
 	// session cookie stores the session identifier
 	sessionCookie = "session"
-	//organizationCookie stores the current organization for the session
+	// organizationCookie stores the current organization for the session
 	organizationCookie = "organization"
 	// path cookie stores the last path the user attempted to access
 	pathCookie = "path"
