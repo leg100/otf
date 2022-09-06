@@ -1,0 +1,70 @@
+package http
+
+import (
+	"bytes"
+	"context"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/gorilla/mux"
+	"github.com/leg100/jsonapi"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/dto"
+	"github.com/r3labs/sse/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestWatch(t *testing.T) {
+	// fake server
+	serverCh := make(chan otf.Event, 1)
+	srv := &Server{
+		Application:  &fakeEventsApp{ch: serverCh},
+		Logger:       logr.Discard(),
+		eventsServer: newSSEServer(),
+	}
+
+	// setup web server
+	router := mux.NewRouter()
+	router.HandleFunc("/watch", srv.watch)
+	webSrv := httptest.NewTLSServer(router)
+	defer webSrv.Close()
+
+	// setup SSE client and subscribe to stream
+	client := newSSEClient(webSrv.URL+"/watch", true)
+	events := make(chan *sse.Event, 1)
+	require.NoError(t, client.SubscribeChanRaw(events))
+	defer client.Unsubscribe(events)
+
+	// Give client time to connect and subscribe before publishing message
+	time.Sleep(100 * time.Millisecond)
+
+	// publish message server-side
+	wantRun := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+	ev := otf.Event{
+		Type:    otf.EventRunCreated,
+		Payload: wantRun,
+	}
+	serverCh <- ev
+
+	// check received event type is what we expect
+	got := <-events
+	assert.Equal(t, "run_created", string(got.Event))
+
+	// check event payload is what we expect
+	gotRun := dto.Run{}
+	err := jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &gotRun)
+	require.NoError(t, err)
+	assert.Equal(t, wantRun.ID(), gotRun.ID)
+}
+
+type fakeEventsApp struct {
+	ch chan otf.Event
+	otf.Application
+}
+
+func (f *fakeEventsApp) Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error) {
+	return f.ch, nil
+}
