@@ -3,14 +3,13 @@ package http
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
 	"github.com/r3labs/sse/v2"
-
-	"net"
-	"net/http"
-	"time"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
@@ -207,7 +206,7 @@ func (s *Server) Open(ctx context.Context) (err error) {
 		}
 	}()
 
-	s.Logger.Info("started server", "address", s.Addr, "ssl", s.SSL)
+	s.Info("started server", "address", s.Addr, "ssl", s.SSL)
 
 	// Block until server stops listening or context is cancelled.
 	select {
@@ -224,7 +223,7 @@ func (s *Server) Open(ctx context.Context) (err error) {
 // shutdown attempts to gracefully shuts down the server before a timeout
 // expires at which point it forcefully closes the server.
 func (s *Server) shutdown() error {
-	s.Logger.Info("gracefully shutting down server...")
+	s.Info("gracefully shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
@@ -240,7 +239,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		m := httpsnoop.CaptureMetrics(next, w, r)
 
-		s.Logger.Info("request",
+		s.Info("request",
 			"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
 			"status", m.Code,
 			"method", r.Method,

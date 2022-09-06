@@ -14,10 +14,8 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
-var (
-	// Query schema Encoder, caches structs, and safe for sharing
-	encoder = schema.NewEncoder()
-)
+// Query schema Encoder, caches structs, and safe for sharing
+var encoder = schema.NewEncoder()
 
 // SanitizeHostname ensures hostname is in the format <host>:<port>
 func SanitizeHostname(hostname string) (string, error) {

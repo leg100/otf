@@ -23,7 +23,7 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 	}
 
 	// Create mappings
-	a.AddWorkspace(ws)
+	a.MapWorkspace(ws)
 
 	a.queues.Create(ws.ID())
 
@@ -56,7 +56,7 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 
 	// update mapper if name changed
 	if ws.Name() != oldName {
-		a.Mapper.UpdateWorkspace(oldName, ws)
+		a.RemapWorkspace(oldName, ws)
 	}
 
 	a.V(0).Info("updated workspace", spec.LogFields()...)
@@ -118,7 +118,7 @@ func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 	}
 
 	// Remove mappings
-	a.RemoveWorkspace(ws)
+	a.UnmapWorkspace(ws)
 
 	a.queues.Delete(ws.ID())
 

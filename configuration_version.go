@@ -14,15 +14,13 @@ const (
 	DefaultAutoQueueRuns       = true
 	DefaultConfigurationSource = "tfe-api"
 
-	//List all available configuration version statuses.
+	// List all available configuration version statuses.
 	ConfigurationErrored  ConfigurationStatus = "errored"
 	ConfigurationPending  ConfigurationStatus = "pending"
 	ConfigurationUploaded ConfigurationStatus = "uploaded"
 )
 
-var (
-	ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")
-)
+var ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")
 
 // ConfigurationVersion is a representation of an uploaded or ingressed
 // Terraform configuration in  A workspace must have at least one configuration

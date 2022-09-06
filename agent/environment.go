@@ -52,8 +52,8 @@ func NewEnvironment(
 	id string,
 	phase otf.PhaseType,
 	ctx context.Context,
-	environmentVariables []string) (*Environment, error) {
-
+	environmentVariables []string,
+) (*Environment, error) {
 	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
 		return nil, err

@@ -301,7 +301,6 @@ func (r *Run) Start(phase PhaseType) error {
 	default:
 		return ErrInvalidRunStateTransition
 	}
-	return nil
 }
 
 // Finish updates the run to reflect its plan or apply phase having finished.
@@ -318,7 +317,6 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	default:
 		return fmt.Errorf("unknown phase")
 	}
-	return nil
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -612,7 +610,7 @@ func (r *Run) downloadState(ctx context.Context, env Environment) error {
 	if err != nil {
 		return fmt.Errorf("downloading state version: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(env.Path(), LocalStateFilename), statefile, 0o644); err != nil {
 		return fmt.Errorf("saving state to local disk: %w", err)
 	}
 	return nil
@@ -647,7 +645,7 @@ func (r *Run) downloadLockFile(ctx context.Context, env Environment) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(env.Path(), LockFilename), lockFile, 0644)
+	return os.WriteFile(filepath.Join(env.Path(), LockFilename), lockFile, 0o644)
 }
 
 func (r *Run) uploadLockFile(ctx context.Context, env Environment) error {
@@ -667,7 +665,7 @@ func (r *Run) downloadPlanFile(ctx context.Context, env Environment) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0644)
+	return os.WriteFile(filepath.Join(env.Path(), PlanFilename), plan, 0o644)
 }
 
 // uploadState reads, parses, and uploads terraform state

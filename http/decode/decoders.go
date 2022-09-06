@@ -10,10 +10,8 @@ import (
 	"github.com/gorilla/schema"
 )
 
-var (
-	// Query schema decoder: caches structs, and safe for sharing.
-	decoder = schema.NewDecoder()
-)
+// Query schema decoder: caches structs, and safe for sharing.
+var decoder = schema.NewDecoder()
 
 // Form decodes an HTTP request's POST form contents into dst.
 func Form(dst interface{}, r *http.Request) error {

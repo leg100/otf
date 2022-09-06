@@ -11,9 +11,7 @@ type subjectCtxKeyType string
 
 const subjectCtxKey subjectCtxKeyType = "subject"
 
-var (
-	ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
-)
+var ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
 
 // AddSubjectToContext adds a subject to a context
 func AddSubjectToContext(ctx context.Context, subj Subject) context.Context {

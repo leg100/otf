@@ -14,9 +14,7 @@ const (
 	DefaultConcurrency = 5
 )
 
-var (
-	PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
-)
+var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
@@ -47,7 +45,7 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 		Terminator:  NewTerminator(),
 	}
 
-	if err := os.MkdirAll(PluginCacheDir, 0755); err != nil {
+	if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 		panic(fmt.Sprintf("cannot create plugin cache dir: %s: %s", PluginCacheDir, err.Error()))
 	}
 	s.environmentVariables = append(os.Environ(), fmt.Sprint("TF_PLUGIN_CACHE_DIR=", PluginCacheDir))

@@ -108,11 +108,11 @@ func (c CredentialsStore) write(config *CredentialsConfig) error {
 	}
 
 	// Ensure all parent directories of config file exist
-	if err := os.MkdirAll(filepath.Dir(string(c)), 0775); err != nil {
+	if err := os.MkdirAll(filepath.Dir(string(c)), 0o775); err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(string(c), data, 0600); err != nil {
+	if err := os.WriteFile(string(c), data, 0o600); err != nil {
 		return err
 	}
 

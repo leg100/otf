@@ -9,12 +9,10 @@ import (
 	"net/url"
 )
 
-var (
-	// Whether or not oTF is running with SSL enabled.
-	//
-	// TODO: replace with something that doesn't involve package variables!
-	SSL bool
-)
+// SSL toggles whether or not oTF is running with SSL enabled.
+//
+// TODO: replace with something that doesn't involve package variables!
+var SSL bool
 
 // Absolute returns an absolute URL for the given path. It uses the http request
 // to determine the correct hostname and scheme to use. Handles situations where

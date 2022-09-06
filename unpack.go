@@ -39,7 +39,7 @@ func Unpack(r io.Reader, dst string) error {
 
 		// Make the directories to the path.
 		dir := filepath.Dir(path)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
@@ -67,7 +67,7 @@ func Unpack(r io.Reader, dst string) error {
 			// and it allowing later ones to clobber earlier ones even if the file
 			// has perms that don't allow overwriting.
 			if os.IsPermission(err) {
-				os.Chmod(path, 0600)
+				os.Chmod(path, 0o600)
 				fh, err = os.Create(path)
 			}
 

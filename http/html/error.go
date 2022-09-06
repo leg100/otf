@@ -30,9 +30,7 @@ const errorTemplateContent = `
 </html>
 `
 
-var (
-	errorTemplate = template.Must(template.New("error").Parse(errorTemplateContent))
-)
+var errorTemplate = template.Must(template.New("error").Parse(errorTemplateContent))
 
 func writeError(w http.ResponseWriter, err string, code int) {
 	w.WriteHeader(code)

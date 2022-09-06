@@ -62,7 +62,7 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.Application.UploadConfig(r.Context(), vars["id"], buf.Bytes()); err != nil {
+	if err := s.UploadConfig(r.Context(), vars["id"], buf.Bytes()); err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

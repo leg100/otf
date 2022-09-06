@@ -91,7 +91,6 @@ func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {
 
 // configureLimiter configures the rate limiter.
 func (c *client) configureLimiter(rawLimit string) {
-
 	// Set default values for when rate limiting is disabled.
 	limit := rate.Inf
 	burst := 0

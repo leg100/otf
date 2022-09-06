@@ -32,7 +32,7 @@ func TestCredentialsStoreWithExistingCredentials(t *testing.T) {
 `
 
 	store := CredentialsStore(filepath.Join(t.TempDir(), "creds.json"))
-	require.NoError(t, os.WriteFile(string(store), []byte(existing), 0600))
+	require.NoError(t, os.WriteFile(string(store), []byte(existing), 0o600))
 
 	require.NoError(t, store.Save("otf.dev:8080", "dummy"))
 
