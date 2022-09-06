@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
 	"net/http"
 
 	"github.com/leg100/jsonapi"
@@ -13,9 +14,9 @@ import (
 // watch subscribes to a stream of otf events using the server-side-events
 // protocol
 func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
-	// r3lab's sse server mandates the query parameter specifies the stream ID
-	// but we don't want to bother the client with having to do that so we generate one here
-	// and add it to the query string
+	// r3lab's sse server expects a query parameter with the stream ID
+	// but we don't want to bother the client with having to do that so we
+	// handle it here
 	streamID := otf.GenerateRandomString(6)
 	q := r.URL.Query()
 	q.Add("stream", streamID)
@@ -32,6 +33,7 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case <-r.Context().Done():
+				s.eventsServer.RemoveStream(streamID)
 				return
 			case event, ok := <-events:
 				if !ok {
@@ -61,4 +63,25 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	s.eventsServer.ServeHTTP(w, r)
+}
+
+func newSSEServer() *sse.Server {
+	srv := sse.New()
+	// we don't use last-event-item functionality so turn it off
+	srv.AutoReplay = false
+	// encode payloads into base64 otherwise the JSON string payloads corrupt
+	// the SSE protocol
+	srv.EncodeBase64 = true
+	return srv
+}
+
+func newSSEClient(path string, insecure bool) *sse.Client {
+	client := sse.NewClient(path)
+	client.EncodingBase64 = true
+	if insecure {
+		client.Connection.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+	}
+	return client
 }

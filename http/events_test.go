@@ -3,8 +3,6 @@ package http
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -23,15 +21,11 @@ func TestWatch(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
 	want := otf.Event{Type: otf.EventRunCreated, Payload: run}
 
-	// setup SSE server
-	eventsServer := sse.New()
-	eventsServer.EncodeBase64 = true
-
 	// fake server object
 	srv := &Server{
 		Application:  newFakeEventServer(want),
 		Logger:       logr.Discard(),
-		eventsServer: eventsServer,
+		eventsServer: newSSEServer(),
 	}
 
 	// setup web server
@@ -41,11 +35,7 @@ func TestWatch(t *testing.T) {
 	defer webSrv.Close()
 
 	// setup SSE client and subscribe to stream
-	client := sse.NewClient(webSrv.URL + "/watch")
-	client.EncodingBase64 = true
-	client.Connection.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+	client := newSSEClient(webSrv.URL+"/watch", true)
 	events := make(chan *sse.Event, 1)
 	require.NoError(t, client.SubscribeChanRaw(events))
 	defer client.Unsubscribe(events)

@@ -93,8 +93,6 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 		workspaceName:          d.Workspace.Name,
 		workspaceID:            d.Workspace.ID,
 		configurationVersionID: d.ConfigurationVersion.ID,
-		// Relations
-		workspace: UnmarshalWorkspaceJSONAPI(d.Workspace),
 		// TODO: unmarshal plan and apply relations
 	}
 

@@ -16,18 +16,23 @@ func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 	if err != nil {
 		return nil, err
 	}
-	client := sse.NewClient(u.String())
-	client.EncodingBase64 = true
-
+	sseClient := newSSEClient(u.String(), c.insecure)
 	ch := make(chan otf.Event, 1)
-	err = client.SubscribeRawWithContext(ctx, func(msg *sse.Event) {
+
+	err = sseClient.SubscribeRawWithContext(ctx, func(msg *sse.Event) {
 		event := string(msg.Event)
+		// TODO: impl support for objects other than runs
 		if strings.HasPrefix(event, "run_") {
 			// bytes -> DTO
 			dto := dto.Run{}
-			err := jsonapi.UnmarshalPayload(bytes.NewReader(msg.Data), &dto)
-			// handle error
+			if err := jsonapi.UnmarshalPayload(bytes.NewReader(msg.Data), &dto); err != nil {
+				ch <- otf.Event{Type: otf.EventError, Payload: err.Error()}
+				return
+			}
 			// DTO -> Domain
+			run := otf.UnmarshalRunJSONAPI(&dto)
+
+			ch <- otf.Event{Type: otf.EventType(event), Payload: run}
 		}
 	})
 	return ch, err

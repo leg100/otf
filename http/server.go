@@ -71,15 +71,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		Logger:       logger,
 		ServerConfig: cfg,
 		Application:  app,
+		eventsServer: newSSEServer(),
 	}
-
-	// Setup SSE server
-	s.eventsServer = sse.New()
-	// we don't use last-event-item functionality so turn it off
-	s.eventsServer.AutoReplay = false
-	// encode payloads into base64 otherwise the JSON string payloads corrupt
-	// the SSE protocol
-	s.eventsServer.EncodeBase64 = true
 
 	// Validate SSL params
 	if cfg.SSL {

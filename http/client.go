@@ -40,6 +40,9 @@ type client struct {
 	retryLogHook      RetryLogHook
 	retryServerErrors bool
 	remoteAPIVersion  string
+	// insecure skips verification of upstream TLS certs. Should only be used
+	// for testing purposes. NOTE: Only takes effect on SSE connections.
+	insecure bool
 
 	otf.OrganizationService
 
