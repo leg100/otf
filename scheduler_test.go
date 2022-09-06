@@ -93,16 +93,6 @@ func (f *fakeSchedulerApp) UnlockWorkspace(context.Context, WorkspaceSpec, Works
 	return nil, nil
 }
 
-func (f *fakeSchedulerApp) Subscribe(string) (Subscription, error) {
-	return &fakeSchedulerSub{}, nil
-}
-
-type fakeSchedulerSub struct{}
-
-func (f *fakeSchedulerSub) C() <-chan Event {
-	return nil
-}
-
-func (f *fakeSchedulerSub) Close() error {
-	return nil
+func (f *fakeSchedulerApp) Watch(context.Context, WatchOptions) (<-chan Event, error) {
+	return make(chan Event), nil
 }

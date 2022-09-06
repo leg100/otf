@@ -16,7 +16,7 @@ func TestSpooler_New(t *testing.T) {
 
 	spooler, err := NewSpooler(
 		&testRunService{runs: []*otf.Run{want}},
-		&testSubscriber{},
+		&testWatcher{},
 		logr.Discard(),
 	)
 	require.NoError(t, err)
@@ -27,8 +27,8 @@ func TestSpooler_New(t *testing.T) {
 // TestSpooler_Start starts the spooler and immediately cancels it.
 func TestSpooler_Start(t *testing.T) {
 	spooler := &SpoolerDaemon{
-		Subscriber: &testSubscriber{},
-		Logger:     logr.Discard(),
+		Watcher: &testWatcher{},
+		Logger:  logr.Discard(),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,18 +60,18 @@ func TestSpooler_GetRun(t *testing.T) {
 func TestSpooler_GetRunFromEvent(t *testing.T) {
 	want := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
 
-	sub := testSubscription{c: make(chan otf.Event, 1)}
+	ch := make(chan otf.Event, 1)
 
 	spooler := &SpoolerDaemon{
-		queue:      make(chan *otf.Run, 1),
-		Subscriber: &testSubscriber{sub: sub},
-		Logger:     logr.Discard(),
+		queue:   make(chan *otf.Run, 1),
+		Watcher: &testWatcher{ch: ch},
+		Logger:  logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())
 
 	// send event
-	sub.c <- otf.Event{Type: otf.EventRunStatusUpdate, Payload: want}
+	ch <- otf.Event{Type: otf.EventRunStatusUpdate, Payload: want}
 
 	assert.Equal(t, want, <-spooler.GetRun())
 }
@@ -81,23 +81,23 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 func TestSpooler_GetRunFromCancelation(t *testing.T) {
 	want := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunCanceled})
 
-	sub := testSubscription{c: make(chan otf.Event, 1)}
+	ch := make(chan otf.Event, 1)
 
 	spooler := &SpoolerDaemon{
 		cancelations: make(chan Cancelation, 1),
-		Subscriber:   &testSubscriber{sub: sub},
+		Watcher:      &testWatcher{ch: ch},
 		Logger:       logr.Discard(),
 	}
 
 	go spooler.Start(context.Background())
 
 	// send and receive cancelation
-	sub.c <- otf.Event{Type: otf.EventRunCancel, Payload: want}
+	ch <- otf.Event{Type: otf.EventRunCancel, Payload: want}
 	got := <-spooler.GetCancelation()
 	assert.Equal(t, Cancelation{Run: want, Forceful: false}, got)
 
 	// send and receive forceful cancelation
-	sub.c <- otf.Event{Type: otf.EventRunForceCancel, Payload: want}
+	ch <- otf.Event{Type: otf.EventRunForceCancel, Payload: want}
 	got = <-spooler.GetCancelation()
 	assert.Equal(t, Cancelation{Run: want, Forceful: true}, got)
 }

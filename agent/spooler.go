@@ -30,8 +30,8 @@ type SpoolerDaemon struct {
 	// Queue of cancelation requests
 	cancelations chan Cancelation
 
-	// Subscriber allows subscribing to stream of events
-	Subscriber
+	// Watcher allows subscribing to stream of events
+	Watcher
 
 	// Logger for logging various events
 	logr.Logger
@@ -41,8 +41,8 @@ type RunLister interface {
 	List(context.Context, otf.RunListOptions) (*otf.RunList, error)
 }
 
-type Subscriber interface {
-	Subscribe(id string) (otf.Subscription, error)
+type Watcher interface {
+	Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error)
 }
 
 type Cancelation struct {
@@ -62,7 +62,7 @@ var (
 )
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(svc otf.RunService, watcher Watcher, logger logr.Logger) (*SpoolerDaemon, error) {
 	// retrieve existing runs, page by page
 	var existing []*otf.Run
 	for {
@@ -91,25 +91,22 @@ func NewSpooler(svc otf.RunService, sub Subscriber, logger logr.Logger) (*Spoole
 	return &SpoolerDaemon{
 		queue:        queue,
 		cancelations: make(chan Cancelation, SpoolerCapacity),
-		Subscriber:   sub,
+		Watcher:      watcher,
 		Logger:       logger,
 	}, nil
 }
 
 // Start starts the spooler
 func (s *SpoolerDaemon) Start(ctx context.Context) error {
-	sub, err := s.Subscribe(DefaultID)
+	sub, err := s.Watch(ctx, otf.WatchOptions{})
 	if err != nil {
 		return err
 	}
-
-	defer sub.Close()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case event := <-sub.C():
+		case event := <-sub:
 			s.handleEvent(event)
 		}
 	}
