@@ -33,11 +33,12 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case <-r.Context().Done():
+				// client closes connection
 				s.eventsServer.RemoveStream(streamID)
 				return
 			case event, ok := <-events:
 				if !ok {
-					// closes connection
+					// server closes connection
 					s.eventsServer.RemoveStream(streamID)
 					return
 				}
