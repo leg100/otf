@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -14,15 +15,10 @@ import (
 )
 
 func TestWatchClient(t *testing.T) {
-	// fake run event
-	want := otf.Event{
-		Type:    otf.EventRunCreated,
-		Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{}),
-	}
-
-	// fake server object
+	// fake server
+	serverCh := make(chan otf.Event, 1)
 	srv := &Server{
-		Application:  newFakeEventServer(want),
+		Application:  &fakeEventsApp{ch: serverCh},
 		Logger:       logr.Discard(),
 		eventsServer: newSSEServer(),
 	}
@@ -40,18 +36,34 @@ func TestWatchClient(t *testing.T) {
 		baseURL:  u,
 		insecure: true,
 	}
-	events, err := client.Watch(context.Background(), otf.WatchOptions{})
+	clientCh, err := client.Watch(context.Background(), otf.WatchOptions{})
 	require.NoError(t, err)
 
-	// check event type is what we expect
-	got := <-events
+	// Give client time to connect and subscribe before publishing message
+	time.Sleep(100 * time.Millisecond)
+
+	// publish message server-side
+	wantRun := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+	ev := otf.Event{
+		Type:    otf.EventRunCreated,
+		Payload: wantRun,
+	}
+	serverCh <- ev
+
+	// check received event type is what we expect
+	got := <-clientCh
 	assert.Equal(t, otf.EventRunCreated, otf.EventType(got.Type))
 
 	// check event payload is what we expect
-	run, ok := got.Payload.(*otf.Run)
+	gotRun, ok := got.Payload.(*otf.Run)
 	assert.True(t, ok)
-	assert.Equal(t, want.Payload.(*otf.Run).ID(), run.ID())
-	assert.Equal(t, want.Payload.(*otf.Run).Status(), run.Status())
-	assert.Equal(t, want.Payload.(*otf.Run).ConfigurationVersionID(), run.ConfigurationVersionID())
-	assert.Equal(t, want.Payload.(*otf.Run).WorkspaceID(), run.WorkspaceID())
+	assert.Equal(t, wantRun.ID(), gotRun.ID())
+	assert.Equal(t, wantRun.Status(), gotRun.Status())
+	assert.Equal(t, wantRun.ConfigurationVersionID(), gotRun.ConfigurationVersionID())
+	assert.Equal(t, wantRun.WorkspaceID(), gotRun.WorkspaceID())
+
+	// closing server chan terminates connection from the server-side,
+	// allowing the temp web server's deferred close above to complete,
+	// otherwise the test times out.
+	close(serverCh)
 }

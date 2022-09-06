@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -17,13 +18,10 @@ import (
 )
 
 func TestWatch(t *testing.T) {
-	// fake run event
-	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
-	want := otf.Event{Type: otf.EventRunCreated, Payload: run}
-
-	// fake server object
+	// fake server
+	serverCh := make(chan otf.Event, 1)
 	srv := &Server{
-		Application:  newFakeEventServer(want),
+		Application:  &fakeEventsApp{ch: serverCh},
 		Logger:       logr.Discard(),
 		eventsServer: newSSEServer(),
 	}
@@ -40,30 +38,33 @@ func TestWatch(t *testing.T) {
 	require.NoError(t, client.SubscribeChanRaw(events))
 	defer client.Unsubscribe(events)
 
-	// check event type is what we expect
+	// Give client time to connect and subscribe before publishing message
+	time.Sleep(100 * time.Millisecond)
+
+	// publish message server-side
+	wantRun := otf.NewTestRun(t, otf.TestRunCreateOptions{})
+	ev := otf.Event{
+		Type:    otf.EventRunCreated,
+		Payload: wantRun,
+	}
+	serverCh <- ev
+
+	// check received event type is what we expect
 	got := <-events
 	assert.Equal(t, "run_created", string(got.Event))
 
 	// check event payload is what we expect
-	dto := dto.Run{}
-	err := jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &dto)
+	gotRun := dto.Run{}
+	err := jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &gotRun)
 	require.NoError(t, err)
-	assert.Equal(t, run.ID(), dto.ID)
+	assert.Equal(t, wantRun.ID(), gotRun.ID)
 }
 
 type fakeEventsApp struct {
-	events chan otf.Event
+	ch chan otf.Event
 	otf.Application
 }
 
-func newFakeEventServer(ev otf.Event) *fakeEventsApp {
-	// setup events channel - send an event and then close
-	events := make(chan otf.Event, 1)
-	events <- ev
-	close(events)
-	return &fakeEventsApp{events: events}
-}
-
 func (f *fakeEventsApp) Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error) {
-	return f.events, nil
+	return f.ch, nil
 }
