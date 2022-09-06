@@ -6,6 +6,7 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
+	"github.com/r3labs/sse/v2"
 
 	"net"
 	"net/http"
@@ -58,6 +59,9 @@ type Server struct {
 	otf.Application
 
 	CacheService *bigcache.BigCache
+
+	// server-side-events server
+	eventsServer *sse.Server
 }
 
 // NewServer is the constructor for Server
@@ -67,6 +71,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		Logger:       logger,
 		ServerConfig: cfg,
 		Application:  app,
+		eventsServer: newSSEServer(),
 	}
 
 	// Validate SSL params
