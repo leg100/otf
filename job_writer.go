@@ -7,6 +7,8 @@ import (
 )
 
 // JobWriter writes logs on behalf of a run phase.
+//
+// TODO: rename to LogWriter or PhaseWriter
 type JobWriter struct {
 	// ID of run to write logs on behalf of.
 	ID string

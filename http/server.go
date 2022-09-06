@@ -102,6 +102,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	r.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
 	r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
+	r.GET("/runs/{run_id}/planfile", s.getPlanFile)
+	r.PUT("/runs/{run_id}/planfile", s.uploadPlanFile)
+	r.GET("/runs/{run_id}/lockfile", s.getLockFile)
+	r.PUT("/runs/{run_id}/lockfile", s.uploadLockFile)
 
 	r.GET("/healthz", GetHealthz)
 
@@ -163,8 +167,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
 
 		// Plan routes
-		r.GET("/plans/{plan_id}", s.GetPlan)
-		r.GET("/plans/{plan_id}/json-output", s.GetPlanJSON)
+		r.GET("/plans/{plan_id}", s.getPlan)
+		r.GET("/plans/{plan_id}/json-output", s.getPlanJSON)
 
 		// Apply routes
 		r.GET("/applies/{apply_id}", s.GetApply)

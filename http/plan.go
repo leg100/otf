@@ -7,14 +7,17 @@ import (
 	"github.com/leg100/otf"
 )
 
-// PlanFileOptions represents the options for retrieving the plan file for a
-// run.
-type PlanFileOptions struct {
-	// Format of plan file. Valid values are json and binary.
-	Format otf.PlanFormat `schema:"format"`
-}
+// These endpoints implement the documented plan API:
+//
+// https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
+//
 
-func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
+// getPlan retrieves a plan object in JSON-API format.
+//
+// https://www.terraform.io/cloud-docs/api-docs/plans#show-a-plan
+//
+func (s *Server) getPlan(w http.ResponseWriter, r *http.Request) {
+	// otf's plan IDs are simply the corresponding run ID
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
@@ -26,7 +29,11 @@ func (s *Server) GetPlan(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, run.Plan())
 }
 
-func (s *Server) GetPlanJSON(w http.ResponseWriter, r *http.Request) {
+// getPlanJSON retrieves a plan object's plan file in JSON format.
+//
+// https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
+func (s *Server) getPlanJSON(w http.ResponseWriter, r *http.Request) {
+	// otf's plan IDs are simply the corresponding run ID
 	planID := mux.Vars(r)["plan_id"]
 	runID := otf.ConvertID(planID, "run")
 
