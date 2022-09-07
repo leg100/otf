@@ -64,7 +64,16 @@ func (a *Application) CreateSession(ctx context.Context, user *otf.User, data *o
 func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	user, err := a.db.GetUser(ctx, spec)
 	if err != nil {
-		a.Error(err, "retrieving user", spec.KeyValue()...)
+		// Failure to retrieve a user is frequently due to the fact the http
+		// middleware first calls this endpoint to see if the bearer token
+		// belongs to a user and if that fails it then checks if it belongs to
+		// an agent. Therefore we log this at a low priority info level rather
+		// than as an error.
+		//
+		// TODO: make bearer token a signed cryptographic token containing
+		// metadata about the authenticating entity.
+		info := append([]any{"err", err.Error()}, spec.KeyValue()...)
+		a.V(2).Info("unable to retrieve user", info...)
 		return nil, err
 	}
 
