@@ -193,7 +193,7 @@ func (spec *UserSpec) KeyValue() []interface{} {
 		return []interface{}{"authentication_token_id", *spec.AuthenticationTokenID}
 	}
 	if spec.AuthenticationToken != nil {
-		return []interface{}{"authentication_token", *spec.AuthenticationToken}
+		return []interface{}{"authentication_token", "*****"}
 	}
 
 	return []interface{}{"invalid user spec", ""}
