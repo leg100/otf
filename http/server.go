@@ -179,6 +179,9 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		// User routes
 		r.GET("/account/details", s.GetCurrentUser)
+
+		// Agent token routes
+		r.GET("/agent/details", s.GetCurrentAgent)
 	})
 
 	http.Handle("/", r)

@@ -3,9 +3,12 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/http/dto"
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 // AgentToken is an authentication token for an agent.
@@ -33,6 +36,14 @@ func (t *AgentToken) CanAccess(organizationName *string) bool {
 	return t.organizationName == *organizationName
 }
 
+// ToJSONAPI assembles a JSON-API DTO.
+func (u *AgentToken) ToJSONAPI(req *http.Request) any {
+	return &jsonapi.AgentToken{
+		ID:               u.id,
+		OrganizationName: u.organizationName,
+	}
+}
+
 type AgentTokenCreateOptions struct {
 	OrganizationName string
 	Description      string
@@ -57,6 +68,13 @@ func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
 		organizationName: opts.OrganizationName,
 	}
 	return &token, nil
+}
+
+func UnmarshalAgentTokenJSONAPI(d *dto.AgentToken) *AgentToken {
+	return &AgentToken{
+		id:               d.ID,
+		organizationName: d.OrganizationName,
+	}
 }
 
 type AgentTokenRow struct {

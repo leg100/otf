@@ -37,7 +37,7 @@ func (a *Application) GetAgentToken(ctx context.Context, token string) (*otf.Age
 		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
 	}
-	a.V(0).Info("retrieved agent token", "organization", at.OrganizationName(), "id", at.ID())
+	a.V(2).Info("retrieved agent token", "organization", at.OrganizationName(), "id", at.ID())
 	return at, nil
 }
 
