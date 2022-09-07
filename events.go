@@ -38,19 +38,11 @@ type PubSubService interface {
 // EventService allows interacting with events. Access is authenticated.
 type EventService interface {
 	// Watch provides access to a stream of events. The WatchOptions filters
-	// events. The caller must ensure WatchOptions are specified in accordance
-	// with their access, i.e. Watch is not clever enough to send all events the
-	// caller is entitled to, instead the caller has to specify options to
-	// ensure only events they are permitted to access are sent, otherwise Watch
-	// will deny access.
+	// events.
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
 }
 
-// WatchOptions filter the events returned by the Watch endpoint. Either:
-// (a) WorkspaceID must be specified
-// (b) Both OrganizationName and WorkspaceName must be specified
-// (c) None are specified
-// These options are mutually exclusive.
+// WatchOptions filters events returned by the Watch endpoint.
 type WatchOptions struct {
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`

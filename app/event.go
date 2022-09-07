@@ -4,35 +4,38 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/inmem"
 )
 
-// Watch provides authenticated access to a stream of events. The returned channel is
-// unbuffered.
-func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
-	allowed, err := canAccessWatch(ctx, a.Mapper, opts)
-	if err != nil {
-		return nil, err
-	}
-	if !allowed {
-		return nil, otf.ErrAccessNotPermitted
-	}
-
-	return a.Subscribe(ctx), nil
+// OrganizationResource is a resource that belongs to an organization
+type OrganizationResource interface {
+	OrganizationName() string
 }
 
-func canAccessWatch(ctx context.Context, mapper *inmem.Mapper, opts otf.WatchOptions) (bool, error) {
-	if opts.OrganizationName == nil && opts.WorkspaceID == nil && opts.WorkspaceName == nil {
-		// Caller requesting access to *every* event
-		return otf.CanAccess(ctx, nil), nil
-	}
-	spec := otf.WorkspaceSpec{
-		OrganizationName: opts.OrganizationName,
-		Name:             opts.WorkspaceName,
-		ID:               opts.WorkspaceID,
-	}
-	if err := spec.Valid(); err != nil {
-		return false, err
-	}
-	return mapper.CanAccessWorkspace(ctx, spec), nil
+// Watch provides authenticated access to a stream of events.
+//
+// TODO: apply watch options
+func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+	ch := make(chan otf.Event)
+	go func() {
+		sub := a.Subscribe(ctx)
+		for {
+			select {
+			case ev, ok := <-sub:
+				res, ok := ev.Payload.(OrganizationResource)
+				if !ok {
+					// skip events that contain payloads that cannot be related
+					// back to an organization
+					continue
+				}
+				if !otf.CanAccess(ctx, otf.String(res.OrganizationName())) {
+					// skip events caller is not entitled to
+					continue
+				}
+				ch <- ev
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return ch, nil
 }
