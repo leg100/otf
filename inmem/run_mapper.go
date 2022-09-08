@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -19,14 +20,14 @@ func newRunMapper() *runMapper {
 	}
 }
 
-func (m *runMapper) populate(svc otf.RunService) error {
+func (m *runMapper) populate(ctx context.Context, svc otf.RunService) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	opts := otf.RunListOptions{ListOptions: otf.ListOptions{PageSize: 100}}
 	var allocated bool
 	for {
-		listing, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListRuns(ctx, opts)
 		if err != nil {
 			return fmt.Errorf("populating workspace mapper: %w", err)
 		}

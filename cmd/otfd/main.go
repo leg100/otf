@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
@@ -20,7 +19,6 @@ const (
 	DefaultAddress  = ":8080"
 	DefaultDatabase = "postgres:///otf?host=/var/run/postgresql"
 	DefaultDataDir  = "~/.otf-data"
-	DefaultLogLevel = "info"
 )
 
 // dbConnStr is the postgres connection string
@@ -38,7 +36,7 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	// all calls to services must be authenticated with the app user
+	// all calls to services are made as the privileged app user
 	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
 
 	cmd := &cobra.Command{
@@ -56,7 +54,7 @@ func run(ctx context.Context, args []string) error {
 	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 
-	loggerCfg := newLoggerConfigFromFlags(cmd.Flags())
+	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
 
@@ -74,7 +72,7 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	// Setup logger
-	logger, err := newLogger(loggerCfg)
+	logger, err := cmdutil.NewLogger(loggerCfg)
 	if err != nil {
 		return err
 	}
@@ -94,7 +92,7 @@ func run(ctx context.Context, args []string) error {
 	defer db.Close()
 
 	// Setup application services
-	app, err := app.NewApplication(logger, db, cache)
+	app, err := app.NewApplication(ctx, logger, db, cache)
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
@@ -106,13 +104,17 @@ func run(ctx context.Context, args []string) error {
 	}
 	go scheduler.Start(ctx)
 
-	// Run agent in background
-	agent, err := agent.NewAgent(logger, app, app)
-	if err != nil {
-		return fmt.Errorf("unable to start agent: %w", err)
-	}
+	// TODO: use this logger for local agent
+	//
+	//logger = logger.WithValues("component", "agent")
 
-	go agent.Start(ctx)
+	// Run agent in background
+	// agent, err := agent.NewAgent(ctx, logger, app, agent.NewAgentOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("unable to start agent: %w", err)
+	// }
+
+	// go agent.Start(ctx)
 
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
 	if err != nil {

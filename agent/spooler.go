@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -50,30 +51,28 @@ type Cancelation struct {
 	Forceful bool
 }
 
-const (
-	// SpoolerCapacity is the max number of queued runs the spooler can store
-	SpoolerCapacity = 100
-)
-
-// QueuedStatuses are the list of run statuses that indicate it is in a
-// queued state
-var QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
+// SpoolerCapacity is the max number of queued runs the spooler can store
+const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(svc otf.RunService, watcher Watcher, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(ctx context.Context, svc otf.RunService, watcher Watcher, logger logr.Logger, opts NewAgentOptions) (*SpoolerDaemon, error) {
+	listOpts := otf.RunListOptions{
+		Statuses:         []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
+		OrganizationName: opts.Organization,
+	}
+
 	// retrieve existing runs, page by page
 	var existing []*otf.Run
 	for {
-		opts := otf.RunListOptions{Statuses: QueuedStatuses}
-		page, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
+		page, err := svc.ListRuns(ctx, listOpts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("populating spooler with queued runs: %w", err)
 		}
 		existing = append(existing, page.Items...)
 		if page.NextPage() == nil {
 			break
 		}
-		opts.PageNumber = *page.NextPage()
+		listOpts.PageNumber = *page.NextPage()
 	}
 	// svc returns runs ordered by creation date, newest first, but we want
 	// oldest first, so we reverse the order
@@ -81,6 +80,7 @@ func NewSpooler(svc otf.RunService, watcher Watcher, logger logr.Logger) (*Spool
 	for _, r := range existing {
 		oldest = append([]*otf.Run{r}, oldest...)
 	}
+	logger.V(1).Info("retrieved queued runs", "total", len(existing))
 	// Populate queue
 	queue := make(chan *otf.Run, SpoolerCapacity)
 	for _, r := range oldest {
@@ -132,5 +132,7 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 		} else if ev.Type == otf.EventRunForceCancel {
 			s.cancelations <- Cancelation{Run: obj, Forceful: true}
 		}
+	case error:
+		s.Error(obj, "streaming error")
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/http/dto"
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
@@ -37,10 +36,10 @@ func (t *AgentToken) CanAccess(organizationName *string) bool {
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
-func (u *AgentToken) ToJSONAPI(req *http.Request) any {
+func (t *AgentToken) ToJSONAPI(req *http.Request) any {
 	return &jsonapi.AgentToken{
-		ID:               u.id,
-		OrganizationName: u.organizationName,
+		ID:               t.id,
+		OrganizationName: t.organizationName,
 	}
 }
 
@@ -70,7 +69,7 @@ func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
 	return &token, nil
 }
 
-func UnmarshalAgentTokenJSONAPI(d *dto.AgentToken) *AgentToken {
+func UnmarshalAgentTokenJSONAPI(d *jsonapi.AgentToken) *AgentToken {
 	return &AgentToken{
 		id:               d.ID,
 		organizationName: d.OrganizationName,

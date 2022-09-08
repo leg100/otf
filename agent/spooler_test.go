@@ -15,9 +15,11 @@ func TestSpooler_New(t *testing.T) {
 	want := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
 
 	spooler, err := NewSpooler(
+		context.Background(),
 		&testRunService{runs: []*otf.Run{want}},
 		&testWatcher{},
 		logr.Discard(),
+		NewAgentOptions{},
 	)
 	require.NoError(t, err)
 

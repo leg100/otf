@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/leg100/otf"
@@ -79,11 +80,11 @@ func NewWorkspaceQueueManager() *WorkspaceQueueManager {
 }
 
 // Populate creates queues for each workspace.
-func (m *WorkspaceQueueManager) Populate(svc otf.WorkspaceService) error {
+func (m *WorkspaceQueueManager) Populate(ctx context.Context, svc otf.WorkspaceService) error {
 	opts := otf.WorkspaceListOptions{}
 	var allocated bool
 	for {
-		listing, err := svc.ListWorkspaces(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListWorkspaces(ctx, opts)
 		if err != nil {
 			return fmt.Errorf("populating workspace mapper: %w", err)
 		}

@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -22,11 +23,11 @@ func newWorkspaceMapper() *workspaceMapper {
 	}
 }
 
-func (m *workspaceMapper) populate(svc otf.WorkspaceService) error {
+func (m *workspaceMapper) populate(ctx context.Context, svc otf.WorkspaceService) error {
 	opts := otf.WorkspaceListOptions{}
 	var allocated bool
 	for {
-		listing, err := svc.ListWorkspaces(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListWorkspaces(ctx, opts)
 		if err != nil {
 			return fmt.Errorf("populating workspace mapper: %w", err)
 		}

@@ -8,7 +8,7 @@ import (
 )
 
 // Download a configuration version.  Only configuration versions in the uploaded state may be downloaded.
-func (c *client) DownloadConfigurationVersion(ctx context.Context, cvID string) ([]byte, error) {
+func (c *client) DownloadConfig(ctx context.Context, cvID string) ([]byte, error) {
 	u := fmt.Sprintf("configuration-versions/%s/download", url.QueryEscape(cvID))
 	req, err := c.newRequest("GET", u, nil)
 	if err != nil {

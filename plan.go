@@ -37,7 +37,7 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
 		ID:               ConvertID(p.runID, "plan"),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("runs/%s/logs/plan", p.runID)),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("api/v2/runs/%s/logs/plan", p.runID)),
 		Status:           string(p.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}

@@ -11,12 +11,11 @@ import (
 )
 
 func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
-	u, err := c.baseURL.Parse("/watch")
+	ch := make(chan otf.Event, 1)
+	sseClient, err := c.newSSEClient("watch", ch)
 	if err != nil {
 		return nil, err
 	}
-	sseClient := newSSEClient(u.String(), c.insecure)
-	ch := make(chan otf.Event, 1)
 
 	go func() {
 		err = sseClient.SubscribeRawWithContext(ctx, func(msg *sse.Event) {

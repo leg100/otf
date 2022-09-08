@@ -13,7 +13,6 @@ import (
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
-	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html"
 	httputil "github.com/leg100/otf/http/util"
@@ -100,88 +99,105 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics/cache.json", s.CacheStats)
-
-	r.GET("/state-versions/{id}/download", s.DownloadStateVersion)
-	r.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion)
-
-	r.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
-	r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
-	r.GET("/runs/{run_id}/planfile", s.getPlanFile)
-	r.PUT("/runs/{run_id}/planfile", s.uploadPlanFile)
-	r.GET("/runs/{run_id}/lockfile", s.getLockFile)
-	r.PUT("/runs/{run_id}/lockfile", s.uploadLockFile)
-
 	r.GET("/healthz", GetHealthz)
 
-	r.GET("/api/v2/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
+	r.PathPrefix("/api/v2").Sub(func(api *html.Router) {
+		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
 
-	// JSON-API API endpoints
-	japi := r.Headers("Accept", jsonapi.MediaType).PathPrefix("/api/v2")
-	japi.Sub(func(r *html.Router) {
-		// Ensure request has valid API token
-		r.Use((&authTokenMiddleware{
-			UserService:       app,
-			AgentTokenService: app,
-			siteToken:         cfg.SiteToken,
-		}).handler)
+		// this is the URL supplied to the TF CLI, but the CLI does not send a
+		// bearer token in the request, therefore it is currently *unauthenticated*
+		//
+		// TODO: migrate to signed URL
+		api.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
 
-		// Organization routes
-		r.GET("/organizations", s.ListOrganizations)
-		r.PST("/organizations", s.CreateOrganization)
-		r.GET("/organizations/{name}", s.GetOrganization)
-		r.PTC("/organizations/{name}", s.UpdateOrganization)
-		r.DEL("/organizations/{name}", s.DeleteOrganization)
-		r.GET("/organizations/{name}/entitlement-set", s.GetEntitlements)
+		// this is the URL supplied to the TF CLI, but the CLI does not send a
+		// bearer token in the request, therefore it is currently *unauthenticated*
+		//
+		// TODO: migrate to signed URL
+		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion)
 
-		// Workspace routes
-		r.GET("/organizations/{organization_name}/workspaces", s.ListWorkspaces)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace)
-		r.PST("/organizations/{organization_name}/workspaces", s.CreateWorkspace)
-		r.PTC("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace)
-		r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace)
-		r.PTC("/workspaces/{id}", s.UpdateWorkspace)
-		r.GET("/workspaces/{id}", s.GetWorkspace)
-		r.DEL("/workspaces/{id}", s.DeleteWorkspace)
-		r.PST("/workspaces/{id}/actions/lock", s.LockWorkspace)
-		r.PST("/workspaces/{id}/actions/unlock", s.UnlockWorkspace)
+		// Authenticated endpoints
+		api.Sub(func(r *html.Router) {
+			// Ensure request has valid API token
+			r.Use((&authTokenMiddleware{
+				UserService:       app,
+				AgentTokenService: app,
+				siteToken:         cfg.SiteToken,
+			}).handler)
 
-		// StateVersion routes
-		r.PST("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion)
-		r.GET("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion)
-		r.GET("/state-versions/{id}", s.GetStateVersion)
-		r.GET("/state-versions", s.ListStateVersions)
+			// Organization routes
+			r.GET("/organizations", s.ListOrganizations)
+			r.PST("/organizations", s.CreateOrganization)
+			r.GET("/organizations/{name}", s.GetOrganization)
+			r.PTC("/organizations/{name}", s.UpdateOrganization)
+			r.DEL("/organizations/{name}", s.DeleteOrganization)
+			r.GET("/organizations/{name}/entitlement-set", s.GetEntitlements)
 
-		// ConfigurationVersion routes
-		r.PST("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
-		r.GET("/configuration-versions/{id}", s.GetConfigurationVersion)
-		r.GET("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
+			// Workspace routes
+			r.GET("/organizations/{organization_name}/workspaces", s.ListWorkspaces)
+			r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace)
+			r.PST("/organizations/{organization_name}/workspaces", s.CreateWorkspace)
+			r.PTC("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace)
+			r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace)
+			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace)
+			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace)
+			r.PTC("/workspaces/{id}", s.UpdateWorkspace)
+			r.GET("/workspaces/{id}", s.GetWorkspace)
+			r.DEL("/workspaces/{id}", s.DeleteWorkspace)
+			r.PST("/workspaces/{id}/actions/lock", s.LockWorkspace)
+			r.PST("/workspaces/{id}/actions/unlock", s.UnlockWorkspace)
 
-		// Run routes
-		r.PST("/runs", s.CreateRun)
-		r.PST("/runs/{id}/actions/apply", s.ApplyRun)
-		r.GET("/workspaces/{workspace_id}/runs", s.ListRuns)
-		r.GET("/runs/{id}", s.GetRun)
-		r.PST("/runs/{id}/actions/discard", s.DiscardRun)
-		r.PST("/runs/{id}/actions/cancel", s.CancelRun)
-		r.PST("/runs/{id}/actions/force-cancel", s.ForceCancelRun)
-		r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
+			// StateVersion routes
+			r.PST("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion)
+			r.GET("/workspaces/{workspace_id}/current-state-version", s.CurrentStateVersion)
+			r.GET("/state-versions/{id}", s.GetStateVersion)
+			r.GET("/state-versions", s.ListStateVersions)
+			r.GET("/state-versions/{id}/download", s.DownloadStateVersion)
 
-		// Plan routes
-		r.GET("/plans/{plan_id}", s.getPlan)
-		r.GET("/plans/{plan_id}/json-output", s.getPlanJSON)
+			// ConfigurationVersion routes
+			r.PST("/workspaces/{workspace_id}/configuration-versions", s.CreateConfigurationVersion)
+			r.GET("/configuration-versions/{id}", s.GetConfigurationVersion)
+			r.GET("/workspaces/{workspace_id}/configuration-versions", s.ListConfigurationVersions)
+			r.GET("/configuration-versions/{id}/download", s.DownloadConfigurationVersion)
 
-		// Apply routes
-		r.GET("/applies/{apply_id}", s.GetApply)
+			// Run routes
+			r.PST("/runs", s.CreateRun)
+			r.PST("/runs/{id}/actions/apply", s.ApplyRun)
+			r.GET("/runs", s.ListRuns)
+			r.GET("/workspaces/{workspace_id}/runs", s.ListRuns)
+			r.GET("/runs/{id}", s.GetRun)
+			r.PST("/runs/{id}/actions/discard", s.DiscardRun)
+			r.PST("/runs/{id}/actions/cancel", s.CancelRun)
+			r.PST("/runs/{id}/actions/force-cancel", s.ForceCancelRun)
+			r.GET("/organizations/{organization_name}/runs/queue", s.GetRunsQueue)
 
-		// User routes
-		r.GET("/account/details", s.GetCurrentUser)
+			// Run routes for exclusive use by remote agents
+			r.PST("/runs/{id}/actions/start/{phase}", s.startPhase)
+			r.PST("/runs/{id}/actions/finish/{phase}", s.finishPhase)
+			r.PUT("/runs/{run_id}/logs/{phase}", s.putLogs)
+			r.GET("/runs/{run_id}/planfile", s.getPlanFile)
+			r.PUT("/runs/{run_id}/planfile", s.uploadPlanFile)
+			r.GET("/runs/{run_id}/lockfile", s.getLockFile)
+			r.PUT("/runs/{run_id}/lockfile", s.uploadLockFile)
 
-		// Agent token routes
-		r.GET("/agent/details", s.GetCurrentAgent)
+			// Event routes
+			r.GET("/watch", s.watch)
+
+			// Plan routes
+			r.GET("/plans/{plan_id}", s.getPlan)
+			r.GET("/plans/{plan_id}/json-output", s.getPlanJSON)
+
+			// Apply routes
+			r.GET("/applies/{apply_id}", s.GetApply)
+
+			// User routes
+			r.GET("/account/details", s.GetCurrentUser)
+
+			// Agent token routes
+			r.GET("/agent/details", s.GetCurrentAgent)
+		})
 	})
 
 	http.Handle("/", r)

@@ -33,8 +33,12 @@ func TestWatch(t *testing.T) {
 	defer webSrv.Close()
 
 	// setup SSE client and subscribe to stream
-	client := newSSEClient(webSrv.URL+"/watch", true)
 	events := make(chan *sse.Event, 1)
+	errch := make(chan otf.Event, 1)
+	httpClient, err := newTestClient(webSrv.URL)
+	require.NoError(t, err)
+	client, err := httpClient.newSSEClient("watch", errch)
+	require.NoError(t, err)
 	require.NoError(t, client.SubscribeChanRaw(events))
 	defer client.Unsubscribe(events)
 
@@ -55,7 +59,7 @@ func TestWatch(t *testing.T) {
 
 	// check event payload is what we expect
 	gotRun := dto.Run{}
-	err := jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &gotRun)
+	err = jsonapi.UnmarshalPayload(bytes.NewReader(got.Data), &gotRun)
 	require.NoError(t, err)
 	assert.Equal(t, wantRun.ID(), gotRun.ID)
 }

@@ -40,7 +40,7 @@ func (sv *StateVersion) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.StateVersion{
 		ID:          sv.ID(),
 		CreatedAt:   sv.CreatedAt(),
-		DownloadURL: fmt.Sprintf("/state-versions/%s/download", sv.ID()),
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
 		Serial:      sv.Serial(),
 	}
 	for _, out := range sv.Outputs() {

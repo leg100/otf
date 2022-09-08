@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -28,14 +27,10 @@ func TestWatchClient(t *testing.T) {
 	router.HandleFunc("/watch", srv.watch)
 	webSrv := httptest.NewTLSServer(router)
 	defer webSrv.Close()
-	u, err := url.Parse(webSrv.URL)
-	require.NoError(t, err)
 
 	// setup client and subscribe to stream
-	client := client{
-		baseURL:  u,
-		insecure: true,
-	}
+	client, err := newTestClient(webSrv.URL)
+	require.NoError(t, err)
 	clientCh, err := client.Watch(context.Background(), otf.WatchOptions{})
 	require.NoError(t, err)
 

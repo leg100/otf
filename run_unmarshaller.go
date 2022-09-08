@@ -99,6 +99,18 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 	return run
 }
 
+// UnmarshalRunListJSONAPI converts a DTO into a run list
+func UnmarshalRunListJSONAPI(json *dto.RunList) *RunList {
+	wl := RunList{
+		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
+	}
+	for _, i := range json.Items {
+		wl.Items = append(wl.Items, UnmarshalRunJSONAPI(i))
+	}
+
+	return &wl
+}
+
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
 	for _, ty := range typs {
 		timestamps = append(timestamps, RunStatusTimestamp{
