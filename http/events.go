@@ -2,10 +2,7 @@ package http
 
 import (
 	"bytes"
-	"crypto/tls"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
@@ -66,31 +63,4 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	s.eventsServer.ServeHTTP(w, r)
-}
-
-func newSSEServer() *sse.Server {
-	srv := sse.New()
-	// we don't use last-event-item functionality so turn it off
-	srv.AutoReplay = false
-	// encode payloads into base64 otherwise the JSON string payloads corrupt
-	// the SSE protocol
-	srv.EncodeBase64 = true
-	return srv
-}
-
-func newSSEClient(url string, insecure bool, errch chan otf.Event) *sse.Client {
-	client := sse.NewClient(url)
-	client.EncodingBase64 = true
-	client.ReconnectNotify = func(err error, next time.Duration) {
-		errch <- otf.Event{
-			Type:    otf.EventError,
-			Payload: fmt.Errorf("%w; url: %s; reconnecting in %s", err, url, next),
-		}
-	}
-	if insecure {
-		client.Connection.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-	return client
 }

@@ -265,3 +265,13 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 			"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
 	})
 }
+
+func newSSEServer() *sse.Server {
+	srv := sse.New()
+	// we don't use last-event-item functionality so turn it off
+	srv.AutoReplay = false
+	// encode payloads into base64 otherwise the JSON string payloads corrupt
+	// the SSE protocol
+	srv.EncodeBase64 = true
+	return srv
+}
