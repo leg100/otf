@@ -71,6 +71,7 @@ type Run struct {
 	forceCancelAvailableAt *time.Time
 	isDestroy              bool
 	message                string
+	executionMode          ExecutionMode
 	positionInQueue        int
 	refresh                bool
 	refreshOnly            bool
@@ -111,6 +112,7 @@ func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
+func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
 
 // CanAccess always return true - some actions are invoked on behalf of a run,
 // e.g. locking a workpace for a run

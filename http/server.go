@@ -197,6 +197,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 			// Agent token routes
 			r.GET("/agent/details", s.GetCurrentAgent)
+			r.PST("/agent/create", s.CreateAgentToken)
 		})
 	})
 

@@ -36,6 +36,8 @@ type SpoolerDaemon struct {
 
 	// Logger for logging various events
 	logr.Logger
+
+	mode AgentMode
 }
 
 type RunLister interface {
@@ -91,6 +93,7 @@ func NewSpooler(ctx context.Context, svc otf.RunService, watcher Watcher, logger
 		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Watcher:      watcher,
 		Logger:       logger,
+		mode:         opts.Mode,
 	}, nil
 }
 
@@ -124,6 +127,21 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Run:
 		s.V(2).Info("received run event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
+
+		switch s.mode {
+		case InternalAgentMode:
+			// internal agent only processes runs in remote execution mode
+			if obj.ExecutionMode() != otf.RemoteExecutionMode {
+				return
+			}
+		case ExternalAgentMode:
+			// external agent only processes runs in agent execution mode
+			if obj.ExecutionMode() != otf.AgentExecutionMode {
+				return
+			}
+		default:
+			panic("invalid agent mode: " + s.mode)
+		}
 
 		if obj.Queued() {
 			s.queue <- obj

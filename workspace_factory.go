@@ -26,7 +26,7 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 		createdAt:           CurrentTimestamp(),
 		updatedAt:           CurrentTimestamp(),
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
-		executionMode:       DefaultExecutionMode,
+		executionMode:       RemoteExecutionMode,
 		fileTriggersEnabled: DefaultFileTriggersEnabled,
 		globalRemoteState:   true, // Only global remote state is supported
 		terraformVersion:    DefaultTerraformVersion,
@@ -87,7 +87,7 @@ type WorkspaceCreateOptions struct {
 	AllowDestroyPlan           *bool
 	AutoApply                  *bool
 	Description                *string
-	ExecutionMode              *string
+	ExecutionMode              *ExecutionMode
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	MigrationEnvironment       *string

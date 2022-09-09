@@ -14,17 +14,23 @@ import (
 type AgentToken struct {
 	id               string
 	createdAt        time.Time
-	token            string
+	token            *string
 	description      string
 	organizationName string
 }
 
 func (t *AgentToken) ID() string               { return t.id }
 func (t *AgentToken) String() string           { return t.id }
-func (t *AgentToken) Token() string            { return t.token }
+func (t *AgentToken) Token() *string           { return t.token }
 func (t *AgentToken) CreatedAt() time.Time     { return t.createdAt }
 func (t *AgentToken) Description() string      { return t.description }
 func (t *AgentToken) OrganizationName() string { return t.organizationName }
+
+// HideToken nullifies the authentication token contained within, rendering
+// AgentToken suitable for exposure outside of otfd.
+func (t *AgentToken) HideToken() {
+	t.token = nil
+}
 
 // CanAccess implements the Subject interface - an agent can only acccess its
 // organization resources.
@@ -39,6 +45,7 @@ func (t *AgentToken) CanAccess(organizationName *string) bool {
 func (t *AgentToken) ToJSONAPI(req *http.Request) any {
 	return &jsonapi.AgentToken{
 		ID:               t.id,
+		Token:            t.token,
 		OrganizationName: t.organizationName,
 	}
 }
@@ -62,18 +69,22 @@ func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
 	token := AgentToken{
 		id:               NewID("at"),
 		createdAt:        CurrentTimestamp(),
-		token:            t,
+		token:            &t,
 		description:      opts.Description,
 		organizationName: opts.OrganizationName,
 	}
 	return &token, nil
 }
 
-func UnmarshalAgentTokenJSONAPI(d *jsonapi.AgentToken) *AgentToken {
-	return &AgentToken{
-		id:               d.ID,
-		organizationName: d.OrganizationName,
+func UnmarshalAgentTokenJSONAPI(dto *jsonapi.AgentToken) *AgentToken {
+	at := &AgentToken{
+		id:               dto.ID,
+		organizationName: dto.OrganizationName,
 	}
+	if dto.Token != nil {
+		at.token = dto.Token
+	}
+	return at
 }
 
 type AgentTokenRow struct {
@@ -89,7 +100,7 @@ func UnmarshalAgentTokenDBResult(row AgentTokenRow) *AgentToken {
 	return &AgentToken{
 		id:               row.TokenID.String,
 		createdAt:        row.CreatedAt.Time,
-		token:            row.Token.String,
+		token:            String(row.Token.String),
 		description:      row.Description.String,
 		organizationName: row.OrganizationName.String,
 	}

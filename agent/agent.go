@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -39,10 +40,23 @@ type NewAgentOptions struct {
 	// Organization if non-nil restricts the agent to processing runs belonging
 	// to the specified organization.
 	Organization *string
+	// Mode the agent is operating in: local or remote
+	Mode AgentMode
 }
+
+type AgentMode string
+
+const (
+	InternalAgentMode AgentMode = "internal"
+	ExternalAgentMode AgentMode = "external"
+)
 
 // NewAgent is the constructor for an Agent
 func NewAgent(ctx context.Context, logger logr.Logger, app otf.Application, opts NewAgentOptions) (*Agent, error) {
+	if opts.Mode != InternalAgentMode && opts.Mode != ExternalAgentMode {
+		return nil, fmt.Errorf("invalid agent mode: %s", opts.Mode)
+	}
+
 	spooler, err := NewSpooler(ctx, app, app, logger, opts)
 	if err != nil {
 		return nil, err

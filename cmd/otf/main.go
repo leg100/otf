@@ -40,6 +40,7 @@ func Run(ctx context.Context, args []string) error {
 
 	cmd.AddCommand(OrganizationCommand(cfg))
 	cmd.AddCommand(WorkspaceCommand(cfg))
+	cmd.AddCommand(AgentCommand(cfg))
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 

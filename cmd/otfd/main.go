@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
@@ -104,17 +105,16 @@ func run(ctx context.Context, args []string) error {
 	}
 	go scheduler.Start(ctx)
 
-	// TODO: use this logger for local agent
-	//
-	//logger = logger.WithValues("component", "agent")
-
-	// Run agent in background
-	// agent, err := agent.NewAgent(ctx, logger, app, agent.NewAgentOptions{})
-	// if err != nil {
-	// 	return fmt.Errorf("unable to start agent: %w", err)
-	// }
-
-	// go agent.Start(ctx)
+	// Run local agent in background
+	agent, err := agent.NewAgent(
+		ctx,
+		logger.WithValues("component", "agent"),
+		app,
+		agent.NewAgentOptions{Mode: agent.InternalAgentMode})
+	if err != nil {
+		return fmt.Errorf("unable to start agent: %w", err)
+	}
+	go agent.Start(ctx)
 
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
 	if err != nil {

@@ -10,6 +10,7 @@ type Run struct {
 	Actions                *RunActions          `jsonapi:"attr,actions"`
 	CreatedAt              time.Time            `jsonapi:"attr,created-at,iso8601"`
 	ForceCancelAvailableAt *time.Time           `jsonapi:"attr,force-cancel-available-at,iso8601"`
+	ExecutionMode          string               `jsonapi:"attr,execution-mode"`
 	HasChanges             bool                 `jsonapi:"attr,has-changes"`
 	IsDestroy              bool                 `jsonapi:"attr,is-destroy"`
 	Message                string               `jsonapi:"attr,message"`

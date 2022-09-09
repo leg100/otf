@@ -68,6 +68,7 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 		queue:   make(chan *otf.Run, 1),
 		Watcher: &testWatcher{ch: ch},
 		Logger:  logr.Discard(),
+		mode:    InternalAgentMode,
 	}
 
 	go spooler.Start(context.Background())
@@ -89,6 +90,7 @@ func TestSpooler_GetRunFromCancelation(t *testing.T) {
 		cancelations: make(chan Cancelation, 1),
 		Watcher:      &testWatcher{ch: ch},
 		Logger:       logr.Discard(),
+		mode:         InternalAgentMode,
 	}
 
 	go spooler.Start(context.Background())

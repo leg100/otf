@@ -43,7 +43,7 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	opts.ExecutionMode = cmd.Flags().String("execution-mode", otf.DefaultExecutionMode, "Which execution mode to use. Valid values are remote, local")
+	opts.ExecutionMode = (*otf.ExecutionMode)(cmd.Flags().String("execution-mode", string(otf.RemoteExecutionMode), "Which execution mode to use. Valid values are remote, local, and agent"))
 
 	spec.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
