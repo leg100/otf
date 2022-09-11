@@ -42,10 +42,10 @@ func Run(ctx context.Context, args []string) error {
 	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
 	cmd.Flags().StringVar(&cfg.Token, "token", "", "Agent token for authentication")
 	cmd.MarkFlagRequired("token")
-	cmd.SetArgs(args)
-	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+
+	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
 	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
 		return err
@@ -78,6 +78,7 @@ func Run(ctx context.Context, args []string) error {
 
 	agent, err := agent.NewAgent(ctx, logger, client, agent.NewAgentOptions{
 		Organization: otf.String(at.OrganizationName()),
+		Mode:         agent.ExternalAgentMode,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)

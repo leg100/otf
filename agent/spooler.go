@@ -76,29 +76,40 @@ func NewSpooler(ctx context.Context, svc otf.RunService, watcher Watcher, logger
 		}
 		listOpts.PageNumber = *page.NextPage()
 	}
+
 	// svc returns runs ordered by creation date, newest first, but we want
 	// oldest first, so we reverse the order
 	var oldest []*otf.Run
 	for _, r := range existing {
 		oldest = append([]*otf.Run{r}, oldest...)
 	}
-	logger.V(1).Info("retrieved queued runs", "total", len(existing))
-	// Populate queue
-	queue := make(chan *otf.Run, SpoolerCapacity)
-	for _, r := range oldest {
-		queue <- r
-	}
-	return &SpoolerDaemon{
-		queue:        queue,
+
+	logger.V(2).Info("retrieved queued runs", "total", len(existing))
+
+	s := &SpoolerDaemon{
+		queue:        make(chan *otf.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Watcher:      watcher,
 		Logger:       logger,
 		mode:         opts.Mode,
-	}, nil
+	}
+
+	// Convert retrieved runs to events and let the handler handle them
+	for _, r := range oldest {
+		s.handleEvent(otf.Event{
+			Type:    otf.EventRunStatusUpdate,
+			Payload: r,
+		})
+	}
+
+	return s, nil
 }
 
 // Start starts the spooler
 func (s *SpoolerDaemon) Start(ctx context.Context) error {
+	// TODO: there is a window between between retrieving existing queued runs
+	// in the constructor above and then watching run events here, in which
+	// time an event may be missed. The two stages should be reversed.
 	sub, err := s.Watch(ctx, otf.WatchOptions{})
 	if err != nil {
 		return err
@@ -150,7 +161,9 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 		} else if ev.Type == otf.EventRunForceCancel {
 			s.cancelations <- Cancelation{Run: obj, Forceful: true}
 		}
+	case string:
+		s.Info("stream update", "info", string(obj))
 	case error:
-		s.Error(obj, "streaming error")
+		s.Error(obj, "stream update")
 	}
 }

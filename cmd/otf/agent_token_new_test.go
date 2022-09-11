@@ -17,6 +17,6 @@ func TestAgentTokenNewCommand(t *testing.T) {
 	cmd.SetOut(&buf)
 	require.NoError(t, cmd.Execute())
 	assert.Regexp(t,
-		regexp.MustCompile(`Successfully created agent token: [a-z0-9\-_]+`),
+		regexp.MustCompile(`Successfully created agent token: [a-zA-Z0-9\-_]+`),
 		buf.String())
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/leg100/otf"
@@ -17,8 +18,20 @@ func TestWorkspaceEdit(t *testing.T) {
 	factory := &http.FakeClientFactory{Workspace: ws}
 
 	cmd := WorkspaceEditCommand(factory)
-	cmd.SetArgs([]string{"dev", "--organization", "automatize"})
-	require.NoError(t, cmd.Execute())
+
+	t.Run("help", func(t *testing.T) {
+		cmd.SetArgs([]string{"dev", "--organization", "automatize"})
+		require.NoError(t, cmd.Execute())
+	})
+
+	t.Run("update execution mode", func(t *testing.T) {
+		cmd.SetArgs([]string{"dev", "--organization", "automatize", "--execution-mode", "local"})
+		buf := bytes.Buffer{}
+		cmd.SetOut(&buf)
+		require.NoError(t, cmd.Execute())
+
+		assert.Equal(t, "updated execution mode: local\n", buf.String())
+	})
 }
 
 func TestWorkspaceEditMissingOrganization(t *testing.T) {

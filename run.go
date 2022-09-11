@@ -332,6 +332,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 			IsDiscardable:     r.discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),
+		ExecutionMode:          string(r.ExecutionMode()),
 		ForceCancelAvailableAt: r.forceCancelAvailableAt,
 		HasChanges:             r.plan.HasChanges(),
 		IsDestroy:              r.IsDestroy(),

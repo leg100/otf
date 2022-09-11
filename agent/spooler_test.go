@@ -19,7 +19,7 @@ func TestSpooler_New(t *testing.T) {
 		&testRunService{runs: []*otf.Run{want}},
 		&testWatcher{},
 		logr.Discard(),
-		NewAgentOptions{},
+		NewAgentOptions{Mode: InternalAgentMode},
 	)
 	require.NoError(t, err)
 

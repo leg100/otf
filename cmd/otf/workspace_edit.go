@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/leg100/otf"
@@ -32,12 +31,9 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			out, err := json.MarshalIndent(ws, "", "    ")
-			if err != nil {
-				return err
+			if opts.ExecutionMode != nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode())
 			}
-
-			fmt.Println(string(out))
 
 			return nil
 		},

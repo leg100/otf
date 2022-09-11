@@ -79,7 +79,9 @@ func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, op
 		return nil, err
 	}
 
-	req, err := c.newRequest("PATCH", path, &options)
+	req, err := c.newRequest("PATCH", path, &dto.WorkspaceUpdateOptions{
+		ExecutionMode: (*string)(options.ExecutionMode),
+	})
 	if err != nil {
 		return nil, err
 	}

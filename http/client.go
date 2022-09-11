@@ -187,9 +187,15 @@ func (c *client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, e
 	client.ReconnectNotify = func(err error, next time.Duration) {
 		errch <- otf.Event{
 			Type:    otf.EventError,
-			Payload: fmt.Errorf("%w; url: %s; reconnecting in %s", err, u, next),
+			Payload: fmt.Errorf("%w; reconnecting in %s", err, next),
 		}
 	}
+	client.OnConnect(func(_ *sse.Client) {
+		errch <- otf.Event{
+			Type:    otf.EventInfo,
+			Payload: "successfully connected",
+		}
+	})
 	client.Headers = map[string]string{
 		"Authorization": "Bearer " + c.token,
 	}

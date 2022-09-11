@@ -199,12 +199,6 @@ func (opts *WorkspaceCreateOptions) Validate() error {
 			opts.ExecutionMode = &localExecutionMode
 		}
 	}
-	if opts.AgentPoolID != nil && (opts.ExecutionMode == nil || *opts.ExecutionMode != "agent") {
-		return errors.New("specifying an agent pool ID requires 'agent' execution mode")
-	}
-	if opts.AgentPoolID == nil && (opts.ExecutionMode != nil && *opts.ExecutionMode == "agent") {
-		return errors.New("'agent' execution mode requires an agent pool ID to be specified")
-	}
 	return nil
 }
 
@@ -301,12 +295,6 @@ func (opts *WorkspaceUpdateOptions) Validate() error {
 		} else {
 			opts.ExecutionMode = &localExecutionMode
 		}
-	}
-	if opts.AgentPoolID != nil && (opts.ExecutionMode == nil || *opts.ExecutionMode != "agent") {
-		return errors.New("specifying an agent pool ID requires 'agent' execution mode")
-	}
-	if opts.AgentPoolID == nil && (opts.ExecutionMode != nil && *opts.ExecutionMode == "agent") {
-		return errors.New("'agent' execution mode requires an agent pool ID to be specified")
 	}
 	return nil
 }

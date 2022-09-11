@@ -60,6 +60,7 @@ func (f *fakeWorkspacesClient) ListWorkspaces(ctx context.Context, opts otf.Work
 }
 
 func (f *fakeWorkspacesClient) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	f.workspace.UpdateWithOptions(ctx, opts)
 	return f.workspace, nil
 }
 
