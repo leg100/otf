@@ -20,16 +20,9 @@ const (
 
 func TestOTF(t *testing.T) {
 	tfpath := terraformPath(t)
+	t.Run("login", login(t, tfpath))
 	organization := createOrganization(t)
 	root := newRoot(t, organization)
-
-	t.Run("terraform login", func(t *testing.T) {
-		login(t, root, tfpath)
-	})
-
-	t.Run("create organization", func(t *testing.T) {
-		createOrganization(t)
-	})
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
@@ -139,28 +132,32 @@ func createOrganization(t *testing.T) string {
 	return organization
 }
 
-func login(t *testing.T, root, tfpath string) {
-	// nullifying PATH ensures `terraform login` skips opening a browser
-	// window
-	t.Setenv("PATH", "")
+func login(t *testing.T, tfpath string) func(t *testing.T) {
+	return func(t *testing.T) {
+		// nullifying PATH ensures `terraform login` skips opening a browser
+		// window
+		t.Setenv("PATH", "")
 
-	token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
-	if !foundToken {
-		t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
+		token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
+		if !foundToken {
+			t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
+		}
+
+		e, tferr, err := expect.SpawnWithArgs(
+			[]string{tfpath, "login", "localhost:8080"},
+			time.Minute,
+			expect.PartialMatch(true),
+			expect.Verbose(testing.Verbose()))
+		require.NoError(t, err)
+		defer e.Close()
+
+		e.ExpectBatch([]expect.Batcher{
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
+			&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
+		}, time.Minute)
+		require.NoError(t, <-tferr)
 	}
-
-	chdir(t, root)
-
-	e, tferr, err := expect.Spawn(fmt.Sprintf("%s login localhost:8080", tfpath), time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
-	require.NoError(t, err)
-	defer e.Close()
-
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
-		&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
-	}, time.Minute)
-	require.NoError(t, <-tferr)
 }
 
 func terraformPath(t *testing.T) string {
