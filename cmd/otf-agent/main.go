@@ -63,13 +63,13 @@ func Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	// Configure client, but doesn't connect yet
+	// NewClient sends unauthenticated ping to server
 	client, err := cfg.NewClient()
 	if err != nil {
 		return err
 	}
 
-	// Confirm connectivity and token validity
+	// Confirm token validity
 	at, err := client.GetAgentToken(ctx, "")
 	if err != nil {
 		return fmt.Errorf("attempted authentication: %w", err)
