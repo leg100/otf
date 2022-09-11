@@ -71,6 +71,7 @@ type Run struct {
 	forceCancelAvailableAt *time.Time
 	isDestroy              bool
 	message                string
+	executionMode          ExecutionMode
 	positionInQueue        int
 	refresh                bool
 	refreshOnly            bool
@@ -111,6 +112,7 @@ func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
+func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
 
 // CanAccess always return true - some actions are invoked on behalf of a run,
 // e.g. locking a workpace for a run
@@ -330,6 +332,7 @@ func (r *Run) ToJSONAPI(req *http.Request) any {
 			IsDiscardable:     r.discardable(),
 		},
 		CreatedAt:              r.CreatedAt(),
+		ExecutionMode:          string(r.ExecutionMode()),
 		ForceCancelAvailableAt: r.forceCancelAvailableAt,
 		HasChanges:             r.plan.HasChanges(),
 		IsDestroy:              r.IsDestroy(),
@@ -817,18 +820,18 @@ func (l *RunList) ToJSONAPI(req *http.Request) any {
 type RunListOptions struct {
 	ListOptions
 	// Filter by run statuses (with an implicit OR condition)
-	Statuses []RunStatus
+	Statuses []RunStatus `schema:"statuses,omitempty"`
 	// Filter by workspace ID
-	WorkspaceID *string `schema:"workspace_id"`
+	WorkspaceID *string `schema:"workspace_id,omitempty"`
 	// Filter by organization name
-	OrganizationName *string `schema:"organization_name"`
+	OrganizationName *string `schema:"organization_name,omitempty"`
 	// Filter by workspace name
-	WorkspaceName *string `schema:"workspace_name"`
+	WorkspaceName *string `schema:"workspace_name,omitempty"`
 	// Filter by speculative or non-speculative
-	Speculative *bool
+	Speculative *bool `schema:"-"`
 	// A list of relations to include. See available resources:
 	// https://www.terraform.io/docs/cloud/api/run.html#available-related-resources
-	Include *string `schema:"include"`
+	Include *string `schema:"include,omitempty"`
 }
 
 // LogFields provides fields for logging

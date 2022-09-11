@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
@@ -35,6 +36,8 @@ type SpoolerDaemon struct {
 
 	// Logger for logging various events
 	logr.Logger
+
+	mode AgentMode
 }
 
 type RunLister interface {
@@ -50,52 +53,63 @@ type Cancelation struct {
 	Forceful bool
 }
 
-const (
-	// SpoolerCapacity is the max number of queued runs the spooler can store
-	SpoolerCapacity = 100
-)
-
-// QueuedStatuses are the list of run statuses that indicate it is in a
-// queued state
-var QueuedStatuses = []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued}
+// SpoolerCapacity is the max number of queued runs the spooler can store
+const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(svc otf.RunService, watcher Watcher, logger logr.Logger) (*SpoolerDaemon, error) {
+func NewSpooler(ctx context.Context, svc otf.RunService, watcher Watcher, logger logr.Logger, opts NewAgentOptions) (*SpoolerDaemon, error) {
+	listOpts := otf.RunListOptions{
+		Statuses:         []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
+		OrganizationName: opts.Organization,
+	}
+
 	// retrieve existing runs, page by page
 	var existing []*otf.Run
 	for {
-		opts := otf.RunListOptions{Statuses: QueuedStatuses}
-		page, err := svc.ListRuns(otf.ContextWithAppUser(), opts)
+		page, err := svc.ListRuns(ctx, listOpts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("populating spooler with queued runs: %w", err)
 		}
 		existing = append(existing, page.Items...)
 		if page.NextPage() == nil {
 			break
 		}
-		opts.PageNumber = *page.NextPage()
+		listOpts.PageNumber = *page.NextPage()
 	}
+
 	// svc returns runs ordered by creation date, newest first, but we want
 	// oldest first, so we reverse the order
 	var oldest []*otf.Run
 	for _, r := range existing {
 		oldest = append([]*otf.Run{r}, oldest...)
 	}
-	// Populate queue
-	queue := make(chan *otf.Run, SpoolerCapacity)
-	for _, r := range oldest {
-		queue <- r
-	}
-	return &SpoolerDaemon{
-		queue:        queue,
+
+	logger.V(2).Info("retrieved queued runs", "total", len(existing))
+
+	s := &SpoolerDaemon{
+		queue:        make(chan *otf.Run, SpoolerCapacity),
 		cancelations: make(chan Cancelation, SpoolerCapacity),
 		Watcher:      watcher,
 		Logger:       logger,
-	}, nil
+		mode:         opts.Mode,
+	}
+
+	// Convert retrieved runs to events and let the handler handle them
+	for _, r := range oldest {
+		s.handleEvent(otf.Event{
+			Type:    otf.EventRunStatusUpdate,
+			Payload: r,
+		})
+	}
+
+	return s, nil
 }
 
 // Start starts the spooler
 func (s *SpoolerDaemon) Start(ctx context.Context) error {
+	// TODO: there is a window between between retrieving existing queued runs
+	// in the constructor above and then watching run events here, in which
+	// time an event may be missed. The two stages should be reversed.
 	sub, err := s.Watch(ctx, otf.WatchOptions{})
 	if err != nil {
 		return err
@@ -125,6 +139,21 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	case *otf.Run:
 		s.V(2).Info("received run event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
 
+		switch s.mode {
+		case InternalAgentMode:
+			// internal agent only processes runs in remote execution mode
+			if obj.ExecutionMode() != otf.RemoteExecutionMode {
+				return
+			}
+		case ExternalAgentMode:
+			// external agent only processes runs in agent execution mode
+			if obj.ExecutionMode() != otf.AgentExecutionMode {
+				return
+			}
+		default:
+			panic("invalid agent mode: " + s.mode)
+		}
+
 		if obj.Queued() {
 			s.queue <- obj
 		} else if ev.Type == otf.EventRunCancel {
@@ -132,5 +161,9 @@ func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 		} else if ev.Type == otf.EventRunForceCancel {
 			s.cancelations <- Cancelation{Run: obj, Forceful: true}
 		}
+	case string:
+		s.Info("stream update", "info", string(obj))
+	case error:
+		s.Error(obj, "stream update")
 	}
 }

@@ -27,6 +27,8 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
 
+	log.Info("starting phase")
+
 	env, err := NewEnvironment(
 		log,
 		w.Application,
@@ -43,7 +45,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	// Start the job before proceeding in case another agent has started it.
 	run, err = w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
 	if err != nil {
-		// bail out without error - the error is logged server-side
+		log.Error(err, "starting phase")
 		return
 	}
 
@@ -54,14 +56,19 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	var finishOptions otf.PhaseFinishOptions
 
+	log.Info("executing phase")
+
 	if err := env.Execute(run); err != nil {
+		log.Error(err, "executing phase")
 		finishOptions.Errored = true
 	}
+
+	log.Info("finishing phase")
 
 	// Regardless of job success, mark job as finished
 	_, err = w.FinishPhase(ctx, run.ID(), run.Phase(), finishOptions)
 	if err != nil {
-		// bail out without error - the error is logged server-side
+		log.Error(err, "finishing phase")
 		return
 	}
 }

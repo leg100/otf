@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/dto"
+	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
 )
 
@@ -173,6 +175,36 @@ func (c *client) newRequest(method, path string, v interface{}) (*retryablehttp.
 	}
 
 	return req, nil
+}
+
+func (c *client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, error) {
+	u, err := c.baseURL.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+	client := sse.NewClient(u.String())
+	client.EncodingBase64 = true
+	client.ReconnectNotify = func(err error, next time.Duration) {
+		errch <- otf.Event{
+			Type:    otf.EventError,
+			Payload: fmt.Errorf("%w; reconnecting in %s", err, next),
+		}
+	}
+	client.OnConnect(func(_ *sse.Client) {
+		errch <- otf.Event{
+			Type:    otf.EventInfo,
+			Payload: "successfully connected",
+		}
+	})
+	client.Headers = map[string]string{
+		"Authorization": "Bearer " + c.token,
+	}
+	if c.insecure {
+		client.Connection.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+	}
+	return client, nil
 }
 
 // Helper method that serializes the given ptr or ptr slice into a JSON
@@ -462,4 +494,12 @@ func parsePagination(body io.Reader) (*dto.Pagination, error) {
 		return &dto.Pagination{}, err
 	}
 	return &raw.Meta.Pagination, nil
+}
+
+func newTestClient(srv string) (*client, error) {
+	u, err := url.Parse(srv)
+	if err != nil {
+		return nil, err
+	}
+	return &client{insecure: true, baseURL: u}, nil
 }

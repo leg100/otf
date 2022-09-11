@@ -50,6 +50,10 @@ func (r *Router) Headers(pairs ...string) *Route {
 	return &Route{r.Router.Headers(pairs...)}
 }
 
+func (r *Router) PathPrefix(prefix string) *Route {
+	return &Route{r.Router.PathPrefix(prefix)}
+}
+
 // Route wraps mux's Route, adding various helper methods
 type Route struct {
 	*mux.Route

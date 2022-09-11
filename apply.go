@@ -24,7 +24,7 @@ func (a *Apply) Phase() PhaseType { return ApplyPhase }
 func (a *Apply) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Apply{
 		ID:               ConvertID(a.runID, "apply"),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("runs/%s/logs/apply", a.runID)),
+		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("api/v2/runs/%s/logs/apply", a.runID)),
 		Status:           string(a.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}

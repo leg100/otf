@@ -51,6 +51,7 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.updateStatus(RunPending)
 	run.replaceAddrs = opts.ReplaceAddrs
 	run.targetAddrs = opts.TargetAddrs
+	run.executionMode = ws.ExecutionMode()
 	if opts.IsDestroy != nil {
 		run.isDestroy = *opts.IsDestroy
 	}

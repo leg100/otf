@@ -56,7 +56,7 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 }
 
 // Start starts the supervisor's workers.
-func (s *Supervisor) Start(ctx context.Context) {
+func (s *Supervisor) Start(ctx context.Context) error {
 	for i := 0; i < s.concurrency; i++ {
 		w := &Worker{Supervisor: s}
 		go w.Start(ctx)
@@ -67,7 +67,7 @@ func (s *Supervisor) Start(ctx context.Context) {
 		case cancelation := <-s.GetCancelation():
 			s.Cancel(cancelation.Run.ID(), cancelation.Forceful)
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }

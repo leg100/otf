@@ -29,6 +29,7 @@ type RunDBResult struct {
 	Speculative            bool                          `json:"speculative"`
 	AutoApply              bool                          `json:"auto_apply"`
 	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
+	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
@@ -50,6 +51,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		autoApply:              result.AutoApply,
 		speculative:            result.Speculative,
 		workspaceName:          result.WorkspaceName.String,
+		executionMode:          ExecutionMode(result.ExecutionMode.String),
 		organizationName:       result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
 		configurationVersionID: result.ConfigurationVersionID.String,
@@ -82,6 +84,7 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 		createdAt:              d.CreatedAt,
 		forceCancelAvailableAt: d.ForceCancelAvailableAt,
 		isDestroy:              d.IsDestroy,
+		executionMode:          ExecutionMode(d.ExecutionMode),
 		message:                d.Message,
 		positionInQueue:        d.PositionInQueue,
 		refresh:                d.Refresh,
@@ -97,6 +100,18 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 	}
 
 	return run
+}
+
+// UnmarshalRunListJSONAPI converts a DTO into a run list
+func UnmarshalRunListJSONAPI(json *dto.RunList) *RunList {
+	wl := RunList{
+		Pagination: UnmarshalPaginationJSONAPI(json.Pagination),
+	}
+	for _, i := range json.Items {
+		wl.Items = append(wl.Items, UnmarshalRunJSONAPI(i))
+	}
+
+	return &wl
 }
 
 func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {

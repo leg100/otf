@@ -82,7 +82,7 @@ func (cv *ConfigurationVersion) ToJSONAPI(req *http.Request) any {
 		Source:           string(cv.Source()),
 		Status:           string(cv.Status()),
 		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
-		UploadURL:        fmt.Sprintf("/configuration-versions/%s/upload", cv.ID()),
+		UploadURL:        fmt.Sprintf("/api/v2/configuration-versions/%s/upload", cv.ID()),
 	}
 	for _, ts := range cv.StatusTimestamps() {
 		switch ts.Status {

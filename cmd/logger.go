@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -12,18 +12,20 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type loggerConfig struct {
+const DefaultLogLevel = "info"
+
+type LoggerConfig struct {
 	level string
 
 	// Toggle log colors. Must be one of auto, true, or false.
 	color string
 }
 
-// newLoggerConfigFromFlags adds flags to the given flagset, and, after the
+// NewLoggerConfigFromFlags adds flags to the given flagset, and, after the
 // flagset is parsed by the caller, the flags populate the returned logger
 // config.
-func newLoggerConfigFromFlags(flags *pflag.FlagSet) *loggerConfig {
-	cfg := loggerConfig{}
+func NewLoggerConfigFromFlags(flags *pflag.FlagSet) *LoggerConfig {
+	cfg := LoggerConfig{}
 
 	flags.StringVarP(&cfg.level, "log-level", "l", DefaultLogLevel, "Logging level")
 	flags.StringVar(&cfg.color, "log-color", "auto", "Toggle log colors: auto, true or false. Auto enables colors if using a TTY.")
@@ -31,7 +33,7 @@ func newLoggerConfigFromFlags(flags *pflag.FlagSet) *loggerConfig {
 	return &cfg
 }
 
-func newLogger(cfg *loggerConfig) (logr.Logger, error) {
+func NewLogger(cfg *LoggerConfig) (logr.Logger, error) {
 	zlvl, err := zerolog.ParseLevel(cfg.level)
 	if err != nil {
 		return logr.Logger{}, err

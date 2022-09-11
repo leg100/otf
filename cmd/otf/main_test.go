@@ -39,6 +39,10 @@ func TestMain(t *testing.T) {
 			args: []string{"workspaces", "unlock", "-h"},
 		},
 		{
+			name: "agent token create",
+			args: []string{"agents", "tokens", "new", "-h"},
+		},
+		{
 			name: "invalid",
 			args: []string{"invalid", "-h"},
 			err:  "unknown command \"invalid\" for \"otf\"",

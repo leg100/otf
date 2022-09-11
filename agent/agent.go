@@ -5,9 +5,11 @@ package agent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -33,11 +35,29 @@ type Agent struct {
 	*Supervisor
 }
 
-// NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, app otf.Application, sub Watcher) (*Agent, error) {
-	logger = logger.WithValues("component", "agent")
+// NewAgentOptions are optional arguments to the NewAgent constructor
+type NewAgentOptions struct {
+	// Organization if non-nil restricts the agent to processing runs belonging
+	// to the specified organization.
+	Organization *string
+	// Mode the agent is operating in: local or remote
+	Mode AgentMode
+}
 
-	spooler, err := NewSpooler(app, sub, logger)
+type AgentMode string
+
+const (
+	InternalAgentMode AgentMode = "internal"
+	ExternalAgentMode AgentMode = "external"
+)
+
+// NewAgent is the constructor for an Agent
+func NewAgent(ctx context.Context, logger logr.Logger, app otf.Application, opts NewAgentOptions) (*Agent, error) {
+	if opts.Mode != InternalAgentMode && opts.Mode != ExternalAgentMode {
+		return nil, fmt.Errorf("invalid agent mode: %s", opts.Mode)
+	}
+
+	spooler, err := NewSpooler(ctx, app, app, logger, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +74,16 @@ func NewAgent(logger logr.Logger, app otf.Application, sub Watcher) (*Agent, err
 }
 
 // Start starts the agent daemon
-func (a *Agent) Start(ctx context.Context) {
-	// start spooler in background TODO: error not handled
-	go a.Spooler.Start(ctx)
+func (a *Agent) Start(ctx context.Context) error {
+	g, ctx := errgroup.WithContext(ctx)
 
-	a.Supervisor.Start(ctx)
+	g.Go(func() error {
+		return a.Spooler.Start(ctx)
+	})
+
+	g.Go(func() error {
+		return a.Supervisor.Start(ctx)
+	})
+
+	return g.Wait()
 }

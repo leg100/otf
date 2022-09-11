@@ -14,7 +14,7 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
-type uploadPlanFileOptions struct {
+type planFileOptions struct {
 	Format otf.PlanFormat `schema:"format,required"`
 }
 
@@ -47,6 +47,44 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, r, run, withCode(http.StatusCreated))
+}
+
+func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	opts := otf.PhaseStartOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	run, err := s.Application.StartPhase(
+		r.Context(),
+		vars["id"],
+		otf.PhaseType(vars["phase"]),
+		opts)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	writeResponse(w, r, run)
+}
+
+func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	opts := otf.PhaseFinishOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	run, err := s.Application.FinishPhase(
+		r.Context(),
+		vars["id"],
+		otf.PhaseType(vars["phase"]),
+		opts)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	writeResponse(w, r, run)
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +209,7 @@ func (s *Server) ForceCancelRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request) {
-	opts := uploadPlanFileOptions{}
+	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -189,7 +227,7 @@ func (s *Server) getPlanFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadPlanFile(w http.ResponseWriter, r *http.Request) {
-	opts := uploadPlanFileOptions{}
+	opts := planFileOptions{}
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return

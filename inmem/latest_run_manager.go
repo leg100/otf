@@ -15,13 +15,13 @@ type LatestRunManager struct {
 	latest map[string]string
 }
 
-func NewLatestRunManager(svc otf.WorkspaceService) (*LatestRunManager, error) {
+func NewLatestRunManager(ctx context.Context, svc otf.WorkspaceService) (*LatestRunManager, error) {
 	m := &LatestRunManager{}
 
 	// Retrieve latest run for each workspace
 	opts := otf.WorkspaceListOptions{}
 	for {
-		listing, err := svc.ListWorkspaces(otf.ContextWithAppUser(), opts)
+		listing, err := svc.ListWorkspaces(ctx, opts)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving latest runs: %w", err)
 		}

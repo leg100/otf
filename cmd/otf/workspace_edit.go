@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/leg100/otf"
@@ -32,18 +31,15 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			out, err := json.MarshalIndent(ws, "", "    ")
-			if err != nil {
-				return err
+			if opts.ExecutionMode != nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "updated execution mode: %s\n", ws.ExecutionMode())
 			}
-
-			fmt.Println(string(out))
 
 			return nil
 		},
 	}
 
-	opts.ExecutionMode = cmd.Flags().String("execution-mode", otf.DefaultExecutionMode, "Which execution mode to use. Valid values are remote, local")
+	opts.ExecutionMode = (*otf.ExecutionMode)(cmd.Flags().String("execution-mode", string(otf.RemoteExecutionMode), "Which execution mode to use. Valid values are remote, local, and agent"))
 
 	spec.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")

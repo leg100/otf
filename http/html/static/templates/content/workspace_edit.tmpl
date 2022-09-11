@@ -28,12 +28,11 @@
       <fieldset>
         <legend>Execution mode</legend>
         <div class="radio">
+        {{ range $mode := .Content.ExecutionModes }}
           <div>
-            <input type="radio" name="execution_mode" id="remote" value="remote" {{ if eq .Content.ExecutionMode "remote" }}checked{{ end }}/><label for="remote">Remote</label>
+            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ if eq $.Content.ExecutionMode $mode }}checked{{ end }}/><label for="{{ $mode }}">{{ title $mode }}</label>
           </div>
-          <div>
-            <input type="radio" name="execution_mode" id="local" value="local" {{ if eq .Content.ExecutionMode "local" }}checked{{ end }}/><label for="local">Local</label>
-          </div>
+        {{ end }}
         </div>
       </fieldset>
     </div>

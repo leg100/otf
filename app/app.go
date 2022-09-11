@@ -35,7 +35,7 @@ type Application struct {
 
 // NewApplication constructs an application, initialising various services and
 // daemons.
-func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
+func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
@@ -53,7 +53,7 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	}
 
 	// Setup latest run manager
-	latest, err := inmem.NewLatestRunManager(app)
+	latest, err := inmem.NewLatestRunManager(ctx, app)
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +66,12 @@ func NewApplication(logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*A
 	app.proxy = proxy
 
 	// Populate mappings with identifiers
-	if err := mapper.Populate(app, app); err != nil {
+	if err := mapper.Populate(ctx, app, app); err != nil {
 		return nil, err
 	}
 
 	queues := inmem.NewWorkspaceQueueManager()
-	if err := queues.Populate(app); err != nil {
+	if err := queues.Populate(ctx, app); err != nil {
 		return nil, fmt.Errorf("populating workspace queues: %w", err)
 	}
 	app.queues = queues

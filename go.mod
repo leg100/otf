@@ -33,6 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 )
 
@@ -80,3 +81,5 @@ require (
 )
 
 //replace github.com/leg100/go-tfe => ../go-tfe
+
+replace github.com/r3labs/sse/v2 => github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad

@@ -57,6 +57,7 @@ SELECT
     configuration_versions.speculative,
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
+    workspaces.execution_mode AS execution_mode,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -129,6 +130,7 @@ SELECT
     configuration_versions.speculative,
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
+    workspaces.execution_mode AS execution_mode,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -180,6 +182,7 @@ SELECT
     configuration_versions.speculative,
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
+    workspaces.execution_mode AS execution_mode,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps

@@ -86,7 +86,7 @@ func (e *Environment) Execute(phase Doer) (err error) {
 	var errors *multierror.Error
 
 	if err := phase.Do(e); err != nil {
-		errors = multierror.Append(errors, fmt.Errorf("executing phase: %w", err))
+		errors = multierror.Append(errors, err)
 	}
 
 	// Mark the logs as fully uploaded
@@ -118,6 +118,8 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 		return fmt.Errorf("execution canceled")
 	}
 
+	logger := e.Logger.WithValues("name", name, "args", args, "path", e.path)
+
 	cmd := exec.Command(name, args...)
 	cmd.Dir = e.path
 	cmd.Stdout = e.out
@@ -128,17 +130,18 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd.Stderr = errWriter
 
 	if err := cmd.Start(); err != nil {
-		e.Error(err, "starting command", "stderr", stderr.String(), "path", e.path)
+		logger.Error(err, "starting command", "stderr", stderr.String())
 		return err
 	}
 	// store process so that it can be canceled
 	e.proc = cmd.Process
 
+	logger.V(2).Info("running command")
+
 	if err := cmd.Wait(); err != nil {
-		e.Error(err, "running command", "stderr", stderr.String(), "path", e.path)
+		logger.Error(err, "running command", "stderr", stderr.String())
 		return err
 	}
-	e.V(2).Info("ran command", "name", name, "args", args, "path", e.path)
 
 	return nil
 }

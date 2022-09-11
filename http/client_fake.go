@@ -24,6 +24,7 @@ func (f FakeClientFactory) NewClient() (Client, error) {
 type FakeClient struct {
 	*fakeOrganizationsClient
 	*fakeWorkspacesClient
+	*fakeAgentTokensClient
 
 	// TODO: stubbed until implemented
 	otf.UserService
@@ -31,7 +32,6 @@ type FakeClient struct {
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService
-	otf.AgentTokenService
 	otf.LatestRunService
 }
 
@@ -60,6 +60,7 @@ func (f *fakeWorkspacesClient) ListWorkspaces(ctx context.Context, opts otf.Work
 }
 
 func (f *fakeWorkspacesClient) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	f.workspace.UpdateWithOptions(ctx, opts)
 	return f.workspace, nil
 }
 
@@ -69,4 +70,12 @@ func (f *fakeWorkspacesClient) LockWorkspace(ctx context.Context, spec otf.Works
 
 func (f *fakeWorkspacesClient) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	return f.workspace, nil
+}
+
+type fakeAgentTokensClient struct {
+	otf.AgentTokenService
+}
+
+func (f *fakeAgentTokensClient) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+	return otf.NewAgentToken(opts)
 }

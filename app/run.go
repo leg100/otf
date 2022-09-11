@@ -53,6 +53,11 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error
 // list.
 func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		subj, err := otf.SubjectFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		a.V(1).Info("authorization failure", "action", "listRuns", "subject", subj.String())
 		return nil, otf.ErrAccessNotPermitted
 	}
 
@@ -257,7 +262,7 @@ func (a *Application) UploadLockFile(ctx context.Context, runID string, plan []b
 	return nil
 }
 
-// DeleteRun deletes a terraform run.
+// DeleteRun deletes a run.
 func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 	if !a.CanAccessRun(ctx, runID) {
 		return otf.ErrAccessNotPermitted
@@ -278,9 +283,15 @@ func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 	return nil
 }
 
-// StartPhase phase.
-func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseStartOptions) (*otf.Run, error) {
+// StartPhase starts a run phase.
+func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.PhaseType, _ otf.PhaseStartOptions) (*otf.Run, error) {
 	if !a.CanAccessRun(ctx, runID) {
+		subj, err := otf.SubjectFromContext(ctx)
+		if err != nil {
+			a.V(1).Info("cannot find subject")
+			return nil, err
+		}
+		a.V(1).Info("authorization failure", "action", "startPhase", "subject", subj.String())
 		return nil, otf.ErrAccessNotPermitted
 	}
 
@@ -296,10 +307,16 @@ func (a *Application) StartPhase(ctx context.Context, runID string, phase otf.Ph
 	return run, nil
 }
 
-// FinishPhase phase. Creates a report of changes before updating the status of
+// FinishPhase finishes a phase. Creates a report of changes before updating the status of
 // the run.
 func (a *Application) FinishPhase(ctx context.Context, runID string, phase otf.PhaseType, opts otf.PhaseFinishOptions) (*otf.Run, error) {
 	if !a.CanAccessRun(ctx, runID) {
+		subj, err := otf.SubjectFromContext(ctx)
+		if err != nil {
+			a.V(1).Info("cannot find subject")
+			return nil, err
+		}
+		a.V(1).Info("authorization failure", "action", "startPhase", "subject", subj.String())
 		return nil, otf.ErrAccessNotPermitted
 	}
 

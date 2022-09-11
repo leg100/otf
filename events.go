@@ -15,6 +15,7 @@ const (
 	EventRunCancel       EventType = "run_cancel"
 	EventRunForceCancel  EventType = "run_force_cancel"
 	EventError           EventType = "error"
+	EventInfo            EventType = "info"
 )
 
 // EventType identifies the type of event

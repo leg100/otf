@@ -11,7 +11,7 @@ import (
 func (db *DB) CreateAgentToken(ctx context.Context, token *otf.AgentToken) error {
 	_, err := db.InsertAgentToken(ctx, pggen.InsertAgentTokenParams{
 		TokenID:          String(token.ID()),
-		Token:            String(token.Token()),
+		Token:            String(*token.Token()),
 		Description:      String(token.Description()),
 		OrganizationName: String(token.OrganizationName()),
 		CreatedAt:        Timestamptz(token.CreatedAt()),

@@ -15,9 +15,11 @@ func TestSpooler_New(t *testing.T) {
 	want := otf.NewTestRun(t, otf.TestRunCreateOptions{Status: otf.RunPlanQueued})
 
 	spooler, err := NewSpooler(
+		context.Background(),
 		&testRunService{runs: []*otf.Run{want}},
 		&testWatcher{},
 		logr.Discard(),
+		NewAgentOptions{Mode: InternalAgentMode},
 	)
 	require.NoError(t, err)
 
@@ -66,6 +68,7 @@ func TestSpooler_GetRunFromEvent(t *testing.T) {
 		queue:   make(chan *otf.Run, 1),
 		Watcher: &testWatcher{ch: ch},
 		Logger:  logr.Discard(),
+		mode:    InternalAgentMode,
 	}
 
 	go spooler.Start(context.Background())
@@ -87,6 +90,7 @@ func TestSpooler_GetRunFromCancelation(t *testing.T) {
 		cancelations: make(chan Cancelation, 1),
 		Watcher:      &testWatcher{ch: ch},
 		Logger:       logr.Discard(),
+		mode:         InternalAgentMode,
 	}
 
 	go spooler.Start(context.Background())

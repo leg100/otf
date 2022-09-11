@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"crypto/tls"
 	"net/http"
 
 	"github.com/leg100/jsonapi"
@@ -64,25 +63,4 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	s.eventsServer.ServeHTTP(w, r)
-}
-
-func newSSEServer() *sse.Server {
-	srv := sse.New()
-	// we don't use last-event-item functionality so turn it off
-	srv.AutoReplay = false
-	// encode payloads into base64 otherwise the JSON string payloads corrupt
-	// the SSE protocol
-	srv.EncodeBase64 = true
-	return srv
-}
-
-func newSSEClient(path string, insecure bool) *sse.Client {
-	client := sse.NewClient(path)
-	client.EncodingBase64 = true
-	if insecure {
-		client.Connection.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-	return client
 }

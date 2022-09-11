@@ -32,11 +32,11 @@ func NewMapper() *Mapper {
 }
 
 // Populate populates the mapper with identifiers
-func (m *Mapper) Populate(ws otf.WorkspaceService, rs otf.RunService) error {
-	if err := m.workspaces.populate(ws); err != nil {
+func (m *Mapper) Populate(ctx context.Context, ws otf.WorkspaceService, rs otf.RunService) error {
+	if err := m.workspaces.populate(ctx, ws); err != nil {
 		return err
 	}
-	if err := m.runs.populate(rs); err != nil {
+	if err := m.runs.populate(ctx, rs); err != nil {
 		return err
 	}
 	return nil

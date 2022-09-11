@@ -18,63 +18,11 @@ const (
 	client = "../_build/otf"
 )
 
-func newConfig(organization string) []byte {
-	config := `
-terraform {
-  backend "remote" {
-	hostname = "localhost:8080"
-	organization = "%s"
-
-	workspaces {
-	  name = "dev"
-	}
-  }
-}
-resource "null_resource" "e2e" {}
-`
-	return []byte(fmt.Sprintf(config, organization))
-}
-
 func TestOTF(t *testing.T) {
-	tfpath, err := exec.LookPath("terraform")
-	require.NoError(t, err)
-
-	// Create TF config
-	root := t.TempDir()
-	organization := uuid.NewString()
-	err = os.WriteFile(filepath.Join(root, "main.tf"), newConfig(organization), 0o600)
-	require.NoError(t, err)
-
-	t.Run("terraform login", func(t *testing.T) {
-		// nullifying PATH ensures `terraform login` skips opening a browser
-		// window
-		t.Setenv("PATH", "")
-
-		token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
-		if !foundToken {
-			t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
-		}
-
-		chdir(t, root)
-
-		e, tferr, err := expect.Spawn(fmt.Sprintf("%s login localhost:8080", tfpath), time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
-		require.NoError(t, err)
-		defer e.Close()
-
-		e.ExpectBatch([]expect.Batcher{
-			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
-			&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
-		}, time.Minute)
-		require.NoError(t, <-tferr)
-	})
-
-	t.Run("create organization", func(t *testing.T) {
-		cmd := exec.Command(client, "organizations", "new", organization)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
+	tfpath := terraformPath(t)
+	t.Run("login", login(t, tfpath))
+	organization := createOrganization(t)
+	root := newRoot(t, organization)
 
 	t.Run("terraform init", func(t *testing.T) {
 		chdir(t, root)
@@ -150,4 +98,72 @@ func chdir(t *testing.T, dir string) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal("unable to change current directory")
 	}
+}
+
+// newRoot creates a root module
+func newRoot(t *testing.T, organization string) string {
+	config := []byte(fmt.Sprintf(`
+terraform {
+  backend "remote" {
+	hostname = "localhost:8080"
+	organization = "%s"
+
+	workspaces {
+	  name = "dev"
+	}
+  }
+}
+resource "null_resource" "e2e" {}
+`, organization))
+
+	root := t.TempDir()
+	err := os.WriteFile(filepath.Join(root, "main.tf"), config, 0o600)
+	require.NoError(t, err)
+
+	return root
+}
+
+func createOrganization(t *testing.T) string {
+	organization := uuid.NewString()
+	cmd := exec.Command(client, "organizations", "new", organization)
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	return organization
+}
+
+func login(t *testing.T, tfpath string) func(t *testing.T) {
+	return func(t *testing.T) {
+		// nullifying PATH ensures `terraform login` skips opening a browser
+		// window
+		t.Setenv("PATH", "")
+
+		token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
+		if !foundToken {
+			t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
+		}
+
+		e, tferr, err := expect.SpawnWithArgs(
+			[]string{tfpath, "login", "localhost:8080"},
+			time.Minute,
+			expect.PartialMatch(true),
+			expect.Verbose(testing.Verbose()))
+		require.NoError(t, err)
+		defer e.Close()
+
+		e.ExpectBatch([]expect.Batcher{
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
+			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
+			&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
+		}, time.Minute)
+		require.NoError(t, <-tferr)
+	}
+}
+
+func terraformPath(t *testing.T) string {
+	path, err := exec.LookPath("terraform")
+	if err != nil {
+		t.Fatal("terraform executable not found in path")
+	}
+	return path
 }

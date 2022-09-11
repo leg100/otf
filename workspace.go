@@ -11,11 +11,15 @@ import (
 )
 
 const (
-	DefaultAllowDestroyPlan    = true
-	DefaultFileTriggersEnabled = true
-	DefaultTerraformVersion    = "1.0.10"
-	DefaultExecutionMode       = "remote"
+	DefaultAllowDestroyPlan                  = true
+	DefaultFileTriggersEnabled               = true
+	DefaultTerraformVersion                  = "1.0.10"
+	RemoteExecutionMode        ExecutionMode = "remote"
+	LocalExecutionMode         ExecutionMode = "local"
+	AgentExecutionMode         ExecutionMode = "agent"
 )
+
+type ExecutionMode string
 
 var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
@@ -29,7 +33,7 @@ type Workspace struct {
 	canQueueDestroyPlan        bool
 	description                string
 	environment                string
-	executionMode              string
+	executionMode              ExecutionMode
 	fileTriggersEnabled        bool
 	globalRemoteState          bool
 	lock                       WorkspaceLockState
@@ -60,7 +64,7 @@ func (ws *Workspace) AutoApply() bool                  { return ws.autoApply }
 func (ws *Workspace) CanQueueDestroyPlan() bool        { return ws.canQueueDestroyPlan }
 func (ws *Workspace) Environment() string              { return ws.environment }
 func (ws *Workspace) Description() string              { return ws.description }
-func (ws *Workspace) ExecutionMode() string            { return ws.executionMode }
+func (ws *Workspace) ExecutionMode() ExecutionMode     { return ws.executionMode }
 func (ws *Workspace) FileTriggersEnabled() bool        { return ws.fileTriggersEnabled }
 func (ws *Workspace) GlobalRemoteState() bool          { return ws.globalRemoteState }
 func (ws *Workspace) GetLock() WorkspaceLockState      { return ws.lock }
@@ -76,6 +80,11 @@ func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirect
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
 func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
+
+// ExecutionModes returns a list of possible execution modes
+func (ws *Workspace) ExecutionModes() []string {
+	return []string{"local", "remote", "agent"}
+}
 
 // QualifiedName returns the workspace's qualified name including the name of
 // its organization
@@ -195,7 +204,7 @@ func (ws *Workspace) ToJSONAPI(req *http.Request) any {
 		CreatedAt:            ws.CreatedAt(),
 		Description:          ws.Description(),
 		Environment:          ws.Environment(),
-		ExecutionMode:        ws.ExecutionMode(),
+		ExecutionMode:        string(ws.ExecutionMode()),
 		FileTriggersEnabled:  ws.FileTriggersEnabled(),
 		GlobalRemoteState:    ws.GlobalRemoteState(),
 		Locked:               ws.Locked(),
@@ -246,7 +255,7 @@ type WorkspaceUpdateOptions struct {
 	AutoApply                  *bool
 	Name                       *string
 	Description                *string
-	ExecutionMode              *string `schema:"execution_mode"`
+	ExecutionMode              *ExecutionMode `schema:"execution_mode"`
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	Operations                 *bool

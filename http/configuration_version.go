@@ -67,3 +67,13 @@ func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 }
+
+func (s *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	resp, err := s.DownloadConfig(r.Context(), vars["id"])
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	w.Write(resp)
+}
