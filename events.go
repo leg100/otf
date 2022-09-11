@@ -1,6 +1,10 @@
 package otf
 
-import "context"
+import (
+	"context"
+
+	"github.com/jackc/pgconn"
+)
 
 const (
 	EventOrganizationCreated EventType = "organization_created"
@@ -51,4 +55,8 @@ type WatchOptions struct {
 	OrganizationName *string `schema:"organization_name"`
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name"`
+}
+
+func UnmarshalPostgresEvent(n *pgconn.Notification) Event {
+	return Event{}
 }

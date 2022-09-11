@@ -35,12 +35,12 @@ type Application struct {
 
 // NewApplication constructs an application, initialising various services and
 // daemons.
-func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *bigcache.BigCache) (*Application, error) {
+func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *bigcache.BigCache, pubsub otf.PubSubService) (*Application, error) {
 	// Setup ID mapper
 	mapper := inmem.NewMapper()
 
 	app := &Application{
-		PubSubService: inmem.NewPubSub(),
+		PubSubService: pubsub,
 		Mapper:        mapper,
 		cache:         cache,
 		db:            db,

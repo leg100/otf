@@ -92,8 +92,15 @@ func run(ctx context.Context, args []string) error {
 	}
 	defer db.Close()
 
+	// Setup pub sub broker
+	pubsub, err := sql.NewPubSub(logger, db.Pool())
+	if err != nil {
+		return fmt.Errorf("setting up pub sub broker")
+	}
+	go pubsub.Start(ctx)
+
 	// Setup application services
-	app, err := app.NewApplication(ctx, logger, db, cache)
+	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}

@@ -25,6 +25,14 @@ func (db *DB) Close() {
 	}
 }
 
+func (db *DB) Pool() *pgxpool.Pool {
+	pool, ok := db.conn.(*pgxpool.Pool)
+	if ok {
+		return pool
+	}
+	return nil
+}
+
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
 func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
@@ -43,6 +51,8 @@ func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
 }
 
 // New constructs a new DB
+//
+// TODO: pass in context
 func New(logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
 	conn, err := pgxpool.Connect(context.Background(), path)
 	if err != nil {

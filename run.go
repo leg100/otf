@@ -753,6 +753,8 @@ type RunCreateOptions struct {
 
 // TestRunCreateOptions is for testing purposes only.
 type TestRunCreateOptions struct {
+	// override ID of run
+	ID          *string
 	Speculative bool
 	Status      RunStatus
 	AutoApply   bool
