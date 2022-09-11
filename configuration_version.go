@@ -18,6 +18,8 @@ const (
 	ConfigurationErrored  ConfigurationStatus = "errored"
 	ConfigurationPending  ConfigurationStatus = "pending"
 	ConfigurationUploaded ConfigurationStatus = "uploaded"
+	// Maximum config size is 10mb.
+	ConfigMaxSize int64 = 1024 * 1024 * 10
 )
 
 var ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")

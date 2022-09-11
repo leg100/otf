@@ -116,7 +116,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		// bearer token in the request, therefore it is currently *unauthenticated*
 		//
 		// TODO: migrate to signed URL
-		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion)
+		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
 
 		// Authenticated endpoints
 		api.Sub(func(r *html.Router) {

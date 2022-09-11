@@ -55,17 +55,20 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, cvl)
 }
 
-func (s *Server) UploadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, r.Body); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	if err := s.UploadConfig(r.Context(), vars["id"], buf.Bytes()); err != nil {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
+func (s *Server) UploadConfigurationVersion() http.HandlerFunc {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		buf := new(bytes.Buffer)
+		if _, err := io.Copy(buf, r.Body); err != nil {
+			writeError(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		if err := s.UploadConfig(r.Context(), vars["id"], buf.Bytes()); err != nil {
+			writeError(w, http.StatusNotFound, err)
+			return
+		}
+	})
+	return http.MaxBytesHandler(h, otf.ConfigMaxSize).ServeHTTP
 }
 
 func (s *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {
