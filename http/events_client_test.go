@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
@@ -26,7 +25,12 @@ func TestWatchClient(t *testing.T) {
 	router := mux.NewRouter()
 	router.HandleFunc("/watch", srv.watch)
 	webSrv := httptest.NewTLSServer(router)
-	defer webSrv.Close()
+	t.Cleanup(func() {
+		// closing chan terminates conn allowing server to close without timing
+		// out
+		close(serverCh)
+		defer webSrv.Close()
+	})
 
 	// setup client and subscribe to stream
 	client, err := newTestClient(webSrv.URL)
@@ -34,8 +38,7 @@ func TestWatchClient(t *testing.T) {
 	clientCh, err := client.Watch(context.Background(), otf.WatchOptions{})
 	require.NoError(t, err)
 
-	// Give client time to connect and subscribe before publishing message
-	time.Sleep(100 * time.Millisecond)
+	require.Equal(t, otf.Event{Type: otf.EventInfo, Payload: "successfully connected"}, <-clientCh)
 
 	// publish message server-side
 	wantRun := otf.NewTestRun(t, otf.TestRunCreateOptions{})
@@ -56,9 +59,4 @@ func TestWatchClient(t *testing.T) {
 	assert.Equal(t, wantRun.Status(), gotRun.Status())
 	assert.Equal(t, wantRun.ConfigurationVersionID(), gotRun.ConfigurationVersionID())
 	assert.Equal(t, wantRun.WorkspaceID(), gotRun.WorkspaceID())
-
-	// closing server chan terminates connection from the server-side,
-	// allowing the temp web server's deferred close above to complete,
-	// otherwise the test times out.
-	close(serverCh)
 }
