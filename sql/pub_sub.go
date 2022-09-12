@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
+	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const EventsChannelName = "events"
@@ -72,37 +73,41 @@ func (ps *PubSub) Start(ctx context.Context) error {
 	}
 
 	// TODO: retry upon error with exp backoff
-	for {
-		notification, err := conn.Conn().WaitForNotification(ctx)
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return nil
-			default:
-				ps.Error(err, "waiting for postgres notification")
+	op := func() error {
+		for {
+			notification, err := conn.Conn().WaitForNotification(ctx)
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					// parent has decided to shutdown so exit without error
+					return nil
+				default:
+					ps.Error(err, "waiting for postgres notification")
+					return err
+				}
+			}
+
+			msg := message{}
+			if err := json.Unmarshal([]byte(notification.Payload), &msg); err != nil {
+				ps.Error(err, "unmarshaling postgres notification")
 				continue
 			}
-		}
 
-		msg := message{}
-		if err := json.Unmarshal([]byte(notification.Payload), &msg); err != nil {
-			ps.Error(err, "unmarshaling postgres notification")
-			continue
-		}
+			if msg.PID == ps.pid {
+				// skip notifications that this process sent.
+				continue
+			}
 
-		if msg.PID == ps.pid {
-			// skip notifications that this process sent.
-			continue
-		}
+			event, err := ps.reassemble(ctx, msg)
+			if err != nil {
+				ps.Error(err, "unmarshaling postgres notification")
+				continue
+			}
 
-		event, err := ps.reassemble(ctx, msg)
-		if err != nil {
-			ps.Error(err, "unmarshaling postgres notification")
-			continue
+			ps.local.Publish(event)
 		}
-
-		ps.local.Publish(event)
 	}
+	return backoff.RetryNotify(op, backoff.NewExponentialBackOff(), nil)
 }
 
 // Publish sends an event to subscribers, via postgres to subscribers on
