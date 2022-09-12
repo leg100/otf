@@ -102,7 +102,10 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
-	g.Go(func() error { return pubsub.Start(ctx) })
+	g.Go(func() error {
+		err := pubsub.Start(ctx)
+		return fmt.Errorf("pubsub daemon terminated prematurely: %w", err)
+	})
 
 	// Setup application services
 	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
@@ -133,7 +136,10 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
 
-	g.Go(func() error { return server.Open(ctx) })
+	g.Go(func() error {
+		err := server.Open(ctx)
+		return fmt.Errorf("web server terminated prematurely: %w", err)
+	})
 
 	// Block until error or Ctrl-C received.
 	return g.Wait()
