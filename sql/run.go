@@ -26,15 +26,15 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 			WorkspaceID:            String(run.WorkspaceID()),
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("inserting run: %w", err)
 		}
 		_, err = db.InsertPlan(ctx, String(run.ID()), String(string(run.Plan().Status())))
 		if err != nil {
-			return err
+			return fmt.Errorf("inserting plan: %w", err)
 		}
 		_, err = db.InsertApply(ctx, String(run.ID()), String(string(run.Apply().Status())))
 		if err != nil {
-			return err
+			return fmt.Errorf("inserting apply: %w", err)
 		}
 		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
