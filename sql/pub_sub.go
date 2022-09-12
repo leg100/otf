@@ -63,7 +63,7 @@ func NewPubSub(logger logr.Logger, pool *pgxpool.Pool) (*PubSub, error) {
 func (ps *PubSub) Start(ctx context.Context) error {
 	conn, err := ps.pool.Acquire(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to acquire postgres connection: %w", err)
 	}
 	defer conn.Release()
 
