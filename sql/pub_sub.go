@@ -75,6 +75,7 @@ func (ps *PubSub) Start(ctx context.Context) error {
 	for {
 		notification, err := conn.Conn().WaitForNotification(ctx)
 		if err != nil {
+			ps.Error(err, "waiting for postgres notification")
 			return err
 		}
 
