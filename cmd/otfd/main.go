@@ -103,8 +103,10 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 	g.Go(func() error {
-		err := pubsub.Start(ctx)
-		return fmt.Errorf("pubsub daemon terminated prematurely: %w", err)
+		if err := pubsub.Start(ctx); err != nil {
+			return fmt.Errorf("pubsub daemon terminated prematurely: %w", err)
+		}
+		return nil
 	})
 
 	// Setup application services
@@ -137,8 +139,10 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	g.Go(func() error {
-		err := server.Open(ctx)
-		return fmt.Errorf("web server terminated prematurely: %w", err)
+		if err := server.Open(ctx); err != nil {
+			return fmt.Errorf("web server terminated prematurely: %w", err)
+		}
+		return nil
 	})
 
 	// Block until error or Ctrl-C received.
