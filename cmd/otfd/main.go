@@ -14,6 +14,7 @@ import (
 	"github.com/leg100/otf/sql"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -92,8 +93,19 @@ func run(ctx context.Context, args []string) error {
 	}
 	defer db.Close()
 
+	// Group several daemons and if any one of them errors then terminate them
+	// all
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Setup pub sub broker
+	pubsub, err := sql.NewPubSub(logger, db.Pool())
+	if err != nil {
+		return fmt.Errorf("setting up pub sub broker")
+	}
+	g.Go(func() error { return pubsub.Start(ctx) })
+
 	// Setup application services
-	app, err := app.NewApplication(ctx, logger, db, cache)
+	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
@@ -114,19 +126,17 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)
 	}
-	go agent.Start(ctx)
+	g.Go(func() error { return agent.Start(ctx) })
 
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
 
-	// Block until Ctrl-C received.
-	if err := server.Open(ctx); err != nil {
-		return err
-	}
+	g.Go(func() error { return server.Open(ctx) })
 
-	return nil
+	// Block until error or Ctrl-C received.
+	return g.Wait()
 }
 
 // newLoggerConfigFromFlags adds flags to the given flagset, and, after the
