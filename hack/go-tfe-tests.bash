@@ -13,4 +13,4 @@ export SKIP_PAID=1
 TESTS="${@:-Test(Workspaces(Create|List|Update|Delete|Unlock|Lock)|Organizations(Create|List|Read|Update)|StateVersions|Runs|Plans|Applies(Read|Logs)|ConfigurationVersions)}"
 
 cd $(GOPROXY=direct go mod download -json github.com/leg100/go-tfe@otf | jq -r '.Dir')
-go test -v -run $TESTS -timeout 60s
+go test -v -run $TESTS -timeout 120s
