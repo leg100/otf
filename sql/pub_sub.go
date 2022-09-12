@@ -143,8 +143,7 @@ func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error
 			return otf.Event{}, err
 		}
 	default:
-		// TODO: log error message
-		return otf.Event{}, nil
+		return otf.Event{}, fmt.Errorf("unknown table specified in events notification: %s", msg.Table)
 	}
 	return otf.Event{
 		Type:    otf.EventType(fmt.Sprintf("%s_%s", msg.Table, msg.Action)),
