@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
@@ -15,19 +15,22 @@ import (
 
 const EventsChannelName = "events"
 
+// a unique identity string for distinguishing this process from other otfd
+// processes
+var uniqID = uuid.New().String()
+
 // PubSub implements a distributed 'pub-sub' service for events, using postgres as a central broker
 type PubSub struct {
 	// postgres notification channel name
 	channel string
 	// pool from which to acquire a dedicated connection to postgres
 	pool *pgxpool.Pool
-	// acquired dedicated connection to postgres
-	conn *pgxpool.Conn
 	// local pub sub service to forward messages to
 	local otf.PubSubService
 	// db used for retrieving objects from the database
 	db otf.DB
 	logr.Logger
+	pid string
 }
 
 // message is the schema of the payload for use in the postgres notification channel.
@@ -38,8 +41,8 @@ type message struct {
 	Action string `json:"action"`
 	// ID is the primary key of the changed row
 	ID string `json:"id"`
-	// PID of the otfd process that sent this event
-	PID int `json:"pid"`
+	// PID is the process id that sent this event
+	PID string `json:"pid"`
 }
 
 func NewPubSub(logger logr.Logger, pool *pgxpool.Pool) (*PubSub, error) {
@@ -51,30 +54,26 @@ func NewPubSub(logger logr.Logger, pool *pgxpool.Pool) (*PubSub, error) {
 		local:   inmem.NewPubSub(),
 		pool:    pool,
 		Logger:  logger.WithValues("component", "pubsub"),
+		pid:     uniqID,
 	}, nil
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
 // local pubsub broker.
-//
-// TODO: start is responsible for acquiring connection and releasing it, but
-// Publish() relies on that connection being present and may be called before
-// start! Need to make this more rigorous.
 func (ps *PubSub) Start(ctx context.Context) error {
-	var err error
-	ps.conn, err = ps.pool.Acquire(ctx)
+	conn, err := ps.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	defer ps.conn.Release()
+	defer conn.Release()
 
-	if _, err := ps.conn.Exec(ctx, "listen "+ps.channel); err != nil {
+	if _, err := conn.Exec(ctx, "listen "+ps.channel); err != nil {
 		return err
 	}
 
 	// TODO: retry upon error with exp backoff
 	for {
-		notification, err := ps.conn.Conn().WaitForNotification(ctx)
+		notification, err := conn.Conn().WaitForNotification(ctx)
 		if err != nil {
 			return err
 		}
@@ -85,7 +84,7 @@ func (ps *PubSub) Start(ctx context.Context) error {
 			continue
 		}
 
-		if msg.PID == os.Getpid() {
+		if msg.PID == ps.pid {
 			// skip notifications that this process sent.
 			continue
 		}
@@ -106,7 +105,7 @@ func (ps *PubSub) Start(ctx context.Context) error {
 func (ps *PubSub) Publish(event otf.Event) {
 	ps.local.Publish(event)
 
-	msg, err := marshal(event)
+	msg, err := ps.marshal(event)
 	if err != nil {
 		ps.Error(err, "marshaling event into postgres notification payload")
 		return
@@ -124,13 +123,14 @@ func (ps *PubSub) Subscribe(ctx context.Context) <-chan otf.Event {
 	return ps.local.Subscribe(ctx)
 }
 
-// reassemble a message into an otf event
+// reassemble a postgres message into an otf event
 //
 // TODO: return pointer to event to indicate there is no event to public but no
 // error occured (?)
 func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 	var payload any
 	var err error
+
 	switch msg.Table {
 	case "run":
 		payload, err = ps.db.GetRun(ctx, msg.ID)
@@ -152,8 +152,8 @@ func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error
 	}, nil
 }
 
-// marshal an otf event into a JSON-encoded message
-func marshal(event otf.Event) ([]byte, error) {
+// marshal an otf event into a JSON-encoded postgres message
+func (ps *PubSub) marshal(event otf.Event) ([]byte, error) {
 	obj, ok := event.Payload.(otf.Identity)
 	if !ok {
 		return nil, fmt.Errorf("cannot marshal event without an identifiable payload")
@@ -167,6 +167,6 @@ func marshal(event otf.Event) ([]byte, error) {
 		Table:  parts[0],
 		Action: parts[1],
 		ID:     obj.ID(),
-		PID:    os.Getpid(),
+		PID:    ps.pid,
 	})
 }

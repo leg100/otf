@@ -2,8 +2,6 @@ package sql
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -13,61 +11,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPubSub(t *testing.T) {
-	db := newTestDB(t)
-	ps, err := NewPubSub(logr.Discard(), db.Pool())
-	require.NoError(t, err)
-
-	t.Run("cancel context", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		done := make(chan error)
-		go func() {
-			done <- ps.Start(ctx)
-		}()
-		cancel()
-		assert.Equal(t, ctx.Err(), <-done)
-	})
-}
-
+// TestPubSub_E2E tests that one pubsub process can publish a message and that
+// another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{
 		ID: otf.String("run-123"),
 	})
-	got := make(chan otf.Event, 1)
-	ps := &PubSub{
+	senderGot := make(chan otf.Event, 1)
+	sender := &PubSub{
 		Logger:  logr.Discard(),
 		pool:    newTestDB(t).Pool(),
 		db:      &fakePubSubDB{run: run},
-		local:   &fakePubSub{got: got},
+		local:   &fakePubSub{got: senderGot},
 		channel: "events_e2e_test",
+		pid:     "sender-1",
+	}
+	// record what receiver receives
+	receiverGot := make(chan otf.Event, 1)
+	receiver := &PubSub{
+		Logger:  logr.Discard(),
+		pool:    newTestDB(t).Pool(),
+		db:      &fakePubSubDB{run: run},
+		local:   &fakePubSub{got: receiverGot},
+		channel: "events_e2e_test",
+		pid:     "receiver-1",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() { cancel() })
 
-	go func() {
-		ps.Start(ctx)
-	}()
+	go func() { sender.Start(ctx) }()
+	go func() { receiver.Start(ctx) }()
 
-	// Give Start() some time to connect and start listening
+	// Give Start() time to connect and start listening
 	time.Sleep(100 * time.Millisecond)
 
 	want := otf.Event{
 		Type:    otf.EventRunStatusUpdate,
 		Payload: run,
 	}
-	ps.Publish(want)
+	sender.Publish(want)
 
 	// Give time for message to make its way via postgres and back.
 	time.Sleep(time.Second)
 
-	// Check that we only receive the one message forwarded locally, and not the
-	// copy that is send via postgres as well
-	assert.Equal(t, 1, len(got))
-	assert.Equal(t, want, <-got)
+	// We expect the receiver process to have received a copy
+	assert.Equal(t, 1, len(receiverGot))
+	assert.Equal(t, want, <-receiverGot)
+
+	// We also expect the sender process to have published a copy locally for local
+	// subs
+	assert.Equal(t, 1, len(senderGot))
+	assert.Equal(t, want, <-senderGot)
 }
 
 func TestPubSub_marshal(t *testing.T) {
+	ps := &PubSub{pid: "process-1"}
 	event := otf.Event{
 		Type: otf.EventRunStatusUpdate,
 		Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
@@ -75,11 +74,9 @@ func TestPubSub_marshal(t *testing.T) {
 		}),
 	}
 
-	got, err := marshal(event)
+	got, err := ps.marshal(event)
 	require.NoError(t, err)
-	want := fmt.Sprintf(
-		"{\"relation\":\"run\",\"action\":\"status_update\",\"id\":\"run-123\",\"pid\":%d}",
-		os.Getpid())
+	want := "{\"relation\":\"run\",\"action\":\"status_update\",\"id\":\"run-123\",\"pid\":\"process-1\"}"
 	assert.Equal(t, want, string(got))
 }
 
