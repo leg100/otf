@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -12,7 +13,8 @@ import (
 
 // CreateRun persists a Run to the DB.
 func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
+	before := time.Now()
+	err := db.Tx(ctx, func(tx otf.DB) error {
 		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     String(run.ID()),
 			CreatedAt:              Timestamptz(run.CreatedAt()),
@@ -47,6 +49,10 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("tx failed: %w; took %s", err, time.Since(before))
+	}
+	return nil
 }
 
 // UpdateStatus updates the run status as well as its plan and/or apply.
