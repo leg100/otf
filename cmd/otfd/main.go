@@ -95,7 +95,7 @@ func run(ctx context.Context, args []string) error {
 
 	// Group several daemons and if any one of them errors then terminate them
 	// all
-	g, ctx := errgroup.WithContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 
 	// Setup pub sub broker
 	pubsub, err := sql.NewPubSub(logger, db.Pool())
@@ -103,7 +103,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up pub sub broker")
 	}
 	g.Go(func() error {
-		if err := pubsub.Start(ctx); err != nil {
+		if err := pubsub.Start(gctx); err != nil {
 			return fmt.Errorf("pubsub daemon terminated prematurely: %w", err)
 		}
 		return nil
@@ -139,7 +139,7 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	g.Go(func() error {
-		if err := server.Open(ctx); err != nil {
+		if err := server.Open(gctx); err != nil {
 			return fmt.Errorf("web server terminated prematurely: %w", err)
 		}
 		return nil
