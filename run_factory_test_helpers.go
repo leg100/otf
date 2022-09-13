@@ -22,6 +22,9 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	if opts.Status != RunStatus("") {
 		run.updateStatus(opts.Status)
 	}
+	if opts.ID != nil {
+		run.id = *opts.ID
+	}
 	return run
 }
 

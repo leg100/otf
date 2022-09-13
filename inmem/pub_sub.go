@@ -30,6 +30,9 @@ func (e *PubSub) Publish(event otf.Event) {
 	defer e.mu.Unlock()
 
 	for _, sub := range e.subs {
+		// TODO: detect full channel using 'select...default:' and if full, close
+		// the channel. Subs can re-subscribe if they wish (will have to
+		// re-engineer subs first to handle this accordingly).
 		sub <- event
 	}
 }

@@ -1,6 +1,8 @@
 package otf
 
-import "context"
+import (
+	"context"
+)
 
 const (
 	EventOrganizationCreated EventType = "organization_created"
