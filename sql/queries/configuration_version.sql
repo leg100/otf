@@ -25,7 +25,7 @@ INSERT INTO configuration_version_status_timestamps (
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('Status'),
-    current_timestamp
+    pggen.arg('Timestamp')
 )
 RETURNING *;
 

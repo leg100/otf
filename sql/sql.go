@@ -4,14 +4,12 @@ Package sql implements persistent storage using the sql database.
 package sql
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
 )
 
@@ -66,13 +64,4 @@ func includeRelation(includes *string, relation string) bool {
 
 func includeOrganization(includes *string) bool {
 	return includeRelation(includes, "organization")
-}
-
-// conn is a postgres connection, i.e. *pgx.Pool, *pgx.Tx, etc
-type conn interface {
-	Begin(ctx context.Context) (pgx.Tx, error)
-	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }

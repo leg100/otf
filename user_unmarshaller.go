@@ -18,8 +18,8 @@ type UserDBResult struct {
 func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, error) {
 	user := User{
 		id:        row.UserID.String,
-		createdAt: row.CreatedAt.Time,
-		updatedAt: row.UpdatedAt.Time,
+		createdAt: row.CreatedAt.Time.UTC(),
+		updatedAt: row.UpdatedAt.Time.UTC(),
 		username:  row.Username.String,
 	}
 	for _, typ := range row.Organizations {

@@ -20,24 +20,6 @@ func TestRun_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestRun_Timestamps(t *testing.T) {
-	db := newTestDB(t)
-	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
-
-	run := newTestRun(ws, cv)
-	err := db.CreateRun(context.Background(), run)
-	require.NoError(t, err)
-
-	got, err := db.GetRun(context.Background(), run.ID())
-	require.NoError(t, err)
-
-	assert.Equal(t, run.CreatedAt(), got.CreatedAt())
-	assert.Equal(t, run.CreatedAt().UTC(), got.CreatedAt().UTC())
-	assert.True(t, run.CreatedAt().Equal(got.CreatedAt()))
-}
-
 func TestRun_UpdateStatus(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
