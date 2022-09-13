@@ -131,7 +131,7 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)
 	}
-	g.Go(func() error { return agent.Start(ctx) })
+	g.Go(func() error { return agent.Start(gctx) })
 
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
 	if err != nil {
