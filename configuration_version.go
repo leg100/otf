@@ -49,8 +49,8 @@ func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusT
 	return cv.statusTimestamps
 }
 
-func (r *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
-	for _, sts := range r.statusTimestamps {
+func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
+	for _, sts := range cv.statusTimestamps {
 		if sts.Status == status {
 			return sts.Timestamp, nil
 		}

@@ -39,7 +39,7 @@ type RunDBResult struct {
 func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 	run := Run{
 		id:                     result.RunID.String,
-		createdAt:              result.CreatedAt.Time,
+		createdAt:              result.CreatedAt.Time.UTC(),
 		isDestroy:              result.IsDestroy,
 		positionInQueue:        result.PositionInQueue,
 		refresh:                result.Refresh,
@@ -73,7 +73,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		},
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
-		run.forceCancelAvailableAt = &result.ForceCancelAvailableAt.Time
+		run.forceCancelAvailableAt = Time(result.ForceCancelAvailableAt.Time.UTC())
 	}
 	return &run, nil
 }
@@ -118,7 +118,7 @@ func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (times
 	for _, ty := range typs {
 		timestamps = append(timestamps, RunStatusTimestamp{
 			Status:    RunStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time,
+			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}
 	return timestamps
@@ -128,7 +128,7 @@ func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (ti
 	for _, ty := range typs {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time,
+			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}
 	return timestamps
@@ -138,7 +138,7 @@ func unmarshalApplyStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (t
 	for _, ty := range typs {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time,
+			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}
 	return timestamps

@@ -43,8 +43,8 @@ type WorkspaceDBResult struct {
 func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	ws := Workspace{
 		id:                         row.WorkspaceID.String,
-		createdAt:                  row.CreatedAt.Time,
-		updatedAt:                  row.UpdatedAt.Time,
+		createdAt:                  row.CreatedAt.Time.UTC(),
+		updatedAt:                  row.UpdatedAt.Time.UTC(),
 		allowDestroyPlan:           row.AllowDestroyPlan,
 		autoApply:                  row.AutoApply,
 		canQueueDestroyPlan:        row.CanQueueDestroyPlan,

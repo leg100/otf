@@ -189,7 +189,7 @@ type StateVersionDBRow struct {
 func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
 	sv := StateVersion{
 		id:        row.StateVersionID.String,
-		createdAt: row.CreatedAt.Time,
+		createdAt: row.CreatedAt.Time.UTC(),
 		serial:    int64(row.Serial),
 		state:     row.State,
 	}

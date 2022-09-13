@@ -25,7 +25,7 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 		}
 
 		// Insert timestamp for current status
-		if err := db.insertCVStatusTimestamp(ctx, cv); err != nil {
+		if err := tx.insertCVStatusTimestamp(ctx, cv); err != nil {
 			return fmt.Errorf("inserting configuration version status timestamp: %w", err)
 		}
 		return nil

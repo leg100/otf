@@ -70,11 +70,12 @@ type Identity interface {
 	ID() string
 }
 
-func String(str string) *string { return &str }
-func Int(i int) *int            { return &i }
-func Int64(i int64) *int64      { return &i }
-func UInt(i uint) *uint         { return &i }
-func Bool(b bool) *bool         { return &b }
+func String(str string) *string   { return &str }
+func Int(i int) *int              { return &i }
+func Int64(i int64) *int64        { return &i }
+func UInt(i uint) *uint           { return &i }
+func Bool(b bool) *bool           { return &b }
+func Time(t time.Time) *time.Time { return &t }
 
 // CurrentTimestamp is *the* way to get a current timestamps in oTF and
 // time.Now() should be avoided. We want timestamps to be rounded to nearest
