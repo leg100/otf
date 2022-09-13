@@ -12,8 +12,8 @@ import (
 
 // CreateRun persists a Run to the DB.
 func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
-	return db.Tx(ctx, func(tx otf.DB) error {
-		_, err := db.InsertRun(ctx, pggen.InsertRunParams{
+	return db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertRun(ctx, pggen.InsertRunParams{
 			ID:                     String(run.ID()),
 			CreatedAt:              Timestamptz(run.CreatedAt()),
 			IsDestroy:              run.IsDestroy(),
@@ -28,21 +28,21 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertPlan(ctx, String(run.ID()), String(string(run.Plan().Status())))
+		_, err = tx.InsertPlan(ctx, String(run.ID()), String(string(run.Plan().Status())))
 		if err != nil {
 			return err
 		}
-		_, err = db.InsertApply(ctx, String(run.ID()), String(string(run.Apply().Status())))
+		_, err = tx.InsertApply(ctx, String(run.ID()), String(string(run.Apply().Status())))
 		if err != nil {
 			return err
 		}
-		if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
+		if err := tx.insertRunStatusTimestamp(ctx, run); err != nil {
 			return fmt.Errorf("inserting run status timestamp: %w", err)
 		}
-		if err := db.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
+		if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
 			return fmt.Errorf("inserting plan status timestamp: %w", err)
 		}
-		if err := db.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
+		if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
 			return fmt.Errorf("inserting apply status timestamp: %w", err)
 		}
 		return nil
@@ -52,9 +52,9 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 // UpdateStatus updates the run status as well as its plan and/or apply.
 func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) error) (*otf.Run, error) {
 	var run *otf.Run
-	err := db.Tx(ctx, func(tx otf.DB) error {
+	err := db.tx(ctx, func(tx *DB) error {
 		// select ...for update
-		result, err := db.FindRunByIDForUpdate(ctx, String(runID))
+		result, err := tx.FindRunByIDForUpdate(ctx, String(runID))
 		if err != nil {
 			return databaseError(err)
 		}
@@ -74,40 +74,40 @@ func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) 
 		}
 
 		if run.Status() != runStatus {
-			_, err := db.UpdateRunStatus(ctx, String(string(run.Status())), String(run.ID()))
+			_, err := tx.UpdateRunStatus(ctx, String(string(run.Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertRunStatusTimestamp(ctx, run); err != nil {
+			if err := tx.insertRunStatusTimestamp(ctx, run); err != nil {
 				return err
 			}
 		}
 
 		if run.Plan().Status() != planStatus {
-			_, err := db.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.ID()))
+			_, err := tx.UpdatePlanStatusByID(ctx, String(string(run.Plan().Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
+			if err := tx.insertPhaseStatusTimestamp(ctx, run.Plan()); err != nil {
 				return err
 			}
 		}
 
 		if run.Apply().Status() != applyStatus {
-			_, err := db.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.ID()))
+			_, err := tx.UpdateApplyStatusByID(ctx, String(string(run.Apply().Status())), String(run.ID()))
 			if err != nil {
 				return err
 			}
 
-			if err := db.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
+			if err := tx.insertPhaseStatusTimestamp(ctx, run.Apply()); err != nil {
 				return err
 			}
 		}
 
 		if run.ForceCancelAvailableAt() != forceCancelAvailableAt && run.ForceCancelAvailableAt() != nil {
-			_, err := db.UpdateRunForceCancelAvailableAt(ctx, Timestamptz(*run.ForceCancelAvailableAt()), String(run.ID()))
+			_, err := tx.UpdateRunForceCancelAvailableAt(ctx, Timestamptz(*run.ForceCancelAvailableAt()), String(run.ID()))
 			if err != nil {
 				return err
 			}
@@ -115,10 +115,7 @@ func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) 
 
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return run, nil
+	return run, err
 }
 
 func (db *DB) CreatePlanReport(ctx context.Context, runID string, report otf.ResourceReport) error {

@@ -10,28 +10,24 @@ import (
 
 // CreateUser persists a User to the DB.
 func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	_, err = q.InsertUser(ctx, pggen.InsertUserParams{
-		ID:        String(user.ID()),
-		Username:  String(user.Username()),
-		CreatedAt: Timestamptz(user.CreatedAt()),
-		UpdatedAt: Timestamptz(user.UpdatedAt()),
-	})
-	if err != nil {
-		return err
-	}
-	for _, org := range user.Organizations {
-		_, err = q.InsertOrganizationMembership(ctx, String(user.ID()), String(org.ID()))
+	return db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertUser(ctx, pggen.InsertUserParams{
+			ID:        String(user.ID()),
+			Username:  String(user.Username()),
+			CreatedAt: Timestamptz(user.CreatedAt()),
+			UpdatedAt: Timestamptz(user.UpdatedAt()),
+		})
 		if err != nil {
 			return err
 		}
-	}
-	return tx.Commit(ctx)
+		for _, org := range user.Organizations {
+			_, err = tx.InsertOrganizationMembership(ctx, String(user.ID()), String(org.ID()))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (db *DB) ListUsers(ctx context.Context) ([]*otf.User, error) {

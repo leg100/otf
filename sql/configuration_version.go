@@ -10,7 +10,7 @@ import (
 )
 
 func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
-	return db.Tx(ctx, func(tx *DB) error {
+	return db.tx(ctx, func(tx *DB) error {
 		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
 			ID:            String(cv.ID()),
 			CreatedAt:     Timestamptz(cv.CreatedAt()),
@@ -33,29 +33,22 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 }
 
 func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+	return db.tx(ctx, func(tx *DB) error {
+		// select ...for update
+		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, String(id))
+		if err != nil {
+			return err
+		}
+		cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+		if err != nil {
+			return err
+		}
 
-	q := pggen.NewQuerier(tx)
-
-	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, String(id))
-	if err != nil {
-		return err
-	}
-	cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
-	if err != nil {
-		return err
-	}
-
-	if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
-		return err
-	}
-
-	return tx.Commit(ctx)
+		if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {

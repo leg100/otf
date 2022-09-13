@@ -42,40 +42,39 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 }
 
 func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn func(*otf.Workspace) error) (*otf.Workspace, error) {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	// retrieve workspace
-	ws, err := db.getWorkspaceForUpdate(ctx, tx, spec)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	// update workspace
-	if err := fn(ws); err != nil {
-		return nil, err
-	}
-	// persist update
-	_, err = q.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
-		ID:                         String(ws.ID()),
-		UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
-		AllowDestroyPlan:           ws.AllowDestroyPlan(),
-		Description:                String(ws.Description()),
-		ExecutionMode:              String(string(ws.ExecutionMode())),
-		Name:                       String(ws.Name()),
-		QueueAllRuns:               ws.QueueAllRuns(),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           String(ws.TerraformVersion()),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           String(ws.WorkingDirectory()),
+	var ws *otf.Workspace
+	err := db.tx(ctx, func(tx *DB) error {
+		var err error
+		// retrieve workspace
+		ws, err = tx.getWorkspaceForUpdate(ctx, spec)
+		if err != nil {
+			return databaseError(err)
+		}
+		// update workspace
+		if err := fn(ws); err != nil {
+			return err
+		}
+		// persist update
+		_, err = tx.UpdateWorkspaceByID(ctx, pggen.UpdateWorkspaceByIDParams{
+			ID:                         String(ws.ID()),
+			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
+			AllowDestroyPlan:           ws.AllowDestroyPlan(),
+			Description:                String(ws.Description()),
+			ExecutionMode:              String(string(ws.ExecutionMode())),
+			Name:                       String(ws.Name()),
+			QueueAllRuns:               ws.QueueAllRuns(),
+			SpeculativeEnabled:         ws.SpeculativeEnabled(),
+			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+			TerraformVersion:           String(ws.TerraformVersion()),
+			TriggerPrefixes:            ws.TriggerPrefixes(),
+			WorkingDirectory:           String(ws.WorkingDirectory()),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return ws, tx.Commit(ctx)
+	return ws, err
 }
 
 // LockWorkspace locks the specified workspace.
@@ -85,32 +84,30 @@ func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts ot
 		return nil, err
 	}
 
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	// retrieve workspace
-	ws, err := db.getWorkspaceForUpdate(ctx, tx, spec)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	// lock the workspace
-	if err := ws.Lock(subj); err != nil {
-		return nil, err
-	}
-	// persist to db
-	params, err := otf.MarshalWorkspaceLockParams(ws)
-	if err != nil {
-		return nil, err
-	}
-	_, err = q.UpdateWorkspaceLockByID(ctx, params)
-	if err != nil {
-		return nil, databaseError(err)
-	}
+	var ws *otf.Workspace
+	err = db.tx(ctx, func(tx *DB) error {
+		// retrieve workspace
+		ws, err = tx.getWorkspaceForUpdate(ctx, spec)
+		if err != nil {
+			return databaseError(err)
+		}
+		// lock the workspace
+		if err := ws.Lock(subj); err != nil {
+			return err
+		}
+		// persist to db
+		params, err := otf.MarshalWorkspaceLockParams(ws)
+		if err != nil {
+			return err
+		}
+		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
+		if err != nil {
+			return databaseError(err)
+		}
+		return nil
+	})
 	// return ws with new lock
-	return ws, tx.Commit(ctx)
+	return ws, err
 }
 
 // SetLatestRun sets the ID of the latest run for the specified workspace.
@@ -131,36 +128,33 @@ func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts 
 		return nil, err
 	}
 
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	// retrieve workspace
-	ws, err := db.getWorkspaceForUpdate(ctx, tx, spec)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	// unlock workspace
-	if err := ws.Unlock(subj, opts.Force); err != nil {
-		return nil, err
-	}
-	// persist to db
-	params, err := otf.MarshalWorkspaceLockParams(ws)
-	if err != nil {
-		return nil, err
-	}
-	_, err = q.UpdateWorkspaceLockByID(ctx, params)
-	if err != nil {
-		return nil, databaseError(err)
-	}
+	var ws *otf.Workspace
+	err = db.tx(ctx, func(tx *DB) error {
+		// retrieve workspace
+		ws, err = db.getWorkspaceForUpdate(ctx, spec)
+		if err != nil {
+			return databaseError(err)
+		}
+		// unlock workspace
+		if err := ws.Unlock(subj, opts.Force); err != nil {
+			return err
+		}
+		// persist to db
+		params, err := otf.MarshalWorkspaceLockParams(ws)
+		if err != nil {
+			return err
+		}
+		_, err = tx.UpdateWorkspaceLockByID(ctx, params)
+		if err != nil {
+			return databaseError(err)
+		}
+		return nil
+	})
 	// return ws with new lock
-	return ws, tx.Commit(ctx)
+	return ws, err
 }
 
 func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	q := pggen.NewQuerier(db)
 	batch := &pgx.Batch{}
 
 	// Organization name filter is optional - if not provided use a % which in
@@ -172,22 +166,22 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 		organizationName = "%"
 	}
 
-	q.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
+	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
 		OrganizationNames:   []string{organizationName},
 		Prefix:              String(opts.Prefix),
 		Limit:               opts.GetLimit(),
 		Offset:              opts.GetOffset(),
 		IncludeOrganization: includeOrganization(opts.Include),
 	})
-	q.CountWorkspacesBatch(batch, String(opts.Prefix), []string{organizationName})
+	db.CountWorkspacesBatch(batch, String(opts.Prefix), []string{organizationName})
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
-	rows, err := q.FindWorkspacesScan(results)
+	rows, err := db.FindWorkspacesScan(results)
 	if err != nil {
 		return nil, err
 	}
-	count, err := q.CountWorkspacesScan(results)
+	count, err := db.CountWorkspacesScan(results)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +242,7 @@ func (db *DB) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error
 	return nil
 }
 
-func (db *DB) getWorkspaceForUpdate(ctx context.Context, tx pgx.Tx, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (db *DB) getWorkspaceForUpdate(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	workspaceID, err := db.getWorkspaceID(ctx, spec)
 	if err != nil {
 		return nil, err
