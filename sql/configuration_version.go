@@ -10,35 +10,26 @@ import (
 )
 
 func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+	return db.Tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+			ID:            String(cv.ID()),
+			CreatedAt:     Timestamptz(cv.CreatedAt()),
+			AutoQueueRuns: cv.AutoQueueRuns(),
+			Source:        String(string(cv.Source())),
+			Speculative:   cv.Speculative(),
+			Status:        String(string(cv.Status())),
+			WorkspaceID:   String(cv.WorkspaceID()),
+		})
+		if err != nil {
+			return err
+		}
 
-	q := pggen.NewQuerier(tx)
-
-	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-		ID:            String(cv.ID()),
-		CreatedAt:     Timestamptz(cv.CreatedAt()),
-		AutoQueueRuns: cv.AutoQueueRuns(),
-		Source:        String(string(cv.Source())),
-		Speculative:   cv.Speculative(),
-		Status:        String(string(cv.Status())),
-		WorkspaceID:   String(cv.WorkspaceID()),
+		// Insert timestamp for current status
+		if err := db.insertCVStatusTimestamp(ctx, cv); err != nil {
+			return fmt.Errorf("inserting configuration version status timestamp: %w", err)
+		}
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, String(cv.ID()), String(string(cv.Status())))
-	if err != nil {
-		return err
-	}
-	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
-
-	return tx.Commit(ctx)
 }
 
 func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
@@ -130,4 +121,17 @@ func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
 		return databaseError(err)
 	}
 	return nil
+}
+
+func (db *DB) insertCVStatusTimestamp(ctx context.Context, cv *otf.ConfigurationVersion) error {
+	sts, err := cv.StatusTimestamp(cv.Status())
+	if err != nil {
+		return err
+	}
+	_, err = db.InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
+		ID:        String(cv.ID()),
+		Status:    String(string(cv.Status())),
+		Timestamp: Timestamptz(sts),
+	})
+	return err
 }

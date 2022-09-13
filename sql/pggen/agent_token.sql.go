@@ -73,10 +73,10 @@ type Querier interface {
 	// InsertConfigurationVersionScan scans the result of an executed InsertConfigurationVersionBatch query.
 	InsertConfigurationVersionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertConfigurationVersionStatusTimestamp(ctx context.Context, id pgtype.Text, status pgtype.Text) (InsertConfigurationVersionStatusTimestampRow, error)
+	InsertConfigurationVersionStatusTimestamp(ctx context.Context, params InsertConfigurationVersionStatusTimestampParams) (InsertConfigurationVersionStatusTimestampRow, error)
 	// InsertConfigurationVersionStatusTimestampBatch enqueues a InsertConfigurationVersionStatusTimestamp query into batch to be executed
 	// later by the batch.
-	InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, id pgtype.Text, status pgtype.Text)
+	InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, params InsertConfigurationVersionStatusTimestampParams)
 	// InsertConfigurationVersionStatusTimestampScan scans the result of an executed InsertConfigurationVersionStatusTimestampBatch query.
 	InsertConfigurationVersionStatusTimestampScan(results pgx.BatchResults) (InsertConfigurationVersionStatusTimestampRow, error)
 

@@ -21,6 +21,7 @@ func newConfigUploader(tx pgx.Tx, id string) *cvUploader {
 }
 
 func (u *cvUploader) SetErrored(ctx context.Context) error {
+	// TODO: add status timestamp
 	_, err := u.q.UpdateConfigurationVersionErroredByID(ctx, String(u.id))
 	if err != nil {
 		return err
@@ -29,6 +30,7 @@ func (u *cvUploader) SetErrored(ctx context.Context) error {
 }
 
 func (u *cvUploader) Upload(ctx context.Context, config []byte) (otf.ConfigurationStatus, error) {
+	// TODO: add status timestamp
 	_, err := u.q.UpdateConfigurationVersionConfigByID(ctx, config, String(u.id))
 	if err != nil {
 		return otf.ConfigurationErrored, err

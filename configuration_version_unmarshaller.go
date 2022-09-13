@@ -19,7 +19,7 @@ type ConfigurationVersionDBResult struct {
 func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		id:               result.ConfigurationVersionID.String,
-		createdAt:        result.CreatedAt.Time,
+		createdAt:        result.CreatedAt.Time.UTC(),
 		autoQueueRuns:    result.AutoQueueRuns,
 		speculative:      result.Speculative,
 		source:           ConfigurationSource(result.Source.String),
@@ -34,7 +34,7 @@ func unmarshalConfigurationVersionStatusTimestampDBTypes(typs []pggen.Configurat
 	for _, ty := range typs {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),
-			Timestamp: ty.Timestamp.Time,
+			Timestamp: ty.Timestamp.Time.UTC(),
 		})
 	}
 	return timestamps

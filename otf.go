@@ -81,7 +81,7 @@ func Bool(b bool) *bool         { return &b }
 // millisecond so that they can be persisted/serialised and not lose precision
 // thereby making comparisons and testing easier.
 func CurrentTimestamp() time.Time {
-	return time.Now().Round(time.Millisecond)
+	return time.Now().Round(time.Millisecond).UTC()
 }
 
 // NewID constructs resource IDs, which are composed of the resource type and a
