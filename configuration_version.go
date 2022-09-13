@@ -48,6 +48,16 @@ func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status 
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
+
+func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
+	for _, sts := range cv.statusTimestamps {
+		if sts.Status == status {
+			return sts.Timestamp, nil
+		}
+	}
+	return time.Time{}, ErrStatusTimestampNotFound
+}
+
 func (cv *ConfigurationVersion) WorkspaceID() string { return cv.workspaceID }
 
 func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, timestamp time.Time) {
@@ -97,6 +107,14 @@ func (cv *ConfigurationVersion) ToJSONAPI(req *http.Request) any {
 		}
 	}
 	return obj
+}
+
+func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
+	cv.status = status
+	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
+		Status:    status,
+		Timestamp: CurrentTimestamp(),
+	})
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
@@ -201,10 +219,11 @@ func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreate
 		id:            NewID("cv"),
 		createdAt:     CurrentTimestamp(),
 		autoQueueRuns: DefaultAutoQueueRuns,
-		status:        ConfigurationPending,
 		source:        DefaultConfigurationSource,
 		workspaceID:   workspaceID,
 	}
+	cv.updateStatus(ConfigurationPending)
+
 	if opts.AutoQueueRuns != nil {
 		cv.autoQueueRuns = *opts.AutoQueueRuns
 	}

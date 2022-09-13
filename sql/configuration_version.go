@@ -25,12 +25,9 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 		}
 
 		// Insert timestamp for current status
-		ts, err := tx.InsertConfigurationVersionStatusTimestamp(ctx, String(cv.ID()), String(string(cv.Status())))
-		if err != nil {
-			return err
+		if err := tx.insertCVStatusTimestamp(ctx, cv); err != nil {
+			return fmt.Errorf("inserting configuration version status timestamp: %w", err)
 		}
-		cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
-
 		return nil
 	})
 }
@@ -52,7 +49,6 @@ func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func
 		}
 		return nil
 	})
-
 }
 
 func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
@@ -118,4 +114,17 @@ func (db *DB) DeleteConfigurationVersion(ctx context.Context, id string) error {
 		return databaseError(err)
 	}
 	return nil
+}
+
+func (db *DB) insertCVStatusTimestamp(ctx context.Context, cv *otf.ConfigurationVersion) error {
+	sts, err := cv.StatusTimestamp(cv.Status())
+	if err != nil {
+		return err
+	}
+	_, err = db.InsertConfigurationVersionStatusTimestamp(ctx, pggen.InsertConfigurationVersionStatusTimestampParams{
+		ID:        String(cv.ID()),
+		Status:    String(string(cv.Status())),
+		Timestamp: Timestamptz(sts),
+	})
+	return err
 }

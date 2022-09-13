@@ -70,9 +70,15 @@ const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_
 ) VALUES (
     $1,
     $2,
-    current_timestamp
+    $3
 )
 RETURNING *;`
+
+type InsertConfigurationVersionStatusTimestampParams struct {
+	ID        pgtype.Text
+	Status    pgtype.Text
+	Timestamp pgtype.Timestamptz
+}
 
 type InsertConfigurationVersionStatusTimestampRow struct {
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
@@ -81,9 +87,9 @@ type InsertConfigurationVersionStatusTimestampRow struct {
 }
 
 // InsertConfigurationVersionStatusTimestamp implements Querier.InsertConfigurationVersionStatusTimestamp.
-func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, id pgtype.Text, status pgtype.Text) (InsertConfigurationVersionStatusTimestampRow, error) {
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Context, params InsertConfigurationVersionStatusTimestampParams) (InsertConfigurationVersionStatusTimestampRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertConfigurationVersionStatusTimestamp")
-	row := q.conn.QueryRow(ctx, insertConfigurationVersionStatusTimestampSQL, id, status)
+	row := q.conn.QueryRow(ctx, insertConfigurationVersionStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
 	var item InsertConfigurationVersionStatusTimestampRow
 	if err := row.Scan(&item.ConfigurationVersionID, &item.Status, &item.Timestamp); err != nil {
 		return item, fmt.Errorf("query InsertConfigurationVersionStatusTimestamp: %w", err)
@@ -92,8 +98,8 @@ func (q *DBQuerier) InsertConfigurationVersionStatusTimestamp(ctx context.Contex
 }
 
 // InsertConfigurationVersionStatusTimestampBatch implements Querier.InsertConfigurationVersionStatusTimestampBatch.
-func (q *DBQuerier) InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, id pgtype.Text, status pgtype.Text) {
-	batch.Queue(insertConfigurationVersionStatusTimestampSQL, id, status)
+func (q *DBQuerier) InsertConfigurationVersionStatusTimestampBatch(batch genericBatch, params InsertConfigurationVersionStatusTimestampParams) {
+	batch.Queue(insertConfigurationVersionStatusTimestampSQL, params.ID, params.Status, params.Timestamp)
 }
 
 // InsertConfigurationVersionStatusTimestampScan implements Querier.InsertConfigurationVersionStatusTimestampScan.
