@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
@@ -27,7 +29,24 @@ func (db *DB) Close() {
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
+func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	if err := callback(newDB(tx)); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		// return original callback error if rollback succeeds
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// tx is the same as exported Tx but for use within the sql pkg, passing the
+// full *DB to the callback.
+func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
@@ -67,4 +86,13 @@ func newDB(conn conn) *DB {
 		conn:    conn,
 		Querier: pggen.NewQuerier(conn),
 	}
+}
+
+// conn is a postgres connection, i.e. *pgx.Pool, *pgx.Tx, etc
+type conn interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }

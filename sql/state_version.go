@@ -11,41 +11,34 @@ import (
 
 // CreateStateVersion persists a StateVersion to the DB.
 func (db *DB) CreateStateVersion(ctx context.Context, workspaceID string, sv *otf.StateVersion) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	q := pggen.NewQuerier(tx)
-
-	_, err = q.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
-		ID:          String(sv.ID()),
-		CreatedAt:   Timestamptz(sv.CreatedAt()),
-		Serial:      int(sv.Serial()),
-		State:       sv.State(),
-		WorkspaceID: String(workspaceID),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Insert state_version_outputs
-	for _, svo := range sv.Outputs() {
-		_, err := q.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
-			ID:             String(svo.ID()),
-			Name:           String(svo.Name),
-			Sensitive:      svo.Sensitive,
-			Type:           String(svo.Type),
-			Value:          String(svo.Value),
-			StateVersionID: String(sv.ID()),
+	return db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertStateVersion(ctx, pggen.InsertStateVersionParams{
+			ID:          String(sv.ID()),
+			CreatedAt:   Timestamptz(sv.CreatedAt()),
+			Serial:      int(sv.Serial()),
+			State:       sv.State(),
+			WorkspaceID: String(workspaceID),
 		})
 		if err != nil {
 			return err
 		}
-	}
 
-	return tx.Commit(ctx)
+		// Insert state_version_outputs
+		for _, svo := range sv.Outputs() {
+			_, err := tx.InsertStateVersionOutput(ctx, pggen.InsertStateVersionOutputParams{
+				ID:             String(svo.ID()),
+				Name:           String(svo.Name),
+				Sensitive:      svo.Sensitive,
+				Type:           String(svo.Type),
+				Value:          String(svo.Value),
+				StateVersionID: String(sv.ID()),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (db *DB) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {

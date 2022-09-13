@@ -10,61 +10,49 @@ import (
 )
 
 func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.ConfigurationVersion) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+	return db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
+			ID:            String(cv.ID()),
+			CreatedAt:     Timestamptz(cv.CreatedAt()),
+			AutoQueueRuns: cv.AutoQueueRuns(),
+			Source:        String(string(cv.Source())),
+			Speculative:   cv.Speculative(),
+			Status:        String(string(cv.Status())),
+			WorkspaceID:   String(cv.WorkspaceID()),
+		})
+		if err != nil {
+			return err
+		}
 
-	q := pggen.NewQuerier(tx)
+		// Insert timestamp for current status
+		ts, err := tx.InsertConfigurationVersionStatusTimestamp(ctx, String(cv.ID()), String(string(cv.Status())))
+		if err != nil {
+			return err
+		}
+		cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
 
-	_, err = q.InsertConfigurationVersion(ctx, pggen.InsertConfigurationVersionParams{
-		ID:            String(cv.ID()),
-		CreatedAt:     Timestamptz(cv.CreatedAt()),
-		AutoQueueRuns: cv.AutoQueueRuns(),
-		Source:        String(string(cv.Source())),
-		Speculative:   cv.Speculative(),
-		Status:        String(string(cv.Status())),
-		WorkspaceID:   String(cv.WorkspaceID()),
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	// Insert timestamp for current status
-	ts, err := q.InsertConfigurationVersionStatusTimestamp(ctx, String(cv.ID()), String(string(cv.Status())))
-	if err != nil {
-		return err
-	}
-	cv.AddStatusTimestamp(otf.ConfigurationStatus(ts.Status.String), ts.Timestamp.Time)
-
-	return tx.Commit(ctx)
 }
 
 func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func(*otf.ConfigurationVersion, otf.ConfigUploader) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+	return db.tx(ctx, func(tx *DB) error {
+		// select ...for update
+		result, err := tx.FindConfigurationVersionByIDForUpdate(ctx, String(id))
+		if err != nil {
+			return err
+		}
+		cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+		if err != nil {
+			return err
+		}
 
-	q := pggen.NewQuerier(tx)
+		if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
+			return err
+		}
+		return nil
+	})
 
-	// select ...for update
-	result, err := q.FindConfigurationVersionByIDForUpdate(ctx, String(id))
-	if err != nil {
-		return err
-	}
-	cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
-	if err != nil {
-		return err
-	}
-
-	if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
-		return err
-	}
-
-	return tx.Commit(ctx)
 }
 
 func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {

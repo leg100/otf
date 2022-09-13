@@ -10,8 +10,7 @@ import (
 
 // CreateOrganization persists an Organization to the DB.
 func (db *DB) CreateOrganization(ctx context.Context, org *otf.Organization) error {
-	q := pggen.NewQuerier(db)
-	_, err := q.InsertOrganization(ctx, pggen.InsertOrganizationParams{
+	_, err := db.InsertOrganization(ctx, pggen.InsertOrganizationParams{
 		ID:              String(org.ID()),
 		CreatedAt:       Timestamptz(org.CreatedAt()),
 		UpdatedAt:       Timestamptz(org.UpdatedAt()),
@@ -29,34 +28,32 @@ func (db *DB) CreateOrganization(ctx context.Context, org *otf.Organization) err
 // org is fetched from the DB, the supplied func is invoked on the org, and the
 // updated org is persisted back to the DB.
 func (db *DB) UpdateOrganization(ctx context.Context, name string, fn func(*otf.Organization) error) (*otf.Organization, error) {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-	q := pggen.NewQuerier(tx)
-	result, err := q.FindOrganizationByNameForUpdate(ctx, String(name))
-	if err != nil {
-		return nil, err
-	}
-	org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
-	if err != nil {
-		return nil, err
-	}
-	if err := fn(org); err != nil {
-		return nil, err
-	}
-	_, err = q.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
-		Name:            String(name),
-		NewName:         String(org.Name()),
-		SessionRemember: org.SessionRemember(),
-		SessionTimeout:  org.SessionTimeout(),
-		UpdatedAt:       Timestamptz(org.UpdatedAt()),
+	var org *otf.Organization
+	err := db.tx(ctx, func(tx *DB) error {
+		result, err := tx.FindOrganizationByNameForUpdate(ctx, String(name))
+		if err != nil {
+			return err
+		}
+		org, err = otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
+		if err != nil {
+			return err
+		}
+		if err := fn(org); err != nil {
+			return err
+		}
+		_, err = tx.UpdateOrganizationByName(ctx, pggen.UpdateOrganizationByNameParams{
+			Name:            String(name),
+			NewName:         String(org.Name()),
+			SessionRemember: org.SessionRemember(),
+			SessionTimeout:  org.SessionTimeout(),
+			UpdatedAt:       Timestamptz(org.UpdatedAt()),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return org, tx.Commit(ctx)
+	return org, err
 }
 
 func (db *DB) ListOrganizations(ctx context.Context, opts otf.OrganizationListOptions) (*otf.OrganizationList, error) {
