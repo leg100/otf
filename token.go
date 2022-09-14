@@ -33,7 +33,7 @@ type TokenStore interface {
 }
 
 func NewToken(uid, description string) (*Token, error) {
-	t, err := GenerateToken()
+	t, err := GenerateAuthToken("user")
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}

@@ -26,7 +26,7 @@ func TestAgent(t *testing.T) {
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
 		require.NoError(t, err)
-		re := regexp.MustCompile(`Successfully created agent token: ([a-zA-Z0-9\-_]+)`)
+		re := regexp.MustCompile(`Successfully created agent token: (agent\.[a-zA-Z0-9\-_]+)`)
 		matches := re.FindStringSubmatch(string(out))
 		require.Equal(t, 2, len(matches))
 		token = matches[1]
@@ -86,5 +86,5 @@ func TestAgent(t *testing.T) {
 
 func spawn(command string, args ...string) (*expect.GExpect, <-chan error, error) {
 	cmd := append([]string{command}, args...)
-	return expect.SpawnWithArgs(cmd, time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
+	return expect.SpawnWithArgs(cmd, time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()), expect.Tee(os.Stdout))
 }

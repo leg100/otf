@@ -174,6 +174,16 @@ func GenerateToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
+// GenerateAuthToken generates an authentication token for a type of account
+// e.g. agent, user
+func GenerateAuthToken(accountType string) (string, error) {
+	token, err := GenerateToken()
+	if err != nil {
+		return "", err
+	}
+	return accountType + "." + token, nil
+}
+
 // ConvertID converts an ID for use with a different resource, e.g. convert
 // run-123 to plan-123.
 func ConvertID(id, resource string) string {

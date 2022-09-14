@@ -62,7 +62,7 @@ func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
 	if opts.Description == "" {
 		return nil, fmt.Errorf("description cannot be an empty string")
 	}
-	t, err := GenerateToken()
+	t, err := GenerateAuthToken("agent")
 	if err != nil {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}

@@ -30,14 +30,14 @@ func (m *authTokenMiddleware) handler(next http.Handler) http.Handler {
 		}
 		token := hdr[1]
 
-		user, err := m.isValid(r.Context(), token)
+		subj, err := m.isValid(r.Context(), token)
 		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		// add user to context for upstream handlers to consume
-		ctx := otf.AddSubjectToContext(r.Context(), user)
+		// add subject to context for upstream handlers to consume
+		ctx := otf.AddSubjectToContext(r.Context(), subj)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -50,17 +50,12 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Su
 		}
 	}
 
-	// check if user token
-	user, err := m.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
-	if err == nil {
-		return user, nil
+	switch {
+	case strings.HasPrefix(token, "user."):
+		return m.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
+	case strings.HasPrefix(token, "agent."):
+		return m.GetAgentToken(ctx, token)
+	default:
+		return nil, fmt.Errorf("unknown auth token format")
 	}
-
-	// check if agent token
-	agentToken, err := m.GetAgentToken(ctx, token)
-	if err == nil {
-		return agentToken, nil
-	}
-
-	return nil, fmt.Errorf("invalid token")
 }
