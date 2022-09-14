@@ -38,9 +38,8 @@ func NewTerraformDownloader() *TerraformDownloader {
 }
 
 // Download ensures the given version of terraform is available on the local
-// filesystem, returning the path to the binary. If it already exists, download
-// will be skipped. Thread-safe: if a download is in-flight and
-// another download is requested then it'll made be made to wait until the
+// filesystem and returns its path. Thread-safe: if a download is in-flight and
+// another download is requested then it'll be made to wait until the
 // former has finished.
 func (d *TerraformDownloader) Download(ctx context.Context, version string, w io.Writer) (string, error) {
 	if otf.Exists(d.dest(version)) {
