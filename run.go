@@ -505,7 +505,7 @@ func (r *Run) doPlan(env Environment) error {
 	if err := r.doTerraformPlan(env); err != nil {
 		return err
 	}
-	if err := env.RunCLI("sh", "-c", fmt.Sprintf("terraform show -json %s > %s", PlanFilename, JSONPlanFilename)); err != nil {
+	if err := env.RunCLI("sh", "-c", fmt.Sprintf("%s show -json %s > %s", env.TerraformPath(), PlanFilename, JSONPlanFilename)); err != nil {
 		return err
 	}
 	if err := env.RunFunc(r.uploadPlan); err != nil {
@@ -543,7 +543,7 @@ func (r *Run) doTerraformPlan(env Environment) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+PlanFilename)
-	return env.RunCLI("terraform", args...)
+	return env.RunCLI(env.TerraformPath(), args...)
 }
 
 // doTerraformApply invokes terraform apply
@@ -553,11 +553,14 @@ func (r *Run) doTerraformApply(env Environment) error {
 		args = append(args, "-destroy")
 	}
 	args = append(args, PlanFilename)
-	return env.RunCLI("terraform", args...)
+	return env.RunCLI(env.TerraformPath(), args...)
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
 func (r *Run) setupEnv(env Environment) error {
+	if err := env.RunFunc(r.downloadTerraform); err != nil {
+		return err
+	}
 	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
 	}
@@ -581,8 +584,20 @@ func (r *Run) setupEnv(env Environment) error {
 			return err
 		}
 	}
-	if err := env.RunCLI("terraform", "init"); err != nil {
+	if err := env.RunCLI(env.TerraformPath(), "init"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
+	}
+	return nil
+}
+
+func (r *Run) downloadTerraform(ctx context.Context, env Environment) error {
+	ws, err := env.GetWorkspace(ctx, WorkspaceSpec{ID: &r.workspaceID})
+	if err != nil {
+		return err
+	}
+	_, err = env.Download(ctx, ws.TerraformVersion(), env)
+	if err != nil {
+		return err
 	}
 	return nil
 }

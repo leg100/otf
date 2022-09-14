@@ -39,6 +39,13 @@ type Environment struct {
 	// CLI process output is written to this
 	out io.WriteCloser
 
+	// Downloader for workers to download terraform cli on demand
+	otf.Downloader
+	// For looking up path to terraform cli
+	Terraform
+	// Terraform version to use for this environment
+	version string
+
 	environmentVariables []string
 
 	// Environment context - should contain subject for authenticating to
@@ -49,10 +56,10 @@ type Environment struct {
 func NewEnvironment(
 	logger logr.Logger,
 	app otf.Application,
-	id string,
-	phase otf.PhaseType,
+	run *otf.Run,
 	ctx context.Context,
 	environmentVariables []string,
+	downloader otf.Downloader,
 ) (*Environment, error) {
 	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
@@ -60,10 +67,15 @@ func NewEnvironment(
 	}
 
 	out := &otf.JobWriter{
-		ID:         id,
-		Phase:      phase,
+		ID:         run.ID(),
+		Phase:      run.Phase(),
 		Logger:     logger,
 		LogService: app,
+	}
+
+	ws, err := app.GetWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(run.WorkspaceID())})
+	if err != nil {
+		return nil, err
 	}
 
 	// Create and store cancel func so func's context can be canceled
@@ -72,6 +84,9 @@ func NewEnvironment(
 	return &Environment{
 		Logger:               logger,
 		Application:          app,
+		Downloader:           downloader,
+		Terraform:            &TerraformPathFinder{},
+		version:              ws.TerraformVersion(),
 		out:                  out,
 		path:                 path,
 		environmentVariables: environmentVariables,
@@ -146,6 +161,11 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	return nil
 }
 
+// TerraformPath provides the path to the terraform bin
+func (e *Environment) TerraformPath() string {
+	return e.Terraform.TerraformPath(e.version)
+}
+
 // RunFunc invokes a func in the executor.
 func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 	if e.canceled {
@@ -157,6 +177,10 @@ func (e *Environment) RunFunc(fn otf.EnvironmentFunc) error {
 		return err
 	}
 	return nil
+}
+
+func (e *Environment) Write(p []byte) (int, error) {
+	return e.out.Write(p)
 }
 
 func (e *Environment) printRedErrorMessage(err error) {

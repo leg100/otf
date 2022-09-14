@@ -30,7 +30,8 @@ type Supervisor struct {
 	Spooler
 
 	*Terminator
-
+	// Downloader for workers to download tf cli on demand
+	otf.Downloader
 	environmentVariables []string
 }
 
@@ -43,8 +44,11 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 		AgentID:     DefaultID,
 		concurrency: concurrency,
 		Terminator:  NewTerminator(),
+		Downloader:  NewTerraformDownloader(),
 	}
 
+	// TODO: consider moving env var setup closer to where they are used i.e.
+	// the Environment obj
 	if err := os.MkdirAll(PluginCacheDir, 0o755); err != nil {
 		panic(fmt.Sprintf("cannot create plugin cache dir: %s: %s", PluginCacheDir, err.Error()))
 	}

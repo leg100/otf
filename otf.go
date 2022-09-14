@@ -8,6 +8,7 @@ import (
 	crypto "crypto/rand"
 	"encoding/base64"
 	"math/rand"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -182,6 +183,13 @@ func ConvertID(id, resource string) string {
 		return id
 	}
 	return resource + "-" + parts[1]
+}
+
+// Exists checks whether a file or directory at the given path exists
+func Exists(path string) bool {
+	// Interpret any error from os.Stat as "not found"
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // AppUser identifies the otf app itself for purposes of authentication. Some
