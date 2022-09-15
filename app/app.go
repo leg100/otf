@@ -102,3 +102,24 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 		return tx(appTx)
 	})
 }
+
+// WithLock provides a callback in which all db interactions are wrapped within a
+// transaction. Useful for ensuring multiple service calls succeed together.
+func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Application) error) error {
+	return a.db.WaitAndLock(ctx, id, func(db otf.DB) error {
+		// make a copy of the app and assign a db wrapped with a session-lock
+		appWithLock := &Application{
+			PubSubService:    a.PubSubService,
+			Mapper:           a.Mapper,
+			cache:            a.cache,
+			Logger:           a.Logger,
+			WorkspaceFactory: a.WorkspaceFactory,
+			RunFactory:       a.RunFactory,
+			latest:           a.latest,
+			proxy:            a.proxy,
+			queues:           a.queues,
+			db:               db,
+		}
+		return cb(appWithLock)
+	})
+}

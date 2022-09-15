@@ -44,12 +44,19 @@ type Application interface {
 	UserService
 	AgentTokenService
 	LatestRunService
+	LockableApplication
+}
+
+type LockableApplication interface {
+	WithLock(ctx context.Context, id int64, cb func(Application) error) error
 }
 
 // DB provides access to oTF database
 type DB interface {
 	// Tx provides a transaction within which to operate on the store.
 	Tx(ctx context.Context, tx func(DB) error) error
+	// WaitAndLock obtains a DB with a session-level advisory lock.
+	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 	Close()
 	UserStore
 	OrganizationStore

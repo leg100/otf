@@ -56,6 +56,7 @@ type client struct {
 	otf.EventService
 	otf.AgentTokenService
 	otf.LatestRunService
+	otf.LockableApplication
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {
