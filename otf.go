@@ -47,6 +47,7 @@ type Application interface {
 	LockableApplication
 }
 
+// LockableApplication is an application that holds an exclusive lock with the given ID.
 type LockableApplication interface {
 	WithLock(ctx context.Context, id int64, cb func(Application) error) error
 }

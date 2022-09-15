@@ -103,8 +103,11 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 	})
 }
 
-// WithLock provides a callback in which all db interactions are wrapped within a
-// transaction. Useful for ensuring multiple service calls succeed together.
+// WithLock provides a callback in which the application's database connection
+// possesses a lock with the given ID, with the guarantee that that lock is
+// exclusive, i.e. no other connection has a lock with the same ID. If a lock
+// with the given ID is already present then this method will block until it is
+// released.
 func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Application) error) error {
 	return a.db.WaitAndLock(ctx, id, func(db otf.DB) error {
 		// make a copy of the app and assign a db wrapped with a session-lock
