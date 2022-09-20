@@ -11,21 +11,24 @@ INSERT INTO phase_status_timestamps (
     pggen.arg('timestamp')
 );
 
--- name: InsertLogChunk :exec
+-- name: InsertLogChunk :one
 INSERT INTO logs (
     run_id,
     phase,
-    chunk
+    chunk,
+    _offset
 ) VALUES (
     pggen.arg('run_id'),
     pggen.arg('phase'),
-    pggen.arg('chunk')
+    pggen.arg('chunk'),
+    pggen.arg('offset')
 )
+RETURNING chunk_id
 ;
 
 -- name: FindLogChunks :one
 SELECT
-    substring(string_agg(chunk, '') FROM pggen.arg('offset') FOR pggen.arg('limit'))
+    substring(string_agg(chunk, '') FROM (pggen.arg('offset')+1) FOR pggen.arg('limit'))
 FROM (
     SELECT run_id, phase, chunk
     FROM logs
@@ -34,4 +37,15 @@ FROM (
     ORDER BY chunk_id
 ) c
 GROUP BY run_id, phase
+;
+
+-- name: FindLogChunkByID :one
+SELECT
+    chunk_id,
+    run_id,
+    phase,
+    chunk,
+    _offset AS offset
+FROM logs
+WHERE chunk_id = pggen.arg('chunk_id')
 ;

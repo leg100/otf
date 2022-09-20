@@ -34,7 +34,7 @@ func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 			}
 		})
 		if err != nil {
-			ch <- otf.Event{Type: otf.EventError, Payload: err.Error()}
+			ch <- otf.Event{Type: otf.EventError, Payload: err}
 		}
 	}()
 	return ch, nil

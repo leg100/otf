@@ -42,6 +42,28 @@ func Route(dst interface{}, r *http.Request) error {
 	return nil
 }
 
+// All populates the struct pointed to by dst with query params, req body params
+// and request path variables, respectively, with path variables taking
+// precedence over body params, and body params over query params.
+func All(dst interface{}, r *http.Request) error {
+	// Parses both query and req body if POST/PUT/PATCH
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+	vars := make(map[string][]string, len(r.Form))
+	for k, v := range r.Form {
+		vars[k] = v
+	}
+	// Merge in request path variables
+	for k, v := range mux.Vars(r) {
+		vars[k] = []string{v}
+	}
+	if err := decoder.Decode(dst, vars); err != nil {
+		return err
+	}
+	return nil
+}
+
 func convertStrMapToStrSliceMap(m map[string]string) map[string][]string {
 	mm := make(map[string][]string, len(m))
 	for k, v := range m {

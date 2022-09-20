@@ -17,9 +17,6 @@ import (
 const (
 	alphanumeric = "abcdefghijkmnopqrstuvwxyzABCDEFGHIJKMNOPQRSTUVWXYZ0123456789"
 
-	// ChunkMaxLimit is maximum permissible size of a chunk
-	ChunkMaxLimit = 65536
-
 	// ChunkStartMarker is the special byte that prefixes the first chunk
 	ChunkStartMarker = byte(2)
 

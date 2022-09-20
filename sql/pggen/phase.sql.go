@@ -57,46 +57,52 @@ func (q *DBQuerier) InsertPhaseStatusTimestampScan(results pgx.BatchResults) (pg
 const insertLogChunkSQL = `INSERT INTO logs (
     run_id,
     phase,
-    chunk
+    chunk,
+    _offset
 ) VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
+RETURNING chunk_id
 ;`
 
 type InsertLogChunkParams struct {
-	RunID pgtype.Text
-	Phase pgtype.Text
-	Chunk []byte
+	RunID  pgtype.Text
+	Phase  pgtype.Text
+	Chunk  []byte
+	Offset int
 }
 
 // InsertLogChunk implements Querier.InsertLogChunk.
-func (q *DBQuerier) InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (int, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertLogChunk")
-	cmdTag, err := q.conn.Exec(ctx, insertLogChunkSQL, params.RunID, params.Phase, params.Chunk)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query InsertLogChunk: %w", err)
+	row := q.conn.QueryRow(ctx, insertLogChunkSQL, params.RunID, params.Phase, params.Chunk, params.Offset)
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query InsertLogChunk: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 // InsertLogChunkBatch implements Querier.InsertLogChunkBatch.
 func (q *DBQuerier) InsertLogChunkBatch(batch genericBatch, params InsertLogChunkParams) {
-	batch.Queue(insertLogChunkSQL, params.RunID, params.Phase, params.Chunk)
+	batch.Queue(insertLogChunkSQL, params.RunID, params.Phase, params.Chunk, params.Offset)
 }
 
 // InsertLogChunkScan implements Querier.InsertLogChunkScan.
-func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec InsertLogChunkBatch: %w", err)
+func (q *DBQuerier) InsertLogChunkScan(results pgx.BatchResults) (int, error) {
+	row := results.QueryRow()
+	var item int
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan InsertLogChunkBatch row: %w", err)
 	}
-	return cmdTag, err
+	return item, nil
 }
 
 const findLogChunksSQL = `SELECT
-    substring(string_agg(chunk, '') FROM $1 FOR $2)
+    substring(string_agg(chunk, '') FROM ($1+1) FOR $2)
 FROM (
     SELECT run_id, phase, chunk
     FROM logs
@@ -136,6 +142,50 @@ func (q *DBQuerier) FindLogChunksScan(results pgx.BatchResults) ([]byte, error) 
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan FindLogChunksBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findLogChunkByIDSQL = `SELECT
+    chunk_id,
+    run_id,
+    phase,
+    chunk,
+    _offset AS offset
+FROM logs
+WHERE chunk_id = $1
+;`
+
+type FindLogChunkByIDRow struct {
+	ChunkID int         `json:"chunk_id"`
+	RunID   pgtype.Text `json:"run_id"`
+	Phase   pgtype.Text `json:"phase"`
+	Chunk   []byte      `json:"chunk"`
+	Offset  int         `json:"offset"`
+}
+
+// FindLogChunkByID implements Querier.FindLogChunkByID.
+func (q *DBQuerier) FindLogChunkByID(ctx context.Context, chunkID int) (FindLogChunkByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindLogChunkByID")
+	row := q.conn.QueryRow(ctx, findLogChunkByIDSQL, chunkID)
+	var item FindLogChunkByIDRow
+	if err := row.Scan(&item.ChunkID, &item.RunID, &item.Phase, &item.Chunk, &item.Offset); err != nil {
+		return item, fmt.Errorf("query FindLogChunkByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindLogChunkByIDBatch implements Querier.FindLogChunkByIDBatch.
+func (q *DBQuerier) FindLogChunkByIDBatch(batch genericBatch, chunkID int) {
+	batch.Queue(findLogChunkByIDSQL, chunkID)
+}
+
+// FindLogChunkByIDScan implements Querier.FindLogChunkByIDScan.
+func (q *DBQuerier) FindLogChunkByIDScan(results pgx.BatchResults) (FindLogChunkByIDRow, error) {
+	row := results.QueryRow()
+	var item FindLogChunkByIDRow
+	if err := row.Scan(&item.ChunkID, &item.RunID, &item.Phase, &item.Chunk, &item.Offset); err != nil {
+		return item, fmt.Errorf("scan FindLogChunkByIDBatch row: %w", err)
 	}
 	return item, nil
 }

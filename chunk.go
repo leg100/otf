@@ -3,113 +3,130 @@ package otf
 import (
 	"context"
 	"fmt"
+	"strconv"
 )
 
-// Chunk is a continuous portion of binary data, with start and end indicating
-// if the portion includes the start and/or end of the binary data.
+// Chunk is a section of logs.
 type Chunk struct {
-	Data       []byte
-	Start, End bool
+	// ID of run that generated the chunk
+	RunID string `schema:"run_id,required"`
+	// Phase that generated the chunk
+	Phase PhaseType `schema:"phase,required"`
+	// Position within logs.
+	Offset int `schema:"offset,required"`
+	// The chunk of logs
+	Data []byte
 }
 
-// ChunkService has same signatures as ChunkStore
-type ChunkService ChunkStore
+// Cut returns a new, smaller chunk.
+func (c Chunk) Cut(opts GetChunkOptions) Chunk {
+	if opts.Offset > c.NextOffset() {
+		// offset is out of bounds - return an empty chunk with offset set to
+		// the end of the chunk
+		return Chunk{Offset: c.NextOffset()}
+	}
+	// sanitize limit - 0 means limitless.
+	if (opts.Offset+opts.Limit) > c.NextOffset() || opts.Limit == 0 {
+		opts.Limit = c.NextOffset() - opts.Offset
+	}
+
+	c.Data = c.Data[(opts.Offset - c.Offset):((opts.Offset - c.Offset) + opts.Limit)]
+	c.Offset = opts.Offset
+
+	return c
+}
+
+func (c Chunk) NextOffset() int {
+	return c.Offset + len(c.Data)
+}
+
+func (c Chunk) AddStartMarker() Chunk {
+	c.Data = append([]byte{0x02}, c.Data...)
+	return c
+}
+
+func (c Chunk) RemoveStartMarker() Chunk {
+	if c.IsStart() {
+		c.Data = c.Data[1:]
+		c.Offset++
+	}
+	return c
+}
+
+func (c Chunk) AddEndMarker() Chunk {
+	c.Data = append(c.Data, 0x03)
+	return c
+}
+
+func (c Chunk) RemoveEndMarker() Chunk {
+	if c.IsEnd() {
+		c.Data = c.Data[:len(c.Data)-1]
+	}
+	return c
+}
+
+func (c Chunk) IsStart() bool {
+	return len(c.Data) > 0 && c.Data[0] == 0x02
+}
+
+func (c Chunk) IsEnd() bool {
+	return len(c.Data) > 0 && c.Data[len(c.Data)-1] == 0x03
+}
+
+func (c Chunk) Key() string {
+	return fmt.Sprintf("%s.%s.log", c.RunID, string(c.Phase))
+}
+
+// PersistedChunk is a chunk that has been persisted to the backend.
+type PersistedChunk struct {
+	// ChunkID uniquely identifies the chunk.
+	ChunkID int
+	Chunk
+}
+
+func (c PersistedChunk) ID() string     { return strconv.Itoa(c.ChunkID) }
+func (c PersistedChunk) String() string { return strconv.Itoa(c.ChunkID) }
 
 // LogService is an alias for ChunkService
 type LogService ChunkService
 
+// ChunkService provides interaction with chunks.
+type ChunkService interface {
+	// GetChunk fetches a chunk.
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	// PutChunk uploads a chunk.
+	PutChunk(ctx context.Context, chunk Chunk) error
+}
+
 // ChunkStore implementations provide a persistent store from and to which chunks
-// of binary objects can be fetched and uploaded.
+// can be fetched and uploaded.
 type ChunkStore interface {
-	// GetChunk fetches a blob chunk for entity with id
-	GetChunk(ctx context.Context, id string, phase PhaseType, opts GetChunkOptions) (Chunk, error)
-	// PutChunk uploads a blob chunk for entity with id
-	PutChunk(ctx context.Context, id string, phase PhaseType, chunk Chunk) error
+	// GetChunk fetches a chunk of logs.
+	GetChunk(ctx context.Context, opts GetChunkOptions) (Chunk, error)
+	// GetChunkByID fetches a specific chunk with the given ID.
+	GetChunkByID(ctx context.Context, id int) (PersistedChunk, error)
+	// PutChunk uploads a chunk, receiving back the chunk along with a unique
+	// ID.
+	PutChunk(ctx context.Context, chunk Chunk) (PersistedChunk, error)
 }
 
 type GetChunkOptions struct {
+	RunID string    `schema:"run_id"`
+	Phase PhaseType `schema:"phase"`
 	// Limit is the size of the chunk to retrieve
 	Limit int `schema:"limit"`
-
-	// Offset is the position within the binary object to retrieve the chunk.
-	// NOTE: this includes the start and end marker bytes in an marshalled
-	// chunk.
+	// Offset is the position in the data from which to retrieve the chunk.
 	Offset int `schema:"offset"`
+}
+
+// Key returns an identifier for looking up chunks in a cache
+func (c GetChunkOptions) Key() string {
+	return fmt.Sprintf("%s.%s.log", c.RunID, string(c.Phase))
 }
 
 type PutChunkOptions struct {
 	// Start indicates this is the first chunk
 	Start bool `schema:"start"`
-
 	// End indicates this is the last and final chunk
 	End bool `schema:"end"`
-}
-
-func (c Chunk) Marshal() []byte {
-	if c.Start {
-		c.Data = append([]byte{ChunkStartMarker}, c.Data...)
-	}
-	if c.End {
-		c.Data = append(c.Data, ChunkEndMarker)
-	}
-	return c.Data
-}
-
-func UnmarshalChunk(chunk []byte) (out Chunk) {
-	if len(chunk) == 0 {
-		return out
-	}
-
-	if chunk[0] == ChunkStartMarker {
-		out.Start = true
-		chunk = chunk[1:]
-	}
-	if chunk[len(chunk)-1] == ChunkEndMarker {
-		out.End = true
-		chunk = chunk[:len(chunk)-1]
-	}
-
-	out.Data = chunk
-
-	return out
-}
-
-// Cut returns a new smaller chunk. NOTE: the options Offset and limit operate
-// on *marshalled* data.
-func (c Chunk) Cut(opts GetChunkOptions) (Chunk, error) {
-	data := c.Marshal()
-	size := len(data)
-
-	if opts.Offset > size {
-		return Chunk{}, fmt.Errorf("chunk offset greater than size of data: %d > %d", opts.Offset, size)
-	}
-
-	// limit cannot be higher than the max
-	if opts.Limit > ChunkMaxLimit {
-		opts.Limit = ChunkMaxLimit
-	}
-
-	// zero means limitless but we set it the size of the remaining data so that
-	// it is easier to work with.
-	if opts.Limit == 0 {
-		opts.Limit = size - opts.Offset
-	}
-
-	// Adjust limit if it extends beyond size of value
-	if (opts.Offset + opts.Limit) > size {
-		opts.Limit = size - opts.Offset
-	}
-
-	// Cut data
-	data = data[opts.Offset:(opts.Offset + opts.Limit)]
-
-	return UnmarshalChunk(data), nil
-}
-
-// Append appends a chunk to an existing chunk
-func (c Chunk) Append(chunk Chunk) Chunk {
-	c.Data = append(c.Data, chunk.Data...)
-	c.Start = chunk.Start
-	c.End = chunk.End
-	return c
 }

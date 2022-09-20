@@ -2,43 +2,70 @@ package sql
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// PutChunk persists a plan log chunk to the DB.
-func (db *DB) PutChunk(ctx context.Context, runID string, phase otf.PhaseType, chunk otf.Chunk) error {
-	if !chunk.Start && !chunk.End && len(chunk.Data) == 0 {
-		// skip empty, marker-less chunks
-		return nil
+// PutChunk persists a log chunk to the DB.
+func (db *DB) PutChunk(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
+	if len(chunk.Data) == 0 {
+		return otf.PersistedChunk{}, fmt.Errorf("refusing to persist empty chunk")
 	}
-	_, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
-		RunID: String(runID),
-		Phase: String(string(phase)),
-		Chunk: chunk.Marshal(),
+	id, err := db.InsertLogChunk(ctx, pggen.InsertLogChunkParams{
+		RunID:  String(chunk.RunID),
+		Phase:  String(string(chunk.Phase)),
+		Chunk:  chunk.Data,
+		Offset: chunk.Offset,
 	})
-	return err
+	if err != nil {
+		return otf.PersistedChunk{}, databaseError(err)
+	}
+	return otf.PersistedChunk{
+		ChunkID: id,
+		Chunk:   chunk,
+	}, nil
 }
 
-// GetChunk retrieves a plan log chunk from the DB.
-func (db *DB) GetChunk(ctx context.Context, runID string, phase otf.PhaseType, opts otf.GetChunkOptions) (otf.Chunk, error) {
+// GetChunk retrieves a log chunk from the DB.
+func (db *DB) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	// 0 means limitless but in SQL it means 0 so as a workaround set it to the
 	// maximum a postgres INT can hold.
 	if opts.Limit == 0 {
 		opts.Limit = math.MaxInt32
 	}
-	chunk, err := db.FindLogChunks(ctx, pggen.FindLogChunksParams{
-		RunID: String(runID),
-		Phase: String(string(phase)),
-		// TODO: we add one here because postgres' substr() starts from 1 not 0
-		// - we should probably move this to the SQL itself
-		Offset: opts.Offset + 1,
+	data, err := db.FindLogChunks(ctx, pggen.FindLogChunksParams{
+		RunID:  String(opts.RunID),
+		Phase:  String(string(opts.Phase)),
+		Offset: opts.Offset,
 		Limit:  opts.Limit,
 	})
 	if err != nil {
 		return otf.Chunk{}, databaseError(err)
 	}
-	return otf.UnmarshalChunk(chunk), nil
+	return otf.Chunk{
+		RunID:  opts.RunID,
+		Phase:  opts.Phase,
+		Data:   data,
+		Offset: opts.Offset,
+	}, nil
+}
+
+// GetChunkByID retrieves a plan log chunk from the DB using its unique chunk ID.
+func (db *DB) GetChunkByID(ctx context.Context, chunkID int) (otf.PersistedChunk, error) {
+	chunk, err := db.FindLogChunkByID(ctx, chunkID)
+	if err != nil {
+		return otf.PersistedChunk{}, databaseError(err)
+	}
+	return otf.PersistedChunk{
+		ChunkID: chunkID,
+		Chunk: otf.Chunk{
+			RunID:  chunk.RunID.String,
+			Phase:  otf.PhaseType(chunk.Phase.String),
+			Data:   chunk.Chunk,
+			Offset: chunk.Offset,
+		},
+	}, nil
 }

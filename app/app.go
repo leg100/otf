@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/inmem"
-	"github.com/leg100/otf/tail"
 )
 
 var _ otf.Application = (*Application)(nil)
@@ -19,16 +18,15 @@ var _ otf.Application = (*Application)(nil)
 // Application encompasses services for interacting between components of the
 // otf server
 type Application struct {
-	db         otf.DB
-	cache      otf.Cache
-	proxy      otf.ChunkStore
-	queues     *inmem.WorkspaceQueueManager
-	tailServer *tail.Server
-	latest     *inmem.LatestRunManager
+	db     otf.DB
+	cache  otf.Cache
+	proxy  otf.ChunkStore
+	queues *inmem.WorkspaceQueueManager
+	latest *inmem.LatestRunManager
 
 	*otf.RunFactory
 	*otf.WorkspaceFactory
-	*inmem.Mapper
+	Mapper
 	otf.PubSubService
 	logr.Logger
 }
@@ -75,9 +73,6 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 		return nil, fmt.Errorf("populating workspace queues: %w", err)
 	}
 	app.queues = queues
-
-	// Initialise tail server for tailing logs on behalf of clients
-	app.tailServer = tail.NewServer(proxy)
 
 	return app, nil
 }

@@ -223,12 +223,12 @@ type Querier interface {
 	// InsertPhaseStatusTimestampScan scans the result of an executed InsertPhaseStatusTimestampBatch query.
 	InsertPhaseStatusTimestampScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (pgconn.CommandTag, error)
+	InsertLogChunk(ctx context.Context, params InsertLogChunkParams) (int, error)
 	// InsertLogChunkBatch enqueues a InsertLogChunk query into batch to be executed
 	// later by the batch.
 	InsertLogChunkBatch(batch genericBatch, params InsertLogChunkParams)
 	// InsertLogChunkScan scans the result of an executed InsertLogChunkBatch query.
-	InsertLogChunkScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertLogChunkScan(results pgx.BatchResults) (int, error)
 
 	FindLogChunks(ctx context.Context, params FindLogChunksParams) ([]byte, error)
 	// FindLogChunksBatch enqueues a FindLogChunks query into batch to be executed
@@ -236,6 +236,13 @@ type Querier interface {
 	FindLogChunksBatch(batch genericBatch, params FindLogChunksParams)
 	// FindLogChunksScan scans the result of an executed FindLogChunksBatch query.
 	FindLogChunksScan(results pgx.BatchResults) ([]byte, error)
+
+	FindLogChunkByID(ctx context.Context, chunkID int) (FindLogChunkByIDRow, error)
+	// FindLogChunkByIDBatch enqueues a FindLogChunkByID query into batch to be executed
+	// later by the batch.
+	FindLogChunkByIDBatch(batch genericBatch, chunkID int)
+	// FindLogChunkByIDScan scans the result of an executed FindLogChunkByIDBatch query.
+	FindLogChunkByIDScan(results pgx.BatchResults) (FindLogChunkByIDRow, error)
 
 	InsertPlan(ctx context.Context, runID pgtype.Text, status pgtype.Text) (pgconn.CommandTag, error)
 	// InsertPlanBatch enqueues a InsertPlan query into batch to be executed
@@ -780,6 +787,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findLogChunksSQL, findLogChunksSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindLogChunks': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findLogChunkByIDSQL, findLogChunkByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindLogChunkByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertPlanSQL, insertPlanSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertPlan': %w", err)

@@ -98,7 +98,7 @@ func run(ctx context.Context, args []string) error {
 	g, gctx := errgroup.WithContext(ctx)
 
 	// Setup pub sub broker
-	pubsub, err := sql.NewPubSub(logger, db.Pool())
+	pubsub, err := sql.NewPubSub(logger, db)
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
