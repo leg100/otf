@@ -72,7 +72,6 @@ func (ps *PubSub) Start(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: retry upon error with exp backoff
 	op := func() error {
 		for {
 			notification, err := conn.Conn().WaitForNotification(ctx)

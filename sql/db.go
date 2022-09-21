@@ -18,12 +18,18 @@ type DB struct {
 	pggen.Querier
 }
 
-// Close closes all connections in the pool. Has no effect if connection is not
-// a pool.
+// Close closes the DB's connections. If the DB has wrapped a transaction then
+// this method has no effect.
 func (db *DB) Close() {
-	pool, ok := db.conn.(*pgxpool.Pool)
-	if ok {
-		pool.Close()
+	switch c := db.conn.(type) {
+	case *pgxpool.Conn:
+		c.Conn().Close(context.Background())
+	case *pgx.Conn:
+		c.Close(context.Background())
+	case *pgxpool.Pool:
+		c.Close()
+	default:
+		// *pgx.Tx etc
 	}
 }
 
@@ -50,6 +56,21 @@ func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) error {
+	conn, err := db.Pool().Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, "SELECT pg_advisory_lock($1)", id)
+	if err != nil {
+		return err
+	}
+	err = cb(newDB(conn))
+	return err
 }
 
 // tx is the same as exported Tx but for use within the sql pkg, passing the

@@ -20,6 +20,7 @@ type fakeApp struct {
 	otf.ConfigurationVersionService
 	otf.EventService
 	otf.LatestRunService
+	otf.LockableApplication
 }
 
 type fakeUserService struct {
