@@ -6,10 +6,6 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// SchedulerLockID is shared by one or more schedulers and is used to guarantee
-// that only one scheduler will run at any time.
-const SchedulerLockID int64 = 5577006791947779410
-
 // Scheduler is responsible for starting runs i.e. the first step, enqueuing the
 // plan
 type Scheduler struct {

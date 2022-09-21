@@ -7,6 +7,10 @@ import (
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
+// SchedulerLockID is shared by one or more schedulers and is used to guarantee
+// that only one scheduler will run at any time.
+const SchedulerLockID int64 = 5577006791947779410
+
 // ExclusiveScheduler runs a scheduler, ensuring it is the *only* scheduler
 // running.
 func ExclusiveScheduler(ctx context.Context, logger logr.Logger, app LockableApplication) {
