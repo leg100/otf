@@ -28,22 +28,13 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 				res, ok := ev.Payload.(OrganizationResource)
 				if !ok {
 					// skip events that contain payloads that cannot be related
-					// back to an organization
+					// back to an organization, including log updates, which are
+					// very noisy
 					continue
 				}
 				if !otf.CanAccess(ctx, otf.String(res.OrganizationName())) {
 					// skip events caller is not entitled to
 					continue
-				}
-				if chunk, ok := ev.Payload.(otf.PersistedChunk); ok {
-					if opts.Logs == nil {
-						// skip log chunks by default
-						continue
-					}
-					if opts.Logs.RunID != chunk.RunID || opts.Logs.Phase != chunk.Phase {
-						// skip logs with for different run phase
-						continue
-					}
 				}
 
 				ch <- ev
