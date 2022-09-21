@@ -11,63 +11,49 @@ import (
 type Scheduler struct {
 	Application
 	logr.Logger
-	updates chan Event
 }
 
 // NewScheduler constructs and initialises the scheduler.
-func NewScheduler(ctx context.Context, logger logr.Logger, app Application) (*Scheduler, error) {
+func NewScheduler(logger logr.Logger, app Application) *Scheduler {
 	s := &Scheduler{
 		Application: app,
 		Logger:      logger.WithValues("component", "scheduler"),
-		updates:     make(chan Event),
 	}
 
-	// retrieve existing runs, page by page
-	var existing []*Run
-	opts := RunListOptions{Statuses: IncompleteRun}
-	for {
-		page, err := app.ListRuns(ctx, opts)
-		if err != nil {
-			return nil, err
-		}
-		existing = append(existing, page.Items...)
-		if page.NextPage() == nil {
-			break
-		}
-		opts.PageNumber = *page.NextPage()
-	}
-	// db returns runs ordered by creation date, newest first, but we want
-	// oldest first, so we reverse the order
-	var oldest []*Run
-	for _, r := range existing {
-		oldest = append([]*Run{r}, oldest...)
-	}
-
-	// subscribe to updates to runs and workspace unlock events
-	sub, err := app.Watch(ctx, WatchOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// feed in both existing runs and updates to the scheduler for processing
-	go func() {
-		for _, run := range existing {
-			s.updates <- Event{Payload: run}
-		}
-		for update := range sub {
-			s.updates <- update
-		}
-	}()
-	return s, nil
+	return s
 }
 
 // Start starts the scheduler daemon. Should be invoked in a go routine.
-func (s *Scheduler) Start(ctx context.Context) {
+func (s *Scheduler) Start(ctx context.Context) error {
+	// subscribe to run events and workspace unlock events
+	sub, err := s.Watch(ctx, WatchOptions{})
+	if err != nil {
+		s.Error(err, "creating watch")
+		return err
+	}
+
+	existing, err := s.existing(ctx)
+	if err != nil {
+		s.Error(err, "retrieving incomplete runs")
+		return err
+	}
+
+	// feed in both existing runs and events to the scheduler for processing
+	queue := make(chan Event)
+	go func() {
+		for _, run := range existing {
+			queue <- Event{Payload: run}
+		}
+		for event := range sub {
+			queue <- event
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return
-		case event := <-s.updates:
+			return ctx.Err()
+		case event := <-queue:
 			if event.Type == EventWorkspaceUnlocked {
 				ws, ok := event.Payload.(*Workspace)
 				if !ok {
@@ -141,4 +127,28 @@ func (s *Scheduler) checkFrontOfQueue(ctx context.Context, workspaceID string) e
 		}
 	}
 	return nil
+}
+
+func (s *Scheduler) existing(ctx context.Context) ([]*Run, error) {
+	// retrieve existing runs, page by page
+	existing := []*Run{}
+	opts := RunListOptions{Statuses: IncompleteRun}
+	for {
+		page, err := s.ListRuns(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		existing = append(existing, page.Items...)
+		if page.NextPage() == nil {
+			break
+		}
+		opts.PageNumber = *page.NextPage()
+	}
+	// db returns runs ordered by creation date, newest first, but we want
+	// oldest first, so we reverse the order
+	oldest := []*Run{}
+	for _, r := range existing {
+		oldest = append([]*Run{r}, oldest...)
+	}
+	return oldest, nil
 }

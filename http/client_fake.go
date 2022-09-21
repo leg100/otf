@@ -33,6 +33,7 @@ type FakeClient struct {
 	otf.ConfigurationVersionService
 	otf.EventService
 	otf.LatestRunService
+	otf.LockableApplication
 }
 
 type fakeOrganizationsClient struct {

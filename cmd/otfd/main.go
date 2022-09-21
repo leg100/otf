@@ -115,12 +115,9 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
-	// run scheduler
-	scheduler, err := otf.NewScheduler(ctx, logger, app)
-	if err != nil {
-		return fmt.Errorf("starting scheduler: %w", err)
-	}
-	go scheduler.Start(ctx)
+	// Run scheduler - if there is another scheduler running already then
+	// this'll wait until the other scheduler exits.
+	go otf.ExclusiveScheduler(ctx, logger, app)
 
 	// Run local agent in background
 	agent, err := agent.NewAgent(

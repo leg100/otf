@@ -25,8 +25,6 @@ func TestTailLogs(t *testing.T) {
 
 	// setup logs channel - send a chunk and then close
 	chunks := make(chan otf.Chunk, 1)
-	chunks <- otf.Chunk{Data: []byte("some logs")}
-	close(chunks)
 
 	// fake app
 	app := &Application{
@@ -53,9 +51,15 @@ func TestTailLogs(t *testing.T) {
 	require.NoError(t, client.SubscribeChan("tail-123", events))
 	defer client.Unsubscribe(events)
 
+	// Client connected to server, now have the tail handler receive an event
+	chunks <- otf.Chunk{Data: []byte("some logs")}
+	close(chunks)
+
+	// Wait for client to receive relayed event
 	logs := <-events
 	assert.Equal(t, "new-log-chunk", string(logs.Event))
 	assert.Equal(t, "{\"html\":\"some logs\\u003cbr\\u003e\",\"offset\":9}", string(logs.Data))
+	// Closing channel should result in a finished event.
 	finished := <-events
 	assert.Equal(t, "finished", string(finished.Event))
 	assert.Equal(t, "no more logs", string(finished.Data))
