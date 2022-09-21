@@ -30,7 +30,7 @@
     </div>
     <div>
       <div class="term-container">
-        {{- .Content.PlanLogs.Existing }}<div id="tailed-plan-logs"></div></div>
+        {{- trim (.Content.PlanLogs.ToHTML | toString) }}<div id="tailed-plan-logs"></div></div>
     </div>
   </div>
   <div id="apply" class="item">
@@ -39,16 +39,16 @@
       {{ template "phase-status" .Content.Run.Apply }}
     </div>
     <div class="term-container">
-      {{- .Content.ApplyLogs.Existing }}<div id="tailed-apply-logs"></div></div>
+      {{- trim (.Content.ApplyLogs.ToHTML | toString) }}<div id="tailed-apply-logs"></div></div>
   </div>
-  {{ if not .Content.PlanLogs.End }}
+  {{ if not .Content.PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content.Run }}, 'plan', {{ .Content.PlanLogs.Offset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content.Run }}, 'plan', {{ .Content.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
-  {{ if not .Content.ApplyLogs.End }}
+  {{ if not .Content.ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content.Run }}, 'apply', {{ .Content.ApplyLogs.Offset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content.Run }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
 {{ end }}

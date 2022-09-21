@@ -21,6 +21,10 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 		for {
 			select {
 			case ev, ok := <-sub:
+				if !ok {
+					close(ch)
+					return
+				}
 				res, ok := ev.Payload.(OrganizationResource)
 				if !ok {
 					// skip events that contain payloads that cannot be related
@@ -31,6 +35,17 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					// skip events caller is not entitled to
 					continue
 				}
+				if chunk, ok := ev.Payload.(otf.PersistedChunk); ok {
+					if opts.Logs == nil {
+						// skip log chunks by default
+						continue
+					}
+					if opts.Logs.RunID != chunk.RunID || opts.Logs.Phase != chunk.Phase {
+						// skip logs with for different run phase
+						continue
+					}
+				}
+
 				ch <- ev
 			case <-ctx.Done():
 				return

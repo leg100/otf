@@ -2,6 +2,7 @@ package html
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 
 	term2html "github.com/buildkite/terminal-to-html"
@@ -10,6 +11,25 @@ import (
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
 )
+
+type htmlLogChunk struct {
+	otf.Chunk
+}
+
+func (l *htmlLogChunk) ToHTML() template.HTML {
+	chunk := l.RemoveStartMarker()
+	chunk = chunk.RemoveEndMarker()
+
+	// convert ANSI escape sequences to HTML
+	data := string(term2html.Render(chunk.Data))
+
+	return template.HTML(data)
+}
+
+// NextOffset returns the offset for the next chunk
+func (l *htmlLogChunk) NextOffset() int {
+	return l.Chunk.Offset + len(l.Chunk.Data)
+}
 
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 	opts := otf.RunListOptions{
@@ -71,24 +91,30 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	}
 	// Get existing logs thus far received for each phase. If none are found then don't treat
 	// that as an error because it merely means no logs have yet been received.
-	planLogs, err := app.GetChunk(r.Context(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
+	planLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
+		RunID: run.ID(),
+		Phase: otf.PlanPhase,
+	})
 	if err != nil && err != otf.ErrResourceNotFound {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	applyLogs, err := app.GetChunk(r.Context(), run.ID(), otf.ApplyPhase, otf.GetChunkOptions{})
+	applyLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
+		RunID: run.ID(),
+		Phase: otf.ApplyPhase,
+	})
 	if err != nil && err != otf.ErrResourceNotFound {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("run_get.tmpl", w, r, struct {
 		Run       *otf.Run
-		PlanLogs  *logs
-		ApplyLogs *logs
+		PlanLogs  *htmlLogChunk
+		ApplyLogs *htmlLogChunk
 	}{
 		Run:       run,
-		PlanLogs:  (*logs)(&planLogs),
-		ApplyLogs: (*logs)(&applyLogs),
+		PlanLogs:  &htmlLogChunk{planLogs},
+		ApplyLogs: &htmlLogChunk{applyLogs},
 	})
 }
 
@@ -123,14 +149,16 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ch, err := app.Tail(r.Context(), mux.Vars(r)["run_id"], opts.Phase, opts.Offset)
+	ch, err := app.Tail(r.Context(), otf.GetChunkOptions{
+		RunID:  mux.Vars(r)["run_id"],
+		Phase:  opts.Phase,
+		Offset: opts.Offset,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	go func() {
-		// keep running tally of offset
-		offset := opts.Offset
 		for {
 			select {
 			case chunk, ok := <-ch:
@@ -142,15 +170,18 @@ func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {
 					})
 					return
 				}
-
-				offset += len(chunk)
-
+				htmlChunk := &htmlLogChunk{chunk}
+				html := htmlChunk.ToHTML()
+				if len(html) == 0 {
+					// don't send empty chunks
+					continue
+				}
 				js, err := json.Marshal(struct {
-					Offset int    `json:"offset"`
-					HTML   string `json:"html"`
+					HTML       string `json:"html"`
+					NextOffset int    `json:"offset"`
 				}{
-					Offset: offset,
-					HTML:   string(term2html.Render(chunk)) + "<br>",
+					HTML:       string(html) + "<br>",
+					NextOffset: htmlChunk.NextOffset(),
 				})
 				if err != nil {
 					app.Error(err, "marshalling data")

@@ -94,7 +94,7 @@ func (u *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) 
 	}, nil
 }
 
-func (u *fakeRunService) GetChunk(context.Context, string, otf.PhaseType, otf.GetChunkOptions) (otf.Chunk, error) {
+func (u *fakeRunService) GetChunk(context.Context, otf.GetChunkOptions) (otf.Chunk, error) {
 	return otf.Chunk{Data: []byte("fake-logs")}, nil
 }
 

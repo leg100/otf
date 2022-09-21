@@ -14,41 +14,35 @@ func TestLog_PutChunk(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+	ctx := context.Background()
 
-	t.Run("first chunk", func(t *testing.T) {
-		run := createTestRun(t, db, ws, cv)
-
-		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1"), Start: true})
+	t.Run("upload chunk", func(t *testing.T) {
+		got, err := db.PutChunk(ctx, otf.Chunk{
+			RunID: run.ID(),
+			Phase: otf.PlanPhase,
+			Data:  []byte("\x02hello world\x03"),
+		})
 		require.NoError(t, err)
 
-		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
-		require.NoError(t, err)
-
-		assert.Equal(t, otf.Chunk{Start: true, Data: []byte("chunk1")}, got)
+		want := otf.PersistedChunk{
+			ChunkID: got.ChunkID,
+			Chunk: otf.Chunk{
+				RunID: run.ID(),
+				Phase: otf.PlanPhase,
+				Data:  []byte("\x02hello world\x03"),
+			},
+		}
+		assert.Equal(t, want, got)
+		assert.Positive(t, got.ChunkID)
 	})
 
-	t.Run("middle chunk", func(t *testing.T) {
-		run := createTestRun(t, db, ws, cv)
-
-		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("chunk1")})
-		require.NoError(t, err)
-
-		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
-		require.NoError(t, err)
-
-		assert.Equal(t, otf.Chunk{Data: []byte("chunk1")}, got)
-	})
-
-	t.Run("last chunk with no data", func(t *testing.T) {
-		run := createTestRun(t, db, ws, cv)
-
-		err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{End: true})
-		require.NoError(t, err)
-
-		got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, otf.GetChunkOptions{})
-		require.NoError(t, err)
-
-		assert.Equal(t, otf.Chunk{Data: []byte{}, End: true}, got)
+	t.Run("reject empty chunk", func(t *testing.T) {
+		_, err := db.PutChunk(ctx, otf.Chunk{
+			RunID: run.ID(),
+			Phase: otf.PlanPhase,
+		})
+		assert.Error(t, err)
 	})
 }
 
@@ -58,11 +52,20 @@ func TestLog_GetChunk(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 	cv := createTestConfigurationVersion(t, db, ws)
 	run := createTestRun(t, db, ws, cv)
+	ctx := context.Background()
 
-	err := db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte("hello"), Start: true})
+	_, err := db.PutChunk(ctx, otf.Chunk{
+		RunID: run.ID(),
+		Phase: otf.PlanPhase,
+		Data:  []byte("\x02hello"),
+	})
 	require.NoError(t, err)
 
-	err = db.PutChunk(context.Background(), run.ID(), otf.PlanPhase, otf.Chunk{Data: []byte(" world"), End: true})
+	_, err = db.PutChunk(ctx, otf.Chunk{
+		RunID: run.ID(),
+		Phase: otf.PlanPhase,
+		Data:  []byte(" world\x03"),
+	})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -72,42 +75,88 @@ func TestLog_GetChunk(t *testing.T) {
 	}{
 		{
 			name: "all chunks",
+			opts: otf.GetChunkOptions{
+				RunID: run.ID(),
+				Phase: otf.PlanPhase,
+			},
 			want: otf.Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Data:   []byte("\x02hello world\x03"),
+				Offset: 0,
 			},
 		},
 		{
 			name: "first chunk",
-			opts: otf.GetChunkOptions{Limit: 4},
+			opts: otf.GetChunkOptions{
+				RunID: run.ID(),
+				Phase: otf.PlanPhase,
+				Limit: 4,
+			},
 			want: otf.Chunk{
-				Data:  []byte("hel"),
-				Start: true,
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Data:   []byte("\x02hel"),
+				Offset: 0,
 			},
 		},
 		{
 			name: "intermediate chunk",
-			opts: otf.GetChunkOptions{Offset: 4, Limit: 3},
+			opts: otf.GetChunkOptions{
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Offset: 4,
+				Limit:  3,
+			},
 			want: otf.Chunk{
-				Data: []byte("lo "),
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Data:   []byte("lo "),
+				Offset: 4,
 			},
 		},
 		{
 			name: "last chunk",
-			opts: otf.GetChunkOptions{Offset: 7},
+			opts: otf.GetChunkOptions{
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Offset: 7,
+			},
 			want: otf.Chunk{
-				Data: []byte("world"),
-				End:  true,
+				RunID:  run.ID(),
+				Phase:  otf.PlanPhase,
+				Data:   []byte("world\x03"),
+				Offset: 7,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetChunk(context.Background(), run.ID(), otf.PlanPhase, tt.opts)
+			got, err := db.GetChunk(ctx, tt.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestLog_GetChunkByID(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
+	ctx := context.Background()
+
+	want, err := db.PutChunk(ctx, otf.Chunk{
+		RunID:  run.ID(),
+		Phase:  otf.PlanPhase,
+		Data:   []byte("\x02hello world\x03"),
+		Offset: 0,
+	})
+	require.NoError(t, err)
+
+	got, err := db.GetChunkByID(ctx, want.ChunkID)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
 }

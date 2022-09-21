@@ -6,6 +6,8 @@ import (
 	"github.com/leg100/otf"
 )
 
+// ChunkProxy is a caching proxy for log chunks, proxying requests to the
+// backend.
 type ChunkProxy struct {
 	cache   otf.Cache
 	backend otf.ChunkStore
@@ -20,48 +22,55 @@ func NewChunkProxy(cache otf.Cache, backend otf.ChunkStore) (otf.ChunkStore, err
 
 // GetChunk attempts to retrieve a chunk from the cache before falling back to
 // using the backend store.
-func (c *ChunkProxy) GetChunk(ctx context.Context, id string, phase otf.PhaseType, opts otf.GetChunkOptions) (otf.Chunk, error) {
+func (c *ChunkProxy) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (otf.Chunk, error) {
 	// Try the cache first
-	if chunk, err := c.cache.Get(otf.LogCacheKey(id, phase)); err == nil {
-		return otf.UnmarshalChunk(chunk).Cut(opts)
+	if data, err := c.cache.Get(otf.LogCacheKey(opts.RunID, opts.Phase)); err == nil {
+		return otf.Chunk{Data: data}.Cut(opts), nil
 	}
 
 	// Fall back to getting chunk from backend
-	chunk, err := c.backend.GetChunk(ctx, id, phase, otf.GetChunkOptions{})
+	chunk, err := c.backend.GetChunk(ctx, opts)
 	if err != nil {
 		return otf.Chunk{}, err
 	}
-
 	// Cache it
-	if err := c.cache.Set(otf.LogCacheKey(id, phase), chunk.Marshal()); err != nil {
+	if err := c.cache.Set(chunk.Key(), chunk.Data); err != nil {
 		return otf.Chunk{}, err
 	}
-
 	// Cut chunk down to requested size.
-	return chunk.Cut(opts)
+	return chunk.Cut(opts), nil
+}
+
+func (c *ChunkProxy) GetChunkByID(ctx context.Context, chunkID int) (otf.PersistedChunk, error) {
+	return c.backend.GetChunkByID(ctx, chunkID)
 }
 
 // PutChunk writes a chunk of data to the backend store before caching it.
-func (c *ChunkProxy) PutChunk(ctx context.Context, id string, phase otf.PhaseType, chunk otf.Chunk) error {
+func (c *ChunkProxy) PutChunk(ctx context.Context, chunk otf.Chunk) (otf.PersistedChunk, error) {
 	// Write to backend
-	if err := c.backend.PutChunk(ctx, id, phase, chunk); err != nil {
-		return err
+	persisted, err := c.backend.PutChunk(ctx, chunk)
+	if err != nil {
+		return otf.PersistedChunk{}, err
 	}
 
 	// First chunk can safely be written straight to cache
-	if chunk.Start {
-		return c.cache.Set(otf.LogCacheKey(id, phase), chunk.Marshal())
+	if chunk.IsStart() {
+		return persisted, c.cache.Set(chunk.Key(), chunk.Data)
 	}
 
 	// Otherwise, append chunk to cache
-	if previous, err := c.cache.Get(otf.LogCacheKey(id, phase)); err == nil {
-		return c.cache.Set(otf.LogCacheKey(id, phase), append(previous, chunk.Marshal()...))
+	if previous, err := c.cache.Get(chunk.Key()); err == nil {
+		return persisted, c.cache.Set(chunk.Key(), append(previous, chunk.Data...))
 	}
 
 	// Cache needs re-populating from store
-	if all, err := c.backend.GetChunk(ctx, id, phase, otf.GetChunkOptions{}); err == nil {
-		return c.cache.Set(otf.LogCacheKey(id, phase), all.Marshal())
+	all, err := c.backend.GetChunk(ctx, otf.GetChunkOptions{
+		RunID: chunk.RunID,
+		Phase: chunk.Phase,
+	})
+	if err == nil {
+		return persisted, c.cache.Set(chunk.Key(), all.Data)
 	} else {
-		return err
+		return persisted, err
 	}
 }

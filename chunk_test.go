@@ -4,142 +4,73 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func TestChunkMarshal(t *testing.T) {
-	tests := []struct {
-		name  string
-		chunk Chunk
-		want  string
-	}{
-		{
-			name: "both start and end markers",
-			chunk: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
-			},
-			want: "\x02hello world\x03",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, string(tt.chunk.Marshal()))
-		})
-	}
-}
-
-func TestChunkUnmarshal(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  Chunk
-	}{
-		{
-			name:  "start marker",
-			input: "\x02hello",
-			want: Chunk{
-				Data:  []byte("hello"),
-				Start: true,
-				End:   false,
-			},
-		},
-		{
-			name:  "end marker",
-			input: " world\x03",
-			want: Chunk{
-				Data:  []byte(" world"),
-				Start: false,
-				End:   true,
-			},
-		},
-		{
-			name:  "start and end marker",
-			input: "\x02hello world\x03",
-			want: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, UnmarshalChunk([]byte(tt.input)))
-		})
-	}
-}
 
 func TestChunkCut(t *testing.T) {
 	tests := []struct {
-		name    string
-		chunk   Chunk
-		opts    GetChunkOptions
-		want    Chunk
-		wantErr bool
+		name  string
+		chunk Chunk
+		opts  GetChunkOptions
+		want  Chunk
 	}{
 		{
-			name: "get all data",
+			name: "cut nothing",
 			chunk: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				Data: []byte("\x02hello world\x03"),
 			},
 			want: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				Data: []byte("\x02hello world\x03"),
 			},
 		},
 		{
-			name: "get middle chunk",
+			name: "cut middle",
 			chunk: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				Data: []byte("\x02hello world\x03"),
 			},
 			opts: GetChunkOptions{Offset: 3, Limit: 4},
 			want: Chunk{
-				Data:  []byte("llo "),
-				Start: false,
-				End:   false,
+				Data:   []byte("llo "),
+				Offset: 3,
 			},
 		},
 		{
-			name: "get chunk with limit beyond size of data",
+			name: "sanitize excessive limit",
 			chunk: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				Data: []byte("\x02hello world\x03"),
 			},
 			opts: GetChunkOptions{Offset: 3, Limit: 99},
 			want: Chunk{
-				Data:  []byte("llo world"),
-				Start: false,
-				End:   true,
+				Data:   []byte("llo world\x03"),
+				Offset: 3,
 			},
 		},
 		{
-			name: "get chunk with offset beyond size of data",
+			name: "handle excessive offset",
 			chunk: Chunk{
-				Data:  []byte("hello world"),
-				Start: true,
-				End:   true,
+				Data: []byte("\x02hello world\x03"),
 			},
-			opts:    GetChunkOptions{Offset: 99, Limit: 4},
-			wantErr: true,
+			opts: GetChunkOptions{Offset: 99},
+			want: Chunk{
+				Offset: 13,
+			},
+		},
+		{
+			name: "cut chunk with non-zero offset",
+			chunk: Chunk{
+				Data:   []byte(" world\x03"),
+				Offset: 6,
+			},
+			opts: GetChunkOptions{Offset: 8, Limit: 12},
+			want: Chunk{
+				Data:   []byte("orld\x03"),
+				Offset: 8,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.chunk.Cut(tt.opts)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
+			got := tt.chunk.Cut(tt.opts)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -14,31 +14,23 @@ import (
 // TestPubSub_E2E tests that one pubsub process can publish a message and that
 // another pubsub process can receive it.
 func TestPubSub_E2E(t *testing.T) {
-	run := otf.NewTestRun(t, otf.TestRunCreateOptions{
-		ID: otf.String("run-123"),
-	})
-	senderGot := make(chan otf.Event, 1)
-	sender := &PubSub{
-		Logger:  logr.Discard(),
-		pool:    newTestDB(t).Pool(),
-		db:      &fakePubSubDB{run: run},
-		local:   &fakePubSub{got: senderGot},
-		channel: "events_e2e_test",
-		pid:     "sender-1",
-	}
-	// record what receiver receives
-	receiverGot := make(chan otf.Event, 1)
-	receiver := &PubSub{
-		Logger:  logr.Discard(),
-		pool:    newTestDB(t).Pool(),
-		db:      &fakePubSubDB{run: run},
-		local:   &fakePubSub{got: receiverGot},
-		channel: "events_e2e_test",
-		pid:     "receiver-1",
-	}
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws)
+	run := createTestRun(t, db, ws, cv)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() { cancel() })
+
+	// setup sender
+	sender, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("sender-1"))
+	require.NoError(t, err)
+	senderGot := sender.Subscribe(ctx)
+	// setup receiver
+	receiver, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("receiver-1"))
+	require.NoError(t, err)
+	receiverGot := receiver.Subscribe(ctx)
 
 	go func() { sender.Start(ctx) }()
 	go func() { receiver.Start(ctx) }()
@@ -46,6 +38,8 @@ func TestPubSub_E2E(t *testing.T) {
 	// Give Start() time to connect and start listening
 	time.Sleep(100 * time.Millisecond)
 
+	// this is the event we're publishing from the sender and expecting to make
+	// its way to postgres and then back to the receiver.
 	want := otf.Event{
 		Type:    otf.EventRunStatusUpdate,
 		Payload: run,
@@ -116,13 +110,4 @@ func (f *fakePubSubDB) GetRun(context.Context, string) (*otf.Run, error) {
 
 func (f *fakePubSubDB) GetWorkspace(context.Context, otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.workspace, nil
-}
-
-type fakePubSub struct {
-	otf.PubSubService
-	got chan otf.Event
-}
-
-func (f *fakePubSub) Publish(ev otf.Event) {
-	f.got <- ev
 }

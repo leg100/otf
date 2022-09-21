@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -31,6 +32,8 @@ type PubSub struct {
 	// db used for retrieving objects from the database
 	db otf.DB
 	logr.Logger
+	// each pubsub maintains a unique identifier to distriguish messages it
+	// sends from messages other pubsub have sent
 	pid string
 }
 
@@ -46,17 +49,37 @@ type message struct {
 	PID string `json:"pid"`
 }
 
-func NewPubSub(logger logr.Logger, pool *pgxpool.Pool) (*PubSub, error) {
-	if pool == nil {
-		return nil, fmt.Errorf("postgres pool is nil")
+type NewPubSubOption func(*PubSub)
+
+func ChannelName(name string) NewPubSubOption {
+	return func(ps *PubSub) {
+		ps.channel = name
 	}
-	return &PubSub{
+}
+
+func PID(pid string) NewPubSubOption {
+	return func(ps *PubSub) {
+		ps.pid = pid
+	}
+}
+
+func NewPubSub(logger logr.Logger, db *DB, opts ...NewPubSubOption) (*PubSub, error) {
+	pool, ok := db.conn.(*pgxpool.Pool)
+	if !ok {
+		return nil, fmt.Errorf("expected connection pool")
+	}
+	ps := &PubSub{
 		channel: EventsChannelName,
 		local:   inmem.NewPubSub(),
 		pool:    pool,
+		db:      db,
 		Logger:  logger.WithValues("component", "pubsub"),
 		pid:     uniqID,
-	}, nil
+	}
+	for _, o := range opts {
+		o(ps)
+	}
+	return ps, nil
 }
 
 // Start the pubsub daemon; listen to notifications from postgres and forward to
@@ -149,6 +172,15 @@ func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error
 		}
 	case "workspace":
 		payload, err = ps.db.GetWorkspace(ctx, otf.WorkspaceSpec{ID: &msg.ID})
+		if err != nil {
+			return otf.Event{}, err
+		}
+	case "log":
+		id, err := strconv.Atoi(msg.ID)
+		if err != nil {
+			return otf.Event{}, fmt.Errorf("converting chunk ID from string to an integer: %w", err)
+		}
+		payload, err = ps.db.GetChunkByID(ctx, id)
 		if err != nil {
 			return otf.Event{}, err
 		}

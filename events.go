@@ -18,6 +18,7 @@ const (
 	EventRunForceCancel  EventType = "run_force_cancel"
 	EventError           EventType = "error"
 	EventInfo            EventType = "info"
+	EventLogChunk        EventType = "log_update"
 )
 
 // EventType identifies the type of event
@@ -53,4 +54,15 @@ type WatchOptions struct {
 	OrganizationName *string `schema:"organization_name"`
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name"`
+	// Watch log updates. If non-nil, other events are omitted. If nil, log
+	// updates are omitted.
+	Logs *WatchLogOptions
+}
+
+// WatchLogOptions are options for watching log updates
+type WatchLogOptions struct {
+	// Filter by workspace ID
+	RunID string `schema:"run_id"`
+	// Filter by organization name
+	Phase PhaseType `schema:"phase"`
 }

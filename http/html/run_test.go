@@ -24,7 +24,7 @@ func TestTailLogs(t *testing.T) {
 	srv.AutoReplay = false
 
 	// setup logs channel - send a chunk and then close
-	chunks := make(chan []byte, 1)
+	chunks := make(chan otf.Chunk, 1)
 
 	// fake app
 	app := &Application{
@@ -52,13 +52,13 @@ func TestTailLogs(t *testing.T) {
 	defer client.Unsubscribe(events)
 
 	// Client connected to server, now have the tail handler receive an event
-	chunks <- []byte("some logs")
+	chunks <- otf.Chunk{Data: []byte("some logs")}
 	close(chunks)
 
 	// Wait for client to receive relayed event
 	logs := <-events
 	assert.Equal(t, "new-log-chunk", string(logs.Event))
-	assert.Equal(t, "{\"offset\":9,\"html\":\"some logs\\u003cbr\\u003e\"}", string(logs.Data))
+	assert.Equal(t, "{\"html\":\"some logs\\u003cbr\\u003e\",\"offset\":9}", string(logs.Data))
 	// Closing channel should result in a finished event.
 	finished := <-events
 	assert.Equal(t, "finished", string(finished.Event))
@@ -67,7 +67,7 @@ func TestTailLogs(t *testing.T) {
 
 type fakeTailApp struct {
 	run    *otf.Run
-	chunks chan []byte
+	chunks chan otf.Chunk
 
 	otf.Application
 }
@@ -76,6 +76,6 @@ func (f *fakeTailApp) GetRun(context.Context, string) (*otf.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakeTailApp) Tail(context.Context, string, otf.PhaseType, int) (<-chan []byte, error) {
+func (f *fakeTailApp) Tail(context.Context, otf.GetChunkOptions) (<-chan otf.Chunk, error) {
 	return f.chunks, nil
 }

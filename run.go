@@ -749,7 +749,7 @@ type RunService interface {
 	// Read and write logs for run phases.
 	LogService
 	// Tail logs of a run phase
-	Tail(ctx context.Context, runID string, phase PhaseType, offset int) (<-chan []byte, error)
+	Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See
