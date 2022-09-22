@@ -11,6 +11,7 @@ import (
 
 	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,7 +40,16 @@ func startDaemon(t *testing.T, port int) {
 }
 
 func startAgent(t *testing.T, token, address string) {
-	e, res, err := spawn(agent, "--token", token, "--address", address)
+	out, err := os.CreateTemp(t.TempDir(), "agent.out")
+	require.NoError(t, err)
+
+	e, res, err := expect.Spawn(
+		fmt.Sprintf("%s --token %s --address %s", agent, token, address),
+		time.Minute,
+		expect.PartialMatch(true),
+		expect.Verbose(testing.Verbose()),
+		expect.Tee(out),
+	)
 	require.NoError(t, err)
 
 	_, err = e.ExpectBatch([]expect.Batcher{
@@ -51,7 +61,12 @@ func startAgent(t *testing.T, token, address string) {
 	// terminate at end of parent test
 	t.Cleanup(func() {
 		e.SendSignal(os.Interrupt)
-		require.NoError(t, <-res)
+		if !assert.NoError(t, <-res) || t.Failed() {
+			logs, err := os.ReadFile(out.Name())
+			require.NoError(t, err)
+			t.Log("--- agent logs ---")
+			t.Log(string(logs))
+		}
 	})
 }
 
