@@ -30,7 +30,7 @@
     </div>
     <div>
       <div class="term-container">
-        {{- trim (.Content.PlanLogs.ToHTML | toString) }}<div id="tailed-plan-logs"></div></div>
+        {{- trimHTML .Content.PlanLogs.ToHTML }}<div id="tailed-plan-logs"></div></div>
     </div>
   </div>
   <div id="apply" class="item">
@@ -39,7 +39,7 @@
       {{ template "phase-status" .Content.Run.Apply }}
     </div>
     <div class="term-container">
-      {{- trim (.Content.ApplyLogs.ToHTML | toString) }}<div id="tailed-apply-logs"></div></div>
+      {{- trimHTML .Content.ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
   </div>
   {{ if not .Content.PlanLogs.IsEnd }}
     <script type="text/javascript">
