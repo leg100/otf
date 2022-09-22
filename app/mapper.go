@@ -9,15 +9,7 @@ import (
 // Mapper maintains mappings between various resource identifiers, which are
 // used by upstream layers to make decisions and efficiently lookup resources.
 type Mapper interface {
-	Populate(ctx context.Context, ws otf.WorkspaceService, rs otf.RunService) error
-
-	MapRun(run *otf.Run)
-	UnmapRun(run *otf.Run)
-
-	MapWorkspace(ws *otf.Workspace)
-	RemapWorkspace(oldName string, ws *otf.Workspace)
-	UnmapWorkspace(ws *otf.Workspace)
-
+	Start(context.Context) error
 	LookupWorkspaceID(spec otf.WorkspaceSpec) string
 
 	CanAccessRun(ctx context.Context, runID string) bool

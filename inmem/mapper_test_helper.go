@@ -6,30 +6,29 @@ import (
 	"github.com/leg100/otf"
 )
 
-type fakeWorkspaceService struct {
+type fakeMapperApp struct {
 	workspaces []*otf.Workspace
-
-	otf.WorkspaceService
+	runs       []*otf.Run
+	events     chan otf.Event
+	otf.Application
 }
 
-func (f *fakeWorkspaceService) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+func (f *fakeMapperApp) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	return &otf.WorkspaceList{
 		Items:      f.workspaces,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.workspaces)),
 	}, nil
 }
 
-type fakeRunService struct {
-	runs []*otf.Run
-
-	otf.RunService
-}
-
-func (f *fakeRunService) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (f *fakeMapperApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
+}
+
+func (f *fakeMapperApp) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+	return f.events, nil
 }
 
 type fakeSubject struct {

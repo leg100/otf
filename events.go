@@ -8,6 +8,7 @@ const (
 	EventOrganizationCreated EventType = "organization_created"
 	EventOrganizationDeleted EventType = "organization_deleted"
 	EventWorkspaceCreated    EventType = "workspace_created"
+	EventWorkspaceRenamed    EventType = "workspace_renamed"
 	EventWorkspaceDeleted    EventType = "workspace_deleted"
 	// EventLatestRunUpdate is an update to the "latest" run for a workspace
 	EventLatestRunUpdate EventType = "run_latest_update"
