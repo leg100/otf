@@ -373,10 +373,10 @@ func (a *Application) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (o
 func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
 	persisted, err := a.proxy.PutChunk(ctx, chunk)
 	if err != nil {
-		a.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "size", len(chunk.Data))
+		a.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
 		return err
 	}
-	a.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase, "size", len(chunk.Data))
+	a.V(2).Info("written logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
 
 	a.Publish(otf.Event{
 		Type:    otf.EventLogChunk,
