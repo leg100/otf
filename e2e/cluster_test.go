@@ -1,52 +1,31 @@
 package e2e
 
 import (
-	"os"
 	"os/exec"
-	"regexp"
 	"testing"
-	"time"
 
-	expect "github.com/google/goexpect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const agent = "../_build/otf-agent"
-
-func TestAgent(t *testing.T) {
+// TestCluster is an end-to-end test of the clustering capabilities, i.e.
+// running more than one otfd. The test runs two otfd's (the first of which is
+// expected to already been running):
+//
+// (1) otfd to which the TF CLI connects
+// (2) otfd to which the otf-agent connects
+//
+// This setup demonstrates that the cluster can coordinate processes between
+// the two clients.
+func TestCluster(t *testing.T) {
 	tfpath := terraformPath(t)
 	t.Run("login", login(t, tfpath))
 	organization := createOrganization(t)
+	token := createAgentToken(t, organization)
 	root := newRoot(t, organization)
 
-	var token string
-	t.Run("create agent token", func(t *testing.T) {
-		cmd := exec.Command(client, "agents", "tokens", "new", "testing", "--organization", organization)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		re := regexp.MustCompile(`Successfully created agent token: (agent\.[a-zA-Z0-9\-_]+)`)
-		matches := re.FindStringSubmatch(string(out))
-		require.Equal(t, 2, len(matches))
-		token = matches[1]
-	})
-
-	// start agent process
-	e, res, err := spawn(agent, "--token", token)
-	require.NoError(t, err)
-
-	_, err = e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "successfully authenticated"},
-		&expect.BExp{R: "stream update.*successfully connected"},
-	}, time.Second*10)
-	require.NoError(t, err)
-
-	// cleanly terminate agent at end of test
-	t.Cleanup(func() {
-		e.SendSignal(os.Interrupt)
-		require.NoError(t, <-res)
-	})
+	startDaemon(t, 8001)
+	startAgent(t, token, "localhost:8001")
 
 	// terraform init creates a workspace named dev
 	t.Run("terraform init", func(t *testing.T) {
@@ -82,9 +61,4 @@ func TestAgent(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 	})
-}
-
-func spawn(command string, args ...string) (*expect.GExpect, <-chan error, error) {
-	cmd := append([]string{command}, args...)
-	return expect.SpawnWithArgs(cmd, time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()), expect.Tee(os.Stdout))
 }
