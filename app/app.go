@@ -49,7 +49,7 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 	// Setup ID mapper and start
 	mapper := inmem.NewMapper(app)
 	go func() {
-		if err := mapper.Start(ctx); err != nil {
+		if err := mapper.Start(ctx); ctx.Err() == nil {
 			logger.Error(err, "mapper unexpectedly terminated")
 		}
 	}()
