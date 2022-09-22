@@ -59,15 +59,22 @@ func (m *workspaceMapper) addWithoutLock(ws *otf.Workspace) {
 	m.nameIDMap[ws.QualifiedName()] = ws.ID()
 }
 
-func (m *workspaceMapper) update(oldName string, ws *otf.Workspace) {
+// update the mapping for a workspace that has been renamed
+func (m *workspaceMapper) update(ws *otf.Workspace) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.nameIDMap[ws.QualifiedName()] = ws.ID()
-	delete(m.nameIDMap, otf.WorkspaceQualifiedName{
-		Name:         oldName,
-		Organization: ws.OrganizationName(),
-	})
+	// we don't have the old name to hand, so we have to enumerate every entry
+	// and look for a workspace with a matching name.
+	for qualified, id := range m.nameIDMap {
+		if ws.ID() == id {
+			// remove old entry
+			delete(m.nameIDMap, qualified)
+			// add new entry
+			m.nameIDMap[ws.QualifiedName()] = ws.ID()
+			return
+		}
+	}
 }
 
 // LookupWorkspaceID looks up the ID of the workspace given its name and

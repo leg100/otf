@@ -34,12 +34,8 @@ type Application struct {
 // NewApplication constructs an application, initialising various services and
 // daemons.
 func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *bigcache.BigCache, pubsub otf.PubSubService) (*Application, error) {
-	// Setup ID mapper
-	mapper := inmem.NewMapper()
-
 	app := &Application{
 		PubSubService: pubsub,
-		Mapper:        mapper,
 		cache:         cache,
 		db:            db,
 		Logger:        logger,
@@ -49,6 +45,15 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 		WorkspaceService:            app,
 		ConfigurationVersionService: app,
 	}
+
+	// Setup ID mapper and start
+	mapper := inmem.NewMapper(app)
+	go func() {
+		if err := mapper.Start(ctx); err != nil {
+			logger.Error(err, "mapper unexpectedly terminated")
+		}
+	}()
+	app.Mapper = mapper
 
 	// Setup latest run manager
 	latest, err := inmem.NewLatestRunManager(ctx, app)
@@ -62,11 +67,6 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
 	app.proxy = proxy
-
-	// Populate mappings with identifiers
-	if err := mapper.Populate(ctx, app, app); err != nil {
-		return nil, err
-	}
 
 	queues := inmem.NewWorkspaceQueueManager()
 	if err := queues.Populate(ctx, app); err != nil {

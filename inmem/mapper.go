@@ -19,15 +19,63 @@ import (
 // resources based on the most appropriate identifier for which it maintains an
 // index, rather having to support lookups using a multitude of identifiers.
 type Mapper struct {
+	otf.Application
 	workspaces *workspaceMapper
 	runs       *runMapper
 }
 
-// NewMapper constructs and populates the mapper
-func NewMapper() *Mapper {
+// NewMapper constructs the mapper
+func NewMapper(app otf.Application) *Mapper {
 	return &Mapper{
-		workspaces: newWorkspaceMapper(),
-		runs:       newRunMapper(),
+		Application: app,
+		workspaces:  newWorkspaceMapper(),
+		runs:        newRunMapper(),
+	}
+}
+
+// Start the mapper, populate entries from the DB, and watch changes, updating
+// mappings accordingly.
+func (m *Mapper) Start(ctx context.Context) error {
+	// Register for events first so we don't miss any.
+	sub, err := m.Watch(ctx, otf.WatchOptions{})
+	if err != nil {
+		return err
+	}
+
+	if err := m.workspaces.populate(ctx, m.Application); err != nil {
+		return err
+	}
+	if err := m.runs.populate(ctx, m.Application); err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case event, ok := <-sub:
+			if !ok {
+				return nil
+			}
+			switch obj := event.Payload.(type) {
+			case *otf.Workspace:
+				switch event.Type {
+				case otf.EventWorkspaceCreated:
+					m.workspaces.add(obj)
+				case otf.EventWorkspaceDeleted:
+					m.workspaces.remove(obj)
+				case otf.EventWorkspaceRenamed:
+					m.workspaces.update(obj)
+				}
+			case *otf.Run:
+				switch event.Type {
+				case otf.EventRunCreated:
+					m.runs.add(obj)
+				case otf.EventRunDeleted:
+					m.runs.remove(obj)
+				}
+			}
+		}
 	}
 }
 
@@ -40,31 +88,6 @@ func (m *Mapper) Populate(ctx context.Context, ws otf.WorkspaceService, rs otf.R
 		return err
 	}
 	return nil
-}
-
-// MapRun adds a mapping for a run
-func (m *Mapper) MapRun(run *otf.Run) {
-	m.runs.add(run)
-}
-
-// UnmapRun removes the mapping for a run
-func (m *Mapper) UnmapRun(run *otf.Run) {
-	m.runs.remove(run)
-}
-
-// MapWorkspace adds a mapping for a workspace
-func (m *Mapper) MapWorkspace(ws *otf.Workspace) {
-	m.workspaces.add(ws)
-}
-
-// RemapWorkspace updates a mapping for a workspace
-func (m *Mapper) RemapWorkspace(oldName string, ws *otf.Workspace) {
-	m.workspaces.update(oldName, ws)
-}
-
-// UnmapWorkspace removes a mapping for the workspace
-func (m *Mapper) UnmapWorkspace(ws *otf.Workspace) {
-	m.workspaces.remove(ws)
 }
 
 // LookupWorkspaceID looks up the ID corresponding to the given spec. If the

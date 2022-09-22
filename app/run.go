@@ -26,8 +26,6 @@ func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opt
 	}
 	a.V(1).Info("created run", "id", run.ID())
 
-	a.MapRun(run)
-
 	a.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
 	return run, nil
@@ -278,7 +276,6 @@ func (a *Application) DeleteRun(ctx context.Context, runID string) error {
 		return err
 	}
 	a.V(0).Info("deleted run", "id", runID)
-	a.UnmapRun(run)
 	a.Publish(otf.Event{Type: otf.EventRunDeleted, Payload: run})
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/leg100/otf"
