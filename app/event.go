@@ -39,6 +39,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 
 				ch <- ev
 			case <-ctx.Done():
+				close(ch)
 				return
 			}
 		}
