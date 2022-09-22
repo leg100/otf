@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/leg100/otf"
@@ -105,6 +106,8 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs["addHash"] = buster.Path
 	// make version available to templates
 	funcs["version"] = func() string { return otf.Version }
+	// make version available to templates
+	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	// make path helpers available to templates
 	addHelpersToFuncMap(funcs)
 
