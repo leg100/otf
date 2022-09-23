@@ -61,5 +61,8 @@ func (m *runMapper) remove(run *otf.Run) {
 }
 
 func (m *runMapper) lookupWorkspaceID(runID string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	return m.idWorkspaceMap[runID]
 }
