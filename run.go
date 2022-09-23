@@ -564,10 +564,7 @@ func (r *Run) setupEnv(env Environment) error {
 	if err := env.RunFunc(r.downloadConfig); err != nil {
 		return err
 	}
-	err := env.RunFunc(func(ctx context.Context, env Environment) error {
-		return deleteBackendConfigFromDirectory(ctx, env.Path())
-	})
-	if err != nil {
+	if err := env.RunFunc(r.deleteBackendConfig); err != nil {
 		return err
 	}
 	if err := env.RunFunc(r.downloadState); err != nil {
@@ -586,6 +583,13 @@ func (r *Run) setupEnv(env Environment) error {
 	}
 	if err := env.RunCLI(env.TerraformPath(), "init"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
+	}
+	return nil
+}
+
+func (r *Run) deleteBackendConfig(ctx context.Context, env Environment) error {
+	if err := rewriteHCL(env.Path(), removeBackendBlock); err != nil {
+		return fmt.Errorf("removing backend config: %w", err)
 	}
 	return nil
 }
