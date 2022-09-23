@@ -45,6 +45,9 @@ type EventService interface {
 	// Watch provides access to a stream of events. The WatchOptions filters
 	// events.
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
+	// WatchLogs provides access to a stream of phase logs. The WatchLogsOptions filters
+	// events.
+	WatchLogs(context.Context, WatchLogsOptions) (<-chan Chunk, error)
 }
 
 // WatchOptions filters events returned by the Watch endpoint.
@@ -56,3 +59,6 @@ type WatchOptions struct {
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name"`
 }
+
+// WatchLogsOptions filters logs returned by the WatchLogs endpoint.
+type WatchLogsOptions WatchOptions

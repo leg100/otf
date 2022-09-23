@@ -46,3 +46,33 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 	}()
 	return ch, nil
 }
+
+// WatchLogs provides a subscription to phase logs.
+//
+// NOTE: unauthenticated.
+func (a *Application) WatchLogs(ctx context.Context, opts otf.WatchLogsOptions) (<-chan otf.Chunk, error) {
+	ch := make(chan otf.Chunk)
+	go func() {
+		sub := a.Subscribe(ctx)
+		for {
+			select {
+			case ev, ok := <-sub:
+				if !ok {
+					close(ch)
+					return
+				}
+				chunk, ok := ev.Payload.(otf.PersistedChunk)
+				if !ok {
+					// skip non-log events
+					continue
+				}
+
+				ch <- chunk.Chunk
+			case <-ctx.Done():
+				close(ch)
+				return
+			}
+		}
+	}()
+	return ch, nil
+}
