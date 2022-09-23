@@ -11,6 +11,7 @@ import (
 )
 
 func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+	// TODO: why buffered chan of size 1?
 	ch := make(chan otf.Event, 1)
 	sseClient, err := c.newSSEClient("watch", ch)
 	if err != nil {
@@ -36,6 +37,7 @@ func (c *client) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.E
 		if err != nil {
 			ch <- otf.Event{Type: otf.EventError, Payload: err}
 		}
+		close(ch)
 	}()
 	return ch, nil
 }
