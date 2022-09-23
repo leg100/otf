@@ -62,10 +62,16 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 	}
 	app.latest = latest
 
-	proxy, err := inmem.NewChunkProxy(cache, db)
+	proxy, err := inmem.NewChunkProxy(app, logger, cache, db)
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
+	go func() {
+		if err := proxy.Start(ctx); ctx.Err() == nil {
+			logger.Error(err, "proxy unexpectedly terminated")
+		}
+	}()
+
 	app.proxy = proxy
 
 	queues := inmem.NewWorkspaceQueueManager()
