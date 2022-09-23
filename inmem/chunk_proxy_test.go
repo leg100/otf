@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func TestChunkProxy_PutChunk(t *testing.T) {
 			backend := &fakeBackend{store: tt.backend}
 			cache := &fakeCache{cache: tt.cache}
 
-			proxy, err := NewChunkProxy(cache, backend)
+			proxy, err := NewChunkProxy(nil, logr.Discard(), cache, backend)
 			require.NoError(t, err)
 
 			_, err = proxy.PutChunk(context.Background(), tt.chunk)
@@ -142,7 +143,7 @@ func TestChunkProxy_GetChunk(t *testing.T) {
 			backend := &fakeBackend{store: tt.backend}
 			cache := &fakeCache{cache: tt.cache}
 
-			proxy, err := NewChunkProxy(cache, backend)
+			proxy, err := NewChunkProxy(nil, logr.Discard(), cache, backend)
 			require.NoError(t, err)
 
 			// check we get wanted chunk
