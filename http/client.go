@@ -22,6 +22,7 @@ import (
 	"github.com/leg100/otf/http/dto"
 	"github.com/r3labs/sse/v2"
 	"golang.org/x/time/rate"
+	"gopkg.in/cenkalti/backoff.v1"
 )
 
 const (
@@ -185,12 +186,8 @@ func (c *client) newSSEClient(path string, errch chan otf.Event) (*sse.Client, e
 	}
 	client := sse.NewClient(u.String())
 	client.EncodingBase64 = true
-	client.ReconnectNotify = func(err error, next time.Duration) {
-		errch <- otf.Event{
-			Type:    otf.EventError,
-			Payload: fmt.Errorf("%w; reconnecting in %s", err, next),
-		}
-	}
+	// Disable backoff, it's instead the responsibility of the caller
+	client.ReconnectStrategy = new(backoff.StopBackOff)
 	client.OnConnect(func(_ *sse.Client) {
 		errch <- otf.Event{
 			Type:    otf.EventInfo,

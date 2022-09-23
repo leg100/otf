@@ -57,10 +57,7 @@ func NewAgent(ctx context.Context, logger logr.Logger, app otf.Application, opts
 		return nil, fmt.Errorf("invalid agent mode: %s", opts.Mode)
 	}
 
-	spooler, err := NewSpooler(ctx, app, app, logger, opts)
-	if err != nil {
-		return nil, err
-	}
+	spooler := NewSpooler(ctx, app, logger, opts)
 
 	supervisor := NewSupervisor(
 		spooler,
