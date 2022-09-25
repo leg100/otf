@@ -41,6 +41,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		log.Error(err, "creating execution environment")
 		return
 	}
+	defer env.Close()
 
 	// Start the job before proceeding in case another agent has started it.
 	run, err = w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})

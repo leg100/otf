@@ -95,6 +95,10 @@ func NewEnvironment(
 	}, nil
 }
 
+func (e *Environment) Close() error {
+	return os.RemoveAll(e.path)
+}
+
 // Execute executes a phase and regardless of whether it fails, it'll close the
 // environment logs.
 func (e *Environment) Execute(phase Doer) (err error) {
