@@ -26,6 +26,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Flag("headless", headless),
 			chromedp.Flag("hide-scrollbars", true),
 			chromedp.Flag("mute-audio", true),
+			chromedp.Flag("ignore-certificate-errors", true),
 		)...)
 	defer cancel()
 
