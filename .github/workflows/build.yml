@@ -48,8 +48,9 @@ jobs:
           sudo update-ca-certificates
           make go-tfe-tests e2e
         env:
-          # The hostname used to communicate with the PostgreSQL service container
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+          OTF_E2E_GITHUB_USERNAME: ${{ secrets.OTF_E2E_GITHUB_USERNAME }}
+          OTF_E2E_GITHUB_PASSWORD: ${{ secrets.OTF_E2E_GITHUB_PASSWORD }}
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
