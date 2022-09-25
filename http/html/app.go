@@ -73,15 +73,10 @@ func (app *Application) addRoutes(r *Router) {
 	// /runs. Uses an HTTP301.
 	r.StrictSlash(true)
 
-	// routes that don't require authentication.
-	r.Sub(func(r *Router) {
-		r.GET("/login", app.loginHandler)
-		// github routes
-		r.Sub(func(r *Router) {
-			r.GET("/github/login", app.oauth.requestHandler)
-			r.GET(githubCallbackPath, app.githubLogin)
-		})
-	})
+	r.GET("/login", app.loginHandler)
+	r.GET("/github/login", app.oauth.requestHandler)
+	r.GET(githubCallbackPath, app.githubLogin)
+
 	// routes that require authentication.
 	r.Sub(func(r *Router) {
 		r.Use((&authMiddleware{app}).authenticate)

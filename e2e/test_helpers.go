@@ -171,3 +171,9 @@ func terraformPath(t *testing.T) string {
 	}
 	return path
 }
+
+func lookupEnv(t *testing.T, name string) string {
+	value, ok := os.LookupEnv(name)
+	require.True(t, ok, "missing environment variable: %s", name)
+	return value
+}
