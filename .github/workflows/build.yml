@@ -46,11 +46,17 @@ jobs:
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
           sudo update-ca-certificates
-          make e2e go-tfe-tests
+          make e2e
         env:
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
           OTF_E2E_GITHUB_USERNAME: ${{ secrets.OTF_E2E_GITHUB_USERNAME }}
           OTF_E2E_GITHUB_PASSWORD: ${{ secrets.OTF_E2E_GITHUB_PASSWORD }}
+      -
+        name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: dist/e2e-screenshot.png
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

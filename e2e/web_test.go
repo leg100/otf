@@ -37,7 +37,6 @@ func TestWeb(t *testing.T) {
 	t.Run("login", func(t *testing.T) {
 		var gotLoginPrompt string
 		var gotGithubLocation string
-		var gotOTFCallback string
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate("https://localhost:8080"),
@@ -70,14 +69,16 @@ func TestWeb(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		var ss []byte
 		err = chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.WaitVisible(`.logo`),
-			chromedp.Location(&gotOTFCallback),
+			chromedp.WaitReady(`body`),
+			chromedp.CaptureScreenshot(&ss),
 		})
+		require.NoError(t, err)
+		err = os.WriteFile("../dist/e2e-screenshot.png", ss, 0o644)
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
 		assert.Regexp(t, `^https://github.com/login`, gotGithubLocation)
-		assert.Regexp(t, `https://localhost:8080/organizations`, gotOTFCallback)
 	})
 }
