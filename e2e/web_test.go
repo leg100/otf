@@ -75,7 +75,7 @@ func TestWeb(t *testing.T) {
 			chromedp.CaptureScreenshot(&ss),
 		})
 		require.NoError(t, err)
-		err = os.WriteFile("../dist/e2e-screenshot.png", ss, 0o644)
+		err = os.WriteFile("e2e-screenshot.png", ss, 0o644)
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
