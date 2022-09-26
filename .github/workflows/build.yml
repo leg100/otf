@@ -52,11 +52,12 @@ jobs:
           OTF_E2E_GITHUB_USERNAME: ${{ secrets.OTF_E2E_GITHUB_USERNAME }}
           OTF_E2E_GITHUB_PASSWORD: ${{ secrets.OTF_E2E_GITHUB_PASSWORD }}
       -
-        name: Archive code coverage results
+        name: Archive screenshots of e2e tests
+        if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: code-coverage-report
-          path: e2e/e2e-screenshot.png
+          name: e2e-screenshots
+          path: e2e/screenshots/*.png
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -36,49 +37,61 @@ func TestWeb(t *testing.T) {
 
 	t.Run("login", func(t *testing.T) {
 		var gotLoginPrompt string
-		var gotGithubLocation string
+		var gotGithubLoginLocation string
+		var gotOTFOrganizationsLocation string
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate("https://localhost:8080"),
+			screenshot("otf_login"),
+
 			chromedp.Text(".center", &gotLoginPrompt, chromedp.NodeVisible),
 			chromedp.Click(".center > a", chromedp.NodeVisible),
-		})
-		require.NoError(t, err)
+			screenshot("github_login"),
 
-		err = chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Location(&gotGithubLocation),
-		})
-		require.NoError(t, err)
-
-		err = chromedp.Run(ctx, chromedp.Tasks{
+			chromedp.Location(&gotGithubLoginLocation),
 			chromedp.WaitVisible(`#login_field`, chromedp.ByID),
 			chromedp.Focus(`#login_field`, chromedp.ByID),
 			input.InsertText(username),
-		})
-		require.NoError(t, err)
-
-		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.WaitVisible(`#password`, chromedp.ByID),
 			chromedp.Focus(`#password`, chromedp.ByID),
 			input.InsertText(password),
-		})
-		require.NoError(t, err)
+			screenshot("github_login_form_completed"),
 
-		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Submit(`#password`, chromedp.ByID),
-		})
-		require.NoError(t, err)
+			screenshot("otf_login_successful"),
 
-		var ss []byte
-		err = chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.WaitReady(`body`),
-			chromedp.CaptureScreenshot(&ss),
+			chromedp.Location(&gotOTFOrganizationsLocation),
 		})
-		require.NoError(t, err)
-		err = os.WriteFile("e2e-screenshot.png", ss, 0o644)
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
-		assert.Regexp(t, `^https://github.com/login`, gotGithubLocation)
+		assert.Regexp(t, `^https://github.com/login`, gotGithubLoginLocation)
+		assert.Regexp(t, `^https://localhost:8080/organizations`, gotOTFOrganizationsLocation)
 	})
+}
+
+var screenshotCounter = 0
+
+func screenshot(name string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		screenshotCounter++
+
+		var image []byte
+		err := chromedp.Run(ctx, chromedp.Tasks{
+			chromedp.WaitReady(`body`),
+			chromedp.CaptureScreenshot(&image),
+		})
+		if err != nil {
+			return err
+		}
+		err = os.MkdirAll("screenshots", 0o755)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(fmt.Sprintf("screenshots/%02d_%s.png", screenshotCounter, name), image, 0o644)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }
