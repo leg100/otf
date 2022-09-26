@@ -48,15 +48,24 @@ func TestWeb(t *testing.T) {
 
 		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Location(&gotGithubLocation),
+		})
+		require.NoError(t, err)
 
+		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.WaitVisible(`#login_field`, chromedp.ByID),
 			chromedp.Focus(`#login_field`, chromedp.ByID),
 			input.InsertText(username),
+		})
+		require.NoError(t, err)
 
+		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.WaitVisible(`#password`, chromedp.ByID),
 			chromedp.Focus(`#password`, chromedp.ByID),
 			input.InsertText(password),
+		})
+		require.NoError(t, err)
 
+		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Submit(`#password`, chromedp.ByID),
 			chromedp.WaitVisible(`.logo`),
 			chromedp.Location(&gotOTFCallback),
