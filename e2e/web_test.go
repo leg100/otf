@@ -51,10 +51,10 @@ func TestWeb(t *testing.T) {
 			chromedp.Location(&gotGithubLoginLocation),
 			chromedp.WaitVisible(`#login_field`, chromedp.ByID),
 			chromedp.Focus(`#login_field`, chromedp.ByID),
-			input.InsertText(username),
+			input.InsertText(strings.TrimSpace(username)),
 			chromedp.WaitVisible(`#password`, chromedp.ByID),
 			chromedp.Focus(`#password`, chromedp.ByID),
-			input.InsertText(password),
+			input.InsertText(strings.TrimSpace(password)),
 			screenshot("github_login_form_completed"),
 
 			chromedp.Submit(`#password`, chromedp.ByID),
