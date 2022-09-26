@@ -67,6 +67,10 @@ func TestWeb(t *testing.T) {
 
 		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Submit(`#password`, chromedp.ByID),
+		})
+		require.NoError(t, err)
+
+		err = chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.WaitVisible(`.logo`),
 			chromedp.Location(&gotOTFCallback),
 		})
