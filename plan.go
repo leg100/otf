@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	jsonapi "github.com/leg100/otf/http/dto"
-	httputil "github.com/leg100/otf/http/util"
 )
 
 const (
@@ -37,7 +36,7 @@ func (p *Plan) ToJSONAPI(req *http.Request) any {
 	dto := &jsonapi.Plan{
 		ID:               ConvertID(p.runID, "plan"),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       httputil.Absolute(req, fmt.Sprintf("api/v2/runs/%s/logs/plan", p.runID)),
+		LogReadURL:       Absolute(req, fmt.Sprintf("api/v2/runs/%s/logs/plan", p.runID)),
 		Status:           string(p.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}

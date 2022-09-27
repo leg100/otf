@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -29,7 +30,7 @@ type Application struct {
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, router *Router) error {
+func AddRoutes(logger logr.Logger, config Config, services otf.Application, router *otfhttp.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -63,7 +64,7 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 }
 
 // AddRoutes adds application routes and middleware to an HTTP multiplexer.
-func (app *Application) addRoutes(r *Router) {
+func (app *Application) addRoutes(r *otfhttp.Router) {
 	r.Handle("/", http.RedirectHandler("/organizations", http.StatusFound))
 
 	// Static assets (JS, CSS, etc).
@@ -74,16 +75,16 @@ func (app *Application) addRoutes(r *Router) {
 	r.StrictSlash(true)
 
 	// routes that don't require authentication.
-	r.Sub(func(r *Router) {
+	r.Sub(func(r *otfhttp.Router) {
 		r.GET("/login", app.loginHandler)
 		// github routes
-		r.Sub(func(r *Router) {
+		r.Sub(func(r *otfhttp.Router) {
 			r.GET("/github/login", app.oauth.requestHandler)
 			r.GET(githubCallbackPath, app.githubLogin)
 		})
 	})
 	// routes that require authentication.
-	r.Sub(func(r *Router) {
+	r.Sub(func(r *otfhttp.Router) {
 		r.Use((&authMiddleware{app}).authenticate)
 		r.Use(setOrganization)
 
