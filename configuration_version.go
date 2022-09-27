@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
-
-	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -85,47 +82,12 @@ func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploa
 	return nil
 }
 
-// ToJSONAPI assembles a JSONAPI DTO.
-func (cv *ConfigurationVersion) ToJSONAPI(req *http.Request) any {
-	obj := &jsonapi.ConfigurationVersion{
-		ID:               cv.ID(),
-		AutoQueueRuns:    cv.AutoQueueRuns(),
-		Speculative:      cv.Speculative(),
-		Source:           string(cv.Source()),
-		Status:           string(cv.Status()),
-		StatusTimestamps: &jsonapi.CVStatusTimestamps{},
-		UploadURL:        fmt.Sprintf("/api/v2/configuration-versions/%s/upload", cv.ID()),
-	}
-	for _, ts := range cv.StatusTimestamps() {
-		switch ts.Status {
-		case ConfigurationPending:
-			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
-		case ConfigurationErrored:
-			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
-		case ConfigurationUploaded:
-			obj.StatusTimestamps.StartedAt = &ts.Timestamp
-		}
-	}
-	return obj
-}
-
 func (cv *ConfigurationVersion) updateStatus(status ConfigurationStatus) {
 	cv.status = status
 	cv.statusTimestamps = append(cv.statusTimestamps, ConfigurationVersionStatusTimestamp{
 		Status:    status,
 		Timestamp: CurrentTimestamp(),
 	})
-}
-
-// ToJSONAPI assembles a JSONAPI DTO
-func (l *ConfigurationVersionList) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.ConfigurationVersionList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.ConfigurationVersion))
-	}
-	return dto
 }
 
 // ConfigurationStatus represents a configuration version status.

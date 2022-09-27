@@ -7,12 +7,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-
-	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -154,7 +151,7 @@ func (r *Run) Phase() PhaseType {
 
 // Discard updates the state of a run to reflect it having been discarded.
 func (r *Run) Discard() error {
-	if !r.discardable() {
+	if !r.Discardable() {
 		return ErrRunDiscardNotAllowed
 	}
 	r.updateStatus(RunDiscarded)
@@ -321,88 +318,6 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	}
 }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (r *Run) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.Run{
-		ID: r.ID(),
-		Actions: &jsonapi.RunActions{
-			IsCancelable:      r.Cancelable(),
-			IsConfirmable:     r.confirmable(),
-			IsForceCancelable: r.forceCancelAvailableAt != nil,
-			IsDiscardable:     r.discardable(),
-		},
-		CreatedAt:              r.CreatedAt(),
-		ExecutionMode:          string(r.ExecutionMode()),
-		ForceCancelAvailableAt: r.forceCancelAvailableAt,
-		HasChanges:             r.plan.HasChanges(),
-		IsDestroy:              r.IsDestroy(),
-		Message:                r.Message(),
-		Permissions: &jsonapi.RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
-		},
-		PositionInQueue:  0,
-		Refresh:          r.Refresh(),
-		RefreshOnly:      r.RefreshOnly(),
-		ReplaceAddrs:     r.ReplaceAddrs(),
-		Source:           DefaultConfigurationSource,
-		Status:           string(r.Status()),
-		StatusTimestamps: &jsonapi.RunStatusTimestamps{},
-		TargetAddrs:      r.TargetAddrs(),
-		// Relations
-		Apply: r.apply.ToJSONAPI(req).(*jsonapi.Apply),
-		Plan:  r.plan.ToJSONAPI(req).(*jsonapi.Plan),
-		// Hardcoded anonymous user until authorization is introduced
-		CreatedBy: &jsonapi.User{
-			ID:       DefaultUserID,
-			Username: DefaultUsername,
-		},
-		ConfigurationVersion: &jsonapi.ConfigurationVersion{
-			ID: r.configurationVersionID,
-		},
-	}
-	if r.workspace != nil {
-		dto.Workspace = r.workspace.ToJSONAPI(req).(*jsonapi.Workspace)
-	} else {
-		dto.Workspace = &jsonapi.Workspace{
-			ID: r.workspaceID,
-		}
-	}
-
-	for _, rst := range r.StatusTimestamps() {
-		switch rst.Status {
-		case RunPending:
-			dto.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
-		case RunPlanQueued:
-			dto.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
-		case RunPlanning:
-			dto.StatusTimestamps.PlanningAt = &rst.Timestamp
-		case RunPlanned:
-			dto.StatusTimestamps.PlannedAt = &rst.Timestamp
-		case RunPlannedAndFinished:
-			dto.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
-		case RunApplyQueued:
-			dto.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
-		case RunApplying:
-			dto.StatusTimestamps.ApplyingAt = &rst.Timestamp
-		case RunApplied:
-			dto.StatusTimestamps.AppliedAt = &rst.Timestamp
-		case RunErrored:
-			dto.StatusTimestamps.ErroredAt = &rst.Timestamp
-		case RunCanceled:
-			dto.StatusTimestamps.CanceledAt = &rst.Timestamp
-		case RunForceCanceled:
-			dto.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
-		case RunDiscarded:
-			dto.StatusTimestamps.DiscardedAt = &rst.Timestamp
-		}
-	}
-	return dto
-}
-
 // IncludeWorkspace adds a workspace for inclusion in the run's JSON-API object.
 func (r *Run) IncludeWorkspace(ws *Workspace) {
 	r.workspace = ws
@@ -471,8 +386,8 @@ func (r *Run) updateStatus(status RunStatus) {
 	})
 }
 
-// discardable determines whether run can be discarded.
-func (r *Run) discardable() bool {
+// Discardable determines whether run can be discarded.
+func (r *Run) Discardable() bool {
 	switch r.Status() {
 	case RunPending, RunPlanned:
 		return true
@@ -491,8 +406,8 @@ func (r *Run) Cancelable() bool {
 	}
 }
 
-// confirmable determines whether run can be confirmed.
-func (r *Run) confirmable() bool {
+// Confirmable determines whether run can be confirmed.
+func (r *Run) Confirmable() bool {
 	switch r.Status() {
 	case RunPlanned:
 		return true
@@ -824,17 +739,6 @@ type RunStore interface {
 type RunList struct {
 	*Pagination
 	Items []*Run
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *RunList) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.RunList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Run))
-	}
-	return dto
 }
 
 // RunListOptions are options for paginating and filtering a list of runs

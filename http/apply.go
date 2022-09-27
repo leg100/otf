@@ -1,10 +1,12 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
@@ -16,5 +18,44 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, run.Apply())
+	writeResponse(w, r, &apply{run.Apply(), r})
+}
+
+type apply struct {
+	*otf.Apply
+	req *http.Request
+}
+
+// ToJSONAPI assembles a JSONAPI DTO.
+func (a *apply) ToJSONAPI() any {
+	dto := &jsonapi.Apply{
+		ID:               otf.ConvertID(a.ID(), "apply"),
+		LogReadURL:       otf.Absolute(a.req, fmt.Sprintf("api/v2/runs/%s/logs/apply", a.ID())),
+		Status:           string(a.Status()),
+		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
+	}
+	if a.ResourceReport != nil {
+		dto.Additions = &a.Additions
+		dto.Changes = &a.Changes
+		dto.Destructions = &a.Destructions
+	}
+	for _, ts := range a.StatusTimestamps() {
+		switch ts.Status {
+		case otf.PhasePending:
+			dto.StatusTimestamps.PendingAt = &ts.Timestamp
+		case otf.PhaseCanceled:
+			dto.StatusTimestamps.CanceledAt = &ts.Timestamp
+		case otf.PhaseErrored:
+			dto.StatusTimestamps.ErroredAt = &ts.Timestamp
+		case otf.PhaseFinished:
+			dto.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case otf.PhaseQueued:
+			dto.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case otf.PhaseRunning:
+			dto.StatusTimestamps.StartedAt = &ts.Timestamp
+		case otf.PhaseUnreachable:
+			dto.StatusTimestamps.UnreachableAt = &ts.Timestamp
+		}
+	}
+	return dto
 }
