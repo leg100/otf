@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
-	httputil "github.com/leg100/otf/http/util"
 	"golang.org/x/oauth2"
 )
 
@@ -83,6 +82,6 @@ func (o *oauth) responseHandler(r *http.Request) (*oauth2.Token, error) {
 
 func (o *oauth) config(r *http.Request) *oauth2.Config {
 	cfg := o.Config
-	cfg.RedirectURL = httputil.Absolute(r, githubCallbackPath)
+	cfg.RedirectURL = otf.Absolute(r, githubCallbackPath)
 	return cfg
 }

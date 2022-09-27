@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf/app"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
+	"github.com/leg100/otf/http/html"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql"
 	"github.com/spf13/cobra"
@@ -59,6 +60,7 @@ func run(ctx context.Context, args []string) error {
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
+	webCfg := newWebConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -130,9 +132,14 @@ func run(ctx context.Context, args []string) error {
 	}
 	g.Go(func() error { return agent.Start(gctx) })
 
+	// construct HTTP/JSON-API server
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
 	if err != nil {
 		return fmt.Errorf("setting up http server: %w", err)
+	}
+	// add Web App routes
+	if err := html.AddRoutes(logger, *webCfg, app, server.Router); err != nil {
+		return err
 	}
 
 	g.Go(func() error {
@@ -146,9 +153,7 @@ func run(ctx context.Context, args []string) error {
 	return g.Wait()
 }
 
-// newLoggerConfigFromFlags adds flags to the given flagset, and, after the
-// flagset is parsed by the caller, the flags populate the returned logger
-// config.
+// newCacheConfigFromFlags adds flags pertaining to cache config
 func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
 	cfg := inmem.CacheConfig{}
 
@@ -158,9 +163,7 @@ func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
 	return &cfg
 }
 
-// newLoggerConfigFromFlags adds flags to the given flagset, and, after the
-// flagset is parsed by the caller, the flags populate the returned logger
-// config.
+// newServerConfigFromFlags adds flags pertaining to http server config
 func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	cfg := http.ServerConfig{}
 
@@ -169,11 +172,19 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
-	flags.BoolVar(&cfg.ApplicationConfig.DevMode, "dev-mode", false, "Enable developer mode.")
-	flags.StringVar(&cfg.ApplicationConfig.Github.ClientID, "github-client-id", "", "Github Client ID")
-	flags.StringVar(&cfg.ApplicationConfig.Github.ClientSecret, "github-client-secret", "", "Github Client Secret")
-	flags.StringVar(&cfg.ApplicationConfig.Github.Hostname, "github-hostname", "github.com", "Github hostname")
 	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
+
+	return &cfg
+}
+
+// newWebConfigFromFlags adds flags pertaining to web app config
+func newWebConfigFromFlags(flags *pflag.FlagSet) *html.Config {
+	cfg := html.Config{}
+
+	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
+	flags.StringVar(&cfg.Github.ClientID, "github-client-id", "", "Github Client ID")
+	flags.StringVar(&cfg.Github.ClientSecret, "github-client-secret", "", "Github Client Secret")
+	flags.StringVar(&cfg.Github.Hostname, "github-hostname", "github.com", "Github hostname")
 
 	return &cfg
 }

@@ -14,8 +14,6 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	httputil "github.com/leg100/otf/http/util"
 )
 
 const (
@@ -30,8 +28,6 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	ApplicationConfig html.Config
-
 	// Listening Address in the form <ip>:<port>
 	Addr string
 
@@ -60,6 +56,8 @@ type Server struct {
 
 	// server-side-events server
 	eventsServer *sse.Server
+	// the http router, exported so that other pkgs can add routes
+	*Router
 }
 
 // NewServer is the constructor for Server
@@ -77,12 +75,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		if cfg.CertFile == "" || cfg.KeyFile == "" {
 			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
 		}
-
-		// Tell http utilities that we're using SSL.
-		httputil.SSL = true
 	}
 
-	r := html.NewRouter()
+	r := NewRouter()
+	s.Router = r
 
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
@@ -92,16 +88,11 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		r.Use(s.loggingMiddleware)
 	}
 
-	// Add web app routes.
-	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, r); err != nil {
-		return nil, err
-	}
-
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics/cache.json", s.CacheStats)
 	r.GET("/healthz", GetHealthz)
 
-	r.PathPrefix("/api/v2").Sub(func(api *html.Router) {
+	r.PathPrefix("/api/v2").Sub(func(api *Router) {
 		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
@@ -119,7 +110,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
 
 		// Authenticated endpoints
-		api.Sub(func(r *html.Router) {
+		api.Sub(func(r *Router) {
 			// Ensure request has valid API token
 			r.Use((&authTokenMiddleware{
 				UserService:       app,
