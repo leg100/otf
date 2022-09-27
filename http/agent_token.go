@@ -22,7 +22,7 @@ func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, at)
+	writeResponse(w, r, &AgentToken{at})
 }
 
 func (s *Server) GetCurrentAgent(w http.ResponseWriter, r *http.Request) {
@@ -32,5 +32,18 @@ func (s *Server) GetCurrentAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	agent.HideToken()
-	writeResponse(w, r, agent)
+	writeResponse(w, r, &AgentToken{agent})
+}
+
+type AgentToken struct {
+	*otf.AgentToken
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (t *AgentToken) ToJSONAPI() any {
+	return &dto.AgentToken{
+		ID:               t.ID(),
+		Token:            t.Token(),
+		OrganizationName: t.OrganizationName(),
+	}
 }

@@ -25,7 +25,7 @@ func (s *Server) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, org, withCode(http.StatusCreated))
+	writeResponse(w, r, &Organization{org}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,7 @@ func (s *Server) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, org)
+	writeResponse(w, r, &Organization{org})
 }
 
 func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -44,12 +44,12 @@ func (s *Server) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	org, err := s.Application.ListOrganizations(r.Context(), opts)
+	list, err := s.Application.ListOrganizations(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, org)
+	writeResponse(w, r, &OrganizationList{list})
 }
 
 func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func (s *Server) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, org)
+	writeResponse(w, r, &Organization{org})
 }
 
 func (s *Server) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -87,5 +87,45 @@ func (s *Server) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, entitlements)
+	writeResponse(w, r, &Entitlements{entitlements})
+}
+
+type Organization struct {
+	*otf.Organization
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (org *Organization) ToJSONAPI() any {
+	return &dto.Organization{
+		Name:            org.Name(),
+		CreatedAt:       org.CreatedAt(),
+		ExternalID:      org.ID(),
+		Permissions:     &dto.DefaultOrganizationPermissions,
+		SessionRemember: org.SessionRemember(),
+		SessionTimeout:  org.SessionTimeout(),
+	}
+}
+
+type OrganizationList struct {
+	*otf.OrganizationList
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *OrganizationList) ToJSONAPI() any {
+	obj := &dto.OrganizationList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&Organization{item}).ToJSONAPI().(*dto.Organization))
+	}
+	return obj
+}
+
+type Entitlements struct {
+	*otf.Entitlements
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (e *Entitlements) ToJSONAPI() any {
+	return (*dto.Entitlements)(e.Entitlements)
 }

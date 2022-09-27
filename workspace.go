@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
-
-	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -79,6 +76,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
 func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
+func (ws *Workspace) Organization() *Organization      { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 
 // ExecutionModes returns a list of possible execution modes
@@ -191,57 +189,6 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 	return nil
 }
 
-// ToJSONAPI assembles a JSONAPI DTO
-func (ws *Workspace) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.Workspace{
-		ID: ws.ID(),
-		Actions: &jsonapi.WorkspaceActions{
-			IsDestroyable: false,
-		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan(),
-		AutoApply:            ws.AutoApply(),
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
-		CreatedAt:            ws.CreatedAt(),
-		Description:          ws.Description(),
-		Environment:          ws.Environment(),
-		ExecutionMode:        string(ws.ExecutionMode()),
-		FileTriggersEnabled:  ws.FileTriggersEnabled(),
-		GlobalRemoteState:    ws.GlobalRemoteState(),
-		Locked:               ws.Locked(),
-		MigrationEnvironment: ws.MigrationEnvironment(),
-		Name:                 ws.Name(),
-		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &jsonapi.WorkspacePermissions{
-			CanDestroy:        true,
-			CanForceUnlock:    true,
-			CanLock:           true,
-			CanUnlock:         true,
-			CanQueueApply:     true,
-			CanQueueDestroy:   true,
-			CanQueueRun:       true,
-			CanReadSettings:   true,
-			CanUpdate:         true,
-			CanUpdateVariable: true,
-		},
-		QueueAllRuns:               ws.QueueAllRuns(),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		SourceName:                 ws.SourceName(),
-		SourceURL:                  ws.SourceURL(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           ws.WorkingDirectory(),
-		UpdatedAt:                  ws.UpdatedAt(),
-	}
-	if ws.organization != nil {
-		dto.Organization = ws.organization.ToJSONAPI(req).(*jsonapi.Organization)
-	} else {
-		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
-	}
-	return dto
-}
-
 // WorkspaceQualifiedName is the workspace's fully qualified name including the
 // name of its organization
 type WorkspaceQualifiedName struct {
@@ -295,17 +242,6 @@ type WorkspaceUnlockOptions struct {
 type WorkspaceList struct {
 	*Pagination
 	Items []*Workspace
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.WorkspaceList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Workspace))
-	}
-	return dto
 }
 
 type WorkspaceService interface {

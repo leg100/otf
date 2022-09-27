@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -26,7 +27,7 @@ func (s *Server) CreateStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, sv)
+	writeResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +41,7 @@ func (s *Server) ListStateVersions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, svl)
+	writeResponse(w, r, &StateVersionList{svl})
 }
 
 func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +51,7 @@ func (s *Server) CurrentStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, sv)
+	writeResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +61,7 @@ func (s *Server) GetStateVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, sv)
+	writeResponse(w, r, &StateVersion{sv})
 }
 
 func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
@@ -71,4 +72,43 @@ func (s *Server) DownloadStateVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
+}
+
+type StateVersion struct {
+	*otf.StateVersion
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (sv *StateVersion) ToJSONAPI() any {
+	obj := &dto.StateVersion{
+		ID:          sv.ID(),
+		CreatedAt:   sv.CreatedAt(),
+		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
+		Serial:      sv.Serial(),
+	}
+	for _, out := range sv.Outputs() {
+		obj.Outputs = append(obj.Outputs, &dto.StateVersionOutput{
+			ID:        out.ID(),
+			Name:      out.Name,
+			Sensitive: out.Sensitive,
+			Type:      out.Type,
+			Value:     out.Value,
+		})
+	}
+	return obj
+}
+
+type StateVersionList struct {
+	*otf.StateVersionList
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *StateVersionList) ToJSONAPI() any {
+	obj := &dto.StateVersionList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&StateVersion{item}).ToJSONAPI().(*dto.StateVersion))
+	}
+	return obj
 }

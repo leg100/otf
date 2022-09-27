@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -39,15 +38,6 @@ func (t *AgentToken) CanAccess(organizationName *string) bool {
 		return false
 	}
 	return t.organizationName == *organizationName
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (t *AgentToken) ToJSONAPI(req *http.Request) any {
-	return &jsonapi.AgentToken{
-		ID:               t.id,
-		Token:            t.token,
-		OrganizationName: t.organizationName,
-	}
 }
 
 type AgentTokenCreateOptions struct {
