@@ -43,6 +43,18 @@ type ServerConfig struct {
 	Secret string
 }
 
+func (cfg *ServerConfig) Validate() error {
+	if cfg.SSL {
+		if cfg.CertFile == "" || cfg.KeyFile == "" {
+			return fmt.Errorf("must provide both --cert-file and --key-file")
+		}
+	}
+	if cfg.Secret == "" {
+		return fmt.Errorf("--secret cannot be empty")
+	}
+	return nil
+}
+
 // Server provides an HTTP/S server
 type Server struct {
 	ServerConfig
@@ -75,11 +87,8 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		Signer:       signer.New([]byte(cfg.Secret)),
 	}
 
-	// Validate SSL params
-	if cfg.SSL {
-		if cfg.CertFile == "" || cfg.KeyFile == "" {
-			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
-		}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
 	}
 
 	r := NewRouter()
