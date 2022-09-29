@@ -24,7 +24,7 @@ require (
 	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.16.0
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
-	github.com/leg100/signer v0.0.0-20220929082558-fab0ed0c62d6
+	github.com/leg100/signer v0.0.1
 	github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5
 	github.com/mattn/go-isatty v0.0.14
 	github.com/natefinch/atomic v1.0.1

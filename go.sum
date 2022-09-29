@@ -301,6 +301,8 @@ github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f h1:B6cjxBElIm1uvJ
 github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f/go.mod h1:bxfK4GybcsXRZYxs4FWVlOe3vK5MN3midIRDqJxVoH0=
 github.com/leg100/signer v0.0.0-20220929082558-fab0ed0c62d6 h1:piUcS7uGf3CGMEfjxGVozyNNhpUnWTYbFT4bXFqSioY=
 github.com/leg100/signer v0.0.0-20220929082558-fab0ed0c62d6/go.mod h1:/0Vc7sK7mBMf1dgkZUQAnWCdSCAqprG3eska4cfDD4U=
+github.com/leg100/signer v0.0.1 h1:4v3r33tMXps1lJcdRVXN2kOVr2D+RGZU0pUNgNZnX9w=
+github.com/leg100/signer v0.0.1/go.mod h1:/0Vc7sK7mBMf1dgkZUQAnWCdSCAqprG3eska4cfDD4U=
 github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad h1:TdeSAP2J0ItVZrNnrJHwwqslDbIxDOkysU/4aHZK9v8=
 github.com/leg100/sse/v2 v2.0.0-20220910081853-79ffbd7c2fad/go.mod h1:Igau6Whc+F17QUgML1fYe1VPZzTV6EMCnYktEmkNJ7I=
 github.com/leg100/zerologr v0.0.0-20210805173127-2e0b118333c5 h1:i08aLIx3Mpb9BRm6GjetLVkLQnp8nE5dcoZWjtk8BlU=
