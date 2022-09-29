@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -28,7 +27,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersion{cv}, withCode(http.StatusCreated))
+	writeResponse(w, r, &ConfigurationVersion{cv, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +37,7 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersion{cv})
+	writeResponse(w, r, &ConfigurationVersion{cv, s})
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +52,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &ConfigurationVersionList{cvl})
+	writeResponse(w, r, &ConfigurationVersionList{cvl, s})
 }
 
 func (s *Server) UploadConfigurationVersion() http.HandlerFunc {
@@ -84,6 +83,7 @@ func (s *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Req
 
 type ConfigurationVersion struct {
 	*otf.ConfigurationVersion
+	*Server
 }
 
 // ToJSONAPI assembles a JSONAPI DTO.
@@ -95,7 +95,7 @@ func (cv *ConfigurationVersion) ToJSONAPI() any {
 		Source:           string(cv.Source()),
 		Status:           string(cv.Status()),
 		StatusTimestamps: &dto.CVStatusTimestamps{},
-		UploadURL:        fmt.Sprintf("/api/v2/configuration-versions/%s/upload", cv.ID()),
+		UploadURL:        cv.signedUploadURL(cv.ID()),
 	}
 	for _, ts := range cv.StatusTimestamps() {
 		switch ts.Status {
@@ -112,6 +112,7 @@ func (cv *ConfigurationVersion) ToJSONAPI() any {
 
 type ConfigurationVersionList struct {
 	*otf.ConfigurationVersionList
+	*Server
 }
 
 // ToJSONAPI assembles a JSONAPI DTO
@@ -120,7 +121,7 @@ func (l *ConfigurationVersionList) ToJSONAPI() any {
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&ConfigurationVersion{item}).ToJSONAPI().(*dto.ConfigurationVersion))
+		obj.Items = append(obj.Items, (&ConfigurationVersion{item, l.Server}).ToJSONAPI().(*dto.ConfigurationVersion))
 	}
 	return obj
 }

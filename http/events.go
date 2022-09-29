@@ -48,7 +48,7 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 				}
 
 				buf := bytes.Buffer{}
-				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r}).ToJSONAPI()); err != nil {
+				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, s}).ToJSONAPI()); err != nil {
 					s.Error(err, "marshalling event", "event", event.Type)
 					continue
 				}

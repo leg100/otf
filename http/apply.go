@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,19 +17,20 @@ func (s *Server) GetApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &apply{run.Apply(), r})
+	writeResponse(w, r, &apply{run.Apply(), r, s})
 }
 
 type apply struct {
 	*otf.Apply
 	req *http.Request
+	*Server
 }
 
 // ToJSONAPI assembles a JSONAPI DTO.
 func (a *apply) ToJSONAPI() any {
 	dto := &jsonapi.Apply{
 		ID:               otf.ConvertID(a.ID(), "apply"),
-		LogReadURL:       otf.Absolute(a.req, fmt.Sprintf("api/v2/runs/%s/logs/apply", a.ID())),
+		LogReadURL:       a.signedLogURL(a.req, a.ID(), "apply"),
 		Status:           string(a.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}

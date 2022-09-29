@@ -14,6 +14,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/signer"
 )
 
 const (
@@ -38,6 +39,8 @@ type ServerConfig struct {
 
 	// site authentication token
 	SiteToken string
+	// Secret for signing
+	Secret string
 }
 
 // Server provides an HTTP/S server
@@ -58,6 +61,7 @@ type Server struct {
 	eventsServer *sse.Server
 	// the http router, exported so that other pkgs can add routes
 	*Router
+	*signer.Signer
 }
 
 // NewServer is the constructor for Server
@@ -68,6 +72,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
+		Signer:       signer.New([]byte(cfg.Secret)),
 	}
 
 	// Validate SSL params
@@ -92,22 +97,19 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	r.GET("/metrics/cache.json", s.CacheStats)
 	r.GET("/healthz", GetHealthz)
 
+	// These are signed URLs that expire after a given time. They don't use
+	// bearer authentication.
+	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
+		signed.Use((&signatureVerifier{s.Signer}).handler)
+
+		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
+		signed.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
+	})
+
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
 		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
-
-		// this is the URL supplied to the TF CLI, but the CLI does not send a
-		// bearer token in the request, therefore it is currently *unauthenticated*
-		//
-		// TODO: migrate to signed URL
-		api.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
-
-		// this is the URL supplied to the TF CLI, but the CLI does not send a
-		// bearer token in the request, therefore it is currently *unauthenticated*
-		//
-		// TODO: migrate to signed URL
-		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
 
 		// Authenticated endpoints
 		api.Sub(func(r *Router) {

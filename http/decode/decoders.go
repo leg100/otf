@@ -11,7 +11,14 @@ import (
 )
 
 // Query schema decoder: caches structs, and safe for sharing.
-var decoder = schema.NewDecoder()
+var decoder *schema.Decoder
+
+func init() {
+	decoder = schema.NewDecoder()
+	// Don't error if there are keys in the source map that are not present in
+	// the destination struct.
+	decoder.IgnoreUnknownKeys(true)
+}
 
 // Form decodes an HTTP request's POST form contents into dst.
 func Form(dst interface{}, r *http.Request) error {
