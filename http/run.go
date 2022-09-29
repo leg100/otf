@@ -46,7 +46,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r}, withCode(http.StatusCreated))
+	writeResponse(w, r, &Run{run, r, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r})
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r})
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +94,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Run{run, r})
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 			}
 		}
 	}
-	writeResponse(w, r, &RunList{rl, r})
+	writeResponse(w, r, &RunList{rl, r, s})
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -277,6 +277,7 @@ func (s *Server) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 type Run struct {
 	*otf.Run
 	req *http.Request
+	*Server
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -311,8 +312,8 @@ func (r *Run) ToJSONAPI() any {
 		StatusTimestamps: &dto.RunStatusTimestamps{},
 		TargetAddrs:      r.TargetAddrs(),
 		// Relations
-		Apply: (&apply{r.Apply(), r.req}).ToJSONAPI().(*dto.Apply),
-		Plan:  (&plan{r.Plan(), r.req}).ToJSONAPI().(*dto.Plan),
+		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*dto.Apply),
+		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*dto.Plan),
 		// Hardcoded anonymous user until authorization is introduced
 		CreatedBy: &dto.User{
 			ID:       otf.DefaultUserID,
@@ -364,6 +365,7 @@ func (r *Run) ToJSONAPI() any {
 type RunList struct {
 	*otf.RunList
 	req *http.Request
+	*Server
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -372,7 +374,7 @@ func (l *RunList) ToJSONAPI() any {
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Run{item, l.req}).ToJSONAPI().(*dto.Run))
+		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*dto.Run))
 	}
 	return obj
 }

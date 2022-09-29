@@ -48,6 +48,8 @@ jobs:
         env:
           # The hostname used to communicate with the PostgreSQL service container
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+          # Secret for signing URLs
+          OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
       -
         name: login to docker hub
         run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u leg100 --password-stdin

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -28,7 +27,7 @@ func (s *Server) getPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &plan{run.Plan(), r})
+	writeResponse(w, r, &plan{run.Plan(), r, s})
 }
 
 // getPlanJSON retrieves a plan object's plan file in JSON format.
@@ -53,6 +52,7 @@ func (s *Server) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 type plan struct {
 	*otf.Plan
 	req *http.Request
+	*Server
 }
 
 // ToJSONAPI assembles a JSON-API DTO.
@@ -60,7 +60,7 @@ func (p *plan) ToJSONAPI() any {
 	dto := &jsonapi.Plan{
 		ID:               otf.ConvertID(p.ID(), "plan"),
 		HasChanges:       p.HasChanges(),
-		LogReadURL:       otf.Absolute(p.req, fmt.Sprintf("api/v2/runs/%s/logs/plan", p.ID())),
+		LogReadURL:       p.signedLogURL(p.req, p.ID(), "plan"),
 		Status:           string(p.Status()),
 		StatusTimestamps: &jsonapi.PhaseStatusTimestamps{},
 	}
