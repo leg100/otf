@@ -84,7 +84,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
-		Signer:       signer.New([]byte(cfg.Secret)),
+		Signer:       signer.New([]byte(cfg.Secret), signer.SkipQuery()),
 	}
 
 	if err := cfg.Validate(); err != nil {
