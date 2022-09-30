@@ -30,6 +30,7 @@ type RunDBResult struct {
 	AutoApply              bool                          `json:"auto_apply"`
 	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
 	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
+	Latest                 bool                          `json:"latest"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
@@ -52,6 +53,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		speculative:            result.Speculative,
 		workspaceName:          result.WorkspaceName.String,
 		executionMode:          ExecutionMode(result.ExecutionMode.String),
+		latest:                 result.Latest,
 		organizationName:       result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
 		configurationVersionID: result.ConfigurationVersionID.String,

@@ -2,6 +2,10 @@ package otf
 
 import "context"
 
-type FakeLatestRunSetter struct{}
+type FakeWorkspaceLockService struct {
+	WorkspaceLockService
+}
 
-func (f *FakeLatestRunSetter) SetLatestRun(context.Context, string, string) error { return nil }
+func (f *FakeWorkspaceLockService) LockWorkspace(context.Context, WorkspaceSpec, WorkspaceLockOptions) (*Workspace, error) {
+	return nil, nil
+}

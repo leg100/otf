@@ -42,7 +42,7 @@ type Application interface {
 	EventService
 	UserService
 	AgentTokenService
-	LatestRunService
+	CurrentRunService
 	LockableApplication
 }
 

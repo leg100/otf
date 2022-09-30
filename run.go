@@ -82,6 +82,7 @@ type Run struct {
 	workspaceName          string
 	workspaceID            string
 	configurationVersionID string
+	latest                 bool
 	// Relations
 	plan      *Plan
 	apply     *Apply
@@ -110,6 +111,10 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
+
+// Latest determines whether run is the latest run for a workspace, i.e.
+// its current run, or the most recent current run.
+func (r *Run) Latest() bool { return r.latest }
 
 // CanAccess always return true - some actions are invoked on behalf of a run,
 // e.g. locking a workpace for a run
@@ -233,15 +238,18 @@ func (r *Run) Done() bool {
 
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
-func (r *Run) EnqueuePlan(ctx context.Context, setter LatestRunSetter) error {
+func (r *Run) EnqueuePlan(ctx context.Context, svc WorkspaceLockService) error {
 	if r.status != RunPending {
-		return fmt.Errorf("cannot enqueue run with non-pending status")
+		return fmt.Errorf("cannot enqueue run with status %s", r.status)
 	}
 	r.updateStatus(RunPlanQueued)
 	r.plan.updateStatus(PhaseQueued)
 
 	if !r.Speculative() {
-		if err := setter.SetLatestRun(ctx, r.WorkspaceID(), r.ID()); err != nil {
+		// Lock the workspace on behalf of the run
+		ctx = AddSubjectToContext(ctx, r)
+		_, err := svc.LockWorkspace(ctx, WorkspaceSpec{ID: String(r.WorkspaceID())}, WorkspaceLockOptions{})
+		if err != nil {
 			return err
 		}
 	}

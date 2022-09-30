@@ -160,6 +160,10 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 		return nil, otf.ErrAccessNotPermitted
 	}
 
+	// Now follows several updates to the DB within a transaction:
+	// 1) set latest run on workspace (if non-speculative)
+	// 2) lock workspace (if non-speculative)
+	// 3) update run status
 	var run *otf.Run
 	err := a.Tx(ctx, func(tx *Application) (err error) {
 		run, err = tx.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {

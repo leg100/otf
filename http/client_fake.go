@@ -32,7 +32,7 @@ type FakeClient struct {
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService
-	otf.LatestRunService
+	otf.CurrentRunService
 	otf.LockableApplication
 }
 

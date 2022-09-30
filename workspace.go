@@ -249,12 +249,15 @@ type WorkspaceService interface {
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
-	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
-	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
-	UpdateWorkspaceQueue(run *Run) error
+	WorkspaceLockService
+	CurrentRunService
+}
+
+type WorkspaceLockService interface {
+	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 }
 
 type WorkspaceStore interface {
@@ -266,20 +269,16 @@ type WorkspaceStore interface {
 	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
-	LatestRunSetter
+	CurrentRunService
 }
 
-// LatestRunService provides interaction with the 'latest' run for a workspace,
-// i.e. the current or most recently active, non-speculative, run.
-type LatestRunService interface {
-	LatestRunSetter
-	// GetLatestRun retrieves the ID of the latest run for a workspace.
-	GetLatestRun(ctx context.Context, workspaceID string) (string, bool)
-}
-
-type LatestRunSetter interface {
-	// SetLatestRun sets the ID of the latest run for a workspace.
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
+// CurrentRunService provides interaction with the current run for a workspace,
+// i.e. the current, or most recently current, non-speculative, run.
+type CurrentRunService interface {
+	// SetCurrentRun sets the ID of the latest run for a workspace.
+	//
+	// Take full run obj as param
+	SetCurrentRun(ctx context.Context, workspaceID, runID string) error
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

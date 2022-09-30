@@ -22,8 +22,6 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 		return nil, err
 	}
 
-	a.queues.Create(ws.ID())
-
 	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.OrganizationID())
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
@@ -60,10 +58,6 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 	return ws, nil
 }
 
-func (a *Application) UpdateWorkspaceQueue(run *otf.Run) error {
-	return a.queues.Update(run.WorkspaceID(), run)
-}
-
 func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
 	if !otf.CanAccess(ctx, opts.OrganizationName) {
 		return nil, otf.ErrAccessNotPermitted
@@ -93,10 +87,6 @@ func (a *Application) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) 
 	return ws, nil
 }
 
-func (a *Application) GetWorkspaceQueue(workspaceID string) ([]*otf.Run, error) {
-	return a.queues.Get(workspaceID)
-}
-
 func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
 	if !a.CanAccessWorkspace(ctx, spec) {
 		return otf.ErrAccessNotPermitted
@@ -112,8 +102,6 @@ func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 		a.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name())
 		return err
 	}
-
-	a.queues.Delete(ws.ID())
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
@@ -168,42 +156,7 @@ func (a *Application) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 	return ws, nil
 }
 
-// SetLatestRun sets the latest run for the workspace
-func (a *Application) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
-	if !a.CanAccessWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}) {
-		return otf.ErrAccessNotPermitted
-	}
-
-	// Persist update to db
-	if err := a.db.SetLatestRun(ctx, workspaceID, runID); err != nil {
-		a.Error(err, "setting latest run", "workspace", workspaceID, "run", runID)
-		return err
-	}
-
-	// Retrieve run so that it can be passed to lock method below.
-	run, err := a.GetRun(ctx, runID)
-	if err != nil {
-		a.Error(err, "retrieving run", "run", runID)
-		return err
-	}
-
-	// Lock the workspace on behalf of the run
-	ctx = otf.AddSubjectToContext(ctx, run)
-	_, err = a.LockWorkspace(ctx, otf.WorkspaceSpec{ID: &workspaceID}, otf.WorkspaceLockOptions{})
-	if err != nil {
-		return err
-	}
-
-	// Inform the latest run manager too so that it can notify clients of change
-	if err := a.latest.SetLatestRun(ctx, workspaceID, runID); err != nil {
-		return err
-	}
-
-	a.V(1).Info("set latest run", "workspace", workspaceID, "run", runID)
-	return nil
-}
-
-// GetLatestRun gets the latest run for a workspace.
-func (a *Application) GetLatestRun(ctx context.Context, workspaceID string) (string, bool) {
-	return a.latest.GetLatestRun(ctx, workspaceID)
+// SetCurrentRun sets the current run for the workspace
+func (a *Application) SetCurrentRun(ctx context.Context, workspaceID, runID string) error {
+	return a.db.SetCurrentRun(ctx, workspaceID, runID)
 }
