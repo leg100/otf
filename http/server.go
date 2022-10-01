@@ -116,7 +116,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	})
 
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
-		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
+		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
 
