@@ -44,7 +44,7 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 		w.started = true
 		chunk = chunk.AddStartMarker()
 	}
-	w.offset += chunk.NextOffset()
+	w.offset = chunk.NextOffset()
 
 	if err := w.PutChunk(context.Background(), chunk); err != nil {
 		w.Error(err, "writing log stream")

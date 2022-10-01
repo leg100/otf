@@ -371,7 +371,7 @@ func (a *Application) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (o
 
 // PutChunk writes a chunk of logs for a phase.
 func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
-	persisted, err := a.proxy.PutChunk(ctx, chunk)
+	persisted, err := a.db.PutChunk(ctx, chunk)
 	if err != nil {
 		a.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
 		return err
