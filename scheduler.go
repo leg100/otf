@@ -24,7 +24,7 @@ func NewScheduler(logger logr.Logger, app Application) *Scheduler {
 	s := &Scheduler{
 		Application:           app,
 		Logger:                logger.WithValues("component", "scheduler"),
-		queues:            make(map[string]eventHandler),
+		queues:                make(map[string]eventHandler),
 		workspaceQueueFactory: queueMaker{},
 	}
 
@@ -42,8 +42,9 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	})
 }
 
-// reinitialize pulls incomplete runs from the DB and listens to run events,
-// passing them onto workspace queues.
+// reinitialize retrieves workspaces and runs from the DB and listens to events,
+// creating/deleting workspace queues accordingly and forwarding events to
+// queues for scheduling.
 func (s *Scheduler) reinitialize(ctx context.Context) error {
 	// subscribe to run events and workspace unlock events
 	sub, err := s.Watch(ctx, WatchOptions{})
@@ -51,6 +52,20 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		return err
 	}
 
+	// retrieve existing workspaces, page by page
+	workspaces := []*Workspace{}
+	workspaceListOpts := WorkspaceListOptions{}
+	for {
+		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
+		if err != nil {
+			return fmt.Errorf("retrieving existing workspaces: %w", err)
+		}
+		workspaces = append(workspaces, page.Items...)
+		if page.NextPage() == nil {
+			break
+		}
+		workspaceListOpts.PageNumber = *page.NextPage()
+	}
 	// retrieve existing incomplete runs, page by page
 	existing := []*Run{}
 	opts := RunListOptions{Statuses: IncompleteRun}
@@ -65,9 +80,15 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		}
 		opts.PageNumber = *page.NextPage()
 	}
-	// feed in both existing runs and events to the scheduler for processing
+	// feed in existing objects and then events to the scheduler for processing
 	queue := make(chan Event)
 	go func() {
+		for _, ws := range workspaces {
+			queue <- Event{
+				Type:    EventWorkspaceCreated,
+				Payload: ws,
+			}
+		}
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
 		for i := len(existing) - 1; i >= 0; i-- {
@@ -88,6 +109,10 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		case event := <-queue:
 			switch payload := event.Payload.(type) {
 			case *Workspace:
+				if event.Type == EventWorkspaceDeleted {
+					delete(s.queues, payload.ID())
+					continue
+				}
 				// create workspace queue if it doesn't exist
 				q, ok := s.queues[payload.ID()]
 				if !ok {
@@ -97,14 +122,11 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 					return err
 				}
 			case *Run:
-				// create workspace queue if it doesn't exist
 				q, ok := s.queues[payload.WorkspaceID()]
 				if !ok {
-					ws, err := s.GetWorkspace(ctx, WorkspaceSpec{ID: String(payload.WorkspaceID())})
-					if err != nil {
-						return err
-					}
-					q = s.createQueue(ctx, ws)
+					// should never happen
+					s.Error(fmt.Errorf("workspace queue does not exist for run event"), "workspace", payload.WorkspaceID(), "run", payload.ID())
+					continue
 				}
 				if err := q.handleEvent(ctx, event); err != nil {
 					return err
