@@ -14,7 +14,6 @@ import (
 type Scheduler struct {
 	Application
 	logr.Logger
-	// TODO: rename to queues
 	queues map[string]eventHandler
 	workspaceQueueFactory
 }

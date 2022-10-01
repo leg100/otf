@@ -41,7 +41,6 @@ func (queueMaker) NewWorkspaceQueue(app Application, logger logr.Logger, ws *Wor
 func (s *WorkspaceQueue) handleEvent(ctx context.Context, event Event) error {
 	switch payload := event.Payload.(type) {
 	case *Workspace:
-		// TODO: handle EventWorkspaceDeleted
 		s.ws = payload
 		if event.Type == EventWorkspaceUnlocked {
 			// schedule next run
