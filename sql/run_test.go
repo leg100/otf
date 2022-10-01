@@ -21,6 +21,8 @@ func TestRun_Create(t *testing.T) {
 }
 
 func TestRun_UpdateStatus(t *testing.T) {
+	ctx := context.Background()
+
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
@@ -28,8 +30,8 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(context.Background(), run.ID(), func(run *otf.Run) error {
-			return run.EnqueuePlan(context.Background(), &otf.FakeLatestRunSetter{})
+		got, err := db.UpdateStatus(ctx, run.ID(), func(run *otf.Run) error {
+			return run.EnqueuePlan(ctx, &otf.FakeWorkspaceLockService{})
 		})
 		require.NoError(t, err)
 		assert.Equal(t, otf.RunPlanQueued, got.Status())
@@ -40,7 +42,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
-		got, err := db.UpdateStatus(context.Background(), run.ID(), func(run *otf.Run) error {
+		got, err := db.UpdateStatus(ctx, run.ID(), func(run *otf.Run) error {
 			_, err := run.Cancel()
 			return err
 		})

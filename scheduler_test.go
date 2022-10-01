@@ -6,82 +6,154 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestScheduler_HandleRun(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+// TestScheduler checks the scheduler is creating workspace queues and
+// forwarding events to the queue handlers.
+func TestScheduler(t *testing.T) {
+	org := newTestOrganization(t)
 
-	speculative := NewTestRun(t, TestRunCreateOptions{Speculative: true})
-	run1 := NewTestRun(t, TestRunCreateOptions{})
-	run2 := NewTestRun(t, TestRunCreateOptions{})
+	t.Run("create workspace queue from db", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		ws := newTestWorkspace(t, org)
+		scheduler, got := newTestScheduler([]*Workspace{ws}, nil)
+		go scheduler.reinitialize(ctx)
 
-	app := &fakeSchedulerApp{
-		runs: []*Run{speculative, run1, run2},
+		assert.Equal(t, Event{Type: EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, 1, len(scheduler.queues))
+
+		cancel()
+	})
+
+	t.Run("create workspace queue from event", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		event := Event{Type: EventWorkspaceCreated, Payload: newTestWorkspace(t, org)}
+		scheduler, got := newTestScheduler(nil, nil, event)
+		go scheduler.reinitialize(ctx)
+		assert.Equal(t, event, <-got)
+		assert.Equal(t, 1, len(scheduler.queues))
+		cancel()
+	})
+
+	t.Run("delete workspace queue", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		// ws is to be created and then deleted
+		ws := newTestWorkspace(t, org)
+		del := Event{Type: EventWorkspaceDeleted, Payload: ws}
+		// necessary so that we can synchronise test below
+		sync := Event{Payload: newTestWorkspace(t, org)}
+		scheduler, got := newTestScheduler([]*Workspace{ws}, nil, del, sync)
+		go scheduler.reinitialize(ctx)
+
+		assert.Equal(t, Event{Type: EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, sync, <-got)
+		assert.NotContains(t, scheduler.queues, ws)
+
+		cancel()
+	})
+
+	t.Run("relay run from db", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		ws := newTestWorkspace(t, org)
+		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		run := NewRun(cv, ws, RunCreateOptions{})
+		scheduler, got := newTestScheduler([]*Workspace{ws}, []*Run{run})
+		go scheduler.reinitialize(ctx)
+
+		assert.Equal(t, Event{Type: EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, Event{Type: EventRunStatusUpdate, Payload: run}, <-got)
+
+		cancel()
+	})
+
+	t.Run("relay run from event", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		ws := newTestWorkspace(t, org)
+		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		event := Event{Payload: NewRun(cv, ws, RunCreateOptions{})}
+		scheduler, got := newTestScheduler([]*Workspace{ws}, nil, event)
+		go scheduler.reinitialize(ctx)
+
+		assert.Equal(t, Event{Type: EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, event, <-got)
+
+		cancel()
+	})
+
+	t.Run("relay runs in reverse order", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		ws := newTestWorkspace(t, org)
+		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		run1 := NewRun(cv, ws, RunCreateOptions{})
+		run2 := NewRun(cv, ws, RunCreateOptions{})
+		scheduler, got := newTestScheduler([]*Workspace{ws}, []*Run{run1, run2})
+		go scheduler.reinitialize(ctx)
+
+		assert.Equal(t, Event{Type: EventWorkspaceCreated, Payload: ws}, <-got)
+		assert.Equal(t, Event{Type: EventRunStatusUpdate, Payload: run2}, <-got)
+		assert.Equal(t, Event{Type: EventRunStatusUpdate, Payload: run1}, <-got)
+
+		cancel()
+	})
+}
+
+func newTestScheduler(workspaces []*Workspace, runs []*Run, events ...Event) (*Scheduler, <-chan Event) {
+	ch := make(chan Event, len(events))
+	for _, ev := range events {
+		ch <- ev
 	}
-	scheduler := NewScheduler(logr.Discard(), app)
-	errch := make(chan error)
-	go func() {
-		errch <- scheduler.Start(ctx)
-	}()
 
-	err := scheduler.handleRun(ctx, speculative)
-	require.NoError(t, err)
-	assert.Equal(t, 0, len(app.queue))
-
-	err = scheduler.handleRun(ctx, run1)
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(app.queue))
-	assert.Equal(t, RunPlanQueued, app.queue[0].Status())
-
-	err = scheduler.handleRun(ctx, run2)
-	require.NoError(t, err)
-	assert.Equal(t, 2, len(app.queue))
-	assert.Equal(t, RunPending, app.queue[1].Status())
-
-	cancel()
-	assert.EqualError(t, <-errch, "context canceled")
+	// construct and run scheduler
+	scheduler := NewScheduler(logr.Discard(), &fakeSchedulerApp{
+		runs:       runs,
+		workspaces: workspaces,
+		events:     ch,
+	})
+	// handled chan receives events relayed to handlers
+	handled := make(chan Event)
+	scheduler.workspaceQueueFactory = &fakeQueueMaker{events: handled}
+	return scheduler, handled
 }
 
 type fakeSchedulerApp struct {
-	queue []*Run
-	runs  []*Run
+	runs       []*Run
+	workspaces []*Workspace
+	events     chan Event
+
 	Application
 }
 
 func (f *fakeSchedulerApp) ListRuns(context.Context, RunListOptions) (*RunList, error) {
-	return &RunList{Items: f.runs, Pagination: NewPagination(ListOptions{}, len(f.runs))}, nil
+	return &RunList{
+		Items:      f.runs,
+		Pagination: NewPagination(ListOptions{}, len(f.runs)),
+	}, nil
 }
 
-func (f *fakeSchedulerApp) EnqueuePlan(ctx context.Context, runID string) (*Run, error) {
-	for _, run := range f.runs {
-		if run.ID() == runID {
-			run.status = RunPlanQueued
-			return run, nil
-		}
-	}
-	return nil, nil
-}
-
-func (f *fakeSchedulerApp) UpdateWorkspaceQueue(run *Run) error {
-	for pos, queued := range f.queue {
-		if queued.ID() == run.ID() {
-			f.queue[pos] = run
-			return nil
-		}
-	}
-	f.queue = append(f.queue, run)
-	return nil
-}
-
-func (f *fakeSchedulerApp) GetWorkspaceQueue(workspaceID string) ([]*Run, error) {
-	return f.queue, nil
-}
-
-func (f *fakeSchedulerApp) UnlockWorkspace(context.Context, WorkspaceSpec, WorkspaceUnlockOptions) (*Workspace, error) {
-	return nil, nil
+func (f *fakeSchedulerApp) ListWorkspaces(context.Context, WorkspaceListOptions) (*WorkspaceList, error) {
+	return &WorkspaceList{
+		Items:      f.workspaces,
+		Pagination: NewPagination(ListOptions{}, len(f.workspaces)),
+	}, nil
 }
 
 func (f *fakeSchedulerApp) Watch(context.Context, WatchOptions) (<-chan Event, error) {
-	return make(chan Event), nil
+	return f.events, nil
+}
+
+type fakeQueueMaker struct {
+	events chan Event
+}
+
+func (f *fakeQueueMaker) NewWorkspaceQueue(Application, logr.Logger, *Workspace) eventHandler {
+	return &fakeWorkspaceQueue{events: f.events}
+}
+
+type fakeWorkspaceQueue struct {
+	events chan Event
+}
+
+func (f *fakeWorkspaceQueue) handleEvent(ctx context.Context, event Event) error {
+	f.events <- event
+	return nil
 }

@@ -56,7 +56,7 @@ type client struct {
 	otf.ConfigurationVersionService
 	otf.EventService
 	otf.AgentTokenService
-	otf.LatestRunService
+	otf.CurrentRunService
 	otf.LockableApplication
 }
 
