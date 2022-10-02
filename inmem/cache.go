@@ -8,8 +8,10 @@ import (
 )
 
 type CacheConfig struct {
+	// Total capacity of cache in MB.
 	Size int
-	TTL  time.Duration
+	// Time-to-live for each cache entry before automatic deletion.
+	TTL time.Duration
 }
 
 func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
@@ -28,6 +30,21 @@ func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// continuously gather metrics
+	cacheSize.Set(float64(config.Size))
+	go func() {
+		for range time.Tick(5 * time.Second) {
+			cacheUsed.Set(float64(cache.Capacity()))
+			cacheEntries.Set(float64(cache.Len()))
+
+			stats := cache.Stats()
+			cacheHits.Set(float64(stats.Hits))
+			cacheMisses.Set(float64(stats.Misses))
+			cacheDelHits.Set(float64(stats.DelHits))
+			cacheDelMisses.Set(float64(stats.DelMisses))
+		}
+	}()
 
 	return cache, nil
 }

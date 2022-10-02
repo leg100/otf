@@ -1,3 +1,6 @@
+# prometheus
+/data
+prometheus.yml
 # modd
 modd.conf
 # logs

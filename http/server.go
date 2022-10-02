@@ -9,6 +9,7 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/r3labs/sse/v2"
 
 	"github.com/allegro/bigcache"
@@ -103,6 +104,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	}
 
 	r.GET("/.well-known/terraform.json", s.WellKnown)
+	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/metrics/cache.json", s.CacheStats)
 	r.GET("/healthz", GetHealthz)
 
@@ -116,7 +118,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	})
 
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
-		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
+		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
 

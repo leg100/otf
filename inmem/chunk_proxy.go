@@ -32,7 +32,7 @@ func (c *ChunkProxy) Start(ctx context.Context) error {
 	// TODO: if it loses its connection to the stream it should keep retrying,
 	// with a backoff alg, and it should invalidate the cache *entirely* because
 	// it may have missed up dates, potentially rendering the cache stale.
-	sub, err := c.WatchLogs(ctx, otf.WatchLogsOptions{})
+	sub, err := c.WatchLogs(ctx, otf.WatchLogsOptions{Name: otf.String("chunk-proxy")})
 	if err != nil {
 		return err
 	}

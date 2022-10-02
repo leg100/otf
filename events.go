@@ -36,8 +36,9 @@ type Event struct {
 type PubSubService interface {
 	// Publish an event
 	Publish(Event)
-	// Subscribe creates a subscription to a stream of errors
-	Subscribe(ctx context.Context) <-chan Event
+	// Subscribe creates a subscription to a stream of errors. Name is a
+	// unique identifier describing the subscriber.
+	Subscribe(ctx context.Context, name string) (<-chan Event, error)
 }
 
 // EventService allows interacting with events. Access is authenticated.
@@ -52,6 +53,8 @@ type EventService interface {
 
 // WatchOptions filters events returned by the Watch endpoint.
 type WatchOptions struct {
+	// Name to uniquely describe the watcher.
+	Name *string
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id"`
 	// Filter by organization name

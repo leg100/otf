@@ -21,10 +21,10 @@ func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opt
 	}
 
 	if err = a.db.CreateRun(ctx, run); err != nil {
-		a.Error(err, "creating run", "id", run.ID())
+		a.Error(err, "creating run", "id", run.ID(), "workspace_id", run.WorkspaceID())
 		return nil, err
 	}
-	a.V(1).Info("created run", "id", run.ID())
+	a.V(1).Info("created run", "id", run.ID(), "workspace_id", run.WorkspaceID())
 
 	a.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
@@ -398,7 +398,10 @@ func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-cha
 	}
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub := a.Subscribe(ctx)
+	sub, err := a.Subscribe(ctx, "tail-"+otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
 
 	chunk, err := a.proxy.GetChunk(ctx, opts)
 	if err == otf.ErrResourceNotFound {
