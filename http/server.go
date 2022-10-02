@@ -105,7 +105,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
-	r.GET("/metrics/cache.json", s.CacheStats)
 	r.GET("/healthz", GetHealthz)
 
 	// These are signed URLs that expire after a given time. They don't use
