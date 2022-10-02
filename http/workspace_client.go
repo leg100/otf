@@ -74,6 +74,10 @@ func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOp
 
 // UpdateWorkspace updates the settings of an existing workspace.
 func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	if err := options.Valid(); err != nil {
+		return nil, err
+	}
+
 	path, err := getWorkspacePath(spec)
 	if err != nil {
 		return nil, err

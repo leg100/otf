@@ -12,6 +12,8 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 	var (
 		spec otf.WorkspaceSpec
 		opts otf.WorkspaceUpdateOptions
+
+		mode *string
 	)
 
 	cmd := &cobra.Command{
@@ -24,6 +26,10 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 			client, err := factory.NewClient()
 			if err != nil {
 				return err
+			}
+
+			if mode != nil && *mode != "" {
+				opts.ExecutionMode = (*otf.ExecutionMode)(mode)
 			}
 
 			ws, err := client.UpdateWorkspace(cmd.Context(), spec, opts)
@@ -39,7 +45,7 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	opts.ExecutionMode = (*otf.ExecutionMode)(cmd.Flags().String("execution-mode", string(otf.RemoteExecutionMode), "Which execution mode to use. Valid values are remote, local, and agent"))
+	mode = cmd.Flags().StringP("execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
 
 	spec.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")

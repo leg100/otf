@@ -18,6 +18,13 @@ const (
 
 type ExecutionMode string
 
+func ValidateExecutionMode(m ExecutionMode) error {
+	if m == RemoteExecutionMode || m == LocalExecutionMode || m == AgentExecutionMode {
+		return nil
+	}
+	return fmt.Errorf("invalid execution mode: %s", m)
+}
+
 var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -146,6 +153,9 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.ExecutionMode != nil {
+		if err := ValidateExecutionMode(*opts.ExecutionMode); err != nil {
+			return err
+		}
 		ws.executionMode = *opts.ExecutionMode
 		ws.updatedAt = CurrentTimestamp()
 	}
@@ -215,11 +225,32 @@ type WorkspaceUpdateOptions struct {
 }
 
 func (o WorkspaceUpdateOptions) Valid() error {
+	if o.AllowDestroyPlan == nil &&
+		o.AutoApply == nil &&
+		o.Name == nil &&
+		o.Description == nil &&
+		o.ExecutionMode == nil &&
+		o.FileTriggersEnabled == nil &&
+		o.GlobalRemoteState == nil &&
+		o.Operations == nil &&
+		o.QueueAllRuns == nil &&
+		o.SpeculativeEnabled == nil &&
+		o.StructuredRunOutputEnabled == nil &&
+		o.TerraformVersion == nil &&
+		o.TriggerPrefixes == nil &&
+		o.WorkingDirectory == nil {
+		return fmt.Errorf("must set at least one option to update")
+	}
 	if o.Name != nil && !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
 		return ErrInvalidTerraformVersion
+	}
+	if o.ExecutionMode != nil {
+		if err := ValidateExecutionMode(*o.ExecutionMode); err != nil {
+			return err
+		}
 	}
 	return nil
 }
