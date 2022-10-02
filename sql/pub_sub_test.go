@@ -26,11 +26,13 @@ func TestPubSub_E2E(t *testing.T) {
 	// setup sender
 	sender, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("sender-1"))
 	require.NoError(t, err)
-	senderGot := sender.Subscribe(ctx)
+	senderGot, err := sender.Subscribe(ctx, "sender-1")
+	require.NoError(t, err)
 	// setup receiver
 	receiver, err := NewPubSub(logr.Discard(), db, ChannelName("events_e2e_test"), PID("receiver-1"))
 	require.NoError(t, err)
-	receiverGot := receiver.Subscribe(ctx)
+	receiverGot, err := receiver.Subscribe(ctx, "sender-2")
+	require.NoError(t, err)
 
 	go func() { sender.Start(ctx) }()
 	go func() { receiver.Start(ctx) }()

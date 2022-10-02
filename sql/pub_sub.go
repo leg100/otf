@@ -152,8 +152,8 @@ func (ps *PubSub) Publish(event otf.Event) {
 }
 
 // Subscribe subscribes the caller to a stream of events.
-func (ps *PubSub) Subscribe(ctx context.Context) <-chan otf.Event {
-	return ps.local.Subscribe(ctx)
+func (ps *PubSub) Subscribe(ctx context.Context, name string) (<-chan otf.Event, error) {
+	return ps.local.Subscribe(ctx, name)
 }
 
 // reassemble a postgres message into an otf event

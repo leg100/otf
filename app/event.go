@@ -15,9 +15,18 @@ type OrganizationResource interface {
 //
 // TODO: apply watch options
 func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
+	name := "watch-" + otf.GenerateRandomString(6)
+	if opts.Name != nil {
+		name = *opts.Name
+	}
+
 	ch := make(chan otf.Event)
+	sub, err := a.Subscribe(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
 	go func() {
-		sub := a.Subscribe(ctx)
 		for {
 			select {
 			case ev, ok := <-sub:
@@ -51,9 +60,18 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 //
 // NOTE: unauthenticated.
 func (a *Application) WatchLogs(ctx context.Context, opts otf.WatchLogsOptions) (<-chan otf.Chunk, error) {
+	name := "watch-logs-" + otf.GenerateRandomString(6)
+	if opts.Name != nil {
+		name = *opts.Name
+	}
+
 	ch := make(chan otf.Chunk)
+	sub, err := a.Subscribe(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
 	go func() {
-		sub := a.Subscribe(ctx)
 		for {
 			select {
 			case ev, ok := <-sub:

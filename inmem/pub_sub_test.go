@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPubSub(t *testing.T) {
@@ -15,10 +16,12 @@ func TestPubSub(t *testing.T) {
 
 	// create subscribers
 	ctx1, cancel1 := context.WithCancel(context.Background())
-	sub1 := ps.Subscribe(ctx1)
+	sub1, err := ps.Subscribe(ctx1, "sub1")
+	require.NoError(t, err)
 
 	ctx2, cancel2 := context.WithCancel(context.Background())
-	sub2 := ps.Subscribe(ctx2)
+	sub2, err := ps.Subscribe(ctx2, "sub2")
+	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(ps.subs))
 

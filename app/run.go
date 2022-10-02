@@ -398,7 +398,10 @@ func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-cha
 	}
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub := a.Subscribe(ctx)
+	sub, err := a.Subscribe(ctx, "tail-"+otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
 
 	chunk, err := a.proxy.GetChunk(ctx, opts)
 	if err == otf.ErrResourceNotFound {

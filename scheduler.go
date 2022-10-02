@@ -45,8 +45,12 @@ func (s *Scheduler) Start(ctx context.Context) error {
 // creating/deleting workspace queues accordingly and forwarding events to
 // queues for scheduling.
 func (s *Scheduler) reinitialize(ctx context.Context) error {
+	// Unsubscribe Watch() whenever exiting this routine.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// subscribe to run events and workspace unlock events
-	sub, err := s.Watch(ctx, WatchOptions{})
+	sub, err := s.Watch(ctx, WatchOptions{Name: String("scheduler")})
 	if err != nil {
 		return err
 	}
@@ -65,19 +69,19 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		}
 		workspaceListOpts.PageNumber = *page.NextPage()
 	}
-	// retrieve existing incomplete runs, page by page
-	existing := []*Run{}
-	opts := RunListOptions{Statuses: IncompleteRun}
+	// retrieve runs incomplete runs, page by page
+	runs := []*Run{}
+	runListOpts := RunListOptions{Statuses: IncompleteRun}
 	for {
-		page, err := s.ListRuns(ctx, opts)
+		page, err := s.ListRuns(ctx, runListOpts)
 		if err != nil {
 			return fmt.Errorf("retrieving incomplete runs: %w", err)
 		}
-		existing = append(existing, page.Items...)
+		runs = append(runs, page.Items...)
 		if page.NextPage() == nil {
 			break
 		}
-		opts.PageNumber = *page.NextPage()
+		runListOpts.PageNumber = *page.NextPage()
 	}
 	// feed in existing objects and then events to the scheduler for processing
 	queue := make(chan Event)
@@ -90,10 +94,10 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 		}
 		// spool existing runs in reverse order; ListRuns returns runs newest first,
 		// whereas we want oldest first.
-		for i := len(existing) - 1; i >= 0; i-- {
+		for i := len(runs) - 1; i >= 0; i-- {
 			queue <- Event{
 				Type:    EventRunStatusUpdate,
-				Payload: existing[i],
+				Payload: runs[i],
 			}
 		}
 		for event := range sub {

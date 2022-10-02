@@ -29,6 +29,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/natefinch/atomic v1.0.1
 	github.com/pressly/goose/v3 v3.5.3
+	github.com/prometheus/client_golang v0.9.3
 	github.com/r3labs/sse/v2 v2.8.1
 	github.com/rs/zerolog v1.23.0
 	github.com/spf13/cobra v1.1.3
@@ -45,6 +46,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
@@ -62,11 +64,15 @@ require (
 	github.com/jackc/puddle v1.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
+	github.com/prometheus/common v0.4.0 // indirect
+	github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
