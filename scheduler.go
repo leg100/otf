@@ -57,7 +57,9 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 
 	// retrieve existing workspaces, page by page
 	workspaces := []*Workspace{}
-	workspaceListOpts := WorkspaceListOptions{}
+	workspaceListOpts := WorkspaceListOptions{
+		ListOptions: ListOptions{PageSize: MaxPageSize},
+	}
 	for {
 		page, err := s.ListWorkspaces(ctx, workspaceListOpts)
 		if err != nil {
@@ -71,7 +73,10 @@ func (s *Scheduler) reinitialize(ctx context.Context) error {
 	}
 	// retrieve runs incomplete runs, page by page
 	runs := []*Run{}
-	runListOpts := RunListOptions{Statuses: IncompleteRun}
+	runListOpts := RunListOptions{
+		Statuses:    IncompleteRun,
+		ListOptions: ListOptions{PageSize: MaxPageSize},
+	}
 	for {
 		page, err := s.ListRuns(ctx, runListOpts)
 		if err != nil {
