@@ -26,6 +26,7 @@ func NewScheduler(logger logr.Logger, app Application) *Scheduler {
 		queues:                make(map[string]eventHandler),
 		workspaceQueueFactory: queueMaker{},
 	}
+	s.Info("started")
 
 	return s
 }
@@ -37,7 +38,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	}
 	policy := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
 	return backoff.RetryNotify(op, policy, func(err error, next time.Duration) {
-		s.Error(err, "reinitializing scheduler")
+		s.Error(err, "restarting scheduler")
 	})
 }
 

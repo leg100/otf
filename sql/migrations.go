@@ -14,7 +14,7 @@ import (
 var migrations embed.FS
 
 func migrate(logger logr.Logger, connStr string) error {
-	goose.SetLogger(newGooseLogger(logger))
+	goose.SetLogger(&gooseLogger{logger})
 
 	goose.SetBaseFS(migrations)
 

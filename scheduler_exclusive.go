@@ -17,13 +17,10 @@ func ExclusiveScheduler(ctx context.Context, logger logr.Logger, app LockableApp
 	op := func() error {
 		for {
 			err := app.WithLock(ctx, SchedulerLockID, func(app Application) error {
-				logger.Info("running scheduler")
-				err := NewScheduler(logger, app).Start(ctx)
-				return err
+				return NewScheduler(logger, app).Start(ctx)
 			})
 			select {
 			case <-ctx.Done():
-				logger.Info("scheduler gracefully shutdown")
 				return nil
 			default:
 				return err

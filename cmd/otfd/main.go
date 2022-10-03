@@ -97,19 +97,14 @@ func run(ctx context.Context, args []string) error {
 
 	// Group several daemons and if any one of them errors then terminate them
 	// all
-	g, gctx := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
 	// Setup pub sub broker
 	pubsub, err := sql.NewPubSub(logger, db)
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
-	g.Go(func() error {
-		if err := pubsub.Start(gctx); err != nil {
-			return fmt.Errorf("pubsub daemon terminated prematurely: %w", err)
-		}
-		return nil
-	})
+	g.Go(func() error { return pubsub.Start(ctx) })
 
 	// Setup application services
 	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
@@ -128,9 +123,14 @@ func run(ctx context.Context, args []string) error {
 		app,
 		agent.NewAgentOptions{Mode: agent.InternalAgentMode})
 	if err != nil {
-		return fmt.Errorf("unable to start agent: %w", err)
+		return fmt.Errorf("initializing agent: %w", err)
 	}
-	g.Go(func() error { return agent.Start(gctx) })
+	g.Go(func() error {
+		if err := agent.Start(ctx); err != nil {
+			return fmt.Errorf("agent terminated: %w", err)
+		}
+		return nil
+	})
 
 	// construct HTTP/JSON-API server
 	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
@@ -143,8 +143,8 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	g.Go(func() error {
-		if err := server.Open(gctx); err != nil {
-			return fmt.Errorf("web server terminated prematurely: %w", err)
+		if err := server.Open(ctx); err != nil {
+			return fmt.Errorf("web server terminated: %w", err)
 		}
 		return nil
 	})
