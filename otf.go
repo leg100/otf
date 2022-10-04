@@ -242,3 +242,15 @@ func Absolute(r *http.Request, path string) string {
 
 	return u.String()
 }
+
+// UpdateHost updates the hostname in a URL
+func UpdateHost(u, host string) (string, error) {
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+
+	parsed.Host = host
+
+	return parsed.String(), nil
+}

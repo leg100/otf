@@ -2,99 +2,100 @@ package html
 
 import (
 	"context"
-	gourl "net/url"
+	"net/url"
 
-	"github.com/leg100/otf/github"
+	"github.com/google/go-github/v41/github"
+	"github.com/spf13/pflag"
 	"golang.org/x/oauth2"
-	githubOAuth2 "golang.org/x/oauth2/github"
+	oauth2github "golang.org/x/oauth2/github"
 )
 
-const (
-	githubCallbackPath       = "/github/callback"
-	DefaultGithubRedirectURL = "https://localhost" + githubCallbackPath
-)
+const DefaultGithubHostname = "github.com"
 
-var githubScopes = []string{"user:email", "read:org"}
-
-type GithubConfig struct {
-	ClientID     string
-	ClientSecret string
-	Hostname     string
+type githubProvider struct {
+	client *github.Client
 }
 
-// githubOAuthApp is a github oauth app, responsible for handling authentication
-// via oauth.
-type githubOAuthApp struct {
-	*oauth
+type GithubConfig struct {
+	*OAuthCredentials
 	hostname string
 }
 
-func newGithubOAuthApp(config GithubConfig) (*githubOAuthApp, error) {
-	endpoint, err := oauthEndpoint(config.Hostname)
+func NewGithubConfigFromFlags(flags *pflag.FlagSet) *GithubConfig {
+	cfg := &GithubConfig{
+		OAuthCredentials: &OAuthCredentials{prefix: "github"},
+	}
+
+	flags.StringVar(&cfg.hostname, "github-hostname", DefaultGithubHostname, "Github hostname")
+	cfg.OAuthCredentials.AddFlags(flags)
+
+	return cfg
+}
+
+func (cfg *GithubConfig) NewCloud() (Cloud, error) {
+	endpoint, err := updateEndpoint(oauth2github.Endpoint, cfg.hostname)
 	if err != nil {
 		return nil, err
 	}
-
-	oauthConfig := &oauth2.Config{
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		Endpoint:     endpoint,
-		Scopes:       githubScopes,
-	}
-
-	gh := githubOAuthApp{
-		hostname: config.Hostname,
-		oauth: &oauth{
-			Config: oauthConfig,
-		},
-	}
-
-	return &gh, nil
-}
-
-// Build a new client: using hostname, oauth config, and token.
-func (a *githubOAuthApp) newClient(ctx context.Context, token *oauth2.Token) (*github.Client, error) {
-	httpClient := a.Config.Client(ctx, token)
-
-	if isGithubEnterprise(a.hostname) {
-		return github.NewEnterpriseClient(a.hostname, httpClient)
-	}
-
-	return github.NewClient(httpClient), nil
-}
-
-func oauthEndpoint(hostname string) (oauth2.Endpoint, error) {
-	if !isGithubEnterprise(hostname) {
-		return githubOAuth2.Endpoint, nil
-	}
-
-	tokenEndpoint, err := replaceHost(githubOAuth2.Endpoint.TokenURL, hostname)
-	if err != nil {
-		return oauth2.Endpoint{}, err
-	}
-
-	authEndpoint, err := replaceHost(githubOAuth2.Endpoint.AuthURL, hostname)
-	if err != nil {
-		return oauth2.Endpoint{}, err
-	}
-
-	return oauth2.Endpoint{
-		TokenURL: tokenEndpoint,
-		AuthURL:  authEndpoint,
+	return &GithubCloud{
+		endpoint:     endpoint,
+		GithubConfig: cfg,
 	}, nil
 }
 
-func isGithubEnterprise(hostname string) bool {
-	return hostname != "github.com"
+type GithubCloud struct {
+	*GithubConfig
+	endpoint oauth2.Endpoint
 }
 
-func replaceHost(url string, newHost string) (string, error) {
-	u, err := gourl.Parse(url)
+func (g *GithubCloud) CloudName() string { return "github" }
+
+func (g *GithubCloud) Scopes() []string {
+	return []string{"user:email", "read:org"}
+}
+
+func (g *GithubCloud) Endpoint() oauth2.Endpoint { return g.endpoint }
+
+func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
+	var err error
+	var client *github.Client
+
+	httpClient := opts.Config.Client(ctx, opts.Token)
+
+	if g.hostname != DefaultGithubHostname {
+		client, err = github.NewEnterpriseClient(enterpriseBaseURL(g.hostname), enterpriseUploadURL(g.hostname), httpClient)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		client = github.NewClient(httpClient)
+	}
+	return &githubProvider{client: client}, nil
+}
+
+func (g *githubProvider) GetUser(ctx context.Context) (string, error) {
+	user, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
 		return "", err
 	}
+	return user.GetName(), nil
+}
 
-	u.Host = newHost
+func (g *githubProvider) ListOrganizations(ctx context.Context) ([]string, error) {
+	orgs, _, err := g.client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	names := []string{}
+	for _, o := range orgs {
+		names = append(names, o.GetName())
+	}
+	return names, nil
+}
 
-	return u.String(), nil
+// Return a github enterprise URL from a hostname
+func enterpriseBaseURL(hostname string) string   { return enterpriseURL(hostname, "/api/v3") }
+func enterpriseUploadURL(hostname string) string { return enterpriseURL(hostname, "/api/uploads") }
+func enterpriseURL(hostname, path string) string {
+	return (&url.URL{Scheme: "https", Host: hostname, Path: path}).String()
 }
