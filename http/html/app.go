@@ -1,8 +1,6 @@
 package html
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -22,7 +20,7 @@ type Config struct {
 }
 
 // NewConfigFromFlags binds flags to the config. The flagset must be parsed
-// before the config is populated.
+// in order for the config to be populated.
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 
@@ -77,20 +75,12 @@ func AddRoutes(logger logr.Logger, config *Config, services otf.Application, rou
 		Server:       sseServer,
 	}
 
-	// Add authenticators that the user has enabled
-	for _, cfg := range config.cloudConfigs {
-		err := cfg.Valid()
-		if errors.Is(err, ErrOAuthCredentialsUnspecified) {
-			continue
-		} else if err != nil {
-			return fmt.Errorf("invalid cloud config: %w", err)
-		}
-		cloud, err := cfg.NewCloud()
-		if err != nil {
-			return err
-		}
-		app.authenticators = append(app.authenticators, NewAuthenticator(services, cloud))
+	// Add authenticators for clouds the user has configured
+	authenticators, err := NewAuthenticatorsFromConfig(services, config.cloudConfigs...)
+	if err != nil {
+		return err
 	}
+	app.authenticators = authenticators
 
 	app.addRoutes(router)
 	return nil

@@ -60,7 +60,7 @@ func run(ctx context.Context, args []string) error {
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
-	htmlcfg := html.ConfigFromFlags(cmd.Flags())
+	htmlCfg := html.NewConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -138,7 +138,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
 	// add Web App routes
-	if err := html.AddRoutes(logger, htmlcfg, app, server.Router); err != nil {
+	if err := html.AddRoutes(logger, htmlCfg, app, server.Router); err != nil {
 		return err
 	}
 

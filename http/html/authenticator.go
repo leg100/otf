@@ -1,6 +1,7 @@
 package html
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -24,12 +25,25 @@ type Authenticator struct {
 	otf.Application
 }
 
-func NewAuthenticator(app otf.Application, cloud Cloud) *Authenticator {
-	a := &Authenticator{
-		Application: app,
-		Cloud:       cloud,
+// NewAuthenticatorsFromConfig constructs authenticators from the given cloud
+// configurations. If config is unspecified then its corresponding cloud
+// authenticator is skipped.
+func NewAuthenticatorsFromConfig(app otf.Application, configs ...CloudConfig) ([]*Authenticator, error) {
+	var authenticators []*Authenticator
+	for _, cfg := range configs {
+		err := cfg.Valid()
+		if errors.Is(err, ErrOAuthCredentialsUnspecified) {
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("invalid cloud config: %w", err)
+		}
+		cloud, err := cfg.NewCloud()
+		if err != nil {
+			return nil, err
+		}
+		authenticators = append(authenticators, &Authenticator{cloud, app})
 	}
-	return a
+	return authenticators, nil
 }
 
 func (a *Authenticator) requestPath() string {
@@ -129,8 +143,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = synchroniseOrganizations(ctx, a, a, user, orgs...)
-	if err != nil {
+	if err = otf.SynchroniseOrganizations(ctx, a, user, orgs...); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

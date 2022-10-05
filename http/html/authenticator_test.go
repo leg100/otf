@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,11 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
-	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
-	authenticator := NewAuthenticator(&fakeAuthenticatorApp{}, &fakeCloud{})
+	authenticator := &Authenticator{&fakeCloud{endpoint: "https://gitlab.com"}, &fakeAuthenticatorApp{}}
 
 	r := httptest.NewRequest("GET", "/auth", nil)
 	w := httptest.NewRecorder()
@@ -33,9 +33,19 @@ func TestAuthenticator_RequestHandler(t *testing.T) {
 }
 
 func TestAuthenticator_ResponseHandler(t *testing.T) {
-	authenticator := NewAuthenticator(&fakeAuthenticatorApp{}, &fakeCloud{})
+	// IdP stub
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
+		require.NoError(t, err)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(out)
+	}))
+	defer srv.Close()
 
-	r := httptest.NewRequest("GET", "/auth", nil)
+	authenticator := &Authenticator{&fakeCloud{endpoint: srv.URL}, &fakeAuthenticatorApp{}}
+
+	r := httptest.NewRequest("GET", "/auth?state=state", nil)
+	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
 	w := httptest.NewRecorder()
 	authenticator.responseHandler(w, r)
 
@@ -43,24 +53,60 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 
 	loc, err := w.Result().Location()
 	require.NoError(t, err)
-	assert.Equal(t, "/login", loc.Path)
+	assert.Equal(t, "/profile", loc.Path)
 
-	assert.Equal(t, 1, len(w.Result().Cookies()))
+	if assert.Equal(t, 1, len(w.Result().Cookies())) {
+		session := w.Result().Cookies()[0]
+		assert.Equal(t, sessionCookie, session.Name)
+	}
+}
+
+type fakeCloud struct {
+	endpoint string
+	*OAuthCredentials
+}
+
+func (f *fakeCloud) CloudName() string    { return "fake" }
+func (f *fakeCloud) Scopes() []string     { return []string{} }
+func (f *fakeCloud) ClientID() string     { return "abc123" }
+func (f *fakeCloud) ClientSecret() string { return "xyz789" }
+func (f *fakeCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
+	return &fakeDirectoryClient{}, nil
+}
+
+func (f *fakeCloud) Endpoint() oauth2.Endpoint {
+	return oauth2.Endpoint{
+		TokenURL: f.endpoint,
+		AuthURL:  f.endpoint,
+	}
+}
+
+type fakeDirectoryClient struct{}
+
+func (f *fakeDirectoryClient) GetUser(context.Context) (string, error) {
+	return "fake-user", nil
+}
+
+func (f *fakeDirectoryClient) ListOrganizations(context.Context) ([]string, error) {
+	return []string{"fake-org"}, nil
 }
 
 type fakeAuthenticatorApp struct {
 	otf.Application
 }
 
-type fakeCloud struct {
-	*OAuthCredentials
+func (f *fakeAuthenticatorApp) EnsureCreatedUser(context.Context, string) (*otf.User, error) {
+	return otf.NewUser("fake-user"), nil
 }
 
-func (f *fakeCloud) CloudName() string         { return "fake" }
-func (f *fakeCloud) Endpoint() oauth2.Endpoint { return oauth2gitlab.Endpoint }
-func (f *fakeCloud) Scopes() []string          { return []string{} }
-func (f *fakeCloud) ClientID() string          { return "abc123" }
-func (f *fakeCloud) ClientSecret() string      { return "xyz789" }
-func (f *fakeCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
-	return nil, nil
+func (f *fakeAuthenticatorApp) CreateSession(context.Context, *otf.User, *otf.SessionData) (*otf.Session, error) {
+	return &otf.Session{}, nil
+}
+
+func (f *fakeAuthenticatorApp) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
+	return otf.NewOrganization(opts)
+}
+
+func (f *fakeAuthenticatorApp) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
+	return user, nil
 }

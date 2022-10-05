@@ -17,10 +17,6 @@ type OAuthCredentials struct {
 	clientSecret string
 }
 
-func NewOAuthCredentials(prefix string) *OAuthCredentials {
-	return &OAuthCredentials{prefix: prefix}
-}
-
 func (a *OAuthCredentials) Valid() error {
 	if a.clientID != "" && a.clientSecret != "" {
 		return nil
@@ -31,7 +27,6 @@ func (a *OAuthCredentials) Valid() error {
 	return ErrOAuthCredentialsIncomplete
 }
 
-// TODO: rename to something like ConfigureViaFlags
 func (a *OAuthCredentials) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&a.clientID, a.clientIDFlag(), "", a.prefix+" Client ID")
 	flags.StringVar(&a.clientSecret, a.clientSecretFlag(), "", a.prefix+" Client Secret")
