@@ -2,9 +2,10 @@ package html
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/spf13/pflag"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var (
@@ -29,8 +30,8 @@ func (a *OAuthCredentials) Valid() error {
 }
 
 func (a *OAuthCredentials) AddFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&a.clientID, a.clientIDFlag(), "", strings.Title(a.prefix)+" client ID")
-	flags.StringVar(&a.clientSecret, a.clientSecretFlag(), "", strings.Title(a.prefix)+" client secret")
+	flags.StringVar(&a.clientID, a.clientIDFlag(), "", a.prefixTitle()+" client ID")
+	flags.StringVar(&a.clientSecret, a.clientSecretFlag(), "", a.prefixTitle()+" client secret")
 }
 
 func (a *OAuthCredentials) ClientID() string     { return a.clientID }
@@ -42,4 +43,8 @@ func (a *OAuthCredentials) clientIDFlag() string {
 
 func (a *OAuthCredentials) clientSecretFlag() string {
 	return a.prefix + "-client-secret"
+}
+
+func (a *OAuthCredentials) prefixTitle() string {
+	return cases.Title(language.English).String(a.prefix)
 }
