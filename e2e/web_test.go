@@ -2,24 +2,32 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func TestWeb(t *testing.T) {
-	username := lookupEnv(t, "OTF_E2E_GITHUB_USERNAME")
-	password := lookupEnv(t, "OTF_E2E_GITHUB_PASSWORD")
 	headless, ok := os.LookupEnv("OTF_E2E_HEADLESS")
 	if !ok {
 		headless = "false"
 	}
+
+	githubHostname := githubStub(t)
+	t.Setenv("OTF_GITHUB_HOSTNAME", githubHostname)
+
+	startDaemon(t, 8002)
 
 	// create context
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(),
@@ -37,27 +45,16 @@ func TestWeb(t *testing.T) {
 
 	t.Run("login", func(t *testing.T) {
 		var gotLoginPrompt string
-		var gotGithubLoginLocation string
 		var gotOTFOrganizationsLocation string
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate("https://localhost:8080"),
+			chromedp.Navigate("https://localhost:8002"),
+
 			screenshot("otf_login"),
 
 			chromedp.Text(".center", &gotLoginPrompt, chromedp.NodeVisible),
 			chromedp.Click(".center > a", chromedp.NodeVisible),
-			screenshot("github_login"),
 
-			chromedp.Location(&gotGithubLoginLocation),
-			chromedp.WaitVisible(`#login_field`, chromedp.ByID),
-			chromedp.Focus(`#login_field`, chromedp.ByID),
-			input.InsertText(strings.TrimSpace(username)),
-			chromedp.WaitVisible(`#password`, chromedp.ByID),
-			chromedp.Focus(`#password`, chromedp.ByID),
-			input.InsertText(strings.TrimSpace(password)),
-			screenshot("github_login_form_completed"),
-
-			chromedp.Submit(`#password`, chromedp.ByID),
 			screenshot("otf_login_successful"),
 
 			chromedp.Location(&gotOTFOrganizationsLocation),
@@ -65,7 +62,6 @@ func TestWeb(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
-		assert.Regexp(t, `^https://github.com/login`, gotGithubLoginLocation)
 		assert.Regexp(t, `^https://localhost:8080/organizations`, gotOTFOrganizationsLocation)
 	})
 }
@@ -94,4 +90,35 @@ func screenshot(name string) chromedp.ActionFunc {
 		}
 		return nil
 	}
+}
+
+func githubStub(t *testing.T) string {
+	authCode := otf.GenerateRandomString(10)
+
+	http.HandleFunc("/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
+		q := url.Values{}
+		q.Add("state", r.URL.Query().Get("state"))
+		q.Add("code", authCode)
+
+		// TODO: check if can use referrer header?
+		callback := url.URL{
+			Scheme:   "https",
+			Host:     "localhost:8002",
+			RawQuery: q.Encode(),
+		}
+
+		http.Redirect(w, r, callback.String(), 302)
+	})
+	http.HandleFunc("/oauth/token", func(w http.ResponseWriter, r *http.Request) {
+		token := oauth2.Token{AccessToken: "stub-token"}
+		out, err := json.Marshal(&token)
+		require.NoError(t, err)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(out)
+	})
+	srv := httptest.NewTLSServer(nil)
+	defer srv.Close()
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+	return u.Host
 }
