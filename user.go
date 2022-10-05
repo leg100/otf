@@ -227,3 +227,41 @@ func inOrganizationList(orgID string, orgs []*Organization) bool {
 	}
 	return false
 }
+
+// SynchroniseOrganizations ensures an otf user's organization memberships match
+// their identity provider account's organization memberships
+func SynchroniseOrganizations(
+	ctx context.Context,
+	app Application,
+	user *User,
+	orgNames ...string,
+) error {
+	var orgs []*Organization
+
+	// Sync orgs
+	for _, name := range orgNames {
+		org, err := app.EnsureCreatedOrganization(ctx, OrganizationCreateOptions{
+			Name: String(name),
+		})
+		if err != nil {
+			return err
+		}
+		orgs = append(orgs, org)
+	}
+	// A user also gets their own personal organization that matches their
+	// username
+	org, err := app.EnsureCreatedOrganization(ctx, OrganizationCreateOptions{
+		Name: String(user.Username()),
+	})
+	if err != nil {
+		return err
+	}
+	orgs = append(orgs, org)
+
+	// Sync memberships
+	if _, err = app.SyncOrganizationMemberships(ctx, user, orgs); err != nil {
+		return err
+	}
+
+	return nil
+}

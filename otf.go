@@ -139,11 +139,6 @@ func (r ResourceReport) HasChanges() bool {
 	return false
 }
 
-// validString checks if the given input is present and non-empty.
-func validString(v *string) bool {
-	return v != nil && *v != ""
-}
-
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {
@@ -241,4 +236,16 @@ func Absolute(r *http.Request, path string) string {
 	}
 
 	return u.String()
+}
+
+// UpdateHost updates the hostname in a URL
+func UpdateHost(u, host string) (string, error) {
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+
+	parsed.Host = host
+
+	return parsed.String(), nil
 }
