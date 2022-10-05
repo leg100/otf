@@ -239,9 +239,9 @@ func SynchroniseOrganizations(
 	var orgs []*Organization
 
 	// Sync orgs
-	for _, org := range orgNames {
+	for _, name := range orgNames {
 		org, err := app.EnsureCreatedOrganization(ctx, OrganizationCreateOptions{
-			Name: String(org),
+			Name: String(name),
 		})
 		if err != nil {
 			return err

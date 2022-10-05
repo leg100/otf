@@ -100,7 +100,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	// routes that don't require authentication.
 	r.GET("/login", app.loginHandler)
 	for _, auth := range app.authenticators {
-		r.GET(auth.requestPath(), auth.requestHandler)
+		r.GET(auth.RequestPath(), auth.requestHandler)
 		r.GET(auth.callbackPath(), auth.responseHandler)
 	}
 

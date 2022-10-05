@@ -78,7 +78,7 @@ func (g *githubProvider) GetUser(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return user.GetName(), nil
+	return user.GetLogin(), nil
 }
 
 func (g *githubProvider) ListOrganizations(ctx context.Context) ([]string, error) {
@@ -88,7 +88,7 @@ func (g *githubProvider) ListOrganizations(ctx context.Context) ([]string, error
 	}
 	names := []string{}
 	for _, o := range orgs {
-		names = append(names, o.GetName())
+		names = append(names, o.GetLogin())
 	}
 	return names, nil
 }

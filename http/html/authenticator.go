@@ -46,7 +46,7 @@ func NewAuthenticatorsFromConfig(app otf.Application, configs ...CloudConfig) ([
 	return authenticators, nil
 }
 
-func (a *Authenticator) requestPath() string {
+func (a *Authenticator) RequestPath() string {
 	return path.Join(authPrefix, a.CloudName(), "login")
 }
 

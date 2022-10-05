@@ -8,7 +8,7 @@ import (
 )
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-	app.render("login.tmpl", w, r, nil)
+	app.render("login.tmpl", w, r, app.authenticators)
 }
 
 func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {

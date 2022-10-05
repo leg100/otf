@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf"
 )
@@ -14,7 +15,7 @@ func (a *Application) CreateOrganization(ctx context.Context, opts otf.Organizat
 
 	org, err := otf.NewOrganization(opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating organization: %w", err)
 	}
 
 	if err := a.db.CreateOrganization(ctx, org); err != nil {
