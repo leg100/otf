@@ -49,6 +49,14 @@ jobs:
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
           OTF_E2E_GITHUB_USERNAME: ${{ secrets.OTF_E2E_GITHUB_USERNAME }}
           OTF_E2E_GITHUB_PASSWORD: ${{ secrets.OTF_E2E_GITHUB_PASSWORD }}
+          OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
+      -
+        name: Archive screenshots of e2e tests
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-screenshots
+          path: e2e/screenshots/*.png
       -
         name: login to docker hub
         run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u leg100 --password-stdin

@@ -94,10 +94,13 @@ func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 //
 // TODO: pass in context
 func New(logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
+	logger = logger.WithValues("component", "database")
+
 	conn, err := pgxpool.Connect(context.Background(), path)
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("successfully connected", "path", path)
 
 	if err := migrate(logger, path); err != nil {
 		return nil, err

@@ -9,13 +9,13 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/handlers"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/r3labs/sse/v2"
 
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
-	httputil "github.com/leg100/otf/http/util"
+	"github.com/leg100/signer"
 )
 
 const (
@@ -30,8 +30,6 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	ApplicationConfig html.Config
-
 	// Listening Address in the form <ip>:<port>
 	Addr string
 
@@ -42,6 +40,20 @@ type ServerConfig struct {
 
 	// site authentication token
 	SiteToken string
+	// Secret for signing
+	Secret string
+}
+
+func (cfg *ServerConfig) Validate() error {
+	if cfg.SSL {
+		if cfg.CertFile == "" || cfg.KeyFile == "" {
+			return fmt.Errorf("must provide both --cert-file and --key-file")
+		}
+	}
+	if cfg.Secret == "" {
+		return fmt.Errorf("--secret cannot be empty")
+	}
+	return nil
 }
 
 // Server provides an HTTP/S server
@@ -60,6 +72,9 @@ type Server struct {
 
 	// server-side-events server
 	eventsServer *sse.Server
+	// the http router, exported so that other pkgs can add routes
+	*Router
+	*signer.Signer
 }
 
 // NewServer is the constructor for Server
@@ -70,19 +85,15 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
+		Signer:       signer.New([]byte(cfg.Secret), signer.SkipQuery()),
 	}
 
-	// Validate SSL params
-	if cfg.SSL {
-		if cfg.CertFile == "" || cfg.KeyFile == "" {
-			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
-		}
-
-		// Tell http utilities that we're using SSL.
-		httputil.SSL = true
+	if err := cfg.Validate(); err != nil {
+		return nil, err
 	}
 
-	r := html.NewRouter()
+	r := NewRouter()
+	s.Router = r
 
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
@@ -92,34 +103,26 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		r.Use(s.loggingMiddleware)
 	}
 
-	// Add web app routes.
-	if err := html.AddRoutes(logger, cfg.ApplicationConfig, app, r); err != nil {
-		return nil, err
-	}
-
 	r.GET("/.well-known/terraform.json", s.WellKnown)
-	r.GET("/metrics/cache.json", s.CacheStats)
+	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/healthz", GetHealthz)
 
-	r.PathPrefix("/api/v2").Sub(func(api *html.Router) {
-		r.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
+	// These are signed URLs that expire after a given time. They don't use
+	// bearer authentication.
+	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
+		signed.Use((&signatureVerifier{s.Signer}).handler)
+
+		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
+		signed.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
+	})
+
+	r.PathPrefix("/api/v2").Sub(func(api *Router) {
+		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
 
-		// this is the URL supplied to the TF CLI, but the CLI does not send a
-		// bearer token in the request, therefore it is currently *unauthenticated*
-		//
-		// TODO: migrate to signed URL
-		api.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
-
-		// this is the URL supplied to the TF CLI, but the CLI does not send a
-		// bearer token in the request, therefore it is currently *unauthenticated*
-		//
-		// TODO: migrate to signed URL
-		api.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
-
 		// Authenticated endpoints
-		api.Sub(func(r *html.Router) {
+		api.Sub(func(r *Router) {
 			// Ensure request has valid API token
 			r.Use((&authTokenMiddleware{
 				UserService:       app,

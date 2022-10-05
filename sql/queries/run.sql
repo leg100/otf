@@ -58,6 +58,9 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -131,6 +134,9 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -183,6 +189,9 @@ SELECT
     workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
+    CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
+         ELSE false
+    END AS latest,
     organizations.name AS organization_name,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps

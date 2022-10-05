@@ -130,8 +130,6 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Run:
-		s.V(2).Info("received run event", "run", obj.ID(), "type", ev.Type, "status", obj.Status())
-
 		switch s.Mode {
 		case InternalAgentMode:
 			// internal agent only processes runs in remote execution mode

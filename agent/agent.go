@@ -75,11 +75,17 @@ func (a *Agent) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return a.Spooler.Start(ctx)
+		if err := a.Spooler.Start(ctx); err != nil {
+			return fmt.Errorf("spooler terminated: %w", err)
+		}
+		return nil
 	})
 
 	g.Go(func() error {
-		return a.Supervisor.Start(ctx)
+		if err := a.Supervisor.Start(ctx); err != nil {
+			return fmt.Errorf("supervisor terminated: %w", err)
+		}
+		return nil
 	})
 
 	return g.Wait()

@@ -21,10 +21,10 @@ func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opt
 	}
 
 	if err = a.db.CreateRun(ctx, run); err != nil {
-		a.Error(err, "creating run", "id", run.ID())
+		a.Error(err, "creating run", "id", run.ID(), "workspace_id", run.WorkspaceID())
 		return nil, err
 	}
-	a.V(1).Info("created run", "id", run.ID())
+	a.V(1).Info("created run", "id", run.ID(), "workspace_id", run.WorkspaceID())
 
 	a.Publish(otf.Event{Type: otf.EventRunCreated, Payload: run})
 
@@ -160,6 +160,10 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 		return nil, otf.ErrAccessNotPermitted
 	}
 
+	// Now follows several updates to the DB within a transaction:
+	// 1) set latest run on workspace (if non-speculative)
+	// 2) lock workspace (if non-speculative)
+	// 3) update run status
 	var run *otf.Run
 	err := a.Tx(ctx, func(tx *Application) (err error) {
 		run, err = tx.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
@@ -371,7 +375,7 @@ func (a *Application) GetChunk(ctx context.Context, opts otf.GetChunkOptions) (o
 
 // PutChunk writes a chunk of logs for a phase.
 func (a *Application) PutChunk(ctx context.Context, chunk otf.Chunk) error {
-	persisted, err := a.proxy.PutChunk(ctx, chunk)
+	persisted, err := a.db.PutChunk(ctx, chunk)
 	if err != nil {
 		a.Error(err, "writing logs", "id", chunk.RunID, "phase", chunk.Phase, "offset", chunk.Offset)
 		return err
@@ -394,7 +398,10 @@ func (a *Application) Tail(ctx context.Context, opts otf.GetChunkOptions) (<-cha
 	}
 	// Subscribe first and only then retrieve from DB, guaranteeing that we
 	// won't miss any updates
-	sub := a.Subscribe(ctx)
+	sub, err := a.Subscribe(ctx, "tail-"+otf.GenerateRandomString(6))
+	if err != nil {
+		return nil, err
+	}
 
 	chunk, err := a.proxy.GetChunk(ctx, opts)
 	if err == otf.ErrResourceNotFound {

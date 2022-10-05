@@ -27,7 +27,7 @@ func (s *Server) CreateConfigurationVersion(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, cv, withCode(http.StatusCreated))
+	writeResponse(w, r, &ConfigurationVersion{cv, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +37,7 @@ func (s *Server) GetConfigurationVersion(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, cv)
+	writeResponse(w, r, &ConfigurationVersion{cv, s})
 }
 
 func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (s *Server) ListConfigurationVersions(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, cvl)
+	writeResponse(w, r, &ConfigurationVersionList{cvl, s})
 }
 
 func (s *Server) UploadConfigurationVersion() http.HandlerFunc {
@@ -79,4 +79,49 @@ func (s *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Req
 		return
 	}
 	w.Write(resp)
+}
+
+type ConfigurationVersion struct {
+	*otf.ConfigurationVersion
+	*Server
+}
+
+// ToJSONAPI assembles a JSONAPI DTO.
+func (cv *ConfigurationVersion) ToJSONAPI() any {
+	obj := &dto.ConfigurationVersion{
+		ID:               cv.ID(),
+		AutoQueueRuns:    cv.AutoQueueRuns(),
+		Speculative:      cv.Speculative(),
+		Source:           string(cv.Source()),
+		Status:           string(cv.Status()),
+		StatusTimestamps: &dto.CVStatusTimestamps{},
+		UploadURL:        cv.signedUploadURL(cv.ID()),
+	}
+	for _, ts := range cv.StatusTimestamps() {
+		switch ts.Status {
+		case otf.ConfigurationPending:
+			obj.StatusTimestamps.QueuedAt = &ts.Timestamp
+		case otf.ConfigurationErrored:
+			obj.StatusTimestamps.FinishedAt = &ts.Timestamp
+		case otf.ConfigurationUploaded:
+			obj.StatusTimestamps.StartedAt = &ts.Timestamp
+		}
+	}
+	return obj
+}
+
+type ConfigurationVersionList struct {
+	*otf.ConfigurationVersionList
+	*Server
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (l *ConfigurationVersionList) ToJSONAPI() any {
+	obj := &dto.ConfigurationVersionList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&ConfigurationVersion{item, l.Server}).ToJSONAPI().(*dto.ConfigurationVersion))
+	}
+	return obj
 }

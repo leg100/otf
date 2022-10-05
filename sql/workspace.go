@@ -110,8 +110,8 @@ func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts ot
 	return ws, err
 }
 
-// SetLatestRun sets the ID of the latest run for the specified workspace.
-func (db *DB) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
+// SetCurrentRun sets the ID of the current run for the specified workspace.
+func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) error {
 	_, err := db.UpdateWorkspaceLatestRun(ctx, String(runID), String(workspaceID))
 	if err != nil {
 		return databaseError(err)

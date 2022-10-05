@@ -46,7 +46,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, run, withCode(http.StatusCreated))
+	writeResponse(w, r, &Run{run, r, s}, withCode(http.StatusCreated))
 }
 
 func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func (s *Server) startPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, run)
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (s *Server) finishPhase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, run)
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +94,7 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, run)
+	writeResponse(w, r, &Run{run, r, s})
 }
 
 func (s *Server) ListRuns(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 			}
 		}
 	}
-	writeResponse(w, r, rl)
+	writeResponse(w, r, &RunList{rl, r, s})
 }
 
 func (s *Server) ApplyRun(w http.ResponseWriter, r *http.Request) {
@@ -272,4 +272,109 @@ func (s *Server) uploadLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+type Run struct {
+	*otf.Run
+	req *http.Request
+	*Server
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (r *Run) ToJSONAPI() any {
+	obj := &dto.Run{
+		ID: r.ID(),
+		Actions: &dto.RunActions{
+			IsCancelable:      r.Cancelable(),
+			IsConfirmable:     r.Confirmable(),
+			IsForceCancelable: r.ForceCancelAvailableAt() != nil,
+			IsDiscardable:     r.Discardable(),
+		},
+		CreatedAt:              r.CreatedAt(),
+		ExecutionMode:          string(r.ExecutionMode()),
+		ForceCancelAvailableAt: r.ForceCancelAvailableAt(),
+		HasChanges:             r.Plan().HasChanges(),
+		IsDestroy:              r.IsDestroy(),
+		Message:                r.Message(),
+		Permissions: &dto.RunPermissions{
+			CanForceCancel:  true,
+			CanApply:        true,
+			CanCancel:       true,
+			CanDiscard:      true,
+			CanForceExecute: true,
+		},
+		PositionInQueue:  0,
+		Refresh:          r.Refresh(),
+		RefreshOnly:      r.RefreshOnly(),
+		ReplaceAddrs:     r.ReplaceAddrs(),
+		Source:           otf.DefaultConfigurationSource,
+		Status:           string(r.Status()),
+		StatusTimestamps: &dto.RunStatusTimestamps{},
+		TargetAddrs:      r.TargetAddrs(),
+		// Relations
+		Apply: (&apply{r.Apply(), r.req, r.Server}).ToJSONAPI().(*dto.Apply),
+		Plan:  (&plan{r.Plan(), r.req, r.Server}).ToJSONAPI().(*dto.Plan),
+		// Hardcoded anonymous user until authorization is introduced
+		CreatedBy: &dto.User{
+			ID:       otf.DefaultUserID,
+			Username: otf.DefaultUsername,
+		},
+		ConfigurationVersion: &dto.ConfigurationVersion{
+			ID: r.ConfigurationVersionID(),
+		},
+	}
+	if r.Workspace() != nil {
+		obj.Workspace = (&Workspace{r.Workspace()}).ToJSONAPI().(*dto.Workspace)
+	} else {
+		obj.Workspace = &dto.Workspace{
+			ID: r.WorkspaceID(),
+		}
+	}
+
+	for _, rst := range r.StatusTimestamps() {
+		switch rst.Status {
+		case otf.RunPending:
+			obj.StatusTimestamps.PlanQueueableAt = &rst.Timestamp
+		case otf.RunPlanQueued:
+			obj.StatusTimestamps.PlanQueuedAt = &rst.Timestamp
+		case otf.RunPlanning:
+			obj.StatusTimestamps.PlanningAt = &rst.Timestamp
+		case otf.RunPlanned:
+			obj.StatusTimestamps.PlannedAt = &rst.Timestamp
+		case otf.RunPlannedAndFinished:
+			obj.StatusTimestamps.PlannedAndFinishedAt = &rst.Timestamp
+		case otf.RunApplyQueued:
+			obj.StatusTimestamps.ApplyQueuedAt = &rst.Timestamp
+		case otf.RunApplying:
+			obj.StatusTimestamps.ApplyingAt = &rst.Timestamp
+		case otf.RunApplied:
+			obj.StatusTimestamps.AppliedAt = &rst.Timestamp
+		case otf.RunErrored:
+			obj.StatusTimestamps.ErroredAt = &rst.Timestamp
+		case otf.RunCanceled:
+			obj.StatusTimestamps.CanceledAt = &rst.Timestamp
+		case otf.RunForceCanceled:
+			obj.StatusTimestamps.ForceCanceledAt = &rst.Timestamp
+		case otf.RunDiscarded:
+			obj.StatusTimestamps.DiscardedAt = &rst.Timestamp
+		}
+	}
+	return obj
+}
+
+type RunList struct {
+	*otf.RunList
+	req *http.Request
+	*Server
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *RunList) ToJSONAPI() any {
+	obj := &dto.RunList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&Run{item, l.req, l.Server}).ToJSONAPI().(*dto.Run))
+	}
+	return obj
 }

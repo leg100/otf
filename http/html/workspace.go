@@ -230,17 +230,8 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				// specified then events for all runs that are not speculative
 				// are relayed (e.g. for web page that shows list of runs).
 				if r.URL.Query().Get("latest") != "" {
-					latest, exists := app.GetLatestRun(r.Context(), run.WorkspaceID())
-					if !exists {
-						// There is no latest run for the workspace matching the
-						// workspace of the run in the event. This means all
-						// runs thus far have been speculative (which do not count) and
-						// that the event is for a speculative run too. In which
-						// case skip this event.
-						continue
-					}
-					if latest != run.ID() {
-						// skip: event is for a run which is not the latest
+					if !run.Latest() {
+						// skip: run is not the latest run for a workspace
 						continue
 					}
 				} else if runID := r.URL.Query().Get("run-id"); runID != "" {

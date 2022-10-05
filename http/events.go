@@ -6,7 +6,6 @@ import (
 
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/dto"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -42,15 +41,14 @@ func (s *Server) watch(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				marshalable, ok := event.Payload.(dto.Assembler)
+				// Watch currently only streams run events
+				run, ok := event.Payload.(*otf.Run)
 				if !ok {
-					// skip events that cannot be marshaled into a JSON-API
-					// object
 					continue
 				}
 
 				buf := bytes.Buffer{}
-				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, marshalable.ToJSONAPI(r)); err != nil {
+				if err = jsonapi.MarshalPayloadWithoutIncluded(&buf, (&Run{run, r, s}).ToJSONAPI()); err != nil {
 					s.Error(err, "marshalling event", "event", event.Type)
 					continue
 				}

@@ -167,11 +167,11 @@ type fakePubSubTailService struct {
 	otf.PubSubService
 }
 
-func (f *fakePubSubTailService) Subscribe(context.Context) <-chan otf.Event {
+func (f *fakePubSubTailService) Subscribe(context.Context, string) (<-chan otf.Event, error) {
 	ch := make(chan otf.Event)
 	go func() {
 		ch <- f.event
 		close(ch)
 	}()
-	return ch
+	return ch, nil
 }

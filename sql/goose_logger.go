@@ -8,33 +8,29 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-var _ goose.Logger = (*GooseLogger)(nil)
+var _ goose.Logger = (*gooseLogger)(nil)
 
-type GooseLogger struct {
+type gooseLogger struct {
 	logr.Logger
 }
 
-func newGooseLogger(logger logr.Logger) *GooseLogger {
-	return &GooseLogger{Logger: logger}
+func (l *gooseLogger) Fatal(v ...interface{}) {
+	l.Logger.Error(nil, fmt.Sprint(v...))
 }
 
-func (l *GooseLogger) Fatal(v ...interface{}) {
-	l.Logger.Error(nil, fmt.Sprint(v...), "component", "database")
+func (l *gooseLogger) Fatalf(msg string, v ...interface{}) {
+	l.Logger.Error(nil, fmt.Sprintf(msg, v...))
 }
 
-func (l *GooseLogger) Fatalf(msg string, v ...interface{}) {
-	l.Logger.Error(nil, fmt.Sprintf(msg, v...), "component", "database")
+func (l *gooseLogger) Print(v ...interface{}) {
+	l.Logger.Info(fmt.Sprint(v...))
 }
 
-func (l *GooseLogger) Print(v ...interface{}) {
-	l.Logger.Info(fmt.Sprint(v...), "component", "database")
+func (l *gooseLogger) Println(v ...interface{}) {
+	l.Logger.Info(fmt.Sprint(v...))
 }
 
-func (l *GooseLogger) Println(v ...interface{}) {
-	l.Logger.Info(fmt.Sprint(v...), "component", "database")
-}
-
-func (l *GooseLogger) Printf(msg string, v ...interface{}) {
+func (l *gooseLogger) Printf(msg string, v ...interface{}) {
 	trimmed := strings.Trim(msg, "\n")
-	l.Logger.Info(fmt.Sprintf(trimmed, v...), "component", "database")
+	l.Logger.Info(fmt.Sprintf(trimmed, v...))
 }

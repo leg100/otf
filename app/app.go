@@ -18,11 +18,9 @@ var _ otf.Application = (*Application)(nil)
 // Application encompasses services for interacting between components of the
 // otf server
 type Application struct {
-	db     otf.DB
-	cache  otf.Cache
-	proxy  otf.ChunkStore
-	queues *inmem.WorkspaceQueueManager
-	latest *inmem.LatestRunManager
+	db    otf.DB
+	cache otf.Cache
+	proxy otf.ChunkStore
 
 	*otf.RunFactory
 	*otf.WorkspaceFactory
@@ -55,30 +53,16 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 	}()
 	app.Mapper = mapper
 
-	// Setup latest run manager
-	latest, err := inmem.NewLatestRunManager(ctx, app)
-	if err != nil {
-		return nil, err
-	}
-	app.latest = latest
-
 	proxy, err := inmem.NewChunkProxy(app, logger, cache, db)
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
+	app.proxy = proxy
 	go func() {
 		if err := proxy.Start(ctx); ctx.Err() == nil {
 			logger.Error(err, "proxy unexpectedly terminated")
 		}
 	}()
-
-	app.proxy = proxy
-
-	queues := inmem.NewWorkspaceQueueManager()
-	if err := queues.Populate(ctx, app); err != nil {
-		return nil, fmt.Errorf("populating workspace queues: %w", err)
-	}
-	app.queues = queues
 
 	return app, nil
 }
@@ -95,9 +79,7 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,
 			RunFactory:       a.RunFactory,
-			latest:           a.latest,
 			proxy:            a.proxy,
-			queues:           a.queues,
 			db:               db,
 		}
 		return tx(appTx)
@@ -119,9 +101,7 @@ func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Applic
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,
 			RunFactory:       a.RunFactory,
-			latest:           a.latest,
 			proxy:            a.proxy,
-			queues:           a.queues,
 			db:               db,
 		}
 		return cb(appWithLock)

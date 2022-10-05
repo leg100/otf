@@ -104,8 +104,11 @@ func (a *Application) DeleteOrganization(ctx context.Context, name string) error
 
 	err := a.db.DeleteOrganization(ctx, name)
 	if err != nil {
+		a.Error(err, "deleting organization", "name", name)
 		return err
 	}
+	a.V(0).Info("deleted organization", "name", name)
+
 	return nil
 }
 

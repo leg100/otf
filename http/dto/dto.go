@@ -3,14 +3,13 @@
 package dto
 
 import (
-	"net/http"
 	"time"
 )
 
 // Assembler is capable of assembling itself into a JSON-API DTO object.
 type Assembler interface {
 	// ToJSONAPI assembles a JSON-API DTO using the current request.
-	ToJSONAPI(*http.Request) any
+	ToJSONAPI() any
 }
 
 // PhaseStatusTimestamps holds the timestamps for individual statuses for a

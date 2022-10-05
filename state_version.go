@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -35,41 +34,10 @@ func (sv *StateVersion) Serial() int64                  { return sv.serial }
 func (sv *StateVersion) State() []byte                  { return sv.state }
 func (sv *StateVersion) Outputs() []*StateVersionOutput { return sv.outputs }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (sv *StateVersion) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.StateVersion{
-		ID:          sv.ID(),
-		CreatedAt:   sv.CreatedAt(),
-		DownloadURL: fmt.Sprintf("/api/v2/state-versions/%s/download", sv.ID()),
-		Serial:      sv.Serial(),
-	}
-	for _, out := range sv.Outputs() {
-		dto.Outputs = append(dto.Outputs, &jsonapi.StateVersionOutput{
-			ID:        out.ID(),
-			Name:      out.Name,
-			Sensitive: out.Sensitive,
-			Type:      out.Type,
-			Value:     out.Value,
-		})
-	}
-	return dto
-}
-
 // StateVersionList represents a list of state versions.
 type StateVersionList struct {
 	*Pagination
 	Items []*StateVersion
-}
-
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *StateVersionList) ToJSONAPI(req *http.Request) any {
-	obj := &jsonapi.StateVersionList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		obj.Items = append(obj.Items, item.ToJSONAPI(req).(*jsonapi.StateVersion))
-	}
-	return obj
 }
 
 type StateVersionService interface {

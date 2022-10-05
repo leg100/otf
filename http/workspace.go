@@ -46,7 +46,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws, withCode(http.StatusCreated))
+	writeResponse(w, r, &Workspace{ws}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeResponse(w, r, &Workspace{ws})
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +77,12 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.Application.ListWorkspaces(r.Context(), opts)
+	wsl, err := s.Application.ListWorkspaces(r.Context(), opts)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeResponse(w, r, &WorkspaceList{wsl})
 }
 
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +119,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeResponse(w, r, &Workspace{ws})
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +141,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeResponse(w, r, &Workspace{ws})
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +159,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, ws)
+	writeResponse(w, r, &Workspace{ws})
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -173,4 +173,74 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type Workspace struct {
+	*otf.Workspace
+}
+
+// ToJSONAPI assembles a JSONAPI DTO
+func (ws *Workspace) ToJSONAPI() any {
+	obj := &dto.Workspace{
+		ID: ws.ID(),
+		Actions: &dto.WorkspaceActions{
+			IsDestroyable: false,
+		},
+		AllowDestroyPlan:     ws.AllowDestroyPlan(),
+		AutoApply:            ws.AutoApply(),
+		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
+		CreatedAt:            ws.CreatedAt(),
+		Description:          ws.Description(),
+		Environment:          ws.Environment(),
+		ExecutionMode:        string(ws.ExecutionMode()),
+		FileTriggersEnabled:  ws.FileTriggersEnabled(),
+		GlobalRemoteState:    ws.GlobalRemoteState(),
+		Locked:               ws.Locked(),
+		MigrationEnvironment: ws.MigrationEnvironment(),
+		Name:                 ws.Name(),
+		// Operations is deprecated but clients and go-tfe tests still use it
+		Operations: ws.ExecutionMode() == "remote",
+		Permissions: &dto.WorkspacePermissions{
+			CanDestroy:        true,
+			CanForceUnlock:    true,
+			CanLock:           true,
+			CanUnlock:         true,
+			CanQueueApply:     true,
+			CanQueueDestroy:   true,
+			CanQueueRun:       true,
+			CanReadSettings:   true,
+			CanUpdate:         true,
+			CanUpdateVariable: true,
+		},
+		QueueAllRuns:               ws.QueueAllRuns(),
+		SpeculativeEnabled:         ws.SpeculativeEnabled(),
+		SourceName:                 ws.SourceName(),
+		SourceURL:                  ws.SourceURL(),
+		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+		TerraformVersion:           ws.TerraformVersion(),
+		TriggerPrefixes:            ws.TriggerPrefixes(),
+		WorkingDirectory:           ws.WorkingDirectory(),
+		UpdatedAt:                  ws.UpdatedAt(),
+	}
+	if ws.Organization() != nil {
+		obj.Organization = (&Organization{ws.Organization()}).ToJSONAPI().(*dto.Organization)
+	} else {
+		obj.Organization = &dto.Organization{ExternalID: ws.OrganizationID()}
+	}
+	return obj
+}
+
+type WorkspaceList struct {
+	*otf.WorkspaceList
+}
+
+// ToJSONAPI assembles a JSON-API DTO.
+func (l *WorkspaceList) ToJSONAPI() any {
+	obj := &dto.WorkspaceList{
+		Pagination: l.Pagination.ToJSONAPI(),
+	}
+	for _, item := range l.Items {
+		obj.Items = append(obj.Items, (&Workspace{item}).ToJSONAPI().(*dto.Workspace))
+	}
+	return obj
 }

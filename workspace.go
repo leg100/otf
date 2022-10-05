@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
-
-	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -20,6 +17,13 @@ const (
 )
 
 type ExecutionMode string
+
+func ValidateExecutionMode(m ExecutionMode) error {
+	if m == RemoteExecutionMode || m == LocalExecutionMode || m == AgentExecutionMode {
+		return nil
+	}
+	return fmt.Errorf("invalid execution mode: %s", m)
+}
 
 var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
@@ -79,6 +83,7 @@ func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefix
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
 func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
 func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
+func (ws *Workspace) Organization() *Organization      { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 
 // ExecutionModes returns a list of possible execution modes
@@ -148,6 +153,9 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		ws.updatedAt = CurrentTimestamp()
 	}
 	if opts.ExecutionMode != nil {
+		if err := ValidateExecutionMode(*opts.ExecutionMode); err != nil {
+			return err
+		}
 		ws.executionMode = *opts.ExecutionMode
 		ws.updatedAt = CurrentTimestamp()
 	}
@@ -191,57 +199,6 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 	return nil
 }
 
-// ToJSONAPI assembles a JSONAPI DTO
-func (ws *Workspace) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.Workspace{
-		ID: ws.ID(),
-		Actions: &jsonapi.WorkspaceActions{
-			IsDestroyable: false,
-		},
-		AllowDestroyPlan:     ws.AllowDestroyPlan(),
-		AutoApply:            ws.AutoApply(),
-		CanQueueDestroyPlan:  ws.CanQueueDestroyPlan(),
-		CreatedAt:            ws.CreatedAt(),
-		Description:          ws.Description(),
-		Environment:          ws.Environment(),
-		ExecutionMode:        string(ws.ExecutionMode()),
-		FileTriggersEnabled:  ws.FileTriggersEnabled(),
-		GlobalRemoteState:    ws.GlobalRemoteState(),
-		Locked:               ws.Locked(),
-		MigrationEnvironment: ws.MigrationEnvironment(),
-		Name:                 ws.Name(),
-		// Operations is deprecated but clients and go-tfe tests still use it
-		Operations: ws.ExecutionMode() == "remote",
-		Permissions: &jsonapi.WorkspacePermissions{
-			CanDestroy:        true,
-			CanForceUnlock:    true,
-			CanLock:           true,
-			CanUnlock:         true,
-			CanQueueApply:     true,
-			CanQueueDestroy:   true,
-			CanQueueRun:       true,
-			CanReadSettings:   true,
-			CanUpdate:         true,
-			CanUpdateVariable: true,
-		},
-		QueueAllRuns:               ws.QueueAllRuns(),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		SourceName:                 ws.SourceName(),
-		SourceURL:                  ws.SourceURL(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           ws.TerraformVersion(),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		WorkingDirectory:           ws.WorkingDirectory(),
-		UpdatedAt:                  ws.UpdatedAt(),
-	}
-	if ws.organization != nil {
-		dto.Organization = ws.organization.ToJSONAPI(req).(*jsonapi.Organization)
-	} else {
-		dto.Organization = &jsonapi.Organization{ExternalID: ws.OrganizationID()}
-	}
-	return dto
-}
-
 // WorkspaceQualifiedName is the workspace's fully qualified name including the
 // name of its organization
 type WorkspaceQualifiedName struct {
@@ -268,11 +225,32 @@ type WorkspaceUpdateOptions struct {
 }
 
 func (o WorkspaceUpdateOptions) Valid() error {
+	if o.AllowDestroyPlan == nil &&
+		o.AutoApply == nil &&
+		o.Name == nil &&
+		o.Description == nil &&
+		o.ExecutionMode == nil &&
+		o.FileTriggersEnabled == nil &&
+		o.GlobalRemoteState == nil &&
+		o.Operations == nil &&
+		o.QueueAllRuns == nil &&
+		o.SpeculativeEnabled == nil &&
+		o.StructuredRunOutputEnabled == nil &&
+		o.TerraformVersion == nil &&
+		o.TriggerPrefixes == nil &&
+		o.WorkingDirectory == nil {
+		return fmt.Errorf("must set at least one option to update")
+	}
 	if o.Name != nil && !ValidStringID(o.Name) {
 		return ErrInvalidName
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
 		return ErrInvalidTerraformVersion
+	}
+	if o.ExecutionMode != nil {
+		if err := ValidateExecutionMode(*o.ExecutionMode); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -297,28 +275,20 @@ type WorkspaceList struct {
 	Items []*Workspace
 }
 
-// ToJSONAPI assembles a JSON-API DTO.
-func (l *WorkspaceList) ToJSONAPI(req *http.Request) any {
-	dto := &jsonapi.WorkspaceList{
-		Pagination: l.Pagination.ToJSONAPI(),
-	}
-	for _, item := range l.Items {
-		dto.Items = append(dto.Items, item.ToJSONAPI(req).(*jsonapi.Workspace))
-	}
-	return dto
-}
-
 type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
-	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
-	GetWorkspaceQueue(workspaceID string) ([]*Run, error)
-	UpdateWorkspaceQueue(run *Run) error
+	WorkspaceLockService
+	CurrentRunService
+}
+
+type WorkspaceLockService interface {
+	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
+	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 }
 
 type WorkspaceStore interface {
@@ -330,20 +300,16 @@ type WorkspaceStore interface {
 	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
-	LatestRunSetter
+	CurrentRunService
 }
 
-// LatestRunService provides interaction with the 'latest' run for a workspace,
-// i.e. the current or most recently active, non-speculative, run.
-type LatestRunService interface {
-	LatestRunSetter
-	// GetLatestRun retrieves the ID of the latest run for a workspace.
-	GetLatestRun(ctx context.Context, workspaceID string) (string, bool)
-}
-
-type LatestRunSetter interface {
-	// SetLatestRun sets the ID of the latest run for a workspace.
-	SetLatestRun(ctx context.Context, workspaceID, runID string) error
+// CurrentRunService provides interaction with the current run for a workspace,
+// i.e. the current, or most recently current, non-speculative, run.
+type CurrentRunService interface {
+	// SetCurrentRun sets the ID of the latest run for a workspace.
+	//
+	// Take full run obj as param
+	SetCurrentRun(ctx context.Context, workspaceID, runID string) error
 }
 
 // WorkspaceListOptions are options for paginating and filtering a list of

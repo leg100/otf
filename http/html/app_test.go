@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +64,7 @@ func TestApp(t *testing.T) {
 		},
 	}
 	// Add web app routes.
-	router := NewRouter()
+	router := otfhttp.NewRouter()
 	err = AddRoutes(logr.Discard(), Config{}, app, router)
 	require.NoError(t, err)
 	// setup server
