@@ -7,9 +7,29 @@ import (
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
+	"github.com/spf13/pflag"
 )
 
 const DefaultPathPrefix = "/"
+
+// Config is the web app configuration.
+type Config struct {
+	DevMode bool
+
+	cloudConfigs []CloudConfig
+}
+
+// NewConfigFromFlags binds flags to the config. The flagset must be parsed
+// in order for the config to be populated.
+func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
+	cfg := Config{}
+
+	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGithubConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGitlabConfigFromFlags(flags))
+
+	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
+	return &cfg
+}
 
 // Application is the oTF web app.
 type Application struct {
@@ -17,8 +37,6 @@ type Application struct {
 	staticServer http.FileSystem
 	// oTF service accessors
 	otf.Application
-	// github oauth authorization
-	oauth *githubOAuthApp
 	// path prefix for all URLs
 	pathPrefix string
 	// view engine populates and renders templates
@@ -27,18 +45,16 @@ type Application struct {
 	logr.Logger
 	// server-side-events server
 	*sse.Server
+	// enabled authenticators
+	authenticators []*Authenticator
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config Config, services otf.Application, router *otfhttp.Router) error {
+func AddRoutes(logger logr.Logger, config *Config, services otf.Application, router *otfhttp.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
 	views, err := newViewEngine(config.DevMode)
-	if err != nil {
-		return err
-	}
-	oauthApp, err := newGithubOAuthApp(config.Github)
 	if err != nil {
 		return err
 	}
@@ -52,13 +68,20 @@ func AddRoutes(logger logr.Logger, config Config, services otf.Application, rout
 
 	app := &Application{
 		Application:  services,
-		oauth:        oauthApp,
 		staticServer: newStaticServer(config.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 		Logger:       logger,
 		Server:       sseServer,
 	}
+
+	// Add authenticators for clouds the user has configured
+	authenticators, err := NewAuthenticatorsFromConfig(services, config.cloudConfigs...)
+	if err != nil {
+		return err
+	}
+	app.authenticators = authenticators
+
 	app.addRoutes(router)
 	return nil
 }
@@ -75,14 +98,12 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	r.StrictSlash(true)
 
 	// routes that don't require authentication.
-	r.Sub(func(r *otfhttp.Router) {
-		r.GET("/login", app.loginHandler)
-		// github routes
-		r.Sub(func(r *otfhttp.Router) {
-			r.GET("/github/login", app.oauth.requestHandler)
-			r.GET(githubCallbackPath, app.githubLogin)
-		})
-	})
+	r.GET("/login", app.loginHandler)
+	for _, auth := range app.authenticators {
+		r.GET(auth.RequestPath(), auth.requestHandler)
+		r.GET(auth.callbackPath(), auth.responseHandler)
+	}
+
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
 		r.Use((&authMiddleware{app}).authenticate)

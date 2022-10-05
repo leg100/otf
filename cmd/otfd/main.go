@@ -60,7 +60,7 @@ func run(ctx context.Context, args []string) error {
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
-	webCfg := newWebConfigFromFlags(cmd.Flags())
+	htmlCfg := html.NewConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -138,7 +138,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
 	// add Web App routes
-	if err := html.AddRoutes(logger, *webCfg, app, server.Router); err != nil {
+	if err := html.AddRoutes(logger, htmlCfg, app, server.Router); err != nil {
 		return err
 	}
 
@@ -174,18 +174,6 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
-
-	return &cfg
-}
-
-// newWebConfigFromFlags adds flags pertaining to web app config
-func newWebConfigFromFlags(flags *pflag.FlagSet) *html.Config {
-	cfg := html.Config{}
-
-	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
-	flags.StringVar(&cfg.Github.ClientID, "github-client-id", "", "Github Client ID")
-	flags.StringVar(&cfg.Github.ClientSecret, "github-client-secret", "", "Github Client Secret")
-	flags.StringVar(&cfg.Github.Hostname, "github-hostname", "github.com", "Github hostname")
 
 	return &cfg
 }

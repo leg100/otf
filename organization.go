@@ -2,6 +2,8 @@ package otf
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -67,11 +69,14 @@ type OrganizationCreateOptions struct {
 }
 
 func (opts *OrganizationCreateOptions) Validate() error {
-	if !validString(opts.Name) {
-		return ErrRequiredName
+	if opts.Name == nil {
+		return errors.New("name required")
+	}
+	if *opts.Name == "" {
+		return errors.New("name cannot be empty")
 	}
 	if !ValidStringID(opts.Name) {
-		return ErrInvalidName
+		return fmt.Errorf("invalid name: %s", *opts.Name)
 	}
 	return nil
 }
