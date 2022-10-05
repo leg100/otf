@@ -52,7 +52,7 @@ func (cfg *GitlabConfig) NewCloud() (Cloud, error) {
 func (g *gitlabCloud) CloudName() string { return "gitlab" }
 
 func (g *gitlabCloud) Scopes() []string {
-	return []string{"read_user", "profile"}
+	return []string{"read_user", "read_api"}
 }
 
 func (g *gitlabCloud) Endpoint() oauth2.Endpoint { return g.endpoint }

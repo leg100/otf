@@ -5,11 +5,12 @@
 {{ define "container" }}
   {{ template "flash" . }}
   <div class="center">
-    {{ range .Content }}
-      <a href="{{ .RequestPath }}">
-        {{ template "github_icon" }}
-        <span>Login with {{ title .CloudName }}</span>
-      </a>
-    {{ end }}
+    <div class="login-buttons-container">
+      {{ range .Content }}
+        <a href="{{ .RequestPath }}">
+          {{ template "icons" .CloudName }}<span>Login with {{ title .CloudName }}</span>
+        </a>
+      {{ end }}
+    </div>
   </div>
 {{ end }}
