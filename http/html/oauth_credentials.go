@@ -2,6 +2,7 @@ package html
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/spf13/pflag"
 )
@@ -28,8 +29,8 @@ func (a *OAuthCredentials) Valid() error {
 }
 
 func (a *OAuthCredentials) AddFlags(flags *pflag.FlagSet) {
-	flags.StringVar(&a.clientID, a.clientIDFlag(), "", a.prefix+" Client ID")
-	flags.StringVar(&a.clientSecret, a.clientSecretFlag(), "", a.prefix+" Client Secret")
+	flags.StringVar(&a.clientID, a.clientIDFlag(), "", strings.Title(a.prefix)+" client ID")
+	flags.StringVar(&a.clientSecret, a.clientSecretFlag(), "", strings.Title(a.prefix)+" client secret")
 }
 
 func (a *OAuthCredentials) ClientID() string     { return a.clientID }
