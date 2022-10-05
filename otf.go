@@ -139,11 +139,6 @@ func (r ResourceReport) HasChanges() bool {
 	return false
 }
 
-// validString checks if the given input is present and non-empty.
-func validString(v *string) bool {
-	return v != nil && *v != ""
-}
-
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {
