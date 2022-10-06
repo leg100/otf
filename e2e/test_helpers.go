@@ -29,6 +29,8 @@ func startDaemon(t *testing.T, port int) {
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
 		"--log-http-requests",
+		"--github-client-id", "stub-client-id",
+		"--github-client-secret", "stub-client-secret",
 		"--github-skip-tls-verification",
 	)
 	out, err := cmd.StdoutPipe()
