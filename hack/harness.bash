@@ -45,7 +45,7 @@ trap print_logs ERR
 
 # Start otfd if not already running
 if ! pgrep otfd; then
-    nohup otfd --log-level trace --log-color true > otfd.log &
+    nohup otfd --log-level trace --log-color true --log-http-requests > otfd.log &
     started=1
 fi
 

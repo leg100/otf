@@ -7,7 +7,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/spf13/pflag"
 	"github.com/xanzy/go-gitlab"
-	"golang.org/x/oauth2"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
@@ -15,21 +14,25 @@ const DefaultGitlabHostname = "gitlab.com"
 
 type gitlabCloud struct {
 	*GitlabConfig
-	endpoint oauth2.Endpoint
 }
 
+// TODO: rename to gitlabClient
 type gitlabProvider struct {
 	client *gitlab.Client
 }
 
 type GitlabConfig struct {
-	*OAuthCredentials
-	hostname string
+	cloudConfig
 }
 
 func NewGitlabConfigFromFlags(flags *pflag.FlagSet) *GitlabConfig {
 	cfg := &GitlabConfig{
-		OAuthCredentials: &OAuthCredentials{prefix: "gitlab"},
+		cloudConfig: cloudConfig{
+			OAuthCredentials: &OAuthCredentials{prefix: "gitlab"},
+			cloudName:        "gitlab",
+			endpoint:         oauth2gitlab.Endpoint,
+			scopes:           []string{"read_user", "read_api"},
+		},
 	}
 
 	flags.StringVar(&cfg.hostname, "gitlab-hostname", DefaultGitlabHostname, "Gitlab hostname")
@@ -39,23 +42,8 @@ func NewGitlabConfigFromFlags(flags *pflag.FlagSet) *GitlabConfig {
 }
 
 func (cfg *GitlabConfig) NewCloud() (Cloud, error) {
-	endpoint, err := updateEndpoint(oauth2gitlab.Endpoint, cfg.hostname)
-	if err != nil {
-		return nil, err
-	}
-	return &gitlabCloud{
-		endpoint:     endpoint,
-		GitlabConfig: cfg,
-	}, nil
+	return &gitlabCloud{GitlabConfig: cfg}, nil
 }
-
-func (g *gitlabCloud) CloudName() string { return "gitlab" }
-
-func (g *gitlabCloud) Scopes() []string {
-	return []string{"read_user", "read_api"}
-}
-
-func (g *gitlabCloud) Endpoint() oauth2.Endpoint { return g.endpoint }
 
 func (g *gitlabCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
 	var err error

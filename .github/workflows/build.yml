@@ -46,12 +46,17 @@ jobs:
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
           sudo update-ca-certificates
-          make go-tfe-tests e2e
+          make e2e go-tfe-tests
         env:
-          # The hostname used to communicate with the PostgreSQL service container
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
-          # Secret for signing URLs
           OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
+      -
+        name: Archive screenshots of e2e tests
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-screenshots
+          path: e2e/screenshots/*.png
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

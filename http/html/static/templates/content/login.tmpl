@@ -7,7 +7,7 @@
   <div class="center">
     <div class="login-buttons-container">
       {{ range .Content }}
-        <a href="{{ .RequestPath }}">
+        <a class="login-button-{{ .CloudName }}" href="{{ .RequestPath }}">
           {{ template "icons" .CloudName }}<span>Login with {{ title .CloudName }}</span>
         </a>
       {{ end }}

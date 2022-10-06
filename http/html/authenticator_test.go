@@ -5,16 +5,21 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	oauth2github "golang.org/x/oauth2/github"
 )
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
-	authenticator := &Authenticator{&fakeCloud{endpoint: "https://gitlab.com"}, &fakeAuthenticatorApp{}}
+	authenticator := &Authenticator{
+		newFakeCloud("gitlab.com"),
+		&fakeAuthenticatorApp{},
+	}
 
 	r := httptest.NewRequest("GET", "/auth", nil)
 	w := httptest.NewRecorder()
@@ -34,15 +39,20 @@ func TestAuthenticator_RequestHandler(t *testing.T) {
 
 func TestAuthenticator_ResponseHandler(t *testing.T) {
 	// IdP stub
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	}))
 	defer srv.Close()
+	srvURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
 
-	authenticator := &Authenticator{&fakeCloud{endpoint: srv.URL}, &fakeAuthenticatorApp{}}
+	authenticator := &Authenticator{
+		newFakeCloud(srvURL.Host),
+		&fakeAuthenticatorApp{},
+	}
 
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
@@ -62,24 +72,29 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 }
 
 type fakeCloud struct {
-	endpoint string
-	*OAuthCredentials
+	cloudConfig
 }
 
-func (f *fakeCloud) CloudName() string    { return "fake" }
-func (f *fakeCloud) Scopes() []string     { return []string{} }
-func (f *fakeCloud) ClientID() string     { return "abc123" }
-func (f *fakeCloud) ClientSecret() string { return "xyz789" }
+func newFakeCloud(hostname string) *fakeCloud {
+	return &fakeCloud{
+		cloudConfig: cloudConfig{
+			cloudName:           "fake",
+			endpoint:            oauth2github.Endpoint,
+			hostname:            hostname,
+			skipTLSVerification: true,
+			OAuthCredentials: &OAuthCredentials{
+				clientID:     "abc-123",
+				clientSecret: "xyz-789",
+			},
+		},
+	}
+}
+
 func (f *fakeCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
 	return &fakeDirectoryClient{}, nil
 }
 
-func (f *fakeCloud) Endpoint() oauth2.Endpoint {
-	return oauth2.Endpoint{
-		TokenURL: f.endpoint,
-		AuthURL:  f.endpoint,
-	}
-}
+func (f *fakeCloud) NewCloud() (Cloud, error) { return nil, nil }
 
 type fakeDirectoryClient struct{}
 

@@ -1,6 +1,8 @@
 package html
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -83,10 +85,14 @@ func (a *Authenticator) requestHandler(w http.ResponseWriter, r *http.Request) {
 // oauthConfig generates an OAuth configuration - the current request is
 // necessary for obtaining the hostname and scheme for the redirect URL
 func (a *Authenticator) oauthConfig(r *http.Request) (*oauth2.Config, error) {
+	endpoint, err := a.Endpoint()
+	if err != nil {
+		return nil, err
+	}
 	return &oauth2.Config{
 		ClientID:     a.ClientID(),
 		ClientSecret: a.ClientSecret(),
-		Endpoint:     a.Endpoint(),
+		Endpoint:     endpoint,
 		Scopes:       a.Scopes(),
 		RedirectURL:  otf.Absolute(r, a.callbackPath()),
 	}, nil
@@ -198,6 +204,16 @@ func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oa
 		return nil, fmt.Errorf("state mismatch between cookie and callback response")
 	}
 
+	// Optionally skip TLS verification of auth code endpoint
+	ctx := r.Context()
+	if a.SkipTLSVerification() {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		})
+	}
+
 	// Exchange code for an access token
-	return cfg.Exchange(r.Context(), resp.AuthCode)
+	return cfg.Exchange(ctx, resp.AuthCode)
 }
