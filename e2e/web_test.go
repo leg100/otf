@@ -31,7 +31,7 @@ func TestWeb(t *testing.T) {
 	githubHostname := githubStub(t)
 	t.Setenv("OTF_GITHUB_HOSTNAME", githubHostname)
 
-	startDaemon(t, 8002)
+	url := startDaemon(t)
 
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(),
 		append(chromedp.DefaultExecAllocatorOptions[:],
@@ -51,7 +51,7 @@ func TestWeb(t *testing.T) {
 		var gotLocationOrganizations string
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate("https://localhost:8002"),
+			chromedp.Navigate(url),
 
 			screenshot("otf_login"),
 
@@ -65,7 +65,7 @@ func TestWeb(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
-		assert.Regexp(t, `^https://localhost:8002/organizations`, gotLocationOrganizations)
+		assert.Equal(t, url+"/organizations", gotLocationOrganizations)
 	})
 }
 

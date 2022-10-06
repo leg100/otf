@@ -22,9 +22,11 @@ const (
 	agent  = "../_build/otf-agent"
 )
 
-func startDaemon(t *testing.T, port int) {
+var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl=true`)
+
+func startDaemon(t *testing.T) string {
 	cmd := exec.Command(daemon,
-		"--address", fmt.Sprintf(":%d", port),
+		"--address", ":0",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
@@ -34,30 +36,18 @@ func startDaemon(t *testing.T, port int) {
 		"--github-skip-tls-verification",
 	)
 	out, err := cmd.StdoutPipe()
+	errout, err := cmd.StderrPipe()
 	require.NoError(t, err)
 	stdout := iochan.DelimReader(out, '\n')
+	stderr := iochan.DelimReader(errout, '\n')
 
 	require.NoError(t, cmd.Start())
 
-	// wait for otfd to log that it has started successfully
-	select {
-	case <-time.After(time.Second * 10):
-		t.Fatal("otfd failed to start correctly")
-	case logline := <-stdout:
-		started, err := regexp.MatchString("started server", logline)
-		require.NoError(t, err)
-		if started {
-			break
-		}
-	}
+	// record daemon's URL
+	var url string
 
-	// capture stdout in background
+	// for capturing stdout
 	loglines := []string{}
-	go func() {
-		for logline := range stdout {
-			loglines = append(loglines, logline)
-		}
-	}()
 
 	t.Cleanup(func() {
 		// kill otfd gracefully
@@ -71,6 +61,41 @@ func startDaemon(t *testing.T, port int) {
 			}
 		}
 	})
+
+	// wait for otfd to log that it has started successfully
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			t.Fatal("otfd failed to start correctly")
+		case logline := <-stdout:
+			loglines = append(loglines, logline)
+
+			matches := startedServerRegex.FindStringSubmatch(logline)
+			switch len(matches) {
+			case 2:
+				port := matches[1]
+				url = "https://localhost:" + port
+				goto STARTED
+			case 0:
+				// keep waiting
+				continue
+			default:
+				t.Fatalf("server returned malformed output: %s", logline)
+			}
+		case err := <-stderr:
+			t.Fatalf(err)
+		}
+	}
+STARTED:
+
+	// capture remainder of stdout in background
+	go func() {
+		for logline := range stdout {
+			loglines = append(loglines, logline)
+		}
+	}()
+
+	return url
 }
 
 func startAgent(t *testing.T, token, address string) {
