@@ -46,7 +46,6 @@ func (cfg *GithubConfig) NewCloud() (Cloud, error) {
 
 type GithubCloud struct {
 	*GithubConfig
-	endpoint oauth2.Endpoint
 }
 
 func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
