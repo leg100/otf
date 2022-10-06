@@ -1,6 +1,3 @@
-before:
-  hooks:
-    - make unit
 builds:
   - id: otfd
     ldflags:

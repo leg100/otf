@@ -44,6 +44,12 @@ jobs:
         with:
           go-version: 1.18
       -
+        name: Unit tests
+        run: |
+          make unit
+        env:
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+      -
         name: E2E tests
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
@@ -65,8 +71,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
-        env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
       -
         name: Login to docker hub
         if: startsWith(github.ref, 'refs/tags/v')
@@ -77,5 +81,3 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
-        env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
