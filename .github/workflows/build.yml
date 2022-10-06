@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*.*.*
   pull_request:
     branches:
       - '*'
 
 jobs:
-  goreleaser:
+  build:
     # You must use a Linux environment when using service containers or container jobs
     runs-on: ubuntu-latest
     # Service containers to run with `goreleaser`
@@ -51,14 +53,27 @@ jobs:
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
           OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
       -
-        name: Archive screenshots of e2e tests
+        name: Archive E2E screenshots
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: e2e-screenshots
           path: e2e/screenshots/*.png
       -
-        name: Run GoReleaser
+        name: Build bins
+        if: "startsWith(github.ref, 'refs/master') || startsWith(github.ref, 'refs/pull')"
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release --rm-dist --snapshot --skip-sign
+        env:
+          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+      -
+        name: Login to docker hub
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u leg100 --password-stdin
+      -
+        name: Build bins and release
+        if: "startsWith(github.ref, 'refs/tags/v')"
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --snapshot --skip-sign
