@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
@@ -43,29 +44,50 @@ func TestWeb(t *testing.T) {
 		)...)
 	defer cancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
 	t.Run("login", func(t *testing.T) {
+		ctx, cancel := chromedp.NewContext(allocCtx)
+		defer cancel()
+
 		var gotLoginPrompt string
 		var gotLocationOrganizations string
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate(url),
-
 			screenshot("otf_login"),
-
 			chromedp.Text(".center", &gotLoginPrompt, chromedp.NodeVisible),
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-
 			screenshot("otf_login_successful"),
-
 			chromedp.Location(&gotLocationOrganizations),
 		})
 		require.NoError(t, err)
 
 		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
 		assert.Equal(t, url+"/organizations", gotLocationOrganizations)
+	})
+
+	t.Run("new workspace", func(t *testing.T) {
+		ctx, cancel := chromedp.NewContext(allocCtx)
+		defer cancel()
+
+		var gotFlashSuccess string
+		workspaceName := "workspace-" + otf.GenerateRandomString(4)
+
+		err := chromedp.Run(ctx, chromedp.Tasks{
+			chromedp.Navigate(url),
+			chromedp.Click(".login-button-github", chromedp.NodeVisible),
+			chromedp.Click(".content-list a", chromedp.NodeVisible),
+			chromedp.Click("#workspaces > a", chromedp.NodeVisible),
+			chromedp.Click("#new-workspace-button", chromedp.NodeVisible),
+			screenshot("otf_new_workspace_form"),
+			chromedp.Focus("input#name", chromedp.NodeVisible),
+			input.InsertText(workspaceName),
+			chromedp.Click("#create-workspace-button"),
+			screenshot("otf_created_workspace"),
+			chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
 	})
 }
 

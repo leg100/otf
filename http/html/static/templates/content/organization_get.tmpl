@@ -6,7 +6,7 @@
 
 {{ define "content" }}
   <div class="content-menu">
-    <span class="content-menu-item"><a href="{{ listWorkspacePath .Content }}">workspaces</a></span>
-    <span class="content-menu-item"><a href="{{ listAgentTokenPath .Content }}">agent tokens</a></span>
+    <span id="workspaces" class="content-menu-item"><a href="{{ listWorkspacePath .Content }}">workspaces</a></span>
+    <span id="agent_tokens" class="content-menu-item"><a href="{{ listAgentTokenPath .Content }}">agent tokens</a></span>
   </div>
 {{ end }}
