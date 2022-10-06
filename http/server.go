@@ -229,7 +229,7 @@ func (s *Server) Open(ctx context.Context) (err error) {
 		}
 	}()
 
-	s.Info("started server", "address", s.Addr, "ssl", s.SSL)
+	s.Info("started server", "address", s.ln.Addr().String(), "ssl", s.SSL)
 
 	// Block until server stops listening or context is cancelled.
 	select {

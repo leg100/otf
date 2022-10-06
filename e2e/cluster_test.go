@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"net/url"
 	"os/exec"
 	"testing"
 
@@ -24,8 +25,11 @@ func TestCluster(t *testing.T) {
 	token := createAgentToken(t, organization)
 	root := newRoot(t, organization)
 
-	startDaemon(t, 8001)
-	startAgent(t, token, "localhost:8001")
+	daemonURL := startDaemon(t)
+	u, err := url.Parse(daemonURL)
+	require.NoError(t, err)
+
+	startAgent(t, token, u.Host)
 
 	// terraform init creates a workspace named dev
 	t.Run("terraform init", func(t *testing.T) {
