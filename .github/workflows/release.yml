@@ -43,8 +43,7 @@ jobs:
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
           sudo update-ca-certificates
-          make e2e
-          make go-tfe-tests e2e
+          make e2e go-tfe-tests
         env:
           OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
           OTF_E2E_GITHUB_USERNAME: ${{ secrets.OTF_E2E_GITHUB_USERNAME }}

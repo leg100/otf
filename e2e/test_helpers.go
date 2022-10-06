@@ -11,6 +11,7 @@ import (
 
 	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
+	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,20 +23,51 @@ const (
 )
 
 func startDaemon(t *testing.T, port int) {
-	e, res, err := spawn(daemon,
-		"--address",
-		fmt.Sprintf(":%d", port),
+	cmd := exec.Command(daemon,
+		"--address", fmt.Sprintf(":%d", port),
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
+		"--dev-mode=false",
+		"--log-http-requests",
+		"--github-skip-tls-verification",
 	)
+	out, err := cmd.StdoutPipe()
 	require.NoError(t, err)
+	stdout := iochan.DelimReader(out, '\n')
 
-	_, _, err = e.Expect(regexp.MustCompile("started server"), time.Second*10)
-	require.NoError(t, err)
+	require.NoError(t, cmd.Start())
+
+	// wait for otfd to log that it has started successfully
+	select {
+	case <-time.After(time.Second * 10):
+		t.Fatal("otfd failed to start correctly")
+	case logline := <-stdout:
+		started, err := regexp.MatchString("started server", logline)
+		require.NoError(t, err)
+		if started {
+			break
+		}
+	}
+
+	// capture stdout in background
+	loglines := []string{}
+	go func() {
+		for logline := range stdout {
+			loglines = append(loglines, logline)
+		}
+	}()
 
 	t.Cleanup(func() {
-		e.SendSignal(os.Interrupt)
-		require.NoError(t, <-res)
+		// kill otfd gracefully
+		cmd.Process.Signal(os.Interrupt)
+		assert.NoError(t, cmd.Wait())
+
+		// upon failure dump stdout
+		if t.Failed() {
+			for _, ll := range loglines {
+				t.Log(ll)
+			}
+		}
 	})
 }
 

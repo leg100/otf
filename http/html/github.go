@@ -2,6 +2,8 @@ package html
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 	"net/url"
 
 	"github.com/google/go-github/v41/github"
@@ -12,35 +14,34 @@ import (
 
 const DefaultGithubHostname = "github.com"
 
+// TODO: rename to githubClient
 type githubProvider struct {
 	client *github.Client
 }
 
 type GithubConfig struct {
-	*OAuthCredentials
-	hostname string
+	cloudConfig
 }
 
 func NewGithubConfigFromFlags(flags *pflag.FlagSet) *GithubConfig {
 	cfg := &GithubConfig{
-		OAuthCredentials: &OAuthCredentials{prefix: "github"},
+		cloudConfig: cloudConfig{
+			OAuthCredentials: &OAuthCredentials{prefix: "github"},
+			cloudName:        "github",
+			endpoint:         oauth2github.Endpoint,
+			scopes:           []string{"user:email", "read:org"},
+		},
 	}
 
 	flags.StringVar(&cfg.hostname, "github-hostname", DefaultGithubHostname, "Github hostname")
+	flags.BoolVar(&cfg.skipTLSVerification, "github-skip-tls-verification", false, "Skip github TLS verification")
 	cfg.OAuthCredentials.AddFlags(flags)
 
 	return cfg
 }
 
 func (cfg *GithubConfig) NewCloud() (Cloud, error) {
-	endpoint, err := updateEndpoint(oauth2github.Endpoint, cfg.hostname)
-	if err != nil {
-		return nil, err
-	}
-	return &GithubCloud{
-		endpoint:     endpoint,
-		GithubConfig: cfg,
-	}, nil
+	return &GithubCloud{GithubConfig: cfg}, nil
 }
 
 type GithubCloud struct {
@@ -48,17 +49,18 @@ type GithubCloud struct {
 	endpoint oauth2.Endpoint
 }
 
-func (g *GithubCloud) CloudName() string { return "github" }
-
-func (g *GithubCloud) Scopes() []string {
-	return []string{"user:email", "read:org"}
-}
-
-func (g *GithubCloud) Endpoint() oauth2.Endpoint { return g.endpoint }
-
 func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
 	var err error
 	var client *github.Client
+
+	// Optionally skip TLS verification of github API
+	if g.skipTLSVerification {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		})
+	}
 
 	httpClient := opts.Config.Client(ctx, opts.Token)
 
