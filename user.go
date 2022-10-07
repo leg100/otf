@@ -142,6 +142,9 @@ type UserService interface {
 	// SyncOrganizationMemberships synchronises a user's organization
 	// memberships, adding and removing them accordingly.
 	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
+	// SyncTeamMemberships synchronises a user's team
+	// memberships, adding and removing them accordingly.
+	SyncTeamMemberships(ctx context.Context, user *User, teams []*Team) (*User, error)
 }
 
 // UserStore is a persistence store for user accounts.
@@ -155,6 +158,11 @@ type UserStore interface {
 	// RemoveOrganizationMembership removes a user as a member of an
 	// organization
 	RemoveOrganizationMembership(ctx context.Context, id, orgID string) error
+	// AddTeamMembership adds a user as a member of a team
+	AddTeamMembership(ctx context.Context, id, teamID string) error
+	// RemoveTeamMembership removes a user as a member of an
+	// team
+	RemoveTeamMembership(ctx context.Context, id, teamID string) error
 }
 
 type UserSpec struct {

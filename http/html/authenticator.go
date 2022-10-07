@@ -141,6 +141,32 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	for i, org := range orgs {
+		org, err = a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+			Name: otf.String(org.Name()),
+		})
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// replace org in list with one fetched from service
+		orgs[i] = org
+	}
+
+	teams, err := client.ListTeams(ctx)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for i, team := range teams {
+		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.Organization().Name)
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// replace team in list with one fetched from service
+		teams[i] = team
+	}
 
 	// Get named user; if not exist create user
 	user, err := a.EnsureCreatedUser(ctx, username)

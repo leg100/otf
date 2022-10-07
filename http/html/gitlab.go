@@ -67,16 +67,49 @@ func (g *gitlabProvider) GetUser(ctx context.Context) (string, error) {
 	return user.Username, nil
 }
 
-func (g *gitlabProvider) ListOrganizations(ctx context.Context) ([]string, error) {
+func (g *gitlabProvider) ListTeams(ctx context.Context) ([]*otf.Team, error) {
+	// First get top-level groups
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
 		TopLevelOnly: otf.Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	names := []string{}
-	for _, o := range groups {
-		names = append(names, o.Name)
+	var teams []*otf.Team
+	for _, group := range groups {
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(group.Path),
+		})
+		if err != nil {
+			return nil, err
+		}
+		subs, _, err := g.client.Groups.ListSubGroups(group.ID, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, s := range subs {
+			teams = append(teams, otf.NewTeam(s.FullPath, org))
+		}
 	}
-	return names, nil
+	return teams, nil
+}
+
+func (g *gitlabProvider) ListOrganizations(ctx context.Context) ([]*otf.Organization, error) {
+	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
+		TopLevelOnly: otf.Bool(true),
+	})
+	if err != nil {
+		return nil, err
+	}
+	var orgs []*otf.Organization
+	for _, group := range groups {
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(group.Path),
+		})
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, org)
+	}
+	return orgs, nil
 }

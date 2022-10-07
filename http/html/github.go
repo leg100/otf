@@ -82,6 +82,18 @@ func (g *githubProvider) GetUser(ctx context.Context) (string, error) {
 	return user.GetLogin(), nil
 }
 
+func (g *githubProvider) ListTeams(ctx context.Context) ([]string, error) {
+	teams, _, err := g.client.Teams.ListUserTeams(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	names := []string{}
+	for _, t := range teams {
+		names = append(names, t.GetName())
+	}
+	return names, nil
+}
+
 func (g *githubProvider) ListOrganizations(ctx context.Context) ([]string, error) {
 	orgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
