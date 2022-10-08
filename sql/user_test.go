@@ -165,6 +165,9 @@ func TestUser_Get_WithSessions(t *testing.T) {
 }
 
 func TestUser_List(t *testing.T) {
+	// TODO: this lists *every* user in the db! need to change API to filter by
+	// org - anyhow, shouldn't all users belong to at least one org?
+
 	db := newTestDB(t)
 	user1 := createTestUser(t, db)
 	user2 := createTestUser(t, db)

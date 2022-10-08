@@ -46,7 +46,7 @@ func (a *Application) GetTeam(ctx context.Context, spec otf.TeamSpec) (*otf.Team
 		a.V(2).Info("retrieving team", spec.KeyValue()...)
 		return nil, err
 	}
-	a.V(2).Info("retrieved team", "name", team.Name(), "organization", team.Organization().Name())
+	a.V(2).Info("retrieved team", "name", team.Name(), "organization", team.OrganizationName())
 
 	return team, nil
 }
