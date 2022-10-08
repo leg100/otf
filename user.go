@@ -28,6 +28,8 @@ type User struct {
 	Tokens []*Token
 	// A user belongs to many organizations
 	Organizations []*Organization
+	// A user belongs to many teams
+	Teams []*Team
 }
 
 // AttachNewSession creates and attaches a new session to the user.
@@ -74,28 +76,49 @@ func (u *User) ActiveSession() *Session {
 	return nil
 }
 
-// SyncOrganizationMemberships synchronises a user's organization memberships,
-// taking an authoritative list of memberships and ensuring its memberships
-// match, adding and removing memberships accordingly.
-func (u *User) SyncOrganizationMemberships(ctx context.Context, authoritative []*Organization, store UserStore) error {
-	// Iterate thru authoritative and if not in user's membership, add to db
-	for _, auth := range authoritative {
-		if !inOrganizationList(auth.ID(), u.Organizations) {
-			if err := store.AddOrganizationMembership(ctx, u.ID(), auth.ID()); err != nil {
+// SyncMemberships synchronises the user's organization and team memberships to
+// match those given, adding and removing memberships in the persistence store accordingly.
+func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Organization, teams []*Team) error {
+	// Iterate thru orgs and check if already member; if not then
+	// add membership to store
+	for _, org := range orgs {
+		if !inOrganizationList(u.Organizations, org.ID()) {
+			if err := store.AddOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
 				return err
 			}
 		}
 	}
-	// Iterate thru existing and if not in authoritative list, remove from db
-	for _, existing := range u.Organizations {
-		if !inOrganizationList(existing.ID(), authoritative) {
-			if err := store.RemoveOrganizationMembership(ctx, u.ID(), existing.ID()); err != nil {
+	// Iterate thru receiver's orgs and check if in the given orgs; if not then
+	// remove membership from store
+	for _, org := range u.Organizations {
+		if !inOrganizationList(orgs, org.ID()) {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
 				return err
 			}
 		}
 	}
-	// ...and update receiver too.
-	u.Organizations = authoritative
+	u.Organizations = orgs
+
+	// Iterate thru teams and check if already member; if not then
+	// add membership to store
+	for _, team := range teams {
+		if !inTeamList(u.Teams, team.ID()) {
+			if err := store.AddTeamMembership(ctx, u.ID(), team.ID()); err != nil {
+				return err
+			}
+		}
+	}
+	// Iterate thru receiver's teams and check if in the given teams; if
+	// not then remove membership from store
+	for _, team := range u.Teams {
+		if !inTeamList(teams, team.ID()) {
+			if err := store.RemoveTeamMembership(ctx, u.ID(), team.ID()); err != nil {
+				return err
+			}
+		}
+	}
+	u.Teams = teams
+
 	return nil
 }
 
@@ -131,6 +154,9 @@ type UserService interface {
 	EnsureCreatedUser(ctx context.Context, username string) (*User, error)
 	// Get retrieves a user according to the spec.
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
+	// SyncUserMemberships makes the user a member of the specified organizations
+	// and teams and removes any existing memberships not specified.
+	SyncUserMemberships(ctx context.Context, user *User, orgs []*Organization, teams []*Team) (*User, error)
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 	// DeleteSession deletes the session with the given token
@@ -139,12 +165,6 @@ type UserService interface {
 	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, user *User, tokenID string) error
-	// SyncOrganizationMemberships synchronises a user's organization
-	// memberships, adding and removing them accordingly.
-	SyncOrganizationMemberships(ctx context.Context, user *User, orgs []*Organization) (*User, error)
-	// SyncTeamMemberships synchronises a user's team
-	// memberships, adding and removing them accordingly.
-	SyncTeamMemberships(ctx context.Context, user *User, teams []*Team) (*User, error)
 }
 
 // UserStore is a persistence store for user accounts.
@@ -217,6 +237,12 @@ func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 	}
 }
 
+func WithTeamMemberships(memberships ...*Team) NewUserOption {
+	return func(user *User) {
+		user.Teams = memberships
+	}
+}
+
 func WithActiveSession(token string) NewUserOption {
 	return func(user *User) {
 		for _, session := range user.Sessions {
@@ -227,7 +253,7 @@ func WithActiveSession(token string) NewUserOption {
 	}
 }
 
-func inOrganizationList(orgID string, orgs []*Organization) bool {
+func inOrganizationList(orgs []*Organization, orgID string) bool {
 	for _, org := range orgs {
 		if org.ID() == orgID {
 			return true
@@ -236,40 +262,11 @@ func inOrganizationList(orgID string, orgs []*Organization) bool {
 	return false
 }
 
-// SynchroniseOrganizations ensures an otf user's organization memberships match
-// their identity provider account's organization memberships
-func SynchroniseOrganizations(
-	ctx context.Context,
-	app Application,
-	user *User,
-	orgNames ...string,
-) error {
-	var orgs []*Organization
-
-	// Sync orgs
-	for _, name := range orgNames {
-		org, err := app.EnsureCreatedOrganization(ctx, OrganizationCreateOptions{
-			Name: String(name),
-		})
-		if err != nil {
-			return err
+func inTeamList(teams []*Team, teamID string) bool {
+	for _, team := range teams {
+		if team.ID() == teamID {
+			return true
 		}
-		orgs = append(orgs, org)
 	}
-	// A user also gets their own personal organization that matches their
-	// username
-	org, err := app.EnsureCreatedOrganization(ctx, OrganizationCreateOptions{
-		Name: String(user.Username()),
-	})
-	if err != nil {
-		return err
-	}
-	orgs = append(orgs, org)
-
-	// Sync memberships
-	if _, err = app.SyncOrganizationMemberships(ctx, user, orgs); err != nil {
-		return err
-	}
-
-	return nil
+	return false
 }

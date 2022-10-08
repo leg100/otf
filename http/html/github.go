@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"net/url"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/leg100/otf"
 	"github.com/spf13/pflag"
 	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"
@@ -64,7 +64,7 @@ func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 	httpClient := opts.Config.Client(ctx, opts.Token)
 
 	if g.hostname != DefaultGithubHostname {
-		client, err = github.NewEnterpriseClient(enterpriseBaseURL(g.hostname), enterpriseUploadURL(g.hostname), httpClient)
+		client, err = NewGithubEnterpriseClient(g.hostname, httpClient)
 		if err != nil {
 			return nil, err
 		}
@@ -74,41 +74,49 @@ func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 	return &githubProvider{client: client}, nil
 }
 
-func (g *githubProvider) GetUser(ctx context.Context) (string, error) {
-	user, _, err := g.client.Users.Get(ctx, "")
-	if err != nil {
-		return "", err
-	}
-	return user.GetLogin(), nil
-}
-
-func (g *githubProvider) ListTeams(ctx context.Context) ([]string, error) {
-	teams, _, err := g.client.Teams.ListUserTeams(ctx, nil)
+func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
+	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
 		return nil, err
 	}
-	names := []string{}
-	for _, t := range teams {
-		names = append(names, t.GetName())
-	}
-	return names, nil
-}
 
-func (g *githubProvider) ListOrganizations(ctx context.Context) ([]string, error) {
-	orgs, _, err := g.client.Organizations.List(ctx, "", nil)
+	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
-	names := []string{}
-	for _, o := range orgs {
-		names = append(names, o.GetLogin())
+	var orgs []*otf.Organization
+	for _, gorg := range gorgs {
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(gorg.GetLogin()),
+		})
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, org)
 	}
-	return names, nil
+
+	gteams, _, err := g.client.Teams.ListUserTeams(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	var teams []*otf.Team
+	for _, gteam := range gteams {
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(gteam.GetOrganization().GetLogin()),
+		})
+		if err != nil {
+			return nil, err
+		}
+		teams = append(teams, otf.NewTeam(gteam.GetName(), org))
+	}
+
+	user := otf.NewUser(guser.GetLogin(), otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
+	return user, nil
 }
 
-// Return a github enterprise URL from a hostname
-func enterpriseBaseURL(hostname string) string   { return enterpriseURL(hostname, "/api/v3") }
-func enterpriseUploadURL(hostname string) string { return enterpriseURL(hostname, "/api/uploads") }
-func enterpriseURL(hostname, path string) string {
-	return (&url.URL{Scheme: "https", Host: hostname, Path: path}).String()
+func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
+	return github.NewEnterpriseClient(
+		"https://"+hostname,
+		"https://"+hostname,
+		httpClient)
 }

@@ -26,6 +26,12 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 				return err
 			}
 		}
+		for _, team := range user.Teams {
+			_, err = tx.InsertTeamMembership(ctx, String(user.ID()), String(team.ID()))
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }

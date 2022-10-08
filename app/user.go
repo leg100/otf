@@ -33,14 +33,14 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 	return a.CreateUser(ctx, username)
 }
 
-func (a *Application) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
-	if err := user.SyncOrganizationMemberships(ctx, orgs, a.db); err != nil {
+func (a *Application) SyncUser(ctx context.Context, dst, src *otf.User) (*otf.User, error) {
+	if err := dst.SyncMemberships(ctx, src, a.db); err != nil {
 		return nil, err
 	}
 
-	a.V(1).Info("synchronised user's organization memberships", "username", user.Username())
+	a.V(1).Info("synchronised user's memberships", "username", dst.Username())
 
-	return user, nil
+	return dst, nil
 }
 
 // CreateSession creates a session and adds it to the user.

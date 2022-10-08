@@ -19,7 +19,5 @@ type DirectoryClientOptions struct {
 }
 
 type DirectoryClient interface {
-	GetUser(ctx context.Context) (string, error)
-	ListTeams(ctx context.Context) ([]*otf.Team, error)
-	ListOrganizations(ctx context.Context) ([]*otf.Organization, error)
+	GetUser(ctx context.Context) (*otf.User, error)
 }

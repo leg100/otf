@@ -19,6 +19,7 @@ type fakeApp struct {
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService
+	otf.TeamService
 	otf.CurrentRunService
 	otf.LockableApplication
 }

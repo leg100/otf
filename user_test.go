@@ -8,29 +8,71 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSynchroniseOrganizations(t *testing.T) {
-	app := &fakeSynchroniseOrganizationsApp{}
-	err := SynchroniseOrganizations(context.Background(), app, NewUser("fake-user"), "org-1", "org-2")
+func TestUserSyncMemberships(t *testing.T) {
+	ctx := context.Background()
+
+	org1 := newTestOrganization(t)
+	org2 := newTestOrganization(t)
+	org3 := newTestOrganization(t)
+
+	team1 := NewTeam("team-1", org1)
+	team2 := NewTeam("team-2", org2)
+	team3 := NewTeam("team-2", org3)
+
+	user := NewUser("test-user",
+		WithOrganizationMemberships(org1, org2),
+		WithTeamMemberships(team1, team2))
+
+	wantOrgMemberships := []*Organization{org2, org3}
+	wantTeamMemberships := []*Team{team2, team3}
+
+	store := &fakeUserStore{}
+	err := user.SyncMemberships(ctx, store, wantOrgMemberships, wantTeamMemberships)
 	require.NoError(t, err)
 
-	if assert.Equal(t, 3, len(app.synced)) {
-		assert.Equal(t, "org-1", app.synced[0].Name())
-		assert.Equal(t, "org-2", app.synced[1].Name())
-		assert.Equal(t, "fake-user", app.synced[2].Name())
+	assert.Equal(t, wantOrgMemberships, user.Organizations)
+	assert.Equal(t, wantTeamMemberships, user.Teams)
+
+	// expect membership to have been added to org3
+	if assert.Equal(t, 1, len(store.addedOrgs)) {
+		assert.Equal(t, org3.ID(), store.addedOrgs[0])
+	}
+	// expect membership to have been removed from org1
+	if assert.Equal(t, 1, len(store.removedOrgs)) {
+		assert.Equal(t, org1.ID(), store.removedOrgs[0])
+	}
+	// expect membership to have been added to team3
+	if assert.Equal(t, 1, len(store.addedTeams)) {
+		assert.Equal(t, team3.ID(), store.addedTeams[0])
+	}
+	// expect membership to have been removed from team1
+	if assert.Equal(t, 1, len(store.removedTeams)) {
+		assert.Equal(t, team1.ID(), store.removedTeams[0])
 	}
 }
 
-type fakeSynchroniseOrganizationsApp struct {
-	// list of synchronised organizations
-	synced []*Organization
-	Application
+type fakeUserStore struct {
+	// IDs of orgs and teams added and removed
+	addedOrgs, removedOrgs, addedTeams, removedTeams []string
+	UserStore
 }
 
-func (f *fakeSynchroniseOrganizationsApp) EnsureCreatedOrganization(ctx context.Context, opts OrganizationCreateOptions) (*Organization, error) {
-	return NewOrganization(opts)
+func (f *fakeUserStore) AddOrganizationMembership(ctx context.Context, userID, orgID string) error {
+	f.addedOrgs = append(f.addedOrgs, orgID)
+	return nil
 }
 
-func (f *fakeSynchroniseOrganizationsApp) SyncOrganizationMemberships(ctx context.Context, u *User, orgs []*Organization) (*User, error) {
-	f.synced = orgs
-	return nil, nil
+func (f *fakeUserStore) RemoveOrganizationMembership(ctx context.Context, userID, orgID string) error {
+	f.removedOrgs = append(f.removedOrgs, orgID)
+	return nil
+}
+
+func (f *fakeUserStore) AddTeamMembership(ctx context.Context, userID, orgID string) error {
+	f.addedTeams = append(f.addedTeams, orgID)
+	return nil
+}
+
+func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, userID, orgID string) error {
+	f.removedTeams = append(f.removedTeams, orgID)
+	return nil
 }

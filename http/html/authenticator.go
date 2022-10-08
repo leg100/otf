@@ -118,9 +118,6 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// service calls are made using the privileged app user
-	ctx := otf.AddSubjectToContext(r.Context(), &otf.AppUser{})
-
 	client, err := a.NewDirectoryClient(r.Context(), DirectoryClientOptions{
 		Token:  token,
 		Config: cfg,
@@ -130,52 +127,8 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	username, err := client.GetUser(ctx)
+	user, err := a.synchronise(r.Context(), client)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	orgs, err := client.ListOrganizations(ctx)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for i, org := range orgs {
-		org, err = a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
-			Name: otf.String(org.Name()),
-		})
-		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// replace org in list with one fetched from service
-		orgs[i] = org
-	}
-
-	teams, err := client.ListTeams(ctx)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for i, team := range teams {
-		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.Organization().Name)
-		if err != nil {
-			writeError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// replace team in list with one fetched from service
-		teams[i] = team
-	}
-
-	// Get named user; if not exist create user
-	user, err := a.EnsureCreatedUser(ctx, username)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err = otf.SynchroniseOrganizations(ctx, a, user, orgs...); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -242,4 +195,59 @@ func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oa
 
 	// Exchange code for an access token
 	return cfg.Exchange(ctx, resp.AuthCode)
+}
+
+func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient) (*otf.User, error) {
+	// service calls are made using the privileged app user
+	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
+
+	// Get cloud user
+	cuser, err := client.GetUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get otf user; if not exist, create user
+	user, err := a.EnsureCreatedUser(ctx, cuser.Username())
+	if err != nil {
+		return nil, err
+	}
+
+	// Create user's organizations as necessary
+	for i, org := range cuser.Organizations {
+		org, err = a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+			Name: otf.String(org.Name()),
+		})
+		if err != nil {
+			return nil, err
+		}
+		cuser.Organizations[i] = org
+	}
+
+	// A user also gets their own personal organization that matches their
+	// username
+	org, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+		Name: otf.String(user.Username()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	cuser.Organizations = append(cuser.Organizations, org)
+
+	// Create user's teams as necessary
+	for i, team := range cuser.Teams {
+		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.OrganizationName())
+		if err != nil {
+			return nil, err
+		}
+		cuser.Teams[i] = team
+	}
+
+	// Synchronise user's memberships so that they match those of the cloud
+	// user.
+	if _, err = a.SyncUserMemberships(ctx, user, cuser.Organizations, cuser.Teams); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

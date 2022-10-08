@@ -454,6 +454,55 @@ type Querier interface {
 	// InsertStateVersionOutputScan scans the result of an executed InsertStateVersionOutputBatch query.
 	InsertStateVersionOutputScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error)
+	// InsertTeamBatch enqueues a InsertTeam query into batch to be executed
+	// later by the batch.
+	InsertTeamBatch(batch genericBatch, params InsertTeamParams)
+	// InsertTeamScan scans the result of an executed InsertTeamBatch query.
+	InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindTeamByIDRow, error)
+	// FindTeamByIDBatch enqueues a FindTeamByID query into batch to be executed
+	// later by the batch.
+	FindTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
+	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
+
+	FindTeamByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindTeamByNameRow, error)
+	// FindTeamByNameBatch enqueues a FindTeamByName query into batch to be executed
+	// later by the batch.
+	FindTeamByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
+	// FindTeamByNameScan scans the result of an executed FindTeamByNameBatch query.
+	FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error)
+
+	DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamByIDBatch enqueues a DeleteTeamByID query into batch to be executed
+	// later by the batch.
+	DeleteTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// DeleteTeamByIDScan scans the result of an executed DeleteTeamByIDBatch query.
+	DeleteTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteTeamByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamByNameBatch enqueues a DeleteTeamByName query into batch to be executed
+	// later by the batch.
+	DeleteTeamByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
+	// DeleteTeamByNameScan scans the result of an executed DeleteTeamByNameBatch query.
+	DeleteTeamByNameScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	InsertTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
+	// InsertTeamMembershipBatch enqueues a InsertTeamMembership query into batch to be executed
+	// later by the batch.
+	InsertTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text)
+	// InsertTeamMembershipScan scans the result of an executed InsertTeamMembershipBatch query.
+	InsertTeamMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	DeleteTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamMembershipBatch enqueues a DeleteTeamMembership query into batch to be executed
+	// later by the batch.
+	DeleteTeamMembershipBatch(batch genericBatch, userID pgtype.Text, teamID pgtype.Text)
+	// DeleteTeamMembershipScan scans the result of an executed DeleteTeamMembershipBatch query.
+	DeleteTeamMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertToken(ctx context.Context, params InsertTokenParams) (pgconn.CommandTag, error)
 	// InsertTokenBatch enqueues a InsertToken query into batch to be executed
 	// later by the batch.
@@ -881,6 +930,27 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertStateVersionOutputSQL, insertStateVersionOutputSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersionOutput': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamByNameSQL, findTeamByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamByIDSQL, deleteTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamByNameSQL, deleteTeamByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertTeamMembershipSQL, insertTeamMembershipSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertTeamMembership': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamMembershipSQL, deleteTeamMembershipSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamMembership': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
 	}
@@ -1026,6 +1096,14 @@ type StateVersionOutputs struct {
 	Type                 pgtype.Text `json:"type"`
 	Value                pgtype.Text `json:"value"`
 	StateVersionID       pgtype.Text `json:"state_version_id"`
+}
+
+// Teams represents the Postgres composite type "teams".
+type Teams struct {
+	TeamID         pgtype.Text        `json:"team_id"`
+	Name           pgtype.Text        `json:"name"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	OrganizationID pgtype.Text        `json:"organization_id"`
 }
 
 // Tokens represents the Postgres composite type "tokens".
@@ -1238,6 +1316,18 @@ func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
 	)
 }
 
+// newTeams creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'teams'.
+func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"teams",
+		compositeField{"team_id", "text", &pgtype.Text{}},
+		compositeField{"name", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"organization_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newTokens creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'tokens'.
 func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
@@ -1297,6 +1387,12 @@ func (tr *typeResolver) newSessionsArray() pgtype.ValueTranscoder {
 // '_state_version_outputs' array type.
 func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_state_version_outputs", "state_version_outputs", tr.newStateVersionOutputs)
+}
+
+// newTeamsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_teams' array type.
+func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_teams", "teams", tr.newTeams)
 }
 
 // newTokensArray creates a new pgtype.ValueTranscoder for the Postgres

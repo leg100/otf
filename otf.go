@@ -41,6 +41,7 @@ type Application interface {
 	RunService
 	EventService
 	UserService
+	TeamService
 	AgentTokenService
 	CurrentRunService
 	LockableApplication
@@ -59,6 +60,7 @@ type DB interface {
 	WaitAndLock(ctx context.Context, id int64, cb func(DB) error) error
 	Close()
 	UserStore
+	TeamStore
 	OrganizationStore
 	WorkspaceStore
 	RunStore

@@ -15,11 +15,13 @@ INSERT INTO users (
 SELECT u.*,
     array_remove(array_agg(s), NULL) AS sessions,
     array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations
+    array_remove(array_agg(o), NULL) AS organizations,
+    array_remove(array_agg(teams), NULL) AS teams
 FROM users u
 LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
 LEFT JOIN tokens t ON u.user_id = t.user_id
 LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
 GROUP BY u.user_id
 ;
 
@@ -41,7 +43,13 @@ SELECT u.*,
         FROM organizations o
         LEFT JOIN organization_memberships om USING (organization_id)
         WHERE om.user_id = u.user_id
-    ) AS organizations
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 WHERE u.user_id = pggen.arg('user_id')
 GROUP BY u.user_id
@@ -65,7 +73,13 @@ SELECT u.*,
         FROM organizations o
         LEFT JOIN organization_memberships om USING (organization_id)
         WHERE om.user_id = u.user_id
-    ) AS organizations
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 WHERE u.username = pggen.arg('username')
 GROUP BY u.user_id
@@ -89,7 +103,13 @@ SELECT u.*,
         FROM organizations o
         LEFT JOIN organization_memberships om USING (organization_id)
         WHERE om.user_id = u.user_id
-    ) AS organizations
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
 WHERE s.token = pggen.arg('token')
@@ -114,7 +134,13 @@ SELECT u.*,
         from organizations o
         left join organization_memberships om using (organization_id)
         where om.user_id = u.user_id
-    ) as organizations
+    ) as organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 LEFT JOIN tokens t ON u.user_id = t.user_id
 WHERE t.token = pggen.arg('token')
@@ -139,7 +165,13 @@ SELECT u.*,
         FROM organizations o
         LEFT JOIN organization_memberships om USING (organization_id)
         WHERE om.user_id = u.user_id
-    ) AS organizations
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 JOIN tokens t ON u.user_id = t.user_id
 WHERE t.token_id = pggen.arg('token_id')

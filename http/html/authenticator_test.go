@@ -71,6 +71,23 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	}
 }
 
+func TestAuthenticator_Synchronise(t *testing.T) {
+	authenticator := &Authenticator{nil, &fakeAuthenticatorApp{}}
+	user, err := authenticator.synchronise(context.Background(), &fakeDirectoryClient{})
+	require.NoError(t, err)
+
+	assert.Equal(t, "fake-user", user.Username())
+
+	if assert.Equal(t, 2, len(user.Organizations)) {
+		assert.Equal(t, "fake-org", user.Organizations[0].Name())
+		assert.Equal(t, "fake-user", user.Organizations[1].Name())
+	}
+
+	if assert.Equal(t, 1, len(user.Teams)) {
+		assert.Equal(t, "fake-team", user.Teams[0].Name())
+	}
+}
+
 type fakeCloud struct {
 	cloudConfig
 }
@@ -98,12 +115,16 @@ func (f *fakeCloud) NewCloud() (Cloud, error) { return nil, nil }
 
 type fakeDirectoryClient struct{}
 
-func (f *fakeDirectoryClient) GetUser(context.Context) (string, error) {
-	return "fake-user", nil
-}
-
-func (f *fakeDirectoryClient) ListOrganizations(context.Context) ([]string, error) {
-	return []string{"fake-org"}, nil
+func (f *fakeDirectoryClient) GetUser(context.Context) (*otf.User, error) {
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+		Name: otf.String("fake-org"),
+	})
+	if err != nil {
+		return nil, err
+	}
+	team := otf.NewTeam("fake-team", org)
+	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+	return user, nil
 }
 
 type fakeAuthenticatorApp struct {
@@ -122,6 +143,18 @@ func (f *fakeAuthenticatorApp) EnsureCreatedOrganization(ctx context.Context, op
 	return otf.NewOrganization(opts)
 }
 
-func (f *fakeAuthenticatorApp) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
+func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
+	user.Organizations = orgs
+	user.Teams = teams
 	return user, nil
+}
+
+func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*otf.Team, error) {
+	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+		Name: otf.String(organizationName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return otf.NewTeam(name, org), nil
 }
