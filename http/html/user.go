@@ -1,6 +1,11 @@
 package html
 
-import "github.com/leg100/otf"
+import (
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/leg100/otf"
+)
 
 type UserList struct {
 	Items []*otf.User
@@ -19,4 +24,16 @@ func (l UserList) TeamName() string {
 		return ""
 	}
 	return *l.opts.TeamName
+}
+
+func (app *Application) listUsers(w http.ResponseWriter, r *http.Request) {
+	opts := otf.UserListOptions{
+		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
+	}
+	users, err := app.ListUsers(r.Context(), opts)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.render("users_list.tmpl", w, r, UserList{users, opts})
 }

@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
@@ -87,6 +86,27 @@ func TestWeb(t *testing.T) {
 		assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
 	})
 
+	t.Run("list users", func(t *testing.T) {
+		ctx, cancel := chromedp.NewContext(allocCtx)
+		defer cancel()
+
+		var gotUser string
+		err := chromedp.Run(ctx, chromedp.Tasks{
+			chromedp.Navigate(url),
+			// login
+			chromedp.Click(".login-button-github", chromedp.NodeVisible),
+			// select fake-user's personal org
+			chromedp.Click("#item-organization-fake-user a", chromedp.NodeVisible),
+			// list users
+			chromedp.Click("#users > a", chromedp.NodeVisible),
+			screenshot("otf_list_users"),
+			chromedp.Text("#item-user-fake-user .status", &gotUser, chromedp.NodeVisible),
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, "fake-user", strings.TrimSpace(gotUser))
+	})
+
 	t.Run("list team members", func(t *testing.T) {
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
@@ -107,8 +127,6 @@ func TestWeb(t *testing.T) {
 			chromedp.Text("#item-user-fake-user .status", &gotUser, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
-
-		time.Sleep(5 * time.Second)
 
 		assert.Equal(t, "fake-user", strings.TrimSpace(gotUser))
 	})

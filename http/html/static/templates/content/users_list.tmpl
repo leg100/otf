@@ -1,0 +1,24 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Users{{ end }}
+
+{{ define "container-header" }}users{{ end }}
+
+{{ define "content" }}
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      {{ block "content-list-item" . }}{{ end }}
+    {{ else }}
+      No items currently exist.
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div id="item-user-{{ .Username }}" class="item">
+    <div class="item-heading">
+      <span class="status">{{ .Username }}</span>
+    </div>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}
