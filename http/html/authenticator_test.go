@@ -116,6 +116,8 @@ func (f *fakeCloud) NewCloud() (Cloud, error) { return nil, nil }
 type fakeDirectoryClient struct{}
 
 func (f *fakeDirectoryClient) GetUser(context.Context) (*otf.User, error) {
+	// TODO: move org/team/user constructors to test routine itself, letting
+	// routine populate fake dir client accordingly.
 	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
 		Name: otf.String("fake-org"),
 	})

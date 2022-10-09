@@ -156,6 +156,19 @@ func githubStub(t *testing.T) string {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
+	http.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
+		out, err := json.Marshal([]*github.Team{
+			{
+				Name: otf.String("stub_team"),
+				Organization: &github.Organization{
+					Login: otf.String("stub_org"),
+				},
+			},
+		})
+		require.NoError(t, err)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(out)
+	})
 	srv := httptest.NewTLSServer(nil)
 	t.Cleanup(srv.Close)
 
