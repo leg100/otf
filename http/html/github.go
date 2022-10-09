@@ -80,11 +80,13 @@ func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
 		return nil, err
 	}
 
+	var orgs []*otf.Organization
+	var teams []*otf.Team
+
 	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
-	var orgs []*otf.Organization
 	for _, gorg := range gorgs {
 		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
 			Name: otf.String(gorg.GetLogin()),
@@ -93,13 +95,21 @@ func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
 			return nil, err
 		}
 		orgs = append(orgs, org)
+
+		// Determine if they are an admin; if so, add them to the owners team.
+		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", org.Name())
+		if err != nil {
+			return nil, err
+		}
+		if membership.GetRole() == "admin" {
+			teams = append(teams, otf.NewTeam("owners", org))
+		}
 	}
 
 	gteams, _, err := g.client.Teams.ListUserTeams(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	var teams []*otf.Team
 	for _, gteam := range gteams {
 		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
 			Name: otf.String(gteam.GetOrganization().GetLogin()),
