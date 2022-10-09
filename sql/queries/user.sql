@@ -29,7 +29,12 @@ GROUP BY u.user_id
 SELECT u.*,
     array_remove(array_agg(s), NULL) AS sessions,
     array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
     array_remove(array_agg(teams), NULL) AS teams
 FROM users u
 LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
@@ -44,8 +49,18 @@ GROUP BY u.user_id
 SELECT u.*,
     array_remove(array_agg(s), NULL) AS sessions,
     array_remove(array_agg(t), NULL) AS tokens,
-    array_remove(array_agg(o), NULL) AS organizations,
-    array_remove(array_agg(teams), NULL) AS teams
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
 FROM users u
 LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
 LEFT JOIN tokens t ON u.user_id = t.user_id

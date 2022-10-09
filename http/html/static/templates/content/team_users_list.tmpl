@@ -21,9 +21,9 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
+  <div id="item-user-{{ .Username }}" class="item">
     <div class="item-heading">
-    <span class="status">{{ .Username }}</span>
+      <span class="status">{{ .Username }}</span>
     </div>
     {{ template "identifier" . }}
   </div>

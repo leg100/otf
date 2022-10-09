@@ -9,7 +9,7 @@
 {{ end }}
 
 {{ define "content-list-item" }}
-  <div class="item">
+  <div id="item-organization-{{ .Name }}" class="item">
     <div class="item-heading">
     <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
     </div>
