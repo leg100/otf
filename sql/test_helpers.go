@@ -48,6 +48,10 @@ func newTestOrganization(t *testing.T) *otf.Organization {
 	return org
 }
 
+func newTestTeam(t *testing.T, team *otf.Organization) *otf.Team {
+	return otf.NewTeam(uuid.NewString(), team)
+}
+
 func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
 	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{
 		Name: uuid.NewString(),
@@ -96,6 +100,17 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 		db.DeleteOrganization(context.Background(), org.Name())
 	})
 	return org
+}
+
+func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
+	team := newTestTeam(t, org)
+	err := db.CreateTeam(context.Background(), team)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteTeam(context.Background(), otf.TeamSpec{ID: otf.String(team.ID())})
+	})
+	return team
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {

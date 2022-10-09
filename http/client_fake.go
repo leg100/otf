@@ -28,6 +28,7 @@ type FakeClient struct {
 
 	// TODO: stubbed until implemented
 	otf.UserService
+	otf.TeamService
 	otf.RunService
 	otf.StateVersionService
 	otf.ConfigurationVersionService

@@ -33,12 +33,12 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 	return a.CreateUser(ctx, username)
 }
 
-func (a *Application) SyncOrganizationMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization) (*otf.User, error) {
-	if err := user.SyncOrganizationMemberships(ctx, orgs, a.db); err != nil {
+func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
+	if err := user.SyncMemberships(ctx, a.db, orgs, teams); err != nil {
 		return nil, err
 	}
 
-	a.V(1).Info("synchronised user's organization memberships", "username", user.Username())
+	a.V(1).Info("synchronised user's memberships", "username", user.Username())
 
 	return user, nil
 }

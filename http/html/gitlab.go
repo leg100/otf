@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/leg100/otf"
@@ -59,24 +60,57 @@ func (g *gitlabCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 	return &gitlabProvider{client: client}, nil
 }
 
-func (g *gitlabProvider) GetUser(ctx context.Context) (string, error) {
-	user, _, err := g.client.Users.CurrentUser()
+// GetUser retrieves a user from gitlab. The user's organizations map to gitlab
+// groups and the user's teams map to their access level on the groups, e.g. a
+// user with maintainer access level on group acme maps to a user in the
+// maintainer team in the acme organization.
+func (g *gitlabProvider) GetUser(ctx context.Context) (*otf.User, error) {
+	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return user.Username, nil
-}
 
-func (g *gitlabProvider) ListOrganizations(ctx context.Context) ([]string, error) {
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
 		TopLevelOnly: otf.Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	names := []string{}
-	for _, o := range groups {
-		names = append(names, o.Name)
+	var orgs []*otf.Organization
+	var teams []*otf.Team
+	for _, group := range groups {
+		// Create org for each top-level group
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(group.Path),
+		})
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, org)
+
+		// Get group membership info
+		membership, _, err := g.client.GroupMembers.GetGroupMember(group.ID, guser.ID)
+		if err != nil {
+			return nil, err
+		}
+		var teamName string
+		switch membership.AccessLevel {
+		case gitlab.OwnerPermissions:
+			teamName = "owners"
+		case gitlab.DeveloperPermissions:
+			teamName = "developers"
+		case gitlab.MaintainerPermissions:
+			teamName = "maintainers"
+		case gitlab.ReporterPermissions:
+			teamName = "reporters"
+		case gitlab.GuestPermissions:
+			teamName = "guests"
+		default:
+			// TODO: skip unknown access levels without error
+			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
+		}
+		teams = append(teams, otf.NewTeam(teamName, org))
 	}
-	return names, nil
+	user := otf.NewUser(guser.Username, otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
+	return user, nil
 }

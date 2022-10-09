@@ -3,6 +3,7 @@ package html
 import (
 	"context"
 
+	"github.com/leg100/otf"
 	"golang.org/x/oauth2"
 )
 
@@ -18,6 +19,5 @@ type DirectoryClientOptions struct {
 }
 
 type DirectoryClient interface {
-	GetUser(ctx context.Context) (string, error)
-	ListOrganizations(ctx context.Context) ([]string, error)
+	GetUser(ctx context.Context) (*otf.User, error)
 }
