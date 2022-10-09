@@ -17,7 +17,7 @@ import (
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
 	authenticator := &Authenticator{
-		newFakeCloud("gitlab.com"),
+		newFakeCloud("gitlab.com", nil),
 		&fakeAuthenticatorApp{},
 	}
 
@@ -38,6 +38,10 @@ func TestAuthenticator_RequestHandler(t *testing.T) {
 }
 
 func TestAuthenticator_ResponseHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	team := otf.NewTeam("fake-team", org)
+	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+
 	// IdP stub
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
@@ -50,7 +54,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	authenticator := &Authenticator{
-		newFakeCloud(srvURL.Host),
+		newFakeCloud(srvURL.Host, user),
 		&fakeAuthenticatorApp{},
 	}
 
@@ -72,27 +76,36 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 }
 
 func TestAuthenticator_Synchronise(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	team := otf.NewTeam("fake-team", org)
+	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+
 	authenticator := &Authenticator{nil, &fakeAuthenticatorApp{}}
-	user, err := authenticator.synchronise(context.Background(), &fakeDirectoryClient{})
+	user, err := authenticator.synchronise(context.Background(), &fakeDirectoryClient{user})
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())
 
 	if assert.Equal(t, 2, len(user.Organizations)) {
-		assert.Equal(t, "fake-org", user.Organizations[0].Name())
+		assert.Equal(t, org.Name(), user.Organizations[0].Name())
 		assert.Equal(t, "fake-user", user.Organizations[1].Name())
 	}
 
-	if assert.Equal(t, 1, len(user.Teams)) {
+	if assert.Equal(t, 2, len(user.Teams)) {
 		assert.Equal(t, "fake-team", user.Teams[0].Name())
+		assert.Equal(t, org.Name(), user.Teams[0].OrganizationName())
+
+		assert.Equal(t, "owners", user.Teams[1].Name())
+		assert.Equal(t, "fake-user", user.Teams[1].OrganizationName())
 	}
 }
 
 type fakeCloud struct {
 	cloudConfig
+	user *otf.User
 }
 
-func newFakeCloud(hostname string) *fakeCloud {
+func newFakeCloud(hostname string, user *otf.User) *fakeCloud {
 	return &fakeCloud{
 		cloudConfig: cloudConfig{
 			cloudName:           "fake",
@@ -104,29 +117,22 @@ func newFakeCloud(hostname string) *fakeCloud {
 				clientSecret: "xyz-789",
 			},
 		},
+		user: user,
 	}
 }
 
 func (f *fakeCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
-	return &fakeDirectoryClient{}, nil
+	return &fakeDirectoryClient{f.user}, nil
 }
 
 func (f *fakeCloud) NewCloud() (Cloud, error) { return nil, nil }
 
-type fakeDirectoryClient struct{}
+type fakeDirectoryClient struct {
+	user *otf.User
+}
 
 func (f *fakeDirectoryClient) GetUser(context.Context) (*otf.User, error) {
-	// TODO: move org/team/user constructors to test routine itself, letting
-	// routine populate fake dir client accordingly.
-	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-		Name: otf.String("fake-org"),
-	})
-	if err != nil {
-		return nil, err
-	}
-	team := otf.NewTeam("fake-team", org)
-	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
-	return user, nil
+	return f.user, nil
 }
 
 type fakeAuthenticatorApp struct {
