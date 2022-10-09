@@ -38,13 +38,26 @@ func (db *DB) GetTeam(ctx context.Context, spec otf.TeamSpec) (*otf.Team, error)
 	}
 }
 
-func (db *DB) AddTeamMembership(ctx context.Context, id, orgID string) error {
-	_, err := db.InsertTeamMembership(ctx, String(id), String(orgID))
+func (db *DB) ListTeams(ctx context.Context, organizationName string) ([]*otf.Team, error) {
+	result, err := db.FindTeamsByOrg(ctx, String(organizationName))
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Team
+	for _, r := range result {
+		items = append(items, otf.UnmarshalTeamDBResult(otf.TeamDBResult(r)))
+	}
+	return items, nil
+}
+
+func (db *DB) AddTeamMembership(ctx context.Context, userID, teamID string) error {
+	_, err := db.InsertTeamMembership(ctx, String(userID), String(teamID))
 	return err
 }
 
-func (db *DB) RemoveTeamMembership(ctx context.Context, id, orgID string) error {
-	_, err := db.DeleteTeamMembership(ctx, String(id), String(orgID))
+func (db *DB) RemoveTeamMembership(ctx context.Context, userID, teamID string) error {
+	_, err := db.DeleteTeamMembership(ctx, String(userID), String(teamID))
 	if err != nil {
 		return databaseError(err)
 	}

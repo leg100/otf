@@ -11,6 +11,12 @@ type organizationRoute interface {
 	OrganizationName() string
 }
 
+// teamRoute provides info about a route for an team resource
+type teamRoute interface {
+	OrganizationName() string
+	TeamName() string
+}
+
 // workspaceRoute provides info about a route for a workspace resource
 type workspaceRoute interface {
 	OrganizationName() string
@@ -99,6 +105,14 @@ func deleteOrganizationPath(name organizationRoute) string {
 	return fmt.Sprintf("/organizations/%s/delete", name.OrganizationName())
 }
 
+func listTeamsPath(name organizationRoute) string {
+	return fmt.Sprintf("/organizations/%s/teams", name.OrganizationName())
+}
+
+func listTeamUsersPath(name teamRoute) string {
+	return fmt.Sprintf("/organizations/%s/teams/%s/users", name.OrganizationName(), name.TeamName())
+}
+
 func listWorkspacePath(name organizationRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces", name.OrganizationName())
 }
@@ -182,6 +196,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["editOrganizationPath"] = editOrganizationPath
 	m["updateOrganizationPath"] = updateOrganizationPath
 	m["deleteOrganizationPath"] = deleteOrganizationPath
+	m["listTeamsPath"] = listTeamsPath
+	m["listTeamUsersPath"] = listTeamUsersPath
 	m["listWorkspacePath"] = listWorkspacePath
 	m["newWorkspacePath"] = newWorkspacePath
 	m["createWorkspacePath"] = createWorkspacePath

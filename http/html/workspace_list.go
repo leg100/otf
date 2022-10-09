@@ -12,6 +12,8 @@ type workspaceList struct {
 
 // OrganizationName makes the organization name for a workspace listing
 // available to a template
+//
+// TODO: migrate this to WorkspaceList itself, checking for nil and returning ""
 func (l workspaceList) OrganizationName() string {
 	return *l.WorkspaceListOptions.OrganizationName
 }

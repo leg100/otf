@@ -33,6 +33,13 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 	return a.CreateUser(ctx, username)
 }
 
+func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
+	if !otf.CanAccess(ctx, opts.OrganizationName) {
+		return nil, otf.ErrAccessNotPermitted
+	}
+	return a.db.ListUsers(ctx, opts)
+}
+
 func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
 	if err := user.SyncMemberships(ctx, a.db, orgs, teams); err != nil {
 		return nil, err

@@ -1,0 +1,24 @@
+{{ template "layout" . }}
+
+{{ define "title" }}Teams{{ end }}
+
+{{ define "container-header" }}teams{{ end }}
+
+{{ define "content" }}
+  <div id="content-list" class="content-list">
+    {{ range .Content }}
+      {{ block "content-list-item" . }}{{ end }}
+    {{ else }}
+      No items currently exist.
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+    <a class="status" href="{{ listTeamUsersPath . }}">{{ .Name }}</a>
+    </div>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}

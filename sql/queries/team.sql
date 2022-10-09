@@ -11,6 +11,15 @@ INSERT INTO teams (
     pggen.arg('organization_id')
 );
 
+-- name: FindTeamsByOrg :many
+SELECT
+    t.*,
+    o.name AS organization_name
+FROM teams t
+JOIN organizations o USING (organization_id)
+WHERE o.name = pggen.arg('organization_name')
+;
+
 -- name: FindTeamByID :one
 SELECT
     t.*,

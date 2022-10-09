@@ -50,3 +50,14 @@ func (a *Application) GetTeam(ctx context.Context, spec otf.TeamSpec) (*otf.Team
 
 	return team, nil
 }
+
+func (a *Application) ListTeams(ctx context.Context, organizationName string) ([]*otf.Team, error) {
+	teams, err := a.db.ListTeams(ctx, organizationName)
+	if err != nil {
+		a.V(2).Info("listing teams", "organization", organizationName)
+		return nil, err
+	}
+	a.V(2).Info("listed teams", "organization", organizationName, "total", len(teams))
+
+	return teams, nil
+}

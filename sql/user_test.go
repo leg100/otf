@@ -165,31 +165,51 @@ func TestUser_Get_WithSessions(t *testing.T) {
 }
 
 func TestUser_List(t *testing.T) {
-	// TODO: this lists *every* user in the db! need to change API to filter by
-	// org - anyhow, shouldn't all users belong to at least one org?
-
+	ctx := context.Background()
 	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	team := createTestTeam(t, db, org)
 	user1 := createTestUser(t, db)
-	user2 := createTestUser(t, db)
-	user3 := createTestUser(t, db)
+	user2 := createTestUser(t, db, otf.WithOrganizationMemberships(org))
+	user3 := createTestUser(t, db, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
-	users, err := db.ListUsers(context.Background())
+	// Retrieve all users
+	users, err := db.ListUsers(ctx, otf.UserListOptions{})
 	require.NoError(t, err)
 
 	assert.Contains(t, users, user1)
 	assert.Contains(t, users, user2)
 	assert.Contains(t, users, user3)
+
+	// Retrieve users in org
+	users, err = db.ListUsers(ctx, otf.UserListOptions{OrganizationName: otf.String(org.Name())})
+	require.NoError(t, err)
+
+	assert.NotContains(t, users, user1)
+	assert.Contains(t, users, user2)
+	assert.Contains(t, users, user3)
+
+	// Retrieve users in org belonging to team
+	users, err = db.ListUsers(ctx, otf.UserListOptions{
+		OrganizationName: otf.String(org.Name()),
+		TeamName:         otf.String(team.Name()),
+	})
+	require.NoError(t, err)
+
+	assert.NotContains(t, users, user1)
+	assert.NotContains(t, users, user2)
+	assert.Contains(t, users, user3)
 }
 
 func TestUser_Delete(t *testing.T) {
+	ctx := context.Background()
 	db := newTestDB(t)
 	user := createTestUser(t, db)
 
-	err := db.DeleteUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
+	err := db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	// Verify zero users after deletion
-	users, err := db.ListUsers(context.Background())
+	users, err := db.ListUsers(ctx, otf.UserListOptions{})
 	require.NoError(t, err)
 	assert.NotContains(t, users, user)
 }
