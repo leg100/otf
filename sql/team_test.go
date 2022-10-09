@@ -49,3 +49,18 @@ func TestTeam_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestTeam_List(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	team1 := createTestTeam(t, db, org)
+	team2 := createTestTeam(t, db, org)
+	team3 := createTestTeam(t, db, org)
+
+	got, err := db.ListTeams(context.Background(), org.Name())
+	require.NoError(t, err)
+
+	assert.Contains(t, got, team1)
+	assert.Contains(t, got, team2)
+	assert.Contains(t, got, team3)
+}

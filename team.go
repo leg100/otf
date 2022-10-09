@@ -18,6 +18,7 @@ type Team struct {
 
 func (u *Team) ID() string               { return u.id }
 func (u *Team) Name() string             { return u.name }
+func (u *Team) TeamName() string         { return u.name }
 func (u *Team) CreatedAt() time.Time     { return u.createdAt }
 func (u *Team) String() string           { return u.name }
 func (u *Team) OrganizationName() string { return u.organizationName }
@@ -34,6 +35,8 @@ type TeamService interface {
 	EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*Team, error)
 	// Get retrieves a team according to the spec.
 	GetTeam(ctx context.Context, spec TeamSpec) (*Team, error)
+	// ListTeams lists teams in an organization.
+	ListTeams(ctx context.Context, organizationName string) ([]*Team, error)
 }
 
 // TeamStore is a persistence store for team accounts.
@@ -41,6 +44,7 @@ type TeamStore interface {
 	CreateTeam(ctx context.Context, team *Team) error
 	GetTeam(ctx context.Context, spec TeamSpec) (*Team, error)
 	DeleteTeam(ctx context.Context, spec TeamSpec) error
+	ListTeams(ctx context.Context, organizationName string) ([]*Team, error)
 }
 
 type TeamSpec struct {

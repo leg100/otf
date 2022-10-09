@@ -36,21 +36,46 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 	})
 }
 
-func (db *DB) ListUsers(ctx context.Context) ([]*otf.User, error) {
-	result, err := db.FindUsers(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var items []*otf.User
-	for _, r := range result {
-		user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+func (db *DB) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
+	var users []*otf.User
+	if opts.OrganizationName != nil && opts.TeamName != nil {
+		result, err := db.FindUsersByTeam(ctx, String(*opts.OrganizationName), String(*opts.TeamName))
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, user)
+		for _, r := range result {
+			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			if err != nil {
+				return nil, err
+			}
+			users = append(users, user)
+		}
+	} else if opts.OrganizationName != nil {
+		result, err := db.FindUsersByOrganization(ctx, String(*opts.OrganizationName))
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range result {
+			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			if err != nil {
+				return nil, err
+			}
+			users = append(users, user)
+		}
+	} else {
+		result, err := db.FindUsers(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range result {
+			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			if err != nil {
+				return nil, err
+			}
+			users = append(users, user)
+		}
 	}
-	return items, nil
+	return users, nil
 }
 
 // GetUser retrieves a user from the DB, along with its sessions.

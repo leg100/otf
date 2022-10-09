@@ -25,6 +25,52 @@ LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.use
 GROUP BY u.user_id
 ;
 
+-- name: FindUsersByOrganization :many
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
+    array_remove(array_agg(teams), NULL) AS teams
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
+WHERE o.name = pggen.arg('organization_name')
+GROUP BY u.user_id
+;
+
+-- name: FindUsersByTeam :many
+SELECT u.*,
+    array_remove(array_agg(s), NULL) AS sessions,
+    array_remove(array_agg(t), NULL) AS tokens,
+    (
+        SELECT array_remove(array_agg(o), NULL)
+        FROM organizations o
+        LEFT JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
+    (
+        SELECT array_remove(array_agg(t), NULL)
+        FROM teams t
+        LEFT JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
+FROM users u
+LEFT JOIN sessions s ON u.user_id = s.user_id AND s.expiry > current_timestamp
+LEFT JOIN tokens t ON u.user_id = t.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
+WHERE o.name = pggen.arg('organization_name')
+AND   teams.name = pggen.arg('team_name')
+GROUP BY u.user_id
+;
+
 -- name: FindUserByID :one
 SELECT u.*,
     (

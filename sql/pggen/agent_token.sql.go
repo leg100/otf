@@ -461,6 +461,13 @@ type Querier interface {
 	// InsertTeamScan scans the result of an executed InsertTeamBatch query.
 	InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	FindTeamsByOrg(ctx context.Context, organizationName pgtype.Text) ([]FindTeamsByOrgRow, error)
+	// FindTeamsByOrgBatch enqueues a FindTeamsByOrg query into batch to be executed
+	// later by the batch.
+	FindTeamsByOrgBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindTeamsByOrgScan scans the result of an executed FindTeamsByOrgBatch query.
+	FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByOrgRow, error)
+
 	FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindTeamByIDRow, error)
 	// FindTeamByIDBatch enqueues a FindTeamByID query into batch to be executed
 	// later by the batch.
@@ -530,6 +537,20 @@ type Querier interface {
 	FindUsersBatch(batch genericBatch)
 	// FindUsersScan scans the result of an executed FindUsersBatch query.
 	FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, error)
+
+	FindUsersByOrganization(ctx context.Context, organizationName pgtype.Text) ([]FindUsersByOrganizationRow, error)
+	// FindUsersByOrganizationBatch enqueues a FindUsersByOrganization query into batch to be executed
+	// later by the batch.
+	FindUsersByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindUsersByOrganizationScan scans the result of an executed FindUsersByOrganizationBatch query.
+	FindUsersByOrganizationScan(results pgx.BatchResults) ([]FindUsersByOrganizationRow, error)
+
+	FindUsersByTeam(ctx context.Context, organizationName pgtype.Text, teamName pgtype.Text) ([]FindUsersByTeamRow, error)
+	// FindUsersByTeamBatch enqueues a FindUsersByTeam query into batch to be executed
+	// later by the batch.
+	FindUsersByTeamBatch(batch genericBatch, organizationName pgtype.Text, teamName pgtype.Text)
+	// FindUsersByTeamScan scans the result of an executed FindUsersByTeamBatch query.
+	FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersByTeamRow, error)
 
 	FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error)
 	// FindUserByIDBatch enqueues a FindUserByID query into batch to be executed
@@ -933,6 +954,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findTeamsByOrgSQL, findTeamsByOrgSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamsByOrg': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
 	}
@@ -962,6 +986,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findUsersSQL, findUsersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsers': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findUsersByOrganizationSQL, findUsersByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindUsersByOrganization': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findUsersByTeamSQL, findUsersByTeamSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindUsersByTeam': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUserByIDSQL, findUserByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByID': %w", err)

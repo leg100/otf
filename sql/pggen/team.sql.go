@@ -54,6 +54,70 @@ func (q *DBQuerier) InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag,
 	return cmdTag, err
 }
 
+const findTeamsByOrgSQL = `SELECT
+    t.*,
+    o.name AS organization_name
+FROM teams t
+JOIN organizations o USING (organization_id)
+WHERE o.name = $1
+;`
+
+type FindTeamsByOrgRow struct {
+	TeamID           pgtype.Text        `json:"team_id"`
+	Name             pgtype.Text        `json:"name"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	OrganizationID   pgtype.Text        `json:"organization_id"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindTeamsByOrg implements Querier.FindTeamsByOrg.
+func (q *DBQuerier) FindTeamsByOrg(ctx context.Context, organizationName pgtype.Text) ([]FindTeamsByOrgRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamsByOrg")
+	rows, err := q.conn.Query(ctx, findTeamsByOrgSQL, organizationName)
+	if err != nil {
+		return nil, fmt.Errorf("query FindTeamsByOrg: %w", err)
+	}
+	defer rows.Close()
+	items := []FindTeamsByOrgRow{}
+	for rows.Next() {
+		var item FindTeamsByOrgRow
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindTeamsByOrg row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindTeamsByOrg rows: %w", err)
+	}
+	return items, err
+}
+
+// FindTeamsByOrgBatch implements Querier.FindTeamsByOrgBatch.
+func (q *DBQuerier) FindTeamsByOrgBatch(batch genericBatch, organizationName pgtype.Text) {
+	batch.Queue(findTeamsByOrgSQL, organizationName)
+}
+
+// FindTeamsByOrgScan implements Querier.FindTeamsByOrgScan.
+func (q *DBQuerier) FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByOrgRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindTeamsByOrgBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindTeamsByOrgRow{}
+	for rows.Next() {
+		var item FindTeamsByOrgRow
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.OrganizationName); err != nil {
+			return nil, fmt.Errorf("scan FindTeamsByOrgBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindTeamsByOrgBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findTeamByIDSQL = `SELECT
     t.*,
     o.name AS organization_name

@@ -157,6 +157,8 @@ type UserService interface {
 	// SyncUserMemberships makes the user a member of the specified organizations
 	// and teams and removes any existing memberships not specified.
 	SyncUserMemberships(ctx context.Context, user *User, orgs []*Organization, teams []*Team) (*User, error)
+	// ListUsers lists users.
+	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
 	// CreateSession creates a user session.
 	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
 	// DeleteSession deletes the session with the given token
@@ -171,7 +173,8 @@ type UserService interface {
 type UserStore interface {
 	CreateUser(ctx context.Context, user *User) error
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
-	ListUsers(ctx context.Context) ([]*User, error)
+	// ListUsers lists users.
+	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
 	DeleteUser(ctx context.Context, spec UserSpec) error
 	// AddOrganizationMembership adds a user as a member of an organization
 	AddOrganizationMembership(ctx context.Context, id, orgID string) error
@@ -183,6 +186,13 @@ type UserStore interface {
 	// RemoveTeamMembership removes a user as a member of an
 	// team
 	RemoveTeamMembership(ctx context.Context, id, teamID string) error
+}
+
+// UserListOptions are options for the ListUsers endpoint. Both
+// OrganizationName and TeamName must be specified, or neither.
+type UserListOptions struct {
+	OrganizationName *string
+	TeamName         *string
 }
 
 type UserSpec struct {
