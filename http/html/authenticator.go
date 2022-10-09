@@ -224,15 +224,16 @@ func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient)
 		cuser.Organizations[i] = org
 	}
 
-	// A user also gets their own personal organization that matches their
-	// username
-	org, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+	// A user also gets their own personal organization matching their username
+	personal, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
 		Name: otf.String(user.Username()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	cuser.Organizations = append(cuser.Organizations, org)
+	cuser.Organizations = append(cuser.Organizations, personal)
+	// And make them an owner of their personal org
+	cuser.Teams = append(cuser.Teams, otf.NewTeam("owners", personal))
 
 	// Create user's teams as necessary
 	for i, team := range cuser.Teams {
