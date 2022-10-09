@@ -7,19 +7,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// teamRequest provides metadata about a request for a workspace
-type teamRequest struct {
-	r *http.Request
-}
-
-func (w teamRequest) OrganizationName() string {
-	return param(w.r, "organization_name")
-}
-
-func (w teamRequest) TeamName() string {
-	return param(w.r, "team_name")
-}
-
 func (app *Application) listTeams(w http.ResponseWriter, r *http.Request) {
 	teams, err := app.ListTeams(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
