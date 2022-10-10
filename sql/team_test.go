@@ -21,6 +21,50 @@ func TestTeam_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTeam_Update_ByID(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+
+	org := createTestOrganization(t, db)
+	team := createTestTeam(t, db, org)
+
+	_, err := db.UpdateTeam(ctx, otf.TeamSpec{ID: otf.String(team.ID())}, func(team *otf.Team) error {
+		return team.Update(otf.TeamUpdateOptions{
+			ManageWorkspaces: true,
+		})
+	})
+	require.NoError(t, err)
+
+	got, err := db.GetTeam(ctx, otf.TeamSpec{ID: otf.String(team.ID())})
+	require.NoError(t, err)
+
+	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
+}
+
+func TestTeam_Update_ByName(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+
+	org := createTestOrganization(t, db)
+	team := createTestTeam(t, db, org)
+
+	spec := otf.TeamSpec{
+		Name:             otf.String(team.Name()),
+		OrganizationName: otf.String(org.Name()),
+	}
+	_, err := db.UpdateTeam(ctx, spec, func(team *otf.Team) error {
+		return team.Update(otf.TeamUpdateOptions{
+			ManageWorkspaces: true,
+		})
+	})
+	require.NoError(t, err)
+
+	got, err := db.GetTeam(ctx, spec)
+	require.NoError(t, err)
+
+	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
+}
+
 func TestTeam_Get(t *testing.T) {
 	db := newTestDB(t)
 

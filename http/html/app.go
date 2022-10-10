@@ -133,7 +133,11 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/users", app.listUsers)
 
 		r.GET("/organizations/{organization_name}/teams", app.listTeams)
+		r.GET("/organizations/{organization_name}/teams/{team_name}", app.getTeam)
 		r.GET("/organizations/{organization_name}/teams/{team_name}/users", app.listTeamUsers)
+		r.PST("/organizations/{organization_name}/teams/{team_name}/update", app.updateTeam)
+
+		r.GET("/organizations/{organization_name}/permissions", app.listOrganizationPermissions)
 
 		r.GET("/organizations/{organization_name}/workspaces", app.listWorkspaces)
 		r.GET("/organizations/{organization_name}/workspaces/new", app.newWorkspace)

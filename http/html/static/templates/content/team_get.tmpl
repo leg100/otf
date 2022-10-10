@@ -1,0 +1,37 @@
+{{ template "layout" . }}
+
+{{ define "title" }}team: {{ .Content.Name }}{{ end }}
+
+{{ define "container-header" }}
+  <a href="{{ listTeamsPath .Content }}">teams</a>
+  /
+{{ .Content.Name }}{{ end }}
+
+{{ define "content" }}
+  <h3>Permissions</h3>
+  <form class="permissions-form" action="{{ updateTeamPath .Content }}" method="POST">
+    <div class="field">
+      <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Content.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Content.IsOwners }}disabled{{ end }}>
+      <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
+    </div>
+    {{ if not .Content.IsOwners }}
+      <div class="field">
+        <button>Save changes</button>
+      </div>
+    {{ end }}
+  </form>
+  <br>
+  <h3>Members</h3>
+  <div id="content-list" class="content-list">
+    {{ range .Content.Members }}
+      <div id="item-user-{{ .Username }}" class="item">
+        <div class="item-heading">
+          <span class="status">{{ .Username }}</span>
+        </div>
+        {{ template "identifier" . }}
+      </div>
+    {{ else }}
+      No items currently exist.
+    {{ end }}
+  </div>
+{{ end }}

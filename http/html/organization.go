@@ -80,3 +80,12 @@ func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Reques
 	flashSuccess(w, "deleted organization: "+organizationName)
 	http.Redirect(w, r, listOrganizationPath(), http.StatusFound)
 }
+
+func (app *Application) listOrganizationPermissions(w http.ResponseWriter, r *http.Request) {
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.render("organization_get.tmpl", w, r, org)
+}
