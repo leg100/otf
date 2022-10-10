@@ -155,14 +155,20 @@ header nav {
   gap: 1em;
 }
 
+/* Place labels above their inputs */
+.main-form label {
+  display: block;
+}
+
+.permissions-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
 /* Free-form inputs need to accommodate more text */
 input.freeform {
   width: 30em;
-}
-
-/* Place labels above their inputs */
-label {
-  display: block;
 }
 
 /* Radio options are placed horizontally */

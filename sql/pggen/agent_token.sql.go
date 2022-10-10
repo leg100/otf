@@ -461,6 +461,13 @@ type Querier interface {
 	// InsertTeamScan scans the result of an executed InsertTeamBatch query.
 	InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	FindTeamIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
+	// FindTeamIDByNameBatch enqueues a FindTeamIDByName query into batch to be executed
+	// later by the batch.
+	FindTeamIDByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
+	// FindTeamIDByNameScan scans the result of an executed FindTeamIDByNameBatch query.
+	FindTeamIDByNameScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	FindTeamsByOrg(ctx context.Context, organizationName pgtype.Text) ([]FindTeamsByOrgRow, error)
 	// FindTeamsByOrgBatch enqueues a FindTeamsByOrg query into batch to be executed
 	// later by the batch.
@@ -481,6 +488,20 @@ type Querier interface {
 	FindTeamByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
 	// FindTeamByNameScan scans the result of an executed FindTeamByNameBatch query.
 	FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error)
+
+	FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (FindTeamByIDForUpdateRow, error)
+	// FindTeamByIDForUpdateBatch enqueues a FindTeamByIDForUpdate query into batch to be executed
+	// later by the batch.
+	FindTeamByIDForUpdateBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamByIDForUpdateScan scans the result of an executed FindTeamByIDForUpdateBatch query.
+	FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTeamByIDForUpdateRow, error)
+
+	UpdateTeamByID(ctx context.Context, permissionManageWorkspaces bool, teamID pgtype.Text) (pgtype.Text, error)
+	// UpdateTeamByIDBatch enqueues a UpdateTeamByID query into batch to be executed
+	// later by the batch.
+	UpdateTeamByIDBatch(batch genericBatch, permissionManageWorkspaces bool, teamID pgtype.Text)
+	// UpdateTeamByIDScan scans the result of an executed UpdateTeamByIDBatch query.
+	UpdateTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
 	// DeleteTeamByIDBatch enqueues a DeleteTeamByID query into batch to be executed
@@ -954,6 +975,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findTeamIDByNameSQL, findTeamIDByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamIDByName': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findTeamsByOrgSQL, findTeamsByOrgSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamsByOrg': %w", err)
 	}
@@ -962,6 +986,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findTeamByNameSQL, findTeamByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findTeamByIDForUpdateSQL, findTeamByIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByIDForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateTeamByIDSQL, updateTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateTeamByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteTeamByIDSQL, deleteTeamByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTeamByID': %w", err)
@@ -1130,10 +1160,11 @@ type StateVersionOutputs struct {
 
 // Teams represents the Postgres composite type "teams".
 type Teams struct {
-	TeamID         pgtype.Text        `json:"team_id"`
-	Name           pgtype.Text        `json:"name"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	OrganizationID pgtype.Text        `json:"organization_id"`
+	TeamID                     pgtype.Text        `json:"team_id"`
+	Name                       pgtype.Text        `json:"name"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 }
 
 // Tokens represents the Postgres composite type "tokens".
@@ -1355,6 +1386,7 @@ func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 		compositeField{"name", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"organization_id", "text", &pgtype.Text{}},
+		compositeField{"permission_manage_workspaces", "bool", &pgtype.Bool{}},
 	)
 }
 

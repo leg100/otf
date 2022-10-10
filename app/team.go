@@ -23,6 +23,20 @@ func (a *Application) CreateTeam(ctx context.Context, name, organizationName str
 	return team, nil
 }
 
+func (a *Application) UpdateTeam(ctx context.Context, spec otf.TeamSpec, opts otf.TeamUpdateOptions) (*otf.Team, error) {
+	team, err := a.db.UpdateTeam(ctx, spec, func(team *otf.Team) error {
+		return team.Update(opts)
+	})
+	if err != nil {
+		a.Error(err, "updating team", "name", spec)
+		return nil, err
+	}
+
+	a.V(2).Info("updated team", "name", spec, "id", team.ID())
+
+	return team, nil
+}
+
 // EnsureCreatedTeam retrieves the team or creates the team if it doesn't exist.
 func (a *Application) EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*otf.Team, error) {
 	team, err := a.db.GetTeam(ctx, otf.TeamSpec{

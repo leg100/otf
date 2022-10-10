@@ -10,11 +10,12 @@ import (
 // json?)
 // TODO: rename TeamDBResult to TeamRow
 type TeamDBResult struct {
-	TeamID           pgtype.Text        `json:"team_id"`
-	Name             pgtype.Text        `json:"name"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	OrganizationID   pgtype.Text        `json:"organization_id"`
-	OrganizationName pgtype.Text        `json:"organization_name"`
+	TeamID                     pgtype.Text        `json:"team_id"`
+	Name                       pgtype.Text        `json:"name"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 func UnmarshalTeamDBResult(row TeamDBResult, opts ...NewTeamOption) *Team {
@@ -24,5 +25,8 @@ func UnmarshalTeamDBResult(row TeamDBResult, opts ...NewTeamOption) *Team {
 		name:             row.Name.String,
 		organizationName: row.OrganizationName.String,
 		organizationID:   row.OrganizationID.String,
+		access: OrganizationAccess{
+			ManageWorkspaces: row.PermissionManageWorkspaces,
+		},
 	}
 }
