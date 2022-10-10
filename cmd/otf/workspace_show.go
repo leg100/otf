@@ -13,9 +13,11 @@ func WorkspaceShowCommand(factory http.ClientFactory) *cobra.Command {
 	var spec otf.WorkspaceSpec
 
 	cmd := &cobra.Command{
-		Use:   "show [name]",
-		Short: "Show a workspace",
-		Args:  cobra.ExactArgs(1),
+		Use:           "show [name]",
+		Short:         "Show a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			spec.Name = otf.String(args[0])
 
@@ -34,7 +36,7 @@ func WorkspaceShowCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			fmt.Println(string(out))
+			fmt.Fprintln(cmd.OutOrStdout(), string(out))
 
 			return nil
 		},

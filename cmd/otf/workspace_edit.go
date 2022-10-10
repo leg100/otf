@@ -17,9 +17,11 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "edit [name]",
-		Short: "Edit a workspace",
-		Args:  cobra.ExactArgs(1),
+		Use:           "edit [name]",
+		Short:         "Edit a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			spec.Name = otf.String(args[0])
 

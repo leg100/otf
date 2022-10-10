@@ -12,9 +12,11 @@ func AgentTokenNewCommand(factory http.ClientFactory) *cobra.Command {
 	opts := otf.AgentTokenCreateOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "new [description]",
-		Short: "Create a new agent token",
-		Args:  cobra.ExactArgs(1),
+		Use:           "new [description]",
+		Short:         "Create a new agent token",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Description = args[0]
 

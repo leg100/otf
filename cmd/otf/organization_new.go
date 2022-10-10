@@ -12,9 +12,11 @@ func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 	opts := otf.OrganizationCreateOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "new [name]",
-		Short: "Create a new organization",
-		Args:  cobra.ExactArgs(1),
+		Use:           "new [name]",
+		Short:         "Create a new organization",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = otf.String(args[0])
 
@@ -28,7 +30,7 @@ func OrganizationNewCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Successfully created organization %s\n", org.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully created organization %s\n", org.Name())
 
 			return nil
 		},

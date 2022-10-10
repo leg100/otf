@@ -5,27 +5,24 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspaceEdit(t *testing.T) {
-	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String("automatize")})
-	require.NoError(t, err)
-	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{Name: "dev"})
-	require.NoError(t, err)
-	factory := &http.FakeClientFactory{Workspace: ws}
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	factory := &fakeClientFactory{ws: ws}
 
 	cmd := WorkspaceEditCommand(factory)
 
 	t.Run("help", func(t *testing.T) {
-		cmd.SetArgs([]string{"dev", "--organization", "automatize"})
+		cmd.SetArgs([]string{"dev", "--organization", org.Name()})
 		require.NoError(t, cmd.Execute())
 	})
 
 	t.Run("update execution mode", func(t *testing.T) {
-		cmd.SetArgs([]string{"dev", "--organization", "automatize", "--execution-mode", "local"})
+		cmd.SetArgs([]string{"dev", "--organization", org.Name(), "--execution-mode", "local"})
 		buf := bytes.Buffer{}
 		cmd.SetOut(&buf)
 		require.NoError(t, cmd.Execute())
@@ -35,7 +32,7 @@ func TestWorkspaceEdit(t *testing.T) {
 }
 
 func TestWorkspaceEditMissingOrganization(t *testing.T) {
-	cmd := WorkspaceEditCommand(&http.FakeClientFactory{})
+	cmd := WorkspaceEditCommand(&fakeClientFactory{})
 	cmd.SetArgs([]string{"automatize"})
 	err := cmd.Execute()
 	assert.EqualError(t, err, "required flag(s) \"organization\" not set")

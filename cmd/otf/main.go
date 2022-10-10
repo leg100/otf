@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 
 	cmdutil "github.com/leg100/otf/cmd"
@@ -14,13 +15,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	if err := Run(ctx, os.Args[1:]); err != nil {
+	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }
 
-func Run(ctx context.Context, args []string) error {
+func run(ctx context.Context, args []string, out io.Writer) error {
 	cfg, err := http.NewConfig(LoadCredentials)
 	if err != nil {
 		return err
@@ -37,6 +38,7 @@ func Run(ctx context.Context, args []string) error {
 	cmd.PersistentFlags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
 
 	cmd.SetArgs(args)
+	cmd.SetOut(out)
 
 	cmd.AddCommand(OrganizationCommand(cfg))
 	cmd.AddCommand(WorkspaceCommand(cfg))

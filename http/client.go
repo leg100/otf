@@ -47,18 +47,7 @@ type client struct {
 	// for testing purposes. NOTE: Only takes effect on SSE connections.
 	insecure bool
 
-	otf.OrganizationService
-
-	// TODO: stubbed until implemented
-	otf.UserService
-	otf.TeamService
-	otf.RunService
-	otf.StateVersionService
-	otf.ConfigurationVersionService
-	otf.EventService
-	otf.AgentTokenService
-	otf.CurrentRunService
-	otf.LockableApplication
+	otf.Application
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {

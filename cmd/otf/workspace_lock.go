@@ -12,9 +12,11 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 	var spec otf.WorkspaceSpec
 
 	cmd := &cobra.Command{
-		Use:   "lock [name]",
-		Short: "Lock a workspace",
-		Args:  cobra.ExactArgs(1),
+		Use:           "lock [name]",
+		Short:         "Lock a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			spec.Name = otf.String(args[0])
 
@@ -26,7 +28,7 @@ func WorkspaceLockCommand(factory http.ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Successfully locked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully locked workspace %s\n", ws.Name())
 
 			return nil
 		},
