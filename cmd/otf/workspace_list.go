@@ -12,8 +12,10 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 	var opts otf.WorkspaceListOptions
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List workspaces",
+		Use:           "list",
+		Short:         "List workspaces",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := factory.NewClient()
 			if err != nil {
@@ -26,7 +28,7 @@ func WorkspaceListCommand(factory http.ClientFactory) *cobra.Command {
 					return err
 				}
 				for _, ws := range list.Items {
-					fmt.Println(ws.Name())
+					fmt.Fprintln(cmd.OutOrStdout(), ws.Name())
 				}
 				if list.NextPage() != nil {
 					opts.PageNumber = *list.NextPage()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,6 +10,8 @@ import (
 
 // TestMain checks the command tree is as it should be
 func TestMain(t *testing.T) {
+	ctx := context.Background()
+
 	tests := []struct {
 		name string
 		args []string
@@ -50,11 +53,11 @@ func TestMain(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Run(context.Background(), tt.args)
+			err := run(ctx, tt.args, io.Discard)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 			} else {
-				require.NoError(t, Run(context.Background(), tt.args))
+				require.NoError(t, err)
 			}
 		})
 	}

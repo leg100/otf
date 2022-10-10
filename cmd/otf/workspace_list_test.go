@@ -1,29 +1,57 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspaceList(t *testing.T) {
-	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String("automatize")})
-	require.NoError(t, err)
-	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{Name: "dev"})
-	require.NoError(t, err)
-	factory := &http.FakeClientFactory{Workspace: ws}
+	org := otf.NewTestOrganization(t)
+	ws1 := otf.NewTestWorkspace(t, org)
+	ws2 := otf.NewTestWorkspace(t, org)
+	factory := &fakeWorkspaceListClientFactory{workspaces: []*otf.Workspace{ws1, ws2}}
 
 	cmd := WorkspaceListCommand(factory)
-	cmd.SetArgs([]string{"--organization", "automatize"})
+	cmd.SetArgs([]string{"--organization", org.Name()})
+	got := bytes.Buffer{}
+	cmd.SetOut(&got)
 	require.NoError(t, cmd.Execute())
+	want := fmt.Sprintf("%s\n%s\n", ws1.Name(), ws2.Name())
+	assert.Equal(t, want, got.String())
 }
 
 func TestWorkspaceListMissingOrganization(t *testing.T) {
-	cmd := WorkspaceListCommand(&http.FakeClientFactory{})
+	cmd := WorkspaceListCommand(&fakeClientFactory{})
 	cmd.SetArgs([]string{"automatize"})
 	err := cmd.Execute()
 	assert.EqualError(t, err, "required flag(s) \"organization\" not set")
+}
+
+type fakeWorkspaceListClientFactory struct {
+	workspaces []*otf.Workspace
+}
+
+func (f fakeWorkspaceListClientFactory) NewClient() (otfhttp.Client, error) {
+	return &fakeWorkspaceListClient{
+		workspaces: f.workspaces,
+	}, nil
+}
+
+type fakeWorkspaceListClient struct {
+	workspaces []*otf.Workspace
+	otf.Application
+}
+
+func (f *fakeWorkspaceListClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
+	return &otf.WorkspaceList{
+		Items:      f.workspaces,
+		Pagination: otf.NewPagination(otf.ListOptions{}, 1),
+	}, nil
 }

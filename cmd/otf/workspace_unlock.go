@@ -12,9 +12,11 @@ func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
 	var spec otf.WorkspaceSpec
 
 	cmd := &cobra.Command{
-		Use:   "unlock [name]",
-		Short: "Unlock a workspace",
-		Args:  cobra.ExactArgs(1),
+		Use:           "unlock [name]",
+		Short:         "Unlock a workspace",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			spec.Name = otf.String(args[0])
 
@@ -27,7 +29,7 @@ func WorkspaceUnlockCommand(factory http.ClientFactory) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Successfully unlocked workspace %s\n", ws.Name())
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully unlocked workspace %s\n", ws.Name())
 
 			return nil
 		},
