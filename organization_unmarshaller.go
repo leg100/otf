@@ -5,8 +5,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, error) {
-	org := Organization{
+func UnmarshalOrganizationDBResult(result pggen.Organizations) *Organization {
+	return &Organization{
 		id:              result.OrganizationID.String,
 		createdAt:       result.CreatedAt.Time.UTC(),
 		updatedAt:       result.UpdatedAt.Time.UTC(),
@@ -14,8 +14,6 @@ func UnmarshalOrganizationDBResult(result pggen.Organizations) (*Organization, e
 		sessionRemember: result.SessionRemember,
 		sessionTimeout:  result.SessionTimeout,
 	}
-
-	return &org, nil
 }
 
 func UnmarshalOrganizationJSONAPI(model *dto.Organization) *Organization {

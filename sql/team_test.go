@@ -81,7 +81,7 @@ func TestTeam_Get(t *testing.T) {
 		},
 		{
 			name: "name and organization name",
-			spec: otf.TeamSpec{Name: otf.String(team.Name()), OrganizationName: otf.String(team.OrganizationName())},
+			spec: otf.TeamSpec{Name: otf.String(team.Name()), OrganizationName: otf.String(org.Name())},
 		},
 	}
 	for _, tt := range tests {

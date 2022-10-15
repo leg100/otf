@@ -237,7 +237,7 @@ func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient)
 
 	// Create user's teams as necessary
 	for i, team := range cuser.Teams {
-		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.OrganizationName())
+		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.Organization().Name())
 		if err != nil {
 			return nil, err
 		}

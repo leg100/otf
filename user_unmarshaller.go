@@ -1,8 +1,6 @@
 package otf
 
 import (
-	"fmt"
-
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -25,32 +23,25 @@ func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, erro
 		updatedAt: row.UpdatedAt.Time.UTC(),
 		username:  row.Username.String,
 	}
-	// build a mapping of organization id to name whilst reconstructing
-	// organizations...
-	organizationIDNameMap := make(map[string]string)
 	for _, or := range row.Organizations {
-		org, err := UnmarshalOrganizationDBResult(or)
-		if err != nil {
-			return nil, err
-		}
-		user.Organizations = append(user.Organizations, org)
-		organizationIDNameMap[org.ID()] = org.Name()
+		user.Organizations = append(user.Organizations, UnmarshalOrganizationDBResult(or))
 	}
-	// ...reconstruct teams and use the organization mapping to retrieve the
-	// organization name. (We do this here to avoid an overly nested SQL
-	// query).
+	// Unmarshal team requires finding the team's corresponding
+	// organization...pggen doesn't permit two layers of embedding table rows
+	// (i.e. user -> team -> org)
 	for _, tr := range row.Teams {
-		orgName, ok := organizationIDNameMap[tr.OrganizationID.String]
-		if !ok {
-			return nil, fmt.Errorf("constructing user teams: no name maps to organization ID: %s", tr.OrganizationID.String)
+		for _, or := range row.Organizations {
+			if tr.OrganizationID == or.OrganizationID {
+				user.Teams = append(user.Teams, UnmarshalTeamDBResult(TeamDBResult{
+					TeamID:                     tr.TeamID,
+					Name:                       tr.Name,
+					CreatedAt:                  tr.CreatedAt,
+					OrganizationID:             tr.OrganizationID,
+					PermissionManageWorkspaces: tr.PermissionManageWorkspaces,
+					Organization:               &or,
+				}))
+			}
 		}
-		user.Teams = append(user.Teams, UnmarshalTeamDBResult(TeamDBResult{
-			TeamID:           tr.TeamID,
-			Name:             tr.Name,
-			CreatedAt:        tr.CreatedAt,
-			OrganizationID:   tr.OrganizationID,
-			OrganizationName: pgtype.Text{String: orgName, Status: pgtype.Present},
-		}))
 	}
 	for _, typ := range row.Sessions {
 		sess, err := UnmarshalSessionDBType(typ)

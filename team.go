@@ -15,11 +15,8 @@ type Team struct {
 	createdAt time.Time
 	name      string
 
-	// TODO: remove
-	organizationName string
-
 	// A team belongs to an organization
-	organizationID string
+	organization *Organization
 
 	access OrganizationAccess
 }
@@ -29,9 +26,9 @@ func (u *Team) Name() string                           { return u.name }
 func (u *Team) TeamName() string                       { return u.name }
 func (u *Team) CreatedAt() time.Time                   { return u.createdAt }
 func (u *Team) String() string                         { return u.name }
-func (u *Team) OrganizationID() string                 { return u.organizationID }
+func (u *Team) Organization() *Organization            { return u.organization }
+func (u *Team) OrganizationName() string               { return u.organization.name }
 func (u *Team) OrganizationAccess() OrganizationAccess { return u.access }
-func (u *Team) OrganizationName() string               { return u.organizationName }
 
 func (u *Team) IsOwners() bool {
 	return u.name == "owners"
@@ -96,11 +93,10 @@ type TeamUpdateOptions struct {
 
 func NewTeam(name string, org *Organization, opts ...NewTeamOption) *Team {
 	team := Team{
-		id:               NewID("team"),
-		name:             name,
-		createdAt:        CurrentTimestamp(),
-		organizationName: org.Name(),
-		organizationID:   org.ID(),
+		id:           NewID("team"),
+		name:         name,
+		createdAt:    CurrentTimestamp(),
+		organization: org,
 	}
 	for _, o := range opts {
 		o(&team)

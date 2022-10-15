@@ -91,7 +91,7 @@ func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	return otf.NewRun(cv, ws, otf.RunCreateOptions{})
 }
 
-func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.WorkspaceRole) otf.WorkspacePermission {
+func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.WorkspaceRole) *otf.WorkspacePermission {
 	ctx := context.Background()
 	err := db.SetWorkspacePermission(ctx, ws.SpecName(), team.Name(), role)
 	require.NoError(t, err)
@@ -99,7 +99,7 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 	t.Cleanup(func() {
 		db.UnsetWorkspacePermission(ctx, ws.SpecName(), team.Name())
 	})
-	return otf.WorkspacePermission{Team: team, Permission: role}
+	return &otf.WorkspacePermission{Team: team, Permission: role}
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {

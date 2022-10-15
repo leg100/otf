@@ -34,10 +34,7 @@ func (db *DB) UpdateOrganization(ctx context.Context, name string, fn func(*otf.
 		if err != nil {
 			return err
 		}
-		org, err = otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
-		if err != nil {
-			return err
-		}
+		org = otf.UnmarshalOrganizationDBResult(pggen.Organizations(result))
 		if err := fn(org); err != nil {
 			return err
 		}
@@ -75,11 +72,7 @@ func (db *DB) ListOrganizations(ctx context.Context, opts otf.OrganizationListOp
 
 	var items []*otf.Organization
 	for _, r := range rows {
-		org, err := otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, org)
+		items = append(items, otf.UnmarshalOrganizationDBResult(pggen.Organizations(r)))
 	}
 
 	return &otf.OrganizationList{
@@ -93,7 +86,7 @@ func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organizati
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r))
+	return otf.UnmarshalOrganizationDBResult(pggen.Organizations(r)), nil
 }
 
 func (db *DB) DeleteOrganization(ctx context.Context, name string) error {

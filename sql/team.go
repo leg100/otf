@@ -15,7 +15,7 @@ func (db *DB) CreateTeam(ctx context.Context, team *otf.Team) error {
 		ID:             String(team.ID()),
 		Name:           String(team.Name()),
 		CreatedAt:      Timestamptz(team.CreatedAt()),
-		OrganizationID: String(team.OrganizationID()),
+		OrganizationID: String(team.Organization().ID()),
 	})
 	return err
 }

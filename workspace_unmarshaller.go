@@ -77,11 +77,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	}
 
 	if row.Organization != nil {
-		org, err := UnmarshalOrganizationDBResult(*row.Organization)
-		if err != nil {
-			return nil, err
-		}
-		ws.organization = org
+		ws.organization = UnmarshalOrganizationDBResult(*row.Organization)
 	}
 
 	return &ws, nil
@@ -168,18 +164,19 @@ func UnmarshalWorkspaceListJSONAPI(json *dto.WorkspaceList) *WorkspaceList {
 }
 
 type WorkspacePermissionDBResult struct {
-	Role pgtype.Text  `json:"role"`
-	Team *pggen.Teams `json:"team"`
+	Role         pgtype.Text          `json:"role"`
+	Team         *pggen.Teams         `json:"team"`
+	Organization *pggen.Organizations `json:"organization"`
 }
 
 func UnmarshalWorkspacePermissionDBResult(row WorkspacePermissionDBResult) *WorkspacePermission {
 	return &WorkspacePermission{
 		Permission: WorkspaceRole(row.Role.String),
 		Team: &Team{
-			id:             row.Team.TeamID.String,
-			name:           row.Team.Name.String,
-			createdAt:      row.Team.CreatedAt.Time.UTC(),
-			organizationID: row.Team.OrganizationID.String,
+			id:           row.Team.TeamID.String,
+			name:         row.Team.Name.String,
+			createdAt:    row.Team.CreatedAt.Time.UTC(),
+			organization: UnmarshalOrganizationDBResult(*row.Organization),
 			access: OrganizationAccess{
 				ManageWorkspaces: row.Team.PermissionManageWorkspaces,
 			},

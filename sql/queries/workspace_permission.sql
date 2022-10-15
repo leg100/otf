@@ -14,18 +14,21 @@ ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = pggen.arg('role')
 
 -- name: FindWorkspacePermissionsByID :many
 SELECT
-    perms.role,
-    (teams.*)::"teams" AS team
-FROM workspace_permissions perms
-JOIN teams USING (team_id)
-WHERE perms.workspace_id = pggen.arg('workspace_id')
+    p.role,
+    (t.*)::"teams" AS team,
+    (o.*)::"organizations" AS organization
+FROM workspace_permissions p
+JOIN teams t USING (team_id)
+JOIN organizations o USING (organization_id)
+WHERE p.workspace_id = pggen.arg('workspace_id')
 ;
 
 -- name: FindWorkspacePermissionsByName :many
 SELECT
-    perms.role,
-    (t.*)::"teams" AS team
-FROM workspace_permissions perms
+    p.role,
+    (t.*)::"teams" AS team,
+    (o.*)::"organizations" AS organization
+FROM workspace_permissions p
 JOIN teams t USING (team_id)
 JOIN workspaces w USING (workspace_id)
 JOIN organizations o ON o.organization_id = w.organization_id
