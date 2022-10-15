@@ -83,11 +83,13 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+
 	ws, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	var latest *otf.Run
 	if ws.LatestRunID() != nil {
 		latest, err = app.GetRun(r.Context(), *ws.LatestRunID())
@@ -96,14 +98,47 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// Get existing perms as well as all teams in org
+	perms, err := app.ListWorkspacePermissions(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	teams, err := app.ListTeams(r.Context(), *spec.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Filter teams, removing those already assigned perms
+	for _, p := range perms {
+		for it, t := range teams {
+			if t.ID() == p.Team.ID() {
+				teams = append(teams[:it], teams[it+1:]...)
+				break
+			}
+		}
+	}
+
 	app.render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
 		LatestRun      *otf.Run
 		LatestStreamID string
+		Permissions    []*otf.WorkspacePermission
+		Teams          []*otf.Team
+		Roles          []otf.WorkspaceRole
 	}{
 		Workspace:      ws,
 		LatestRun:      latest,
 		LatestStreamID: "latest-" + otf.GenerateRandomString(5),
+		Permissions:    perms,
+		Teams:          teams,
+		Roles: []otf.WorkspaceRole{
+			otf.WorkspaceReadRole,
+			otf.WorkspacePlanRole,
+			otf.WorkspaceWriteRole,
+			otf.WorkspaceAdminRole,
+		},
 	})
 }
 

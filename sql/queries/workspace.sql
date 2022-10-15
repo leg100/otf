@@ -53,13 +53,16 @@ SELECT
     o.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
+   array_remove(array_agg(perms), NULL) AS workspace_permissions,
     CASE WHEN pggen.arg('include_organization') THEN (o.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN workspace_permissions perms ON w.workspace_id = perms.workspace_id
 WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND   o.name LIKE ANY(pggen.arg('organization_names'))
+GROUP BY w.workspace_id, o.name, u.*, r.*, o.*
 ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -87,31 +90,43 @@ SELECT w.*,
     organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
+   array_remove(array_agg(perms), NULL) AS workspace_permissions,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN workspace_permissions perms ON w.workspace_id = perms.workspace_id
 WHERE w.name = pggen.arg('name')
-AND organizations.name = pggen.arg('organization_name');
+AND   organizations.name = pggen.arg('organization_name')
+GROUP BY w.workspace_id, organizations.name, u.*, r.*, organizations.*;
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
     organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
+    array_remove(array_agg(perms), NULL) AS workspace_permissions,
     CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-WHERE w.workspace_id = pggen.arg('id');
+LEFT JOIN workspace_permissions perms ON w.workspace_id = perms.workspace_id
+WHERE w.workspace_id = pggen.arg('id')
+GROUP BY w.workspace_id, organizations.name, u.*, r.*, organizations.*;
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
     organizations.name AS organization_name,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
+    (
+        SELECT array_agg(perms.*) AS workspace_permissions
+        FROM workspace_permissions perms
+        WHERE perms.workspace_id = w.workspace_id
+        GROUP BY w.workspace_id
+    ) AS workspace_permissions,
     NULL::"organizations" AS organization
 FROM workspaces w
 JOIN organizations USING (organization_id)

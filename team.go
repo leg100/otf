@@ -14,9 +14,12 @@ type Team struct {
 	id        string
 	createdAt time.Time
 	name      string
-	// A team belongs to an organization
+
+	// TODO: remove
 	organizationName string
-	organizationID   string
+
+	// A team belongs to an organization
+	organizationID string
 
 	access OrganizationAccess
 }
@@ -26,9 +29,9 @@ func (u *Team) Name() string                           { return u.name }
 func (u *Team) TeamName() string                       { return u.name }
 func (u *Team) CreatedAt() time.Time                   { return u.createdAt }
 func (u *Team) String() string                         { return u.name }
-func (u *Team) OrganizationName() string               { return u.organizationName }
 func (u *Team) OrganizationID() string                 { return u.organizationID }
 func (u *Team) OrganizationAccess() OrganizationAccess { return u.access }
+func (u *Team) OrganizationName() string               { return u.organizationName }
 
 func (u *Team) IsOwners() bool {
 	return u.name == "owners"

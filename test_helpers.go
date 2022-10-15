@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestOrganization(t *testing.T) *Organization {
+func NewTestOrganization(t *testing.T) *Organization {
 	org, err := NewOrganization(OrganizationCreateOptions{
 		Name: String(uuid.NewString()),
 	})
@@ -15,7 +15,7 @@ func newTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func newTestWorkspace(t *testing.T, org *Organization) *Workspace {
+func NewTestWorkspace(t *testing.T, org *Organization) *Workspace {
 	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
 		Name: uuid.NewString(),
 	})
@@ -23,8 +23,16 @@ func newTestWorkspace(t *testing.T, org *Organization) *Workspace {
 	return ws
 }
 
-func newTestConfigurationVersion(t *testing.T, ws *Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
+func NewTestConfigurationVersion(t *testing.T, ws *Workspace, opts ConfigurationVersionCreateOptions) *ConfigurationVersion {
 	cv, err := NewConfigurationVersion(ws.ID(), opts)
 	require.NoError(t, err)
 	return cv
+}
+
+func NewTestUser(t *testing.T, opts ...NewUserOption) *User {
+	return NewUser(uuid.NewString(), opts...)
+}
+
+func NewTestTeam(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
+	return NewTeam(uuid.NewString(), org, opts...)
 }

@@ -14,12 +14,12 @@ type fakeApp struct {
 	*fakeRunService
 	*fakeUserService
 	*fakeAgentTokenService
+	*fakeTeamService
 
 	// TODO: stubbed until tests are implemented
 	otf.StateVersionService
 	otf.ConfigurationVersionService
 	otf.EventService
-	otf.TeamService
 	otf.CurrentRunService
 	otf.LockableApplication
 }
@@ -38,6 +38,14 @@ func (u *fakeUserService) CreateToken(ctx context.Context, user *otf.User, opts 
 }
 
 func (u *fakeUserService) DeleteToken(context.Context, *otf.User, string) error { return nil }
+
+type fakeTeamService struct {
+	otf.TeamService
+}
+
+func (u *fakeTeamService) ListTeams(ctx context.Context, organizationName string) ([]*otf.Team, error) {
+	return nil, nil
+}
 
 type fakeOrganizationService struct {
 	fakeOrganization *otf.Organization
@@ -77,6 +85,18 @@ func (u *fakeWorkspaceService) ListWorkspaces(ctx context.Context, opts otf.Work
 
 func (u *fakeWorkspaceService) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
+}
+
+func (u *fakeWorkspaceService) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+	return nil, nil
+}
+
+func (u *fakeWorkspaceService) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string, role otf.WorkspaceRole) error {
+	return nil
+}
+
+func (u *fakeWorkspaceService) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string) error {
+	return nil
 }
 
 type fakeRunService struct {

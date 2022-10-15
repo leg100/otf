@@ -80,7 +80,7 @@ fieldset {
 }
 
 /* Reset browser heading styles */
-h1,h2,h3 {
+h1,h2,h3,h4,h5 {
   margin-block-start: 0.5em;
   margin-block-end: 0.5em;
 }
@@ -160,9 +160,63 @@ header nav {
   display: block;
 }
 
+/*
+ * Workspace permissions
+ */
+
+.permissions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding-top: 1em;
+  border-top: 1px solid var(--faint-grey);
+}
+
+.permissions-container .container-header-title {
+  font-size: 1.2em;
+  font-weight: bolder;
+}
+
 .permissions-form {
   display: flex;
   flex-direction: column;
+  gap: 1em;
+}
+
+#permissions-owners {
+  color: grey;
+}
+
+.permissions-container table {
+  text-align: left;
+  font-size: 0.9em;
+  border-collapse: collapse;
+  letter-spacing: 1px;
+}
+
+.permissions-container thead {
+  background-color: var(--faint-grey);
+  border-top: 1px solid #bac1cc;
+  border-bottom: 1px solid #bac1cc;
+}
+
+.permissions-container td, th {
+  padding: 10px;
+}
+
+.permissions-container tbody tr {
+  border-bottom: 1px solid #dce0e6;
+}
+
+.permissions-add-role-container {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.horizontal-form {
+  display: flex;
+  flex-direction: row;
   gap: 1em;
 }
 
