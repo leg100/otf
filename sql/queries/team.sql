@@ -21,7 +21,7 @@ AND organizations.name = pggen.arg('organization_name');
 -- name: FindTeamsByOrg :many
 SELECT
     t.*,
-    o.name AS organization_name
+    (o.*)::"organizations" AS organization
 FROM teams t
 JOIN organizations o USING (organization_id)
 WHERE o.name = pggen.arg('organization_name')
@@ -30,7 +30,7 @@ WHERE o.name = pggen.arg('organization_name')
 -- name: FindTeamByID :one
 SELECT
     t.*,
-    o.name AS organization_name
+    (o.*)::"organizations" AS organization
 FROM teams t
 JOIN organizations o USING (organization_id)
 WHERE t.team_id = pggen.arg('team_id')
@@ -39,7 +39,7 @@ WHERE t.team_id = pggen.arg('team_id')
 -- name: FindTeamByName :one
 SELECT
     t.*,
-    o.name AS organization_name
+    (o.*)::"organizations" AS organization
 FROM teams t
 JOIN organizations o USING (organization_id)
 WHERE t.name = pggen.arg('name')
@@ -49,7 +49,7 @@ AND   o.name = pggen.arg('organization_name')
 -- name: FindTeamByIDForUpdate :one
 SELECT
     t.*,
-    o.name AS organization_name
+    (o.*)::"organizations" AS organization
 FROM teams t
 JOIN organizations o USING (organization_id)
 WHERE t.team_id = pggen.arg('team_id')

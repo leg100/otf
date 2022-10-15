@@ -93,10 +93,10 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 
 	if assert.Equal(t, 2, len(user.Teams)) {
 		assert.Equal(t, "fake-team", user.Teams[0].Name())
-		assert.Equal(t, org.Name(), user.Teams[0].OrganizationName())
+		assert.Equal(t, org.Name(), user.Teams[0].Organization().Name())
 
 		assert.Equal(t, "owners", user.Teams[1].Name())
-		assert.Equal(t, "fake-user", user.Teams[1].OrganizationName())
+		assert.Equal(t, "fake-user", user.Teams[1].Organization().Name())
 	}
 }
 

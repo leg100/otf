@@ -55,16 +55,19 @@ func (q *DBQuerier) UpsertWorkspacePermissionScan(results pgx.BatchResults) (pgc
 }
 
 const findWorkspacePermissionsByIDSQL = `SELECT
-    perms.role,
-    (teams.*)::"teams" AS team
-FROM workspace_permissions perms
-JOIN teams USING (team_id)
-WHERE perms.workspace_id = $1
+    p.role,
+    (t.*)::"teams" AS team,
+    (o.*)::"organizations" AS organization
+FROM workspace_permissions p
+JOIN teams t USING (team_id)
+JOIN organizations o USING (organization_id)
+WHERE p.workspace_id = $1
 ;`
 
 type FindWorkspacePermissionsByIDRow struct {
-	Role pgtype.Text `json:"role"`
-	Team *Teams      `json:"team"`
+	Role         pgtype.Text    `json:"role"`
+	Team         *Teams         `json:"team"`
+	Organization *Organizations `json:"organization"`
 }
 
 // FindWorkspacePermissionsByID implements Querier.FindWorkspacePermissionsByID.
@@ -77,12 +80,16 @@ func (q *DBQuerier) FindWorkspacePermissionsByID(ctx context.Context, workspaceI
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByIDRow{}
 	teamRow := q.types.newTeams()
+	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByIDRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.Role, teamRow, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByID row: %w", err)
 		}
 		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByID row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacePermissionsByID row: %w", err)
 		}
 		items = append(items, item)
@@ -107,12 +114,16 @@ func (q *DBQuerier) FindWorkspacePermissionsByIDScan(results pgx.BatchResults) (
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByIDRow{}
 	teamRow := q.types.newTeams()
+	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByIDRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.Role, teamRow, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByIDBatch row: %w", err)
 		}
 		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByID row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacePermissionsByID row: %w", err)
 		}
 		items = append(items, item)
@@ -124,9 +135,10 @@ func (q *DBQuerier) FindWorkspacePermissionsByIDScan(results pgx.BatchResults) (
 }
 
 const findWorkspacePermissionsByNameSQL = `SELECT
-    perms.role,
-    (t.*)::"teams" AS team
-FROM workspace_permissions perms
+    p.role,
+    (t.*)::"teams" AS team,
+    (o.*)::"organizations" AS organization
+FROM workspace_permissions p
 JOIN teams t USING (team_id)
 JOIN workspaces w USING (workspace_id)
 JOIN organizations o ON o.organization_id = w.organization_id
@@ -135,8 +147,9 @@ AND o.name = $2
 ;`
 
 type FindWorkspacePermissionsByNameRow struct {
-	Role pgtype.Text `json:"role"`
-	Team *Teams      `json:"team"`
+	Role         pgtype.Text    `json:"role"`
+	Team         *Teams         `json:"team"`
+	Organization *Organizations `json:"organization"`
 }
 
 // FindWorkspacePermissionsByName implements Querier.FindWorkspacePermissionsByName.
@@ -149,12 +162,16 @@ func (q *DBQuerier) FindWorkspacePermissionsByName(ctx context.Context, workspac
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByNameRow{}
 	teamRow := q.types.newTeams()
+	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByNameRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.Role, teamRow, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByName row: %w", err)
 		}
 		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByName row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacePermissionsByName row: %w", err)
 		}
 		items = append(items, item)
@@ -179,12 +196,16 @@ func (q *DBQuerier) FindWorkspacePermissionsByNameScan(results pgx.BatchResults)
 	defer rows.Close()
 	items := []FindWorkspacePermissionsByNameRow{}
 	teamRow := q.types.newTeams()
+	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindWorkspacePermissionsByNameRow
-		if err := rows.Scan(&item.Role, teamRow); err != nil {
+		if err := rows.Scan(&item.Role, teamRow, organizationRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacePermissionsByNameBatch row: %w", err)
 		}
 		if err := teamRow.AssignTo(&item.Team); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacePermissionsByName row: %w", err)
+		}
+		if err := organizationRow.AssignTo(&item.Organization); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacePermissionsByName row: %w", err)
 		}
 		items = append(items, item)
