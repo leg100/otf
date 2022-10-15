@@ -16,7 +16,8 @@
 
 {{ define "content-list-item" }}
   <div class="item" id="item-workspace-{{ .Name }}">
-    <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
+    <div class="item-heading">
+      <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
     </div>
     {{ template "identifier" . }}
   </div>
