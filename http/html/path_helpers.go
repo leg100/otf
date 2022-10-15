@@ -161,6 +161,14 @@ func unlockWorkspacePath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/unlock", ws.OrganizationName(), ws.WorkspaceName())
 }
 
+func setWorkspacePermissionPath(name workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/permissions", name.OrganizationName(), name.WorkspaceName())
+}
+
+func unsetWorkspacePermissionPath(name workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/permissions/unset", name.OrganizationName(), name.WorkspaceName())
+}
+
 func listRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs", ws.OrganizationName(), ws.WorkspaceName())
 }
@@ -222,6 +230,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["deleteWorkspacePath"] = deleteWorkspacePath
 	m["lockWorkspacePath"] = lockWorkspacePath
 	m["unlockWorkspacePath"] = unlockWorkspacePath
+	m["setWorkspacePermissionPath"] = setWorkspacePermissionPath
+	m["unsetWorkspacePermissionPath"] = unsetWorkspacePermissionPath
 	m["listRunPath"] = listRunPath
 	m["newRunPath"] = newRunPath
 	m["createRunPath"] = createRunPath

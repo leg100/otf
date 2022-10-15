@@ -129,6 +129,23 @@ func TestApp(t *testing.T) {
 			path:   "/organizations/org-fake/workspaces/ws-fake/runs/" + fakeRun.ID(),
 		},
 		{
+			method: "POST",
+			path:   "/organizations/org-fake/workspaces/ws-fake/permissions",
+			form: url.Values{
+				"team_name": []string{"team-123"},
+				"role":      []string{"admin"},
+			},
+			redirect: "/organizations/org-fake/workspaces/ws-fake",
+		},
+		{
+			method: "POST",
+			path:   "/organizations/org-fake/workspaces/ws-fake/permissions/unset",
+			form: url.Values{
+				"team_name": []string{"team-123"},
+			},
+			redirect: "/organizations/org-fake/workspaces/ws-fake",
+		},
+		{
 			method: "GET",
 			path:   "/profile",
 		},

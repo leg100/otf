@@ -148,6 +148,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/delete", app.deleteWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/lock", app.lockWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions", app.setWorkspacePermission)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions/unset", app.unsetWorkspacePermission)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)

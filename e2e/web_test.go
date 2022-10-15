@@ -25,8 +25,12 @@ func TestWeb(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	githubHostname := githubStub(t)
-	t.Setenv("OTF_GITHUB_HOSTNAME", githubHostname)
+	org := otf.NewTestOrganization(t)
+	team := otf.NewTestTeam(t, org)
+	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+
+	hostname := githubStub(t, user)
+	t.Setenv("OTF_GITHUB_HOSTNAME", hostname)
 
 	url := startDaemon(t)
 
@@ -62,28 +66,49 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("new workspace", func(t *testing.T) {
+		createWebWorkspace(t, allocCtx, url, org)
+	})
+
+	t.Run("add workspace permission", func(t *testing.T) {
+		workspace := createWebWorkspace(t, allocCtx, url, org)
+
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
 
+		var gotOwnersTeam string
+		var gotOwnersRole string
 		var gotFlashSuccess string
-		workspaceName := "workspace-" + otf.GenerateRandomString(4)
 
+		t.Log("team ID: ", team.ID())
+
+		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
+		workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate(url),
+			// login
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			chromedp.Click(".content-list a", chromedp.NodeVisible),
+			// select org
+			chromedp.Click(orgSelector, chromedp.NodeVisible),
+			// list workspaces
 			chromedp.Click("#workspaces > a", chromedp.NodeVisible),
-			chromedp.Click("#new-workspace-button", chromedp.NodeVisible),
-			screenshot("otf_new_workspace_form"),
-			chromedp.Focus("input#name", chromedp.NodeVisible),
-			input.InsertText(workspaceName),
-			chromedp.Click("#create-workspace-button"),
-			screenshot("otf_created_workspace"),
+			// select workspace
+			chromedp.Click(workspaceSelector, chromedp.NodeVisible),
+			screenshot("otf_show_workspace"),
+			// confirm builtin admin permission for owners team
+			chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
+			chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
+			// add write permission for the test team
+			chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, "write", chromedp.BySearch),
+			chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team.Name(), chromedp.BySearch),
+			chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
+			screenshot("otf_workspace_permissions_updated"),
 			chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
+		assert.Equal(t, "owners", gotOwnersTeam)
+		assert.Equal(t, "admin", gotOwnersRole)
+		assert.Equal(t, "updated workspace permissions", gotFlashSuccess)
 	})
 
 	t.Run("list users", func(t *testing.T) {
@@ -91,20 +116,22 @@ func TestWeb(t *testing.T) {
 		defer cancel()
 
 		var gotUser string
+		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
+		userSelector := fmt.Sprintf("#item-user-%s .status", user.Username())
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate(url),
 			// login
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			// select fake-user's personal org
-			chromedp.Click("#item-organization-fake-user a", chromedp.NodeVisible),
+			// select org
+			chromedp.Click(orgSelector, chromedp.NodeVisible),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
 			screenshot("otf_list_users"),
-			chromedp.Text("#item-user-fake-user .status", &gotUser, chromedp.NodeVisible),
+			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "fake-user", strings.TrimSpace(gotUser))
+		assert.Equal(t, user.Username(), strings.TrimSpace(gotUser))
 	})
 
 	t.Run("list team members", func(t *testing.T) {
@@ -112,24 +139,54 @@ func TestWeb(t *testing.T) {
 		defer cancel()
 
 		var gotUser string
+		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
+		userSelector := fmt.Sprintf("#item-user-%s .status", user.Username())
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate(url),
 			// login
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			// select fake-user's personal org
-			chromedp.Click("#item-organization-fake-user a", chromedp.NodeVisible),
+			// select org
+			chromedp.Click(orgSelector, chromedp.NodeVisible),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),
 			screenshot("otf_list_teams"),
 			// select owners team
 			chromedp.Click("#item-team-owners a", chromedp.NodeVisible),
 			screenshot("otf_list_team_members"),
-			chromedp.Text("#item-user-fake-user .status", &gotUser, chromedp.NodeVisible),
+			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "fake-user", strings.TrimSpace(gotUser))
+		assert.Equal(t, user.Username(), strings.TrimSpace(gotUser))
 	})
+}
+
+func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.Organization) string {
+	ctx, cancel := chromedp.NewContext(ctx)
+	defer cancel()
+
+	var gotFlashSuccess string
+	workspaceName := "workspace-" + otf.GenerateRandomString(4)
+	orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
+
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		chromedp.Navigate(url),
+		chromedp.Click(".login-button-github", chromedp.NodeVisible),
+		chromedp.Click(orgSelector, chromedp.NodeVisible),
+		chromedp.Click("#workspaces > a", chromedp.NodeVisible),
+		chromedp.Click("#new-workspace-button", chromedp.NodeVisible),
+		screenshot("otf_new_workspace_form"),
+		chromedp.Focus("input#name", chromedp.NodeVisible),
+		input.InsertText(workspaceName),
+		chromedp.Click("#create-workspace-button"),
+		screenshot("otf_created_workspace"),
+		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
+
+	return workspaceName
 }
 
 var screenshotCounter = 0
@@ -158,10 +215,7 @@ func screenshot(name string) chromedp.ActionFunc {
 	}
 }
 
-func githubStub(t *testing.T) string {
-	org := otf.NewTestOrganization(t)
-	team := otf.NewTeam("fake-team", org)
-	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+func githubStub(t *testing.T, user *otf.User) string {
 	srv := html.NewTestGithubServer(t, user)
 
 	u, err := url.Parse(srv.URL)

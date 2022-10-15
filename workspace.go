@@ -8,12 +8,18 @@ import (
 )
 
 const (
-	DefaultAllowDestroyPlan                  = true
-	DefaultFileTriggersEnabled               = true
-	DefaultTerraformVersion                  = "1.0.10"
-	RemoteExecutionMode        ExecutionMode = "remote"
-	LocalExecutionMode         ExecutionMode = "local"
-	AgentExecutionMode         ExecutionMode = "agent"
+	DefaultAllowDestroyPlan    = true
+	DefaultFileTriggersEnabled = true
+	DefaultTerraformVersion    = "1.0.10"
+
+	RemoteExecutionMode ExecutionMode = "remote"
+	LocalExecutionMode  ExecutionMode = "local"
+	AgentExecutionMode  ExecutionMode = "agent"
+
+	WorkspaceReadRole  WorkspaceRole = "read"
+	WorkspacePlanRole  WorkspaceRole = "plan"
+	WorkspaceWriteRole WorkspaceRole = "write"
+	WorkspaceAdminRole WorkspaceRole = "admin"
 )
 
 type ExecutionMode string
@@ -56,6 +62,13 @@ type Workspace struct {
 	organization               *Organization
 	latestRunID                *string
 }
+
+type WorkspacePermission struct {
+	Team       *Team
+	Permission WorkspaceRole
+}
+
+type WorkspaceRole string
 
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
@@ -284,6 +297,13 @@ type WorkspaceService interface {
 
 	WorkspaceLockService
 	CurrentRunService
+	WorkspacePermissionService
+}
+
+type WorkspacePermissionService interface {
+	SetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string, role WorkspaceRole) error
+	ListWorkspacePermissions(ctx context.Context, spec WorkspaceSpec) ([]*WorkspacePermission, error)
+	UnsetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string) error
 }
 
 type WorkspaceLockService interface {
@@ -296,11 +316,11 @@ type WorkspaceStore interface {
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
-	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
+	WorkspaceLockService
 	CurrentRunService
+	WorkspacePermissionService
 }
 
 // CurrentRunService provides interaction with the current run for a workspace,

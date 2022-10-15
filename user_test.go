@@ -11,9 +11,9 @@ import (
 func TestUserSyncMemberships(t *testing.T) {
 	ctx := context.Background()
 
-	org1 := newTestOrganization(t)
-	org2 := newTestOrganization(t)
-	org3 := newTestOrganization(t)
+	org1 := NewTestOrganization(t)
+	org2 := NewTestOrganization(t)
+	org3 := NewTestOrganization(t)
 
 	team1 := NewTeam("team-1", org1)
 	team2 := NewTeam("team-2", org2)

@@ -6,8 +6,6 @@ import (
 
 // TeamDBResult is a row from the database teams table
 //
-// TODO: remove json tags (think leftover from when we used to unmarshal using
-// json?)
 // TODO: rename TeamDBResult to TeamRow
 type TeamDBResult struct {
 	TeamID                     pgtype.Text        `json:"team_id"`

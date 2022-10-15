@@ -13,12 +13,12 @@ func TestWorkspaceQueue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	org := newTestOrganization(t)
+	org := NewTestOrganization(t)
 
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := newTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
-		cv1 := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		cv1 := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run1 := NewRun(cv1, ws, RunCreateOptions{})
 		run2 := NewRun(cv1, ws, RunCreateOptions{})
 		run3 := NewRun(cv1, ws, RunCreateOptions{})
@@ -73,9 +73,9 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := newTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
-		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
+		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
 			Speculative: Bool(true),
 		})
 		run := NewRun(cv, ws, RunCreateOptions{})
@@ -88,9 +88,9 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := newTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
-		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
 
 		// user locks workspace; new run should be made the current run but should not
@@ -114,9 +114,9 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := newTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
-		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
 		run.status = RunPlanning
 
@@ -127,9 +127,9 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		ws := newTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
-		cv := newTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
 		ws.latestRunID = &run.id
 
