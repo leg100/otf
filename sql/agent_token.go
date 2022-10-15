@@ -26,7 +26,7 @@ func (db *DB) ListAgentTokens(ctx context.Context, organizationName string) ([]*
 	}
 	var unmarshalled []*otf.AgentToken
 	for _, r := range rows {
-		unmarshalled = append(unmarshalled, otf.UnmarshalAgentTokenDBResult(otf.AgentTokenRow(r)))
+		unmarshalled = append(unmarshalled, otf.UnmarshalAgentTokenResult(otf.AgentTokenRow(r)))
 	}
 	return unmarshalled, nil
 }
@@ -36,7 +36,7 @@ func (db *DB) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken,
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalAgentTokenDBResult(otf.AgentTokenRow(r)), nil
+	return otf.UnmarshalAgentTokenResult(otf.AgentTokenRow(r)), nil
 }
 
 // DeleteAgentToken deletes an agent token.

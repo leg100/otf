@@ -6,10 +6,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// TODO: rename these objects from *DBResult to *DBRecord or just *Record
-
-// RunDBResult is the database record for a run
-type RunDBResult struct {
+// RunResult represents the result of a database query for a run.
+type RunResult struct {
 	RunID                  pgtype.Text                   `json:"run_id"`
 	CreatedAt              pgtype.Timestamptz            `json:"created_at"`
 	ForceCancelAvailableAt pgtype.Timestamptz            `json:"force_cancel_available_at"`
@@ -37,7 +35,7 @@ type RunDBResult struct {
 	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
 }
 
-func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
+func UnmarshalRunResult(result RunResult) (*Run, error) {
 	run := Run{
 		id:                     result.RunID.String,
 		createdAt:              result.CreatedAt.Time.UTC(),
@@ -46,7 +44,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 		refresh:                result.Refresh,
 		refreshOnly:            result.RefreshOnly,
 		status:                 RunStatus(result.Status.String),
-		statusTimestamps:       unmarshalRunStatusTimestampDBTypes(result.RunStatusTimestamps),
+		statusTimestamps:       unmarshalRunStatusTimestampRows(result.RunStatusTimestamps),
 		replaceAddrs:           result.ReplaceAddrs,
 		targetAddrs:            result.TargetAddrs,
 		autoApply:              result.AutoApply,
@@ -61,7 +59,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 			runID: result.RunID.String,
 			phaseStatus: &phaseStatus{
 				status:           PhaseStatus(result.PlanStatus.String),
-				statusTimestamps: unmarshalPlanStatusTimestampDBTypes(result.PlanStatusTimestamps),
+				statusTimestamps: unmarshalPlanStatusTimestampRows(result.PlanStatusTimestamps),
 			},
 			ResourceReport: (*ResourceReport)(result.PlannedChanges),
 		},
@@ -69,7 +67,7 @@ func UnmarshalRunDBResult(result RunDBResult) (*Run, error) {
 			runID: result.RunID.String,
 			phaseStatus: &phaseStatus{
 				status:           PhaseStatus(result.ApplyStatus.String),
-				statusTimestamps: unmarshalApplyStatusTimestampDBTypes(result.ApplyStatusTimestamps),
+				statusTimestamps: unmarshalApplyStatusTimestampRows(result.ApplyStatusTimestamps),
 			},
 			ResourceReport: (*ResourceReport)(result.AppliedChanges),
 		},
@@ -116,8 +114,8 @@ func UnmarshalRunListJSONAPI(json *dto.RunList) *RunList {
 	return &wl
 }
 
-func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
-	for _, ty := range typs {
+func unmarshalRunStatusTimestampRows(rows []pggen.RunStatusTimestamps) (timestamps []RunStatusTimestamp) {
+	for _, ty := range rows {
 		timestamps = append(timestamps, RunStatusTimestamp{
 			Status:    RunStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
@@ -126,8 +124,8 @@ func unmarshalRunStatusTimestampDBTypes(typs []pggen.RunStatusTimestamps) (times
 	return timestamps
 }
 
-func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
-	for _, ty := range typs {
+func unmarshalPlanStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
+	for _, ty := range rows {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),
@@ -136,8 +134,8 @@ func unmarshalPlanStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (ti
 	return timestamps
 }
 
-func unmarshalApplyStatusTimestampDBTypes(typs []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
-	for _, ty := range typs {
+func unmarshalApplyStatusTimestampRows(rows []pggen.PhaseStatusTimestamps) (timestamps []PhaseStatusTimestamp) {
+	for _, ty := range rows {
 		timestamps = append(timestamps, PhaseStatusTimestamp{
 			Status:    PhaseStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),

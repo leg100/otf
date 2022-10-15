@@ -5,10 +5,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-// TeamDBResult is a row from the database teams table
-//
-// TODO: rename TeamDBResult to TeamRow
-type TeamDBResult struct {
+// TeamResult represents the result of a database query for a team.
+type TeamResult struct {
 	TeamID                     pgtype.Text          `json:"team_id"`
 	Name                       pgtype.Text          `json:"name"`
 	CreatedAt                  pgtype.Timestamptz   `json:"created_at"`
@@ -17,12 +15,12 @@ type TeamDBResult struct {
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
-func UnmarshalTeamDBResult(row TeamDBResult, opts ...NewTeamOption) *Team {
+func UnmarshalTeamResult(row TeamResult, opts ...NewTeamOption) *Team {
 	return &Team{
 		id:           row.TeamID.String,
 		createdAt:    row.CreatedAt.Time.UTC(),
 		name:         row.Name.String,
-		organization: UnmarshalOrganizationDBResult(*row.Organization),
+		organization: UnmarshalOrganizationRow(*row.Organization),
 		access: OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
 		},

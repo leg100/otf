@@ -143,8 +143,9 @@ func NewTestStateVersion(t *testing.T, outputs ...StateOutput) *StateVersion {
 	return sv
 }
 
-// StateVersionDBRow is the state version postgres record.
-type StateVersionDBRow struct {
+// StateVersionResult represents the result of a database query for a state
+// version.
+type StateVersionResult struct {
 	StateVersionID      pgtype.Text                 `json:"state_version_id"`
 	CreatedAt           pgtype.Timestamptz          `json:"created_at"`
 	Serial              int                         `json:"serial"`
@@ -153,8 +154,8 @@ type StateVersionDBRow struct {
 	StateVersionOutputs []pggen.StateVersionOutputs `json:"state_version_outputs"`
 }
 
-// UnmarshalStateVersionDBResult unmarshals a state version postgres record.
-func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error) {
+// UnmarshalStateVersionResult unmarshals a database result query into a state version.
+func UnmarshalStateVersionResult(row StateVersionResult) (*StateVersion, error) {
 	sv := StateVersion{
 		id:        row.StateVersionID.String,
 		createdAt: row.CreatedAt.Time.UTC(),
@@ -162,7 +163,7 @@ func UnmarshalStateVersionDBResult(row StateVersionDBRow) (*StateVersion, error)
 		state:     row.State,
 	}
 	for _, r := range row.StateVersionOutputs {
-		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputDBType(r))
+		sv.outputs = append(sv.outputs, UnmarshalStateVersionOutputRow(r))
 	}
 	return &sv, nil
 }

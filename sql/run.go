@@ -58,7 +58,7 @@ func (db *DB) UpdateStatus(ctx context.Context, runID string, fn func(*otf.Run) 
 		if err != nil {
 			return databaseError(err)
 		}
-		run, err = otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+		run, err = otf.UnmarshalRunResult(otf.RunResult(result))
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunLi
 
 	var items []*otf.Run
 	for _, r := range rows {
-		run, err := otf.UnmarshalRunDBResult(otf.RunDBResult(r))
+		run, err := otf.UnmarshalRunResult(otf.RunResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +216,7 @@ func (db *DB) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalRunDBResult(otf.RunDBResult(result))
+	return otf.UnmarshalRunResult(otf.RunResult(result))
 }
 
 // SetPlanFile writes a plan file to the db

@@ -188,7 +188,7 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 
 	var items []*otf.Workspace
 	for _, r := range rows {
-		ws, err := otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(r))
+		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := db.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
 			Name:                String(*spec.Name),
@@ -219,7 +219,7 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+		return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 	} else {
 		return nil, fmt.Errorf("no workspace spec provided")
 	}
@@ -251,7 +251,7 @@ func (db *DB) getWorkspaceForUpdate(ctx context.Context, spec otf.WorkspaceSpec)
 	if err != nil {
 		return nil, err
 	}
-	return otf.UnmarshalWorkspaceDBResult(otf.WorkspaceDBResult(result))
+	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 }
 
 func (db *DB) getWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (pgtype.Text, error) {

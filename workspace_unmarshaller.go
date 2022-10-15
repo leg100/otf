@@ -8,7 +8,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-type WorkspaceDBResult struct {
+// WorkspaceResult represents the result of a database query for a workspace.
+type WorkspaceResult struct {
 	WorkspaceID                pgtype.Text                  `json:"workspace_id"`
 	CreatedAt                  pgtype.Timestamptz           `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz           `json:"updated_at"`
@@ -41,7 +42,7 @@ type WorkspaceDBResult struct {
 	Organization               *pggen.Organizations         `json:"organization"`
 }
 
-func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
+func UnmarshalWorkspaceResult(row WorkspaceResult) (*Workspace, error) {
 	ws := Workspace{
 		id:                         row.WorkspaceID.String,
 		createdAt:                  row.CreatedAt.Time.UTC(),
@@ -77,7 +78,7 @@ func UnmarshalWorkspaceDBResult(row WorkspaceDBResult) (*Workspace, error) {
 	}
 
 	if row.Organization != nil {
-		ws.organization = UnmarshalOrganizationDBResult(*row.Organization)
+		ws.organization = UnmarshalOrganizationRow(*row.Organization)
 	}
 
 	return &ws, nil
@@ -103,7 +104,7 @@ func MarshalWorkspaceLockParams(ws *Workspace) (pggen.UpdateWorkspaceLockByIDPar
 	return params, nil
 }
 
-func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceDBResult) error {
+func unmarshalWorkspaceLock(dst *Workspace, row *WorkspaceResult) error {
 	if row.UserLock == nil && row.RunLock == nil {
 		dst.lock = &Unlocked{}
 	} else if row.UserLock != nil {
@@ -163,20 +164,22 @@ func UnmarshalWorkspaceListJSONAPI(json *dto.WorkspaceList) *WorkspaceList {
 	return &wl
 }
 
-type WorkspacePermissionDBResult struct {
+// WorkspacePermissionResult represents the result of a database query for a
+// workspace permission.
+type WorkspacePermissionResult struct {
 	Role         pgtype.Text          `json:"role"`
 	Team         *pggen.Teams         `json:"team"`
 	Organization *pggen.Organizations `json:"organization"`
 }
 
-func UnmarshalWorkspacePermissionDBResult(row WorkspacePermissionDBResult) *WorkspacePermission {
+func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) *WorkspacePermission {
 	return &WorkspacePermission{
 		Permission: WorkspaceRole(row.Role.String),
 		Team: &Team{
 			id:           row.Team.TeamID.String,
 			name:         row.Team.Name.String,
 			createdAt:    row.Team.CreatedAt.Time.UTC(),
-			organization: UnmarshalOrganizationDBResult(*row.Organization),
+			organization: UnmarshalOrganizationRow(*row.Organization),
 			access: OrganizationAccess{
 				ManageWorkspaces: row.Team.PermissionManageWorkspaces,
 			},

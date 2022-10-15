@@ -32,7 +32,7 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionDBResult(otf.WorkspacePermissionDBResult(row)))
+			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
 		}
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := db.FindWorkspacePermissionsByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
@@ -40,7 +40,7 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionDBResult(otf.WorkspacePermissionDBResult(row)))
+			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
 		}
 	} else {
 		return nil, fmt.Errorf("invalid workspace spec")

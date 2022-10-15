@@ -5,14 +5,16 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func UnmarshalOrganizationDBResult(result pggen.Organizations) *Organization {
+// UnmarshalOrganizationRow converts an organization database row into an
+// organization.
+func UnmarshalOrganizationRow(row pggen.Organizations) *Organization {
 	return &Organization{
-		id:              result.OrganizationID.String,
-		createdAt:       result.CreatedAt.Time.UTC(),
-		updatedAt:       result.UpdatedAt.Time.UTC(),
-		name:            result.Name.String,
-		sessionRemember: result.SessionRemember,
-		sessionTimeout:  result.SessionTimeout,
+		id:              row.OrganizationID.String,
+		createdAt:       row.CreatedAt.Time.UTC(),
+		updatedAt:       row.UpdatedAt.Time.UTC(),
+		name:            row.Name.String,
+		sessionRemember: row.SessionRemember,
+		sessionTimeout:  row.SessionTimeout,
 	}
 }
 

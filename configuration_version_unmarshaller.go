@@ -5,7 +5,9 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-type ConfigurationVersionDBResult struct {
+// ConfigurationVersionResult represents the result of a database query for a
+// configuration version.
+type ConfigurationVersionResult struct {
 	ConfigurationVersionID               pgtype.Text                                  `json:"configuration_version_id"`
 	CreatedAt                            pgtype.Timestamptz                           `json:"created_at"`
 	AutoQueueRuns                        bool                                         `json:"auto_queue_runs"`
@@ -16,7 +18,7 @@ type ConfigurationVersionDBResult struct {
 	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
 }
 
-func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) (*ConfigurationVersion, error) {
+func UnmarshalConfigurationVersionResult(result ConfigurationVersionResult) (*ConfigurationVersion, error) {
 	cv := ConfigurationVersion{
 		id:               result.ConfigurationVersionID.String,
 		createdAt:        result.CreatedAt.Time.UTC(),
@@ -24,14 +26,14 @@ func UnmarshalConfigurationVersionDBResult(result ConfigurationVersionDBResult) 
 		speculative:      result.Speculative,
 		source:           ConfigurationSource(result.Source.String),
 		status:           ConfigurationStatus(result.Status.String),
-		statusTimestamps: unmarshalConfigurationVersionStatusTimestampDBTypes(result.ConfigurationVersionStatusTimestamps),
+		statusTimestamps: unmarshalConfigurationVersionStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
 		workspaceID:      result.WorkspaceID.String,
 	}
 	return &cv, nil
 }
 
-func unmarshalConfigurationVersionStatusTimestampDBTypes(typs []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
-	for _, ty := range typs {
+func unmarshalConfigurationVersionStatusTimestampRows(rows []pggen.ConfigurationVersionStatusTimestamps) (timestamps []ConfigurationVersionStatusTimestamp) {
+	for _, ty := range rows {
 		timestamps = append(timestamps, ConfigurationVersionStatusTimestamp{
 			Status:    ConfigurationStatus(ty.Status.String),
 			Timestamp: ty.Timestamp.Time.UTC(),

@@ -44,7 +44,7 @@ func (db *DB) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.U
 			return nil, err
 		}
 		for _, r := range result {
-			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			user, err := otf.UnmarshalUserResult(otf.UserResult(r))
 			if err != nil {
 				return nil, err
 			}
@@ -56,7 +56,7 @@ func (db *DB) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.U
 			return nil, err
 		}
 		for _, r := range result {
-			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			user, err := otf.UnmarshalUserResult(otf.UserResult(r))
 			if err != nil {
 				return nil, err
 			}
@@ -68,7 +68,7 @@ func (db *DB) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.U
 			return nil, err
 		}
 		for _, r := range result {
-			user, err := otf.UnmarshalUserDBResult(otf.UserDBResult(r))
+			user, err := otf.UnmarshalUserResult(otf.UserResult(r))
 			if err != nil {
 				return nil, err
 			}
@@ -85,31 +85,31 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
+		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else if spec.Username != nil {
 		result, err := db.FindUserByUsername(ctx, String(*spec.Username))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
+		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else if spec.AuthenticationToken != nil {
 		result, err := db.FindUserByAuthenticationToken(ctx, String(*spec.AuthenticationToken))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
+		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else if spec.AuthenticationTokenID != nil {
 		result, err := db.FindUserByAuthenticationTokenID(ctx, String(*spec.AuthenticationTokenID))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result))
+		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else if spec.SessionToken != nil {
 		result, err := db.FindUserBySessionToken(ctx, String(*spec.SessionToken))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserDBResult(otf.UserDBResult(result), otf.WithActiveSession(*spec.SessionToken))
+		return otf.UnmarshalUserResult(otf.UserResult(result), otf.WithActiveSession(*spec.SessionToken))
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

@@ -5,7 +5,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-type UserDBResult struct {
+// UserResult represents the result of a database query for a user.
+type UserResult struct {
 	UserID        pgtype.Text           `json:"user_id"`
 	Username      pgtype.Text           `json:"username"`
 	CreatedAt     pgtype.Timestamptz    `json:"created_at"`
@@ -16,7 +17,7 @@ type UserDBResult struct {
 	Teams         []pggen.Teams         `json:"teams"`
 }
 
-func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, error) {
+func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 	user := User{
 		id:        row.UserID.String,
 		createdAt: row.CreatedAt.Time.UTC(),
@@ -24,7 +25,7 @@ func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, erro
 		username:  row.Username.String,
 	}
 	for _, or := range row.Organizations {
-		user.Organizations = append(user.Organizations, UnmarshalOrganizationDBResult(or))
+		user.Organizations = append(user.Organizations, UnmarshalOrganizationRow(or))
 	}
 	// Unmarshal team requires finding the team's corresponding
 	// organization...pggen doesn't permit two layers of embedding table rows
@@ -32,7 +33,7 @@ func UnmarshalUserDBResult(row UserDBResult, opts ...NewUserOption) (*User, erro
 	for _, tr := range row.Teams {
 		for _, or := range row.Organizations {
 			if tr.OrganizationID == or.OrganizationID {
-				user.Teams = append(user.Teams, UnmarshalTeamDBResult(TeamDBResult{
+				user.Teams = append(user.Teams, UnmarshalTeamResult(TeamResult{
 					TeamID:                     tr.TeamID,
 					Name:                       tr.Name,
 					CreatedAt:                  tr.CreatedAt,

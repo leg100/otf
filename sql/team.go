@@ -50,13 +50,13 @@ func (db *DB) GetTeam(ctx context.Context, spec otf.TeamSpec) (*otf.Team, error)
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalTeamDBResult(otf.TeamDBResult(result)), nil
+		return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := db.FindTeamByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalTeamDBResult(otf.TeamDBResult(result)), nil
+		return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}
@@ -70,7 +70,7 @@ func (db *DB) ListTeams(ctx context.Context, organizationName string) ([]*otf.Te
 
 	var items []*otf.Team
 	for _, r := range result {
-		items = append(items, otf.UnmarshalTeamDBResult(otf.TeamDBResult(r)))
+		items = append(items, otf.UnmarshalTeamResult(otf.TeamResult(r)))
 	}
 	return items, nil
 }
@@ -115,7 +115,7 @@ func (db *DB) getTeamForUpdate(ctx context.Context, spec otf.TeamSpec) (*otf.Tea
 	if err != nil {
 		return nil, err
 	}
-	return otf.UnmarshalTeamDBResult(otf.TeamDBResult(result)), nil
+	return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 }
 
 func (db *DB) getTeamID(ctx context.Context, spec otf.TeamSpec) (pgtype.Text, error) {

@@ -85,8 +85,8 @@ type AgentTokenRow struct {
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
-// UnmarshalAgentTokenDBResult unmarshals a row from the database.
-func UnmarshalAgentTokenDBResult(row AgentTokenRow) *AgentToken {
+// UnmarshalAgentTokenResult unmarshals a row from the database.
+func UnmarshalAgentTokenResult(row AgentTokenRow) *AgentToken {
 	return &AgentToken{
 		id:               row.TokenID.String,
 		createdAt:        row.CreatedAt.Time,

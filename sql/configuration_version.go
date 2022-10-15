@@ -39,7 +39,7 @@ func (db *DB) UploadConfigurationVersion(ctx context.Context, id string, fn func
 		if err != nil {
 			return err
 		}
-		cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+		cv, err := otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (db *DB) ListConfigurationVersions(ctx context.Context, workspaceID string,
 
 	var items []*otf.ConfigurationVersion
 	for _, r := range rows {
-		cv, err := otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(r))
+		cv, err := otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -92,13 +92,13 @@ func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.Configuratio
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, err
 		}
-		return otf.UnmarshalConfigurationVersionDBResult(otf.ConfigurationVersionDBResult(result))
+		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else {
 		return nil, fmt.Errorf("no configuration version spec provided")
 	}

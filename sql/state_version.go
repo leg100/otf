@@ -73,7 +73,7 @@ func (db *DB) ListStateVersions(ctx context.Context, opts otf.StateVersionListOp
 
 	var items []*otf.StateVersion
 	for _, r := range rows {
-		sv, err := otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(r))
+		sv, err := otf.UnmarshalStateVersionResult(otf.StateVersionResult(r))
 		if err != nil {
 			return nil, err
 		}
@@ -92,13 +92,13 @@ func (db *DB) GetStateVersion(ctx context.Context, opts otf.StateVersionGetOptio
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
+		return otf.UnmarshalStateVersionResult(otf.StateVersionResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindStateVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalStateVersionDBResult(otf.StateVersionDBRow(result))
+		return otf.UnmarshalStateVersionResult(otf.StateVersionResult(result))
 	} else {
 		return nil, fmt.Errorf("no state version spec provided")
 	}
