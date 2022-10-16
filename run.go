@@ -116,12 +116,6 @@ func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
 // its current run, or the most recent current run.
 func (r *Run) Latest() bool { return r.latest }
 
-// CanAccess always return true - some actions are invoked on behalf of a run,
-// e.g. locking a workpace for a run
-func (r *Run) CanAccess(organizationName *string) bool {
-	return true
-}
-
 func (r *Run) Queued() bool {
 	return r.status == RunPlanQueued || r.status == RunApplyQueued
 }
@@ -254,6 +248,21 @@ func (r *Run) EnqueuePlan(ctx context.Context, svc WorkspaceLockService) error {
 		}
 	}
 	return nil
+}
+
+func (*Run) CanAccessSite(action Action) bool {
+	// run cannot carry out site-level actions
+	return false
+}
+
+func (r *Run) CanAccessOrganization(action Action, name string) bool {
+	// run cannot access organization-level resources
+	return false
+}
+
+func (r *Run) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+	// run can access anything within its workspace
+	return r.workspaceID == policy.WorkspaceID
 }
 
 func (r *Run) EnqueueApply() error {

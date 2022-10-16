@@ -79,7 +79,9 @@ func (s *SpoolerDaemon) GetCancelation() <-chan Cancelation {
 }
 
 func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
-	sub, err := s.Watch(ctx, otf.WatchOptions{})
+	sub, err := s.Watch(ctx, otf.WatchOptions{
+		OrganizationName: s.Organization,
+	})
 	if err != nil {
 		return err
 	}

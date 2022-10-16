@@ -249,6 +249,69 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	return items, err
 }
 
+const findWorkspaceIDByRunIDSQL = `SELECT w.workspace_id
+FROM workspaces w
+JOIN runs r USING (workspace_id)
+WHERE r.run_id = $1
+;`
+
+// FindWorkspaceIDByRunID implements Querier.FindWorkspaceIDByRunID.
+func (q *DBQuerier) FindWorkspaceIDByRunID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceIDByRunID")
+	row := q.conn.QueryRow(ctx, findWorkspaceIDByRunIDSQL, runID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindWorkspaceIDByRunID: %w", err)
+	}
+	return item, nil
+}
+
+// FindWorkspaceIDByRunIDBatch implements Querier.FindWorkspaceIDByRunIDBatch.
+func (q *DBQuerier) FindWorkspaceIDByRunIDBatch(batch genericBatch, runID pgtype.Text) {
+	batch.Queue(findWorkspaceIDByRunIDSQL, runID)
+}
+
+// FindWorkspaceIDByRunIDScan implements Querier.FindWorkspaceIDByRunIDScan.
+func (q *DBQuerier) FindWorkspaceIDByRunIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindWorkspaceIDByRunIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findWorkspaceIDByStateVersionIDSQL = `SELECT workspace_id
+FROM state_versions
+WHERE state_version_id = $1
+;`
+
+// FindWorkspaceIDByStateVersionID implements Querier.FindWorkspaceIDByStateVersionID.
+func (q *DBQuerier) FindWorkspaceIDByStateVersionID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceIDByStateVersionID")
+	row := q.conn.QueryRow(ctx, findWorkspaceIDByStateVersionIDSQL, stateVersionID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindWorkspaceIDByStateVersionID: %w", err)
+	}
+	return item, nil
+}
+
+// FindWorkspaceIDByStateVersionIDBatch implements Querier.FindWorkspaceIDByStateVersionIDBatch.
+func (q *DBQuerier) FindWorkspaceIDByStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text) {
+	batch.Queue(findWorkspaceIDByStateVersionIDSQL, stateVersionID)
+}
+
+// FindWorkspaceIDByStateVersionIDScan implements Querier.FindWorkspaceIDByStateVersionIDScan.
+func (q *DBQuerier) FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindWorkspaceIDByStateVersionIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const countWorkspacesSQL = `SELECT count(*)
 FROM workspaces w
 JOIN organizations o USING (organization_id)

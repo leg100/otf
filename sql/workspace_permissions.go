@@ -9,12 +9,12 @@ import (
 )
 
 func (db *DB) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.WorkspaceRole) error {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	workspaceID, err := db.GetWorkspaceID(ctx, spec)
 	if err != nil {
 		return databaseError(err)
 	}
 	_, err = db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
-		WorkspaceID: workspaceID,
+		WorkspaceID: String(workspaceID),
 		TeamName:    String(team),
 		Role:        String(string(role)),
 	})
@@ -48,12 +48,24 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 	return perms, nil
 }
 
+func (db *DB) ListWorkspacePermissionsByRunID(ctx context.Context, id string) ([]*otf.WorkspacePermission, error) {
+	var perms []*otf.WorkspacePermission
+	result, err := db.FindWorkspacePermissionsByRunID(ctx, String(id))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	for _, row := range result {
+		perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
+	}
+	return perms, nil
+}
+
 func (db *DB) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string) error {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	workspaceID, err := db.GetWorkspaceID(ctx, spec)
 	if err != nil {
 		return databaseError(err)
 	}
-	_, err = db.DeleteWorkspacePermissionByID(ctx, workspaceID, String(team))
+	_, err = db.DeleteWorkspacePermissionByID(ctx, String(workspaceID), String(team))
 	if err != nil {
 		return databaseError(err)
 	}

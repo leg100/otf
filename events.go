@@ -10,16 +10,14 @@ const (
 	EventWorkspaceCreated    EventType = "workspace_created"
 	EventWorkspaceRenamed    EventType = "workspace_renamed"
 	EventWorkspaceDeleted    EventType = "workspace_deleted"
-	// EventLatestRunUpdate is an update to the "latest" run for a workspace
-	EventLatestRunUpdate EventType = "run_latest_update"
-	EventRunCreated      EventType = "run_created"
-	EventRunStatusUpdate EventType = "run_status_update"
-	EventRunDeleted      EventType = "run_deleted"
-	EventRunCancel       EventType = "run_cancel"
-	EventRunForceCancel  EventType = "run_force_cancel"
-	EventError           EventType = "error"
-	EventInfo            EventType = "info"
-	EventLogChunk        EventType = "log_update"
+	EventRunCreated          EventType = "run_created"
+	EventRunStatusUpdate     EventType = "run_status_update"
+	EventRunDeleted          EventType = "run_deleted"
+	EventRunCancel           EventType = "run_cancel"
+	EventRunForceCancel      EventType = "run_force_cancel"
+	EventError               EventType = "error"
+	EventInfo                EventType = "info"
+	EventLogChunk            EventType = "log_update"
 )
 
 // EventType identifies the type of event
@@ -53,13 +51,13 @@ type EventService interface {
 
 // WatchOptions filters events returned by the Watch endpoint.
 type WatchOptions struct {
-	// Name to uniquely describe the watcher.
+	// Name to uniquely describe the watcher. If not provided then a
+	// name will be auto generated.
 	Name *string
-	// Filter by workspace ID
-	WorkspaceID *string `schema:"workspace_id"`
 	// Filter by organization name
 	OrganizationName *string `schema:"organization_name"`
-	// Filter by workspace name
+	// Filter by workspace name. Must be specified in tandem with
+	// OrganizationName.
 	WorkspaceName *string `schema:"workspace_name"`
 }
 

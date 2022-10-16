@@ -151,6 +151,13 @@ type Querier interface {
 	// DeleteConfigurationVersionByIDScan scans the result of an executed DeleteConfigurationVersionByIDBatch query.
 	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
+	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindOrganizationNameByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindOrganizationNameByWorkspaceIDScan scans the result of an executed FindOrganizationNameByWorkspaceIDBatch query.
+	FindOrganizationNameByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	// FindOrganizationByName finds an organization by name.
 	//
 	FindOrganizationByName(ctx context.Context, name pgtype.Text) (FindOrganizationByNameRow, error)
@@ -636,6 +643,20 @@ type Querier interface {
 	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
 	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
 
+	FindWorkspaceIDByRunID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
+	// FindWorkspaceIDByRunIDBatch enqueues a FindWorkspaceIDByRunID query into batch to be executed
+	// later by the batch.
+	FindWorkspaceIDByRunIDBatch(batch genericBatch, runID pgtype.Text)
+	// FindWorkspaceIDByRunIDScan scans the result of an executed FindWorkspaceIDByRunIDBatch query.
+	FindWorkspaceIDByRunIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	FindWorkspaceIDByStateVersionID(ctx context.Context, stateVersionID pgtype.Text) (pgtype.Text, error)
+	// FindWorkspaceIDByStateVersionIDBatch enqueues a FindWorkspaceIDByStateVersionID query into batch to be executed
+	// later by the batch.
+	FindWorkspaceIDByStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text)
+	// FindWorkspaceIDByStateVersionIDScan scans the result of an executed FindWorkspaceIDByStateVersionIDBatch query.
+	FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (*int, error)
 	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
 	// later by the batch.
@@ -733,6 +754,13 @@ type Querier interface {
 	FindWorkspacePermissionsByNameBatch(batch genericBatch, workspaceName pgtype.Text, organizationName pgtype.Text)
 	// FindWorkspacePermissionsByNameScan scans the result of an executed FindWorkspacePermissionsByNameBatch query.
 	FindWorkspacePermissionsByNameScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByNameRow, error)
+
+	FindWorkspacePermissionsByRunID(ctx context.Context, runID pgtype.Text) ([]FindWorkspacePermissionsByRunIDRow, error)
+	// FindWorkspacePermissionsByRunIDBatch enqueues a FindWorkspacePermissionsByRunID query into batch to be executed
+	// later by the batch.
+	FindWorkspacePermissionsByRunIDBatch(batch genericBatch, runID pgtype.Text)
+	// FindWorkspacePermissionsByRunIDScan scans the result of an executed FindWorkspacePermissionsByRunIDBatch query.
+	FindWorkspacePermissionsByRunIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByRunIDRow, error)
 
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
@@ -877,6 +905,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteConfigurationVersionByIDSQL, deleteConfigurationVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteConfigurationVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
@@ -1085,6 +1116,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacesSQL, findWorkspacesSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaces': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findWorkspaceIDByRunIDSQL, findWorkspaceIDByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceIDByRunID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspaceIDByStateVersionIDSQL, findWorkspaceIDByStateVersionIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspaceIDByStateVersionID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, countWorkspacesSQL, countWorkspacesSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountWorkspaces': %w", err)
 	}
@@ -1123,6 +1160,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWorkspacePermissionsByNameSQL, findWorkspacePermissionsByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspacePermissionsByRunIDSQL, findWorkspacePermissionsByRunIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)

@@ -33,11 +33,11 @@ func (u *fakeUserService) GetUser(context.Context, otf.UserSpec) (*otf.User, err
 	return u.fakeUser, nil
 }
 
-func (u *fakeUserService) CreateToken(ctx context.Context, user *otf.User, opts *otf.TokenCreateOptions) (*otf.Token, error) {
-	return otf.NewToken(user.ID(), opts.Description)
+func (u *fakeUserService) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+	return otf.NewToken(userID, opts.Description)
 }
 
-func (u *fakeUserService) DeleteToken(context.Context, *otf.User, string) error { return nil }
+func (u *fakeUserService) DeleteToken(context.Context, string, string) error { return nil }
 
 type fakeTeamService struct {
 	otf.TeamService
@@ -136,6 +136,6 @@ func (f *fakeAgentTokenService) ListAgentTokens(ctx context.Context, _ string) (
 	return []*otf.AgentToken{f.fakeAgentToken}, nil
 }
 
-func (f *fakeAgentTokenService) DeleteAgentToken(ctx context.Context, id string) error {
+func (f *fakeAgentTokenService) DeleteAgentToken(ctx context.Context, id string, organizationName string) error {
 	return nil
 }

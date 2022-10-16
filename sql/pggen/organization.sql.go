@@ -11,6 +11,38 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+const findOrganizationNameByWorkspaceIDSQL = `SELECT o.name
+FROM organizations o
+JOIN workspaces w USING (organization_id)
+WHERE w.workspace_id = $1
+;`
+
+// FindOrganizationNameByWorkspaceID implements Querier.FindOrganizationNameByWorkspaceID.
+func (q *DBQuerier) FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationNameByWorkspaceID")
+	row := q.conn.QueryRow(ctx, findOrganizationNameByWorkspaceIDSQL, workspaceID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindOrganizationNameByWorkspaceID: %w", err)
+	}
+	return item, nil
+}
+
+// FindOrganizationNameByWorkspaceIDBatch implements Querier.FindOrganizationNameByWorkspaceIDBatch.
+func (q *DBQuerier) FindOrganizationNameByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text) {
+	batch.Queue(findOrganizationNameByWorkspaceIDSQL, workspaceID)
+}
+
+// FindOrganizationNameByWorkspaceIDScan implements Querier.FindOrganizationNameByWorkspaceIDScan.
+func (q *DBQuerier) FindOrganizationNameByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationNameByWorkspaceIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const findOrganizationByNameSQL = `SELECT * FROM organizations WHERE name = $1;`
 
 type FindOrganizationByNameRow struct {

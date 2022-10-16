@@ -9,8 +9,9 @@ import (
 
 // CreateOrganization creates an organization. Needs admin permission.
 func (a *Application) CreateOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	if !otf.IsAdmin(ctx) {
-		return nil, otf.ErrAccessNotPermitted
+	subject, err := a.CanAccessSite(ctx, otf.CreateOrganizationAction)
+	if err != nil {
+		return nil, err
 	}
 
 	org, err := otf.NewOrganization(opts)
@@ -19,22 +20,26 @@ func (a *Application) CreateOrganization(ctx context.Context, opts otf.Organizat
 	}
 
 	if err := a.db.CreateOrganization(ctx, org); err != nil {
-		a.Error(err, "creating organization", "id", org.ID())
+		a.Error(err, "creating organization", "id", org.ID(), "subject", subject)
 		return nil, err
 	}
 
 	a.Publish(otf.Event{Type: otf.EventOrganizationCreated, Payload: org})
 
-	a.V(0).Info("created organization", "id", org.ID(), "name", org.Name())
+	a.V(0).Info("created organization", "id", org.ID(), "name", org.Name(), "subject", subject)
 
 	return org, nil
 }
 
 // EnsureCreatedOrganization idempotently creates an organization. Needs admin
 // permission.
+//
+// TODO: merge this into CreatedOrganization and add an option to toggle
+// idempotency
 func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.OrganizationCreateOptions) (*otf.Organization, error) {
-	if !otf.IsAdmin(ctx) {
-		return nil, otf.ErrAccessNotPermitted
+	subject, err := a.CanAccessSite(ctx, otf.GetOrganizationAction)
+	if err != nil {
+		return nil, err
 	}
 
 	org, err := a.db.GetOrganization(ctx, *opts.Name)
@@ -43,7 +48,7 @@ func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.Or
 	}
 
 	if err != otf.ErrResourceNotFound {
-		a.Error(err, "retrieving organization", "name", *opts.Name)
+		a.Error(err, "retrieving organization", "name", *opts.Name, "subject", subject)
 		return nil, err
 	}
 
@@ -52,17 +57,18 @@ func (a *Application) EnsureCreatedOrganization(ctx context.Context, opts otf.Or
 
 // GetOrganization retrieves an organization by name.
 func (a *Application) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
-	if !otf.CanAccess(ctx, &name) {
-		return nil, otf.ErrAccessNotPermitted
+	subject, err := a.CanAccessOrganization(ctx, otf.GetOrganizationAction, name)
+	if err != nil {
+		return nil, err
 	}
 
 	org, err := a.db.GetOrganization(ctx, name)
 	if err != nil {
-		a.Error(err, "retrieving organization", "name", name)
+		a.Error(err, "retrieving organization", "name", name, "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("retrieved organization", "name", name, "id", org.ID())
+	a.V(2).Info("retrieved organization", "name", name, "id", org.ID(), "subject", subject)
 
 	return org, nil
 }
@@ -74,48 +80,51 @@ func (a *Application) ListOrganizations(ctx context.Context, opts otf.Organizati
 	if err != nil {
 		return nil, err
 	}
-	if user, ok := subj.(*otf.User); ok && !user.SiteAdmin() {
+	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin() {
 		return newOrganizationList(opts, user.Organizations), nil
 	}
 	return a.db.ListOrganizations(ctx, opts)
 }
 
 func (a *Application) UpdateOrganization(ctx context.Context, name string, opts *otf.OrganizationUpdateOptions) (*otf.Organization, error) {
-	if !otf.CanAccess(ctx, &name) {
-		return nil, otf.ErrAccessNotPermitted
+	subject, err := a.CanAccessOrganization(ctx, otf.UpdateOrganizationAction, name)
+	if err != nil {
+		return nil, err
 	}
 
 	org, err := a.db.UpdateOrganization(ctx, name, func(org *otf.Organization) error {
 		return otf.UpdateOrganizationFromOpts(org, *opts)
 	})
 	if err != nil {
-		a.Error(err, "updating organization", "name", name)
+		a.Error(err, "updating organization", "name", name, "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("updated organization", "name", name, "id", org.ID())
+	a.V(2).Info("updated organization", "name", name, "id", org.ID(), "subject", subject)
 
 	return org, nil
 }
 
 func (a *Application) DeleteOrganization(ctx context.Context, name string) error {
-	if !otf.CanAccess(ctx, &name) {
-		return otf.ErrAccessNotPermitted
-	}
-
-	err := a.db.DeleteOrganization(ctx, name)
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteOrganizationAction, name)
 	if err != nil {
-		a.Error(err, "deleting organization", "name", name)
 		return err
 	}
-	a.V(0).Info("deleted organization", "name", name)
+
+	err = a.db.DeleteOrganization(ctx, name)
+	if err != nil {
+		a.Error(err, "deleting organization", "name", name, "subject", subject)
+		return err
+	}
+	a.V(0).Info("deleted organization", "name", name, "subject", subject)
 
 	return nil
 }
 
 func (a *Application) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
-	if !otf.CanAccess(ctx, &organizationName) {
-		return nil, otf.ErrAccessNotPermitted
+	_, err := a.CanAccessOrganization(ctx, otf.GetEntitlementsAction, organizationName)
+	if err != nil {
+		return nil, err
 	}
 
 	org, err := a.GetOrganization(ctx, organizationName)

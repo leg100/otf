@@ -317,6 +317,9 @@ type WorkspaceStore interface {
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
+	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
+	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
+	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 
 	WorkspaceLockService
 	CurrentRunService
@@ -339,7 +342,7 @@ type WorkspaceListOptions struct {
 	ListOptions
 	// Filter workspaces with name matching prefix.
 	Prefix string `schema:"search[name],omitempty"`
-	// OrganizationName filters workspaces by organization name. Required.
+	// OrganizationName filters workspaces by organization name.
 	OrganizationName *string `schema:"organization_name,omitempty"`
 	// A list of relations to include. See available resources
 	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources

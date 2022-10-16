@@ -68,6 +68,19 @@ LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
 ;
 
+-- name: FindWorkspaceIDByRunID :one
+SELECT w.workspace_id
+FROM workspaces w
+JOIN runs r USING (workspace_id)
+WHERE r.run_id = pggen.arg('run_id')
+;
+
+-- name: FindWorkspaceIDByStateVersionID :one
+SELECT workspace_id
+FROM state_versions
+WHERE state_version_id = pggen.arg('state_version_id')
+;
+
 -- name: CountWorkspaces :one
 SELECT count(*)
 FROM workspaces w

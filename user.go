@@ -47,21 +47,65 @@ func (u *User) Username() string     { return u.username }
 func (u *User) CreatedAt() time.Time { return u.createdAt }
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 func (u *User) String() string       { return u.username }
-func (u *User) SiteAdmin() bool      { return u.id == SiteAdminID }
 
-func (u *User) CanAccess(organizationName *string) bool {
-	// Site admin can access any organization
-	if u.SiteAdmin() {
+func (u *User) IsSiteAdmin() bool { return u.id == SiteAdminID }
+
+func (u *User) CanAccessSite(action Action) bool {
+	// Only site admin can perform actions on the site
+	return u.IsSiteAdmin()
+}
+
+func (u *User) CanAccessOrganization(action Action, name string) bool {
+	// Site admin can perform any action on any organization
+	if u.IsSiteAdmin() {
 		return true
 	}
-	// Normal users cannot access *any* organization...
-	if organizationName == nil {
-		return false
+
+	for _, team := range u.Teams {
+		if team.OrganizationName() == name {
+			if team.IsOwners() {
+				// owner team members can perform all actions on organization
+				return true
+			}
+			if team.access.ManageWorkspaces {
+				// check if workspace manager role allows action
+				return workspaceManagerPermissions[action]
+			}
+			// TODO: as we add more organization-level features, such as a
+			// registry, policies, etc, we'll introduce further manager roles
+			// and check if roles allow action here.
+
+			switch action {
+			case GetOrganizationAction:
+				// members can retrieve info about their organization
+				return true
+			}
+		}
 	}
-	// ...but they can access an organization they are a member of.
-	for _, org := range u.Organizations {
-		if org.Name() == *organizationName {
-			return true
+	return false
+}
+
+func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+	// Site admin can access any workspace
+	if u.IsSiteAdmin() {
+		return true
+	}
+	// user must be a member of a team with perms
+	for _, team := range u.Teams {
+		if team.OrganizationName() == policy.OrganizationName {
+			if team.IsOwners() {
+				// owner team members can perform all actions on all workspaces
+				return true
+			}
+			if team.access.ManageWorkspaces {
+				// workspace managers can perform all actions on all workspaces
+				return true
+			}
+			for _, perm := range policy.Permissions {
+				if team.id == perm.Team.id {
+					return IsAllowed(action, perm.Permission)
+				}
+			}
 		}
 	}
 	return false
@@ -164,9 +208,9 @@ type UserService interface {
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
 	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
+	CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
 	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, user *User, tokenID string) error
+	DeleteToken(ctx context.Context, userID string, tokenID string) error
 }
 
 // UserStore is a persistence store for user accounts.
@@ -188,8 +232,7 @@ type UserStore interface {
 	RemoveTeamMembership(ctx context.Context, id, teamID string) error
 }
 
-// UserListOptions are options for the ListUsers endpoint. Both
-// OrganizationName and TeamName must be specified, or neither.
+// UserListOptions are options for the ListUsers endpoint.
 type UserListOptions struct {
 	OrganizationName *string
 	TeamName         *string

@@ -104,24 +104,8 @@ func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
 	}
 }
 
-// CanAccessRun determines if the caller is permitted to access the run
-func (m *Mapper) CanAccessRun(ctx context.Context, runID string) bool {
-	orgName := m.lookupRunOrganization(runID)
-	return otf.CanAccess(ctx, &orgName)
-}
-
-// CanAccessWorkspace determines if the caller is permitted to access the
-// workspace specified by the spec.
-func (m *Mapper) CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec) bool {
-	orgName, ok := m.workspaces.lookupOrganizationBySpec(spec)
-	if !ok {
-		return false
-	}
-	return otf.CanAccess(ctx, &orgName)
-}
-
 // lookupRunOrganization returns a run's organization name given a run ID
 func (m *Mapper) lookupRunOrganization(runID string) string {
-	workspaceID := m.runs.lookupWorkspaceID(runID)
+	workspaceID := m.runs.LookupWorkspaceID(runID)
 	return m.workspaces.lookupOrganizationByID(workspaceID)
 }

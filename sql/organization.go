@@ -81,6 +81,14 @@ func (db *DB) ListOrganizations(ctx context.Context, opts otf.OrganizationListOp
 	}, nil
 }
 
+func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
+	name, err := db.FindOrganizationNameByWorkspaceID(ctx, String(workspaceID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return name.String, nil
+}
+
 func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
 	r, err := db.FindOrganizationByName(ctx, String(name))
 	if err != nil {

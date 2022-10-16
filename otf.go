@@ -211,9 +211,11 @@ func Exists(path string) bool {
 // it is necessary to escalate privileges by "sudo'ing" to this user.
 type AppUser struct{}
 
-func (*AppUser) CanAccess(*string) bool { return true }
-func (*AppUser) String() string         { return "app-user" }
-func (*AppUser) ID() string             { return "app-user" }
+func (*AppUser) CanAccessSite(action Action) bool                 { return true }
+func (*AppUser) CanAccessOrganization(Action, string) bool        { return true }
+func (*AppUser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
+func (*AppUser) String() string                                   { return "app-user" }
+func (*AppUser) ID() string                                       { return "app-user" }
 
 // Absolute returns an absolute URL for the given path. It uses the http request
 // to determine the correct hostname and scheme to use. Handles situations where

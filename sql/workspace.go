@@ -201,6 +201,36 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}, nil
 }
 
+func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, String(runID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
+func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, String(svID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
+func (db *DB) GetWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (string, error) {
+	if spec.ID != nil {
+		return *spec.ID, nil
+	}
+	if spec.Name != nil && spec.OrganizationName != nil {
+		id, err := db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+		if err != nil {
+			return "", err
+		}
+		return id.String, nil
+	}
+	return "", otf.ErrInvalidWorkspaceSpec
+}
+
 func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if spec.ID != nil {
 		// TODO: always include the organization regardless of whether caller

@@ -11,7 +11,4 @@ import (
 type Mapper interface {
 	Start(context.Context) error
 	LookupWorkspaceID(spec otf.WorkspaceSpec) string
-
-	CanAccessRun(ctx context.Context, runID string) bool
-	CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec) bool
 }
