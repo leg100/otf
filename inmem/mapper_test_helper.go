@@ -30,15 +30,3 @@ func (f *fakeMapperApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (
 func (f *fakeMapperApp) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	return f.events, nil
 }
-
-type fakeSubject struct {
-	// name of organization the subject is a member of
-	memberOrg string
-}
-
-func (*fakeSubject) String() string { return "fake-subject" }
-func (*fakeSubject) ID() string     { return "fake-subject" }
-
-func (f *fakeSubject) CanAccess(org *string) bool {
-	return *org == f.memberOrg
-}

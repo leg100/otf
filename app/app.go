@@ -27,6 +27,7 @@ type Application struct {
 	Mapper
 	otf.PubSubService
 	logr.Logger
+	Authorizer
 }
 
 // NewApplication constructs an application, initialising various services and
@@ -38,6 +39,7 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 		db:            db,
 		Logger:        logger,
 	}
+	app.Authorizer = &authorizer{db}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{
 		WorkspaceService:            app,
@@ -79,6 +81,7 @@ func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) err
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,
 			RunFactory:       a.RunFactory,
+			Authorizer:       a.Authorizer,
 			proxy:            a.proxy,
 			db:               db,
 		}
@@ -101,6 +104,7 @@ func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Applic
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,
 			RunFactory:       a.RunFactory,
+			Authorizer:       a.Authorizer,
 			proxy:            a.proxy,
 			db:               db,
 		}

@@ -96,23 +96,3 @@ func (m *workspaceMapper) remove(ws *otf.Workspace) {
 	delete(m.idOrgMap, ws.ID())
 	delete(m.nameIDMap, ws.QualifiedName())
 }
-
-func (m *workspaceMapper) lookupOrganizationByID(workspaceID string) string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return m.idOrgMap[workspaceID]
-}
-
-func (m *workspaceMapper) lookupOrganizationBySpec(spec otf.WorkspaceSpec) (string, bool) {
-	if spec.OrganizationName != nil {
-		return *spec.OrganizationName, true
-	} else if spec.ID != nil {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-
-		return m.idOrgMap[*spec.ID], true
-	} else {
-		return "", false
-	}
-}

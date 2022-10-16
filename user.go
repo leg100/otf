@@ -67,6 +67,13 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 				// owner team members can perform all actions on organization
 				return true
 			}
+
+			switch action {
+			case GetOrganizationAction:
+				// members can retrieve info about their organization
+				return true
+			}
+
 			if team.access.ManageWorkspaces {
 				// check if workspace manager role allows action
 				return workspaceManagerPermissions[action]
@@ -74,12 +81,6 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 			// TODO: as we add more organization-level features, such as a
 			// registry, policies, etc, we'll introduce further manager roles
 			// and check if roles allow action here.
-
-			switch action {
-			case GetOrganizationAction:
-				// members can retrieve info about their organization
-				return true
-			}
 		}
 	}
 	return false

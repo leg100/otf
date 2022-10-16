@@ -46,16 +46,6 @@ func TestMapper(t *testing.T) {
 		t.Run("lookup workspace ID", func(t *testing.T) {
 			assert.Equal(t, ws1.ID(), m.LookupWorkspaceID(ws1.SpecName()))
 		})
-
-		t.Run("authorized user", func(t *testing.T) {
-			ctx := otf.AddSubjectToContext(ctx, &fakeSubject{"test-org"})
-			assert.True(t, m.CanAccessRun(ctx, run1.ID()))
-		})
-
-		t.Run("unauthorized user", func(t *testing.T) {
-			ctx := otf.AddSubjectToContext(ctx, &fakeSubject{"another-org"})
-			assert.False(t, m.CanAccessRun(ctx, run1.ID()))
-		})
 	})
 
 	t.Run("add workspace and run from events", func(t *testing.T) {

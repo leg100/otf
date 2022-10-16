@@ -103,9 +103,3 @@ func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
 		return ""
 	}
 }
-
-// lookupRunOrganization returns a run's organization name given a run ID
-func (m *Mapper) lookupRunOrganization(runID string) string {
-	workspaceID := m.runs.LookupWorkspaceID(runID)
-	return m.workspaces.lookupOrganizationByID(workspaceID)
-}

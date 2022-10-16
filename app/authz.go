@@ -6,7 +6,19 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error) {
+type Authorizer interface {
+	CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error)
+	CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error)
+	CanAccessWorkspace(ctx context.Context, action otf.Action, spec otf.WorkspaceSpec) (otf.Subject, error)
+	CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error)
+	CanAccessStateVersion(ctx context.Context, action otf.Action, svID string) (otf.Subject, error)
+}
+
+type authorizer struct {
+	db otf.DB
+}
+
+func (a *authorizer) CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -17,7 +29,7 @@ func (a *Application) CanAccessSite(ctx context.Context, action otf.Action) (otf
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *Application) CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error) {
+func (a *authorizer) CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -28,7 +40,7 @@ func (a *Application) CanAccessOrganization(ctx context.Context, action otf.Acti
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *Application) CanAccessWorkspace(ctx context.Context, action otf.Action, spec otf.WorkspaceSpec) (otf.Subject, error) {
+func (a *authorizer) CanAccessWorkspace(ctx context.Context, action otf.Action, spec otf.WorkspaceSpec) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -55,7 +67,7 @@ func (a *Application) CanAccessWorkspace(ctx context.Context, action otf.Action,
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *Application) CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -82,7 +94,7 @@ func (a *Application) CanAccessRun(ctx context.Context, action otf.Action, runID
 	return nil, otf.ErrAccessNotPermitted
 }
 
-func (a *Application) CanAccessStateVersion(ctx context.Context, action otf.Action, svID string) (otf.Subject, error) {
+func (a *authorizer) CanAccessStateVersion(ctx context.Context, action otf.Action, svID string) (otf.Subject, error) {
 	subj, err := otf.SubjectFromContext(ctx)
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -221,6 +222,8 @@ func (*AppUser) ID() string                                       { return "app-
 // to determine the correct hostname and scheme to use. Handles situations where
 // oTF is sitting behind a reverse proxy, using the X-Forwarded-* headers the
 // proxy sets.
+//
+// TODO: move to http pkg
 func Absolute(r *http.Request, path string) string {
 	u := url.URL{
 		Host: r.Host,
