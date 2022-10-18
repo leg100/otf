@@ -39,9 +39,6 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	// all calls to services are made as the privileged app user
-	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
-
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -99,6 +96,11 @@ func run(ctx context.Context, args []string) error {
 	// all
 	g, ctx := errgroup.WithContext(ctx)
 
+	// create context for local agent, in order to identify all calls it makes
+	actx := otf.AddSubjectToContext(ctx, &otf.LocalAgent{})
+	// all other calls to services are made as the privileged app user
+	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
+
 	// Setup pub sub broker
 	pubsub, err := sql.NewPubSub(logger, db)
 	if err != nil {
@@ -118,7 +120,6 @@ func run(ctx context.Context, args []string) error {
 
 	// Run local agent in background
 	agent, err := agent.NewAgent(
-		ctx,
 		logger.WithValues("component", "agent"),
 		app,
 		agent.NewAgentOptions{Mode: agent.InternalAgentMode})
@@ -126,7 +127,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("initializing agent: %w", err)
 	}
 	g.Go(func() error {
-		if err := agent.Start(ctx); err != nil {
+		if err := agent.Start(actx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}
 		return nil
