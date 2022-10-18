@@ -10,17 +10,17 @@ import (
 
 func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
 	spec := otf.TeamSpec{
-		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
-		Name:             otf.String(mux.Vars(r)["team_name"]),
+		OrganizationName: mux.Vars(r)["organization_name"],
+		Name:             mux.Vars(r)["team_name"],
 	}
-	team, err := app.GetTeam(r.Context(), spec)
+	team, err := app.GetTeam(r.Context(), spec.Name, spec.OrganizationName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	members, err := app.ListUsers(r.Context(), otf.UserListOptions{
-		OrganizationName: spec.OrganizationName,
-		TeamName:         spec.Name,
+		OrganizationName: otf.String(spec.OrganizationName),
+		TeamName:         otf.String(spec.Name),
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -37,14 +37,14 @@ func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) updateTeam(w http.ResponseWriter, r *http.Request) {
 	spec := otf.TeamSpec{
-		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
-		Name:             otf.String(mux.Vars(r)["team_name"]),
+		OrganizationName: mux.Vars(r)["organization_name"],
+		Name:             mux.Vars(r)["team_name"],
 	}
 	opts := otf.TeamUpdateOptions{}
 	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 	}
-	team, err := app.UpdateTeam(r.Context(), spec, opts)
+	team, err := app.UpdateTeam(r.Context(), spec.Name, spec.OrganizationName, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

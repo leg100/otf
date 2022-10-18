@@ -201,6 +201,43 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}, nil
 }
 
+func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
+	batch := &pgx.Batch{}
+
+	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
+		OrganizationName: String(organization),
+		UserID:           String(userID),
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
+	})
+	db.CountWorkspacesByUserIDBatch(batch, String(organization), String(userID))
+	results := db.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := db.FindWorkspacesByUserIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+	count, err := db.CountWorkspacesByUserIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Workspace
+	for _, r := range rows {
+		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, ws)
+	}
+
+	return &otf.WorkspaceList{
+		Items:      items,
+		Pagination: otf.NewPagination(opts, *count),
+	}, nil
+}
+
 func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
 	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, String(runID))
 	if err != nil {

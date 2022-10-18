@@ -19,7 +19,7 @@ func TestWorkspace_Create(t *testing.T) {
 
 	t.Run("Duplicate", func(t *testing.T) {
 		err := db.CreateWorkspace(context.Background(), ws)
-		require.Equal(t, otf.ErrResourcesAlreadyExists, err)
+		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
 
@@ -127,6 +127,75 @@ func TestWorkspace_Lock(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
+}
+
+func TestWorkspace_ListByUserID(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	ws1 := createTestWorkspace(t, db, org)
+	ws2 := createTestWorkspace(t, db, org)
+	team1 := createTestTeam(t, db, org)
+	team2 := createTestTeam(t, db, org)
+	_ = createTestWorkspacePermission(t, db, ws1, team1, otf.WorkspaceAdminRole)
+	_ = createTestWorkspacePermission(t, db, ws2, team2, otf.WorkspacePlanRole)
+	user := createTestUser(t, db, otf.WithTeamMemberships(team1, team2))
+
+	tests := []struct {
+		name         string
+		userID       string
+		organization string
+		opts         otf.ListOptions
+		want         func(*testing.T, *otf.WorkspaceList)
+	}{
+		{
+			name:         "show both workspaces",
+			userID:       user.ID(),
+			organization: org.Name(),
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Equal(t, 2, len(l.Items))
+				assert.Contains(t, l.Items, ws1)
+				assert.Contains(t, l.Items, ws2)
+			},
+		},
+		{
+			name:         "query non-existent org",
+			userID:       user.ID(),
+			organization: "acme-corp",
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name:         "query non-existent user",
+			userID:       "mr-invisible",
+			organization: org.Name(),
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Equal(t, 0, len(l.Items))
+			},
+		},
+		{
+			name:         "paginated results ordered by updated_at",
+			userID:       user.ID(),
+			organization: org.Name(),
+			opts:         otf.ListOptions{PageNumber: 1, PageSize: 1},
+			want: func(t *testing.T, l *otf.WorkspaceList) {
+				assert.Equal(t, 1, len(l.Items))
+				// results are in descending order so we expect ws2 to be listed
+				// first.
+				assert.Equal(t, ws2, l.Items[0])
+				assert.Equal(t, 2, l.TotalCount())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := db.ListWorkspacesByUserID(context.Background(), tt.userID, tt.organization, tt.opts)
+			require.NoError(t, err)
+
+			tt.want(t, results)
+		})
+	}
 }
 
 func TestWorkspace_List(t *testing.T) {

@@ -45,7 +45,7 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 	})
 	http.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 		var orgs []*github.Organization
-		for _, org := range user.Organizations {
+		for _, org := range user.Organizations() {
 			orgs = append(orgs, &github.Organization{Login: otf.String(org.Name())})
 		}
 		out, err := json.Marshal(orgs)
@@ -53,7 +53,7 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	for _, org := range user.Organizations {
+	for _, org := range user.Organizations() {
 		http.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.Membership{
 				Role: otf.String("admin"),
@@ -65,7 +65,7 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 	}
 	http.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
 		var teams []*github.Team
-		for _, team := range user.Teams {
+		for _, team := range user.Teams() {
 			teams = append(teams, &github.Team{
 				Name: otf.String(team.Name()),
 				Organization: &github.Organization{

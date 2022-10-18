@@ -64,7 +64,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	workspace, err := app.CreateWorkspace(r.Context(), opts)
-	if err == otf.ErrResourcesAlreadyExists {
+	if err == otf.ErrResourceAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
 		http.Redirect(w, r, newWorkspacePath(organizationRequest{r}), http.StatusFound)
 		return

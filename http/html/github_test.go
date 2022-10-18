@@ -38,11 +38,11 @@ func TestGithub_GetUser(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want.Username(), got.Username())
-	if assert.Equal(t, 1, len(got.Organizations)) {
-		assert.Equal(t, org.Name(), got.Organizations[0].Name())
+	if assert.Equal(t, 1, len(got.Organizations())) {
+		assert.Equal(t, org.Name(), got.Organizations()[0].Name())
 	}
-	if assert.Equal(t, 2, len(got.Teams)) {
-		assert.Equal(t, "owners", got.Teams[0].Name())
-		assert.Equal(t, team.Name(), got.Teams[1].Name())
+	if assert.Equal(t, 2, len(got.Teams())) {
+		assert.Equal(t, "owners", got.Teams()[0].Name())
+		assert.Equal(t, team.Name(), got.Teams()[1].Name())
 	}
 }

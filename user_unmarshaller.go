@@ -25,7 +25,7 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 		username:  row.Username.String,
 	}
 	for _, or := range row.Organizations {
-		user.Organizations = append(user.Organizations, UnmarshalOrganizationRow(or))
+		user.organizations = append(user.organizations, UnmarshalOrganizationRow(or))
 	}
 	// Unmarshal team requires finding the team's corresponding
 	// organization...pggen doesn't permit two layers of embedding table rows
@@ -33,7 +33,7 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 	for _, tr := range row.Teams {
 		for _, or := range row.Organizations {
 			if tr.OrganizationID == or.OrganizationID {
-				user.Teams = append(user.Teams, UnmarshalTeamResult(TeamResult{
+				user.teams = append(user.teams, UnmarshalTeamResult(TeamResult{
 					TeamID:                     tr.TeamID,
 					Name:                       tr.Name,
 					CreatedAt:                  tr.CreatedAt,
@@ -49,14 +49,14 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 		if err != nil {
 			return nil, err
 		}
-		user.Sessions = append(user.Sessions, sess)
+		user.sessions = append(user.sessions, sess)
 	}
 	for _, typ := range row.Tokens {
 		token, err := unmarshalTokenDBType(typ)
 		if err != nil {
 			return nil, err
 		}
-		user.Tokens = append(user.Tokens, token)
+		user.tokens = append(user.tokens, token)
 	}
 	for _, o := range opts {
 		o(&user)

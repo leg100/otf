@@ -15,7 +15,7 @@ func TestTeam_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := otf.NewTeam("team-awesome", org)
 
-	defer db.DeleteTeam(ctx, otf.TeamSpec{ID: otf.String(team.ID())})
+	defer db.DeleteTeam(ctx, team.Name(), org.Name())
 
 	err := db.CreateTeam(ctx, team)
 	require.NoError(t, err)
@@ -28,38 +28,14 @@ func TestTeam_Update_ByID(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 
-	_, err := db.UpdateTeam(ctx, otf.TeamSpec{ID: otf.String(team.ID())}, func(team *otf.Team) error {
+	_, err := db.UpdateTeam(ctx, team.Name(), org.Name(), func(team *otf.Team) error {
 		return team.Update(otf.TeamUpdateOptions{
 			ManageWorkspaces: true,
 		})
 	})
 	require.NoError(t, err)
 
-	got, err := db.GetTeam(ctx, otf.TeamSpec{ID: otf.String(team.ID())})
-	require.NoError(t, err)
-
-	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
-}
-
-func TestTeam_Update_ByName(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-
-	org := createTestOrganization(t, db)
-	team := createTestTeam(t, db, org)
-
-	spec := otf.TeamSpec{
-		Name:             otf.String(team.Name()),
-		OrganizationName: otf.String(org.Name()),
-	}
-	_, err := db.UpdateTeam(ctx, spec, func(team *otf.Team) error {
-		return team.Update(otf.TeamUpdateOptions{
-			ManageWorkspaces: true,
-		})
-	})
-	require.NoError(t, err)
-
-	got, err := db.GetTeam(ctx, spec)
+	got, err := db.GetTeam(ctx, team.Name(), org.Name())
 	require.NoError(t, err)
 
 	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
@@ -71,27 +47,10 @@ func TestTeam_Get(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 
-	tests := []struct {
-		name string
-		spec otf.TeamSpec
-	}{
-		{
-			name: "id",
-			spec: otf.TeamSpec{ID: otf.String(team.ID())},
-		},
-		{
-			name: "name and organization name",
-			spec: otf.TeamSpec{Name: otf.String(team.Name()), OrganizationName: otf.String(org.Name())},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetTeam(context.Background(), tt.spec)
-			require.NoError(t, err)
+	got, err := db.GetTeam(context.Background(), team.Name(), org.Name())
+	require.NoError(t, err)
 
-			assert.Equal(t, team, got)
-		})
-	}
+	assert.Equal(t, team, got)
 }
 
 func TestTeam_List(t *testing.T) {

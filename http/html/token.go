@@ -55,13 +55,17 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// display tokens by creation date, newest first
-	sort.Slice(user.Tokens, func(i, j int) bool {
-		return user.Tokens[i].CreatedAt().After(user.Tokens[j].CreatedAt())
+
+	// re-order tokens by creation date, newest first
+	tokens := make([]*otf.Token, len(user.Tokens()))
+	copy(tokens, user.Tokens())
+	sort.Slice(tokens, func(i, j int) bool {
+		return tokens[i].CreatedAt().After(tokens[j].CreatedAt())
 	})
+
 	app.render("token_list.tmpl", w, r, tokenList{
 		Pagination: &otf.Pagination{},
-		Items:      user.Tokens,
+		Items:      tokens,
 	})
 }
 

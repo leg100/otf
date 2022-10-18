@@ -6,9 +6,19 @@
 
 {{ define "content" }}
   <div class="content-menu">
-    <span id="workspaces" class="content-menu-item"><a href="{{ listWorkspacePath .Content }}">workspaces</a></span>
-    <span id="agent_tokens" class="content-menu-item"><a href="{{ listAgentTokenPath .Content }}">agent tokens</a></span>
-    <span id="users" class="content-menu-item"><a href="{{ listUsersPath .Content }}">users</a></span>
-    <span id="teams" class="content-menu-item"><a href="{{ listTeamsPath .Content }}">teams</a></span>
+    <span id="workspaces" class="content-menu-item">
+      <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+    </span>
+    <span id="teams" class="content-menu-item">
+      <a href="{{ listTeamsPath .Content }}">teams</a>
+    </span>
+    {{ if .CurrentUser.IsOwner .Content.Name }}
+    <span id="users" class="content-menu-item">
+      <a href="{{ listUsersPath .Content }}">users</a>
+    </span>
+    <span id="agent_tokens" class="content-menu-item">
+      <a href="{{ listAgentTokenPath .Content }}">agent tokens</a>
+    </span>
+    {{ end }}
   </div>
 {{ end }}

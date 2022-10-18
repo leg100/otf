@@ -21,13 +21,17 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// display sessions by creation date, newest first
-	sort.Slice(user.Sessions, func(i, j int) bool {
-		return user.Sessions[i].CreatedAt().After(user.Sessions[j].CreatedAt())
+
+	// re-order sessions by creation date, newest first
+	sessions := make([]*otf.Session, len(user.Sessions()))
+	copy(sessions, user.Sessions())
+	sort.Slice(sessions, func(i, j int) bool {
+		return sessions[i].CreatedAt().After(sessions[j].CreatedAt())
 	})
+
 	app.render("session_list.tmpl", w, r, sessionList{
 		Pagination: &otf.Pagination{},
-		Items:      user.Sessions,
+		Items:      sessions,
 	})
 }
 

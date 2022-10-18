@@ -86,17 +86,17 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 
 	assert.Equal(t, "fake-user", user.Username())
 
-	if assert.Equal(t, 2, len(user.Organizations)) {
-		assert.Equal(t, org.Name(), user.Organizations[0].Name())
-		assert.Equal(t, "fake-user", user.Organizations[1].Name())
+	if assert.Equal(t, 2, len(user.Organizations())) {
+		assert.Equal(t, org.Name(), user.Organizations()[0].Name())
+		assert.Equal(t, "fake-user", user.Organizations()[1].Name())
 	}
 
-	if assert.Equal(t, 2, len(user.Teams)) {
-		assert.Equal(t, "fake-team", user.Teams[0].Name())
-		assert.Equal(t, org.Name(), user.Teams[0].Organization().Name())
+	if assert.Equal(t, 2, len(user.Teams())) {
+		assert.Equal(t, "fake-team", user.Teams()[0].Name())
+		assert.Equal(t, org.Name(), user.Teams()[0].Organization().Name())
 
-		assert.Equal(t, "owners", user.Teams[1].Name())
-		assert.Equal(t, "fake-user", user.Teams[1].Organization().Name())
+		assert.Equal(t, "owners", user.Teams()[1].Name())
+		assert.Equal(t, "fake-user", user.Teams()[1].Organization().Name())
 	}
 }
 
@@ -152,9 +152,8 @@ func (f *fakeAuthenticatorApp) EnsureCreatedOrganization(ctx context.Context, op
 }
 
 func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
-	user.Organizations = orgs
-	user.Teams = teams
-	return user, nil
+	err := user.SyncMemberships(ctx, &fakeUserStore{}, orgs, teams)
+	return user, err
 }
 
 func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*otf.Team, error) {
@@ -165,4 +164,20 @@ func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, name, orga
 		return nil, err
 	}
 	return otf.NewTeam(name, org), nil
+}
+
+type fakeUserStore struct {
+	otf.UserStore
+}
+
+func (f *fakeUserStore) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
+	return nil
+}
+
+func (f *fakeUserStore) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {
+	return nil
+}
+func (f *fakeUserStore) AddTeamMembership(ctx context.Context, id, teamID string) error { return nil }
+func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, id, teamID string) error {
+	return nil
 }

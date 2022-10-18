@@ -119,7 +119,7 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteTeam(context.Background(), otf.TeamSpec{ID: otf.String(team.ID())})
+		db.DeleteTeam(context.Background(), team.Name(), org.Name())
 	})
 	return team
 }

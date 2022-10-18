@@ -61,16 +61,28 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 }
 
 func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	var err error
-	if opts.OrganizationName != nil {
-		// subject needs perms on org to list workspaces in org
-		_, err = a.CanAccessOrganization(ctx, otf.ListWorkspacesAction, *opts.OrganizationName)
-	} else {
+	if opts.OrganizationName == nil {
 		// subject needs perms on site to list workspaces across site
-		_, err = a.CanAccessSite(ctx, otf.ListWorkspacesAction)
-	}
-	if err != nil {
-		return nil, err
+		_, err := a.CanAccessSite(ctx, otf.ListWorkspacesAction)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// check if subject has perms to list workspaces in organization
+		_, err := a.CanAccessOrganization(ctx, otf.ListWorkspacesAction, *opts.OrganizationName)
+		if err == otf.ErrAccessNotPermitted {
+			// user does not have org-wide perms; fallback to listing workspaces
+			// for which they have workspace-level perms.
+			subject, err := otf.SubjectFromContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if user, ok := subject.(*otf.User); ok {
+				return a.db.ListWorkspacesByUserID(ctx, user.ID(), *opts.OrganizationName, opts.ListOptions)
+			}
+		} else if err != nil {
+			return nil, err
+		}
 	}
 
 	return a.db.ListWorkspaces(ctx, opts)

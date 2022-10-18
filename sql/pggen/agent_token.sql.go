@@ -468,26 +468,12 @@ type Querier interface {
 	// InsertTeamScan scans the result of an executed InsertTeamBatch query.
 	InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindTeamIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
-	// FindTeamIDByNameBatch enqueues a FindTeamIDByName query into batch to be executed
-	// later by the batch.
-	FindTeamIDByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindTeamIDByNameScan scans the result of an executed FindTeamIDByNameBatch query.
-	FindTeamIDByNameScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	FindTeamsByOrg(ctx context.Context, organizationName pgtype.Text) ([]FindTeamsByOrgRow, error)
 	// FindTeamsByOrgBatch enqueues a FindTeamsByOrg query into batch to be executed
 	// later by the batch.
 	FindTeamsByOrgBatch(batch genericBatch, organizationName pgtype.Text)
 	// FindTeamsByOrgScan scans the result of an executed FindTeamsByOrgBatch query.
 	FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByOrgRow, error)
-
-	FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindTeamByIDRow, error)
-	// FindTeamByIDBatch enqueues a FindTeamByID query into batch to be executed
-	// later by the batch.
-	FindTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
-	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
-	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
 
 	FindTeamByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindTeamByNameRow, error)
 	// FindTeamByNameBatch enqueues a FindTeamByName query into batch to be executed
@@ -496,26 +482,19 @@ type Querier interface {
 	// FindTeamByNameScan scans the result of an executed FindTeamByNameBatch query.
 	FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error)
 
-	FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (FindTeamByIDForUpdateRow, error)
-	// FindTeamByIDForUpdateBatch enqueues a FindTeamByIDForUpdate query into batch to be executed
+	FindTeamByNameForUpdate(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindTeamByNameForUpdateRow, error)
+	// FindTeamByNameForUpdateBatch enqueues a FindTeamByNameForUpdate query into batch to be executed
 	// later by the batch.
-	FindTeamByIDForUpdateBatch(batch genericBatch, teamID pgtype.Text)
-	// FindTeamByIDForUpdateScan scans the result of an executed FindTeamByIDForUpdateBatch query.
-	FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTeamByIDForUpdateRow, error)
+	FindTeamByNameForUpdateBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
+	// FindTeamByNameForUpdateScan scans the result of an executed FindTeamByNameForUpdateBatch query.
+	FindTeamByNameForUpdateScan(results pgx.BatchResults) (FindTeamByNameForUpdateRow, error)
 
-	UpdateTeamByID(ctx context.Context, permissionManageWorkspaces bool, teamID pgtype.Text) (pgtype.Text, error)
-	// UpdateTeamByIDBatch enqueues a UpdateTeamByID query into batch to be executed
+	UpdateTeamByName(ctx context.Context, params UpdateTeamByNameParams) (pgtype.Text, error)
+	// UpdateTeamByNameBatch enqueues a UpdateTeamByName query into batch to be executed
 	// later by the batch.
-	UpdateTeamByIDBatch(batch genericBatch, permissionManageWorkspaces bool, teamID pgtype.Text)
-	// UpdateTeamByIDScan scans the result of an executed UpdateTeamByIDBatch query.
-	UpdateTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
-	// DeleteTeamByIDBatch enqueues a DeleteTeamByID query into batch to be executed
-	// later by the batch.
-	DeleteTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
-	// DeleteTeamByIDScan scans the result of an executed DeleteTeamByIDBatch query.
-	DeleteTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateTeamByNameBatch(batch genericBatch, params UpdateTeamByNameParams)
+	// UpdateTeamByNameScan scans the result of an executed UpdateTeamByNameBatch query.
+	UpdateTeamByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	DeleteTeamByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteTeamByNameBatch enqueues a DeleteTeamByName query into batch to be executed
@@ -643,6 +622,27 @@ type Querier interface {
 	// FindWorkspacesScan scans the result of an executed FindWorkspacesBatch query.
 	FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspacesRow, error)
 
+	CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (*int, error)
+	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
+	// later by the batch.
+	CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationNames []string)
+	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
+	CountWorkspacesScan(results pgx.BatchResults) (*int, error)
+
+	FindWorkspacesByUserID(ctx context.Context, params FindWorkspacesByUserIDParams) ([]FindWorkspacesByUserIDRow, error)
+	// FindWorkspacesByUserIDBatch enqueues a FindWorkspacesByUserID query into batch to be executed
+	// later by the batch.
+	FindWorkspacesByUserIDBatch(batch genericBatch, params FindWorkspacesByUserIDParams)
+	// FindWorkspacesByUserIDScan scans the result of an executed FindWorkspacesByUserIDBatch query.
+	FindWorkspacesByUserIDScan(results pgx.BatchResults) ([]FindWorkspacesByUserIDRow, error)
+
+	CountWorkspacesByUserID(ctx context.Context, organizationName pgtype.Text, userID pgtype.Text) (*int, error)
+	// CountWorkspacesByUserIDBatch enqueues a CountWorkspacesByUserID query into batch to be executed
+	// later by the batch.
+	CountWorkspacesByUserIDBatch(batch genericBatch, organizationName pgtype.Text, userID pgtype.Text)
+	// CountWorkspacesByUserIDScan scans the result of an executed CountWorkspacesByUserIDBatch query.
+	CountWorkspacesByUserIDScan(results pgx.BatchResults) (*int, error)
+
 	FindWorkspaceIDByRunID(ctx context.Context, runID pgtype.Text) (pgtype.Text, error)
 	// FindWorkspaceIDByRunIDBatch enqueues a FindWorkspaceIDByRunID query into batch to be executed
 	// later by the batch.
@@ -656,13 +656,6 @@ type Querier interface {
 	FindWorkspaceIDByStateVersionIDBatch(batch genericBatch, stateVersionID pgtype.Text)
 	// FindWorkspaceIDByStateVersionIDScan scans the result of an executed FindWorkspaceIDByStateVersionIDBatch query.
 	FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults) (pgtype.Text, error)
-
-	CountWorkspaces(ctx context.Context, prefix pgtype.Text, organizationNames []string) (*int, error)
-	// CountWorkspacesBatch enqueues a CountWorkspaces query into batch to be executed
-	// later by the batch.
-	CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationNames []string)
-	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
-	CountWorkspacesScan(results pgx.BatchResults) (*int, error)
 
 	FindWorkspaceIDByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// FindWorkspaceIDByNameBatch enqueues a FindWorkspaceIDByName query into batch to be executed
@@ -1041,26 +1034,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertTeamSQL, insertTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeam': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findTeamIDByNameSQL, findTeamIDByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindTeamIDByName': %w", err)
-	}
 	if _, err := p.Prepare(ctx, findTeamsByOrgSQL, findTeamsByOrgSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamsByOrg': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findTeamByNameSQL, findTeamByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByName': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findTeamByIDForUpdateSQL, findTeamByIDForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindTeamByIDForUpdate': %w", err)
+	if _, err := p.Prepare(ctx, findTeamByNameForUpdateSQL, findTeamByNameForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByNameForUpdate': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateTeamByIDSQL, updateTeamByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateTeamByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteTeamByIDSQL, deleteTeamByIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteTeamByID': %w", err)
+	if _, err := p.Prepare(ctx, updateTeamByNameSQL, updateTeamByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateTeamByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteTeamByNameSQL, deleteTeamByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTeamByName': %w", err)
@@ -1116,14 +1100,20 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWorkspacesSQL, findWorkspacesSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaces': %w", err)
 	}
+	if _, err := p.Prepare(ctx, countWorkspacesSQL, countWorkspacesSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountWorkspaces': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspacesByUserIDSQL, findWorkspacesByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacesByUserID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, countWorkspacesByUserIDSQL, countWorkspacesByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'CountWorkspacesByUserID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findWorkspaceIDByRunIDSQL, findWorkspaceIDByRunIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceIDByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceIDByStateVersionIDSQL, findWorkspaceIDByStateVersionIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceIDByStateVersionID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, countWorkspacesSQL, countWorkspacesSQL); err != nil {
-		return fmt.Errorf("prepare query 'CountWorkspaces': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspaceIDByNameSQL, findWorkspaceIDByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspaceIDByName': %w", err)
@@ -1272,13 +1262,6 @@ type Users struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
-// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
-type WorkspacePermissions struct {
-	WorkspaceID pgtype.Text `json:"workspace_id"`
-	TeamID      pgtype.Text `json:"team_id"`
-	Role        pgtype.Text `json:"role"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1512,17 +1495,6 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 	)
 }
 
-// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspace_permissions'.
-func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspace_permissions",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"team_id", "text", &pgtype.Text{}},
-		compositeField{"role", "text", &pgtype.Text{}},
-	)
-}
-
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1569,12 +1541,6 @@ func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 // '_tokens' array type.
 func (tr *typeResolver) newTokensArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_tokens", "tokens", tr.newTokens)
-}
-
-// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_workspace_permissions' array type.
-func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (

@@ -11,13 +11,6 @@ INSERT INTO teams (
     pggen.arg('organization_id')
 );
 
--- name: FindTeamIDByName :one
-SELECT teams.team_id
-FROM teams
-JOIN organizations USING (organization_id)
-WHERE teams.name = pggen.arg('name')
-AND organizations.name = pggen.arg('organization_name');
-
 -- name: FindTeamsByOrg :many
 SELECT
     t.*,
@@ -25,15 +18,6 @@ SELECT
 FROM teams t
 JOIN organizations o USING (organization_id)
 WHERE o.name = pggen.arg('organization_name')
-;
-
--- name: FindTeamByID :one
-SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.team_id = pggen.arg('team_id')
 ;
 
 -- name: FindTeamByName :one
@@ -46,28 +30,25 @@ WHERE t.name = pggen.arg('name')
 AND   o.name = pggen.arg('organization_name')
 ;
 
--- name: FindTeamByIDForUpdate :one
+-- name: FindTeamByNameForUpdate :one
 SELECT
     t.*,
     (o.*)::"organizations" AS organization
 FROM teams t
 JOIN organizations o USING (organization_id)
-WHERE t.team_id = pggen.arg('team_id')
+WHERE t.name = pggen.arg('name')
+AND   o.name = pggen.arg('organization_name')
 FOR UPDATE OF t
 ;
 
--- name: UpdateTeamByID :one
+-- name: UpdateTeamByName :one
 UPDATE teams
 SET permission_manage_workspaces = pggen.arg('permission_manage_workspaces')
-WHERE team_id = pggen.arg('team_id')
+FROM organizations o
+WHERE teams.organization_id = o.organization_id
+AND   o.name = pggen.arg('organization_name')
+AND   teams.name = pggen.arg('name')
 RETURNING team_id;
-
--- name: DeleteTeamByID :one
-DELETE
-FROM teams
-WHERE team_id = pggen.arg('team_id')
-RETURNING team_id
-;
 
 -- name: DeleteTeamByName :one
 DELETE

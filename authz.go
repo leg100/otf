@@ -9,20 +9,6 @@ import (
 // unexported key type prevents collisions
 type subjectCtxKeyType string
 
-const subjectCtxKey subjectCtxKeyType = "subject"
-
-var ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
-
-// Subject is an entity attempting to carry out an action on a resource.
-type Subject interface {
-	CanAccessSite(action Action) bool
-	CanAccessOrganization(action Action, name string) bool
-	CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool
-	Identity
-}
-
-type Action string
-
 const (
 	WatchAction Action = "watch"
 
@@ -67,28 +53,47 @@ const (
 	DownloadStateAction      Action = "download_state"
 
 	ListUsersAction Action = "list_users"
+
+	subjectCtxKey subjectCtxKeyType = "subject"
 )
 
-var workspaceManagerPermissions = map[Action]bool{
-	CreateWorkspaceAction: true,
+var (
+	ErrAccessNotPermitted       = errors.New("access to the resource is not permitted")
+	workspaceManagerPermissions = map[Action]bool{
+		CreateWorkspaceAction: true,
+		// workspace managers can list every workspace in an organization
+		ListWorkspacesAction: true,
+	}
+	adminPermissions = map[Action]bool{
+		SetWorkspacePermissionAction: true,
+		DeleteWorkspaceAction:        true,
+	}
+	writePermissions = map[Action]bool{
+		ApplyRunAction: true,
+	}
+	planPermissions = map[Action]bool{
+		CreateRunAction: true,
+	}
+	readPermissions = map[Action]bool{
+		ListRunsAction:    true,
+		GetPlanFileAction: true,
+	}
+)
+
+// Subject is an entity attempting to carry out an action on a resource.
+type Subject interface {
+	CanAccessSite(action Action) bool
+	CanAccessOrganization(action Action, name string) bool
+	CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool
+	Identity
 }
 
-var adminPermissions = map[Action]bool{
-	SetWorkspacePermissionAction: true,
-	DeleteWorkspaceAction:        true,
-}
+type Action string
 
-var writePermissions = map[Action]bool{
-	ApplyRunAction: true,
-}
-
-var planPermissions = map[Action]bool{
-	CreateRunAction: true,
-}
-
-var readPermissions = map[Action]bool{
-	ListRunsAction:    true,
-	GetPlanFileAction: true,
+type WorkspacePolicy struct {
+	OrganizationName string
+	WorkspaceID      string
+	Permissions      []*WorkspacePermission
 }
 
 func init() {
@@ -108,12 +113,6 @@ func init() {
 	for p := range adminPermissions {
 		workspaceManagerPermissions[p] = true
 	}
-}
-
-type WorkspacePolicy struct {
-	OrganizationName string
-	WorkspaceID      string
-	Permissions      []*WorkspacePermission
 }
 
 // AddSubjectToContext adds a subject to a context

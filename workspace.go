@@ -315,6 +315,7 @@ type WorkspaceStore interface {
 	CreateWorkspace(ctx context.Context, ws *Workspace) error
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
@@ -344,6 +345,8 @@ type WorkspaceListOptions struct {
 	Prefix string `schema:"search[name],omitempty"`
 	// OrganizationName filters workspaces by organization name.
 	OrganizationName *string `schema:"organization_name,omitempty"`
+	// Filter by those for which user has workspace-level permissions.
+	UserID *string
 	// A list of relations to include. See available resources
 	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`

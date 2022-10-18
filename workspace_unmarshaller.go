@@ -10,36 +10,35 @@ import (
 
 // WorkspaceResult represents the result of a database query for a workspace.
 type WorkspaceResult struct {
-	WorkspaceID                pgtype.Text                  `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz           `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz           `json:"updated_at"`
-	AllowDestroyPlan           bool                         `json:"allow_destroy_plan"`
-	AutoApply                  bool                         `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                         `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text                  `json:"description"`
-	Environment                pgtype.Text                  `json:"environment"`
-	ExecutionMode              pgtype.Text                  `json:"execution_mode"`
-	FileTriggersEnabled        bool                         `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                         `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text                  `json:"migration_environment"`
-	Name                       pgtype.Text                  `json:"name"`
-	QueueAllRuns               bool                         `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                         `json:"speculative_enabled"`
-	SourceName                 pgtype.Text                  `json:"source_name"`
-	SourceURL                  pgtype.Text                  `json:"source_url"`
-	StructuredRunOutputEnabled bool                         `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text                  `json:"terraform_version"`
-	TriggerPrefixes            []string                     `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text                  `json:"working_directory"`
-	OrganizationID             pgtype.Text                  `json:"organization_id"`
-	LockRunID                  pgtype.Text                  `json:"lock_run_id"`
-	LockUserID                 pgtype.Text                  `json:"lock_user_id"`
-	LatestRunID                pgtype.Text                  `json:"latest_run_id"`
-	OrganizationName           pgtype.Text                  `json:"organization_name"`
-	UserLock                   *pggen.Users                 `json:"user_lock"`
-	RunLock                    *pggen.Runs                  `json:"run_lock"`
-	WorkspacePermissions       []pggen.WorkspacePermissions `json:"workspace_permissions"`
-	Organization               *pggen.Organizations         `json:"organization"`
+	WorkspaceID                pgtype.Text          `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz   `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz   `json:"updated_at"`
+	AllowDestroyPlan           bool                 `json:"allow_destroy_plan"`
+	AutoApply                  bool                 `json:"auto_apply"`
+	CanQueueDestroyPlan        bool                 `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text          `json:"description"`
+	Environment                pgtype.Text          `json:"environment"`
+	ExecutionMode              pgtype.Text          `json:"execution_mode"`
+	FileTriggersEnabled        bool                 `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool                 `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text          `json:"migration_environment"`
+	Name                       pgtype.Text          `json:"name"`
+	QueueAllRuns               bool                 `json:"queue_all_runs"`
+	SpeculativeEnabled         bool                 `json:"speculative_enabled"`
+	SourceName                 pgtype.Text          `json:"source_name"`
+	SourceURL                  pgtype.Text          `json:"source_url"`
+	StructuredRunOutputEnabled bool                 `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text          `json:"terraform_version"`
+	TriggerPrefixes            []string             `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text          `json:"working_directory"`
+	OrganizationID             pgtype.Text          `json:"organization_id"`
+	LockRunID                  pgtype.Text          `json:"lock_run_id"`
+	LockUserID                 pgtype.Text          `json:"lock_user_id"`
+	LatestRunID                pgtype.Text          `json:"latest_run_id"`
+	OrganizationName           pgtype.Text          `json:"organization_name"`
+	UserLock                   *pggen.Users         `json:"user_lock"`
+	RunLock                    *pggen.Runs          `json:"run_lock"`
+	Organization               *pggen.Organizations `json:"organization"`
 }
 
 func UnmarshalWorkspaceResult(row WorkspaceResult) (*Workspace, error) {

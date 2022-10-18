@@ -34,8 +34,25 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 	return a.CreateUser(ctx, username)
 }
 
+// ListUsers lists users with various filters.
 func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
 	var err error
+	if opts.OrganizationName != nil && opts.TeamName != nil {
+		// team members can view membership of their own teams.
+		subject, err := otf.SubjectFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if user, ok := subject.(*otf.User); ok && !user.IsSiteAdmin() {
+			_, err := user.Team(*opts.TeamName)
+			if err != nil {
+				// user is not a member of the team
+				return nil, otf.ErrAccessNotPermitted
+			}
+			return a.db.ListUsers(ctx, opts)
+		}
+	}
+
 	if opts.OrganizationName != nil {
 		// subject needs perms on org to list users in org
 		_, err = a.CanAccessOrganization(ctx, otf.ListUsersAction, *opts.OrganizationName)

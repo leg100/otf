@@ -7,7 +7,6 @@ import (
 	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"

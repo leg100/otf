@@ -32,7 +32,7 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.Contains(t, got.Organizations, org)
+	assert.Contains(t, got.Organizations(), org)
 }
 
 func TestUser_RemoveOrganizationMembership(t *testing.T) {
@@ -48,7 +48,7 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.NotContains(t, got.Organizations, org)
+	assert.NotContains(t, got.Organizations(), org)
 }
 
 func TestUser_AddTeamMembership(t *testing.T) {
@@ -65,7 +65,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.Contains(t, got.Teams, team)
+	assert.Contains(t, got.Teams(), team)
 }
 
 func TestUser_RemoveTeamMembership(t *testing.T) {
@@ -82,7 +82,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.NotContains(t, got.Teams, team)
+	assert.NotContains(t, got.Teams(), team)
 }
 
 func TestUser_Get(t *testing.T) {
@@ -137,10 +137,10 @@ func TestUser_Get(t *testing.T) {
 			assert.Equal(t, got.Username(), user.Username())
 			assert.Equal(t, got.CreatedAt(), user.CreatedAt())
 			assert.Equal(t, got.UpdatedAt(), user.UpdatedAt())
-			assert.Equal(t, 2, len(got.Organizations))
-			assert.Equal(t, 2, len(got.Sessions))
-			assert.Equal(t, 2, len(got.Tokens))
-			assert.Equal(t, 2, len(got.Teams))
+			assert.Equal(t, 2, len(got.Organizations()))
+			assert.Equal(t, 2, len(got.Sessions()))
+			assert.Equal(t, 2, len(got.Tokens()))
+			assert.Equal(t, 2, len(got.Teams()))
 		})
 	}
 }
@@ -161,7 +161,7 @@ func TestUser_Get_WithSessions(t *testing.T) {
 	got, err := db.GetUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(got.Sessions))
+	assert.Equal(t, 2, len(got.Sessions()))
 }
 
 func TestUser_List(t *testing.T) {
