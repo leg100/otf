@@ -97,7 +97,7 @@ func run(ctx context.Context, args []string) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// create context for local agent, in order to identify all calls it makes
-	actx := otf.AddSubjectToContext(ctx, &otf.LocalAgent{})
+	agentCtx := otf.AddSubjectToContext(ctx, &otf.LocalAgent{})
 	// all other calls to services are made as the privileged app user
 	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
 
@@ -127,7 +127,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("initializing agent: %w", err)
 	}
 	g.Go(func() error {
-		if err := agent.Start(actx); err != nil {
+		if err := agent.Start(agentCtx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}
 		return nil

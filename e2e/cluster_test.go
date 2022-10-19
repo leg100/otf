@@ -19,8 +19,8 @@ import (
 // This setup demonstrates that the cluster can coordinate processes between
 // the two clients.
 func TestCluster(t *testing.T) {
-	tfpath := terraformPath(t)
-	t.Run("login", login(t, tfpath))
+	addBuildsToPath(t)
+	login(t)
 	organization := createOrganization(t)
 	token := createAgentToken(t, organization)
 	root := newRoot(t, organization)
@@ -32,37 +32,33 @@ func TestCluster(t *testing.T) {
 	startAgent(t, token, u.Host)
 
 	// terraform init creates a workspace named dev
-	t.Run("terraform init", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "init", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
+	cmd := exec.Command("terraform", "init", "-no-color")
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
 
-	t.Run("edit workspace to use agent", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "edit", "dev", "--organization", organization, "--execution-mode", "agent")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		assert.Equal(t, "updated execution mode: agent\n", string(out))
-	})
+	// edit workspace to use agent
+	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", organization, "--execution-mode", "agent")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	assert.Equal(t, "updated execution mode: agent\n", string(out))
 
-	t.Run("terraform plan", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "plan", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
-	})
+	// terraform plan
+	cmd = exec.Command("terraform", "plan", "-no-color")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 
-	t.Run("terraform apply", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "apply", "-no-color", "-auto-approve")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
-	})
+	// terraform apply
+	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 }

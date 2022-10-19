@@ -66,13 +66,6 @@ func NewEnvironment(
 		return nil, err
 	}
 
-	out := &otf.JobWriter{
-		ID:         run.ID(),
-		Phase:      run.Phase(),
-		Logger:     logger,
-		LogService: app,
-	}
-
 	ws, err := app.GetWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(run.WorkspaceID())})
 	if err != nil {
 		return nil, err
@@ -87,7 +80,7 @@ func NewEnvironment(
 		Downloader:           downloader,
 		Terraform:            &TerraformPathFinder{},
 		version:              ws.TerraformVersion(),
-		out:                  out,
+		out:                  otf.NewJobWriter(ctx, app, logger, run),
 		path:                 path,
 		environmentVariables: environmentVariables,
 		cancel:               cancel,

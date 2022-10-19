@@ -36,6 +36,9 @@ func NewMapper(app otf.Application) *Mapper {
 // Start the mapper, populate entries from the DB, and watch changes, updating
 // mappings accordingly.
 func (m *Mapper) Start(ctx context.Context) error {
+	// make all service calls as the mapper user
+	ctx = otf.AddSubjectToContext(ctx, &mapperUser{})
+
 	// Register for events first so we don't miss any.
 	sub, err := m.Watch(ctx, otf.WatchOptions{})
 	if err != nil {
@@ -103,3 +106,20 @@ func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
 		return ""
 	}
 }
+
+// mapperUser identifies the mapper for auth purposes
+type mapperUser struct{}
+
+// CanAccessSite - mapper needs to retrieve runs across site
+func (*mapperUser) CanAccessSite(action otf.Action) bool { return true }
+
+// CanAccessOrganization - mapper needs to access any org
+func (*mapperUser) CanAccessOrganization(otf.Action, string) bool { return true }
+
+// CanAccessWorkspace -  mapper accesses all workspaces.
+//
+// TODO: proscribe authz, mapper does not need to do much.
+func (*mapperUser) CanAccessWorkspace(otf.Action, *otf.WorkspacePolicy) bool { return true }
+
+func (*mapperUser) String() string { return "mapper" }
+func (*mapperUser) ID() string     { return "mapper" }

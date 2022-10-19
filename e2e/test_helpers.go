@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -16,16 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	daemon = "../_build/otfd"
-	client = "../_build/otf"
-	agent  = "../_build/otf-agent"
-)
-
 var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl=true`)
 
 func startDaemon(t *testing.T) string {
-	cmd := exec.Command(daemon,
+	cmd := exec.Command("otfd",
 		"--address", ":0",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
@@ -36,6 +31,7 @@ func startDaemon(t *testing.T) string {
 		"--github-skip-tls-verification",
 	)
 	out, err := cmd.StdoutPipe()
+	require.NoError(t, err)
 	errout, err := cmd.StderrPipe()
 	require.NoError(t, err)
 	stdout := iochan.DelimReader(out, '\n')
@@ -103,7 +99,7 @@ func startAgent(t *testing.T, token, address string) {
 	require.NoError(t, err)
 
 	e, res, err := expect.Spawn(
-		fmt.Sprintf("%s --token %s --address %s", agent, token, address),
+		fmt.Sprintf("%s --token %s --address %s", "otf-agent", token, address),
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.Verbose(testing.Verbose()),
@@ -130,7 +126,7 @@ func startAgent(t *testing.T, token, address string) {
 }
 
 func createAgentToken(t *testing.T, organization string) string {
-	cmd := exec.Command(client, "agents", "tokens", "new", "testing", "--organization", organization)
+	cmd := exec.Command("otf", "agents", "tokens", "new", "testing", "--organization", organization)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
@@ -145,25 +141,6 @@ func spawn(command string, args ...string) (*expect.GExpect, <-chan error, error
 	return expect.SpawnWithArgs(cmd, time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
 }
 
-// Chdir changes current directory to this temp directory.
-func chdir(t *testing.T, dir string) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("unable to get current directory")
-	}
-
-	t.Cleanup(func() {
-		if err := os.Chdir(pwd); err != nil {
-			t.Fatal("unable to reset current directory")
-		}
-	})
-
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal("unable to change current directory")
-	}
-}
-
-// newRoot creates a root module
 func newRoot(t *testing.T, organization string) string {
 	config := []byte(fmt.Sprintf(`
 terraform {
@@ -188,51 +165,44 @@ resource "null_resource" "e2e" {}
 
 func createOrganization(t *testing.T) string {
 	organization := uuid.NewString()
-	cmd := exec.Command(client, "organizations", "new", organization)
+	cmd := exec.Command("otf", "organizations", "new", organization)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 	return organization
 }
 
-func login(t *testing.T, tfpath string) func(t *testing.T) {
-	return func(t *testing.T) {
-		// nullifying PATH ensures `terraform login` skips opening a browser
-		// window
-		t.Setenv("PATH", "")
+func login(t *testing.T) {
+	tfpath, err := exec.LookPath("terraform")
+	require.NoErrorf(t, err, "terraform executable not found in path")
 
-		token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
-		if !foundToken {
-			t.Fatal("Test cannot proceed without OTF_SITE_TOKEN")
-		}
+	token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
+	require.Truef(t, foundToken, "Test cannot proceed without OTF_SITE_TOKEN")
 
-		e, tferr, err := expect.SpawnWithArgs(
-			[]string{tfpath, "login", "localhost:8080"},
-			time.Minute,
-			expect.PartialMatch(true),
-			expect.Verbose(testing.Verbose()))
-		require.NoError(t, err)
-		defer e.Close()
+	// nullifying PATH temporarily to make `terraform login` skip opening a browser
+	// window
+	path := os.Getenv("PATH")
+	os.Setenv("PATH", "")
+	defer os.Setenv("PATH", path)
 
-		e.ExpectBatch([]expect.Batcher{
-			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-			&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
-			&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
-		}, time.Minute)
-		require.NoError(t, <-tferr)
-	}
+	e, tferr, err := expect.SpawnWithArgs(
+		[]string{tfpath, "login", "localhost:8080"},
+		time.Minute,
+		expect.PartialMatch(true),
+		expect.Verbose(testing.Verbose()))
+	require.NoError(t, err)
+	defer e.Close()
+
+	e.ExpectBatch([]expect.Batcher{
+		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
+		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
+		&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
+	}, time.Minute)
+	require.NoError(t, <-tferr)
 }
 
-func terraformPath(t *testing.T) string {
-	path, err := exec.LookPath("terraform")
-	if err != nil {
-		t.Fatal("terraform executable not found in path")
-	}
-	return path
-}
-
-func lookupEnv(t *testing.T, name string) string {
-	value, ok := os.LookupEnv(name)
-	require.True(t, ok, "missing environment variable: %s", name)
-	return value
+func addBuildsToPath(t *testing.T) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
 }

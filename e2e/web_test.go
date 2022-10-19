@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,6 +20,8 @@ import (
 )
 
 func TestWeb(t *testing.T) {
+	addBuildsToPath(t)
+
 	headless := true
 	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
 		var err error
@@ -45,6 +49,8 @@ func TestWeb(t *testing.T) {
 	defer cancel()
 
 	t.Run("login", func(t *testing.T) {
+		s := screenshotter(0)
+
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
 
@@ -53,10 +59,10 @@ func TestWeb(t *testing.T) {
 
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.Navigate(url),
-			screenshot("otf_login"),
+			s.screenshot(t),
 			chromedp.Text(".center", &gotLoginPrompt, chromedp.NodeVisible),
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			screenshot("otf_login_successful"),
+			s.screenshot(t),
 			chromedp.Location(&gotLocationOrganizations),
 		})
 		require.NoError(t, err)
@@ -70,6 +76,8 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("add workspace permission", func(t *testing.T) {
+		s := screenshotter(0)
+
 		workspace := createWebWorkspace(t, allocCtx, url, org)
 
 		ctx, cancel := chromedp.NewContext(allocCtx)
@@ -78,8 +86,6 @@ func TestWeb(t *testing.T) {
 		var gotOwnersTeam string
 		var gotOwnersRole string
 		var gotFlashSuccess string
-
-		t.Log("team ID: ", team.ID())
 
 		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
 		workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
@@ -93,7 +99,7 @@ func TestWeb(t *testing.T) {
 			chromedp.Click("#workspaces > a", chromedp.NodeVisible),
 			// select workspace
 			chromedp.Click(workspaceSelector, chromedp.NodeVisible),
-			screenshot("otf_show_workspace"),
+			s.screenshot(t),
 			// confirm builtin admin permission for owners team
 			chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
 			chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
@@ -101,7 +107,7 @@ func TestWeb(t *testing.T) {
 			chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, "write", chromedp.BySearch),
 			chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team.Name(), chromedp.BySearch),
 			chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
-			screenshot("otf_workspace_permissions_updated"),
+			s.screenshot(t),
 			chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
@@ -112,6 +118,8 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("list users", func(t *testing.T) {
+		s := screenshotter(0)
+
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
 
@@ -124,9 +132,10 @@ func TestWeb(t *testing.T) {
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
 			// select org
 			chromedp.Click(orgSelector, chromedp.NodeVisible),
+			s.screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
-			screenshot("otf_list_users"),
+			s.screenshot(t),
 			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
@@ -135,6 +144,8 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("list team members", func(t *testing.T) {
+		s := screenshotter(0)
+
 		ctx, cancel := chromedp.NewContext(allocCtx)
 		defer cancel()
 
@@ -147,12 +158,13 @@ func TestWeb(t *testing.T) {
 			chromedp.Click(".login-button-github", chromedp.NodeVisible),
 			// select org
 			chromedp.Click(orgSelector, chromedp.NodeVisible),
+			s.screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),
-			screenshot("otf_list_teams"),
+			s.screenshot(t),
 			// select owners team
 			chromedp.Click("#item-team-owners a", chromedp.NodeVisible),
-			screenshot("otf_list_team_members"),
+			s.screenshot(t),
 			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
 		})
 		require.NoError(t, err)
@@ -162,6 +174,8 @@ func TestWeb(t *testing.T) {
 }
 
 func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.Organization) string {
+	s := screenshotter(0)
+
 	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
@@ -173,13 +187,14 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.
 		chromedp.Navigate(url),
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
 		chromedp.Click(orgSelector, chromedp.NodeVisible),
+		s.screenshot(t),
 		chromedp.Click("#workspaces > a", chromedp.NodeVisible),
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible),
-		screenshot("otf_new_workspace_form"),
+		s.screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
 		input.InsertText(workspaceName),
 		chromedp.Click("#create-workspace-button"),
-		screenshot("otf_created_workspace"),
+		s.screenshot(t),
 		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
 	})
 	require.NoError(t, err)
@@ -189,12 +204,15 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.
 	return workspaceName
 }
 
-var screenshotCounter = 0
+// screenshotter takes a series of screenshots for a test, incrementing a
+// counter on each screenshot
+type screenshotter int
 
-func screenshot(name string) chromedp.ActionFunc {
+func (ss *screenshotter) screenshot(t *testing.T) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
-		screenshotCounter++
+		*ss++
 
+		// take screenshot
 		var image []byte
 		err := chromedp.Run(ctx, chromedp.Tasks{
 			chromedp.WaitReady(`body`),
@@ -203,11 +221,14 @@ func screenshot(name string) chromedp.ActionFunc {
 		if err != nil {
 			return err
 		}
-		err = os.MkdirAll("screenshots", 0o755)
+
+		// save image to disk
+		fname := path.Join("screenshots", fmt.Sprintf("%s_%02d.png", t.Name(), *ss))
+		err = os.MkdirAll(filepath.Dir(fname), 0o755)
 		if err != nil {
 			return err
 		}
-		err = os.WriteFile(fmt.Sprintf("screenshots/%02d_%s.png", screenshotCounter, name), image, 0o644)
+		err = os.WriteFile(fname, image, 0o644)
 		if err != nil {
 			return err
 		}
