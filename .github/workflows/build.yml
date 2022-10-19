@@ -64,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: e2e-screenshots
-          path: e2e/screenshots/*.png
+          path: e2e/screenshots/**/*.png
       -
         name: Build bins
         if: "startsWith(github.ref, 'refs/master') || startsWith(github.ref, 'refs/pull')"
