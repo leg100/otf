@@ -41,18 +41,32 @@ const (
 	GetLockFileAction    Action = "get_lock_file"
 	UploadLockFileAction Action = "upload_lock_file"
 
-	ListWorkspacesAction         Action = "list_workspaces"
-	GetWorkspaceAction           Action = "get_workspace"
-	CreateWorkspaceAction        Action = "create_workspace"
-	DeleteWorkspaceAction        Action = "delete_workspace"
-	SetWorkspacePermissionAction Action = "set_workspace_permission"
+	ListWorkspacesAction           Action = "list_workspaces"
+	GetWorkspaceAction             Action = "get_workspace"
+	CreateWorkspaceAction          Action = "create_workspace"
+	DeleteWorkspaceAction          Action = "delete_workspace"
+	SetWorkspacePermissionAction   Action = "set_workspace_permission"
+	UnsetWorkspacePermissionAction Action = "unset_workspace_permission"
+	LockWorkspaceAction            Action = "lock_workspace"
+	UnlockWorkspaceAction          Action = "unlock_workspace"
+	UpdateWorkspaceAction          Action = "update_workspace"
 
 	CreateStateVersionAction Action = "create_state_version"
 	ListStateVersionsAction  Action = "list_state_versions"
 	GetStateVersionAction    Action = "get_state_version"
 	DownloadStateAction      Action = "download_state"
 
+	CreateConfigurationVersionAction   Action = "create_configuration_version"
+	ListConfigurationVersionsAction    Action = "list_configuration_versions"
+	GetConfigurationVersionAction      Action = "get_configuration_version"
+	DownloadConfigurationVersionAction Action = "download_configuration_version"
+
 	ListUsersAction Action = "list_users"
+
+	CreateTeamAction Action = "create_team"
+	UpdateTeamAction Action = "update_team"
+	GetTeamAction    Action = "get_team"
+	ListTeamsAction  Action = "list_teams"
 
 	subjectCtxKey subjectCtxKeyType = "subject"
 )
@@ -60,23 +74,32 @@ const (
 var (
 	ErrAccessNotPermitted       = errors.New("access to the resource is not permitted")
 	workspaceManagerPermissions = map[Action]bool{
-		CreateWorkspaceAction: true,
-		// workspace managers can list every workspace in an organization
-		ListWorkspacesAction: true,
+		CreateWorkspaceAction:          true,
+		ListWorkspacesAction:           true,
+		UpdateWorkspaceAction:          true,
+		SetWorkspacePermissionAction:   true,
+		UnsetWorkspacePermissionAction: true,
 	}
 	adminPermissions = map[Action]bool{
 		SetWorkspacePermissionAction: true,
 		DeleteWorkspaceAction:        true,
 	}
 	writePermissions = map[Action]bool{
-		ApplyRunAction: true,
+		ApplyRunAction:        true,
+		LockWorkspaceAction:   true,
+		UnlockWorkspaceAction: true,
 	}
 	planPermissions = map[Action]bool{
-		CreateRunAction: true,
+		CreateRunAction:                  true,
+		CreateConfigurationVersionAction: true,
 	}
 	readPermissions = map[Action]bool{
-		ListRunsAction:    true,
-		GetPlanFileAction: true,
+		ListRunsAction:                true,
+		GetPlanFileAction:             true,
+		GetWorkspaceAction:            true,
+		GetStateVersionAction:         true,
+		GetRunAction:                  true,
+		GetConfigurationVersionAction: true,
 	}
 )
 

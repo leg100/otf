@@ -31,7 +31,7 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 }
 
 func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, spec)
+	subject, err := a.CanAccessWorkspace(ctx, otf.UpdateWorkspaceAction, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (a *Application) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) 
 }
 
 func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, spec)
+	subject, err := a.CanAccessWorkspace(ctx, otf.DeleteWorkspaceAction, spec)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 }
 
 func (a *Application) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, spec)
+	subject, err := a.CanAccessWorkspace(ctx, otf.LockWorkspaceAction, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (a *Application) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec,
 }
 
 func (a *Application) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, spec)
+	subject, err := a.CanAccessWorkspace(ctx, otf.UnlockWorkspaceAction, spec)
 	if err != nil {
 		return nil, err
 	}

@@ -3,55 +3,30 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWeb(t *testing.T) {
 	addBuildsToPath(t)
-
-	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-		var err error
-		headless, err = strconv.ParseBool(v)
-		require.NoError(t, err)
-	}
+	allocater := newBrowserAllocater(t)
 
 	org := otf.NewTestOrganization(t)
 	team := otf.NewTestTeam(t, org)
 	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
-
-	hostname := githubStub(t, user)
-	t.Setenv("OTF_GITHUB_HOSTNAME", hostname)
-
-	url := startDaemon(t)
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
-	defer cancel()
+	hostname := startDaemon(t, user)
+	url := "https://" + hostname
 
 	t.Run("login", func(t *testing.T) {
 		s := screenshotter(0)
 
-		ctx, cancel := chromedp.NewContext(allocCtx)
+		ctx, cancel := chromedp.NewContext(allocater)
 		defer cancel()
 
 		var gotLoginPrompt string
@@ -72,55 +47,24 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("new workspace", func(t *testing.T) {
-		createWebWorkspace(t, allocCtx, url, org)
+		s := screenshotter(0)
+
+		createWebWorkspace(t, allocater, s, url, org)
 	})
 
 	t.Run("add workspace permission", func(t *testing.T) {
 		s := screenshotter(0)
 
-		workspace := createWebWorkspace(t, allocCtx, url, org)
+		workspace := createWebWorkspace(t, allocater, s, url, org)
 
-		ctx, cancel := chromedp.NewContext(allocCtx)
-		defer cancel()
-
-		var gotOwnersTeam string
-		var gotOwnersRole string
-		var gotFlashSuccess string
-
-		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
-		workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate(url),
-			// login
-			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			// select org
-			chromedp.Click(orgSelector, chromedp.NodeVisible),
-			// list workspaces
-			chromedp.Click("#workspaces > a", chromedp.NodeVisible),
-			// select workspace
-			chromedp.Click(workspaceSelector, chromedp.NodeVisible),
-			s.screenshot(t),
-			// confirm builtin admin permission for owners team
-			chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
-			chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
-			// add write permission for the test team
-			chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, "write", chromedp.BySearch),
-			chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team.Name(), chromedp.BySearch),
-			chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
-			s.screenshot(t),
-			chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
-		})
-		require.NoError(t, err)
-
-		assert.Equal(t, "owners", gotOwnersTeam)
-		assert.Equal(t, "admin", gotOwnersRole)
-		assert.Equal(t, "updated workspace permissions", gotFlashSuccess)
+		// assign write permissions to team
+		addWorkspacePermission(t, allocater, url, org.Name(), workspace, team.Name(), "write")
 	})
 
 	t.Run("list users", func(t *testing.T) {
 		s := screenshotter(0)
 
-		ctx, cancel := chromedp.NewContext(allocCtx)
+		ctx, cancel := chromedp.NewContext(allocater)
 		defer cancel()
 
 		var gotUser string
@@ -146,7 +90,7 @@ func TestWeb(t *testing.T) {
 	t.Run("list team members", func(t *testing.T) {
 		s := screenshotter(0)
 
-		ctx, cancel := chromedp.NewContext(allocCtx)
+		ctx, cancel := chromedp.NewContext(allocater)
 		defer cancel()
 
 		var gotUser string
@@ -173,9 +117,7 @@ func TestWeb(t *testing.T) {
 	})
 }
 
-func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.Organization) string {
-	s := screenshotter(0)
-
+func createWebWorkspace(t *testing.T, ctx context.Context, s screenshotter, url string, org *otf.Organization) string {
 	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
@@ -204,42 +146,47 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.
 	return workspaceName
 }
 
-// screenshotter takes a series of screenshots for a test, incrementing a
-// counter on each screenshot
-type screenshotter int
+// addWorkspacePermission adds a workspace permission via the web app, assigning
+// a role to a team on a workspace in an org.
+func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, workspace, team, role string) {
+	s := screenshotter(0)
 
-func (ss *screenshotter) screenshot(t *testing.T) chromedp.ActionFunc {
-	return func(ctx context.Context) error {
-		*ss++
+	ctx, cancel := chromedp.NewContext(allocater)
+	defer cancel()
 
-		// take screenshot
-		var image []byte
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.WaitReady(`body`),
-			chromedp.CaptureScreenshot(&image),
-		})
-		if err != nil {
-			return err
-		}
+	var gotOwnersTeam string
+	var gotOwnersRole string
+	var gotFlashSuccess string
 
-		// save image to disk
-		fname := path.Join("screenshots", fmt.Sprintf("%s_%02d.png", t.Name(), *ss))
-		err = os.MkdirAll(filepath.Dir(fname), 0o755)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(fname, image, 0o644)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
-func githubStub(t *testing.T, user *otf.User) string {
-	srv := html.NewTestGithubServer(t, user)
-
-	u, err := url.Parse(srv.URL)
+	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
+	workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		chromedp.Navigate(url),
+		// login
+		chromedp.Click(".login-button-github", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		// select org
+		chromedp.Click(orgSelector, chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		// list workspaces
+		chromedp.Click("#workspaces > a", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		// select workspace
+		chromedp.Click(workspaceSelector, chromedp.NodeVisible),
+		s.screenshot(t),
+		// confirm builtin admin permission for owners team
+		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
+		chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
+		// add write permission for the test team
+		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, "write", chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
+		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
+		s.screenshot(t),
+		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
+	})
 	require.NoError(t, err)
-	return u.Host
+
+	assert.Equal(t, "owners", gotOwnersTeam)
+	assert.Equal(t, "admin", gotOwnersRole)
+	assert.Equal(t, "updated workspace permissions", gotFlashSuccess)
 }

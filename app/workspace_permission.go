@@ -29,6 +29,13 @@ func (a *Application) ListWorkspacePermissions(ctx context.Context, spec otf.Wor
 }
 
 func (a *Application) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string) error {
+	subject, err := a.CanAccessWorkspace(ctx, otf.UnsetWorkspacePermissionAction, spec)
+	if err != nil {
+		a.Error(err, "unsetting workspace permission", append(spec.LogFields(), "team", team, "subject", subject)...)
+		return err
+	}
+
+	a.V(0).Info("unset workspace permission", append(spec.LogFields(), "team", team, "subject", subject)...)
 	// TODO: publish event
 	return a.db.UnsetWorkspacePermission(ctx, spec, team)
 }

@@ -254,6 +254,14 @@ func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (
 	return workspaceID.String, nil
 }
 
+func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, String(cvID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
 func (db *DB) GetWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (string, error) {
 	if spec.ID != nil {
 		return *spec.ID, nil

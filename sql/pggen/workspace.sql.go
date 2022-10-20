@@ -509,6 +509,37 @@ func (q *DBQuerier) FindWorkspaceIDByStateVersionIDScan(results pgx.BatchResults
 	return item, nil
 }
 
+const findWorkspaceIDByCVIDSQL = `SELECT workspace_id
+FROM configuration_versions
+WHERE configuration_version_id = $1
+;`
+
+// FindWorkspaceIDByCVID implements Querier.FindWorkspaceIDByCVID.
+func (q *DBQuerier) FindWorkspaceIDByCVID(ctx context.Context, configurationVersionID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWorkspaceIDByCVID")
+	row := q.conn.QueryRow(ctx, findWorkspaceIDByCVIDSQL, configurationVersionID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindWorkspaceIDByCVID: %w", err)
+	}
+	return item, nil
+}
+
+// FindWorkspaceIDByCVIDBatch implements Querier.FindWorkspaceIDByCVIDBatch.
+func (q *DBQuerier) FindWorkspaceIDByCVIDBatch(batch genericBatch, configurationVersionID pgtype.Text) {
+	batch.Queue(findWorkspaceIDByCVIDSQL, configurationVersionID)
+}
+
+// FindWorkspaceIDByCVIDScan implements Querier.FindWorkspaceIDByCVIDScan.
+func (q *DBQuerier) FindWorkspaceIDByCVIDScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan FindWorkspaceIDByCVIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const findWorkspaceIDByNameSQL = `SELECT workspaces.workspace_id
 FROM workspaces
 JOIN organizations USING (organization_id)

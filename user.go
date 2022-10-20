@@ -65,14 +65,18 @@ func (u *User) TeamsByOrganization(organization string) []*Team {
 	return orgTeams
 }
 
-// Team retrieves the named team.
-func (u *User) Team(name string) (*Team, error) {
+// Team retrieves the named team in the given organization.
+func (u *User) Team(name, organization string) (*Team, error) {
 	for _, t := range u.teams {
-		if t.Name() == name {
+		if t.Name() == name && t.OrganizationName() == organization {
 			return t, nil
 		}
 	}
 	return nil, fmt.Errorf("no team found with the name: %s", name)
+}
+
+func (u *User) IsUnprivilegedUser(organization string) bool {
+	return !u.IsSiteAdmin() && !u.IsOwner(organization)
 }
 
 func (u *User) IsSiteAdmin() bool { return u.id == SiteAdminID }
@@ -96,7 +100,7 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 			}
 
 			switch action {
-			case GetOrganizationAction:
+			case GetOrganizationAction, GetEntitlementsAction:
 				// members can retrieve info about their organization
 				return true
 			}

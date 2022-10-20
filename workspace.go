@@ -321,6 +321,7 @@ type WorkspaceStore interface {
 	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
 	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
+	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 
 	WorkspaceLockService
 	CurrentRunService

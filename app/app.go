@@ -39,7 +39,7 @@ func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *b
 		db:            db,
 		Logger:        logger,
 	}
-	app.Authorizer = &authorizer{db}
+	app.Authorizer = &authorizer{db, logger}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{
 		WorkspaceService:            app,

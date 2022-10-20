@@ -1,17 +1,24 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/input"
+	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,16 +26,22 @@ import (
 
 var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl=true`)
 
-func startDaemon(t *testing.T) string {
+// startDaemon starts an instance of the otfd daemon along with a github stub
+// seeded with the given user. The hostname of the otfd daemon is returned.
+func startDaemon(t *testing.T, user *otf.User) string {
+	githubServer := html.NewTestGithubServer(t, user)
+	githubURL, err := url.Parse(githubServer.URL)
+	require.NoError(t, err)
+
 	cmd := exec.Command("otfd",
 		"--address", ":0",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
-		"--log-http-requests",
 		"--github-client-id", "stub-client-id",
 		"--github-client-secret", "stub-client-secret",
 		"--github-skip-tls-verification",
+		"--github-hostname", githubURL.Host,
 	)
 	out, err := cmd.StdoutPipe()
 	require.NoError(t, err)
@@ -70,7 +83,7 @@ func startDaemon(t *testing.T) string {
 			switch len(matches) {
 			case 2:
 				port := matches[1]
-				url = "https://localhost:" + port
+				url = "localhost:" + port
 				goto STARTED
 			case 0:
 				// keep waiting
@@ -87,6 +100,12 @@ STARTED:
 	// capture remainder of stdout in background
 	go func() {
 		for logline := range stdout {
+			loglines = append(loglines, logline)
+		}
+	}()
+	// capture remainder of stderr in background
+	go func() {
+		for logline := range stderr {
 			loglines = append(loglines, logline)
 		}
 	}()
@@ -125,6 +144,7 @@ func startAgent(t *testing.T, token, address string) {
 	})
 }
 
+// createAgentToken creates an agent token via the CLI
 func createAgentToken(t *testing.T, organization string) string {
 	cmd := exec.Command("otf", "agents", "tokens", "new", "testing", "--organization", organization)
 	out, err := cmd.CombinedOutput()
@@ -136,25 +156,20 @@ func createAgentToken(t *testing.T, organization string) string {
 	return matches[1]
 }
 
-func spawn(command string, args ...string) (*expect.GExpect, <-chan error, error) {
-	cmd := append([]string{command}, args...)
-	return expect.SpawnWithArgs(cmd, time.Minute, expect.PartialMatch(true), expect.Verbose(testing.Verbose()))
-}
-
-func newRoot(t *testing.T, organization string) string {
+func newRootModule(t *testing.T, hostname, organization, workspace string) string {
 	config := []byte(fmt.Sprintf(`
 terraform {
   backend "remote" {
-	hostname = "localhost:8080"
+	hostname = "%s"
 	organization = "%s"
 
 	workspaces {
-	  name = "dev"
+	  name = "%s"
 	}
   }
 }
 resource "null_resource" "e2e" {}
-`, organization))
+`, hostname, organization, workspace))
 
 	root := t.TempDir()
 	err := os.WriteFile(filepath.Join(root, "main.tf"), config, 0o600)
@@ -172,12 +187,11 @@ func createOrganization(t *testing.T) string {
 	return organization
 }
 
-func login(t *testing.T) {
+// login invokes 'terraform login <hostname>', configuring credentials for the
+// given hostname with the given token.
+func login(t *testing.T, hostname, token string) {
 	tfpath, err := exec.LookPath("terraform")
 	require.NoErrorf(t, err, "terraform executable not found in path")
-
-	token, foundToken := os.LookupEnv("OTF_SITE_TOKEN")
-	require.Truef(t, foundToken, "Test cannot proceed without OTF_SITE_TOKEN")
 
 	// nullifying PATH temporarily to make `terraform login` skip opening a browser
 	// window
@@ -186,7 +200,7 @@ func login(t *testing.T) {
 	defer os.Setenv("PATH", path)
 
 	e, tferr, err := expect.SpawnWithArgs(
-		[]string{tfpath, "login", "localhost:8080"},
+		[]string{tfpath, "login", hostname},
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.Verbose(testing.Verbose()))
@@ -205,4 +219,57 @@ func addBuildsToPath(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
+}
+
+func newBrowserAllocater(t *testing.T) context.Context {
+	headless := true
+	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+		var err error
+		headless, err = strconv.ParseBool(v)
+		require.NoError(t, err)
+	}
+
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(),
+		append(chromedp.DefaultExecAllocatorOptions[:],
+			chromedp.Flag("headless", headless),
+			chromedp.Flag("hide-scrollbars", true),
+			chromedp.Flag("mute-audio", true),
+			chromedp.Flag("ignore-certificate-errors", true),
+			chromedp.Flag("disable-gpu", true),
+		)...)
+	t.Cleanup(cancel)
+
+	return ctx
+}
+
+// createAPIToken creates an API token via the web app
+func createAPIToken(t *testing.T, hostname string) string {
+	allocater := newBrowserAllocater(t)
+
+	ctx, cancel := chromedp.NewContext(allocater)
+	defer cancel()
+
+	var token string
+
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		chromedp.Navigate("https://" + hostname),
+		chromedp.Click(".login-button-github", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		chromedp.Click("#top-right-profile-link > a", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		chromedp.Click("#user-tokens-link > a", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		chromedp.Click("#new-user-token-button", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		chromedp.Focus("#description", chromedp.NodeVisible),
+		input.InsertText("e2e-test"),
+		chromedp.Submit("#description"),
+		chromedp.WaitReady(`body`),
+		chromedp.Text(".flash-success > .data", &token, chromedp.NodeVisible),
+	})
+	require.NoError(t, err)
+
+	assert.Regexp(t, `user\.(.+)`, token)
+
+	return token
 }

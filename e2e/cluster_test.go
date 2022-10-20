@@ -1,37 +1,48 @@
 package e2e
 
 import (
-	"net/url"
 	"os/exec"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestCluster is an end-to-end test of the clustering capabilities, i.e.
-// running more than one otfd. The test runs two otfd's (the first of which is
-// expected to already been running):
+// more than one otfd, both connected to the same postgres db. The test runs two
+// otfd daemons:
 //
-// (1) otfd to which the TF CLI connects
-// (2) otfd to which the otf-agent connects
+// otfd1) otfd to which the TF CLI connects
+// otfd2) otfd to which the otf-agent connects
 //
-// This setup demonstrates that the cluster can coordinate processes between
-// the two clients.
+// This setup provides a limited demonstration that the cluster is co-ordinating
+// processes successfully, e.g. relaying of logs from the agent through to the
+// TF CLI
 func TestCluster(t *testing.T) {
 	addBuildsToPath(t)
-	login(t)
-	organization := createOrganization(t)
-	token := createAgentToken(t, organization)
-	root := newRoot(t, organization)
 
-	daemonURL := startDaemon(t)
-	u, err := url.Parse(daemonURL)
-	require.NoError(t, err)
+	org := otf.NewTestOrganization(t)
+	team := otf.NewTestTeam(t, org)
+	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
-	startAgent(t, token, u.Host)
+	// start two daemons
+	otfd1 := startDaemon(t, user)
+	otfd2 := startDaemon(t, user)
 
-	// terraform init creates a workspace named dev
+	// creating api token via web also syncs org
+	userToken := createAPIToken(t, otfd1)
+	login(t, otfd1, userToken)
+
+	// org now sync'd, so we can create agent token via CLI
+	agentToken := createAgentToken(t, org.Name())
+	// start agent, instructing it to connect to otfd2
+	startAgent(t, agentToken, otfd2)
+
+	// create root module, setting otfd1 as hostname
+	root := newRootModule(t, otfd1, org.Name(), "dev")
+
+	// terraform init automatically creates a workspace named dev
 	cmd := exec.Command("terraform", "init", "-no-color")
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
@@ -39,7 +50,7 @@ func TestCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	// edit workspace to use agent
-	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", organization, "--execution-mode", "agent")
+	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org.Name(), "--execution-mode", "agent")
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))

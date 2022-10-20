@@ -44,7 +44,7 @@ func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) (
 			return nil, err
 		}
 		if user, ok := subject.(*otf.User); ok && !user.IsSiteAdmin() {
-			_, err := user.Team(*opts.TeamName)
+			_, err := user.Team(*opts.TeamName, *opts.OrganizationName)
 			if err != nil {
 				// user is not a member of the team
 				return nil, otf.ErrAccessNotPermitted

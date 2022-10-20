@@ -126,6 +126,12 @@ FROM state_versions
 WHERE state_version_id = pggen.arg('state_version_id')
 ;
 
+-- name: FindWorkspaceIDByCVID :one
+SELECT workspace_id
+FROM configuration_versions
+WHERE configuration_version_id = pggen.arg('configuration_version_id')
+;
+
 -- name: FindWorkspaceIDByName :one
 SELECT workspaces.workspace_id
 FROM workspaces
