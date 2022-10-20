@@ -9,19 +9,24 @@ import (
 
 func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
 	type workspacePermission struct {
-		Name             string            `schema:"workspace_name,required"`
-		OrganizationName string            `schema:"organization_name,required"`
-		TeamName         string            `schema:"team_name,required"`
-		Role             otf.WorkspaceRole `schema:"role,required"`
+		Name             string `schema:"workspace_name,required"`
+		OrganizationName string `schema:"organization_name,required"`
+		TeamName         string `schema:"team_name,required"`
+		Role             string `schema:"role,required"`
 	}
 	perm := workspacePermission{}
 	if err := decode.All(&perm, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	role, err := otf.WorkspaceRoleFromString(perm.Role)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	spec := otf.WorkspaceSpec{Name: otf.String(perm.Name), OrganizationName: otf.String(perm.OrganizationName)}
-	err := app.SetWorkspacePermission(r.Context(), spec, perm.TeamName, perm.Role)
+	err = app.SetWorkspacePermission(r.Context(), spec, perm.TeamName, role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

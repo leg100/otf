@@ -99,7 +99,7 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 	t.Cleanup(func() {
 		db.UnsetWorkspacePermission(ctx, ws.SpecName(), team.Name())
 	})
-	return &otf.WorkspacePermission{Team: team, Permission: role}
+	return &otf.WorkspacePermission{Team: team, Role: role}
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {

@@ -755,13 +755,6 @@ type Querier interface {
 	// FindWorkspacePermissionsByNameScan scans the result of an executed FindWorkspacePermissionsByNameBatch query.
 	FindWorkspacePermissionsByNameScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByNameRow, error)
 
-	FindWorkspacePermissionsByRunID(ctx context.Context, runID pgtype.Text) ([]FindWorkspacePermissionsByRunIDRow, error)
-	// FindWorkspacePermissionsByRunIDBatch enqueues a FindWorkspacePermissionsByRunID query into batch to be executed
-	// later by the batch.
-	FindWorkspacePermissionsByRunIDBatch(batch genericBatch, runID pgtype.Text)
-	// FindWorkspacePermissionsByRunIDScan scans the result of an executed FindWorkspacePermissionsByRunIDBatch query.
-	FindWorkspacePermissionsByRunIDScan(results pgx.BatchResults) ([]FindWorkspacePermissionsByRunIDRow, error)
-
 	DeleteWorkspacePermissionByID(ctx context.Context, workspaceID pgtype.Text, teamName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspacePermissionByIDBatch enqueues a DeleteWorkspacePermissionByID query into batch to be executed
 	// later by the batch.
@@ -1160,9 +1153,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWorkspacePermissionsByNameSQL, findWorkspacePermissionsByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByName': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWorkspacePermissionsByRunIDSQL, findWorkspacePermissionsByRunIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWorkspacePermissionsByRunID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByIDSQL, deleteWorkspacePermissionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByID': %w", err)

@@ -36,18 +36,6 @@ WHERE w.name = pggen.arg('workspace_name')
 AND o.name = pggen.arg('organization_name')
 ;
 
--- name: FindWorkspacePermissionsByRunID :many
-SELECT
-    p.role,
-    (t.*)::"teams" AS team,
-    (o.*)::"organizations" AS organization
-FROM workspace_permissions p
-JOIN teams t USING (team_id)
-JOIN organizations o USING (organization_id)
-JOIN runs r USING (workspace_id)
-WHERE r.run_id = pggen.arg('run_id')
-;
-
 -- name: DeleteWorkspacePermissionByID :exec
 DELETE
 FROM workspace_permissions p

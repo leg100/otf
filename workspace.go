@@ -15,11 +15,6 @@ const (
 	RemoteExecutionMode ExecutionMode = "remote"
 	LocalExecutionMode  ExecutionMode = "local"
 	AgentExecutionMode  ExecutionMode = "agent"
-
-	WorkspaceReadRole  WorkspaceRole = "read"
-	WorkspacePlanRole  WorkspaceRole = "plan"
-	WorkspaceWriteRole WorkspaceRole = "write"
-	WorkspaceAdminRole WorkspaceRole = "admin"
 )
 
 type ExecutionMode string
@@ -62,13 +57,6 @@ type Workspace struct {
 	organization               *Organization
 	latestRunID                *string
 }
-
-type WorkspacePermission struct {
-	Team       *Team
-	Permission WorkspaceRole
-}
-
-type WorkspaceRole string
 
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }

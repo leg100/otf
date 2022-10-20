@@ -11,7 +11,6 @@ import (
 // TestE2E demonstrates a user with write permissions on a workspace interacting
 // with the workspace via the terraform CLI.
 func TestWritePermission(t *testing.T) {
-	s := screenshotter(0)
 	addBuildsToPath(t)
 
 	// First we need to setup an organization with a user who is both in the
@@ -25,7 +24,7 @@ func TestWritePermission(t *testing.T) {
 
 	// create workspace via web - note this also syncs the org and owner
 	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, s, url, org)
+	workspace := createWebWorkspace(t, allocater, url, org)
 
 	// assign write permissions to devops team
 	addWorkspacePermission(t, allocater, url, org.Name(), workspace, devops.Name(), "write")

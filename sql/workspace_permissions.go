@@ -16,7 +16,7 @@ func (db *DB) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec
 	_, err = db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
 		WorkspaceID: String(workspaceID),
 		TeamName:    String(team),
-		Role:        String(string(role)),
+		Role:        String(role.String()),
 	})
 	if err != nil {
 		return databaseError(err)
@@ -32,7 +32,11 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
+			perm, err := otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row))
+			if err != nil {
+				return nil, databaseError(err)
+			}
+			perms = append(perms, perm)
 		}
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := db.FindWorkspacePermissionsByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
@@ -40,22 +44,14 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
+			perm, err := otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row))
+			if err != nil {
+				return nil, databaseError(err)
+			}
+			perms = append(perms, perm)
 		}
 	} else {
 		return nil, fmt.Errorf("invalid workspace spec")
-	}
-	return perms, nil
-}
-
-func (db *DB) ListWorkspacePermissionsByRunID(ctx context.Context, id string) ([]*otf.WorkspacePermission, error) {
-	var perms []*otf.WorkspacePermission
-	result, err := db.FindWorkspacePermissionsByRunID(ctx, String(id))
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	for _, row := range result {
-		perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
 	}
 	return perms, nil
 }

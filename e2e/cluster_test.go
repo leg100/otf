@@ -23,24 +23,24 @@ func TestCluster(t *testing.T) {
 	addBuildsToPath(t)
 
 	org := otf.NewTestOrganization(t)
-	team := otf.NewTestTeam(t, org)
+	team := otf.NewTeam("owners", org)
 	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
 	// start two daemons
-	otfd1 := startDaemon(t, user)
-	otfd2 := startDaemon(t, user)
+	userDaemon := startDaemon(t, user)
+	agentDaemon := startDaemon(t, user)
 
 	// creating api token via web also syncs org
-	userToken := createAPIToken(t, otfd1)
-	login(t, otfd1, userToken)
+	userToken := createAPIToken(t, userDaemon)
+	login(t, userDaemon, userToken)
 
 	// org now sync'd, so we can create agent token via CLI
 	agentToken := createAgentToken(t, org.Name())
 	// start agent, instructing it to connect to otfd2
-	startAgent(t, agentToken, otfd2)
+	startAgent(t, agentToken, agentDaemon)
 
 	// create root module, setting otfd1 as hostname
-	root := newRootModule(t, otfd1, org.Name(), "dev")
+	root := newRootModule(t, userDaemon, org.Name(), "dev")
 
 	// terraform init automatically creates a workspace named dev
 	cmd := exec.Command("terraform", "init", "-no-color")

@@ -171,9 +171,13 @@ type WorkspacePermissionResult struct {
 	Organization *pggen.Organizations `json:"organization"`
 }
 
-func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) *WorkspacePermission {
+func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) (*WorkspacePermission, error) {
+	role, err := WorkspaceRoleFromString(row.Role.String)
+	if err != nil {
+		return nil, err
+	}
 	return &WorkspacePermission{
-		Permission: WorkspaceRole(row.Role.String),
+		Role: role,
 		Team: &Team{
 			id:           row.Team.TeamID.String,
 			name:         row.Team.Name.String,
@@ -183,5 +187,5 @@ func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) *Workspac
 				ManageWorkspaces: row.Team.PermissionManageWorkspaces,
 			},
 		},
-	}
+	}, nil
 }

@@ -6,102 +6,10 @@ import (
 	"fmt"
 )
 
+var ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
+
 // unexported key type prevents collisions
 type subjectCtxKeyType string
-
-const (
-	WatchAction Action = "watch"
-
-	CreateOrganizationAction Action = "create_organization"
-	UpdateOrganizationAction Action = "update_organization"
-	GetOrganizationAction    Action = "get_organization"
-	GetEntitlementsAction    Action = "get_entitlements"
-	DeleteOrganizationAction Action = "delete_organization"
-
-	CreateAgentTokenAction Action = "create_agent_token"
-	ListAgentTokenActions  Action = "list_agent_tokens"
-	DeleteAgentTokenAction Action = "delete_agent_token"
-
-	GetRunAction      Action = "get_run"
-	ListRunsAction    Action = "list_runs"
-	ApplyRunAction    Action = "apply_run"
-	CreateRunAction   Action = "create_run"
-	DiscardRunAction  Action = "discard_run"
-	DeleteRunAction   Action = "delete_run"
-	CancelRunAction   Action = "cancel_run"
-	EnqueuePlanAction Action = "enqueue_plan"
-	StartPhaseAction  Action = "start_run_phase"
-	FinishPhaseAction Action = "finish_run_phase"
-	PutChunkAction    Action = "put_log_chunk"
-	TailLogsAction    Action = "tail_logs"
-
-	GetPlanFileAction    Action = "get_plan_file"
-	UploadPlanFileAction Action = "upload_plan_file"
-
-	GetLockFileAction    Action = "get_lock_file"
-	UploadLockFileAction Action = "upload_lock_file"
-
-	ListWorkspacesAction           Action = "list_workspaces"
-	GetWorkspaceAction             Action = "get_workspace"
-	CreateWorkspaceAction          Action = "create_workspace"
-	DeleteWorkspaceAction          Action = "delete_workspace"
-	SetWorkspacePermissionAction   Action = "set_workspace_permission"
-	UnsetWorkspacePermissionAction Action = "unset_workspace_permission"
-	LockWorkspaceAction            Action = "lock_workspace"
-	UnlockWorkspaceAction          Action = "unlock_workspace"
-	UpdateWorkspaceAction          Action = "update_workspace"
-
-	CreateStateVersionAction Action = "create_state_version"
-	ListStateVersionsAction  Action = "list_state_versions"
-	GetStateVersionAction    Action = "get_state_version"
-	DownloadStateAction      Action = "download_state"
-
-	CreateConfigurationVersionAction   Action = "create_configuration_version"
-	ListConfigurationVersionsAction    Action = "list_configuration_versions"
-	GetConfigurationVersionAction      Action = "get_configuration_version"
-	DownloadConfigurationVersionAction Action = "download_configuration_version"
-
-	ListUsersAction Action = "list_users"
-
-	CreateTeamAction Action = "create_team"
-	UpdateTeamAction Action = "update_team"
-	GetTeamAction    Action = "get_team"
-	ListTeamsAction  Action = "list_teams"
-
-	subjectCtxKey subjectCtxKeyType = "subject"
-)
-
-var (
-	ErrAccessNotPermitted       = errors.New("access to the resource is not permitted")
-	workspaceManagerPermissions = map[Action]bool{
-		CreateWorkspaceAction:          true,
-		ListWorkspacesAction:           true,
-		UpdateWorkspaceAction:          true,
-		SetWorkspacePermissionAction:   true,
-		UnsetWorkspacePermissionAction: true,
-	}
-	adminPermissions = map[Action]bool{
-		SetWorkspacePermissionAction: true,
-		DeleteWorkspaceAction:        true,
-	}
-	writePermissions = map[Action]bool{
-		ApplyRunAction:        true,
-		LockWorkspaceAction:   true,
-		UnlockWorkspaceAction: true,
-	}
-	planPermissions = map[Action]bool{
-		CreateRunAction:                  true,
-		CreateConfigurationVersionAction: true,
-	}
-	readPermissions = map[Action]bool{
-		ListRunsAction:                true,
-		GetPlanFileAction:             true,
-		GetWorkspaceAction:            true,
-		GetStateVersionAction:         true,
-		GetRunAction:                  true,
-		GetConfigurationVersionAction: true,
-	}
-)
 
 // Subject is an entity attempting to carry out an action on a resource.
 type Subject interface {
@@ -111,31 +19,17 @@ type Subject interface {
 	Identity
 }
 
-type Action string
-
+// WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
 	OrganizationName string
 	WorkspaceID      string
 	Permissions      []*WorkspacePermission
 }
 
-func init() {
-	// plan role includes read permissions
-	for p := range readPermissions {
-		planPermissions[p] = true
-	}
-	// write role includes plan permissions
-	for p := range planPermissions {
-		writePermissions[p] = true
-	}
-	// admin role includes write permissions
-	for p := range writePermissions {
-		adminPermissions[p] = true
-	}
-	// workspace manager role includes admin permissions
-	for p := range adminPermissions {
-		workspaceManagerPermissions[p] = true
-	}
+// WorkspacePermission binds a role to a team.
+type WorkspacePermission struct {
+	Team *Team
+	Role WorkspaceRole
 }
 
 // AddSubjectToContext adds a subject to a context
@@ -189,34 +83,4 @@ func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
 		return nil, fmt.Errorf("no lock subject in context")
 	}
 	return lock, nil
-}
-
-// IsAdmin determines if the caller is an admin, i.e. the app/agent/site-admin,
-// but not a normal user. Returns false if the context contains no subject.
-func IsAdmin(ctx context.Context) bool {
-	subj, err := SubjectFromContext(ctx)
-	if err != nil {
-		// unauthenticated call
-		return false
-	}
-	if user, ok := subj.(*User); ok && !user.IsSiteAdmin() {
-		// is normal user
-		return false
-	}
-	// call is authenticated and the subject is not a normal user
-	return true
-}
-
-func IsAllowed(action Action, role WorkspaceRole) bool {
-	switch role {
-	case WorkspaceAdminRole:
-		return true
-	case WorkspaceWriteRole:
-		return writePermissions[action]
-	case WorkspacePlanRole:
-		return planPermissions[action]
-	case WorkspaceReadRole:
-		return readPermissions[action]
-	}
-	return false
 }

@@ -65,9 +65,9 @@
                     <form class="horizontal-form" action="{{ setWorkspacePermissionPath $.Content }}" method="POST">
                       <input name="team_name" value="{{ .Team.Name }}" type="hidden">
                       <select name="role" id="role-select">
-                        {{ $currentRole := .Permission }}
+                        {{ $currentRole := .Role.String }}
                         {{ range $.Content.Roles }}
-                          {{ if eq . $currentRole }}
+                          {{ if eq .String $currentRole }}
                             <option value="{{ . }}" selected>{{ . }}</option>
                           {{ else }}
                             <option value="{{ . }}">{{ . }}</option>

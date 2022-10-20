@@ -49,6 +49,7 @@ func (app *Application) updateTeam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	flashSuccess(w, "team permissions updated")
 	http.Redirect(w, r, getTeamPath(team), http.StatusFound)
 }
 

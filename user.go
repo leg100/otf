@@ -107,7 +107,7 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 
 			if team.access.ManageWorkspaces {
 				// check if workspace manager role allows action
-				if workspaceManagerPermissions[action] {
+				if WorkspaceManagerRole.permissions[action] {
 					return true
 				}
 			}
@@ -137,7 +137,7 @@ func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 			}
 			for _, perm := range policy.Permissions {
 				if team.id == perm.Team.id {
-					return IsAllowed(action, perm.Permission)
+					return perm.Role.IsAllowed(action)
 				}
 			}
 		}
