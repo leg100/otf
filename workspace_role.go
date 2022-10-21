@@ -6,12 +6,14 @@ var (
 	WorkspaceReadRole = WorkspaceRole{
 		name: "read",
 		permissions: map[Action]bool{
-			ListRunsAction:                true,
-			GetPlanFileAction:             true,
-			GetWorkspaceAction:            true,
-			GetStateVersionAction:         true,
-			GetRunAction:                  true,
-			GetConfigurationVersionAction: true,
+			ListRunsAction:                     true,
+			GetPlanFileAction:                  true,
+			GetWorkspaceAction:                 true,
+			GetStateVersionAction:              true,
+			DownloadStateAction:                true,
+			DownloadConfigurationVersionAction: true,
+			GetRunAction:                       true,
+			GetConfigurationVersionAction:      true,
 		},
 	}
 
