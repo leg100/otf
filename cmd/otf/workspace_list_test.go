@@ -14,8 +14,8 @@ import (
 
 func TestWorkspaceList(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws1 := otf.NewTestWorkspace(t, org)
-	ws2 := otf.NewTestWorkspace(t, org)
+	ws1 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws2 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	factory := &fakeWorkspaceListClientFactory{workspaces: []*otf.Workspace{ws1, ws2}}
 
 	cmd := WorkspaceListCommand(factory)

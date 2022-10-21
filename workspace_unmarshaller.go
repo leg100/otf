@@ -35,49 +35,43 @@ type WorkspaceResult struct {
 	LockRunID                  pgtype.Text          `json:"lock_run_id"`
 	LockUserID                 pgtype.Text          `json:"lock_user_id"`
 	LatestRunID                pgtype.Text          `json:"latest_run_id"`
-	OrganizationName           pgtype.Text          `json:"organization_name"`
+	Organization               *pggen.Organizations `json:"organization"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
 	RunLock                    *pggen.Runs          `json:"run_lock"`
-	Organization               *pggen.Organizations `json:"organization"`
 }
 
-func UnmarshalWorkspaceResult(row WorkspaceResult) (*Workspace, error) {
+func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 	ws := Workspace{
-		id:                         row.WorkspaceID.String,
-		createdAt:                  row.CreatedAt.Time.UTC(),
-		updatedAt:                  row.UpdatedAt.Time.UTC(),
-		allowDestroyPlan:           row.AllowDestroyPlan,
-		autoApply:                  row.AutoApply,
-		canQueueDestroyPlan:        row.CanQueueDestroyPlan,
-		description:                row.Description.String,
-		environment:                row.Environment.String,
-		executionMode:              ExecutionMode(row.ExecutionMode.String),
-		fileTriggersEnabled:        row.FileTriggersEnabled,
-		globalRemoteState:          row.GlobalRemoteState,
-		migrationEnvironment:       row.MigrationEnvironment.String,
-		name:                       row.Name.String,
-		queueAllRuns:               row.QueueAllRuns,
-		speculativeEnabled:         row.SpeculativeEnabled,
-		structuredRunOutputEnabled: row.StructuredRunOutputEnabled,
-		sourceName:                 row.SourceName.String,
-		sourceURL:                  row.SourceURL.String,
-		terraformVersion:           row.TerraformVersion.String,
-		triggerPrefixes:            row.TriggerPrefixes,
-		workingDirectory:           row.WorkingDirectory.String,
-		organizationID:             row.OrganizationID.String,
-		organizationName:           row.OrganizationName.String,
+		id:                         result.WorkspaceID.String,
+		createdAt:                  result.CreatedAt.Time.UTC(),
+		updatedAt:                  result.UpdatedAt.Time.UTC(),
+		allowDestroyPlan:           result.AllowDestroyPlan,
+		autoApply:                  result.AutoApply,
+		canQueueDestroyPlan:        result.CanQueueDestroyPlan,
+		description:                result.Description.String,
+		environment:                result.Environment.String,
+		executionMode:              ExecutionMode(result.ExecutionMode.String),
+		fileTriggersEnabled:        result.FileTriggersEnabled,
+		globalRemoteState:          result.GlobalRemoteState,
+		migrationEnvironment:       result.MigrationEnvironment.String,
+		name:                       result.Name.String,
+		queueAllRuns:               result.QueueAllRuns,
+		speculativeEnabled:         result.SpeculativeEnabled,
+		structuredRunOutputEnabled: result.StructuredRunOutputEnabled,
+		sourceName:                 result.SourceName.String,
+		sourceURL:                  result.SourceURL.String,
+		terraformVersion:           result.TerraformVersion.String,
+		triggerPrefixes:            result.TriggerPrefixes,
+		workingDirectory:           result.WorkingDirectory.String,
+		organization:               UnmarshalOrganizationRow(*result.Organization),
 	}
 
-	if row.LatestRunID.Status == pgtype.Present {
-		ws.latestRunID = &row.LatestRunID.String
+	if result.LatestRunID.Status == pgtype.Present {
+		ws.latestRunID = &result.LatestRunID.String
 	}
 
-	if err := unmarshalWorkspaceLock(&ws, &row); err != nil {
+	if err := unmarshalWorkspaceLock(&ws, &result); err != nil {
 		return nil, err
-	}
-
-	if row.Organization != nil {
-		ws.organization = UnmarshalOrganizationRow(*row.Organization)
 	}
 
 	return &ws, nil
@@ -139,7 +133,7 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		terraformVersion:           w.TerraformVersion,
 		workingDirectory:           w.WorkingDirectory,
 		triggerPrefixes:            w.TriggerPrefixes,
-		organizationID:             w.Organization.ExternalID,
+		organization:               UnmarshalOrganizationJSONAPI(w.Organization),
 	}
 
 	// The DTO only encodes whether lock is unlocked or locked, whereas our

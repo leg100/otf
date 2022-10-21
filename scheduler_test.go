@@ -15,7 +15,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("create workspace queue from db", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		ws := NewTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
 		scheduler, got := newTestScheduler([]*Workspace{ws}, nil)
 		go scheduler.reinitialize(ctx)
 
@@ -27,7 +27,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("create workspace queue from event", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		event := Event{Type: EventWorkspaceCreated, Payload: NewTestWorkspace(t, org)}
+		event := Event{Type: EventWorkspaceCreated, Payload: NewTestWorkspace(t, org, WorkspaceCreateOptions{})}
 		scheduler, got := newTestScheduler(nil, nil, event)
 		go scheduler.reinitialize(ctx)
 		assert.Equal(t, event, <-got)
@@ -38,10 +38,10 @@ func TestScheduler(t *testing.T) {
 	t.Run("delete workspace queue", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		// ws is to be created and then deleted
-		ws := NewTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
 		del := Event{Type: EventWorkspaceDeleted, Payload: ws}
 		// necessary so that we can synchronise test below
-		sync := Event{Payload: NewTestWorkspace(t, org)}
+		sync := Event{Payload: NewTestWorkspace(t, org, WorkspaceCreateOptions{})}
 		scheduler, got := newTestScheduler([]*Workspace{ws}, nil, del, sync)
 		go scheduler.reinitialize(ctx)
 
@@ -54,7 +54,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("relay run from db", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		ws := NewTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
 		scheduler, got := newTestScheduler([]*Workspace{ws}, []*Run{run})
@@ -68,7 +68,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("relay run from event", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		ws := NewTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		event := Event{Payload: NewRun(cv, ws, RunCreateOptions{})}
 		scheduler, got := newTestScheduler([]*Workspace{ws}, nil, event)
@@ -82,7 +82,7 @@ func TestScheduler(t *testing.T) {
 
 	t.Run("relay runs in reverse order", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		ws := NewTestWorkspace(t, org)
+		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run1 := NewRun(cv, ws, RunCreateOptions{})
 		run2 := NewRun(cv, ws, RunCreateOptions{})

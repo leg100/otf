@@ -5,7 +5,6 @@ package sql
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -48,20 +47,4 @@ func noRowsInResultError(err error) bool {
 			return true
 		}
 	}
-}
-
-func includeRelation(includes *string, relation string) bool {
-	if includes != nil {
-		includes := strings.Split(*includes, ",")
-		for _, inc := range includes {
-			if inc == relation {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func includeOrganization(includes *string) bool {
-	return includeRelation(includes, "organization")
 }

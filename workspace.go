@@ -52,8 +52,6 @@ type Workspace struct {
 	terraformVersion           string
 	triggerPrefixes            []string
 	workingDirectory           string
-	organizationID             string
-	organizationName           string
 	organization               *Organization
 	latestRunID                *string
 }
@@ -82,8 +80,8 @@ func (ws *Workspace) StructuredRunOutputEnabled() bool { return ws.structuredRun
 func (ws *Workspace) TerraformVersion() string         { return ws.terraformVersion }
 func (ws *Workspace) TriggerPrefixes() []string        { return ws.triggerPrefixes }
 func (ws *Workspace) WorkingDirectory() string         { return ws.workingDirectory }
-func (ws *Workspace) OrganizationID() string           { return ws.organizationID }
-func (ws *Workspace) OrganizationName() string         { return ws.organizationName }
+func (ws *Workspace) OrganizationID() string           { return ws.organization.id }
+func (ws *Workspace) OrganizationName() string         { return ws.organization.name }
 func (ws *Workspace) Organization() *Organization      { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
 
@@ -106,7 +104,7 @@ func (ws *Workspace) SpecID() WorkspaceSpec {
 }
 
 func (ws *Workspace) SpecName() WorkspaceSpec {
-	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organizationName}
+	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organization.name}
 }
 
 // Locked determines whether workspace is locked.
@@ -336,9 +334,6 @@ type WorkspaceListOptions struct {
 	OrganizationName *string `schema:"organization_name,omitempty"`
 	// Filter by those for which user has workspace-level permissions.
 	UserID *string
-	// A list of relations to include. See available resources
-	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
-	Include *string `schema:"include"`
 }
 
 // WorkspaceSpec is used for identifying an individual workspace. Either ID *or*
@@ -350,10 +345,6 @@ type WorkspaceSpec struct {
 	// Specify workspace using its name and organization
 	Name             *string `schema:"workspace_name"`
 	OrganizationName *string `schema:"organization_name"`
-
-	// A list of relations to include. See available resources
-	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
-	Include *string `schema:"include"`
 }
 
 // LogFields provides fields for logging

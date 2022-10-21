@@ -8,17 +8,27 @@ import (
 )
 
 func TestRunFactory(t *testing.T) {
+	org := NewTestOrganization(t)
+	ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+	autoApplyWS := NewTestWorkspace(t, org, WorkspaceCreateOptions{
+		AutoApply: Bool(true),
+	})
+	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
+	speculativeCV := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
+		Speculative: Bool(true),
+	})
+
 	tests := []struct {
 		name string
 		opts RunCreateOptions
 		want func(*testing.T, *Run, error)
-		ws   Workspace
-		cv   ConfigurationVersion
+		ws   *Workspace
+		cv   *ConfigurationVersion
 	}{
 		{
 			name: "defaults",
-			ws:   Workspace{id: "ws-123"},
-			cv:   ConfigurationVersion{id: "cv-123"},
+			ws:   ws,
+			cv:   cv,
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.Equal(t, RunPending, run.status)
@@ -30,8 +40,8 @@ func TestRunFactory(t *testing.T) {
 		},
 		{
 			name: "speculative",
-			ws:   Workspace{id: "ws-123"},
-			cv:   ConfigurationVersion{id: "cv-123", speculative: true},
+			ws:   ws,
+			cv:   speculativeCV,
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.speculative)
@@ -39,8 +49,8 @@ func TestRunFactory(t *testing.T) {
 		},
 		{
 			name: "auto-apply",
-			ws:   Workspace{id: "ws-123", autoApply: true},
-			cv:   ConfigurationVersion{id: "cv-123"},
+			ws:   autoApplyWS,
+			cv:   cv,
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.autoApply)
@@ -50,8 +60,8 @@ func TestRunFactory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := RunFactory{
-				WorkspaceService:            &fakeRunFactoryWorkspaceService{ws: &tt.ws},
-				ConfigurationVersionService: &fakeRunFactoryConfigurationVersionService{cv: &tt.cv},
+				WorkspaceService:            &fakeRunFactoryWorkspaceService{ws: tt.ws},
+				ConfigurationVersionService: &fakeRunFactoryConfigurationVersionService{cv: tt.cv},
 			}
 			run, err := f.NewRun(context.Background(), tt.ws.SpecID(), tt.opts)
 			tt.want(t, run, err)

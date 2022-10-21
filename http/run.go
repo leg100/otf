@@ -132,6 +132,7 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 					return
 				}
 				for _, run := range rl.Items {
+					// TODO: move this to RunList constructor below
 					run.IncludeWorkspace(ws)
 				}
 			}
