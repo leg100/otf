@@ -58,8 +58,7 @@ const (
 	UpdateTeamAction Action = "update_team"
 	GetTeamAction    Action = "get_team"
 	ListTeamsAction  Action = "list_teams"
-
-	subjectCtxKey subjectCtxKeyType = "subject"
 )
 
+// Action symbolizes an action performed on a resource.
 type Action string

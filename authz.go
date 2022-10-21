@@ -2,14 +2,13 @@ package otf
 
 import (
 	"context"
-	"errors"
 	"fmt"
 )
 
-var ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
-
 // unexported key type prevents collisions
 type subjectCtxKeyType string
+
+const subjectCtxKey subjectCtxKeyType = "subject"
 
 // Subject is an entity attempting to carry out an action on a resource.
 type Subject interface {

@@ -7,6 +7,8 @@ import (
 	"github.com/leg100/otf"
 )
 
+// Authorizer is capable of granting or denying access to resources based on the
+// subject contained within the context.
 type Authorizer interface {
 	CanAccessSite(ctx context.Context, action otf.Action) (otf.Subject, error)
 	CanAccessOrganization(ctx context.Context, action otf.Action, name string) (otf.Subject, error)

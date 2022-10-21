@@ -6,6 +6,9 @@ import (
 
 // Generic errors applicable to all resources.
 var (
+	// ErrAccessNotPermitted is returned when an authorization check fails.
+	ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
+
 	// ErrUnauthorized is returned when a receiving a 401.
 	ErrUnauthorized = errors.New("unauthorized")
 
