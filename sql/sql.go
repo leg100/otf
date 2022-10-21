@@ -31,7 +31,7 @@ func databaseError(err error) error {
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
 		case "23505": // unique violation
-			return otf.ErrResourcesAlreadyExists
+			return otf.ErrResourceAlreadyExists
 		}
 		fallthrough
 	default:

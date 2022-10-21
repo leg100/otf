@@ -99,7 +99,7 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 	t.Cleanup(func() {
 		db.UnsetWorkspacePermission(ctx, ws.SpecName(), team.Name())
 	})
-	return &otf.WorkspacePermission{Team: team, Permission: role}
+	return &otf.WorkspacePermission{Team: team, Role: role}
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
@@ -119,7 +119,7 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteTeam(context.Background(), otf.TeamSpec{ID: otf.String(team.ID())})
+		db.DeleteTeam(context.Background(), team.Name(), org.Name())
 	})
 	return team
 }

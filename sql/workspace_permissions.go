@@ -9,14 +9,14 @@ import (
 )
 
 func (db *DB) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.WorkspaceRole) error {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	workspaceID, err := db.GetWorkspaceID(ctx, spec)
 	if err != nil {
 		return databaseError(err)
 	}
 	_, err = db.UpsertWorkspacePermission(ctx, pggen.UpsertWorkspacePermissionParams{
-		WorkspaceID: workspaceID,
+		WorkspaceID: String(workspaceID),
 		TeamName:    String(team),
-		Role:        String(string(role)),
+		Role:        String(role.String()),
 	})
 	if err != nil {
 		return databaseError(err)
@@ -32,7 +32,11 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
+			perm, err := otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row))
+			if err != nil {
+				return nil, databaseError(err)
+			}
+			perms = append(perms, perm)
 		}
 	} else if spec.Name != nil && spec.OrganizationName != nil {
 		result, err := db.FindWorkspacePermissionsByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
@@ -40,7 +44,11 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			return nil, databaseError(err)
 		}
 		for _, row := range result {
-			perms = append(perms, otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row)))
+			perm, err := otf.UnmarshalWorkspacePermissionResult(otf.WorkspacePermissionResult(row))
+			if err != nil {
+				return nil, databaseError(err)
+			}
+			perms = append(perms, perm)
 		}
 	} else {
 		return nil, fmt.Errorf("invalid workspace spec")
@@ -49,11 +57,11 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 }
 
 func (db *DB) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string) error {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	workspaceID, err := db.GetWorkspaceID(ctx, spec)
 	if err != nil {
 		return databaseError(err)
 	}
-	_, err = db.DeleteWorkspacePermissionByID(ctx, workspaceID, String(team))
+	_, err = db.DeleteWorkspacePermissionByID(ctx, String(workspaceID), String(team))
 	if err != nil {
 		return databaseError(err)
 	}

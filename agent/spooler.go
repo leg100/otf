@@ -47,7 +47,7 @@ type Cancelation struct {
 const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(ctx context.Context, app otf.Application, logger logr.Logger, opts NewAgentOptions) *SpoolerDaemon {
+func NewSpooler(app otf.Application, logger logr.Logger, opts NewAgentOptions) *SpoolerDaemon {
 	return &SpoolerDaemon{
 		queue:           make(chan *otf.Run, SpoolerCapacity),
 		cancelations:    make(chan Cancelation, SpoolerCapacity),
@@ -79,7 +79,9 @@ func (s *SpoolerDaemon) GetCancelation() <-chan Cancelation {
 }
 
 func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
-	sub, err := s.Watch(ctx, otf.WatchOptions{})
+	sub, err := s.Watch(ctx, otf.WatchOptions{
+		OrganizationName: s.Organization,
+	})
 	if err != nil {
 		return err
 	}

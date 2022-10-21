@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/leg100/otf"
 )
@@ -33,10 +34,36 @@ func (a *Application) EnsureCreatedUser(ctx context.Context, username string) (*
 	return a.CreateUser(ctx, username)
 }
 
+// ListUsers lists users with various filters.
 func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
-	if !otf.CanAccess(ctx, opts.OrganizationName) {
-		return nil, otf.ErrAccessNotPermitted
+	var err error
+	if opts.OrganizationName != nil && opts.TeamName != nil {
+		// team members can view membership of their own teams.
+		subject, err := otf.SubjectFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if user, ok := subject.(*otf.User); ok && !user.IsSiteAdmin() {
+			_, err := user.Team(*opts.TeamName, *opts.OrganizationName)
+			if err != nil {
+				// user is not a member of the team
+				return nil, otf.ErrAccessNotPermitted
+			}
+			return a.db.ListUsers(ctx, opts)
+		}
 	}
+
+	if opts.OrganizationName != nil {
+		// subject needs perms on org to list users in org
+		_, err = a.CanAccessOrganization(ctx, otf.ListUsersAction, *opts.OrganizationName)
+	} else {
+		// subject needs perms on site to list users across site
+		_, err = a.CanAccessSite(ctx, otf.ListRunsAction)
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	return a.db.ListUsers(ctx, opts)
 }
 
@@ -106,31 +133,48 @@ func (a *Application) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
-// CreateToken creates a user token.
-func (a *Application) CreateToken(ctx context.Context, user *otf.User, opts *otf.TokenCreateOptions) (*otf.Token, error) {
-	token, err := otf.NewToken(user.ID(), opts.Description)
+// CreateToken creates a user token. Only users can create a user token, and
+// they can only create a token for themselves.
+func (a *Application) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+	subject, err := otf.UserFromContext(ctx)
 	if err != nil {
-		a.Error(err, "constructing token", "username", user.Username())
+		return nil, err
+	}
+	if subject.ID() != userID {
+		return nil, fmt.Errorf("cannot create a token for a different user")
+	}
+
+	token, err := otf.NewToken(userID, opts.Description)
+	if err != nil {
+		a.Error(err, "constructing token", "user", subject)
 		return nil, err
 	}
 
 	if err := a.db.CreateToken(ctx, token); err != nil {
-		a.Error(err, "creating token", "username", user.Username())
+		a.Error(err, "creating token", "user", subject)
 		return nil, err
 	}
 
-	a.V(1).Info("created token", "username", user.Username())
+	a.V(1).Info("created token", "user", subject)
 
 	return token, nil
 }
 
-func (a *Application) DeleteToken(ctx context.Context, user *otf.User, tokenID string) error {
+func (a *Application) DeleteToken(ctx context.Context, userID string, tokenID string) error {
+	subject, err := otf.UserFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if subject.ID() != userID {
+		return fmt.Errorf("cannot delete a token for a different user")
+	}
+
 	if err := a.db.DeleteToken(ctx, tokenID); err != nil {
-		a.Error(err, "deleting token", "username", user.Username())
+		a.Error(err, "deleting token", "user", subject)
 		return err
 	}
 
-	a.V(1).Info("deleted token", "username", user.Username())
+	a.V(1).Info("deleted token", "username", subject)
 
 	return nil
 }

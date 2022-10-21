@@ -30,8 +30,8 @@ func TestUserSyncMemberships(t *testing.T) {
 	err := user.SyncMemberships(ctx, store, wantOrgMemberships, wantTeamMemberships)
 	require.NoError(t, err)
 
-	assert.Equal(t, wantOrgMemberships, user.Organizations)
-	assert.Equal(t, wantTeamMemberships, user.Teams)
+	assert.Equal(t, wantOrgMemberships, user.organizations)
+	assert.Equal(t, wantTeamMemberships, user.teams)
 
 	// expect membership to have been added to org3
 	if assert.Equal(t, 1, len(store.addedOrgs)) {

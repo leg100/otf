@@ -92,7 +92,7 @@ func TestStateVersion_List(t *testing.T) {
 	}{
 		{
 			name: "filter by workspace",
-			opts: otf.StateVersionListOptions{Workspace: otf.String(ws.Name()), Organization: otf.String(org.Name())},
+			opts: otf.StateVersionListOptions{Workspace: ws.Name(), Organization: org.OrganizationName()},
 			want: func(t *testing.T, l *otf.StateVersionList, created ...*otf.StateVersion) {
 				assert.Equal(t, 2, len(l.Items))
 				for _, c := range created {
@@ -102,7 +102,7 @@ func TestStateVersion_List(t *testing.T) {
 		},
 		{
 			name: "filter by non-existent workspace",
-			opts: otf.StateVersionListOptions{Workspace: otf.String("non-existent"), Organization: otf.String("non-existent")},
+			opts: otf.StateVersionListOptions{Workspace: "non-existent", Organization: "non-existent"},
 			want: func(t *testing.T, l *otf.StateVersionList, created ...*otf.StateVersion) {
 				assert.Equal(t, 0, len(l.Items))
 			},

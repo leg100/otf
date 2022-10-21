@@ -20,13 +20,13 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 		if err != nil {
 			return err
 		}
-		for _, org := range user.Organizations {
+		for _, org := range user.Organizations() {
 			_, err = tx.InsertOrganizationMembership(ctx, String(user.ID()), String(org.ID()))
 			if err != nil {
 				return err
 			}
 		}
-		for _, team := range user.Teams {
+		for _, team := range user.Teams() {
 			_, err = tx.InsertTeamMembership(ctx, String(user.ID()), String(team.ID()))
 			if err != nil {
 				return err
@@ -117,7 +117,10 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 
 func (db *DB) AddOrganizationMembership(ctx context.Context, id, orgID string) error {
 	_, err := db.InsertOrganizationMembership(ctx, String(id), String(orgID))
-	return err
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }
 
 func (db *DB) RemoveOrganizationMembership(ctx context.Context, id, orgID string) error {

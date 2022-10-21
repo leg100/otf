@@ -25,7 +25,6 @@ func TestSpooler(t *testing.T) {
 	events <- otf.Event{Type: otf.EventRunForceCancel, Payload: run5}
 
 	spooler := NewSpooler(
-		ctx,
 		&fakeSpoolerApp{runs: db, events: events},
 		logr.Discard(),
 		NewAgentOptions{Mode: InternalAgentMode},

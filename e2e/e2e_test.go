@@ -1,72 +1,39 @@
 package e2e
 
 import (
-	"os/exec"
+	"context"
+	"os"
+	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/chromedp/chromedp"
 )
 
-func TestOTF(t *testing.T) {
-	tfpath := terraformPath(t)
-	t.Run("login", login(t, tfpath))
-	organization := createOrganization(t)
-	root := newRoot(t, organization)
+var (
+	allocator context.Context
+	ss        = &screenshotter{m: make(map[string]int)}
+)
 
-	t.Run("terraform init", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "init", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
+func TestMain(t *testing.M) {
+	headless := true
+	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
+		var err error
+		headless, err = strconv.ParseBool(v)
+		if err != nil {
+			panic("cannot parse OTF_E2E_HEADLESS")
+		}
+	}
 
-	t.Run("terraform plan", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "plan", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
-	})
+	var cancel context.CancelFunc
+	allocator, cancel = chromedp.NewExecAllocator(context.Background(),
+		append(chromedp.DefaultExecAllocatorOptions[:],
+			chromedp.Flag("headless", headless),
+			chromedp.Flag("hide-scrollbars", true),
+			chromedp.Flag("mute-audio", true),
+			chromedp.Flag("ignore-certificate-errors", true),
+			chromedp.Flag("disable-gpu", true),
+		)...)
+	defer cancel()
 
-	t.Run("terraform apply", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "apply", "-no-color", "-auto-approve")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
-	})
-
-	t.Run("terraform destroy", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "destroy", "-no-color", "-auto-approve")
-		out, err := cmd.CombinedOutput()
-		require.NoError(t, err)
-		t.Log(string(out))
-		require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
-	})
-
-	t.Run("lock workspace", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "lock", "dev", "--organization", organization)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
-
-	t.Run("unlock workspace", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "unlock", "dev", "--organization", organization)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
-
-	t.Run("list workspaces", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "list", "--organization", organization)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "dev")
-	})
+	os.Exit(t.Run())
 }

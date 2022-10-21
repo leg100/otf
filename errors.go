@@ -6,6 +6,9 @@ import (
 
 // Generic errors applicable to all resources.
 var (
+	// ErrAccessNotPermitted is returned when an authorization check fails.
+	ErrAccessNotPermitted = errors.New("access to the resource is not permitted")
+
 	// ErrUnauthorized is returned when a receiving a 401.
 	ErrUnauthorized = errors.New("unauthorized")
 
@@ -14,7 +17,7 @@ var (
 
 	// ErrResourceAlreadyExists is returned when attempting to create a resource
 	// that already exists.
-	ErrResourcesAlreadyExists = errors.New("resource already exists")
+	ErrResourceAlreadyExists = errors.New("resource already exists")
 
 	// ErrRequiredName is returned when a name option is not present.
 	ErrRequiredName = errors.New("name is required")

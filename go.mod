@@ -10,7 +10,8 @@ require (
 	github.com/chromedp/chromedp v0.8.5
 	github.com/fatih/color v1.13.0
 	github.com/felixge/httpsnoop v1.0.1
-	github.com/go-logr/logr v1.0.0
+	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/zerologr v1.2.2
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
 	github.com/google/uuid v1.3.0
@@ -32,7 +33,7 @@ require (
 	github.com/pressly/goose/v3 v3.5.3
 	github.com/prometheus/client_golang v0.9.3
 	github.com/r3labs/sse/v2 v2.8.1
-	github.com/rs/zerolog v1.23.0
+	github.com/rs/zerolog v1.26.1
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0

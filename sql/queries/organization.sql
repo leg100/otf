@@ -1,3 +1,10 @@
+-- name: FindOrganizationNameByWorkspaceID :one
+SELECT o.name
+FROM organizations o
+JOIN workspaces w USING (organization_id)
+WHERE w.workspace_id = pggen.arg('workspace_id')
+;
+
 -- FindOrganizationByName finds an organization by name.
 --
 -- name: FindOrganizationByName :one

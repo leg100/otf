@@ -23,7 +23,7 @@ func TestOrganization_Create(t *testing.T) {
 
 	t.Run("Duplicate", func(t *testing.T) {
 		err := db.CreateOrganization(context.Background(), org)
-		require.Equal(t, otf.ErrResourcesAlreadyExists, err)
+		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
 

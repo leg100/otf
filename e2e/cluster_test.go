@@ -1,68 +1,75 @@
 package e2e
 
 import (
-	"net/url"
 	"os/exec"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestCluster is an end-to-end test of the clustering capabilities, i.e.
-// running more than one otfd. The test runs two otfd's (the first of which is
-// expected to already been running):
+// more than one otfd, both connected to the same postgres db. The test runs two
+// otfd daemons:
 //
-// (1) otfd to which the TF CLI connects
-// (2) otfd to which the otf-agent connects
+// otfd1) otfd to which the TF CLI connects
+// otfd2) otfd to which the otf-agent connects
 //
-// This setup demonstrates that the cluster can coordinate processes between
-// the two clients.
+// This setup provides a limited demonstration that the cluster is co-ordinating
+// processes successfully, e.g. relaying of logs from the agent through to the
+// TF CLI
 func TestCluster(t *testing.T) {
-	tfpath := terraformPath(t)
-	t.Run("login", login(t, tfpath))
-	organization := createOrganization(t)
-	token := createAgentToken(t, organization)
-	root := newRoot(t, organization)
+	addBuildsToPath(t)
 
-	daemonURL := startDaemon(t)
-	u, err := url.Parse(daemonURL)
+	org := otf.NewTestOrganization(t)
+	team := otf.NewTeam("owners", org)
+	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+
+	// start two daemons
+	userDaemon := startDaemon(t, user)
+	agentDaemon := startDaemon(t, user)
+
+	// creating api token via web also syncs org
+	userToken := createAPIToken(t, userDaemon)
+	login(t, userDaemon, userToken)
+
+	// org now sync'd, so we can create agent token via CLI
+	agentToken := createAgentToken(t, org.Name(), userDaemon)
+	// start agent, instructing it to connect to otfd2
+	startAgent(t, agentToken, agentDaemon)
+
+	// create root module, setting otfd1 as hostname
+	root := newRootModule(t, userDaemon, org.Name(), "dev")
+
+	// terraform init automatically creates a workspace named dev
+	cmd := exec.Command("terraform", "init", "-no-color")
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
 	require.NoError(t, err)
 
-	startAgent(t, token, u.Host)
+	// edit workspace to use agent
+	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org.Name(), "--execution-mode", "agent", "--address", userDaemon)
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	assert.Equal(t, "updated execution mode: agent\n", string(out))
 
-	// terraform init creates a workspace named dev
-	t.Run("terraform init", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "init", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-	})
+	// terraform plan
+	cmd = exec.Command("terraform", "plan", "-no-color")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 
-	t.Run("edit workspace to use agent", func(t *testing.T) {
-		cmd := exec.Command(client, "workspaces", "edit", "dev", "--organization", organization, "--execution-mode", "agent")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		assert.Equal(t, "updated execution mode: agent\n", string(out))
-	})
-
-	t.Run("terraform plan", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "plan", "-no-color")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
-	})
-
-	t.Run("terraform apply", func(t *testing.T) {
-		chdir(t, root)
-		cmd := exec.Command(tfpath, "apply", "-no-color", "-auto-approve")
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		require.NoError(t, err)
-		require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
-	})
+	// terraform apply
+	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 }

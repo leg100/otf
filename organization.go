@@ -58,6 +58,7 @@ type OrganizationStore interface {
 	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 	UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
+	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
 }
 
 // OrganizationCreateOptions represents the options for creating an

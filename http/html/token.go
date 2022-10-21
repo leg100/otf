@@ -32,7 +32,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	token, err := app.CreateToken(r.Context(), user, &opts)
+	token, err := app.CreateToken(r.Context(), user.ID(), &opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,13 +55,17 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// display tokens by creation date, newest first
-	sort.Slice(user.Tokens, func(i, j int) bool {
-		return user.Tokens[i].CreatedAt().After(user.Tokens[j].CreatedAt())
+
+	// re-order tokens by creation date, newest first
+	tokens := make([]*otf.Token, len(user.Tokens()))
+	copy(tokens, user.Tokens())
+	sort.Slice(tokens, func(i, j int) bool {
+		return tokens[i].CreatedAt().After(tokens[j].CreatedAt())
 	})
+
 	app.render("token_list.tmpl", w, r, tokenList{
 		Pagination: &otf.Pagination{},
-		Items:      user.Tokens,
+		Items:      tokens,
 	})
 }
 
@@ -76,7 +80,7 @@ func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Reques
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.DeleteToken(r.Context(), user, id); err != nil {
+	if err := app.DeleteToken(r.Context(), user.ID(), id); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

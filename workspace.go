@@ -15,11 +15,6 @@ const (
 	RemoteExecutionMode ExecutionMode = "remote"
 	LocalExecutionMode  ExecutionMode = "local"
 	AgentExecutionMode  ExecutionMode = "agent"
-
-	WorkspaceReadRole  WorkspaceRole = "read"
-	WorkspacePlanRole  WorkspaceRole = "plan"
-	WorkspaceWriteRole WorkspaceRole = "write"
-	WorkspaceAdminRole WorkspaceRole = "admin"
 )
 
 type ExecutionMode string
@@ -62,13 +57,6 @@ type Workspace struct {
 	organization               *Organization
 	latestRunID                *string
 }
-
-type WorkspacePermission struct {
-	Team       *Team
-	Permission WorkspaceRole
-}
-
-type WorkspaceRole string
 
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
@@ -315,8 +303,13 @@ type WorkspaceStore interface {
 	CreateWorkspace(ctx context.Context, ws *Workspace) error
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
+	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
+	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
+	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
+	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 
 	WorkspaceLockService
 	CurrentRunService
@@ -339,8 +332,10 @@ type WorkspaceListOptions struct {
 	ListOptions
 	// Filter workspaces with name matching prefix.
 	Prefix string `schema:"search[name],omitempty"`
-	// OrganizationName filters workspaces by organization name. Required.
+	// OrganizationName filters workspaces by organization name.
 	OrganizationName *string `schema:"organization_name,omitempty"`
+	// Filter by those for which user has workspace-level permissions.
+	UserID *string
 	// A list of relations to include. See available resources
 	// https://www.terraform.io/docs/cloud/api/workspaces.html#available-related-resources
 	Include *string `schema:"include"`

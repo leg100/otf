@@ -42,22 +42,15 @@ func (db *DB) CreateStateVersion(ctx context.Context, workspaceID string, sv *ot
 }
 
 func (db *DB) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	if opts.Workspace == nil {
-		return nil, fmt.Errorf("missing required option: workspace")
-	}
-	if opts.Organization == nil {
-		return nil, fmt.Errorf("missing required option: organization")
-	}
-
 	batch := &pgx.Batch{}
 
 	db.FindStateVersionsByWorkspaceNameBatch(batch, pggen.FindStateVersionsByWorkspaceNameParams{
-		WorkspaceName:    String(*opts.Workspace),
-		OrganizationName: String(*opts.Organization),
+		WorkspaceName:    String(opts.Workspace),
+		OrganizationName: String(opts.Organization),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	db.CountStateVersionsByWorkspaceNameBatch(batch, String(*opts.Workspace), String(*opts.Organization))
+	db.CountStateVersionsByWorkspaceNameBatch(batch, String(opts.Workspace), String(opts.Organization))
 
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()

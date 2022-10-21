@@ -36,6 +36,9 @@ func NewMapper(app otf.Application) *Mapper {
 // Start the mapper, populate entries from the DB, and watch changes, updating
 // mappings accordingly.
 func (m *Mapper) Start(ctx context.Context) error {
+	// make all service calls as the mapper user
+	ctx = otf.AddSubjectToContext(ctx, &mapperUser{})
+
 	// Register for events first so we don't miss any.
 	sub, err := m.Watch(ctx, otf.WatchOptions{})
 	if err != nil {
@@ -104,24 +107,19 @@ func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
 	}
 }
 
-// CanAccessRun determines if the caller is permitted to access the run
-func (m *Mapper) CanAccessRun(ctx context.Context, runID string) bool {
-	orgName := m.lookupRunOrganization(runID)
-	return otf.CanAccess(ctx, &orgName)
-}
+// mapperUser identifies the mapper for auth purposes
+type mapperUser struct{}
 
-// CanAccessWorkspace determines if the caller is permitted to access the
-// workspace specified by the spec.
-func (m *Mapper) CanAccessWorkspace(ctx context.Context, spec otf.WorkspaceSpec) bool {
-	orgName, ok := m.workspaces.lookupOrganizationBySpec(spec)
-	if !ok {
-		return false
-	}
-	return otf.CanAccess(ctx, &orgName)
-}
+// CanAccessSite - mapper needs to retrieve runs across site
+func (*mapperUser) CanAccessSite(action otf.Action) bool { return true }
 
-// lookupRunOrganization returns a run's organization name given a run ID
-func (m *Mapper) lookupRunOrganization(runID string) string {
-	workspaceID := m.runs.lookupWorkspaceID(runID)
-	return m.workspaces.lookupOrganizationByID(workspaceID)
-}
+// CanAccessOrganization - mapper needs to access any org
+func (*mapperUser) CanAccessOrganization(otf.Action, string) bool { return true }
+
+// CanAccessWorkspace -  mapper accesses all workspaces.
+//
+// TODO: proscribe authz, mapper does not need to do much.
+func (*mapperUser) CanAccessWorkspace(otf.Action, *otf.WorkspacePolicy) bool { return true }
+
+func (*mapperUser) String() string { return "mapper" }
+func (*mapperUser) ID() string     { return "mapper" }

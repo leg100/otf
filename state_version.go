@@ -68,19 +68,8 @@ type StateVersionGetOptions struct {
 // StateVersionListOptions represents the options for listing state versions.
 type StateVersionListOptions struct {
 	ListOptions
-	Organization *string `schema:"filter[organization][name]"`
-	Workspace    *string `schema:"filter[workspace][name]"`
-}
-
-// LogFields provides fields for logging
-func (opts StateVersionListOptions) LogFields() (fields []interface{}) {
-	if opts.Workspace != nil {
-		fields = append(fields, "workspace", *opts.Workspace)
-	}
-	if opts.Organization != nil {
-		fields = append(fields, "organization", *opts.Organization)
-	}
-	return fields
+	Organization string `schema:"filter[organization][name],required"`
+	Workspace    string `schema:"filter[workspace][name],required"`
 }
 
 // StateVersionCreateOptions represents the options for creating a state

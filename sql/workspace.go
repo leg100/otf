@@ -201,6 +201,81 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}, nil
 }
 
+func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {
+	batch := &pgx.Batch{}
+
+	db.FindWorkspacesByUserIDBatch(batch, pggen.FindWorkspacesByUserIDParams{
+		OrganizationName: String(organization),
+		UserID:           String(userID),
+		Limit:            opts.GetLimit(),
+		Offset:           opts.GetOffset(),
+	})
+	db.CountWorkspacesByUserIDBatch(batch, String(organization), String(userID))
+	results := db.SendBatch(ctx, batch)
+	defer results.Close()
+
+	rows, err := db.FindWorkspacesByUserIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+	count, err := db.CountWorkspacesByUserIDScan(results)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Workspace
+	for _, r := range rows {
+		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, ws)
+	}
+
+	return &otf.WorkspaceList{
+		Items:      items,
+		Pagination: otf.NewPagination(opts, *count),
+	}, nil
+}
+
+func (db *DB) GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByRunID(ctx, String(runID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
+func (db *DB) GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByStateVersionID(ctx, String(svID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
+func (db *DB) GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error) {
+	workspaceID, err := db.FindWorkspaceIDByCVID(ctx, String(cvID))
+	if err != nil {
+		return "", databaseError(err)
+	}
+	return workspaceID.String, nil
+}
+
+func (db *DB) GetWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (string, error) {
+	if spec.ID != nil {
+		return *spec.ID, nil
+	}
+	if spec.Name != nil && spec.OrganizationName != nil {
+		id, err := db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+		if err != nil {
+			return "", err
+		}
+		return id.String, nil
+	}
+	return "", otf.ErrInvalidWorkspaceSpec
+}
+
 func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if spec.ID != nil {
 		// TODO: always include the organization regardless of whether caller

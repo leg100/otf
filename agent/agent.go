@@ -52,12 +52,12 @@ const (
 )
 
 // NewAgent is the constructor for an Agent
-func NewAgent(ctx context.Context, logger logr.Logger, app otf.Application, opts NewAgentOptions) (*Agent, error) {
+func NewAgent(logger logr.Logger, app otf.Application, opts NewAgentOptions) (*Agent, error) {
 	if opts.Mode != InternalAgentMode && opts.Mode != ExternalAgentMode {
 		return nil, fmt.Errorf("invalid agent mode: %s", opts.Mode)
 	}
 
-	spooler := NewSpooler(ctx, app, logger, opts)
+	spooler := NewSpooler(app, logger, opts)
 
 	supervisor := NewSupervisor(
 		spooler,

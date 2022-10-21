@@ -8,10 +8,11 @@
 {{ .Content.Name }}{{ end }}
 
 {{ define "content" }}
+  {{ if .CurrentUser.IsOwner .Content.Team.OrganizationName }}
   <h3>Permissions</h3>
   <form class="permissions-form" action="{{ updateTeamPath .Content }}" method="POST">
     <div class="field">
-      <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Content.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Content.IsOwners }}disabled{{ end }}>
+      <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Content.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
       <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
     </div>
     {{ if not .Content.IsOwners }}
@@ -21,6 +22,7 @@
     {{ end }}
   </form>
   <br>
+  {{ end }}
   <h3>Members</h3>
   <div id="content-list" class="content-list">
     {{ range .Content.Members }}

@@ -44,42 +44,29 @@ func (u *Team) Update(opts TeamUpdateOptions) error {
 type TeamService interface {
 	// CreateTeam creates a team with the given name belong to the named
 	// organization.
-	CreateTeam(ctx context.Context, name, organizationName string) (*Team, error)
-	UpdateTeam(ctx context.Context, spec TeamSpec, opts TeamUpdateOptions) (*Team, error)
+	CreateTeam(ctx context.Context, name, organization string) (*Team, error)
+	UpdateTeam(ctx context.Context, name, organization string, opts TeamUpdateOptions) (*Team, error)
 	// EnsureCreatedTeam retrieves a team; if they don't exist they'll be
 	// created.
-	EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*Team, error)
+	EnsureCreatedTeam(ctx context.Context, name, organization string) (*Team, error)
 	// Get retrieves a team according to the spec.
-	GetTeam(ctx context.Context, spec TeamSpec) (*Team, error)
+	GetTeam(ctx context.Context, name, organization string) (*Team, error)
 	// ListTeams lists teams in an organization.
-	ListTeams(ctx context.Context, organizationName string) ([]*Team, error)
+	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 }
 
 // TeamStore is a persistence store for team accounts.
 type TeamStore interface {
 	CreateTeam(ctx context.Context, team *Team) error
-	UpdateTeam(ctx context.Context, spec TeamSpec, fn func(*Team) error) (*Team, error)
-	GetTeam(ctx context.Context, spec TeamSpec) (*Team, error)
-	DeleteTeam(ctx context.Context, spec TeamSpec) error
-	ListTeams(ctx context.Context, organizationName string) ([]*Team, error)
+	UpdateTeam(ctx context.Context, name, organization string, fn func(*Team) error) (*Team, error)
+	GetTeam(ctx context.Context, name, organization string) (*Team, error)
+	DeleteTeam(ctx context.Context, name, organization string) error
+	ListTeams(ctx context.Context, organization string) ([]*Team, error)
 }
 
 type TeamSpec struct {
-	ID               *string
-	Name             *string
-	OrganizationName *string
-}
-
-// KeyValue returns the team spec in key-value form. Useful for logging
-// purposes.
-func (spec *TeamSpec) KeyValue() []any {
-	if spec.ID != nil {
-		return []interface{}{"id", *spec.ID}
-	}
-	if spec.Name != nil && spec.OrganizationName != nil {
-		return []interface{}{"name", *spec.Name, "organization", *spec.OrganizationName}
-	}
-	return []any{}
+	Name             string `schema:"team_name,required"`
+	OrganizationName string `schema:"organization_name,required"`
 }
 
 // OrganizationAccess defines a team's organization access.

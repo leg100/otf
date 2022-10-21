@@ -12,20 +12,27 @@ import (
 type JobWriter struct {
 	// ID of run to write logs on behalf of.
 	ID string
-
 	// run phase
 	Phase PhaseType
-
 	// LogService for uploading logs to server
 	LogService
-
 	// started is used internally by the writer to determine whether the first
 	// write has been prefixed with the start marker (STX).
 	started bool
-	// current position in the stream
+	// current position in stream
 	offset int
-
 	logr.Logger
+	ctx context.Context
+}
+
+func NewJobWriter(ctx context.Context, app Application, logger logr.Logger, run *Run) *JobWriter {
+	return &JobWriter{
+		ID:         run.ID(),
+		Phase:      run.Phase(),
+		LogService: app,
+		Logger:     logger,
+		ctx:        ctx,
+	}
 }
 
 // Write uploads a chunk of logs to the server.
@@ -46,7 +53,7 @@ func (w *JobWriter) Write(p []byte) (int, error) {
 	}
 	w.offset = chunk.NextOffset()
 
-	if err := w.PutChunk(context.Background(), chunk); err != nil {
+	if err := w.PutChunk(w.ctx, chunk); err != nil {
 		w.Error(err, "writing log stream")
 		return 0, err
 	}
@@ -67,7 +74,7 @@ func (w *JobWriter) Close() error {
 	}
 	w.offset += chunk.NextOffset()
 
-	if err := w.PutChunk(context.Background(), chunk); err != nil {
+	if err := w.PutChunk(w.ctx, chunk); err != nil {
 		w.Error(err, "closing log stream")
 		return err
 	}

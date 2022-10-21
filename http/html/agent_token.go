@@ -62,7 +62,7 @@ func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request)
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.DeleteAgentToken(r.Context(), id); err != nil {
+	if err := app.DeleteAgentToken(r.Context(), id, mux.Vars(r)["organization_name"]); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -31,13 +31,18 @@ func (t *AgentToken) HideToken() {
 	t.token = nil
 }
 
-// CanAccess implements the Subject interface - an agent can only acccess its
-// organization resources.
-func (t *AgentToken) CanAccess(organizationName *string) bool {
-	if organizationName == nil {
-		return false
-	}
-	return t.organizationName == *organizationName
+func (*AgentToken) CanAccessSite(action Action) bool {
+	// agent cannot carry out site-level actions
+	return false
+}
+
+func (t *AgentToken) CanAccessOrganization(action Action, name string) bool {
+	return t.organizationName == name
+}
+
+func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+	// agent can access anything within its organization
+	return t.organizationName == policy.OrganizationName
 }
 
 type AgentTokenCreateOptions struct {
@@ -103,7 +108,7 @@ type AgentTokenService interface {
 	// authentication token.
 	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
 	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
-	DeleteAgentToken(ctx context.Context, id string) error
+	DeleteAgentToken(ctx context.Context, id string, organizationName string) error
 }
 
 // AgentTokenStore persists agent authentication tokens.

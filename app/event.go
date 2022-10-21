@@ -6,26 +6,41 @@ import (
 	"github.com/leg100/otf"
 )
 
-// OrganizationResource is a resource that belongs to an organization
-type OrganizationResource interface {
+// WorkspaceResource is a resource that belongs to a workspace and organization, or is a
+// workspace
+type WorkspaceResource interface {
 	OrganizationName() string
+	WorkspaceName() string
 }
 
 // Watch provides authenticated access to a stream of events.
 //
 // TODO: apply watch options
 func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
-	name := "watch-" + otf.GenerateRandomString(6)
-	if opts.Name != nil {
-		name = *opts.Name
+	var err error
+	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+		// caller must have workspace-level read permissions
+		_, err = a.CanAccessWorkspace(ctx, otf.WatchAction, otf.WorkspaceSpec{
+			Name:             opts.WorkspaceName,
+			OrganizationName: opts.OrganizationName,
+		})
+	} else if opts.OrganizationName != nil {
+		// caller must have organization-level read permissions
+		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.OrganizationName)
 	}
-
-	ch := make(chan otf.Event)
-	sub, err := a.Subscribe(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
+	if opts.Name == nil {
+		opts.Name = otf.String("watch-" + otf.GenerateRandomString(6))
+	}
+	sub, err := a.Subscribe(ctx, *opts.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan otf.Event)
 	go func() {
 		for {
 			select {
@@ -34,16 +49,24 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					close(ch)
 					return
 				}
-				res, ok := ev.Payload.(OrganizationResource)
+				res, ok := ev.Payload.(WorkspaceResource)
 				if !ok {
 					// skip events that contain payloads that cannot be related
-					// back to an organization, including log updates, which are
+					// back to a workspace, including log updates which are
 					// very noisy
 					continue
 				}
-				if !otf.CanAccess(ctx, otf.String(res.OrganizationName())) {
-					// skip events caller is not entitled to
-					continue
+				// apply optional organization filter
+				if opts.OrganizationName != nil {
+					if res.OrganizationName() != *opts.OrganizationName {
+						continue
+					}
+				}
+				// apply optional workspace filter
+				if opts.WorkspaceName != nil {
+					if res.WorkspaceName() != *opts.WorkspaceName {
+						continue
+					}
 				}
 
 				ch <- ev
@@ -58,7 +81,8 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 
 // WatchLogs provides a subscription to phase logs.
 //
-// NOTE: unauthenticated.
+// NOTE: unauthenticated. External access to this endpoint should only be made
+// via signed URLs.
 func (a *Application) WatchLogs(ctx context.Context, opts otf.WatchLogsOptions) (<-chan otf.Chunk, error) {
 	name := "watch-logs-" + otf.GenerateRandomString(6)
 	if opts.Name != nil {

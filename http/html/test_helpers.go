@@ -14,7 +14,8 @@ import (
 )
 
 func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
-	http.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
 		q.Add("code", otf.GenerateRandomString(10))
@@ -31,21 +32,21 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 
 		http.Redirect(w, r, callback.String(), http.StatusFound)
 	})
-	http.HandleFunc("/login/oauth/access_token", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/login/oauth/access_token", func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "stub_token"})
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	http.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&github.User{Login: otf.String(user.Username())})
 		require.NoError(t, err)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	http.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 		var orgs []*github.Organization
-		for _, org := range user.Organizations {
+		for _, org := range user.Organizations() {
 			orgs = append(orgs, &github.Organization{Login: otf.String(org.Name())})
 		}
 		out, err := json.Marshal(orgs)
@@ -53,19 +54,19 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	for _, org := range user.Organizations {
-		http.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
+	for _, org := range user.Organizations() {
+		mux.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
 			out, err := json.Marshal(&github.Membership{
-				Role: otf.String("admin"),
+				Role: otf.String("member"),
 			})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
 	}
-	http.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
 		var teams []*github.Team
-		for _, team := range user.Teams {
+		for _, team := range user.Teams() {
 			teams = append(teams, &github.Team{
 				Name: otf.String(team.Name()),
 				Organization: &github.Organization{
@@ -79,7 +80,7 @@ func NewTestGithubServer(t *testing.T, user *otf.User) *httptest.Server {
 		w.Write(out)
 	})
 
-	srv := httptest.NewTLSServer(nil)
+	srv := httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
 }

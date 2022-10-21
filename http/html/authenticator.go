@@ -213,15 +213,20 @@ func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient)
 		return nil, err
 	}
 
+	// organizations to be synchronised
+	var organizations []*otf.Organization
+	// teams to be synchronised
+	var teams []*otf.Team
+
 	// Create user's organizations as necessary
-	for i, org := range cuser.Organizations {
+	for _, org := range cuser.Organizations() {
 		org, err = a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
 			Name: otf.String(org.Name()),
 		})
 		if err != nil {
 			return nil, err
 		}
-		cuser.Organizations[i] = org
+		organizations = append(organizations, org)
 	}
 
 	// A user also gets their own personal organization matching their username
@@ -231,22 +236,26 @@ func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient)
 	if err != nil {
 		return nil, err
 	}
-	cuser.Organizations = append(cuser.Organizations, personal)
-	// And make them an owner of their personal org
-	cuser.Teams = append(cuser.Teams, otf.NewTeam("owners", personal))
+	organizations = append(organizations, personal)
 
 	// Create user's teams as necessary
-	for i, team := range cuser.Teams {
+	for _, team := range cuser.Teams() {
 		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.Organization().Name())
 		if err != nil {
 			return nil, err
 		}
-		cuser.Teams[i] = team
+		teams = append(teams, team)
 	}
+	// And make them an owner of their personal org
+	team, err := a.EnsureCreatedTeam(ctx, "owners", personal.Name())
+	if err != nil {
+		return nil, err
+	}
+	teams = append(teams, team)
 
 	// Synchronise user's memberships so that they match those of the cloud
 	// user.
-	if _, err = a.SyncUserMemberships(ctx, user, cuser.Organizations, cuser.Teams); err != nil {
+	if _, err = a.SyncUserMemberships(ctx, user, organizations, teams); err != nil {
 		return nil, err
 	}
 

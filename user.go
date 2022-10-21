@@ -2,6 +2,8 @@ package otf
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -23,13 +25,13 @@ type User struct {
 	updatedAt time.Time
 	username  string
 	// A user has many sessions
-	Sessions []*Session
+	sessions []*Session
 	// A user has many tokens
-	Tokens []*Token
+	tokens []*Token
 	// A user belongs to many organizations
-	Organizations []*Organization
+	organizations []*Organization
 	// A user belongs to many teams
-	Teams []*Team
+	teams []*Team
 }
 
 // AttachNewSession creates and attaches a new session to the user.
@@ -38,37 +40,125 @@ func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	u.Sessions = append(u.Sessions, session)
+	u.sessions = append(u.sessions, session)
 	return session, nil
 }
 
-func (u *User) ID() string           { return u.id }
-func (u *User) Username() string     { return u.username }
-func (u *User) CreatedAt() time.Time { return u.createdAt }
-func (u *User) UpdatedAt() time.Time { return u.updatedAt }
-func (u *User) String() string       { return u.username }
-func (u *User) SiteAdmin() bool      { return u.id == SiteAdminID }
+func (u *User) ID() string                     { return u.id }
+func (u *User) Username() string               { return u.username }
+func (u *User) CreatedAt() time.Time           { return u.createdAt }
+func (u *User) UpdatedAt() time.Time           { return u.updatedAt }
+func (u *User) String() string                 { return u.username }
+func (u *User) Sessions() []*Session           { return u.sessions }
+func (u *User) Tokens() []*Token               { return u.tokens }
+func (u *User) Organizations() []*Organization { return u.organizations }
+func (u *User) Teams() []*Team                 { return u.teams }
 
-func (u *User) CanAccess(organizationName *string) bool {
-	// Site admin can access any organization
-	if u.SiteAdmin() {
+// TeamsByOrganization return a user's teams filtered by organization name
+func (u *User) TeamsByOrganization(organization string) []*Team {
+	var orgTeams []*Team
+	for _, t := range u.teams {
+		if t.OrganizationName() == organization {
+			orgTeams = append(orgTeams, t)
+		}
+	}
+	return orgTeams
+}
+
+// Team retrieves the named team in the given organization.
+func (u *User) Team(name, organization string) (*Team, error) {
+	for _, t := range u.teams {
+		if t.Name() == name && t.OrganizationName() == organization {
+			return t, nil
+		}
+	}
+	return nil, fmt.Errorf("no team found with the name: %s", name)
+}
+
+func (u *User) IsUnprivilegedUser(organization string) bool {
+	return !u.IsSiteAdmin() && !u.IsOwner(organization)
+}
+
+func (u *User) IsSiteAdmin() bool { return u.id == SiteAdminID }
+
+func (u *User) CanAccessSite(action Action) bool {
+	// Only site admin can perform actions on the site
+	return u.IsSiteAdmin()
+}
+
+func (u *User) CanAccessOrganization(action Action, name string) bool {
+	// Site admin can perform any action on any organization
+	if u.IsSiteAdmin() {
 		return true
 	}
-	// Normal users cannot access *any* organization...
-	if organizationName == nil {
-		return false
+
+	for _, team := range u.teams {
+		if team.OrganizationName() == name {
+			if team.IsOwners() {
+				// owner team members can perform all actions on organization
+				return true
+			}
+
+			switch action {
+			case GetOrganizationAction, GetEntitlementsAction:
+				// members can retrieve info about their organization
+				return true
+			}
+
+			if team.access.ManageWorkspaces {
+				// check if workspace manager role allows action
+				if WorkspaceManagerRole.permissions[action] {
+					return true
+				}
+			}
+			// TODO: as we add more organization-level features, such as a
+			// registry, policies, etc, we'll introduce further manager roles
+			// and check if roles allow action here.
+		}
 	}
-	// ...but they can access an organization they are a member of.
-	for _, org := range u.Organizations {
-		if org.Name() == *organizationName {
-			return true
+	return false
+}
+
+func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
+	// Site admin can access any workspace
+	if u.IsSiteAdmin() {
+		return true
+	}
+	// user must be a member of a team with perms
+	for _, team := range u.teams {
+		if team.OrganizationName() == policy.OrganizationName {
+			if team.IsOwners() {
+				// owner team members can perform all actions on all workspaces
+				return true
+			}
+			if team.access.ManageWorkspaces {
+				// workspace managers can perform all actions on all workspaces
+				return true
+			}
+			for _, perm := range policy.Permissions {
+				if team.id == perm.Team.id {
+					return perm.Role.IsAllowed(action)
+				}
+			}
+		}
+	}
+	return false
+}
+
+// IsOwner determines if the user is an owner of an organization
+func (u *User) IsOwner(organization string) bool {
+	for _, team := range u.teams {
+		if team.OrganizationName() == organization {
+			if team.IsOwners() {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func (u *User) ActiveSession() *Session {
-	for _, s := range u.Sessions {
+	for _, s := range u.sessions {
 		if s.active {
 			return s
 		}
@@ -82,42 +172,54 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Org
 	// Iterate thru orgs and check if already member; if not then
 	// add membership to store
 	for _, org := range orgs {
-		if !inOrganizationList(u.Organizations, org.ID()) {
+		if !inOrganizationList(u.organizations, org.ID()) {
 			if err := store.AddOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
-				return err
+				if errors.Is(err, ErrResourceAlreadyExists) {
+					// ignore conflicts - sometimes the caller may provide
+					// duplicate orgs
+					continue
+				} else {
+					return err
+				}
 			}
 		}
 	}
 	// Iterate thru receiver's orgs and check if in the given orgs; if not then
 	// remove membership from store
-	for _, org := range u.Organizations {
+	for _, org := range u.organizations {
 		if !inOrganizationList(orgs, org.ID()) {
 			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
 				return err
 			}
 		}
 	}
-	u.Organizations = orgs
+	u.organizations = orgs
 
 	// Iterate thru teams and check if already member; if not then
 	// add membership to store
 	for _, team := range teams {
-		if !inTeamList(u.Teams, team.ID()) {
+		if !inTeamList(u.teams, team.ID()) {
 			if err := store.AddTeamMembership(ctx, u.ID(), team.ID()); err != nil {
-				return err
+				if errors.Is(err, ErrResourceAlreadyExists) {
+					// ignore conflicts - sometimes the caller may provide
+					// duplicate teams
+					continue
+				} else {
+					return err
+				}
 			}
 		}
 	}
 	// Iterate thru receiver's teams and check if in the given teams; if
 	// not then remove membership from store
-	for _, team := range u.Teams {
+	for _, team := range u.teams {
 		if !inTeamList(teams, team.ID()) {
 			if err := store.RemoveTeamMembership(ctx, u.ID(), team.ID()); err != nil {
 				return err
 			}
 		}
 	}
-	u.Teams = teams
+	u.teams = teams
 
 	return nil
 }
@@ -164,9 +266,9 @@ type UserService interface {
 	// DeleteSession deletes the session with the given token
 	DeleteSession(ctx context.Context, token string) error
 	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, user *User, opts *TokenCreateOptions) (*Token, error)
+	CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
 	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, user *User, tokenID string) error
+	DeleteToken(ctx context.Context, userID string, tokenID string) error
 }
 
 // UserStore is a persistence store for user accounts.
@@ -188,8 +290,7 @@ type UserStore interface {
 	RemoveTeamMembership(ctx context.Context, id, teamID string) error
 }
 
-// UserListOptions are options for the ListUsers endpoint. Both
-// OrganizationName and TeamName must be specified, or neither.
+// UserListOptions are options for the ListUsers endpoint.
 type UserListOptions struct {
 	OrganizationName *string
 	TeamName         *string
@@ -243,19 +344,19 @@ type NewUserOption func(*User)
 
 func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 	return func(user *User) {
-		user.Organizations = memberships
+		user.organizations = memberships
 	}
 }
 
 func WithTeamMemberships(memberships ...*Team) NewUserOption {
 	return func(user *User) {
-		user.Teams = memberships
+		user.teams = memberships
 	}
 }
 
 func WithActiveSession(token string) NewUserOption {
 	return func(user *User) {
-		for _, session := range user.Sessions {
+		for _, session := range user.sessions {
 			if session.Token == token {
 				session.active = true
 			}

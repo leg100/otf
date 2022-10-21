@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/zerologr"
+	"github.com/go-logr/zerologr"
 	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
@@ -68,6 +68,9 @@ func NewLogger(cfg *LoggerConfig) (logr.Logger, error) {
 		logger.WithLevel(logger.GetLevel()).Msg("custom log level enabled")
 	}
 
+	// Disable "v=<log-level>" field on every log line
+	zerologr.VerbosityFieldName = ""
+
 	// wrap within logr wrapper
-	return zerologr.NewLogger(&logger), nil
+	return zerologr.New(&logger), nil
 }

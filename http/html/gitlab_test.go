@@ -46,10 +46,10 @@ func TestGitlab_GetUser(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())
-	if assert.Equal(t, 1, len(user.Organizations)) {
-		assert.Equal(t, "fake-group", user.Organizations[0].Name())
+	if assert.Equal(t, 1, len(user.Organizations())) {
+		assert.Equal(t, "fake-group", user.Organizations()[0].Name())
 	}
-	if assert.Equal(t, 1, len(user.Teams)) {
-		assert.Equal(t, "maintainers", user.Teams[0].Name())
+	if assert.Equal(t, 1, len(user.Teams())) {
+		assert.Equal(t, "maintainers", user.Teams()[0].Name())
 	}
 }
