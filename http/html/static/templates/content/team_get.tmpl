@@ -8,6 +8,7 @@
 {{ .Content.Name }}{{ end }}
 
 {{ define "content" }}
+  {{ if .CurrentUser.IsOwner .Content.Team.OrganizationName }}
   <h3>Permissions</h3>
   <form class="permissions-form" action="{{ updateTeamPath .Content }}" method="POST">
     <div class="field">
@@ -21,6 +22,7 @@
     {{ end }}
   </form>
   <br>
+  {{ end }}
   <h3>Members</h3>
   <div id="content-list" class="content-list">
     {{ range .Content.Members }}

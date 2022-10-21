@@ -77,23 +77,17 @@ AND   o.name LIKE ANY(pggen.arg('organization_names'))
 SELECT
     w.*,
     o.name AS organization_name,
-    (
-        SELECT (users.*)::"users"
-        FROM users
-        JOIN workspaces ON w.lock_user_id = users.user_id
-    ) AS user_lock,
-    (
-        SELECT (runs.*)::"runs"
-        FROM runs
-        JOIN workspaces ON w.lock_run_id = runs.run_id
-    ) AS run_lock,
+    (ul.*)::"users" AS user_lock,
+    (rl.*)::"runs" AS run_lock,
     CASE WHEN pggen.arg('include_organization') THEN (o.*)::"organizations" END AS organization
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
+LEFT JOIN users ul ON w.lock_user_id = ul.user_id
+LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
-JOIN users u USING (user_id)
+JOIN users u ON tm.user_id = u.user_id
 WHERE o.name = pggen.arg('organization_name')
 AND   u.user_id = pggen.arg('user_id')
 ORDER BY w.updated_at DESC
