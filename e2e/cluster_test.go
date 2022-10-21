@@ -35,7 +35,7 @@ func TestCluster(t *testing.T) {
 	login(t, userDaemon, userToken)
 
 	// org now sync'd, so we can create agent token via CLI
-	agentToken := createAgentToken(t, org.Name())
+	agentToken := createAgentToken(t, org.Name(), userDaemon)
 	// start agent, instructing it to connect to otfd2
 	startAgent(t, agentToken, agentDaemon)
 
@@ -50,7 +50,7 @@ func TestCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	// edit workspace to use agent
-	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org.Name(), "--execution-mode", "agent")
+	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org.Name(), "--execution-mode", "agent", "--address", userDaemon)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))

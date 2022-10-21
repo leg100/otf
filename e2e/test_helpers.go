@@ -145,8 +145,8 @@ func startAgent(t *testing.T, token, address string) {
 }
 
 // createAgentToken creates an agent token via the CLI
-func createAgentToken(t *testing.T, organization string) string {
-	cmd := exec.Command("otf", "agents", "tokens", "new", "testing", "--organization", organization)
+func createAgentToken(t *testing.T, organization, hostname string) string {
+	cmd := exec.Command("otf", "agents", "tokens", "new", "testing", "--organization", organization, "--address", hostname)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)

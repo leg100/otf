@@ -71,21 +71,21 @@ func TestWritePermission(t *testing.T) {
 	require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock workspace
-	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name())
+	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name(), "--address", hostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// unlock workspace
-	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name())
+	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name(), "--address", hostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// list workspaces
-	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name())
+	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name(), "--address", hostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
