@@ -50,10 +50,9 @@ INSERT INTO workspaces (
 -- name: FindWorkspaces :many
 SELECT
     w.*,
-    o.name AS organization_name,
+    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock,
-    CASE WHEN pggen.arg('include_organization') THEN (o.*)::"organizations" END AS organization
+    (r.*)::"runs" AS run_lock
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
@@ -76,10 +75,9 @@ AND   o.name LIKE ANY(pggen.arg('organization_names'))
 -- name: FindWorkspacesByUserID :many
 SELECT
     w.*,
-    o.name AS organization_name,
+    (o.*)::"organizations" AS organization,
     (ul.*)::"users" AS user_lock,
-    (rl.*)::"runs" AS run_lock,
-    CASE WHEN pggen.arg('include_organization') THEN (o.*)::"organizations" END AS organization
+    (rl.*)::"runs" AS run_lock
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
@@ -137,26 +135,24 @@ AND organizations.name = pggen.arg('organization_name');
 --
 -- name: FindWorkspaceByName :one
 SELECT w.*,
-    organizations.name AS organization_name,
+    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock,
-    CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
+    (r.*)::"runs" AS run_lock
 FROM workspaces w
-JOIN organizations USING (organization_id)
+JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.name = pggen.arg('name')
-AND   organizations.name = pggen.arg('organization_name')
+AND   o.name = pggen.arg('organization_name')
 ;
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
-    organizations.name AS organization_name,
+    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock,
-    CASE WHEN pggen.arg('include_organization') THEN (organizations.*)::"organizations" END AS organization
+    (r.*)::"runs" AS run_lock
 FROM workspaces w
-JOIN organizations USING (organization_id)
+JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = pggen.arg('id')
@@ -164,12 +160,11 @@ WHERE w.workspace_id = pggen.arg('id')
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
-    organizations.name AS organization_name,
+    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock,
-    NULL::"organizations" AS organization
+    (r.*)::"runs" AS run_lock
 FROM workspaces w
-JOIN organizations USING (organization_id)
+JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 WHERE w.workspace_id = pggen.arg('id')

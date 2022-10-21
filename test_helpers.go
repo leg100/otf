@@ -15,10 +15,11 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func NewTestWorkspace(t *testing.T, org *Organization) *Workspace {
-	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
-		Name: uuid.NewString(),
-	})
+func NewTestWorkspace(t *testing.T, org *Organization, opts WorkspaceCreateOptions) *Workspace {
+	if opts.Name == "" {
+		opts.Name = uuid.NewString()
+	}
+	ws, err := NewWorkspace(org, opts)
 	require.NoError(t, err)
 	return ws
 }

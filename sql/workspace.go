@@ -167,11 +167,10 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}
 
 	db.FindWorkspacesBatch(batch, pggen.FindWorkspacesParams{
-		OrganizationNames:   []string{organizationName},
-		Prefix:              String(opts.Prefix),
-		Limit:               opts.GetLimit(),
-		Offset:              opts.GetOffset(),
-		IncludeOrganization: includeOrganization(opts.Include),
+		OrganizationNames: []string{organizationName},
+		Prefix:            String(opts.Prefix),
+		Limit:             opts.GetLimit(),
+		Offset:            opts.GetOffset(),
 	})
 	db.CountWorkspacesBatch(batch, String(opts.Prefix), []string{organizationName})
 	results := db.SendBatch(ctx, batch)
@@ -278,19 +277,13 @@ func (db *DB) GetWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (strin
 
 func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	if spec.ID != nil {
-		// TODO: always include the organization regardless of whether caller
-		// specified it. The complexity isn't worth the performance saving.
-		result, err := db.FindWorkspaceByID(ctx, includeOrganization(spec.Include), String(*spec.ID))
+		result, err := db.FindWorkspaceByID(ctx, String(*spec.ID))
 		if err != nil {
 			return nil, databaseError(err)
 		}
 		return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := db.FindWorkspaceByName(ctx, pggen.FindWorkspaceByNameParams{
-			Name:                String(*spec.Name),
-			OrganizationName:    String(*spec.OrganizationName),
-			IncludeOrganization: includeOrganization(spec.Include),
-		})
+		result, err := db.FindWorkspaceByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
 		if err != nil {
 			return nil, databaseError(err)
 		}

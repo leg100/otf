@@ -673,17 +673,17 @@ type Querier interface {
 
 	// FindWorkspaceByName finds a workspace by name and organization name.
 	//
-	FindWorkspaceByName(ctx context.Context, params FindWorkspaceByNameParams) (FindWorkspaceByNameRow, error)
+	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
 	// later by the batch.
-	FindWorkspaceByNameBatch(batch genericBatch, params FindWorkspaceByNameParams)
+	FindWorkspaceByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
 	// FindWorkspaceByNameScan scans the result of an executed FindWorkspaceByNameBatch query.
 	FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorkspaceByNameRow, error)
 
-	FindWorkspaceByID(ctx context.Context, includeOrganization bool, id pgtype.Text) (FindWorkspaceByIDRow, error)
+	FindWorkspaceByID(ctx context.Context, id pgtype.Text) (FindWorkspaceByIDRow, error)
 	// FindWorkspaceByIDBatch enqueues a FindWorkspaceByID query into batch to be executed
 	// later by the batch.
-	FindWorkspaceByIDBatch(batch genericBatch, includeOrganization bool, id pgtype.Text)
+	FindWorkspaceByIDBatch(batch genericBatch, id pgtype.Text)
 	// FindWorkspaceByIDScan scans the result of an executed FindWorkspaceByIDBatch query.
 	FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspaceByIDRow, error)
 
