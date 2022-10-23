@@ -13,6 +13,8 @@ type fakeApp struct {
 	*fakeWorkspaceService
 	*fakeRunService
 	*fakeUserService
+	*fakeSessionService
+	*fakeTokenService
 	*fakeAgentTokenService
 	*fakeTeamService
 
@@ -33,11 +35,31 @@ func (u *fakeUserService) GetUser(context.Context, otf.UserSpec) (*otf.User, err
 	return u.fakeUser, nil
 }
 
-func (u *fakeUserService) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
+type fakeSessionService struct {
+	otf.SessionService
+}
+
+func (u *fakeSessionService) GetSessionByToken(context.Context, string) (*otf.Session, error) {
+	return otf.NewSession("user-fake", &otf.SessionData{})
+}
+
+func (u *fakeSessionService) ListSessions(context.Context, string) ([]*otf.Session, error) {
+	return nil, nil
+}
+
+type fakeTokenService struct {
+	otf.TokenService
+}
+
+func (u *fakeTokenService) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
 	return otf.NewToken(userID, opts.Description)
 }
 
-func (u *fakeUserService) DeleteToken(context.Context, string, string) error { return nil }
+func (u *fakeTokenService) ListTokens(ctx context.Context, userID string) ([]*otf.Token, error) {
+	return nil, nil
+}
+
+func (u *fakeTokenService) DeleteToken(context.Context, string, string) error { return nil }
 
 type fakeTeamService struct {
 	otf.TeamService

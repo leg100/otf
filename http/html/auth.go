@@ -17,10 +17,10 @@ func (app *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := app.DeleteSession(r.Context(), session.Token); err != nil {
+	if err := app.DeleteSession(r.Context(), session.Token()); err != nil {
 		return
 	}
-	setCookie(w, sessionCookie, session.Token, &time.Time{})
+	setCookie(w, sessionCookie, session.Token(), &time.Time{})
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
 

@@ -55,10 +55,13 @@ func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	tokens, err := app.ListTokens(r.Context(), user.ID())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// re-order tokens by creation date, newest first
-	tokens := make([]*otf.Token, len(user.Tokens()))
-	copy(tokens, user.Tokens())
 	sort.Slice(tokens, func(i, j int) bool {
 		return tokens[i].CreatedAt().After(tokens[j].CreatedAt())
 	})

@@ -140,12 +140,12 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.CreateSession(r.Context(), user, data)
+	session, err := a.CreateSession(r.Context(), user.ID(), data)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	setCookie(w, sessionCookie, session.Token, &session.Expiry)
+	setCookie(w, sessionCookie, session.Token(), otf.Time(session.Expiry()))
 
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(pathCookie); err == nil {

@@ -41,6 +41,8 @@ type Application interface {
 	RunService
 	EventService
 	UserService
+	SessionService
+	TokenService
 	TeamService
 	AgentTokenService
 	CurrentRunService

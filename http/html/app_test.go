@@ -35,9 +35,9 @@ func TestApp(t *testing.T) {
 	require.NoError(t, err)
 
 	fakeUser := otf.NewUser("fake")
-	session, err := fakeUser.AttachNewSession(&otf.SessionData{Address: "127.0.0.1"})
+
+	session, err := otf.NewSession(fakeUser.ID(), &otf.SessionData{Address: "127.0.0.1"})
 	require.NoError(t, err)
-	token := session.Token
 
 	fakeAgentToken, err := otf.NewAgentToken(otf.AgentTokenCreateOptions{
 		Description:      "fake-token",
@@ -214,7 +214,7 @@ func TestApp(t *testing.T) {
 			if tt.method == "POST" {
 				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			}
-			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+			req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session.Token()})
 			res, err := client.Do(req)
 			require.NoError(t, err)
 			defer res.Body.Close()

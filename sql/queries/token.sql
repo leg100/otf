@@ -13,6 +13,12 @@ INSERT INTO tokens (
     pggen.arg('UserID')
 );
 
+-- name: FindTokensByUserID :many
+SELECT *
+FROM tokens
+WHERE user_id = pggen.arg('user_id')
+;
+
 -- name: DeleteTokenByID :one
 DELETE
 FROM tokens

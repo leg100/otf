@@ -98,18 +98,12 @@ func (db *DB) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error)
 			return nil, databaseError(err)
 		}
 		return otf.UnmarshalUserResult(otf.UserResult(result))
-	} else if spec.AuthenticationTokenID != nil {
-		result, err := db.FindUserByAuthenticationTokenID(ctx, String(*spec.AuthenticationTokenID))
-		if err != nil {
-			return nil, databaseError(err)
-		}
-		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else if spec.SessionToken != nil {
 		result, err := db.FindUserBySessionToken(ctx, String(*spec.SessionToken))
 		if err != nil {
 			return nil, databaseError(err)
 		}
-		return otf.UnmarshalUserResult(otf.UserResult(result), otf.WithActiveSession(*spec.SessionToken))
+		return otf.UnmarshalUserResult(otf.UserResult(result))
 	} else {
 		return nil, fmt.Errorf("unsupported user spec for retrieving user")
 	}

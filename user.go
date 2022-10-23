@@ -24,24 +24,10 @@ type User struct {
 	createdAt time.Time
 	updatedAt time.Time
 	username  string
-	// A user has many sessions
-	sessions []*Session
-	// A user has many tokens
-	tokens []*Token
 	// A user belongs to many organizations
 	organizations []*Organization
 	// A user belongs to many teams
 	teams []*Team
-}
-
-// AttachNewSession creates and attaches a new session to the user.
-func (u *User) AttachNewSession(data *SessionData) (*Session, error) {
-	session, err := NewSession(u.ID(), data)
-	if err != nil {
-		return nil, err
-	}
-	u.sessions = append(u.sessions, session)
-	return session, nil
 }
 
 func (u *User) ID() string                     { return u.id }
@@ -49,8 +35,6 @@ func (u *User) Username() string               { return u.username }
 func (u *User) CreatedAt() time.Time           { return u.createdAt }
 func (u *User) UpdatedAt() time.Time           { return u.updatedAt }
 func (u *User) String() string                 { return u.username }
-func (u *User) Sessions() []*Session           { return u.sessions }
-func (u *User) Tokens() []*Token               { return u.tokens }
 func (u *User) Organizations() []*Organization { return u.organizations }
 func (u *User) Teams() []*Team                 { return u.teams }
 
@@ -157,15 +141,6 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-func (u *User) ActiveSession() *Session {
-	for _, s := range u.sessions {
-		if s.active {
-			return s
-		}
-	}
-	return nil
-}
-
 // SyncMemberships synchronises the user's organization and team memberships to
 // match those given, adding and removing memberships in the persistence store accordingly.
 func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Organization, teams []*Team) error {
@@ -261,14 +236,6 @@ type UserService interface {
 	SyncUserMemberships(ctx context.Context, user *User, orgs []*Organization, teams []*Team) (*User, error)
 	// ListUsers lists users.
 	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
-	// CreateSession creates a user session.
-	CreateSession(ctx context.Context, user *User, data *SessionData) (*Session, error)
-	// DeleteSession deletes the session with the given token
-	DeleteSession(ctx context.Context, token string) error
-	// CreateToken creates a user token.
-	CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
-	// DeleteToken deletes a user token.
-	DeleteToken(ctx context.Context, userID string, tokenID string) error
 }
 
 // UserStore is a persistence store for user accounts.
@@ -297,15 +264,10 @@ type UserListOptions struct {
 }
 
 type UserSpec struct {
-	UserID                *string
-	Username              *string
-	SessionToken          *string
-	AuthenticationTokenID *string
-	AuthenticationToken   *string
-}
-
-type TokenCreateOptions struct {
-	Description string
+	UserID              *string
+	Username            *string
+	SessionToken        *string
+	AuthenticationToken *string
 }
 
 // KeyValue returns the user spec in key-value form. Useful for logging
@@ -316,9 +278,6 @@ func (spec *UserSpec) KeyValue() []interface{} {
 	}
 	if spec.SessionToken != nil {
 		return []interface{}{"token", *spec.SessionToken}
-	}
-	if spec.AuthenticationTokenID != nil {
-		return []interface{}{"authentication_token_id", *spec.AuthenticationTokenID}
 	}
 	if spec.AuthenticationToken != nil {
 		return []interface{}{"authentication_token", "*****"}
@@ -351,16 +310,6 @@ func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
 func WithTeamMemberships(memberships ...*Team) NewUserOption {
 	return func(user *User) {
 		user.teams = memberships
-	}
-}
-
-func WithActiveSession(token string) NewUserOption {
-	return func(user *User) {
-		for _, session := range user.sessions {
-			if session.Token == token {
-				session.active = true
-			}
-		}
 	}
 }
 

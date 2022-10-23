@@ -19,6 +19,18 @@ func (db *DB) CreateToken(ctx context.Context, token *otf.Token) error {
 	return err
 }
 
+func (db *DB) ListTokens(ctx context.Context, userID string) ([]*otf.Token, error) {
+	result, err := db.FindTokensByUserID(ctx, String(userID))
+	if err != nil {
+		return nil, err
+	}
+	var tokens []*otf.Token
+	for _, row := range result {
+		tokens = append(tokens, otf.UnmarshalTokenResult(row))
+	}
+	return tokens, nil
+}
+
 // DeleteToken deletes a user's token from the DB.
 func (db *DB) DeleteToken(ctx context.Context, id string) error {
 	_, err := db.DeleteTokenByID(ctx, String(id))

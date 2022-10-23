@@ -117,11 +117,7 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			name: "session token",
-			spec: otf.UserSpec{SessionToken: &session1.Token},
-		},
-		{
-			name: "auth token ID",
-			spec: otf.UserSpec{AuthenticationTokenID: otf.String(token1.ID())},
+			spec: otf.UserSpec{SessionToken: otf.String(session1.Token())},
 		},
 		{
 			name: "auth token",
@@ -138,8 +134,6 @@ func TestUser_Get(t *testing.T) {
 			assert.Equal(t, got.CreatedAt(), user.CreatedAt())
 			assert.Equal(t, got.UpdatedAt(), user.UpdatedAt())
 			assert.Equal(t, 2, len(got.Organizations()))
-			assert.Equal(t, 2, len(got.Sessions()))
-			assert.Equal(t, 2, len(got.Tokens()))
 			assert.Equal(t, 2, len(got.Teams()))
 		})
 	}
@@ -150,18 +144,6 @@ func TestUser_Get_NotFound(t *testing.T) {
 
 	_, err := db.GetUser(context.Background(), otf.UserSpec{Username: otf.String("does-not-exist")})
 	assert.Equal(t, otf.ErrResourceNotFound, err)
-}
-
-func TestUser_Get_WithSessions(t *testing.T) {
-	db := newTestDB(t)
-	user := createTestUser(t, db)
-	_ = createTestSession(t, db, user.ID())
-	_ = createTestSession(t, db, user.ID())
-
-	got, err := db.GetUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
-	require.NoError(t, err)
-
-	assert.Equal(t, 2, len(got.Sessions()))
 }
 
 func TestUser_List(t *testing.T) {

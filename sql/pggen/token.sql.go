@@ -57,6 +57,67 @@ func (q *DBQuerier) InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag
 	return cmdTag, err
 }
 
+const findTokensByUserIDSQL = `SELECT *
+FROM tokens
+WHERE user_id = $1
+;`
+
+type FindTokensByUserIDRow struct {
+	TokenID     pgtype.Text        `json:"token_id"`
+	Token       pgtype.Text        `json:"token"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description pgtype.Text        `json:"description"`
+	UserID      pgtype.Text        `json:"user_id"`
+}
+
+// FindTokensByUserID implements Querier.FindTokensByUserID.
+func (q *DBQuerier) FindTokensByUserID(ctx context.Context, userID pgtype.Text) ([]FindTokensByUserIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindTokensByUserID")
+	rows, err := q.conn.Query(ctx, findTokensByUserIDSQL, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindTokensByUserID: %w", err)
+	}
+	defer rows.Close()
+	items := []FindTokensByUserIDRow{}
+	for rows.Next() {
+		var item FindTokensByUserIDRow
+		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+			return nil, fmt.Errorf("scan FindTokensByUserID row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindTokensByUserID rows: %w", err)
+	}
+	return items, err
+}
+
+// FindTokensByUserIDBatch implements Querier.FindTokensByUserIDBatch.
+func (q *DBQuerier) FindTokensByUserIDBatch(batch genericBatch, userID pgtype.Text) {
+	batch.Queue(findTokensByUserIDSQL, userID)
+}
+
+// FindTokensByUserIDScan implements Querier.FindTokensByUserIDScan.
+func (q *DBQuerier) FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindTokensByUserIDBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindTokensByUserIDRow{}
+	for rows.Next() {
+		var item FindTokensByUserIDRow
+		if err := rows.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.UserID); err != nil {
+			return nil, fmt.Errorf("scan FindTokensByUserIDBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindTokensByUserIDBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const deleteTokenByIDSQL = `DELETE
 FROM tokens
 WHERE token_id = $1

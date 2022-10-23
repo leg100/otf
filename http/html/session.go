@@ -21,10 +21,13 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	sessions, err := app.ListSessions(r.Context(), user.ID())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// re-order sessions by creation date, newest first
-	sessions := make([]*otf.Session, len(user.Sessions()))
-	copy(sessions, user.Sessions())
 	sort.Slice(sessions, func(i, j int) bool {
 		return sessions[i].CreatedAt().After(sessions[j].CreatedAt())
 	})

@@ -13,6 +13,19 @@ INSERT INTO sessions (
     pggen.arg('UserID')
 );
 
+-- name: FindSessionsByUserID :many
+SELECT *
+FROM sessions
+WHERE user_id = pggen.arg('user_id')
+AND   expiry > current_timestamp
+;
+
+-- name: FindSessionByToken :one
+SELECT *
+FROM sessions
+WHERE token = pggen.arg('token')
+;
+
 -- name: UpdateSessionExpiry :one
 UPDATE sessions
 SET

@@ -143,7 +143,7 @@ func (f *fakeAuthenticatorApp) EnsureCreatedUser(context.Context, string) (*otf.
 	return otf.NewUser("fake-user"), nil
 }
 
-func (f *fakeAuthenticatorApp) CreateSession(context.Context, *otf.User, *otf.SessionData) (*otf.Session, error) {
+func (f *fakeAuthenticatorApp) CreateSession(context.Context, string, *otf.SessionData) (*otf.Session, error) {
 	return &otf.Session{}, nil
 }
 
