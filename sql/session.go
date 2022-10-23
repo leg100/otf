@@ -13,10 +13,10 @@ var DefaultSessionCleanupInterval = 5 * time.Minute
 // CreateSession inserts the session, associating it with the user.
 func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 	_, err := db.InsertSession(ctx, pggen.InsertSessionParams{
-		Token:     String(session.Token),
-		Address:   String(session.Address),
-		Expiry:    Timestamptz(session.Expiry),
-		UserID:    String(session.UserID),
+		Token:     String(session.Token()),
+		Address:   String(session.Data().Address),
+		Expiry:    Timestamptz(session.Expiry()),
+		UserID:    String(session.UserID()),
 		CreatedAt: Timestamptz(session.CreatedAt()),
 	})
 	return err

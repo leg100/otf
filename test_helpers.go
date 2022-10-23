@@ -37,3 +37,16 @@ func NewTestUser(t *testing.T, opts ...NewUserOption) *User {
 func NewTestTeam(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
 	return NewTeam(uuid.NewString(), org, opts...)
 }
+
+func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Session {
+	session, err := NewSession(userID, &SessionData{
+		Address: "127.0.0.1",
+	})
+	require.NoError(t, err)
+
+	for _, o := range opts {
+		o(session)
+	}
+
+	return session
+}

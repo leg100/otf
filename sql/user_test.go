@@ -117,7 +117,7 @@ func TestUser_Get(t *testing.T) {
 		},
 		{
 			name: "session token",
-			spec: otf.UserSpec{SessionToken: &session1.Token},
+			spec: otf.UserSpec{SessionToken: otf.String(session1.Token())},
 		},
 		{
 			name: "auth token",

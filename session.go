@@ -16,16 +16,13 @@ const (
 
 // Session is a user session
 type Session struct {
-	Token  string
-	Expiry time.Time
-	// Name of the Organization the session most recently accessed on the web
-	// app.
-	SessionData
+	token     string
+	expiry    time.Time
+	data      SessionData
 	createdAt time.Time
+
 	// Session belongs to a user
-	UserID string
-	// whether session is the active session for a user.
-	active bool
+	userID string
 }
 
 func NewSession(uid string, data *SessionData) (*Session, error) {
@@ -34,18 +31,21 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 		return nil, fmt.Errorf("generating session token: %w", err)
 	}
 	session := Session{
-		createdAt:   CurrentTimestamp(),
-		Token:       token,
-		SessionData: *data,
-		Expiry:      CurrentTimestamp().Add(DefaultSessionExpiry),
-		UserID:      uid,
+		createdAt: CurrentTimestamp(),
+		token:     token,
+		data:      *data,
+		expiry:    CurrentTimestamp().Add(DefaultSessionExpiry),
+		userID:    uid,
 	}
 	return &session, nil
 }
 
 func (s *Session) CreatedAt() time.Time { return s.createdAt }
-func (s *Session) ID() string           { return s.Token }
-func (s *Session) Active() bool         { return s.active }
+func (s *Session) ID() string           { return s.token }
+func (s *Session) Token() string        { return s.token }
+func (s *Session) UserID() string       { return s.userID }
+func (s *Session) Data() SessionData    { return s.data }
+func (s *Session) Expiry() time.Time    { return s.expiry }
 
 // SessionData is various session data serialised to the session store as JSON.
 type SessionData struct {
@@ -62,6 +62,14 @@ func NewSessionData(r *http.Request) (*SessionData, error) {
 		Address: addr,
 	}
 	return &data, nil
+}
+
+type NewSessionOption func(*Session)
+
+func SessionExpiry(expiry time.Time) NewSessionOption {
+	return func(session *Session) {
+		session.expiry = expiry
+	}
 }
 
 type SessionService interface {
@@ -97,11 +105,11 @@ type SessionResult struct {
 
 func UnmarshalSessionResult(result SessionResult) *Session {
 	return &Session{
-		Token:     result.Token.String,
+		token:     result.Token.String,
 		createdAt: result.CreatedAt.Time.UTC(),
-		Expiry:    result.Expiry.Time.UTC(),
-		UserID:    result.UserID.String,
-		SessionData: SessionData{
+		expiry:    result.Expiry.Time.UTC(),
+		userID:    result.UserID.String,
+		data: SessionData{
 			Address: result.Address.String,
 		},
 	}

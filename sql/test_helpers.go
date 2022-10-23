@@ -66,27 +66,6 @@ func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace, opts otf.Confi
 	return cv
 }
 
-type newTestSessionOption func(*otf.Session)
-
-func overrideExpiry(expiry time.Time) newTestSessionOption {
-	return func(session *otf.Session) {
-		session.Expiry = expiry
-	}
-}
-
-func newTestSession(t *testing.T, userID string, opts ...newTestSessionOption) *otf.Session {
-	session, err := otf.NewSession(userID, &otf.SessionData{
-		Address: "127.0.0.1",
-	})
-	require.NoError(t, err)
-
-	for _, o := range opts {
-		o(session)
-	}
-
-	return session
-}
-
 func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
 	return otf.NewRun(cv, ws, otf.RunCreateOptions{})
 }
@@ -193,15 +172,15 @@ func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.Use
 	return user
 }
 
-func createTestSession(t *testing.T, db otf.DB, userID string, opts ...newTestSessionOption) *otf.Session {
-	session := newTestSession(t, userID, opts...)
+func createTestSession(t *testing.T, db otf.DB, userID string, opts ...otf.NewSessionOption) *otf.Session {
+	session := otf.NewTestSession(t, userID, opts...)
 	ctx := context.Background()
 
 	err := db.CreateSession(ctx, session)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteSession(ctx, session.Token)
+		db.DeleteSession(ctx, session.Token())
 	})
 	return session
 }

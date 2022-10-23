@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,9 +13,9 @@ import (
 func TestSession_CreateSession(t *testing.T) {
 	db := newTestDB(t)
 	user := createTestUser(t, db)
-	session := newTestSession(t, user.ID())
+	session := otf.NewTestSession(t, user.ID())
 
-	defer db.DeleteSession(context.Background(), session.Token)
+	defer db.DeleteSession(context.Background(), session.Token())
 
 	err := db.CreateSession(context.Background(), session)
 	require.NoError(t, err)
@@ -26,7 +27,7 @@ func TestSession_GetByToken(t *testing.T) {
 	user := createTestUser(t, db)
 	want := createTestSession(t, db, user.ID())
 
-	got, err := db.GetSessionByToken(ctx, want.Token)
+	got, err := db.GetSessionByToken(ctx, want.Token())
 	require.NoError(t, err)
 
 	assert.Equal(t, want, got)
@@ -56,8 +57,8 @@ func TestSession_SessionCleanup(t *testing.T) {
 	db := newTestDB(t, 100*time.Millisecond)
 	user := createTestUser(t, db)
 
-	_ = createTestSession(t, db, user.ID(), overrideExpiry(time.Now()))
-	_ = createTestSession(t, db, user.ID(), overrideExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))
+	_ = createTestSession(t, db, user.ID(), otf.SessionExpiry(time.Now()))
 
 	time.Sleep(300 * time.Millisecond)
 
