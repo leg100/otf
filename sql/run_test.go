@@ -13,9 +13,9 @@ func TestRun_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
-	run := newTestRun(ws, cv)
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 }
@@ -26,7 +26,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
@@ -61,7 +61,7 @@ func TestRun_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	want := createTestRun(t, db, ws, cv)
 
@@ -78,8 +78,10 @@ func TestRun_List(t *testing.T) {
 	org2 := createTestOrganization(t, db)
 	ws1 := createTestWorkspace(t, db, org1)
 	ws2 := createTestWorkspace(t, db, org2)
-	cv1 := createTestConfigurationVersion(t, db, ws1)
-	cv2 := createTestConfigurationVersion(t, db, ws2, speculative())
+	cv1 := createTestConfigurationVersion(t, db, ws1, otf.ConfigurationVersionCreateOptions{})
+	cv2 := createTestConfigurationVersion(t, db, ws2, otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(true),
+	})
 
 	run1 := createTestRun(t, db, ws1, cv1)
 	run2 := createTestRun(t, db, ws1, cv1)
@@ -180,7 +182,7 @@ func TestRun_CreatePlanReport(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 
 	report := otf.ResourceReport{

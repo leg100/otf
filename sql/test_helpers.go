@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 
@@ -42,34 +41,6 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 	return db
 }
 
-func newTestOrganization(t *testing.T) *otf.Organization {
-	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{Name: otf.String(uuid.NewString())})
-	require.NoError(t, err)
-	return org
-}
-
-func newTestTeam(t *testing.T, team *otf.Organization) *otf.Team {
-	return otf.NewTeam(uuid.NewString(), team)
-}
-
-func newTestWorkspace(t *testing.T, org *otf.Organization) *otf.Workspace {
-	ws, err := otf.NewWorkspace(org, otf.WorkspaceCreateOptions{
-		Name: uuid.NewString(),
-	})
-	require.NoError(t, err)
-	return ws
-}
-
-func newTestConfigurationVersion(t *testing.T, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
-	cv, err := otf.NewConfigurationVersion(ws.ID(), opts)
-	require.NoError(t, err)
-	return cv
-}
-
-func newTestRun(ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	return otf.NewRun(cv, ws, otf.RunCreateOptions{})
-}
-
 func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.WorkspaceRole) *otf.WorkspacePermission {
 	ctx := context.Background()
 	err := db.SetWorkspacePermission(ctx, ws.SpecName(), team.Name(), role)
@@ -82,7 +53,7 @@ func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, t
 }
 
 func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
-	org := newTestOrganization(t)
+	org := otf.NewTestOrganization(t)
 	err := db.CreateOrganization(context.Background(), org)
 	require.NoError(t, err)
 
@@ -93,7 +64,7 @@ func createTestOrganization(t *testing.T, db otf.DB) *otf.Organization {
 }
 
 func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
-	team := newTestTeam(t, org)
+	team := otf.NewTestTeam(t, org)
 	err := db.CreateTeam(context.Background(), team)
 	require.NoError(t, err)
 
@@ -104,7 +75,7 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 }
 
 func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws := newTestWorkspace(t, org)
+	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	err := db.CreateWorkspace(context.Background(), ws)
 	require.NoError(t, err)
 
@@ -114,20 +85,8 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Wo
 	return ws
 }
 
-type createConfigurationVersionOption func(*otf.ConfigurationVersionCreateOptions)
-
-func speculative() createConfigurationVersionOption {
-	return func(opts *otf.ConfigurationVersionCreateOptions) {
-		opts.Speculative = otf.Bool(true)
-	}
-}
-
-func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts ...createConfigurationVersionOption) *otf.ConfigurationVersion {
-	var createOpts otf.ConfigurationVersionCreateOptions
-	for _, o := range opts {
-		o(&createOpts)
-	}
-	cv := newTestConfigurationVersion(t, ws, createOpts)
+func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
+	cv := otf.NewTestConfigurationVersion(t, ws, opts)
 	err := db.CreateConfigurationVersion(context.Background(), cv)
 	require.NoError(t, err)
 
@@ -149,7 +108,7 @@ func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs 
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
-	run := newTestRun(ws, cv)
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	err := db.CreateRun(context.Background(), run)
 	require.NoError(t, err)
 

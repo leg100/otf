@@ -17,7 +17,7 @@ func TestPubSub_E2E(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 	run := createTestRun(t, db, ws, cv)
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -12,7 +12,7 @@ import (
 func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	ws := newTestWorkspace(t, org)
+	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 
 	err := db.CreateWorkspace(context.Background(), ws)
 	require.NoError(t, err)
@@ -298,7 +298,7 @@ func TestWorkspace_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := createTestWorkspace(t, db, org)
-			cv := createTestConfigurationVersion(t, db, ws)
+			cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 			_ = createTestRun(t, db, ws, cv)
 
 			err := db.DeleteWorkspace(ctx, tt.spec(ws))

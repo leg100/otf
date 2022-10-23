@@ -12,7 +12,7 @@ import (
 
 func TestOrganization_Create(t *testing.T) {
 	db := newTestDB(t)
-	org := newTestOrganization(t)
+	org := otf.NewTestOrganization(t)
 
 	t.Cleanup(func() {
 		db.DeleteOrganization(context.Background(), org.Name())

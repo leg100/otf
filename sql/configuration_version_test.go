@@ -13,7 +13,7 @@ func TestConfigurationVersion_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := newTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
+	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 
 	err := db.CreateConfigurationVersion(context.Background(), cv)
 	require.NoError(t, err)
@@ -23,7 +23,7 @@ func TestConfigurationVersion_Update(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	err := db.UploadConfigurationVersion(context.Background(), cv.ID(), func(cv *otf.ConfigurationVersion, uploader otf.ConfigUploader) error {
 		_, err := uploader.Upload(context.Background(), nil)
@@ -41,7 +41,7 @@ func TestConfigurationVersion_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
-	cv := createTestConfigurationVersion(t, db, ws)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	tests := []struct {
 		name string
@@ -71,8 +71,8 @@ func TestConfigurationVersion_List(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	cv1 := createTestConfigurationVersion(t, db, ws)
-	cv2 := createTestConfigurationVersion(t, db, ws)
+	cv1 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	cv2 := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
 
 	tests := []struct {
 		name        string
