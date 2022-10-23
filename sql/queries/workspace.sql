@@ -51,11 +51,6 @@ INSERT INTO workspaces (
 SELECT
     w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -81,11 +76,6 @@ AND   o.name LIKE ANY(pggen.arg('organization_names'))
 SELECT
     w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock
 FROM workspaces w
@@ -146,11 +136,6 @@ AND organizations.name = pggen.arg('organization_name');
 -- name: FindWorkspaceByName :one
 SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -164,11 +149,6 @@ AND   o.name = pggen.arg('organization_name')
 -- name: FindWorkspaceByID :one
 SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -181,11 +161,6 @@ WHERE w.workspace_id = pggen.arg('id')
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w

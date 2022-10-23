@@ -1266,13 +1266,6 @@ type Users struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-// WorkspacePermissions represents the Postgres composite type "workspace_permissions".
-type WorkspacePermissions struct {
-	WorkspaceID pgtype.Text `json:"workspace_id"`
-	TeamID      pgtype.Text `json:"team_id"`
-	Role        pgtype.Text `json:"role"`
-}
-
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
 type typeResolver struct {
 	connInfo *pgtype.ConnInfo // types by Postgres type name
@@ -1478,17 +1471,6 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 	)
 }
 
-// newWorkspacePermissions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'workspace_permissions'.
-func (tr *typeResolver) newWorkspacePermissions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"workspace_permissions",
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"team_id", "text", &pgtype.Text{}},
-		compositeField{"role", "text", &pgtype.Text{}},
-	)
-}
-
 // newConfigurationVersionStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
@@ -1523,12 +1505,6 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
-}
-
-// newWorkspacePermissionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_workspace_permissions' array type.
-func (tr *typeResolver) newWorkspacePermissionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_workspace_permissions", "workspace_permissions", tr.newWorkspacePermissions)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (

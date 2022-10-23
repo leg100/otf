@@ -111,11 +111,6 @@ func (q *DBQuerier) InsertWorkspaceScan(results pgx.BatchResults) (pgconn.Comman
 const findWorkspacesSQL = `SELECT
     w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -137,35 +132,34 @@ type FindWorkspacesParams struct {
 }
 
 type FindWorkspacesRow struct {
-	WorkspaceID                pgtype.Text            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-	AutoApply                  bool                   `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text            `json:"description"`
-	Environment                pgtype.Text            `json:"environment"`
-	ExecutionMode              pgtype.Text            `json:"execution_mode"`
-	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                   `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-	Name                       pgtype.Text            `json:"name"`
-	QueueAllRuns               bool                   `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
-	SourceName                 pgtype.Text            `json:"source_name"`
-	SourceURL                  pgtype.Text            `json:"source_url"`
-	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text            `json:"terraform_version"`
-	TriggerPrefixes            []string               `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text            `json:"working_directory"`
-	OrganizationID             pgtype.Text            `json:"organization_id"`
-	LockRunID                  pgtype.Text            `json:"lock_run_id"`
-	LockUserID                 pgtype.Text            `json:"lock_user_id"`
-	LatestRunID                pgtype.Text            `json:"latest_run_id"`
-	Organization               *Organizations         `json:"organization"`
-	Permissions                []WorkspacePermissions `json:"permissions"`
-	UserLock                   *Users                 `json:"user_lock"`
-	RunLock                    *Runs                  `json:"run_lock"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	LatestRunID                pgtype.Text        `json:"latest_run_id"`
+	Organization               *Organizations     `json:"organization"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
 }
 
 // FindWorkspaces implements Querier.FindWorkspaces.
@@ -178,18 +172,14 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 	defer rows.Close()
 	items := []FindWorkspacesRow{}
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspaces row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
-		}
-		if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -220,18 +210,14 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	defer rows.Close()
 	items := []FindWorkspacesRow{}
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
-		}
-		if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -284,11 +270,6 @@ func (q *DBQuerier) CountWorkspacesScan(results pgx.BatchResults) (*int, error) 
 const findWorkspacesByUserIDSQL = `SELECT
     w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock
 FROM workspaces w
@@ -314,35 +295,34 @@ type FindWorkspacesByUserIDParams struct {
 }
 
 type FindWorkspacesByUserIDRow struct {
-	WorkspaceID                pgtype.Text            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-	AutoApply                  bool                   `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text            `json:"description"`
-	Environment                pgtype.Text            `json:"environment"`
-	ExecutionMode              pgtype.Text            `json:"execution_mode"`
-	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                   `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-	Name                       pgtype.Text            `json:"name"`
-	QueueAllRuns               bool                   `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
-	SourceName                 pgtype.Text            `json:"source_name"`
-	SourceURL                  pgtype.Text            `json:"source_url"`
-	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text            `json:"terraform_version"`
-	TriggerPrefixes            []string               `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text            `json:"working_directory"`
-	OrganizationID             pgtype.Text            `json:"organization_id"`
-	LockRunID                  pgtype.Text            `json:"lock_run_id"`
-	LockUserID                 pgtype.Text            `json:"lock_user_id"`
-	LatestRunID                pgtype.Text            `json:"latest_run_id"`
-	Organization               *Organizations         `json:"organization"`
-	Permissions                []WorkspacePermissions `json:"permissions"`
-	UserLock                   *Users                 `json:"user_lock"`
-	RunLock                    *Runs                  `json:"run_lock"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	LatestRunID                pgtype.Text        `json:"latest_run_id"`
+	Organization               *Organizations     `json:"organization"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
 }
 
 // FindWorkspacesByUserID implements Querier.FindWorkspacesByUserID.
@@ -355,18 +335,14 @@ func (q *DBQuerier) FindWorkspacesByUserID(ctx context.Context, params FindWorks
 	defer rows.Close()
 	items := []FindWorkspacesByUserIDRow{}
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
 	for rows.Next() {
 		var item FindWorkspacesByUserIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUserID row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
-		}
-		if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -397,18 +373,14 @@ func (q *DBQuerier) FindWorkspacesByUserIDScan(results pgx.BatchResults) ([]Find
 	defer rows.Close()
 	items := []FindWorkspacesByUserIDRow{}
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
 	for rows.Next() {
 		var item FindWorkspacesByUserIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUserIDBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
-		}
-		if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -590,11 +562,6 @@ func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.
 
 const findWorkspaceByNameSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -606,35 +573,34 @@ AND   o.name = $2
 ;`
 
 type FindWorkspaceByNameRow struct {
-	WorkspaceID                pgtype.Text            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-	AutoApply                  bool                   `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text            `json:"description"`
-	Environment                pgtype.Text            `json:"environment"`
-	ExecutionMode              pgtype.Text            `json:"execution_mode"`
-	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                   `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-	Name                       pgtype.Text            `json:"name"`
-	QueueAllRuns               bool                   `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
-	SourceName                 pgtype.Text            `json:"source_name"`
-	SourceURL                  pgtype.Text            `json:"source_url"`
-	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text            `json:"terraform_version"`
-	TriggerPrefixes            []string               `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text            `json:"working_directory"`
-	OrganizationID             pgtype.Text            `json:"organization_id"`
-	LockRunID                  pgtype.Text            `json:"lock_run_id"`
-	LockUserID                 pgtype.Text            `json:"lock_user_id"`
-	LatestRunID                pgtype.Text            `json:"latest_run_id"`
-	Organization               *Organizations         `json:"organization"`
-	Permissions                []WorkspacePermissions `json:"permissions"`
-	UserLock                   *Users                 `json:"user_lock"`
-	RunLock                    *Runs                  `json:"run_lock"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	LatestRunID                pgtype.Text        `json:"latest_run_id"`
+	Organization               *Organizations     `json:"organization"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
 }
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
@@ -643,16 +609,12 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name pgtype.Text, o
 	row := q.conn.QueryRow(ctx, findWorkspaceByNameSQL, name, organizationName)
 	var item FindWorkspaceByNameRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByName: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -674,16 +636,12 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	row := results.QueryRow()
 	var item FindWorkspaceByNameRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -697,11 +655,6 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 
 const findWorkspaceByIDSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -712,35 +665,34 @@ WHERE w.workspace_id = $1
 ;`
 
 type FindWorkspaceByIDRow struct {
-	WorkspaceID                pgtype.Text            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-	AutoApply                  bool                   `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text            `json:"description"`
-	Environment                pgtype.Text            `json:"environment"`
-	ExecutionMode              pgtype.Text            `json:"execution_mode"`
-	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                   `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-	Name                       pgtype.Text            `json:"name"`
-	QueueAllRuns               bool                   `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
-	SourceName                 pgtype.Text            `json:"source_name"`
-	SourceURL                  pgtype.Text            `json:"source_url"`
-	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text            `json:"terraform_version"`
-	TriggerPrefixes            []string               `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text            `json:"working_directory"`
-	OrganizationID             pgtype.Text            `json:"organization_id"`
-	LockRunID                  pgtype.Text            `json:"lock_run_id"`
-	LockUserID                 pgtype.Text            `json:"lock_user_id"`
-	LatestRunID                pgtype.Text            `json:"latest_run_id"`
-	Organization               *Organizations         `json:"organization"`
-	Permissions                []WorkspacePermissions `json:"permissions"`
-	UserLock                   *Users                 `json:"user_lock"`
-	RunLock                    *Runs                  `json:"run_lock"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	LatestRunID                pgtype.Text        `json:"latest_run_id"`
+	Organization               *Organizations     `json:"organization"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
 }
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
@@ -749,16 +701,12 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (Find
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDSQL, id)
 	var item FindWorkspaceByIDRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByID: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -780,16 +728,12 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	row := results.QueryRow()
 	var item FindWorkspaceByIDRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -803,11 +747,6 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 
 const findWorkspaceByIDForUpdateSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
-    (
-        SELECT array_agg(wp.*)
-        FROM workspace_permissions wp
-        WHERE wp.workspace_id = w.workspace_id
-    ) AS permissions,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock
 FROM workspaces w
@@ -818,35 +757,34 @@ WHERE w.workspace_id = $1
 FOR UPDATE OF w;`
 
 type FindWorkspaceByIDForUpdateRow struct {
-	WorkspaceID                pgtype.Text            `json:"workspace_id"`
-	CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
-	UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
-	AllowDestroyPlan           bool                   `json:"allow_destroy_plan"`
-	AutoApply                  bool                   `json:"auto_apply"`
-	CanQueueDestroyPlan        bool                   `json:"can_queue_destroy_plan"`
-	Description                pgtype.Text            `json:"description"`
-	Environment                pgtype.Text            `json:"environment"`
-	ExecutionMode              pgtype.Text            `json:"execution_mode"`
-	FileTriggersEnabled        bool                   `json:"file_triggers_enabled"`
-	GlobalRemoteState          bool                   `json:"global_remote_state"`
-	MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
-	Name                       pgtype.Text            `json:"name"`
-	QueueAllRuns               bool                   `json:"queue_all_runs"`
-	SpeculativeEnabled         bool                   `json:"speculative_enabled"`
-	SourceName                 pgtype.Text            `json:"source_name"`
-	SourceURL                  pgtype.Text            `json:"source_url"`
-	StructuredRunOutputEnabled bool                   `json:"structured_run_output_enabled"`
-	TerraformVersion           pgtype.Text            `json:"terraform_version"`
-	TriggerPrefixes            []string               `json:"trigger_prefixes"`
-	WorkingDirectory           pgtype.Text            `json:"working_directory"`
-	OrganizationID             pgtype.Text            `json:"organization_id"`
-	LockRunID                  pgtype.Text            `json:"lock_run_id"`
-	LockUserID                 pgtype.Text            `json:"lock_user_id"`
-	LatestRunID                pgtype.Text            `json:"latest_run_id"`
-	Organization               *Organizations         `json:"organization"`
-	Permissions                []WorkspacePermissions `json:"permissions"`
-	UserLock                   *Users                 `json:"user_lock"`
-	RunLock                    *Runs                  `json:"run_lock"`
+	WorkspaceID                pgtype.Text        `json:"workspace_id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AllowDestroyPlan           bool               `json:"allow_destroy_plan"`
+	AutoApply                  bool               `json:"auto_apply"`
+	CanQueueDestroyPlan        bool               `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	FileTriggersEnabled        bool               `json:"file_triggers_enabled"`
+	GlobalRemoteState          bool               `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               bool               `json:"queue_all_runs"`
+	SpeculativeEnabled         bool               `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled bool               `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationID             pgtype.Text        `json:"organization_id"`
+	LockRunID                  pgtype.Text        `json:"lock_run_id"`
+	LockUserID                 pgtype.Text        `json:"lock_user_id"`
+	LatestRunID                pgtype.Text        `json:"latest_run_id"`
+	Organization               *Organizations     `json:"organization"`
+	UserLock                   *Users             `json:"user_lock"`
+	RunLock                    *Runs              `json:"run_lock"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
@@ -855,16 +793,12 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Te
 	row := q.conn.QueryRow(ctx, findWorkspaceByIDForUpdateSQL, id)
 	var item FindWorkspaceByIDForUpdateRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
@@ -886,16 +820,12 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 	row := results.QueryRow()
 	var item FindWorkspaceByIDForUpdateRow
 	organizationRow := q.types.newOrganizations()
-	permissionsArray := q.types.newWorkspacePermissionsArray()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, permissionsArray, userLockRow, runLockRow); err != nil {
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
-	}
-	if err := permissionsArray.AssignTo(&item.Permissions); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	if err := userLockRow.AssignTo(&item.UserLock); err != nil {
