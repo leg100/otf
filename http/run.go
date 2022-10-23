@@ -283,6 +283,22 @@ type Run struct {
 
 // ToJSONAPI assembles a JSON-API DTO.
 func (r *Run) ToJSONAPI() any {
+	subject, err := otf.SubjectFromContext(r.req.Context())
+	if err != nil {
+		panic(err.Error())
+	}
+	perms, err := r.ListWorkspacePermissions(r.req.Context(), otf.WorkspaceSpec{
+		ID: otf.String(r.WorkspaceID()),
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+	policy := &otf.WorkspacePolicy{
+		OrganizationName: r.OrganizationName(),
+		WorkspaceID:      r.WorkspaceID(),
+		Permissions:      perms,
+	}
+
 	obj := &dto.Run{
 		ID: r.ID(),
 		Actions: &dto.RunActions{
@@ -298,11 +314,11 @@ func (r *Run) ToJSONAPI() any {
 		IsDestroy:              r.IsDestroy(),
 		Message:                r.Message(),
 		Permissions: &dto.RunPermissions{
-			CanForceCancel:  true,
-			CanApply:        true,
-			CanCancel:       true,
-			CanDiscard:      true,
-			CanForceExecute: true,
+			CanDiscard:      subject.CanAccessWorkspace(otf.DiscardRunAction, policy),
+			CanForceExecute: subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
+			CanForceCancel:  subject.CanAccessWorkspace(otf.CancelRunAction, policy),
+			CanCancel:       subject.CanAccessWorkspace(otf.CancelRunAction, policy),
+			CanApply:        subject.CanAccessWorkspace(otf.ApplyRunAction, policy),
 		},
 		PositionInQueue:  0,
 		Refresh:          r.Refresh(),
@@ -325,7 +341,7 @@ func (r *Run) ToJSONAPI() any {
 		},
 	}
 	if r.Workspace() != nil {
-		obj.Workspace = (&Workspace{r.Workspace()}).ToJSONAPI().(*dto.Workspace)
+		obj.Workspace = (&Workspace{r.req.Context(), r.Application, r.Workspace()}).ToJSONAPI().(*dto.Workspace)
 	} else {
 		obj.Workspace = &dto.Workspace{
 			ID: r.WorkspaceID(),

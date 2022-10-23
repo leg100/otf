@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -25,7 +26,8 @@ func TestWatchClient(t *testing.T) {
 
 	// setup web server
 	router := mux.NewRouter()
-	router.HandleFunc("/watch", srv.watch)
+	// adds a subject with unlimited privs so we can by-pass authz
+	router.Handle("/watch", allowAllMiddleware(http.HandlerFunc(srv.watch)))
 	webSrv := httptest.NewTLSServer(router)
 	t.Cleanup(func() {
 		// closing chan terminates conn allowing server to close without timing

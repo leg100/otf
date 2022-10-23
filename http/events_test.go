@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -30,7 +31,8 @@ func TestWatch(t *testing.T) {
 
 	// setup web server
 	router := mux.NewRouter()
-	router.HandleFunc("/watch", srv.watch)
+	// adds a subject with unlimited privs so we can by-pass authz
+	router.Handle("/watch", allowAllMiddleware(http.HandlerFunc(srv.watch)))
 	webSrv := httptest.NewTLSServer(router)
 	defer webSrv.Close()
 
@@ -73,4 +75,8 @@ type fakeEventsApp struct {
 
 func (f *fakeEventsApp) Watch(context.Context, otf.WatchOptions) (<-chan otf.Event, error) {
 	return f.ch, nil
+}
+
+func (f *fakeEventsApp) ListWorkspacePermissions(context.Context, otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+	return nil, nil
 }

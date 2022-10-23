@@ -83,3 +83,13 @@ func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
 	}
 	return lock, nil
 }
+
+// AllowAllSubject is a subject with unlimited privileges. Only to be used for
+// by-passing authz in tests.
+type AllowAllSubject struct{}
+
+func (*AllowAllSubject) CanAccessSite(action Action) bool                 { return true }
+func (*AllowAllSubject) CanAccessOrganization(Action, string) bool        { return true }
+func (*AllowAllSubject) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
+func (*AllowAllSubject) String() string                                   { return "allow-all" }
+func (*AllowAllSubject) ID() string                                       { return "allow-all" }
