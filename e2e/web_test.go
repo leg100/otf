@@ -194,8 +194,8 @@ func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, w
 		// confirm builtin admin permission for owners team
 		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
 		chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
-		// add write permission for the test team
-		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, "write", chromedp.BySearch),
+		// assign role to team
+		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
 		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
 		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
 		ss.screenshot(t),
