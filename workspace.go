@@ -54,6 +54,7 @@ type Workspace struct {
 	workingDirectory           string
 	organization               *Organization
 	latestRunID                *string
+	permissions                []*WorkspacePermission
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
