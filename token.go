@@ -24,10 +24,25 @@ func (t *Token) CreatedAt() time.Time { return t.createdAt }
 func (t *Token) Description() string  { return t.description }
 func (t *Token) UserID() string       { return t.userID }
 
+type TokenCreateOptions struct {
+	Description string
+}
+
+type TokenService interface {
+	// CreateToken creates a user token.
+	CreateToken(ctx context.Context, userID string, opts *TokenCreateOptions) (*Token, error)
+	// ListTokens lists API tokens for a user
+	ListTokens(ctx context.Context, userID string) ([]*Token, error)
+	// DeleteToken deletes a user token.
+	DeleteToken(ctx context.Context, userID string, tokenID string) error
+}
+
 // TokenStore is a persistence store for user authentication tokens.
 type TokenStore interface {
 	// CreateToken creates a user token.
 	CreateToken(ctx context.Context, token *Token) error
+	// ListTokens lists user tokens.
+	ListTokens(ctx context.Context, userID string) ([]*Token, error)
 	// DeleteToken deletes a user token.
 	DeleteToken(ctx context.Context, id string) error
 }
@@ -47,13 +62,12 @@ func NewToken(uid, description string) (*Token, error) {
 	return &token, nil
 }
 
-func unmarshalTokenDBType(typ pggen.Tokens) (*Token, error) {
-	token := Token{
-		id:          typ.TokenID.String,
-		createdAt:   typ.CreatedAt.Time,
-		token:       typ.Token.String,
-		description: typ.Description.String,
-		userID:      typ.UserID.String,
+func UnmarshalTokenResult(result pggen.FindTokensByUserIDRow) *Token {
+	return &Token{
+		id:          result.TokenID.String,
+		createdAt:   result.CreatedAt.Time,
+		token:       result.Token.String,
+		description: result.Description.String,
+		userID:      result.UserID.String,
 	}
-	return &token, nil
 }

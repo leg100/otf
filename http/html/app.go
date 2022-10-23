@@ -106,7 +106,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
-		r.Use((&authMiddleware{app}).authenticate)
+		r.Use((&authMiddleware{app, app}).authenticate)
 		r.Use(setOrganization)
 
 		r.PST("/logout", app.logoutHandler)

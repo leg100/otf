@@ -11,8 +11,6 @@ type UserResult struct {
 	Username      pgtype.Text           `json:"username"`
 	CreatedAt     pgtype.Timestamptz    `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz    `json:"updated_at"`
-	Sessions      []pggen.Sessions      `json:"sessions"`
-	Tokens        []pggen.Tokens        `json:"tokens"`
 	Organizations []pggen.Organizations `json:"organizations"`
 	Teams         []pggen.Teams         `json:"teams"`
 }
@@ -43,20 +41,6 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 				}))
 			}
 		}
-	}
-	for _, typ := range row.Sessions {
-		sess, err := UnmarshalSessionDBType(typ)
-		if err != nil {
-			return nil, err
-		}
-		user.sessions = append(user.sessions, sess)
-	}
-	for _, typ := range row.Tokens {
-		token, err := unmarshalTokenDBType(typ)
-		if err != nil {
-			return nil, err
-		}
-		user.tokens = append(user.tokens, token)
 	}
 	for _, o := range opts {
 		o(&user)

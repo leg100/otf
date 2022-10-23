@@ -384,6 +384,20 @@ type Querier interface {
 	// InsertSessionScan scans the result of an executed InsertSessionBatch query.
 	InsertSessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	FindSessionsByUserID(ctx context.Context, userID pgtype.Text) ([]FindSessionsByUserIDRow, error)
+	// FindSessionsByUserIDBatch enqueues a FindSessionsByUserID query into batch to be executed
+	// later by the batch.
+	FindSessionsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	// FindSessionsByUserIDScan scans the result of an executed FindSessionsByUserIDBatch query.
+	FindSessionsByUserIDScan(results pgx.BatchResults) ([]FindSessionsByUserIDRow, error)
+
+	FindSessionByToken(ctx context.Context, token pgtype.Text) (FindSessionByTokenRow, error)
+	// FindSessionByTokenBatch enqueues a FindSessionByToken query into batch to be executed
+	// later by the batch.
+	FindSessionByTokenBatch(batch genericBatch, token pgtype.Text)
+	// FindSessionByTokenScan scans the result of an executed FindSessionByTokenBatch query.
+	FindSessionByTokenScan(results pgx.BatchResults) (FindSessionByTokenRow, error)
+
 	UpdateSessionExpiry(ctx context.Context, expiry pgtype.Timestamptz, token pgtype.Text) (pgtype.Text, error)
 	// UpdateSessionExpiryBatch enqueues a UpdateSessionExpiry query into batch to be executed
 	// later by the batch.
@@ -524,6 +538,13 @@ type Querier interface {
 	// InsertTokenScan scans the result of an executed InsertTokenBatch query.
 	InsertTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	FindTokensByUserID(ctx context.Context, userID pgtype.Text) ([]FindTokensByUserIDRow, error)
+	// FindTokensByUserIDBatch enqueues a FindTokensByUserID query into batch to be executed
+	// later by the batch.
+	FindTokensByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	// FindTokensByUserIDScan scans the result of an executed FindTokensByUserIDBatch query.
+	FindTokensByUserIDScan(results pgx.BatchResults) ([]FindTokensByUserIDRow, error)
+
 	DeleteTokenByID(ctx context.Context, tokenID pgtype.Text) (pgtype.Text, error)
 	// DeleteTokenByIDBatch enqueues a DeleteTokenByID query into batch to be executed
 	// later by the batch.
@@ -586,13 +607,6 @@ type Querier interface {
 	FindUserByAuthenticationTokenBatch(batch genericBatch, token pgtype.Text)
 	// FindUserByAuthenticationTokenScan scans the result of an executed FindUserByAuthenticationTokenBatch query.
 	FindUserByAuthenticationTokenScan(results pgx.BatchResults) (FindUserByAuthenticationTokenRow, error)
-
-	FindUserByAuthenticationTokenID(ctx context.Context, tokenID pgtype.Text) (FindUserByAuthenticationTokenIDRow, error)
-	// FindUserByAuthenticationTokenIDBatch enqueues a FindUserByAuthenticationTokenID query into batch to be executed
-	// later by the batch.
-	FindUserByAuthenticationTokenIDBatch(batch genericBatch, tokenID pgtype.Text)
-	// FindUserByAuthenticationTokenIDScan scans the result of an executed FindUserByAuthenticationTokenIDBatch query.
-	FindUserByAuthenticationTokenIDScan(results pgx.BatchResults) (FindUserByAuthenticationTokenIDRow, error)
 
 	DeleteUserByID(ctx context.Context, userID pgtype.Text) (pgtype.Text, error)
 	// DeleteUserByIDBatch enqueues a DeleteUserByID query into batch to be executed
@@ -998,6 +1012,12 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertSessionSQL, insertSessionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertSession': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findSessionsByUserIDSQL, findSessionsByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindSessionsByUserID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findSessionByTokenSQL, findSessionByTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindSessionByToken': %w", err)
+	}
 	if _, err := p.Prepare(ctx, updateSessionExpirySQL, updateSessionExpirySQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdateSessionExpiry': %w", err)
 	}
@@ -1058,6 +1078,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertTokenSQL, insertTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertToken': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findTokensByUserIDSQL, findTokensByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTokensByUserID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteTokenByIDSQL, deleteTokenByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteTokenByID': %w", err)
 	}
@@ -1084,9 +1107,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenSQL, findUserByAuthenticationTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByAuthenticationToken': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findUserByAuthenticationTokenIDSQL, findUserByAuthenticationTokenIDSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindUserByAuthenticationTokenID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteUserByIDSQL, deleteUserByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteUserByID': %w", err)
@@ -1219,15 +1239,6 @@ type Runs struct {
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
 }
 
-// Sessions represents the Postgres composite type "sessions".
-type Sessions struct {
-	Token     pgtype.Text        `json:"token"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Address   pgtype.Text        `json:"address"`
-	Expiry    pgtype.Timestamptz `json:"expiry"`
-	UserID    pgtype.Text        `json:"user_id"`
-}
-
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
 type StateVersionOutputs struct {
 	StateVersionOutputID pgtype.Text `json:"state_version_output_id"`
@@ -1245,15 +1256,6 @@ type Teams struct {
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
-}
-
-// Tokens represents the Postgres composite type "tokens".
-type Tokens struct {
-	TokenID     pgtype.Text        `json:"token_id"`
-	Token       pgtype.Text        `json:"token"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	Description pgtype.Text        `json:"description"`
-	UserID      pgtype.Text        `json:"user_id"`
 }
 
 // Users represents the Postgres composite type "users".
@@ -1430,19 +1432,6 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 	)
 }
 
-// newSessions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'sessions'.
-func (tr *typeResolver) newSessions() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"sessions",
-		compositeField{"token", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"address", "text", &pgtype.Text{}},
-		compositeField{"expiry", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"user_id", "text", &pgtype.Text{}},
-	)
-}
-
 // newStateVersionOutputs creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'state_version_outputs'.
 func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
@@ -1467,19 +1456,6 @@ func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"organization_id", "text", &pgtype.Text{}},
 		compositeField{"permission_manage_workspaces", "bool", &pgtype.Bool{}},
-	)
-}
-
-// newTokens creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'tokens'.
-func (tr *typeResolver) newTokens() pgtype.ValueTranscoder {
-	return tr.newCompositeValue(
-		"tokens",
-		compositeField{"token_id", "text", &pgtype.Text{}},
-		compositeField{"token", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"description", "text", &pgtype.Text{}},
-		compositeField{"user_id", "text", &pgtype.Text{}},
 	)
 }
 
@@ -1519,12 +1495,6 @@ func (tr *typeResolver) newRunStatusTimestampsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_run_status_timestamps", "run_status_timestamps", tr.newRunStatusTimestamps)
 }
 
-// newSessionsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_sessions' array type.
-func (tr *typeResolver) newSessionsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_sessions", "sessions", tr.newSessions)
-}
-
 // newStateVersionOutputsArray creates a new pgtype.ValueTranscoder for the Postgres
 // '_state_version_outputs' array type.
 func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
@@ -1535,12 +1505,6 @@ func (tr *typeResolver) newStateVersionOutputsArray() pgtype.ValueTranscoder {
 // '_teams' array type.
 func (tr *typeResolver) newTeamsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_teams", "teams", tr.newTeams)
-}
-
-// newTokensArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_tokens' array type.
-func (tr *typeResolver) newTokensArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_tokens", "tokens", tr.newTokens)
 }
 
 const insertAgentTokenSQL = `INSERT INTO agent_tokens (

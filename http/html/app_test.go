@@ -35,7 +35,8 @@ func TestApp(t *testing.T) {
 	require.NoError(t, err)
 
 	fakeUser := otf.NewUser("fake")
-	session, err := fakeUser.AttachNewSession(&otf.SessionData{Address: "127.0.0.1"})
+
+	session, err := otf.NewSession(fakeUser.ID(), &otf.SessionData{Address: "127.0.0.1"})
 	require.NoError(t, err)
 	token := session.Token
 

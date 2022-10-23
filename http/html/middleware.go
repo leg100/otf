@@ -19,7 +19,8 @@ func (c *currentOrganization) OrganizationName() string {
 // authUser middleware ensures the request has a valid session cookie, attaching
 // a session and user to the request context.
 type authMiddleware struct {
-	users otf.UserService
+	users    otf.UserService
+	sessions otf.SessionService
 }
 
 func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
@@ -37,8 +38,14 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			sendUserToLoginPage(w, r)
 			return
 		}
+		session, err := m.sessions.GetSessionByToken(r.Context(), cookie.Value)
+		if err != nil {
+			flashError(w, "unable to find session: "+err.Error())
+			sendUserToLoginPage(w, r)
+			return
+		}
 		ctx := otf.AddSubjectToContext(r.Context(), user)
-		ctx = addSessionToContext(ctx, user.ActiveSession())
+		ctx = addSessionToContext(ctx, session)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

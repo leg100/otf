@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/leg100/otf/sql/pggen"
+	"github.com/jackc/pgtype"
 )
 
 const (
@@ -64,23 +64,45 @@ func NewSessionData(r *http.Request) (*SessionData, error) {
 	return &data, nil
 }
 
+type SessionService interface {
+	// CreateSession creates a user session.
+	CreateSession(ctx context.Context, userID string, data *SessionData) (*Session, error)
+	// GetSession retrieves a session using its token.
+	GetSessionByToken(ctx context.Context, token string) (*Session, error)
+	// ListSessions lists current sessions for a user
+	ListSessions(ctx context.Context, userID string) ([]*Session, error)
+	// DeleteSession deletes the session with the given token
+	DeleteSession(ctx context.Context, token string) error
+}
+
 // SessionStore is a persistence store for user sessions.
 type SessionStore interface {
 	// CreateSession persists a new session to the store.
 	CreateSession(ctx context.Context, session *Session) error
+	// GetSession retrieves a session using its token.
+	GetSessionByToken(ctx context.Context, token string) (*Session, error)
+	// ListSessions lists current sessions for a user
+	ListSessions(ctx context.Context, userID string) ([]*Session, error)
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, token string) error
 }
 
-func UnmarshalSessionDBType(typ pggen.Sessions) (*Session, error) {
-	session := Session{
-		Token:     typ.Token.String,
-		createdAt: typ.CreatedAt.Time,
-		Expiry:    typ.Expiry.Time,
-		UserID:    typ.UserID.String,
+type SessionResult struct {
+	Token     pgtype.Text        `json:"token"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Address   pgtype.Text        `json:"address"`
+	Expiry    pgtype.Timestamptz `json:"expiry"`
+	UserID    pgtype.Text        `json:"user_id"`
+}
+
+func UnmarshalSessionResult(result SessionResult) *Session {
+	return &Session{
+		Token:     result.Token.String,
+		createdAt: result.CreatedAt.Time.UTC(),
+		Expiry:    result.Expiry.Time.UTC(),
+		UserID:    result.UserID.String,
 		SessionData: SessionData{
-			Address: typ.Address.String,
+			Address: result.Address.String,
 		},
 	}
-	return &session, nil
 }

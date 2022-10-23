@@ -140,7 +140,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := a.CreateSession(r.Context(), user, data)
+	session, err := a.CreateSession(r.Context(), user.ID(), data)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/leg100/otf"
 )
@@ -77,24 +76,6 @@ func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, o
 	return user, nil
 }
 
-// CreateSession creates a session and adds it to the user.
-func (a *Application) CreateSession(ctx context.Context, user *otf.User, data *otf.SessionData) (*otf.Session, error) {
-	session, err := user.AttachNewSession(data)
-	if err != nil {
-		a.Error(err, "attaching session", "username", user.Username())
-		return nil, err
-	}
-
-	if err := a.db.CreateSession(ctx, session); err != nil {
-		a.Error(err, "creating session", "username", user.Username())
-		return nil, err
-	}
-
-	a.V(1).Info("created session", "username", user.Username())
-
-	return session, nil
-}
-
 func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User, error) {
 	user, err := a.db.GetUser(ctx, spec)
 	if err != nil {
@@ -114,67 +95,4 @@ func (a *Application) GetUser(ctx context.Context, spec otf.UserSpec) (*otf.User
 	a.V(2).Info("retrieved user", "username", user.Username())
 
 	return user, nil
-}
-
-func (a *Application) DeleteSession(ctx context.Context, token string) error {
-	// Retrieve user purely for logging purposes
-	user, err := a.GetUser(ctx, otf.UserSpec{SessionToken: &token})
-	if err != nil {
-		return err
-	}
-
-	if err := a.db.DeleteSession(ctx, token); err != nil {
-		a.Error(err, "deleting session", "username", user.Username())
-		return err
-	}
-
-	a.V(1).Info("deleted session", "username", user.Username())
-
-	return nil
-}
-
-// CreateToken creates a user token. Only users can create a user token, and
-// they can only create a token for themselves.
-func (a *Application) CreateToken(ctx context.Context, userID string, opts *otf.TokenCreateOptions) (*otf.Token, error) {
-	subject, err := otf.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if subject.ID() != userID {
-		return nil, fmt.Errorf("cannot create a token for a different user")
-	}
-
-	token, err := otf.NewToken(userID, opts.Description)
-	if err != nil {
-		a.Error(err, "constructing token", "user", subject)
-		return nil, err
-	}
-
-	if err := a.db.CreateToken(ctx, token); err != nil {
-		a.Error(err, "creating token", "user", subject)
-		return nil, err
-	}
-
-	a.V(1).Info("created token", "user", subject)
-
-	return token, nil
-}
-
-func (a *Application) DeleteToken(ctx context.Context, userID string, tokenID string) error {
-	subject, err := otf.UserFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	if subject.ID() != userID {
-		return fmt.Errorf("cannot delete a token for a different user")
-	}
-
-	if err := a.db.DeleteToken(ctx, tokenID); err != nil {
-		a.Error(err, "deleting token", "user", subject)
-		return err
-	}
-
-	a.V(1).Info("deleted token", "username", subject)
-
-	return nil
 }

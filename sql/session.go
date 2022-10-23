@@ -22,6 +22,26 @@ func (db *DB) CreateSession(ctx context.Context, session *otf.Session) error {
 	return err
 }
 
+func (db *DB) GetSessionByToken(ctx context.Context, token string) (*otf.Session, error) {
+	result, err := db.FindSessionByToken(ctx, String(token))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalSessionResult(otf.SessionResult(result)), nil
+}
+
+func (db *DB) ListSessions(ctx context.Context, userID string) ([]*otf.Session, error) {
+	result, err := db.FindSessionsByUserID(ctx, String(userID))
+	if err != nil {
+		return nil, err
+	}
+	var sessions []*otf.Session
+	for _, row := range result {
+		sessions = append(sessions, otf.UnmarshalSessionResult(otf.SessionResult(row)))
+	}
+	return sessions, nil
+}
+
 // DeleteSession deletes a user's session from the DB.
 func (db *DB) DeleteSession(ctx context.Context, token string) error {
 	_, err := db.DeleteSessionByToken(ctx, String(token))
