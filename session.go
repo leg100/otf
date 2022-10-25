@@ -3,8 +3,6 @@ package otf
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -18,14 +16,14 @@ const (
 type Session struct {
 	token     string
 	expiry    time.Time
-	data      SessionData
+	address   string
 	createdAt time.Time
 
 	// Session belongs to a user
 	userID string
 }
 
-func NewSession(uid string, data *SessionData) (*Session, error) {
+func NewSession(uid, address string) (*Session, error) {
 	token, err := GenerateToken()
 	if err != nil {
 		return nil, fmt.Errorf("generating session token: %w", err)
@@ -33,7 +31,7 @@ func NewSession(uid string, data *SessionData) (*Session, error) {
 	session := Session{
 		createdAt: CurrentTimestamp(),
 		token:     token,
-		data:      *data,
+		address:   address,
 		expiry:    CurrentTimestamp().Add(DefaultSessionExpiry),
 		userID:    uid,
 	}
@@ -44,25 +42,8 @@ func (s *Session) CreatedAt() time.Time { return s.createdAt }
 func (s *Session) ID() string           { return s.token }
 func (s *Session) Token() string        { return s.token }
 func (s *Session) UserID() string       { return s.userID }
-func (s *Session) Data() SessionData    { return s.data }
+func (s *Session) Address() string      { return s.address }
 func (s *Session) Expiry() time.Time    { return s.expiry }
-
-// SessionData is various session data serialised to the session store as JSON.
-type SessionData struct {
-	// Client IP address
-	Address string
-}
-
-func NewSessionData(r *http.Request) (*SessionData, error) {
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return nil, err
-	}
-	data := SessionData{
-		Address: addr,
-	}
-	return &data, nil
-}
 
 type NewSessionOption func(*Session)
 
@@ -74,7 +55,7 @@ func SessionExpiry(expiry time.Time) NewSessionOption {
 
 type SessionService interface {
 	// CreateSession creates a user session.
-	CreateSession(ctx context.Context, userID string, data *SessionData) (*Session, error)
+	CreateSession(ctx context.Context, userID, address string) (*Session, error)
 	// GetSession retrieves a session using its token.
 	GetSessionByToken(ctx context.Context, token string) (*Session, error)
 	// ListSessions lists current sessions for a user
@@ -109,8 +90,6 @@ func UnmarshalSessionResult(result SessionResult) *Session {
 		createdAt: result.CreatedAt.Time.UTC(),
 		expiry:    result.Expiry.Time.UTC(),
 		userID:    result.UserID.String,
-		data: SessionData{
-			Address: result.Address.String,
-		},
+		address:   result.Address.String,
 	}
 }

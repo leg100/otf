@@ -7,8 +7,8 @@ import (
 )
 
 // CreateSession creates and persists a user session.
-func (a *Application) CreateSession(ctx context.Context, userID string, data *otf.SessionData) (*otf.Session, error) {
-	session, err := otf.NewSession(userID, data)
+func (a *Application) CreateSession(ctx context.Context, userID, address string) (*otf.Session, error) {
+	session, err := otf.NewSession(userID, address)
 	if err != nil {
 		a.Error(err, "building new session", "uid", userID)
 		return nil, err
