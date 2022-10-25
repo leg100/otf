@@ -1,7 +1,7 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
-IMAGE_NAME = otf
+IMAGE_NAME = leg100/otf
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
 	-X 'github.com/leg100/otf.Version=$(VERSION)'	\
@@ -72,11 +72,15 @@ vet:
 image: build
 	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
 
-# Push docker image
-.PHONY: push
-push: image
-	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
-	docker push $(IMAGE_TARGET)
+# Load image into k8s kind
+.PHONY: load
+load:
+	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
+
+# Deploy helm chart
+.PHONY: deploy
+deploy: image load
+	helm upgrade -i --set image.tag=$(IMAGE_TAG) otf ./chart
 
 # Generate sql code
 .PHONY: sql
