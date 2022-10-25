@@ -7,16 +7,13 @@ import (
 	"github.com/leg100/otf"
 )
 
-// sessionList exposes a list of sessions to a template
-type sessionList struct {
-	// list template expects pagination object but we don't paginate session
-	// listing
-	*otf.Pagination
-	Items []*otf.Session
-}
-
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := otf.UserFromContext(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	active, err := sessionFromContext(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -32,9 +29,12 @@ func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) 
 		return sessions[i].CreatedAt().After(sessions[j].CreatedAt())
 	})
 
-	app.render("session_list.tmpl", w, r, sessionList{
-		Pagination: &otf.Pagination{},
-		Items:      sessions,
+	app.render("session_list.tmpl", w, r, struct {
+		Items  []*otf.Session
+		Active *otf.Session
+	}{
+		Items:  sessions,
+		Active: active,
 	})
 }
 

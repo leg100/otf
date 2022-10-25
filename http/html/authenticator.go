@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"path"
 	"time"
@@ -133,14 +134,14 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// create session data
-	data, err := otf.NewSessionData(r)
+	// get user's source IP address
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	session, err := a.CreateSession(r.Context(), user.ID(), data)
+	session, err := a.CreateSession(r.Context(), user.ID(), addr)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
