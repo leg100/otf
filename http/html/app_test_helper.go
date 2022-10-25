@@ -2,9 +2,23 @@ package html
 
 import (
 	"context"
+	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/stretchr/testify/require"
 )
+
+func newFakeWebApp(t *testing.T, app otf.Application) *Application {
+	views, err := newViewEngine(false)
+	require.NoError(t, err)
+
+	return &Application{
+		Application: app,
+		Logger:      logr.Discard(),
+		viewEngine:  views,
+	}
+}
 
 var _ otf.Application = (*fakeApp)(nil)
 
@@ -40,7 +54,7 @@ type fakeSessionService struct {
 }
 
 func (u *fakeSessionService) GetSessionByToken(context.Context, string) (*otf.Session, error) {
-	return otf.NewSession("user-fake", &otf.SessionData{})
+	return otf.NewSession("user-fake", "127.0.0.1")
 }
 
 func (u *fakeSessionService) ListSessions(context.Context, string) ([]*otf.Session, error) {
