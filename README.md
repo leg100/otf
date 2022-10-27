@@ -1,13 +1,16 @@
 # oTF
 
-An open source alternative to terraform enterprise.
+An open source alternative to Terraform Enterprise:
 
-Functionality is currently limited:
-
-* Remote execution mode (plans and applies run remotely)
-* State backend (state stored in postgresql)
-* Workspace management (supports `terraform workspace` commands)
-* No web frontend; CLI/API support only.
+* Full Terraform CLI integration
+* Remote execution mode: plans and applies run on servers
+* Agent execution mode: plans and applies run on agents
+* Remote state backend: state stored in PostgreSQL
+* SSO signin: github and gitlab supported
+* Team-based authorization: syncs your github teams / gitlab roles
+* Compatible with much of the Terraform Enterprise/Cloud API
+* Minimal dependencies: requires only PostgreSQL
+* Stateless server: deploy servers in HA mode, in pods on Kubernetes, etc
 
 ## Getting Started
 
@@ -78,16 +81,11 @@ These steps will get you started with running everything on your local system. Y
    terraform apply
    ```
 
-## Next Steps
+## TODO
 
-oTF is a mere prototype but a roadmap of further features is planned:
-
-* User AuthN/Z
-* Agents
-* Terminal application
-* Github integration
-* Policies (OPA?)
-* Web frontend
+* VCS integration
+* Provider and module registry
+* Policies (OPA)
 
 ## Building
 
