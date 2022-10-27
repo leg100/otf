@@ -81,6 +81,7 @@ releases:
       - prometheus:
           prometheusSpec:
             podMonitorSelectorNilUsesHelmValues: false
+            serviceMonitorSelectorNilUsesHelmValues: false
 
 helmDefaults:
   # wait for k8s resources via --wait
