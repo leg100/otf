@@ -1,7 +1,7 @@
 VERSION = $(shell git describe --tags --dirty --always)
 GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
-IMAGE_NAME = otf
+IMAGE_NAME = leg100/otf
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
 	-X 'github.com/leg100/otf.Version=$(VERSION)'	\
@@ -72,11 +72,20 @@ vet:
 image: build
 	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) -t $(IMAGE_NAME):latest ./_build
 
-# Push docker image
-.PHONY: push
-push: image
-	docker tag $(IMAGE_NAME):latest $(IMAGE_TARGET)
-	docker push $(IMAGE_TARGET)
+# Build and load image into k8s kind
+.PHONY: load
+load: image
+	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
+
+# Deploy helm chart
+.PHONY: deploy
+deploy: load
+	IMAGE_TAG=$(IMAGE_TAG) helmfile apply --skip-deps -f kind/helmfile.yaml
+
+# Show differences in Kind deployment
+.PHONY: helmdiff
+helmdiff:
+	IMAGE_TAG=$(IMAGE_TAG) helmfile diff --skip-deps -f kind/helmfile.yaml
 
 # Generate sql code
 .PHONY: sql
@@ -104,3 +113,8 @@ migrate:
 .PHONY: migrate-redo
 migrate-redo:
 	GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo
+
+# Create a Kind kubernetes cluster
+.PHONY: create-cluster
+create-cluster:
+	kind create cluster --config kind/config.yml

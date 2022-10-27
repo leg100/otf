@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otf-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  otf.json: |
+{{ .Files.Get "otf-dashboard.json" | indent 4 }}
