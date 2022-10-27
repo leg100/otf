@@ -80,12 +80,12 @@ load: image
 # Deploy helm chart
 .PHONY: deploy
 deploy: load
-	IMAGE_TAG=$(IMAGE_TAG) helmfile apply -f kind/helmfile.yaml
+	IMAGE_TAG=$(IMAGE_TAG) helmfile apply --skip-deps -f kind/helmfile.yaml
 
 # Show differences in Kind deployment
 .PHONY: helmdiff
 helmdiff:
-	IMAGE_TAG=$(IMAGE_TAG) helmfile diff -f kind/helmfile.yaml
+	IMAGE_TAG=$(IMAGE_TAG) helmfile diff --skip-deps -f kind/helmfile.yaml
 
 # Generate sql code
 .PHONY: sql
