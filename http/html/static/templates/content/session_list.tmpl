@@ -2,8 +2,6 @@
 
 {{ define "title" }}Sessions{{ end }}
 
-{{ define "sidebar" }}{{ template "me_sidebar" . }}{{ end }}
-
 {{ define "container-header" }}
   <a href="{{ getProfilePath }}">profile</a>
   /
@@ -13,24 +11,26 @@
 {{ define "container-header-links" }}{{ template "profile-header" . }}{{ end }}
 
 {{ define "content" }}
-  {{ template "content-list" . }}
-{{ end }}
-
-{{ define "content-list-item" }}
-  <div class="item">
-    <div class="item-heading">
-      <span>{{ .Address }}</span>
-      {{ if .Active }} &#10004; {{ end }}
-      <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
-    </div>
-    <div class="item-content">
-      {{ template "identifier" . }}
-      {{ if not .Active }}
-      <form action="{{ revokeSessionPath }}" method="POST">
-        <button class="delete">Revoke</button>
-        <input type="hidden" name="token" value="{{ .Token }}">
-      </form>
-      {{ end }}
-    </div>
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      <div class="item">
+        <div class="item-heading">
+          <span>{{ .Address }}</span>
+          {{ if eq .ID $.Content.Active.ID }} &#10004; {{ end }}
+          <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
+        </div>
+        <div class="item-content">
+          {{ template "identifier" . }}
+          {{ if ne .ID $.Content.Active.ID }}
+          <form action="{{ revokeSessionPath }}" method="POST">
+            <button class="delete">Revoke</button>
+            <input type="hidden" name="token" value="{{ .Token }}">
+          </form>
+          {{ end }}
+        </div>
+      </div>
+    {{ else }}
+      No sessions found.
+    {{ end }}
   </div>
 {{ end }}
