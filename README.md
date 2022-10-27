@@ -101,3 +101,7 @@ make install
 
 That'll create a binary inside your go bins directory (defaults to `$HOME/go/bin`).
 
+## Intellectual Property
+
+Note: otf is in no way affiliated with Hashicorp. Terraform and Terraform Enterprise are trademarks of Hashicorp.
+
