@@ -1,3 +1,4 @@
+{{- if .Values.serviceMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -10,3 +11,4 @@ spec:
       {{- include "otf.labels" . | nindent 6 }}
   endpoints:
   - port: http
+{{- end }}
