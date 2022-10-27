@@ -10,7 +10,7 @@ An open source alternative to Terraform Enterprise:
 * Team-based authorization: syncs your github teams / gitlab roles
 * Compatible with much of the Terraform Enterprise/Cloud API
 * Minimal dependencies: requires only PostgreSQL
-* Stateless server: deploy servers in HA mode, in pods on Kubernetes, etc
+* Stateless: horizontally scale servers in pods on Kubernetes, etc
 
 ## Getting Started
 
