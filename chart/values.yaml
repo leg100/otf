@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: leg100/otf
@@ -15,14 +15,31 @@ nameOverride: ""
 fullnameOverride: ""
 
 # postgres connection string
-database: postgres://cluster-example-rw/otf
+database: ""
 
-# secret string for signing urls
-secret: somethinglongandcomplicated
+# source database username from a secret
+databaseUsernameFromSecret:
+  # name of secret
+  name: ""
+  # key within secret containing username
+  key: ""
+
+# source database pasword from a secret
+databasePasswordFromSecret:
+  # name of secret
+  name: ""
+  # key within secret containing password
+  key: ""
+
+# secret string for signing urls - required.
+secret: ""
+
+# log http requests in log output
+logHTTPRequests: false
 
 github:
-  clientID: 1793c69ce1cf92e291c1
-  clientSecret: 5daa0fd285324a7066c9af8c5138de9c106c91f5
+  clientID: ""
+  clientSecret: ""
 
 gitlab:
   clientID: ""
@@ -55,21 +72,20 @@ service:
   port: 80
 
 ingress:
-  enabled: true
-  className: ""
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/issuer: issuer
+  enabled: false
+  # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
+  # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
+  # className: nginx
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: otf.ninja
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: otf-ninja-tls
-      hosts:
-      - otf.ninja
+  path: /
+  pathType: Prefix
+  hosts: []
+  tls: []
+  # - secretName: otf-ninja-tls
+  #   hosts:
+  #   - otf.ninja
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

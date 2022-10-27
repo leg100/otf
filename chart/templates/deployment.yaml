@@ -30,18 +30,24 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
+            - name: OTF_LOG_HTTP_REQUESTS
+              value: "{{ .Values.logHTTPRequests }}"
             - name: OTF_DATABASE
               value: {{ .Values.database }}
+            {{ with .Values.databaseUsernameFromSecret }}
             - name: PGUSER
               valueFrom:
                 secretKeyRef:
-                  name: cluster-example-app
-                  key: username
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{ end }}
+            {{ with .Values.databasePasswordFromSecret }}
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cluster-example-app
-                  key: password
+                  name: {{ .name }}
+                  key: {{ .key }}
+            {{ end }}
             - name: OTF_SECRET
               value: {{ .Values.secret }}
             - name: OTF_GITHUB_CLIENT_ID
@@ -63,11 +69,11 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: 8080
           readinessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: 8080
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

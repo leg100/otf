@@ -1,6 +1,6 @@
 apiVersion: v2
 name: otf
-description: A Helm chart for Kubernetes
+description: Open source terraform server
 
 # A chart can be either an 'application' or a 'library' chart.
 #

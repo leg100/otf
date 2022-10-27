@@ -1,0 +1,30 @@
+replicaCount: 3
+
+image:
+  tag: {{ env "IMAGE_TAG" | default "latest" }}
+
+secret: {{ requiredEnv "OTF_SECRET" }}
+
+github:
+  clientID: {{ env "OTF_KIND_GITHUB_CLIENT_ID" }}
+  clientSecret: {{ env "OTF_KIND_GITHUB_CLIENT_SECRET" }}
+
+database: postgres://postgres-rw/otf
+databaseUsernameFromSecret:
+  name: postgres-app
+  key: username
+databasePasswordFromSecret:
+  name: postgres-app
+  key: password
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+  hosts:
+    - otf.ninja
+  tls:
+    - secretName: otf-ninja-tls
+      hosts:
+      - otf.ninja
