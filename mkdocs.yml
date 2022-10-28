@@ -1,0 +1,5 @@
+site_name: otf
+site_url: otf.readthedocs.com
+theme: readthedocs
+nav:
+  - Home: index.md
