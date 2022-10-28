@@ -2,3 +2,7 @@ site_name: otf
 theme: readthedocs
 nav:
   - Home: index.md
+  - Github: github.md
+
+markdown_extensions:
+  - admonition
