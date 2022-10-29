@@ -80,4 +80,4 @@ jobs:
         if: "startsWith(github.ref, 'refs/tags/v')"
         uses: goreleaser/goreleaser-action@v2
         with:
-          args: release --rm-dist --snapshot --skip-sign
+          args: release --rm-dist --skip-sign
