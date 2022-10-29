@@ -118,3 +118,8 @@ migrate-redo:
 .PHONY: create-cluster
 create-cluster:
 	kind create cluster --config kind/config.yml
+
+# Run docs server with live reload
+.PHONY: serve-docs
+serve-docs:
+	mkdocs serve -a localhost:9999
