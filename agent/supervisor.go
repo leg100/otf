@@ -19,30 +19,23 @@ var PluginCacheDir = filepath.Join(os.TempDir(), "plugin-cache")
 // Supervisor supervises concurrently running workers.
 type Supervisor struct {
 	otf.Application
-
-	// concurrency is the max number of concurrent workers
-	concurrency int
-
+	Config
 	logr.Logger
-
-	AgentID string
-
 	Spooler
-
 	*Terminator
 	// Downloader for workers to download tf cli on demand
 	otf.Downloader
+
 	environmentVariables []string
 }
 
 // NewSupervisor is the constructor for Supervisor
-func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, concurrency int) *Supervisor {
+func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, cfg Config) *Supervisor {
 	s := &Supervisor{
 		Spooler:     spooler,
 		Application: app,
 		Logger:      logger,
-		AgentID:     DefaultID,
-		concurrency: concurrency,
+		Config:      cfg,
 		Terminator:  NewTerminator(),
 		Downloader:  NewTerraformDownloader(),
 	}
@@ -61,7 +54,7 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, con
 
 // Start starts the supervisor's workers.
 func (s *Supervisor) Start(ctx context.Context) error {
-	for i := 0; i < s.concurrency; i++ {
+	for i := 0; i < s.Concurrency; i++ {
 		w := &Worker{Supervisor: s}
 		go w.Start(ctx)
 	}

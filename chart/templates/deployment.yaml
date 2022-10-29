@@ -58,8 +58,14 @@ spec:
               value: {{ .Values.gitlab.clientID }}
             - name: OTF_GITLAB_CLIENT_SECRET
               value: {{ .Values.gitlab.clientSecret }}
+            {{- if .Values.sandbox }}
+            - name: OTF_SANDBOX
+              value: "true"
+            {{- end }}
+          {{- if .Values.sandbox }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            privileged: true
+          {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

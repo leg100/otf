@@ -11,6 +11,7 @@ import (
 // handle canceling them if necessary.
 type Environment interface {
 	Path() string
+	RunTerraform(cmd string, args ...string) error
 	RunCLI(name string, args ...string) error
 	RunFunc(fn EnvironmentFunc) error
 	TerraformPath() string

@@ -36,6 +36,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		ctx,
 		w.environmentVariables,
 		w.Downloader,
+		w.Config,
 	)
 	if err != nil {
 		log.Error(err, "creating execution environment")

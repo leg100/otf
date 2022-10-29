@@ -51,6 +51,10 @@ type Environment struct {
 	// Environment context - should contain subject for authenticating to
 	// services
 	ctx context.Context
+
+	// sandbox determines whether processes are isolated within a sandbox to
+	// prevent access to host filesystem etc
+	sandbox bool
 }
 
 func NewEnvironment(
@@ -60,6 +64,7 @@ func NewEnvironment(
 	ctx context.Context,
 	environmentVariables []string,
 	downloader otf.Downloader,
+	cfg Config,
 ) (*Environment, error) {
 	path, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
@@ -85,6 +90,7 @@ func NewEnvironment(
 		environmentVariables: environmentVariables,
 		cancel:               cancel,
 		ctx:                  ctx,
+		sandbox:              cfg.Sandbox,
 	}, nil
 }
 
@@ -124,6 +130,29 @@ func (e *Environment) Cancel(force bool) {
 	e.cancelFunc(force)
 }
 
+// RunTerraform runs a terraform command in the environment
+func (e *Environment) RunTerraform(cmd string, args ...string) error {
+	// optionally sandbox terraform apply using bubblewrap
+	if e.sandbox && cmd == "apply" {
+		fmt.Fprintln(e.out, "Running within sandbox...")
+		return e.RunCLI("bwrap", append([]string{
+			"--ro-bind", e.TerraformPath(), "/bin/terraform",
+			"--bind", e.path, "/workspace",
+			"--ro-bind", PluginCacheDir, PluginCacheDir,
+			// for DNS lookups
+			"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+			// for verifying SSL connections
+			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+			"--chdir", "/workspace",
+			// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
+			"--proc", "/proc",
+			"terraform", "apply",
+		}, args...)...)
+	}
+
+	return e.RunCLI(e.TerraformPath(), append([]string{cmd}, args...)...)
+}
+
 // RunCLI executes a CLI process in the executor.
 func (e *Environment) RunCLI(name string, args ...string) error {
 	if e.canceled {
@@ -137,9 +166,10 @@ func (e *Environment) RunCLI(name string, args ...string) error {
 	cmd.Stdout = e.out
 	cmd.Env = e.environmentVariables
 
+	// send stderr to both environment output (for sending to client) and to
+	// local var so we can report on errors below
 	stderr := new(bytes.Buffer)
-	errWriter := io.MultiWriter(e.out, stderr)
-	cmd.Stderr = errWriter
+	cmd.Stderr = io.MultiWriter(e.out, stderr)
 
 	if err := cmd.Start(); err != nil {
 		logger.Error(err, "starting command", "stderr", stderr.String())

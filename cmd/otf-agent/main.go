@@ -26,7 +26,7 @@ func main() {
 func Run(ctx context.Context, args []string) error {
 	var help bool
 
-	cfg, err := http.NewConfig()
+	clientCfg, err := http.NewConfig()
 	if err != nil {
 		return err
 	}
@@ -39,11 +39,12 @@ func Run(ctx context.Context, args []string) error {
 		Run: func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
-	cmd.Flags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
-	cmd.Flags().StringVar(&cfg.Token, "token", "", "Agent token for authentication")
+	cmd.Flags().StringVar(&clientCfg.Address, "address", http.DefaultAddress, "Address of OTF server")
+	cmd.Flags().StringVar(&clientCfg.Token, "token", "", "Agent token for authentication")
 	cmd.MarkFlagRequired("token")
 
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
+	cfg := agent.NewConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -64,7 +65,7 @@ func Run(ctx context.Context, args []string) error {
 	}
 
 	// NewClient sends unauthenticated ping to server
-	client, err := cfg.NewClient()
+	client, err := clientCfg.NewClient()
 	if err != nil {
 		return err
 	}
@@ -76,10 +77,13 @@ func Run(ctx context.Context, args []string) error {
 	}
 	logger.Info("successfully authenticated", "organization", at.OrganizationName(), "token_id", at.ID())
 
-	agent, err := agent.NewAgent(logger, client, agent.Config{
-		Organization: otf.String(at.OrganizationName()),
-		External:     true,
-	})
+	// Ensure agent only process runs for this org
+	cfg.Organization = otf.String(at.OrganizationName())
+	// otf-agent is an 'external' agent, as opposed to the internal agent in
+	// otfd.
+	cfg.External = true
+
+	agent, err := agent.NewAgent(logger, client, *cfg)
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)
 	}
