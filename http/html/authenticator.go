@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"path"
 	"time"
@@ -134,19 +133,10 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// get user's source IP address
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
+	if err := createSession(a.Application, w, r, user.ID()); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	session, err := a.CreateSession(r.Context(), user.ID(), addr)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	setCookie(w, sessionCookie, session.Token(), otf.Time(session.Expiry()))
 
 	// Return user to the original path they attempted to access
 	if cookie, err := r.Cookie(pathCookie); err == nil {
