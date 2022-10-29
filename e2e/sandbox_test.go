@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"errors"
 	"os/exec"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 // TestSandbox demonstrates the sandbox feature, whereby terraform apply is run
 // within an isolated environment.
 func TestSandbox(t *testing.T) {
-	if _, err := exec.LookPath("bwrap"); err == exec.ErrNotFound {
+	if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 		t.Skipf("bwrap binary not found")
 	}
 

@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 
@@ -43,7 +44,7 @@ type Config struct {
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, error) {
 	if cfg.Sandbox {
-		if _, err := exec.LookPath("bwrap"); err == exec.ErrNotFound {
+		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox requires bubblewrap: %w", err)
 		}
 		logger.Info("sandbox mode enabled")
