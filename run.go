@@ -468,24 +468,22 @@ func (r *Run) doApply(env Environment) error {
 
 // doTerraformPlan invokes terraform plan
 func (r *Run) doTerraformPlan(env Environment) error {
-	args := []string{
-		"plan",
-	}
+	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, "-out="+PlanFilename)
-	return env.RunCLI(env.TerraformPath(), args...)
+	return env.RunTerraform("plan", args...)
 }
 
 // doTerraformApply invokes terraform apply
 func (r *Run) doTerraformApply(env Environment) error {
-	args := []string{"apply"}
+	var args []string
 	if r.isDestroy {
 		args = append(args, "-destroy")
 	}
 	args = append(args, PlanFilename)
-	return env.RunCLI(env.TerraformPath(), args...)
+	return env.RunTerraform("apply", args...)
 }
 
 // setupEnv invokes the necessary steps before a plan or apply can proceed.
@@ -513,7 +511,7 @@ func (r *Run) setupEnv(env Environment) error {
 			return err
 		}
 	}
-	if err := env.RunCLI(env.TerraformPath(), "init"); err != nil {
+	if err := env.RunTerraform("init"); err != nil {
 		return fmt.Errorf("running terraform init: %w", err)
 	}
 	return nil

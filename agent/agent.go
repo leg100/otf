@@ -6,32 +6,21 @@ package agent
 import (
 	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	DefaultDataDir = "~/.otf-agent"
-	DefaultID      = "agent-001"
+	DefaultID = "agent-001"
 )
 
-// Agent runs remote operations
+// Agent processes runs.
 type Agent struct {
-	// ID uniquely identifies the agent.
-	ID string
-
-	// DataDir stores artefacts relating to runs, i.e. downloaded plugins,
-	// modules (?), configuration versions, state, etc.
-	DataDir string
-
-	// ServerAddr is the address (<host>:<port>) of the OTF server to connect
-	// to.
-	ServerAddr string
-
 	Spooler
-
 	*Supervisor
 }
 
@@ -44,21 +33,34 @@ type Config struct {
 	// otf-agent, thus whether it handles runs for workspaces in remote mode
 	// (external=false) or workspaces in agent mode (external=true).
 	External bool
+	// Sandbox determines whether terraform is invoked within an isolated
+	// environment, restricting its access to various host resources
+	Sandbox bool
+	// Concurrency determines number of runs that can be handled concurrently
+	Concurrency int
 }
 
 // NewAgent is the constructor for an Agent
 func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, error) {
+	if cfg.Sandbox {
+		if _, err := exec.LookPath("bwrap"); err == exec.ErrNotFound {
+			return nil, fmt.Errorf("sandbox requires bubblewrap: %w", err)
+		}
+		logger.Info("sandbox mode enabled")
+	}
+
 	spooler := NewSpooler(app, logger, cfg)
-
-	supervisor := NewSupervisor(
-		spooler,
-		app,
-		logger, DefaultConcurrency)
-
 	return &Agent{
 		Spooler:    spooler,
-		Supervisor: supervisor,
+		Supervisor: NewSupervisor(spooler, app, logger, cfg),
 	}, nil
+}
+
+func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
+	cfg := Config{}
+	flags.BoolVar(&cfg.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
+	flags.IntVar(&cfg.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
+	return &cfg
 }
 
 // Start starts the agent daemon

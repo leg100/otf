@@ -58,6 +58,7 @@ func run(ctx context.Context, args []string) error {
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
 	htmlCfg := html.NewConfigFromFlags(cmd.Flags())
+	agentCfg := agent.NewConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -122,7 +123,7 @@ func run(ctx context.Context, args []string) error {
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
 		app,
-		agent.Config{})
+		*agentCfg)
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)
 	}
