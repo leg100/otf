@@ -10,7 +10,6 @@ builds:
       - CGO_ENABLED=0
     goos:
     - linux
-    - darwin
     goarch:
     - 386
     - amd64
@@ -25,16 +24,23 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-    - linux
     - darwin
+    - linux
     goarch:
     - 386
     - amd64
     - arm64
 archives:
-- format: zip
-  files:
-  - none*
+- id: otfd
+  builds:
+    - otfd
+  format: zip
+  name_template: "otfd_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+- id: otf
+  builds:
+    - otf
+  format: zip
+  name_template: "otf_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 dockers:
 - goos: linux
   goarch: amd64
