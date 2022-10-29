@@ -66,7 +66,17 @@
   {{ end }}
   </main>
   <footer>
-    <a href="https://github.com/leg100/otf">{{ .Version }}</a>
+    <div class="footer-container">
+      <div></div>
+      <div class="footer-version">
+        <a href="https://github.com/leg100/otf">{{ .Version }}</a>
+      </div>
+      <div class="footer-site-login">
+        {{ if not .CurrentUser }}
+          <a href="{{ adminLoginPath }}">site admin</a>
+        {{ end }}
+      </div>
+    </div>
   </footer>
 </body>
 </html>

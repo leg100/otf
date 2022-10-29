@@ -31,14 +31,11 @@ type WebRoute string
 // ServerConfig is the http server config
 type ServerConfig struct {
 	// Listening Address in the form <ip>:<port>
-	Addr string
-
-	SSL               bool
-	CertFile, KeyFile string
-
+	Addr                 string
+	SSL                  bool
+	CertFile, KeyFile    string
 	EnableRequestLogging bool
-
-	// site authentication token
+	// site admin token
 	SiteToken string
 	// Secret for signing
 	Secret string

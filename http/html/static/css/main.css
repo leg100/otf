@@ -5,8 +5,8 @@
 :root {
   --faint-grey: #edeaea;
   /* Padding around header and main elements */
-  --body-gutter: 0.5em;
-  --site-width: 72em;
+  --body-gutter: 0.5rem;
+  --site-width: 72rem;
   /* site font is the sans serif family */
   --site-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
   /* alternative site font is the monospace family */
@@ -61,10 +61,18 @@ main {
 /* site footer containing version info */
 footer {
   border-top: 1px solid #ccc;
-  padding: 0.5em;
-  text-align: center;
-  font-size: 0.8em;
+  padding: 0.5em 0;
+  font-size: 0.8rem;
   font-family: var(--alt-font);
+}
+
+.footer-container {
+  max-width: var(--site-width);
+  padding: 0 var(--body-gutter);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 2em;
 }
 
 /* Unset browser list style */

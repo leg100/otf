@@ -28,12 +28,12 @@ var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl
 
 // startDaemon starts an instance of the otfd daemon along with a github stub
 // seeded with the given user. The hostname of the otfd daemon is returned.
-func startDaemon(t *testing.T, user *otf.User) string {
+func startDaemon(t *testing.T, user *otf.User, flags ...string) string {
 	githubServer := html.NewTestGithubServer(t, user)
 	githubURL, err := url.Parse(githubServer.URL)
 	require.NoError(t, err)
 
-	cmd := exec.Command("otfd",
+	flags = append(flags,
 		"--address", ":0",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
@@ -43,6 +43,8 @@ func startDaemon(t *testing.T, user *otf.User) string {
 		"--github-skip-tls-verification",
 		"--github-hostname", githubURL.Host,
 	)
+
+	cmd := exec.Command("otfd", flags...)
 	out, err := cmd.StdoutPipe()
 	require.NoError(t, err)
 	errout, err := cmd.StderrPipe()

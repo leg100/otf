@@ -139,7 +139,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("setting up http server: %w", err)
 	}
 	// add Web App routes
-	if err := html.AddRoutes(logger, htmlCfg, app, server.Router); err != nil {
+	if err := html.AddRoutes(logger, htmlCfg, serverCfg, app, server.Router); err != nil {
 		return err
 	}
 

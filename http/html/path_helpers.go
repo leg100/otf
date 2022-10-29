@@ -41,6 +41,10 @@ func logoutPath() string {
 	return "/logout"
 }
 
+func adminLoginPath() string {
+	return "/admin/login"
+}
+
 func getProfilePath() string {
 	return "/profile"
 }
@@ -204,6 +208,7 @@ func cancelRunPath(run runRoute) string {
 func addHelpersToFuncMap(m template.FuncMap) {
 	m["loginPath"] = loginPath
 	m["logoutPath"] = logoutPath
+	m["adminLoginPath"] = adminLoginPath
 	m["getProfilePath"] = getProfilePath
 	m["listSessionPath"] = listSessionPath
 	m["revokeSessionPath"] = revokeSessionPath

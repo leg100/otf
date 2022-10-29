@@ -62,10 +62,15 @@ func (v *view) CurrentUser() *otf.User {
 	return user
 }
 
-func (v *view) CurrentSession() (*otf.Session, error) {
-	return sessionFromContext(v.request.Context())
+type currentOrganization struct {
+	name string
 }
 
+func (c *currentOrganization) OrganizationName() string {
+	return c.name
+}
+
+// CurrentOrganization retrieves the user's current organization
 func (v *view) CurrentOrganization() *currentOrganization {
 	name, err := organizationFromContext(v.request.Context())
 	if err != nil {

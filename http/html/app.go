@@ -47,10 +47,20 @@ type Application struct {
 	*sse.Server
 	// enabled authenticators
 	authenticators []*Authenticator
+	// site admin's authentication token
+	siteToken string
+}
+
+type ApplicationOption func(*Application)
+
+func WithSiteToken(token string) ApplicationOption {
+	return func(app *Application) {
+		app.siteToken = token
+	}
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config *Config, services otf.Application, router *otfhttp.Router) error {
+func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConfig, services otf.Application, router *otfhttp.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -73,6 +83,7 @@ func AddRoutes(logger logr.Logger, config *Config, services otf.Application, rou
 		viewEngine:   views,
 		Logger:       logger,
 		Server:       sseServer,
+		siteToken:    srvConfig.SiteToken,
 	}
 
 	// Add authenticators for clouds the user has configured
@@ -103,6 +114,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET(auth.RequestPath(), auth.requestHandler)
 		r.GET(auth.callbackPath(), auth.responseHandler)
 	}
+	r.GET("/admin/login", app.adminLoginPromptHandler)
+	r.PST("/admin/login", app.adminLoginHandler)
 
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {

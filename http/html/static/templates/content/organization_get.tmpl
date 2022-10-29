@@ -12,7 +12,7 @@
     <span id="teams" class="content-menu-item">
       <a href="{{ listTeamsPath .Content }}">teams</a>
     </span>
-    {{ if .CurrentUser.IsOwner .Content.Name }}
+    {{ if or (.CurrentUser.IsOwner .Content.Name) .CurrentUser.IsSiteAdmin }}
     <span id="users" class="content-menu-item">
       <a href="{{ listUsersPath .Content }}">users</a>
     </span>

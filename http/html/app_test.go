@@ -65,7 +65,7 @@ func TestApp(t *testing.T) {
 	}
 	// Add web app routes.
 	router := otfhttp.NewRouter()
-	err = AddRoutes(logr.Discard(), &Config{}, app, router)
+	err = AddRoutes(logr.Discard(), &Config{}, &otfhttp.ServerConfig{}, app, router)
 	require.NoError(t, err)
 	// setup server
 	srv := httptest.NewTLSServer(router)

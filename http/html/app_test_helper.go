@@ -9,15 +9,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newFakeWebApp(t *testing.T, app otf.Application) *Application {
+func newFakeWebApp(t *testing.T, app otf.Application, opts ...ApplicationOption) *Application {
 	views, err := newViewEngine(false)
 	require.NoError(t, err)
 
-	return &Application{
+	a := &Application{
 		Application: app,
 		Logger:      logr.Discard(),
 		viewEngine:  views,
 	}
+
+	for _, o := range opts {
+		o(a)
+	}
+
+	return a
 }
 
 var _ otf.Application = (*fakeApp)(nil)
