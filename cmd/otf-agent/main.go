@@ -76,9 +76,9 @@ func Run(ctx context.Context, args []string) error {
 	}
 	logger.Info("successfully authenticated", "organization", at.OrganizationName(), "token_id", at.ID())
 
-	agent, err := agent.NewAgent(logger, client, agent.NewAgentOptions{
+	agent, err := agent.NewAgent(logger, client, agent.Config{
 		Organization: otf.String(at.OrganizationName()),
-		Mode:         agent.ExternalAgentMode,
+		External:     true,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to start agent: %w", err)

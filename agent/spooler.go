@@ -35,7 +35,7 @@ type SpoolerDaemon struct {
 	otf.Application
 	// Logger for logging various events
 	logr.Logger
-	NewAgentOptions
+	Config
 }
 
 type Cancelation struct {
@@ -47,13 +47,13 @@ type Cancelation struct {
 const SpoolerCapacity = 100
 
 // NewSpooler populates a Spooler with queued runs
-func NewSpooler(app otf.Application, logger logr.Logger, opts NewAgentOptions) *SpoolerDaemon {
+func NewSpooler(app otf.Application, logger logr.Logger, cfg Config) *SpoolerDaemon {
 	return &SpoolerDaemon{
-		queue:           make(chan *otf.Run, SpoolerCapacity),
-		cancelations:    make(chan Cancelation, SpoolerCapacity),
-		Application:     app,
-		Logger:          logger,
-		NewAgentOptions: opts,
+		queue:        make(chan *otf.Run, SpoolerCapacity),
+		cancelations: make(chan Cancelation, SpoolerCapacity),
+		Application:  app,
+		Logger:       logger,
+		Config:       cfg,
 	}
 }
 
@@ -132,19 +132,16 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Run:
-		switch s.Mode {
-		case InternalAgentMode:
-			// internal agent only processes runs in remote execution mode
-			if obj.ExecutionMode() != otf.RemoteExecutionMode {
-				return
-			}
-		case ExternalAgentMode:
-			// external agent only processes runs in agent execution mode
+		if obj.ExecutionMode() == otf.LocalExecutionMode {
+			// agent never handles runs in local execution mode (a run, let alone
+			// a run event, should never be created in local execution mode...)
+			return
+		}
+		if s.External {
+			// external agent only handles runs in agent execution mode
 			if obj.ExecutionMode() != otf.AgentExecutionMode {
 				return
 			}
-		default:
-			panic("invalid agent mode: " + s.Mode)
 		}
 
 		if obj.Queued() {

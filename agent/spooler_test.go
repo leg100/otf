@@ -27,7 +27,7 @@ func TestSpooler(t *testing.T) {
 	spooler := NewSpooler(
 		&fakeSpoolerApp{runs: db, events: events},
 		logr.Discard(),
-		NewAgentOptions{Mode: InternalAgentMode},
+		Config{},
 	)
 	errch := make(chan error)
 	go func() { errch <- spooler.reinitialize(ctx) }()

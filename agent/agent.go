@@ -35,29 +35,20 @@ type Agent struct {
 	*Supervisor
 }
 
-// NewAgentOptions are optional arguments to the NewAgent constructor
-type NewAgentOptions struct {
+// Config configures the agent.
+type Config struct {
 	// Organization if non-nil restricts the agent to processing runs belonging
 	// to the specified organization.
 	Organization *string
-	// Mode the agent is operating in: local or remote
-	Mode AgentMode
+	// External indicates whether the agent is running as a separate process,
+	// otf-agent, thus whether it handles runs for workspaces in remote mode
+	// (external=false) or workspaces in agent mode (external=true).
+	External bool
 }
 
-type AgentMode string
-
-const (
-	InternalAgentMode AgentMode = "internal"
-	ExternalAgentMode AgentMode = "external"
-)
-
 // NewAgent is the constructor for an Agent
-func NewAgent(logger logr.Logger, app otf.Application, opts NewAgentOptions) (*Agent, error) {
-	if opts.Mode != InternalAgentMode && opts.Mode != ExternalAgentMode {
-		return nil, fmt.Errorf("invalid agent mode: %s", opts.Mode)
-	}
-
-	spooler := NewSpooler(app, logger, opts)
+func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, error) {
+	spooler := NewSpooler(app, logger, cfg)
 
 	supervisor := NewSupervisor(
 		spooler,

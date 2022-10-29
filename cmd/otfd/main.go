@@ -122,7 +122,7 @@ func run(ctx context.Context, args []string) error {
 	agent, err := agent.NewAgent(
 		logger.WithValues("component", "agent"),
 		app,
-		agent.NewAgentOptions{Mode: agent.InternalAgentMode})
+		agent.Config{})
 	if err != nil {
 		return fmt.Errorf("initializing agent: %w", err)
 	}
