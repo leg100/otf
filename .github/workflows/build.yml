@@ -81,3 +81,5 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           args: release --rm-dist --skip-sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
