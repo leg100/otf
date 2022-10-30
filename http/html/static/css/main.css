@@ -6,7 +6,7 @@
   --faint-grey: #edeaea;
   /* Padding around header and main elements */
   --body-gutter: 0.5rem;
-  --site-width: 72rem;
+  --site-width: 56rem;
   /* site font is the sans serif family */
   --site-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
   /* alternative site font is the monospace family */
@@ -15,7 +15,6 @@
 
 body {
   font-family: var(--site-font);
-
   /*
    * body contains three rows straddling the full height of viewport:
    * - header
@@ -24,7 +23,6 @@ body {
    */
   display: flex;
   flex-direction: column;
-
   /* push footer to bottom of viewport */
   min-height: 100vh;
 }
@@ -36,19 +34,14 @@ header {
 
 main {
   width: 100%;
-
   /* Consume space between header and footer */
   flex-grow: 1;
-
   /* applies to both header and main */
   max-width: var(--site-width);
-
   /* Center horizontally */
   margin: 0 auto;
-
   /* Small gutter around edge */
   padding: var(--body-gutter);
-
   /* two rows:
    * - div.content-header
    * - div.content
@@ -96,11 +89,8 @@ h1,h2,h3,h4,h5 {
 header nav {
   /* Small gutter around edge */
   padding: var(--body-gutter);
-
   font-family: var(--alt-font);
-
   max-width: var(--site-width);
-
   /* Center horizontally */
   margin: 0 auto;
 }
@@ -361,10 +351,9 @@ a:hover {
  * Override terminal-to-html's css
  */
 .term-container {
-  padding: 1em;
-  border-radius: 0px;
   font-family: var(--alt-font);
-  font-size: 1rem;
+  font-size: 0.9em;
+  line-height: 19px;
 }
 
 /*
