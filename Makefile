@@ -77,16 +77,6 @@ image: build
 load: image
 	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
 
-# Deploy helm chart
-.PHONY: deploy
-deploy: load
-	IMAGE_TAG=$(IMAGE_TAG) helmfile apply --skip-deps -f kind/helmfile.yaml
-
-# Show differences in Kind deployment
-.PHONY: helmdiff
-helmdiff:
-	IMAGE_TAG=$(IMAGE_TAG) helmfile diff --skip-deps -f kind/helmfile.yaml
-
 # Generate sql code
 .PHONY: sql
 sql:
@@ -113,11 +103,6 @@ migrate:
 .PHONY: migrate-redo
 migrate-redo:
 	GOOSE_DRIVER=postgres goose -dir ./sql/migrations redo
-
-# Create a Kind kubernetes cluster
-.PHONY: create-cluster
-create-cluster:
-	kind create cluster --config kind/config.yml
 
 # Run docs server with live reload
 .PHONY: serve-docs
