@@ -495,3 +495,21 @@ button.delete:hover {
   /* light grey background */
   background: #e7e7e7;
 }
+
+/* summary of additions, changes, and destructions in plan/apply */
+.resource-summary {
+  font-family: var(--alt-font);
+  font-size: 0.8rem;
+}
+
+.resource-summary-additions {
+  color: green;
+}
+
+.resource-summary-changes {
+  color: blue;
+}
+
+.resource-summary-destructions {
+  color: red;
+}

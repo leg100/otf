@@ -11,12 +11,19 @@
       <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
     </div>
     <div class="item-content">
-    {{ template "identifier" . }}
-    {{ if .Cancelable }}
-      <form action="{{ cancelRunPath . }}" method="POST">
-        <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
-      </form>
-    {{ end }}
+      {{ template "identifier" . }}
+      {{ if eq .Status "applied" }}
+        <div class="resource-summary">
+          <span class="resource-summary-additions">+{{ .Apply.Additions }}</span>
+          <span class="resource-summary-changes">~{{ .Apply.Changes }}</span>
+          <span class="resource-summary-destructions">-{{ .Apply.Destructions }}</span>
+        </div>
+      {{ end }}
+      {{ if .Cancelable }}
+        <form action="{{ cancelRunPath . }}" method="POST">
+          <button class="delete" onclick="return confirm('Are you sure you want to cancel?')">cancel</button>
+        </form>
+      {{ end }}
     </div>
   </div>
 {{ end }}
