@@ -51,6 +51,11 @@ archives:
     - otfd
   format: zip
   name_template: "otfd_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+- id: otf-agent
+  builds:
+    - otf-agent
+  format: zip
+  name_template: "otf-agent_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 - id: otf
   builds:
     - otf
