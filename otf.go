@@ -32,7 +32,7 @@ var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-\._]+$`)
 // A regular expression used to validate semantic versions (major.minor.patch).
 var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
-// Application provides access to the oTF application services
+// Application provides access to the otf application services
 type Application interface {
 	OrganizationService
 	WorkspaceService
@@ -54,7 +54,7 @@ type LockableApplication interface {
 	WithLock(ctx context.Context, id int64, cb func(Application) error) error
 }
 
-// DB provides access to oTF database
+// DB provides access to otf database
 type DB interface {
 	// Tx provides a transaction within which to operate on the store.
 	Tx(ctx context.Context, tx func(DB) error) error
@@ -74,7 +74,7 @@ type DB interface {
 	AgentTokenStore
 }
 
-// Identity is an identifiable oTF entity.
+// Identity is an identifiable otf entity.
 type Identity interface {
 	// Human friendly identification of the entity.
 	String() string
@@ -89,7 +89,7 @@ func UInt(i uint) *uint           { return &i }
 func Bool(b bool) *bool           { return &b }
 func Time(t time.Time) *time.Time { return &t }
 
-// CurrentTimestamp is *the* way to get a current timestamps in oTF and
+// CurrentTimestamp is *the* way to get a current timestamps in otf and
 // time.Now() should be avoided.
 //
 // We want timestamps to be rounded to nearest
@@ -221,7 +221,7 @@ func (*AppUser) ID() string                                       { return "app-
 
 // Absolute returns an absolute URL for the given path. It uses the http request
 // to determine the correct hostname and scheme to use. Handles situations where
-// oTF is sitting behind a reverse proxy, using the X-Forwarded-* headers the
+// otf is sitting behind a reverse proxy, using the X-Forwarded-* headers the
 // proxy sets.
 //
 // TODO: move to http pkg

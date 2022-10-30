@@ -97,13 +97,13 @@ These steps will get you started with running everything on your local system. Y
     sudo update-ca-certificates
     ```
     
-1. Ensure you have access to a postgresql server. oTF assumes it's running locally on a unix domain socket in `/var/run/postgresql`. Create a database named `otf`:
+1. Ensure you have access to a postgresql server. otf assumes it's running locally on a unix domain socket in `/var/run/postgresql`. Create a database named `otf`:
 
     ```bash
     createdb otfd
     ```
 
-1. Run the oTF daemon:
+1. Run the otf daemon:
 
     ```bash
     otfd --ssl --cert-file=cert.crt --key-file=key.pem

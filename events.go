@@ -23,7 +23,7 @@ const (
 // EventType identifies the type of event
 type EventType string
 
-// Event represents an event in the lifecycle of an oTF resource
+// Event represents an event in the lifecycle of an otf resource
 type Event struct {
 	Type    EventType
 	Payload interface{}

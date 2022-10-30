@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// Environment provides a Job with access to various oTF services, a working
+// Environment provides a Job with access to various otf services, a working
 // directory, and the ability to invoke arbitrary commands and go functions.
 // Invoking commands and functions via the environment means the environment can
 // handle canceling them if necessary.

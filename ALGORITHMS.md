@@ -1,12 +1,12 @@
 # Concepts
 
-Notes on various concepts in use by TFE/TFC/oTF.
+Notes on various concepts in use by TFE/TFC/otf.
 
 ## Run Status/State
 
 https://www.terraform.io/cloud-docs/api-docs/run#run-states
 
-A run begins life in the `pending` state. The next state (in oTF) is `plan_queued`, indicating it's ready to enter the plan phase and that it's currently waiting in the global queue (see below). A run is switched from `pending` to `plan_queued` if:
+A run begins life in the `pending` state. The next state (in otf) is `plan_queued`, indicating it's ready to enter the plan phase and that it's currently waiting in the global queue (see below). A run is switched from `pending` to `plan_queued` if:
 
 * it's reached the front of the workspace queue (see below)
 * it's a speculative run (i.e. plan-only) in which case the switch occurs immediately
@@ -31,7 +31,7 @@ Note: the workspace queue is a queue of *runs* whereas the global queue is a que
 
 ## Agents
 
-Note: this only applies to oTF.
+Note: this only applies to otf.
 
 Agents execute run phases i.e. plans and applies.
 

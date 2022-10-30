@@ -46,7 +46,7 @@ type view struct {
 	request *http.Request
 	// pop flash message in template
 	flashPopper func() *flash
-	// oTF version string in footer
+	// otf version string in footer
 	Version string
 }
 

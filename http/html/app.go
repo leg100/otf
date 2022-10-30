@@ -31,11 +31,11 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	return &cfg
 }
 
-// Application is the oTF web app.
+// Application is the otf web app.
 type Application struct {
 	// Static asset server
 	staticServer http.FileSystem
-	// oTF service accessors
+	// otf service accessors
 	otf.Application
 	// path prefix for all URLs
 	pathPrefix string

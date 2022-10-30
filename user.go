@@ -17,7 +17,7 @@ var (
 	SiteAdmin   = User{id: SiteAdminID, username: "site-admin"}
 )
 
-// User represents an oTF user account.
+// User represents an otf user account.
 type User struct {
 	// ID uniquely identifies users
 	id        string

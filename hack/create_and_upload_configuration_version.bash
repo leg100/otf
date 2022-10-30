@@ -16,7 +16,7 @@ then
     exit 1
 fi
 
-# oTF API doesn't yet verify tokens
+# otf API doesn't yet verify tokens
 TOKEN=dummy
 
 HOST=localhost:8080
