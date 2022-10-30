@@ -51,6 +51,12 @@ dockers:
   - "leg100/otf:{{ .Version }}"
   skip_push: auto
   dockerfile: Dockerfile
+release:
+  footer: |
+    ## Docker images
+
+    * `leg100/otf:{{ .Version }}`
+    * `leg100/otf:latest`
 checksum:
   name_template: 'checksums.txt'
 snapshot:
