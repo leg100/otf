@@ -336,6 +336,9 @@ subjects:
 apiVersion: v1
 data:
   allow-snippet-annotations: "true"
+{{- range $key, $value := .Values.controller.config }}
+  {{- $key | nindent 2 }}: {{ $value | quote }}
+{{- end }}
 kind: ConfigMap
 metadata:
   labels:

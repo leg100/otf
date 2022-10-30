@@ -51,6 +51,8 @@ releases:
   - name: ingress-nginx
     chart: ./charts/kind-ingress-nginx
     version: 4.3.0
+    values:
+      - values/ingress-nginx.gotmpl
 
   - name: cert-manager
     namespace: cert-manager
