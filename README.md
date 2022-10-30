@@ -39,7 +39,7 @@ Now return to your terminal and paste the token into the prompt.
 
 You should then receive successful confirmation:
 
-```bash
+```
 Success! Logged in to Terraform Enterprise (demo.otf.ninja)
 ```
 
