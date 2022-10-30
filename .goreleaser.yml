@@ -14,6 +14,21 @@ builds:
     - 386
     - amd64
     - arm64
+  - id: otf-agent
+    ldflags:
+    - -s
+    - '-X ".Version={{ .Version }}"'
+    - '-X ".Commit={{ .Commit }}"'
+    main: ./cmd/otf-agent
+    binary: otf-agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+    - linux
+    goarch:
+    - 386
+    - amd64
+    - arm64
   - id: otf
     ldflags:
     - -s
@@ -47,16 +62,25 @@ dockers:
   ids:
   - otfd
   image_templates:
-  - "leg100/otf:latest"
-  - "leg100/otf:{{ .Version }}"
+  - "leg100/otfd:latest"
+  - "leg100/otfd:{{ .Version }}"
   skip_push: auto
   dockerfile: Dockerfile
+- goos: linux
+  goarch: amd64
+  ids:
+  - otf-agent
+  image_templates:
+  - "leg100/otf-agent:latest"
+  - "leg100/otf-agent:{{ .Version }}"
+  skip_push: auto
+  dockerfile: Dockerfile.agent
 release:
   footer: |
     ## Docker images
 
-    * `leg100/otf:{{ .Version }}`
-    * `leg100/otf:latest`
+    * `leg100/otfd:{{ .Version }}`
+    * `leg100/otf-agent:{{ .Version }}`
 checksum:
   name_template: 'checksums.txt'
 snapshot:

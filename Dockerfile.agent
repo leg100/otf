@@ -1,0 +1,8 @@
+FROM alpine:3.14
+
+# for sandboxing
+RUN apk add bubblewrap
+
+COPY otf-agent /usr/local/bin/otf-agent
+
+ENTRYPOINT ["/usr/local/bin/otf-agent"]
