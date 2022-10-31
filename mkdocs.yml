@@ -3,6 +3,7 @@ theme: readthedocs
 nav:
   - Home: index.md
   - Github: github.md
+  - Agent: agents.md
 
 markdown_extensions:
   - admonition
