@@ -1,8 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"io"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,18 +17,18 @@ func TestMain(t *testing.T) {
 		name string
 		args []string
 		err  string
+		// want is a regex of wanted output
+		want string
 	}{
 		{
 			name: "nothing",
 			args: []string{""},
+			want: `^Usage:\n\totf \[command\]`,
 		},
 		{
 			name: "help",
 			args: []string{"-h"},
-		},
-		{
-			name: "address",
-			args: []string{"--address", "test.abc:1234"},
+			want: `^Usage:\n\totf \[command\]`,
 		},
 		{
 			name: "organization new",
@@ -53,12 +54,15 @@ func TestMain(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := run(ctx, tt.args, io.Discard)
+			got := new(bytes.Buffer)
+			err := run(ctx, tt.args, got)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
-			} else {
-				require.NoError(t, err)
+				return
 			}
+			require.NoError(t, err)
+
+			regexp.MatchString(tt.want, got.String())
 		})
 	}
 }

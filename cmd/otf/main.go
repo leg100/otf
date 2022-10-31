@@ -31,8 +31,6 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		Use:           "otf",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		// Define run func in order to enable cobra's default help functionality
-		Run: func(cmd *cobra.Command, args []string) {},
 	}
 
 	cmd.PersistentFlags().StringVar(&cfg.Address, "address", http.DefaultAddress, "Address of OTF server")
