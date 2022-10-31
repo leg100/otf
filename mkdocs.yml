@@ -2,6 +2,7 @@ site_name: otf
 theme: readthedocs
 nav:
   - Home: index.md
+  - install_from_source.md
   - Github: github.md
   - Agent: agents.md
 
