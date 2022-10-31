@@ -105,6 +105,14 @@ func updateOrganizationPath(name organizationRoute) string {
 	return fmt.Sprintf("/organizations/%s/update", name.OrganizationName())
 }
 
+func newOrganizationPath() string {
+	return "/organizations/new"
+}
+
+func createOrganizationPath() string {
+	return "/organizations/create"
+}
+
 func deleteOrganizationPath(name organizationRoute) string {
 	return fmt.Sprintf("/organizations/%s/delete", name.OrganizationName())
 }
@@ -221,6 +229,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["editOrganizationPath"] = editOrganizationPath
 	m["updateOrganizationPath"] = updateOrganizationPath
 	m["deleteOrganizationPath"] = deleteOrganizationPath
+	m["newOrganizationPath"] = newOrganizationPath
+	m["createOrganizationPath"] = createOrganizationPath
 	m["listUsersPath"] = listUsersPath
 	m["getTeamPath"] = getTeamPath
 	m["updateTeamPath"] = updateTeamPath

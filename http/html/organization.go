@@ -23,6 +23,30 @@ func (w organizationRequest) OrganizationName() string {
 	return param(w.r, "organization_name")
 }
 
+func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {
+	app.render("organization_new.tmpl", w, r, organizationRequest{r})
+}
+
+func (app *Application) createOrganization(w http.ResponseWriter, r *http.Request) {
+	var opts otf.OrganizationCreateOptions
+	if err := decode.Form(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	org, err := app.CreateOrganization(r.Context(), opts)
+	if err == otf.ErrResourceAlreadyExists {
+		flashError(w, "organization already exists: "+*opts.Name)
+		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
+		return
+	}
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	flashSuccess(w, "created organization: "+org.Name())
+	http.Redirect(w, r, getOrganizationPath(org), http.StatusFound)
+}
+
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
 	var opts otf.OrganizationListOptions
 	if err := decode.Query(&opts, r.URL.Query()); err != nil {
