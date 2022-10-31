@@ -64,7 +64,7 @@ type OrganizationStore interface {
 // OrganizationCreateOptions represents the options for creating an
 // organization. See dto.OrganizationCreateOptions for more details.
 type OrganizationCreateOptions struct {
-	Name            *string
+	Name            *string `schema:"name,required"`
 	SessionRemember *int
 	SessionTimeout  *int
 }
