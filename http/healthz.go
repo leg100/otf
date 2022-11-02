@@ -10,13 +10,13 @@ import (
 var currentHealthz = Healthz{
 	Version: otf.Version,
 	Commit:  otf.Commit,
-	Built:   otf.BuiltInt,
+	Built:   otf.Built,
 }
 
 type Healthz struct {
 	Version string
 	Commit  string
-	Built   int
+	Built   string
 }
 
 func GetHealthz(w http.ResponseWriter, r *http.Request) {

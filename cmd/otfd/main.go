@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/leg100/otf"
@@ -32,13 +33,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdutil.CatchCtrlC(cancel)
 
-	if err := run(ctx, os.Args[1:]); err != nil {
+	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, args []string) error {
+func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd := &cobra.Command{
 		Use:           "otfd",
 		Short:         "otf daemon",
@@ -48,10 +49,12 @@ func run(ctx context.Context, args []string) error {
 		// Define run func in order to enable cobra's default help functionality
 		Run: func(cmd *cobra.Command, args []string) {},
 	}
+	cmd.SetOut(out)
 
-	var help bool
+	var help, version bool
 
 	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
+	cmd.Flags().BoolVarP(&version, "version", "v", false, "Print version of otfd")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
@@ -62,7 +65,7 @@ func run(ctx context.Context, args []string) error {
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
-	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
+	if err := cmd.ParseFlags(args); err != nil {
 		return err
 	}
 
@@ -70,6 +73,11 @@ func run(ctx context.Context, args []string) error {
 		if err := cmd.Help(); err != nil {
 			return err
 		}
+		return nil
+	}
+
+	if version {
+		fmt.Fprintln(cmd.OutOrStdout(), otf.Version)
 		return nil
 	}
 

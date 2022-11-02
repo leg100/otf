@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -31,7 +30,7 @@ func TestParseApplyOutputNoChanges(t *testing.T) {
 		Destructions: 0,
 	}
 
-	output, err := ioutil.ReadFile("testdata/apply_no_changes.txt")
+	output, err := os.ReadFile("testdata/apply_no_changes.txt")
 	require.NoError(t, err)
 
 	apply, err := ParseApplyOutput(string(output))
