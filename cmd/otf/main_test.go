@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
-	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,12 +23,12 @@ func TestMain(t *testing.T) {
 		{
 			name: "nothing",
 			args: []string{""},
-			want: `^Usage:\n\totf \[command\]`,
+			want: `^Usage:\n  otf \[command\]`,
 		},
 		{
 			name: "help",
 			args: []string{"-h"},
-			want: `^Usage:\n\totf \[command\]`,
+			want: `^Usage:\n  otf \[command\]`,
 		},
 		{
 			name: "organization new",
@@ -62,7 +62,7 @@ func TestMain(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			regexp.MatchString(tt.want, got.String())
+			assert.Regexp(t, tt.want, got.String())
 		})
 	}
 }

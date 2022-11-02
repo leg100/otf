@@ -1,9 +1,10 @@
 builds:
   - id: otfd
     ldflags:
-    - -s
-    - '-X ".Version={{ .Version }}"'
-    - '-X ".Commit={{ .Commit }}"'
+    - -s -w
+    - -X github.com/leg100/otf.Version={{.Version}}
+    - -X github.com/leg100/otf.Commit={{.Commit}}
+    - -X github.com/leg100/otf.Built={{.Date}}
     main: ./cmd/otfd
     binary: otfd
     env:
@@ -16,9 +17,10 @@ builds:
     - arm64
   - id: otf-agent
     ldflags:
-    - -s
-    - '-X ".Version={{ .Version }}"'
-    - '-X ".Commit={{ .Commit }}"'
+    - -s -w
+    - -X github.com/leg100/otf.Version={{.Version}}
+    - -X github.com/leg100/otf.Commit={{.Commit}}
+    - -X github.com/leg100/otf.Built={{.Date}}
     main: ./cmd/otf-agent
     binary: otf-agent
     env:
@@ -31,9 +33,10 @@ builds:
     - arm64
   - id: otf
     ldflags:
-    - -s
-    - '-X ".Version={{ .Version }}"'
-    - '-X ".Commit={{ .Commit }}"'
+    - -s -w
+    - -X github.com/leg100/otf.Version={{.Version}}
+    - -X github.com/leg100/otf.Commit={{.Commit}}
+    - -X github.com/leg100/otf.Built={{.Date}}
     main: ./cmd/otf
     binary: otf
     env:
