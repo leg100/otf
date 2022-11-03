@@ -1,5 +1,5 @@
 site_name: otf
-theme: readthedocs
+theme: material
 nav:
   - Home: index.md
   - install_from_source.md
@@ -10,3 +10,6 @@ nav:
 
 markdown_extensions:
   - admonition
+
+extra_css:
+  - stylesheets/extra.css

@@ -30,7 +30,7 @@ otf-agent --token <the-token-string> --address <otf-server-hostname>
 2022-10-30T09:15:30Z INF successfully authenticated organization=automatize
 ```
 
-## Configure workspace to use agent
+## Configure workspace
 
 * Login into the web app
 * Select the organization in which you created an agent

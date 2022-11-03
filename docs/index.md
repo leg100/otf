@@ -91,7 +91,7 @@ terraform login localhost:8080
 
 Enter `yes` to proceed.
 
-!!! warning
+!!! bug
     You'll notice `terraform login` opens a browser window. However it ignores the port, thereby failing to open the correct page on the server. Once you properly deploy the server on a non-custom port this won't be a problem.
 
 Ignore the browser window it has opened and enter your token at the terminal prompt. You should receive confirmation of success:
