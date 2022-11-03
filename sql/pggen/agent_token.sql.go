@@ -622,6 +622,27 @@ type Querier interface {
 	// DeleteUserByUsernameScan scans the result of an executed DeleteUserByUsernameBatch query.
 	DeleteUserByUsernameScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error)
+	// InsertVCSProviderBatch enqueues a InsertVCSProvider query into batch to be executed
+	// later by the batch.
+	InsertVCSProviderBatch(batch genericBatch, params InsertVCSProviderParams)
+	// InsertVCSProviderScan scans the result of an executed InsertVCSProviderBatch query.
+	InsertVCSProviderScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindVCSProviders(ctx context.Context, organizationName pgtype.Text) ([]FindVCSProvidersRow, error)
+	// FindVCSProvidersBatch enqueues a FindVCSProviders query into batch to be executed
+	// later by the batch.
+	FindVCSProvidersBatch(batch genericBatch, organizationName pgtype.Text)
+	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
+	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
+
+	DeleteVCSProviderByID(ctx context.Context, vcsProviderID pgtype.Text) (pgtype.Text, error)
+	// DeleteVCSProviderByIDBatch enqueues a DeleteVCSProviderByID query into batch to be executed
+	// later by the batch.
+	DeleteVCSProviderByIDBatch(batch genericBatch, vcsProviderID pgtype.Text)
+	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
+	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
 	// later by the batch.
@@ -1113,6 +1134,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteUserByUsernameSQL, deleteUserByUsernameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteUserByUsername': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVCSProvidersSQL, findVCSProvidersSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProviders': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceSQL, insertWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspace': %w", err)

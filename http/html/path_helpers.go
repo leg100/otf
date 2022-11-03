@@ -89,6 +89,22 @@ func newAgentTokenPath(route organizationRoute) string {
 	return path.Join(getOrganizationPath(route), "agent-tokens", "new")
 }
 
+func listVCSProviderPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers")
+}
+
+func newVCSProviderGithubPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", "new", "github")
+}
+
+func createVCSProviderGithubPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", "create", "github")
+}
+
+func deleteVCSProviderPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", "delete")
+}
+
 func listOrganizationPath() string {
 	return "/organizations"
 }
@@ -259,4 +275,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["deleteAgentTokenPath"] = deleteAgentTokenPath
 	m["createAgentTokenPath"] = createAgentTokenPath
 	m["newAgentTokenPath"] = newAgentTokenPath
+	m["listVCSProviderPath"] = listVCSProviderPath
+	m["newVCSProviderGithubPath"] = newVCSProviderGithubPath
+	m["createVCSProviderGithubPath"] = createVCSProviderGithubPath
+	m["deleteVCSProviderPath"] = deleteVCSProviderPath
 }

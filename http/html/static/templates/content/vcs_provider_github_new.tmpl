@@ -1,0 +1,31 @@
+{{ template "layout" . }}
+
+{{ define "title" }}New Github VCS Provider{{ end }}
+
+{{ define "container-header" }}
+  <div>New Github VCS Provider</div>
+{{ end }}
+
+{{ define "content" }}
+  <div>
+    Create a Github VCS provider using a personal token.
+  </div>
+  <div>
+    Follow <a class="show-underline" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token">Github's instructions</a> on how to create a personal token with fine-grained permissions.
+  </div>
+  <form class="main-form" action="{{ createVCSProviderGithubPath .Content }}" method="POST">
+    <ul>
+      <li class="field">
+        <label for="token">Token</label>
+        <input type="text" name="token" id="token" required>
+      </li>
+      <li class="field">
+        <label for="name">Name</label>
+        <input type="text" name="name" id="name" required>
+      </li>
+      <li>
+        <button>Create VCS Provider</button>
+      </li>
+    </ul>
+  </form>
+{{ end }}

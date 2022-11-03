@@ -48,3 +48,11 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 
 	return session
 }
+
+func NewTestVCSProvider(organization *Organization) *VCSProvider {
+	return NewVCSProvider(VCSProviderCreateOptions{
+		Name:             uuid.NewString(),
+		Token:            uuid.NewString(),
+		OrganizationName: organization.Name(),
+	})
+}

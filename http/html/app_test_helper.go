@@ -43,6 +43,7 @@ type fakeApp struct {
 	otf.ConfigurationVersionService
 	otf.EventService
 	otf.CurrentRunService
+	otf.VCSProviderService
 	otf.LockableApplication
 }
 

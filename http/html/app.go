@@ -137,6 +137,11 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/agent-tokens/create", app.createAgentToken)
 		r.GET("/organizations/{organization_name}/agent-tokens/new", app.newAgentToken)
 
+		r.GET("/organizations/{organization_name}/vcs-providers", app.listVCSProviders)
+		r.GET("/organizations/{organization_name}/vcs-providers/new/github", app.newVCSProviderGithub)
+		r.PST("/organizations/{organization_name}/vcs-providers/create/github", app.createVCSProviderGithub)
+		r.PST("/organizations/{organization_name}/vcs-providers/delete", app.deleteVCSProvider)
+
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)
 		r.PST("/organizations/create", app.createOrganization)

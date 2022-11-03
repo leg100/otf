@@ -9,8 +9,12 @@ const (
 	GetEntitlementsAction    Action = "get_entitlements"
 	DeleteOrganizationAction Action = "delete_organization"
 
+	CreateVCSProviderAction Action = "create_vcs_provider"
+	ListVCSProvidersAction  Action = "list_vcs_provider"
+	DeleteVCSProviderAction Action = "delete_vcs_provider"
+
 	CreateAgentTokenAction Action = "create_agent_token"
-	ListAgentTokenActions  Action = "list_agent_tokens"
+	ListAgentTokensAction  Action = "list_agent_tokens"
 	DeleteAgentTokenAction Action = "delete_agent_token"
 
 	GetRunAction      Action = "get_run"

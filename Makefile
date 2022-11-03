@@ -90,7 +90,8 @@ sql:
 		--go-type 'bytea=[]byte' \
 		--acronym url \
 		--acronym sha \
-		--acronym json
+		--acronym json \
+		--acronym vcs
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen
 

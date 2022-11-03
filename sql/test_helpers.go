@@ -158,3 +158,16 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	})
 	return token
 }
+
+func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
+	provider := otf.NewTestVCSProvider(organization)
+	ctx := context.Background()
+
+	err := db.CreateVCSProvider(ctx, provider)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteVCSProvider(ctx, provider.ID())
+	})
+	return provider
+}

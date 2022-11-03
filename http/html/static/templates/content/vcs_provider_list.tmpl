@@ -1,0 +1,39 @@
+{{ template "layout" . }}
+
+{{ define "title" }}VCS providers{{ end }}
+
+{{ define "container-header" }}VCS Providers{{ end }}
+
+{{ define "content" }}
+  <div>
+  To connect workspaces to git repositories containing Terraform configurations, otf needs access to your version control system (VCS) provider. Use this page to create and list access to VCS providers.
+  </div>
+
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      {{ block "content-list-item" . }}{{ end }}
+    {{ else }}
+      No VCS providers are currently configured.
+    {{ end }}
+  </div>
+
+  <form action="{{ newVCSProviderGithubPath .Content }}" method="GET">
+    <button type="submit">New Github VCS Provider</button>
+  </form>
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+      <span class="status">{{ .Name }}</span>
+      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+    </div>
+    <div class="item-content">
+      {{ template "identifier" . }}
+      <form action="{{ deleteVCSProviderPath . }}" method="POST">
+        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        <input type="hidden" name="id" value="{{ .ID }}">
+      </form>
+    </div>
+  </div>
+{{ end }}

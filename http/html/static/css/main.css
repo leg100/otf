@@ -252,6 +252,11 @@ a:hover {
   color: blue;
 }
 
+/* Restore underline to links. Useful in prose in order to differentiate links */
+a.show-underline {
+  text-decoration: underline;
+}
+
 /* the identifier for a resource, de-emphasised because it's not
  * usually relevant to the user */
 .identifier {
@@ -306,6 +311,13 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Content represents the main content of a page */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
 /* center content e.g. the login prompt */
 .center {
   flex: 1;
@@ -313,6 +325,11 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.border-bottom {
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #edeaea;
 }
 
 .login-buttons-container {
