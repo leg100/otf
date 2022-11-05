@@ -498,7 +498,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		if err != nil {
 			return nil, err
 		}
-		zipball, err := client.GetRepoZipball(ctx, ws.VCSRepo())
+		tarball, err := client.GetRepoTarball(ctx, ws.VCSRepo())
 		if err != nil {
 			return nil, err
 		}
@@ -506,7 +506,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		if err != nil {
 			return nil, err
 		}
-		if err := app.UploadConfig(ctx, cv.ID(), zipball); err != nil {
+		if err := app.UploadConfig(ctx, cv.ID(), tarball); err != nil {
 			return nil, err
 		}
 	} else {
@@ -514,9 +514,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		if err != nil {
 			return nil, err
 		}
-		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), otf.ConfigurationVersionCreateOptions{
-			Speculative: otf.Bool(speculative),
-		})
+		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), opts)
 		if err != nil {
 			return nil, err
 		}
