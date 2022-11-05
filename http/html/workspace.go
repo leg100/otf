@@ -484,26 +484,37 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 	}
 
 	var cv *otf.ConfigurationVersion
+	opts := otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(speculative),
+	}
 	if ws.VCSRepo() != nil {
 		provider, err := app.GetVCSProvider(ctx, ws.VCSRepo().ProviderID, ws.OrganizationName())
 		if err != nil {
 			return nil, err
 		}
-
 		client, err := provider.NewDirectoryClient(ctx, otf.DirectoryClientOptions{
 			Token: &oauth2.Token{AccessToken: provider.Token()},
 		})
 		if err != nil {
 			return nil, err
 		}
-
-		// download repo
-	} else {
-		cv, err = app.GetLatestConfigurationVersion(ctx, ws.ID())
+		zipball, err := client.GetRepoZipball(ctx, ws.VCSRepo())
 		if err != nil {
 			return nil, err
 		}
-		cv, err = app.CloneConfigurationVersion(ctx, ws.ID(), otf.ConfigurationVersionCreateOptions{
+		cv, err = app.CreateConfigurationVersion(ctx, ws.ID(), opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := app.UploadConfig(ctx, cv.ID(), zipball); err != nil {
+			return nil, err
+		}
+	} else {
+		latest, err := app.GetLatestConfigurationVersion(ctx, ws.ID())
+		if err != nil {
+			return nil, err
+		}
+		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), otf.ConfigurationVersionCreateOptions{
 			Speculative: otf.Bool(speculative),
 		})
 		if err != nil {

@@ -16,6 +16,7 @@ func Unpack(r io.Reader, dst string) error {
 	if err != nil {
 		return fmt.Errorf("failed to decompress archive: %w", err)
 	}
+	// TODO: close decompressed
 
 	// Untar as we read.
 	untar := tar.NewReader(decompressed)

@@ -1,6 +1,8 @@
 package otf
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"io"
@@ -150,12 +152,11 @@ func (g *githubProvider) ListRepositories(ctx context.Context) ([]*Repo, error) 
 	return results, nil
 }
 
-func (g *githubProvider) GetRepoZipball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
-	// GetArchiveLink(ctx context.Context, owner, repo string, archiveformat ArchiveFormat, opts *RepositoryContentGetOptions, followRedirects bool) (*url.URL, *Response, error) {
+func (g *githubProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
 	opts := github.RepositoryContentGetOptions{
 		Ref: repo.Branch,
 	}
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, repo.Owner(), repo.Repo(), github.Zipball, &opts, true)
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, repo.Owner(), repo.Repo(), github.Tarball, &opts, true)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +166,17 @@ func (g *githubProvider) GetRepoZipball(ctx context.Context, repo *VCSRepo) ([]b
 		return nil, err
 	}
 
-	return io.ReadAll(resp.Body)
+	// convert .tar to .tar.gz
+	tarball := new(bytes.Buffer)
+	compressor := gzip.NewWriter(tarball)
+	if _, err := io.Copy(compressor, resp.Body); err != nil {
+		return nil, err
+	}
+	if err := compressor.Close(); err != nil {
+		return nil, err
+	}
+
+	return tarball.Bytes(), nil
 }
 
 func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {

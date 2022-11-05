@@ -18,7 +18,7 @@ type DirectoryClientOptions struct {
 type DirectoryClient interface {
 	GetUser(ctx context.Context) (*User, error)
 	ListRepositories(ctx context.Context) ([]*Repo, error)
-	GetRepoZipball(ctx context.Context, repo *VCSRepo) ([]byte, error)
+	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
 }
 
 // Repo is a VCS repository belonging to a cloud
