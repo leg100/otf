@@ -41,9 +41,10 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 		return nil, err
 	}
 
-	var oldName string
-	ws, err := a.db.UpdateWorkspace(ctx, spec, func(ws *otf.Workspace) error {
-		oldName = ws.Name()
+	// retain ref to existing name so a name change can be detected
+	var name string
+	updated, err := a.db.UpdateWorkspace(ctx, spec, func(ws *otf.Workspace) error {
+		name = ws.Name()
 		return ws.UpdateWithOptions(ctx, opts)
 	})
 	if err != nil {
@@ -51,11 +52,62 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 		return nil, err
 	}
 
-	if ws.Name() != oldName {
-		a.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: ws})
+	if updated.Name() != name {
+		a.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
 	}
 
 	a.V(0).Info("updated workspace", append(spec.LogFields(), "subject", subject)...)
+
+	return updated, nil
+}
+
+func (a *Application) ConnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+	subject, err := a.CanAccessWorkspace(ctx, otf.UpdateWorkspaceAction, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := a.db.ConnectWorkspaceRepo(ctx, spec, repo)
+	if err != nil {
+		a.Error(err, "connecting workspace to repo", append(spec.LogFields(), "subject", subject, "repo", repo)...)
+		return nil, err
+	}
+
+	a.V(0).Info("connected workspace to repo", append(spec.LogFields(), "subject", subject, "repo", repo)...)
+
+	return ws, nil
+}
+
+func (a *Application) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+	subject, err := a.CanAccessWorkspace(ctx, otf.UpdateWorkspaceAction, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := a.db.UpdateWorkspaceRepo(ctx, spec, repo)
+	if err != nil {
+		a.Error(err, "updating workspace repo connection", append(spec.LogFields(), "subject", subject, "repo", repo)...)
+		return nil, err
+	}
+
+	a.V(0).Info("updated workspace repo connection", append(spec.LogFields(), "subject", subject, "repo", repo)...)
+
+	return ws, nil
+}
+
+func (a *Application) DisconnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	subject, err := a.CanAccessWorkspace(ctx, otf.UpdateWorkspaceAction, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	ws, err := a.db.DisconnectWorkspaceRepo(ctx, spec)
+	if err != nil {
+		a.Error(err, "disconnecting repo from workspace", append(spec.LogFields(), "subject", subject)...)
+		return nil, err
+	}
+
+	a.V(0).Info("disconnected repo from workspace", append(spec.LogFields(), "subject", subject)...)
 
 	return ws, nil
 }

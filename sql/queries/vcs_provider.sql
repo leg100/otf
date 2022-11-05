@@ -19,6 +19,12 @@ FROM vcs_providers
 WHERE organization_name = pggen.arg('organization_name')
 ;
 
+-- name: FindVCSProvider :one
+SELECT *
+FROM vcs_providers
+WHERE vcs_provider_id = pggen.arg('vcs_provider_id')
+;
+
 -- name: DeleteVCSProviderByID :one
 DELETE
 FROM vcs_providers

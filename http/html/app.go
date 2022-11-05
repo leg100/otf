@@ -16,7 +16,7 @@ const DefaultPathPrefix = "/"
 type Config struct {
 	DevMode bool
 
-	cloudConfigs []CloudConfig
+	cloudConfigs []otf.CloudConfig
 }
 
 // NewConfigFromFlags binds flags to the config. The flagset must be parsed
@@ -24,8 +24,8 @@ type Config struct {
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 
-	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGithubConfigFromFlags(flags))
-	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGitlabConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGithubConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGitlabConfigFromFlags(flags))
 
 	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
 	return &cfg
@@ -170,6 +170,10 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions", app.setWorkspacePermission)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions/unset", app.unsetWorkspacePermission)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers", app.listWorkspaceVCSProviders)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/select", app.selectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/connect", app.connectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)

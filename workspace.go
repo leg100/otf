@@ -54,6 +54,7 @@ type Workspace struct {
 	workingDirectory           string
 	organization               *Organization
 	latestRunID                *string
+	repo                       *VCSRepo
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
@@ -84,6 +85,7 @@ func (ws *Workspace) OrganizationID() string           { return ws.organization.
 func (ws *Workspace) OrganizationName() string         { return ws.organization.name }
 func (ws *Workspace) Organization() *Organization      { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
+func (ws *Workspace) VCSRepo() *VCSRepo                { return ws.repo }
 
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
@@ -194,6 +196,12 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		ws.workingDirectory = *opts.WorkingDirectory
 		ws.updatedAt = CurrentTimestamp()
 	}
+	if opts.VCSRepo != nil {
+		if ws.repo != nil {
+			return fmt.Errorf("updating workspace vcs repo not supported")
+		}
+		ws.repo = opts.VCSRepo
+	}
 
 	return nil
 }
@@ -221,6 +229,7 @@ type WorkspaceUpdateOptions struct {
 	TerraformVersion           *string `schema:"terraform_version"`
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
+	*VCSRepo
 }
 
 func (o WorkspaceUpdateOptions) Valid() error {
@@ -237,7 +246,8 @@ func (o WorkspaceUpdateOptions) Valid() error {
 		o.StructuredRunOutputEnabled == nil &&
 		o.TerraformVersion == nil &&
 		o.TriggerPrefixes == nil &&
-		o.WorkingDirectory == nil {
+		o.WorkingDirectory == nil &&
+		o.VCSRepo == nil {
 		return fmt.Errorf("must set at least one option to update")
 	}
 	if o.Name != nil && !ValidStringID(o.Name) {
@@ -284,6 +294,7 @@ type WorkspaceService interface {
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
+	WorkspaceRepoService
 }
 
 type WorkspacePermissionService interface {
@@ -297,6 +308,7 @@ type WorkspaceLockService interface {
 	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
 }
 
+// WorkspaceStore is a persistence store for workspaces.
 type WorkspaceStore interface {
 	CreateWorkspace(ctx context.Context, ws *Workspace) error
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
@@ -312,6 +324,14 @@ type WorkspaceStore interface {
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
+	WorkspaceRepoService
+}
+
+// WorkspaceRepoService manages a workspace's connection to a VCS repository.
+type WorkspaceRepoService interface {
+	ConnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
+	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
+	DisconnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 }
 
 // CurrentRunService provides interaction with the current run for a workspace,

@@ -12,12 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
-	oauth2github "golang.org/x/oauth2/github"
 )
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
 	authenticator := &Authenticator{
-		newFakeCloud("gitlab.com", nil),
+		otf.NewTestCloud("gitlab.com", nil),
 		&fakeAuthenticatorApp{},
 	}
 
@@ -54,7 +53,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	authenticator := &Authenticator{
-		newFakeCloud(srvURL.Host, user),
+		otf.NewTestCloud(srvURL.Host, user),
 		&fakeAuthenticatorApp{},
 	}
 
@@ -81,7 +80,7 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
 	authenticator := &Authenticator{nil, &fakeAuthenticatorApp{}}
-	user, err := authenticator.synchronise(context.Background(), &fakeDirectoryClient{user})
+	user, err := authenticator.synchronise(context.Background(), &otf.TestDirectoryClient{user})
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())
@@ -98,41 +97,6 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 		assert.Equal(t, "owners", user.Teams()[1].Name())
 		assert.Equal(t, "fake-user", user.Teams()[1].Organization().Name())
 	}
-}
-
-type fakeCloud struct {
-	cloudConfig
-	user *otf.User
-}
-
-func newFakeCloud(hostname string, user *otf.User) *fakeCloud {
-	return &fakeCloud{
-		cloudConfig: cloudConfig{
-			cloudName:           "fake",
-			endpoint:            oauth2github.Endpoint,
-			hostname:            hostname,
-			skipTLSVerification: true,
-			OAuthCredentials: &OAuthCredentials{
-				clientID:     "abc-123",
-				clientSecret: "xyz-789",
-			},
-		},
-		user: user,
-	}
-}
-
-func (f *fakeCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
-	return &fakeDirectoryClient{f.user}, nil
-}
-
-func (f *fakeCloud) NewCloud() (Cloud, error) { return nil, nil }
-
-type fakeDirectoryClient struct {
-	user *otf.User
-}
-
-func (f *fakeDirectoryClient) GetUser(context.Context) (*otf.User, error) {
-	return f.user, nil
 }
 
 type fakeAuthenticatorApp struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
+	"golang.org/x/oauth2"
 )
 
 // workspaceRequest provides metadata about a request for a workspace
@@ -29,6 +30,15 @@ func (w workspaceRequest) Spec() otf.WorkspaceSpec {
 		Name:             otf.String(w.WorkspaceName()),
 		OrganizationName: otf.String(w.OrganizationName()),
 	}
+}
+
+// vcsProviderRequest provides metadata about a request for a vcs provider
+type vcsProviderRequest struct {
+	workspaceRequest
+}
+
+func (r vcsProviderRequest) VCSProviderID() string {
+	return param(r.r, "vcs_provider_id")
 }
 
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -171,6 +181,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		http.Redirect(w, r, editWorkspacePath(workspaceRequest{r}), http.StatusFound)
 		return
 	}
+	// TODO: add support for updating vcs repo, e.g. branch, etc.
 	workspace, err := app.UpdateWorkspace(r.Context(), spec, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -330,4 +341,103 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	app.Server.ServeHTTP(w, r)
+}
+
+func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.render("workspace_vcs_provider_list.tmpl", w, r, struct {
+		Items []*otf.VCSProvider
+		workspaceRoute
+	}{
+		Items:          providers,
+		workspaceRoute: workspaceRequest{r},
+	})
+}
+
+func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+	type options struct {
+		OrganizationName string `schema:"organization_name,required"`
+		WorkspaceName    string `schema:"workspace_name,required"`
+		VCSProviderID    string `schema:"vcs_provider_id,required"`
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
+		Token: &oauth2.Token{AccessToken: provider.Token()},
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repos, err := client.ListRepositories(r.Context())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
+		Items []*otf.Repo
+		vcsProviderRoute
+	}{
+		Items:            repos,
+		vcsProviderRoute: vcsProviderRequest{workspaceRequest{r}},
+	})
+}
+
+func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+	type options struct {
+		otf.WorkspaceSpec
+		otf.Repo
+		VCSProviderID string `schema:"vcs_provider_id,required"`
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
+		Branch:     opts.Branch,
+		HttpURL:    opts.HttpURL,
+		Identifier: opts.Identifier,
+		ProviderID: opts.VCSProviderID,
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+	var spec otf.WorkspaceSpec
+	if err := decode.All(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ws, err := app.DisconnectWorkspaceRepo(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }

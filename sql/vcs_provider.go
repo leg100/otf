@@ -19,6 +19,14 @@ func (db *DB) CreateVCSProvider(ctx context.Context, token *otf.VCSProvider) err
 	return err
 }
 
+func (db *DB) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
+	provider, err := db.FindVCSProvider(ctx, String(id))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider)), nil
+}
+
 func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
 	rows, err := db.FindVCSProviders(ctx, String(organization))
 	if err != nil {

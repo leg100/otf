@@ -1,4 +1,4 @@
-package html
+package otf
 
 import (
 	"context"
@@ -6,13 +6,24 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
 	"github.com/spf13/pflag"
 	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"
 )
 
 const DefaultGithubHostname = "github.com"
+
+func defaultGithubConfig() *GithubConfig {
+	return &GithubConfig{
+		cloudConfig: cloudConfig{
+			OAuthCredentials: &OAuthCredentials{prefix: "github"},
+			cloudName:        "github",
+			endpoint:         oauth2github.Endpoint,
+			scopes:           []string{"user:email", "read:org"},
+			hostname:         DefaultGithubHostname,
+		},
+	}
+}
 
 // TODO: rename to githubClient
 type githubProvider struct {
@@ -24,16 +35,9 @@ type GithubConfig struct {
 }
 
 func NewGithubConfigFromFlags(flags *pflag.FlagSet) *GithubConfig {
-	cfg := &GithubConfig{
-		cloudConfig: cloudConfig{
-			OAuthCredentials: &OAuthCredentials{prefix: "github"},
-			cloudName:        "github",
-			endpoint:         oauth2github.Endpoint,
-			scopes:           []string{"user:email", "read:org"},
-		},
-	}
+	cfg := defaultGithubConfig()
 
-	flags.StringVar(&cfg.hostname, "github-hostname", DefaultGithubHostname, "Github hostname")
+	flags.StringVar(&cfg.hostname, "github-hostname", cfg.hostname, "Github hostname")
 	flags.BoolVar(&cfg.skipTLSVerification, "github-skip-tls-verification", false, "Skip github TLS verification")
 	cfg.OAuthCredentials.AddFlags(flags)
 
@@ -61,7 +65,9 @@ func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 		})
 	}
 
-	httpClient := opts.Config.Client(ctx, opts.Token)
+	// Github's oauth access token never expires
+	src := oauth2.StaticTokenSource(opts.Token)
+	httpClient := oauth2.NewClient(ctx, src)
 
 	if g.hostname != DefaultGithubHostname {
 		client, err = NewGithubEnterpriseClient(g.hostname, httpClient)
@@ -74,22 +80,22 @@ func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 	return &githubProvider{client: client}, nil
 }
 
-func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
+func (g *githubProvider) GetUser(ctx context.Context) (*User, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	var orgs []*otf.Organization
-	var teams []*otf.Team
+	var orgs []*Organization
+	var teams []*Team
 
 	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, gorg := range gorgs {
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(gorg.GetLogin()),
+		org, err := NewOrganization(OrganizationCreateOptions{
+			Name: String(gorg.GetLogin()),
 		})
 		if err != nil {
 			return nil, err
@@ -102,7 +108,7 @@ func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
 			return nil, err
 		}
 		if membership.GetRole() == "admin" {
-			teams = append(teams, otf.NewTeam("owners", org))
+			teams = append(teams, NewTeam("owners", org))
 		}
 	}
 
@@ -111,17 +117,36 @@ func (g *githubProvider) GetUser(ctx context.Context) (*otf.User, error) {
 		return nil, err
 	}
 	for _, gteam := range gteams {
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(gteam.GetOrganization().GetLogin()),
+		org, err := NewOrganization(OrganizationCreateOptions{
+			Name: String(gteam.GetOrganization().GetLogin()),
 		})
 		if err != nil {
 			return nil, err
 		}
-		teams = append(teams, otf.NewTeam(gteam.GetName(), org))
+		teams = append(teams, NewTeam(gteam.GetName(), org))
 	}
 
-	user := otf.NewUser(guser.GetLogin(), otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
+	user := NewUser(guser.GetLogin(), WithOrganizationMemberships(orgs...), WithTeamMemberships(teams...))
 	return user, nil
+}
+
+func (g *githubProvider) ListRepositories(ctx context.Context) ([]*Repo, error) {
+	repos, _, err := g.client.Repositories.List(ctx, "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert to common repo type before returning
+	var results []*Repo
+	for _, repo := range repos {
+		results = append(results, &Repo{
+			Identifier: repo.GetFullName(),
+			HttpURL:    repo.GetURL(),
+			Branch:     repo.GetDefaultBranch(),
+		})
+	}
+
+	return results, nil
 }
 
 func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {

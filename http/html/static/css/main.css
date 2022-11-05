@@ -481,7 +481,9 @@ button.delete:hover {
   padding-bottom: 10px;
 }
 
-.item-heading .status-ago {
+/* shift last child in item heading to the far right,
+ * as long as it is not the only child */
+.item-heading :last-child:not(:first-child) {
   margin-left: auto;
 }
 

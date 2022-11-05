@@ -21,6 +21,18 @@ func TestVCSProvider_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestVCSProvider_Get(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	want := createTestVCSProvider(t, db, org)
+
+	got, err := db.GetVCSProvider(ctx, want.ID())
+	require.NoError(t, err)
+
+	assert.Equal(t, want, got)
+}
+
 func TestVCSProvider_List(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

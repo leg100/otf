@@ -112,11 +112,13 @@ const findWorkspacesSQL = `SELECT
     w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock
+    (r.*)::"runs" AS run_lock,
+    (vr.*)::"vcs_repos" AS vcs_repo
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
 WHERE w.name LIKE $1 || '%'
 AND   o.name LIKE ANY($2)
 ORDER BY w.updated_at DESC
@@ -160,6 +162,7 @@ type FindWorkspacesRow struct {
 	Organization               *Organizations     `json:"organization"`
 	UserLock                   *Users             `json:"user_lock"`
 	RunLock                    *Runs              `json:"run_lock"`
+	VCSRepo                    *VCSRepos          `json:"vcs_repo"`
 }
 
 // FindWorkspaces implements Querier.FindWorkspaces.
@@ -174,9 +177,10 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
+	vcsRepoRow := q.types.newVCSRepos()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspaces row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -186,6 +190,9 @@ func (q *DBQuerier) FindWorkspaces(ctx context.Context, params FindWorkspacesPar
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
+		}
+		if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		items = append(items, item)
@@ -212,9 +219,10 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
+	vcsRepoRow := q.types.newVCSRepos()
 	for rows.Next() {
 		var item FindWorkspacesRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -224,6 +232,9 @@ func (q *DBQuerier) FindWorkspacesScan(results pgx.BatchResults) ([]FindWorkspac
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
+		}
+		if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspaces row: %w", err)
 		}
 		items = append(items, item)
@@ -271,12 +282,14 @@ const findWorkspacesByUserIDSQL = `SELECT
     w.*,
     (o.*)::"organizations" AS organization,
     (ul.*)::"users" AS user_lock,
-    (rl.*)::"runs" AS run_lock
+    (rl.*)::"runs" AS run_lock,
+    (vr.*)::"vcs_repos" AS vcs_repo
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
+LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.user_id = u.user_id
@@ -323,6 +336,7 @@ type FindWorkspacesByUserIDRow struct {
 	Organization               *Organizations     `json:"organization"`
 	UserLock                   *Users             `json:"user_lock"`
 	RunLock                    *Runs              `json:"run_lock"`
+	VCSRepo                    *VCSRepos          `json:"vcs_repo"`
 }
 
 // FindWorkspacesByUserID implements Querier.FindWorkspacesByUserID.
@@ -337,9 +351,10 @@ func (q *DBQuerier) FindWorkspacesByUserID(ctx context.Context, params FindWorks
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
+	vcsRepoRow := q.types.newVCSRepos()
 	for rows.Next() {
 		var item FindWorkspacesByUserIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUserID row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -349,6 +364,9 @@ func (q *DBQuerier) FindWorkspacesByUserID(ctx context.Context, params FindWorks
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
+		}
+		if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		items = append(items, item)
@@ -375,9 +393,10 @@ func (q *DBQuerier) FindWorkspacesByUserIDScan(results pgx.BatchResults) ([]Find
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
+	vcsRepoRow := q.types.newVCSRepos()
 	for rows.Next() {
 		var item FindWorkspacesByUserIDRow
-		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+		if err := rows.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 			return nil, fmt.Errorf("scan FindWorkspacesByUserIDBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -387,6 +406,9 @@ func (q *DBQuerier) FindWorkspacesByUserIDScan(results pgx.BatchResults) ([]Find
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
+		}
+		if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 			return nil, fmt.Errorf("assign FindWorkspacesByUserID row: %w", err)
 		}
 		items = append(items, item)
@@ -563,11 +585,13 @@ func (q *DBQuerier) FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.
 const findWorkspaceByNameSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock
+    (r.*)::"runs" AS run_lock,
+    (vr.*)::"vcs_repos" AS vcs_repo
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
 WHERE w.name = $1
 AND   o.name = $2
 ;`
@@ -601,6 +625,7 @@ type FindWorkspaceByNameRow struct {
 	Organization               *Organizations     `json:"organization"`
 	UserLock                   *Users             `json:"user_lock"`
 	RunLock                    *Runs              `json:"run_lock"`
+	VCSRepo                    *VCSRepos          `json:"vcs_repo"`
 }
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
@@ -611,7 +636,8 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name pgtype.Text, o
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByName: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -621,6 +647,9 @@ func (q *DBQuerier) FindWorkspaceByName(ctx context.Context, name pgtype.Text, o
 		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
 	}
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
+	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
 	}
 	return item, nil
@@ -638,7 +667,8 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByNameBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -650,17 +680,22 @@ func (q *DBQuerier) FindWorkspaceByNameScan(results pgx.BatchResults) (FindWorks
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
 	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByName row: %w", err)
+	}
 	return item, nil
 }
 
 const findWorkspaceByIDSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock
+    (r.*)::"runs" AS run_lock,
+    (vr.*)::"vcs_repos" AS vcs_repo
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = $1
 ;`
 
@@ -693,6 +728,7 @@ type FindWorkspaceByIDRow struct {
 	Organization               *Organizations     `json:"organization"`
 	UserLock                   *Users             `json:"user_lock"`
 	RunLock                    *Runs              `json:"run_lock"`
+	VCSRepo                    *VCSRepos          `json:"vcs_repo"`
 }
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
@@ -703,7 +739,8 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (Find
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByID: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -713,6 +750,9 @@ func (q *DBQuerier) FindWorkspaceByID(ctx context.Context, id pgtype.Text) (Find
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
+	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
 	return item, nil
@@ -730,7 +770,8 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -742,17 +783,22 @@ func (q *DBQuerier) FindWorkspaceByIDScan(results pgx.BatchResults) (FindWorkspa
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
 	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByID row: %w", err)
+	}
 	return item, nil
 }
 
 const findWorkspaceByIDForUpdateSQL = `SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
-    (r.*)::"runs" AS run_lock
+    (r.*)::"runs" AS run_lock,
+    (vr.*)::"vcs_repos" AS vcs_repo
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
+LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = $1
 FOR UPDATE OF w;`
 
@@ -785,6 +831,7 @@ type FindWorkspaceByIDForUpdateRow struct {
 	Organization               *Organizations     `json:"organization"`
 	UserLock                   *Users             `json:"user_lock"`
 	RunLock                    *Runs              `json:"run_lock"`
+	VCSRepo                    *VCSRepos          `json:"vcs_repo"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.
@@ -795,7 +842,8 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Te
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("query FindWorkspaceByIDForUpdate: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -805,6 +853,9 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdate(ctx context.Context, id pgtype.Te
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	return item, nil
@@ -822,7 +873,8 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 	organizationRow := q.types.newOrganizations()
 	userLockRow := q.types.newUsers()
 	runLockRow := q.types.newRuns()
-	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow); err != nil {
+	vcsRepoRow := q.types.newVCSRepos()
+	if err := row.Scan(&item.WorkspaceID, &item.CreatedAt, &item.UpdatedAt, &item.AllowDestroyPlan, &item.AutoApply, &item.CanQueueDestroyPlan, &item.Description, &item.Environment, &item.ExecutionMode, &item.FileTriggersEnabled, &item.GlobalRemoteState, &item.MigrationEnvironment, &item.Name, &item.QueueAllRuns, &item.SpeculativeEnabled, &item.SourceName, &item.SourceURL, &item.StructuredRunOutputEnabled, &item.TerraformVersion, &item.TriggerPrefixes, &item.WorkingDirectory, &item.OrganizationID, &item.LockRunID, &item.LockUserID, &item.LatestRunID, organizationRow, userLockRow, runLockRow, vcsRepoRow); err != nil {
 		return item, fmt.Errorf("scan FindWorkspaceByIDForUpdateBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
@@ -832,6 +884,9 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	if err := runLockRow.AssignTo(&item.RunLock); err != nil {
+		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
+	}
+	if err := vcsRepoRow.AssignTo(&item.VCSRepo); err != nil {
 		return item, fmt.Errorf("assign FindWorkspaceByIDForUpdate row: %w", err)
 	}
 	return item, nil

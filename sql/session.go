@@ -51,11 +51,15 @@ func (db *DB) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
-func (db *DB) startCleanup(interval time.Duration) {
+func (db *DB) startCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	for {
-		<-ticker.C
-		db.deleteExpired()
+		select {
+		case <-ticker.C:
+			db.deleteExpired()
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

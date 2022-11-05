@@ -32,6 +32,9 @@
         <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
       </form>
     </div>
+    {{ with .Content.VCSRepo }}
+    <div>Connected to <span class="data">{{ .Identifier }}</span></div>
+    {{ end }}
     {{ with .Content.LatestRun }}
       <div>
         <h3>Latest Run</h3>

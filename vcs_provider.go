@@ -13,8 +13,11 @@ type VCSProvider struct {
 	createdAt time.Time
 	token     string
 	name      string
+	cloud     string
 	// vcs provider belongs to an organization
 	organizationName string
+
+	*GithubCloud
 }
 
 func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
@@ -24,6 +27,7 @@ func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
 		token:            opts.Token,
 		name:             opts.Name,
 		organizationName: opts.OrganizationName,
+		GithubCloud:      &GithubCloud{defaultGithubConfig()},
 	}
 }
 
@@ -57,12 +61,14 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) *VCSProvider {
 		token:            row.Token.String,
 		name:             row.Name.String,
 		organizationName: row.OrganizationName.String,
+		GithubCloud:      &GithubCloud{defaultGithubConfig()},
 	}
 }
 
 // VCSProviderService provides access to vcs providers
 type VCSProviderService interface {
 	CreateVCSProvider(ctx context.Context, opts VCSProviderCreateOptions) (*VCSProvider, error)
+	GetVCSProvider(ctx context.Context, id, organization string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id, organization string) error
 }
@@ -70,6 +76,7 @@ type VCSProviderService interface {
 // VCSProviderStore persists vcs providers
 type VCSProviderStore interface {
 	CreateVCSProvider(ctx context.Context, provider *VCSProvider) error
+	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id string) error
 }

@@ -1,7 +1,6 @@
-package html
+package otf
 
 import (
-	"github.com/leg100/otf"
 	"golang.org/x/oauth2"
 )
 
@@ -36,11 +35,11 @@ func (g cloudConfig) Endpoint() (oauth2.Endpoint, error) {
 	var err error
 	var endpoint oauth2.Endpoint
 
-	endpoint.AuthURL, err = otf.UpdateHost(g.endpoint.AuthURL, g.hostname)
+	endpoint.AuthURL, err = UpdateHost(g.endpoint.AuthURL, g.hostname)
 	if err != nil {
 		return oauth2.Endpoint{}, err
 	}
-	endpoint.TokenURL, err = otf.UpdateHost(g.endpoint.TokenURL, g.hostname)
+	endpoint.TokenURL, err = UpdateHost(g.endpoint.TokenURL, g.hostname)
 	if err != nil {
 		return oauth2.Endpoint{}, err
 	}

@@ -636,12 +636,40 @@ type Querier interface {
 	// FindVCSProvidersScan scans the result of an executed FindVCSProvidersBatch query.
 	FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSProvidersRow, error)
 
+	FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error)
+	// FindVCSProviderBatch enqueues a FindVCSProvider query into batch to be executed
+	// later by the batch.
+	FindVCSProviderBatch(batch genericBatch, vcsProviderID pgtype.Text)
+	// FindVCSProviderScan scans the result of an executed FindVCSProviderBatch query.
+	FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error)
+
 	DeleteVCSProviderByID(ctx context.Context, vcsProviderID pgtype.Text) (pgtype.Text, error)
 	// DeleteVCSProviderByIDBatch enqueues a DeleteVCSProviderByID query into batch to be executed
 	// later by the batch.
 	DeleteVCSProviderByIDBatch(batch genericBatch, vcsProviderID pgtype.Text)
 	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
 	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	InsertVCSRepo(ctx context.Context, params InsertVCSRepoParams) (pgconn.CommandTag, error)
+	// InsertVCSRepoBatch enqueues a InsertVCSRepo query into batch to be executed
+	// later by the batch.
+	InsertVCSRepoBatch(batch genericBatch, params InsertVCSRepoParams)
+	// InsertVCSRepoScan scans the result of an executed InsertVCSRepoBatch query.
+	InsertVCSRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateVCSRepo(ctx context.Context, params UpdateVCSRepoParams) (pgtype.Text, error)
+	// UpdateVCSRepoBatch enqueues a UpdateVCSRepo query into batch to be executed
+	// later by the batch.
+	UpdateVCSRepoBatch(batch genericBatch, params UpdateVCSRepoParams)
+	// UpdateVCSRepoScan scans the result of an executed UpdateVCSRepoBatch query.
+	UpdateVCSRepoScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteVCSRepo(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error)
+	// DeleteVCSRepoBatch enqueues a DeleteVCSRepo query into batch to be executed
+	// later by the batch.
+	DeleteVCSRepoBatch(batch genericBatch, workspaceID pgtype.Text)
+	// DeleteVCSRepoScan scans the result of an executed DeleteVCSRepoBatch query.
+	DeleteVCSRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
@@ -1141,8 +1169,20 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findVCSProvidersSQL, findVCSProvidersSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindVCSProviders': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findVCSProviderSQL, findVCSProviderSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVCSProvider': %w", err)
+	}
 	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertVCSRepoSQL, insertVCSRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertVCSRepo': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateVCSRepoSQL, updateVCSRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateVCSRepo': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteVCSRepoSQL, deleteVCSRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteVCSRepo': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceSQL, insertWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspace': %w", err)
@@ -1294,6 +1334,14 @@ type Users struct {
 	Username  pgtype.Text        `json:"username"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+// VCSRepos represents the Postgres composite type "vcs_repos".
+type VCSRepos struct {
+	Identifier    pgtype.Text `json:"identifier"`
+	Branch        pgtype.Text `json:"branch"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
 }
 
 // typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
@@ -1498,6 +1546,18 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 		compositeField{"username", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+	)
+}
+
+// newVCSRepos creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'vcs_repos'.
+func (tr *typeResolver) newVCSRepos() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"vcs_repos",
+		compositeField{"identifier", "text", &pgtype.Text{}},
+		compositeField{"branch", "text", &pgtype.Text{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)
 }
 

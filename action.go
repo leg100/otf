@@ -10,6 +10,7 @@ const (
 	DeleteOrganizationAction Action = "delete_organization"
 
 	CreateVCSProviderAction Action = "create_vcs_provider"
+	GetVCSProviderAction    Action = "get_vcs_provider"
 	ListVCSProvidersAction  Action = "list_vcs_provider"
 	DeleteVCSProviderAction Action = "delete_vcs_provider"
 

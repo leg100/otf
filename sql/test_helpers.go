@@ -33,7 +33,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 		interval = sessionCleanupIntervalOverride[0]
 	}
 
-	db, err := New(logr.Discard(), u.String(), nil, interval)
+	db, err := New(context.Background(), logr.Discard(), u.String(), nil, interval)
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })

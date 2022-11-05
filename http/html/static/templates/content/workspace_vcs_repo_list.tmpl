@@ -1,0 +1,39 @@
+{{ template "layout" . }}
+
+{{ define "title" }}VCS providers{{ end }}
+
+{{ define "container-header" }}
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  /
+  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
+  /
+  vcs providers
+{{ end }}
+
+{{ define "content" }}
+  <div>
+    Select a VCS provider to connect this workspace to.
+  </div>
+
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      <div class="item">
+        <div class="item-heading">
+          <span class="status">{{ .Identifier }}</span>
+          <form action="{{ connectWorkspaceRepoPath $.Content }}" method="POST">
+            <input type="hidden" name="identifier" id="identifier" value="{{ .Identifier }}" required>
+            <input type="hidden" name="branch" id="branch" value="{{ .Branch }}" required>
+            <input type="hidden" name="http_url" id="http_url" value="{{ .HttpURL }}" required>
+            <button>connect</button>
+          </form>
+        </div>
+        <div class="item-content">
+          {{ template "identifier" . }}
+        </div>
+      </div>
+    {{ else }}
+      No VCS providers are currently configured.
+    {{ end }}
+  </div>
+{{ end }}
+

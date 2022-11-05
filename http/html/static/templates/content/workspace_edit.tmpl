@@ -15,6 +15,17 @@
 {{ end }}
 
 {{ define "content" }}
+  <div>
+    {{ if .Content.VCSRepo }}
+      <form action="{{ disconnectWorkspaceRepoPath .Content }}" method="GET">
+        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.VCSRepo.Identifier }}</button>
+      </form>
+    {{ else }}
+      <form action="{{ listWorkspaceVCSProvidersPath .Content }}" method="GET">
+        <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
+      </form>
+    {{ end }}
+  </div>
   <form class="main-form" action="{{ updateWorkspacePath .Content }}" method="POST">
     <div class="field">
       <label for="name">Name</label>

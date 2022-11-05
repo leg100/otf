@@ -118,6 +118,45 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 	return items, err
 }
 
+const findVCSProviderSQL = `SELECT *
+FROM vcs_providers
+WHERE vcs_provider_id = $1
+;`
+
+type FindVCSProviderRow struct {
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindVCSProvider implements Querier.FindVCSProvider.
+func (q *DBQuerier) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Text) (FindVCSProviderRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProvider")
+	row := q.conn.QueryRow(ctx, findVCSProviderSQL, vcsProviderID)
+	var item FindVCSProviderRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("query FindVCSProvider: %w", err)
+	}
+	return item, nil
+}
+
+// FindVCSProviderBatch implements Querier.FindVCSProviderBatch.
+func (q *DBQuerier) FindVCSProviderBatch(batch genericBatch, vcsProviderID pgtype.Text) {
+	batch.Queue(findVCSProviderSQL, vcsProviderID)
+}
+
+// FindVCSProviderScan implements Querier.FindVCSProviderScan.
+func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error) {
+	row := results.QueryRow()
+	var item FindVCSProviderRow
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("scan FindVCSProviderBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const deleteVCSProviderByIDSQL = `DELETE
 FROM vcs_providers
 WHERE vcs_provider_id = $1

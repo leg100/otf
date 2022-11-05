@@ -1,11 +1,10 @@
-package html
+package otf
 
 import (
 	"context"
 	"fmt"
 	"net/url"
 
-	"github.com/leg100/otf"
 	"github.com/spf13/pflag"
 	"github.com/xanzy/go-gitlab"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
@@ -64,24 +63,24 @@ func (g *gitlabCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 // groups and the user's teams map to their access level on the groups, e.g. a
 // user with maintainer access level on group acme maps to a user in the
 // maintainer team in the acme organization.
-func (g *gitlabProvider) GetUser(ctx context.Context) (*otf.User, error) {
+func (g *gitlabProvider) GetUser(ctx context.Context) (*User, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
 		return nil, err
 	}
 
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
-		TopLevelOnly: otf.Bool(true),
+		TopLevelOnly: Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	var orgs []*otf.Organization
-	var teams []*otf.Team
+	var orgs []*Organization
+	var teams []*Team
 	for _, group := range groups {
 		// Create org for each top-level group
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(group.Path),
+		org, err := NewOrganization(OrganizationCreateOptions{
+			Name: String(group.Path),
 		})
 		if err != nil {
 			return nil, err
@@ -109,8 +108,26 @@ func (g *gitlabProvider) GetUser(ctx context.Context) (*otf.User, error) {
 			// TODO: skip unknown access levels without error
 			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
 		}
-		teams = append(teams, otf.NewTeam(teamName, org))
+		teams = append(teams, NewTeam(teamName, org))
 	}
-	user := otf.NewUser(guser.Username, otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
+	user := NewUser(guser.Username, WithOrganizationMemberships(orgs...), WithTeamMemberships(teams...))
 	return user, nil
+}
+
+func (g *gitlabProvider) ListRepositories(ctx context.Context) ([]*Repo, error) {
+	projects, _, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert to common repo type before returning
+	var results []*Repo
+	for _, proj := range projects {
+		results = append(results, &Repo{
+			Identifier: proj.PathWithNamespace,
+			HttpURL:    proj.WebURL,
+		})
+	}
+
+	return results, nil
 }
