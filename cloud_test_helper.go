@@ -28,17 +28,18 @@ func NewTestCloud(hostname string, user *User) *testCloud {
 }
 
 func (f *testCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
-	return &TestDirectoryClient{f.user}, nil
+	return &TestDirectoryClient{user: f.user}, nil
 }
 
 func (f *testCloud) NewCloud() (Cloud, error) { return nil, nil }
 
 type TestDirectoryClient struct {
-	User *User
+	user *User
+	DirectoryClient
 }
 
 func (f *TestDirectoryClient) GetUser(context.Context) (*User, error) {
-	return f.User, nil
+	return f.user, nil
 }
 
 func (f *TestDirectoryClient) ListRepositories(context.Context) ([]*Repo, error) {

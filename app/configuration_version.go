@@ -26,6 +26,29 @@ func (a *Application) CreateConfigurationVersion(ctx context.Context, workspaceI
 	return cv, nil
 }
 
+func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string, opts otf.ConfigurationVersionCreateOptions) (*otf.ConfigurationVersion, error) {
+	cv, err := a.GetConfigurationVersion(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	cv, err = a.CreateConfigurationVersion(ctx, cv.WorkspaceID(), opts)
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := a.DownloadConfig(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := a.UploadConfig(ctx, cvID, config); err != nil {
+		return nil, err
+	}
+
+	return cv, nil
+}
+
 func (a *Application) ListConfigurationVersions(ctx context.Context, workspaceID string, opts otf.ConfigurationVersionListOptions) (*otf.ConfigurationVersionList, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, otf.ListConfigurationVersionsAction, workspaceID)
 	if err != nil {

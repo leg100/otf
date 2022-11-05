@@ -192,6 +192,10 @@ func disconnectWorkspaceRepoPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/repo/connect", ws.OrganizationName(), ws.WorkspaceName())
 }
 
+func startRunPath(ws workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/start-run", ws.OrganizationName(), ws.WorkspaceName())
+}
+
 func editWorkspacePath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", ws.OrganizationName(), ws.WorkspaceName())
 }
@@ -226,10 +230,6 @@ func listRunPath(ws workspaceRoute) string {
 
 func newRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", ws.OrganizationName(), ws.WorkspaceName())
-}
-
-func createRunPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/create", ws.OrganizationName(), ws.WorkspaceName())
 }
 
 func getRunPath(run runRoute) string {
@@ -288,7 +288,6 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["unsetWorkspacePermissionPath"] = unsetWorkspacePermissionPath
 	m["listRunPath"] = listRunPath
 	m["newRunPath"] = newRunPath
-	m["createRunPath"] = createRunPath
 	m["getRunPath"] = getRunPath
 	m["watchWorkspacePath"] = watchWorkspacePath
 	m["tailRunPath"] = tailRunPath
@@ -306,4 +305,5 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["selectWorkspaceRepoPath"] = selectWorkspaceRepoPath
 	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
 	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
+	m["startRunPath"] = startRunPath
 }

@@ -2,6 +2,7 @@ package html
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -440,4 +441,77 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 	}
 
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
+	// parse params:
+	// workspace spec
+	// type of run to start: plan-only, or plan-and-apply
+	type options struct {
+		otf.WorkspaceSpec
+		Strategy string `schema:"strategy,required"`
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	var speculative bool
+	switch opts.Strategy {
+	case "plan-only":
+		speculative = true
+	case "plan-and-apply":
+		speculative = false
+	default:
+		writeError(w, "invalid strategy", http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	http.Redirect(w, r, getRunPath(run), http.StatusFound)
+}
+
+func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, speculative bool) (*otf.Run, error) {
+	ws, err := app.GetWorkspace(ctx, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	var cv *otf.ConfigurationVersion
+	if ws.VCSRepo() != nil {
+		provider, err := app.GetVCSProvider(ctx, ws.VCSRepo().ProviderID, ws.OrganizationName())
+		if err != nil {
+			return nil, err
+		}
+
+		client, err := provider.NewDirectoryClient(ctx, otf.DirectoryClientOptions{
+			Token: &oauth2.Token{AccessToken: provider.Token()},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// download repo
+	} else {
+		cv, err = app.GetLatestConfigurationVersion(ctx, ws.ID())
+		if err != nil {
+			return nil, err
+		}
+		cv, err = app.CloneConfigurationVersion(ctx, ws.ID(), otf.ConfigurationVersionCreateOptions{
+			Speculative: otf.Bool(speculative),
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return app.CreateRun(ctx, spec, otf.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID()),
+	})
 }

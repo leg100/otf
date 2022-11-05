@@ -64,25 +64,6 @@ func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
-	var opts otf.RunCreateOptions
-	if err := decode.Route(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	if err := decode.Form(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	ws := workspaceRequest{r}.Spec()
-	created, err := app.CreateRun(r.Context(), ws, opts)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, getRunPath(created), http.StatusFound)
-}
-
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {

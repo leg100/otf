@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"net/http"
 
 	"github.com/google/go-github/v41/github"
@@ -147,6 +148,24 @@ func (g *githubProvider) ListRepositories(ctx context.Context) ([]*Repo, error) 
 	}
 
 	return results, nil
+}
+
+func (g *githubProvider) GetRepoZipball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
+	// GetArchiveLink(ctx context.Context, owner, repo string, archiveformat ArchiveFormat, opts *RepositoryContentGetOptions, followRedirects bool) (*url.URL, *Response, error) {
+	opts := github.RepositoryContentGetOptions{
+		Ref: repo.Branch,
+	}
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, repo.Owner(), repo.Repo(), github.Zipball, &opts, true)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Get(link.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
 func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {

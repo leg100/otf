@@ -387,8 +387,9 @@ a.show-underline {
   gap: 1.5em;
 }
 
-/* Workspace delete button shifted to the far right to de-emphasise */
-.workspace-info .workspace-delete-button {
+/* shift last child in workspace info container to the far right,
+ * as long as it is not the only child */
+.workspace-info :last-child:not(:first-child) {
   margin-left: auto;
 }
 

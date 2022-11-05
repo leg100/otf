@@ -55,4 +55,7 @@
       <button>Save changes</button>
     </div>
   </form>
+  <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content }}" method="POST">
+    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+  </form>
 {{ end }}

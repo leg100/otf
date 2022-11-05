@@ -131,3 +131,14 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context) ([]*Repo, error) 
 
 	return results, nil
 }
+
+func (g *gitlabProvider) GetRepoZipball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
+	zball, _, err := g.client.Repositories.Archive(url.PathEscape(repo.Identifier), &gitlab.ArchiveOptions{
+		Format: String("zip"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return zball, nil
+}

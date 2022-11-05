@@ -117,6 +117,9 @@ type ConfigurationVersionCreateOptions struct {
 
 type ConfigurationVersionService interface {
 	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	// CloneConfigurationVersion creates a new configuration version using the
+	// config tarball of an existing configuration version.
+	CloneConfigurationVersion(ctx context.Context, cvID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
 	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
 	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)

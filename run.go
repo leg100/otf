@@ -694,10 +694,8 @@ type RunCreateOptions struct {
 	RefreshOnly            *bool
 	Message                *string
 	ConfigurationVersionID *string
-	WorkspaceID            *string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
-	WorkspaceSpec          WorkspaceSpec
 }
 
 // TestRunCreateOptions is for testing purposes only.

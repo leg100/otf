@@ -174,11 +174,11 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/select", app.selectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/connect", app.connectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
