@@ -48,6 +48,23 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 }
 
+func TestListWorkspaceProvidersHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	cloud := otf.NewTestCloud()
+	providers := []*otf.VCSProvider{
+		otf.NewTestVCSProvider(org, cloud),
+		otf.NewTestVCSProvider(org, cloud),
+		otf.NewTestVCSProvider(org, cloud),
+	}
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
+
+	q := "/?"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.listWorkspaceVCSProviders(w, r)
+	assert.Equal(t, 200, w.Code)
+}
+
 func TestListWorkspaceReposHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	repos := []*otf.Repo{
@@ -58,7 +75,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		otf.NewTestRepo(),
 	}
 	provider := otf.NewTestVCSProvider(org, otf.NewTestCloud(otf.WithRepos(repos...)))
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{provider: provider})
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: []*otf.VCSProvider{provider}})
 
 	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
 	r := httptest.NewRequest("GET", q, nil)
@@ -96,7 +113,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 
 type fakeWorkspaceHandlerApp struct {
 	workspaces []*otf.Workspace
-	provider   *otf.VCSProvider
+	providers  []*otf.VCSProvider
 	otf.Application
 }
 
@@ -108,5 +125,9 @@ func (f *fakeWorkspaceHandlerApp) ListWorkspaces(ctx context.Context, opts otf.W
 }
 
 func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID, organization string) (*otf.VCSProvider, error) {
-	return f.provider, nil
+	return f.providers[0], nil
+}
+
+func (f *fakeWorkspaceHandlerApp) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
+	return f.providers, nil
 }
