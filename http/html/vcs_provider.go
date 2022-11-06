@@ -9,7 +9,8 @@ import (
 )
 
 func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
-	app.render("vcs_provider_new.tmpl", w, r, organizationRequest{r})
+	tmpl := "vcs_provider_" + mux.Vars(r)["cloud_name"] + "_new.tmpl"
+	app.render(tmpl, w, r, organizationRequest{r})
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {

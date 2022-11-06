@@ -52,6 +52,7 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 func NewTestVCSProvider(organization *Organization) *VCSProvider {
 	return NewVCSProvider(VCSProviderCreateOptions{
 		Name:             uuid.NewString(),
+		Cloud:            "github",
 		Token:            uuid.NewString(),
 		OrganizationName: organization.Name(),
 	})

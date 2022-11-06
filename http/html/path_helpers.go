@@ -298,8 +298,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["createAgentTokenPath"] = createAgentTokenPath
 	m["newAgentTokenPath"] = newAgentTokenPath
 	m["listVCSProviderPath"] = listVCSProviderPath
-	m["newVCSProviderGithubPath"] = newVCSProviderPath
-	m["createVCSProviderGithubPath"] = createVCSProviderPath
+	m["newVCSProviderPath"] = newVCSProviderPath
+	m["createVCSProviderPath"] = createVCSProviderPath
 	m["deleteVCSProviderPath"] = deleteVCSProviderPath
 	m["listWorkspaceVCSProvidersPath"] = listWorkspaceVCSProvidersPath
 	m["selectWorkspaceRepoPath"] = selectWorkspaceRepoPath

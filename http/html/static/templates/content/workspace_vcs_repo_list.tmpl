@@ -7,12 +7,12 @@
   /
   <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
   /
-  vcs providers
+  vcs repositories
 {{ end }}
 
 {{ define "content" }}
   <div>
-    Select a VCS provider to connect this workspace to.
+    Select a VCS repository to connect this workspace to.
   </div>
 
   <div id="content-list" class="content-list">

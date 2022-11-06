@@ -25,6 +25,7 @@ func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
 		createdAt:        CurrentTimestamp(),
 		token:            opts.Token,
 		name:             opts.Name,
+		cloud:            opts.Cloud,
 		organizationName: opts.OrganizationName,
 	}
 }
@@ -34,6 +35,7 @@ func (t *VCSProvider) String() string           { return t.name }
 func (t *VCSProvider) Token() string            { return t.token }
 func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
+func (t *VCSProvider) Cloud() string            { return t.cloud }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 
 func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
@@ -51,6 +53,7 @@ type VCSProviderCreateOptions struct {
 	OrganizationName string `schema:"organization_name,required"`
 	Token            string `schema:"token,required"`
 	Name             string `schema:"name,required"`
+	Cloud            string `schema:"cloud,required"`
 }
 
 // VCSProviderRow represents a database row for a vcs provider
@@ -59,6 +62,7 @@ type VCSProviderRow struct {
 	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
@@ -69,8 +73,8 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) *VCSProvider {
 		createdAt:        row.CreatedAt.Time.UTC(),
 		token:            row.Token.String,
 		name:             row.Name.String,
+		cloud:            row.Cloud.String,
 		organizationName: row.OrganizationName.String,
-		GithubCloud:      &GithubCloud{defaultGithubConfig()},
 	}
 }
 

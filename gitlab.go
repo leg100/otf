@@ -19,6 +19,7 @@ func defaultGitlabConfig() *GitlabConfig {
 			cloudName:        "gitlab",
 			endpoint:         oauth2gitlab.Endpoint,
 			scopes:           []string{"read_user", "read_api"},
+			hostname:         DefaultGitlabHostname,
 		},
 	}
 }
@@ -130,8 +131,8 @@ func (g *gitlabProvider) GetUser(ctx context.Context) (*User, error) {
 func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions) (*RepoList, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			Page:    lopts.PageNumber,
-			PerPage: lopts.PageSize,
+			Page:    lopts.SanitizedPageNumber(),
+			PerPage: lopts.SanitizedPageSize(),
 		},
 	}
 	projects, resp, err := g.client.Projects.ListProjects(opts, nil)
@@ -148,9 +149,17 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions
 			Branch:     proj.DefaultBranch,
 		})
 	}
+	// gitlab doesn't seem to populate resp.TotalItems, which usually rely upon
+	// to create pagination, so we create a made up number based on current page
+	// and if there is a next page then add one more item, which will prompt
+	// pagination to produce a link to the next page...
+	total := resp.ItemsPerPage * resp.CurrentPage
+	if resp.NextPage != 0 {
+		total++
+	}
 	return &RepoList{
 		Items:      items,
-		Pagination: NewPagination(lopts, resp.TotalItems),
+		Pagination: NewPagination(lopts, total),
 	}, nil
 }
 

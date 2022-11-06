@@ -4,12 +4,14 @@ INSERT INTO vcs_providers (
     token,
     created_at,
     name,
+    cloud,
     organization_name
 ) VALUES (
     pggen.arg('vcs_provider_id'),
     pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('name'),
+    pggen.arg('cloud'),
     pggen.arg('organization_name')
 );
 
