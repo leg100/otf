@@ -42,7 +42,7 @@ func (a *Application) CloneConfigurationVersion(ctx context.Context, cvID string
 		return nil, err
 	}
 
-	if err := a.UploadConfig(ctx, cvID, config); err != nil {
+	if err := a.UploadConfig(ctx, cv.ID(), config); err != nil {
 		return nil, err
 	}
 

@@ -67,7 +67,7 @@ func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, t
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	if cv.status != ConfigurationPending {
-		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
+		return fmt.Errorf("cannot upload config for a configuration version with non-pending status: %s", cv.status)
 	}
 
 	// check config untars successfully and set errored status if not

@@ -1,12 +1,10 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +21,9 @@ func TestWeb(t *testing.T) {
 	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
 	hostname := startDaemon(t, user)
 	url := "https://" + hostname
+
+	// TODO: move tests out of subtests - we're not testing bits of functionality
+	// independently but serially.
 
 	t.Run("login", func(t *testing.T) {
 		ctx, cancel := chromedp.NewContext(allocator)
@@ -46,7 +47,7 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("new workspace", func(t *testing.T) {
-		createWebWorkspace(t, allocator, url, org)
+		createWebWorkspace(t, allocator, url, org.Name())
 	})
 
 	t.Run("assign workspace manager role to devops team", func(t *testing.T) {
@@ -79,7 +80,7 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("add write workspace permission to owners team", func(t *testing.T) {
-		workspace := createWebWorkspace(t, allocator, url, org)
+		workspace := createWebWorkspace(t, allocator, url, org.Name())
 
 		// assign write permissions to team
 		addWorkspacePermission(t, allocator, url, org.Name(), workspace, devops.Name(), "write")
@@ -135,76 +136,4 @@ func TestWeb(t *testing.T) {
 
 		assert.Equal(t, user.Username(), strings.TrimSpace(gotUser))
 	})
-}
-
-func createWebWorkspace(t *testing.T, ctx context.Context, url string, org *otf.Organization) string {
-	ctx, cancel := chromedp.NewContext(ctx)
-	defer cancel()
-
-	var gotFlashSuccess string
-	workspaceName := "workspace-" + otf.GenerateRandomString(4)
-	orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
-
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		chromedp.Navigate(url),
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
-		ss.screenshot(t),
-		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
-		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
-		ss.screenshot(t),
-		chromedp.Focus("input#name", chromedp.NodeVisible),
-		input.InsertText(workspaceName),
-		chromedp.Click("#create-workspace-button"),
-		ss.screenshot(t),
-		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
-	})
-	require.NoError(t, err)
-
-	assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
-
-	return workspaceName
-}
-
-// addWorkspacePermission adds a workspace permission via the web app, assigning
-// a role to a team on a workspace in an org.
-func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, workspace, team, role string) {
-	ctx, cancel := chromedp.NewContext(allocater)
-	defer cancel()
-
-	var gotOwnersTeam string
-	var gotOwnersRole string
-	var gotFlashSuccess string
-
-	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
-	workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		chromedp.Navigate(url),
-		// login
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		// select org
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		// list workspaces
-		chromedp.Click("#menu-item-workspaces > a", chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.WaitReady(`body`),
-		// select workspace
-		chromedp.Click(workspaceSelector, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// confirm builtin admin permission for owners team
-		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
-		chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
-		// assign role to team
-		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
-		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
-		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
-		ss.screenshot(t),
-		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
-	})
-	require.NoError(t, err)
-
-	assert.Equal(t, "owners", gotOwnersTeam)
-	assert.Equal(t, "admin", gotOwnersRole)
-	assert.Equal(t, "updated workspace permissions", gotFlashSuccess)
 }

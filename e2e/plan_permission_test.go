@@ -25,7 +25,7 @@ func TestPlanPermission(t *testing.T) {
 
 	// create workspace via web - note this also syncs the org and owner
 	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, url, org)
+	workspace := createWebWorkspace(t, allocater, url, org.Name())
 
 	// assign plan permissions to devops team
 	addWorkspacePermission(t, allocater, url, org.Name(), workspace, devops.Name(), "plan")
