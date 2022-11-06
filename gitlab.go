@@ -145,6 +145,7 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions
 		items = append(items, &Repo{
 			Identifier: proj.PathWithNamespace,
 			HttpURL:    proj.WebURL,
+			Branch:     proj.DefaultBranch,
 		})
 	}
 	return &RepoList{

@@ -17,8 +17,11 @@
     {{ end }}
   </div>
 
-  <form action="{{ newVCSProviderGithubPath .Content }}" method="GET">
+  <form action="{{ newVCSProviderPath .Content "github" }}" method="GET">
     <button type="submit">New Github VCS Provider</button>
+  </form>
+  <form action="{{ newVCSProviderPath .Content "gitlab" }}" method="GET">
+    <button type="submit">New Gitlab VCS Provider</button>
   </form>
 {{ end }}
 

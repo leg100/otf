@@ -17,8 +17,6 @@ type VCSProvider struct {
 	cloud     string
 	// vcs provider belongs to an organization
 	organizationName string
-
-	*GithubCloud
 }
 
 func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
@@ -28,7 +26,6 @@ func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
 		token:            opts.Token,
 		name:             opts.Name,
 		organizationName: opts.OrganizationName,
-		GithubCloud:      &GithubCloud{defaultGithubConfig()},
 	}
 }
 

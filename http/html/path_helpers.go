@@ -100,12 +100,12 @@ func listVCSProviderPath(route organizationRoute) string {
 	return path.Join(getOrganizationPath(route), "vcs-providers")
 }
 
-func newVCSProviderGithubPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers", "new", "github")
+func newVCSProviderPath(route organizationRoute, cloud string) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "new")
 }
 
-func createVCSProviderGithubPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers", "create", "github")
+func createVCSProviderPath(route organizationRoute, cloud string) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "create")
 }
 
 func deleteVCSProviderPath(route organizationRoute) string {
@@ -298,8 +298,8 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["createAgentTokenPath"] = createAgentTokenPath
 	m["newAgentTokenPath"] = newAgentTokenPath
 	m["listVCSProviderPath"] = listVCSProviderPath
-	m["newVCSProviderGithubPath"] = newVCSProviderGithubPath
-	m["createVCSProviderGithubPath"] = createVCSProviderGithubPath
+	m["newVCSProviderGithubPath"] = newVCSProviderPath
+	m["createVCSProviderGithubPath"] = createVCSProviderPath
 	m["deleteVCSProviderPath"] = deleteVCSProviderPath
 	m["listWorkspaceVCSProvidersPath"] = listWorkspaceVCSProvidersPath
 	m["selectWorkspaceRepoPath"] = selectWorkspaceRepoPath

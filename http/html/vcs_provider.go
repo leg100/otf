@@ -8,11 +8,11 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
-func (app *Application) newVCSProviderGithub(w http.ResponseWriter, r *http.Request) {
-	app.render("vcs_provider_github_new.tmpl", w, r, organizationRequest{r})
+func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
+	app.render("vcs_provider_new.tmpl", w, r, organizationRequest{r})
 }
 
-func (app *Application) createVCSProviderGithub(w http.ResponseWriter, r *http.Request) {
+func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 	var opts otf.VCSProviderCreateOptions
 	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)

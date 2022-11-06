@@ -1,14 +1,14 @@
 {{ template "layout" . }}
 
-{{ define "title" }}New Github VCS Provider{{ end }}
+{{ define "title" }}New {{ .CloudName }} VCS Provider{{ end }}
 
 {{ define "container-header" }}
-  <div>New Github VCS Provider</div>
+  <div>New {{ .CloudName }} VCS Provider</div>
 {{ end }}
 
 {{ define "content" }}
   <div>
-    Create a Github VCS provider using a personal token.
+    Create a {{ .CloudName }} VCS provider using a personal token.
   </div>
   <div>
     Follow <a class="show-underline" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token">Github's instructions</a> on how to create a personal token with fine-grained permissions.
