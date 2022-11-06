@@ -75,3 +75,11 @@ func (f *TestDirectoryClient) ListRepositories(ctx context.Context, opts ListOpt
 		Pagination: NewPagination(opts, len(f.Repos)),
 	}, nil
 }
+
+func (f *TestDirectoryClient) GetRepository(context.Context, string) (*Repo, error) {
+	return f.Repos[0], nil
+}
+
+func (f *TestDirectoryClient) GetRepoTarball(context.Context, *VCSRepo) ([]byte, error) {
+	return nil, nil
+}

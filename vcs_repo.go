@@ -7,8 +7,6 @@ type VCSRepo struct {
 	Identifier string
 	// httpURL is the web url for the repo
 	HttpURL string
-	// VCSRepo belongs to a workspace
-	WorkspaceID string
 	// VCSRepo has a VCSProvider
 	ProviderID string
 	// Branch is repo's default mainline branch

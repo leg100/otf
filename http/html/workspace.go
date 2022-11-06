@@ -478,9 +478,6 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
-	// parse params:
-	// workspace spec
-	// type of run to start: plan-only, or plan-and-apply
 	type options struct {
 		otf.WorkspaceSpec
 		Strategy string `schema:"strategy,required"`
