@@ -27,7 +27,7 @@
           <form action="{{ connectWorkspaceRepoPath $.Content }}" method="POST">
             <input type="hidden" name="identifier" id="identifier" value="{{ .Identifier }}" required>
             <input type="hidden" name="branch" id="branch" value="{{ .Branch }}" required>
-            <input type="hidden" name="http_url" id="http_url" value="{{ .HttpURL }}" required>
+            <input type="hidden" name="http_url" id="http_url" value="{{ .HTTPURL }}" required>
             <button>connect</button>
           </form>
         </div>
