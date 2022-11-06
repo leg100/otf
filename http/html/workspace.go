@@ -387,7 +387,7 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 	}
 
 	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
-		Token: &oauth2.Token{AccessToken: provider.Token()},
+		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -502,7 +502,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 			return nil, err
 		}
 		client, err := provider.NewDirectoryClient(ctx, otf.DirectoryClientOptions{
-			Token: &oauth2.Token{AccessToken: provider.Token()},
+			OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
 		})
 		if err != nil {
 			return nil, err

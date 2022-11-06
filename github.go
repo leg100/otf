@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -69,7 +70,15 @@ func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 	}
 
 	// Github's oauth access token never expires
-	src := oauth2.StaticTokenSource(opts.Token)
+	var src oauth2.TokenSource
+	if opts.OAuthToken != nil {
+		src = oauth2.StaticTokenSource(opts.OAuthToken)
+	} else if opts.PersonalToken != nil {
+		src = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *opts.PersonalToken})
+	} else {
+		return nil, fmt.Errorf("no credentials provided")
+	}
+
 	httpClient := oauth2.NewClient(ctx, src)
 
 	if g.hostname != DefaultGithubHostname {

@@ -119,7 +119,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	client, err := a.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
-		Token: token,
+		OAuthToken: token,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

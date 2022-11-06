@@ -12,7 +12,8 @@ type Cloud interface {
 }
 
 type DirectoryClientOptions struct {
-	Token *oauth2.Token
+	OAuthToken    *oauth2.Token
+	PersonalToken *string
 }
 
 type DirectoryClient interface {

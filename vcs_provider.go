@@ -2,6 +2,7 @@ package otf
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -37,6 +38,17 @@ func (t *VCSProvider) Token() string            { return t.token }
 func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
+
+func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
+	switch t.cloud {
+	case "github":
+		return (&GithubCloud{defaultGithubConfig()}).NewDirectoryClient(ctx, opts)
+	case "gitlab":
+		return (&gitlabCloud{defaultGitlabConfig()}).NewDirectoryClient(ctx, opts)
+	default:
+		return nil, fmt.Errorf("vcs provider has no cloud specified")
+	}
+}
 
 type VCSProviderCreateOptions struct {
 	OrganizationName string `schema:"organization_name,required"`

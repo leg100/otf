@@ -33,7 +33,7 @@ func TestGithub_GetUser(t *testing.T) {
 		},
 	}
 	client, err := cloud.NewDirectoryClient(ctx, DirectoryClientOptions{
-		Token: &oauth2.Token{AccessToken: "fake-token"},
+		OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
 	})
 	require.NoError(t, err)
 

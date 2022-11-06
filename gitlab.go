@@ -12,6 +12,17 @@ import (
 
 const DefaultGitlabHostname = "gitlab.com"
 
+func defaultGitlabConfig() *GitlabConfig {
+	return &GitlabConfig{
+		cloudConfig: cloudConfig{
+			OAuthCredentials: &OAuthCredentials{prefix: "gitlab"},
+			cloudName:        "gitlab",
+			endpoint:         oauth2gitlab.Endpoint,
+			scopes:           []string{"read_user", "read_api"},
+		},
+	}
+}
+
 type gitlabCloud struct {
 	*GitlabConfig
 }
@@ -26,14 +37,7 @@ type GitlabConfig struct {
 }
 
 func NewGitlabConfigFromFlags(flags *pflag.FlagSet) *GitlabConfig {
-	cfg := &GitlabConfig{
-		cloudConfig: cloudConfig{
-			OAuthCredentials: &OAuthCredentials{prefix: "gitlab"},
-			cloudName:        "gitlab",
-			endpoint:         oauth2gitlab.Endpoint,
-			scopes:           []string{"read_user", "read_api"},
-		},
-	}
+	cfg := defaultGitlabConfig()
 
 	flags.StringVar(&cfg.hostname, "gitlab-hostname", DefaultGitlabHostname, "Gitlab hostname")
 	cfg.OAuthCredentials.AddFlags(flags)
@@ -51,9 +55,18 @@ func (g *gitlabCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClie
 
 	baseURL := (&url.URL{Scheme: "https", Host: g.hostname}).String()
 
-	client, err = gitlab.NewOAuthClient(opts.Token.AccessToken, gitlab.WithBaseURL(baseURL))
-	if err != nil {
-		return nil, err
+	if opts.OAuthToken != nil {
+		client, err = gitlab.NewOAuthClient(opts.OAuthToken.AccessToken, gitlab.WithBaseURL(baseURL))
+		if err != nil {
+			return nil, err
+		}
+	} else if opts.PersonalToken != nil {
+		client, err = gitlab.NewClient(*opts.PersonalToken, gitlab.WithBaseURL(baseURL))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("no credentials provided")
 	}
 
 	return &gitlabProvider{client: client}, nil
