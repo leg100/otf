@@ -57,7 +57,13 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_list.tmpl", w, r, workspaceList{workspaces, opts})
+	app.render("workspace_list.tmpl", w, r, struct {
+		*otf.WorkspaceList
+		organizationRoute
+	}{
+		WorkspaceList:     workspaces,
+		organizationRoute: organizationRequest{r},
+	})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -365,6 +371,8 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 		OrganizationName string `schema:"organization_name,required"`
 		WorkspaceName    string `schema:"workspace_name,required"`
 		VCSProviderID    string `schema:"vcs_provider_id,required"`
+		// Pagination
+		otf.ListOptions
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -386,17 +394,17 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	repos, err := client.ListRepositories(r.Context())
+	repos, err := client.ListRepositories(r.Context(), opts.ListOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		Items []*otf.Repo
+		*otf.RepoList
 		vcsProviderRoute
 	}{
-		Items:            repos,
+		RepoList:         repos,
 		vcsProviderRoute: vcsProviderRequest{workspaceRequest{r}},
 	})
 }
@@ -440,6 +448,7 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	flashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 

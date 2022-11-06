@@ -17,7 +17,7 @@
 {{ define "content" }}
   <div>
     {{ if .Content.VCSRepo }}
-      <form action="{{ disconnectWorkspaceRepoPath .Content }}" method="GET">
+      <form action="{{ disconnectWorkspaceRepoPath .Content }}" method="POST">
         <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.VCSRepo.Identifier }}</button>
       </form>
     {{ else }}

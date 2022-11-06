@@ -133,23 +133,31 @@ func (g *githubProvider) GetUser(ctx context.Context) (*User, error) {
 	return user, nil
 }
 
-func (g *githubProvider) ListRepositories(ctx context.Context) ([]*Repo, error) {
-	repos, _, err := g.client.Repositories.List(ctx, "", nil)
+func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error) {
+	repos, resp, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
+		ListOptions: github.ListOptions{
+			Page:    opts.SanitizedPageNumber(),
+			PerPage: opts.SanitizedPageSize(),
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// convert to common repo type before returning
-	var results []*Repo
+	var items []*Repo
 	for _, repo := range repos {
-		results = append(results, &Repo{
+		items = append(items, &Repo{
 			Identifier: repo.GetFullName(),
 			HttpURL:    repo.GetURL(),
 			Branch:     repo.GetDefaultBranch(),
 		})
 	}
 
-	return results, nil
+	return &RepoList{
+		Items:      items,
+		Pagination: NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
+	}, nil
 }
 
 func (g *githubProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {

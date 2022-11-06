@@ -189,7 +189,7 @@ func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
 }
 
 func disconnectWorkspaceRepoPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/repo/connect", ws.OrganizationName(), ws.WorkspaceName())
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/repo/disconnect", ws.OrganizationName(), ws.WorkspaceName())
 }
 
 func startRunPath(ws workspaceRoute) string {

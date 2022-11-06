@@ -80,7 +80,7 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
 	authenticator := &Authenticator{nil, &fakeAuthenticatorApp{}}
-	user, err := authenticator.synchronise(context.Background(), &otf.TestDirectoryClient{user})
+	user, err := authenticator.synchronise(context.Background(), &otf.TestDirectoryClient{User: user})
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())

@@ -114,22 +114,30 @@ func (g *gitlabProvider) GetUser(ctx context.Context) (*User, error) {
 	return user, nil
 }
 
-func (g *gitlabProvider) ListRepositories(ctx context.Context) ([]*Repo, error) {
-	projects, _, err := g.client.Projects.ListProjects(&gitlab.ListProjectsOptions{}, nil)
+func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions) (*RepoList, error) {
+	opts := &gitlab.ListProjectsOptions{
+		ListOptions: gitlab.ListOptions{
+			Page:    lopts.PageNumber,
+			PerPage: lopts.PageSize,
+		},
+	}
+	projects, resp, err := g.client.Projects.ListProjects(opts, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// convert to common repo type before returning
-	var results []*Repo
+	var items []*Repo
 	for _, proj := range projects {
-		results = append(results, &Repo{
+		items = append(items, &Repo{
 			Identifier: proj.PathWithNamespace,
 			HttpURL:    proj.WebURL,
 		})
 	}
-
-	return results, nil
+	return &RepoList{
+		Items:      items,
+		Pagination: NewPagination(lopts, resp.TotalItems),
+	}, nil
 }
 
 func (g *gitlabProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {

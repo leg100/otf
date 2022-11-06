@@ -15,6 +15,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestListRunsHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
+	runs := []*otf.Run{
+		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
+		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
+		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
+		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
+		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
+	}
+	app := newFakeWebApp(t, &fakeListRunsApp{runs: runs})
+
+	t.Run("first page", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+		w := httptest.NewRecorder()
+		app.listRuns(w, r)
+		assert.Equal(t, 200, w.Code)
+		assert.NotContains(t, w.Body.String(), "Previous Page")
+		assert.Contains(t, w.Body.String(), "Next Page")
+	})
+
+	t.Run("second page", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+		w := httptest.NewRecorder()
+		app.listRuns(w, r)
+		assert.Equal(t, 200, w.Code)
+		assert.Contains(t, w.Body.String(), "Previous Page")
+		assert.Contains(t, w.Body.String(), "Next Page")
+	})
+
+	t.Run("last page", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+		w := httptest.NewRecorder()
+		app.listRuns(w, r)
+		assert.Equal(t, 200, w.Code)
+		assert.Contains(t, w.Body.String(), "Previous Page")
+		assert.NotContains(t, w.Body.String(), "Next Page")
+	})
+}
+
 func TestTailLogs(t *testing.T) {
 	run := otf.NewTestRun(t, otf.TestRunCreateOptions{})
 
@@ -63,6 +104,18 @@ func TestTailLogs(t *testing.T) {
 	finished := <-events
 	assert.Equal(t, "finished", string(finished.Event))
 	assert.Equal(t, "no more logs", string(finished.Data))
+}
+
+type fakeListRunsApp struct {
+	runs []*otf.Run
+	otf.Application
+}
+
+func (f *fakeListRunsApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+	return &otf.RunList{
+		Items:      f.runs,
+		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
+	}, nil
 }
 
 type fakeTailApp struct {

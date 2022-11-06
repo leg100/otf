@@ -50,8 +50,15 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	streamID := "watch-ws-runs-" + otf.GenerateRandomString(5)
-	app.render("run_list.tmpl", w, r, runList{runs, opts, streamID})
+	app.render("run_list.tmpl", w, r, struct {
+		*otf.RunList
+		workspaceRoute
+		StreamID string
+	}{
+		RunList:        runs,
+		workspaceRoute: workspaceRequest{r},
+		StreamID:       "watch-ws-runs-" + otf.GenerateRandomString(5),
+	})
 }
 
 func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {

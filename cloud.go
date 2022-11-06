@@ -17,7 +17,7 @@ type DirectoryClientOptions struct {
 
 type DirectoryClient interface {
 	GetUser(ctx context.Context) (*User, error)
-	ListRepositories(ctx context.Context) ([]*Repo, error)
+	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
 	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
 }
 
@@ -32,3 +32,9 @@ type Repo struct {
 }
 
 func (r Repo) ID() string { return r.Identifier }
+
+// RepoList is a paginated list of cloud repositories.
+type RepoList struct {
+	*Pagination
+	Items []*Repo
+}
