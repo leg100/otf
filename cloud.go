@@ -18,7 +18,11 @@ type DirectoryClientOptions struct {
 
 type DirectoryClient interface {
 	GetUser(ctx context.Context) (*User, error)
+	// ListRepositories lists repositories accessible to the current user.
+	//
+	// TODO: add optional filters
 	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
+	GetRepository(ctx context.Context, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
 }
 

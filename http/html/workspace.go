@@ -373,6 +373,7 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 		VCSProviderID    string `schema:"vcs_provider_id,required"`
 		// Pagination
 		otf.ListOptions
+		// TODO: filters, public/private, etc
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -386,6 +387,9 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// TODO(@leg100): how come this succeeds for gitlab when we're passing in a personal
+	// access token and not an oauth token? On github, the two are the same
+	// (AFAIK) so it makes sense that that works...
 	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
 		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
 	})
@@ -412,8 +416,8 @@ func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Reque
 func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
 	type options struct {
 		otf.WorkspaceSpec
-		otf.Repo
 		VCSProviderID string `schema:"vcs_provider_id,required"`
+		Identifier    string `schema:"identifier,required"`
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -421,9 +425,29 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, *opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
+		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repo, err := client.GetRepository(r.Context(), opts.Identifier)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
-		Branch:     opts.Branch,
-		HttpURL:    opts.HttpURL,
+		Branch:     repo.Branch,
+		HttpURL:    repo.HttpURL,
 		Identifier: opts.Identifier,
 		ProviderID: opts.VCSProviderID,
 	})
@@ -432,6 +456,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	flashSuccess(w, "connected workspace to repo")
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 

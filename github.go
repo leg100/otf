@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/spf13/pflag"
@@ -166,6 +167,22 @@ func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions)
 	return &RepoList{
 		Items:      items,
 		Pagination: NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
+	}, nil
+}
+
+func (g *githubProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+	owner, name, found := strings.Cut(identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("invalid identifier: %w", identifier)
+	}
+	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
+	if err != nil {
+		return nil, err
+	}
+	return &Repo{
+		Identifier: repo.GetFullName(),
+		HttpURL:    repo.GetURL(),
+		Branch:     repo.GetDefaultBranch(),
 	}, nil
 }
 

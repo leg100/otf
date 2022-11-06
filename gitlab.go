@@ -163,6 +163,18 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions
 	}, nil
 }
 
+func (g *gitlabProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+	proj, _, err := g.client.Projects.GetProject(identifier, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Repo{
+		Identifier: proj.PathWithNamespace,
+		HttpURL:    proj.WebURL,
+		Branch:     proj.DefaultBranch,
+	}, nil
+}
+
 func (g *gitlabProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
 	tarball, _, err := g.client.Repositories.Archive(url.PathEscape(repo.Identifier), &gitlab.ArchiveOptions{
 		Format: String("tar.gz"),
