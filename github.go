@@ -57,6 +57,10 @@ type GithubCloud struct {
 	*GithubConfig
 }
 
+func NewGithubCloud() *GithubCloud {
+	return &GithubCloud{defaultGithubConfig()}
+}
+
 func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
 	var err error
 	var client *github.Client
@@ -143,6 +147,23 @@ func (g *githubProvider) GetUser(ctx context.Context) (*User, error) {
 	return user, nil
 }
 
+func (g *githubProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+	owner, name, found := strings.Cut(identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", identifier)
+	}
+	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repo{
+		Identifier: repo.GetFullName(),
+		HTTPURL:    repo.GetURL(),
+		Branch:     repo.GetDefaultBranch(),
+	}, nil
+}
+
 func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error) {
 	repos, resp, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
@@ -159,7 +180,7 @@ func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions)
 	for _, repo := range repos {
 		items = append(items, &Repo{
 			Identifier: repo.GetFullName(),
-			HttpURL:    repo.GetURL(),
+			HTTPURL:    repo.GetURL(),
 			Branch:     repo.GetDefaultBranch(),
 		})
 	}
@@ -167,22 +188,6 @@ func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions)
 	return &RepoList{
 		Items:      items,
 		Pagination: NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
-	}, nil
-}
-
-func (g *githubProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
-	owner, name, found := strings.Cut(identifier, "/")
-	if !found {
-		return nil, fmt.Errorf("invalid identifier: %s", identifier)
-	}
-	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
-	if err != nil {
-		return nil, err
-	}
-	return &Repo{
-		Identifier: repo.GetFullName(),
-		HttpURL:    repo.GetURL(),
-		Branch:     repo.GetDefaultBranch(),
 	}, nil
 }
 

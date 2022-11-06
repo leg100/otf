@@ -160,7 +160,7 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 }
 
 func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := otf.NewTestVCSProvider(organization)
+	provider := otf.NewTestVCSProvider(organization, otf.NewGithubCloud())
 	ctx := context.Background()
 
 	err := db.CreateVCSProvider(ctx, provider)

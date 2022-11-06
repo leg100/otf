@@ -69,13 +69,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 			TriggerPrefixes:            ws.TriggerPrefixes(),
 			WorkingDirectory:           String(ws.WorkingDirectory()),
 		})
-		if err != nil {
-			return err
-		}
-
-		if ws.VCSRepo() != nil {
-		}
-		return nil
+		return err
 	})
 	return ws, err
 }

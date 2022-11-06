@@ -5,8 +5,8 @@ import "strings"
 type VCSRepo struct {
 	// identifier is <repo_owner>/<repo_name>
 	Identifier string
-	// httpURL is the web url for the repo
-	HttpURL string
+	// HTTPURL is the web url for the repo
+	HTTPURL string
 	// VCSRepo has a VCSProvider
 	ProviderID string
 	// Branch is repo's default mainline branch

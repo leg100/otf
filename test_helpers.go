@@ -62,7 +62,7 @@ func NewTestVCSRepo(provider *VCSProvider) *VCSRepo {
 	identifier := uuid.NewString()
 	return &VCSRepo{
 		Identifier: identifier,
-		HttpURL:    "http://fake-cloud.org/" + identifier,
+		HTTPURL:    "http://fake-cloud.org/" + identifier,
 		ProviderID: provider.ID(),
 		Branch:     "master",
 	}
@@ -72,7 +72,7 @@ func NewTestRepo() *Repo {
 	identifier := uuid.NewString()
 	return &Repo{
 		Identifier: identifier,
-		HttpURL:    "http://fake-cloud.org/" + identifier,
+		HTTPURL:    "http://fake-cloud.org/" + identifier,
 		Branch:     "master",
 	}
 }

@@ -19,7 +19,6 @@ func defaultGitlabConfig() *GitlabConfig {
 			cloudName:        "gitlab",
 			endpoint:         oauth2gitlab.Endpoint,
 			scopes:           []string{"read_user", "read_api"},
-			hostname:         DefaultGitlabHostname,
 		},
 	}
 }
@@ -128,11 +127,24 @@ func (g *gitlabProvider) GetUser(ctx context.Context) (*User, error) {
 	return user, nil
 }
 
+func (g *gitlabProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+	proj, _, err := g.client.Projects.GetProject(identifier, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repo{
+		Identifier: proj.PathWithNamespace,
+		HTTPURL:    proj.WebURL,
+		Branch:     proj.DefaultBranch,
+	}, nil
+}
+
 func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions) (*RepoList, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			Page:    lopts.SanitizedPageNumber(),
-			PerPage: lopts.SanitizedPageSize(),
+			Page:    lopts.PageNumber,
+			PerPage: lopts.PageSize,
 		},
 	}
 	projects, resp, err := g.client.Projects.ListProjects(opts, nil)
@@ -145,33 +157,13 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions
 	for _, proj := range projects {
 		items = append(items, &Repo{
 			Identifier: proj.PathWithNamespace,
-			HttpURL:    proj.WebURL,
+			HTTPURL:    proj.WebURL,
 			Branch:     proj.DefaultBranch,
 		})
 	}
-	// gitlab doesn't seem to populate resp.TotalItems, which usually rely upon
-	// to create pagination, so we create a made up number based on current page
-	// and if there is a next page then add one more item, which will prompt
-	// pagination to produce a link to the next page...
-	total := resp.ItemsPerPage * resp.CurrentPage
-	if resp.NextPage != 0 {
-		total++
-	}
 	return &RepoList{
 		Items:      items,
-		Pagination: NewPagination(lopts, total),
-	}, nil
-}
-
-func (g *gitlabProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
-	proj, _, err := g.client.Projects.GetProject(identifier, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &Repo{
-		Identifier: proj.PathWithNamespace,
-		HttpURL:    proj.WebURL,
-		Branch:     proj.DefaultBranch,
+		Pagination: NewPagination(lopts, resp.TotalItems),
 	}, nil
 }
 

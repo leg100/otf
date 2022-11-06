@@ -30,8 +30,8 @@ type DirectoryClient interface {
 type Repo struct {
 	// Identifier is <repo_owner>/<repo_name>
 	Identifier string `schema:"identifier,required"`
-	// HttpURL is the web url for the repo
-	HttpURL string `schema:"http_url,required"`
+	// HTTPURL is the web url for the repo
+	HTTPURL string `schema:"http_url,required"`
 	// Branch is the default master Branch for a repo
 	Branch string `schema:"branch,required"`
 }

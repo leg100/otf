@@ -447,7 +447,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 
 	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
 		Branch:     repo.Branch,
-		HttpURL:    repo.HttpURL,
+		HTTPURL:    repo.HTTPURL,
 		Identifier: opts.Identifier,
 		ProviderID: opts.VCSProviderID,
 	})
