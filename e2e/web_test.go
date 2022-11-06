@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestWeb is a random walkthrough of the Web UI
 func TestWeb(t *testing.T) {
 	addBuildsToPath(t)
 
@@ -48,7 +49,7 @@ func TestWeb(t *testing.T) {
 		createWebWorkspace(t, allocator, url, org)
 	})
 
-	t.Run("assign workspace manager role to team", func(t *testing.T) {
+	t.Run("assign workspace manager role to devops team", func(t *testing.T) {
 		ctx, cancel := chromedp.NewContext(allocator)
 		defer cancel()
 
@@ -77,11 +78,11 @@ func TestWeb(t *testing.T) {
 		assert.Equal(t, "team permissions updated", strings.TrimSpace(gotFlashSuccess))
 	})
 
-	t.Run("add workspace permission", func(t *testing.T) {
+	t.Run("add write workspace permission to owners team", func(t *testing.T) {
 		workspace := createWebWorkspace(t, allocator, url, org)
 
 		// assign write permissions to team
-		addWorkspacePermission(t, allocator, url, org.Name(), workspace, owners.Name(), "write")
+		addWorkspacePermission(t, allocator, url, org.Name(), workspace, devops.Name(), "write")
 	})
 
 	t.Run("list users", func(t *testing.T) {

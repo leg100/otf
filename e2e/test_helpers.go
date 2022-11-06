@@ -18,7 +18,6 @@ import (
 	expect "github.com/google/goexpect"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/http/html"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +28,7 @@ var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl
 // startDaemon starts an instance of the otfd daemon along with a github stub
 // seeded with the given user. The hostname of the otfd daemon is returned.
 func startDaemon(t *testing.T, user *otf.User, flags ...string) string {
-	githubServer := html.NewTestGithubServer(t, user)
+	githubServer := otf.NewTestGithubServer(t, user)
 	githubURL, err := url.Parse(githubServer.URL)
 	require.NoError(t, err)
 
