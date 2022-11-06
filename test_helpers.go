@@ -49,11 +49,20 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	return session
 }
 
-func NewTestVCSProvider(organization *Organization) *VCSProvider {
+func NewTestVCSProvider(organization *Organization, cloud Cloud) *VCSProvider {
 	return NewVCSProvider(VCSProviderCreateOptions{
 		Name:             uuid.NewString(),
-		Cloud:            "github",
+		Cloud:            cloud,
 		Token:            uuid.NewString(),
 		OrganizationName: organization.Name(),
 	})
+}
+
+func NewTestRepo() *Repo {
+	identifier := uuid.NewString()
+	return &Repo{
+		Identifier: identifier,
+		HttpURL:    "http://fake-cloud.org/" + identifier,
+		Branch:     "master",
+	}
 }

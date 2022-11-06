@@ -8,13 +8,15 @@ import (
 	"github.com/jackc/pgtype"
 )
 
+// VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
+// TFC/E.
 type VCSProvider struct {
 	// TODO: do we need an id if name is unique?
 	id        string
 	createdAt time.Time
 	token     string
 	name      string
-	cloud     string
+	cloud     Cloud
 	// vcs provider belongs to an organization
 	organizationName string
 }
@@ -35,25 +37,18 @@ func (t *VCSProvider) String() string           { return t.name }
 func (t *VCSProvider) Token() string            { return t.token }
 func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
-func (t *VCSProvider) Cloud() string            { return t.cloud }
+func (t *VCSProvider) Cloud() Cloud             { return t.cloud }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 
 func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
-	switch t.cloud {
-	case "github":
-		return (&GithubCloud{defaultGithubConfig()}).NewDirectoryClient(ctx, opts)
-	case "gitlab":
-		return (&gitlabCloud{defaultGitlabConfig()}).NewDirectoryClient(ctx, opts)
-	default:
-		return nil, fmt.Errorf("vcs provider has no cloud specified")
-	}
+	return t.cloud.NewDirectoryClient(ctx, opts)
 }
 
 type VCSProviderCreateOptions struct {
 	OrganizationName string `schema:"organization_name,required"`
 	Token            string `schema:"token,required"`
 	Name             string `schema:"name,required"`
-	Cloud            string `schema:"cloud,required"`
+	Cloud            Cloud  `schema:"cloud,required"`
 }
 
 // VCSProviderRow represents a database row for a vcs provider
@@ -67,15 +62,25 @@ type VCSProviderRow struct {
 }
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
-func UnmarshalVCSProviderRow(row VCSProviderRow) *VCSProvider {
+func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
+	var cloud Cloud
+	switch row.Cloud.String {
+	case "github":
+		cloud = &GithubCloud{defaultGithubConfig()}
+	case "gitlab":
+		cloud = &gitlabCloud{defaultGitlabConfig()}
+	default:
+		return nil, fmt.Errorf("unknown cloud: %s", row.Cloud.String)
+	}
+
 	return &VCSProvider{
 		id:               row.VCSProviderID.String,
 		createdAt:        row.CreatedAt.Time.UTC(),
 		token:            row.Token.String,
 		name:             row.Name.String,
-		cloud:            row.Cloud.String,
+		cloud:            cloud,
 		organizationName: row.OrganizationName.String,
-	}
+	}, nil
 }
 
 // VCSProviderService provides access to vcs providers

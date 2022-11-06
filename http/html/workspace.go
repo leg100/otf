@@ -366,7 +366,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 	})
 }
 
-func (app *Application) selectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	type options struct {
 		OrganizationName string `schema:"organization_name,required"`
 		WorkspaceName    string `schema:"workspace_name,required"`

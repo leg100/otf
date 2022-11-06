@@ -33,7 +33,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	w := httptest.NewRecorder()
-	app.createVCSProviderGithub(w, r)
+	app.createVCSProvider(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -45,9 +45,9 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 func TestListVCSProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	app := newFakeWebApp(t, &fakeVCSProviderApp{providers: []*otf.VCSProvider{
-		otf.NewTestVCSProvider(org),
-		otf.NewTestVCSProvider(org),
-		otf.NewTestVCSProvider(org),
+		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
+		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
+		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
 	}})
 
 	r := httptest.NewRequest("GET", "/organization/acme-corp/vcs-providers", nil)

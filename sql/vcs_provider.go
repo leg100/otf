@@ -13,7 +13,7 @@ func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) 
 		VCSProviderID:    String(provider.ID()),
 		Token:            String(provider.Token()),
 		Name:             String(provider.Name()),
-		Cloud:            String(provider.Cloud()),
+		Cloud:            String(provider.Cloud().CloudName()),
 		OrganizationName: String(provider.OrganizationName()),
 		CreatedAt:        Timestamptz(provider.CreatedAt()),
 	})
@@ -25,7 +25,7 @@ func (db *DB) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, 
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider)), nil
+	return otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider))
 }
 
 func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
@@ -33,11 +33,15 @@ func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	var unmarshalled []*otf.VCSProvider
+	var providers []*otf.VCSProvider
 	for _, r := range rows {
-		unmarshalled = append(unmarshalled, otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(r)))
+		provider, err := otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(r))
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, provider)
 	}
-	return unmarshalled, nil
+	return providers, nil
 }
 
 // DeleteVCSProvider deletes an agent token.

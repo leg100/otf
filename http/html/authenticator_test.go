@@ -16,7 +16,7 @@ import (
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
 	authenticator := &Authenticator{
-		otf.NewTestCloud("gitlab.com", nil),
+		otf.NewTestCloud(otf.WithHostname("gitlab.com")),
 		&fakeAuthenticatorApp{},
 	}
 
@@ -53,7 +53,7 @@ func TestAuthenticator_ResponseHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	authenticator := &Authenticator{
-		otf.NewTestCloud(srvURL.Host, user),
+		otf.NewTestCloud(otf.WithHostname(srvURL.Host), otf.WithUser(user)),
 		&fakeAuthenticatorApp{},
 	}
 

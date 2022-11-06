@@ -171,8 +171,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions", app.setWorkspacePermission)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions/unset", app.unsetWorkspacePermission)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers", app.listWorkspaceVCSProviders)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/select", app.selectWorkspaceRepo)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repo/connect", app.connectWorkspaceRepo)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos", app.listWorkspaceVCSRepos)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
 

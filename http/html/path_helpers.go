@@ -180,12 +180,12 @@ func listWorkspaceVCSProvidersPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func selectWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repo/select", ws.OrganizationName(), ws.WorkspaceName(), providerID)
+func listWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos", ws.OrganizationName(), ws.WorkspaceName(), providerID)
 }
 
 func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repo/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
 }
 
 func disconnectWorkspaceRepoPath(ws workspaceRoute) string {
@@ -302,7 +302,7 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["createVCSProviderPath"] = createVCSProviderPath
 	m["deleteVCSProviderPath"] = deleteVCSProviderPath
 	m["listWorkspaceVCSProvidersPath"] = listWorkspaceVCSProvidersPath
-	m["selectWorkspaceRepoPath"] = selectWorkspaceRepoPath
+	m["listWorkspaceRepoPath"] = listWorkspaceRepoPath
 	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
 	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
 	m["startRunPath"] = startRunPath

@@ -173,7 +173,7 @@ func (g *githubProvider) ListRepositories(ctx context.Context, opts ListOptions)
 func (g *githubProvider) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return nil, fmt.Errorf("invalid identifier: %w", identifier)
+		return nil, fmt.Errorf("invalid identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {

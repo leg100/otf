@@ -48,34 +48,46 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 }
 
-func TestSelectWorkspaceRepoHandler(t *testing.T) {
+func TestListWorkspaceReposHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
-	provider := &otf.VCSProvider{}
+	repos := []*otf.Repo{
+		otf.NewTestRepo(),
+		otf.NewTestRepo(),
+		otf.NewTestRepo(),
+		otf.NewTestRepo(),
+		otf.NewTestRepo(),
+	}
+	provider := otf.NewTestVCSProvider(org, otf.NewTestCloud(otf.WithRepos(repos...)))
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{provider: provider})
 
+	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.listWorkspaceVCSRepos(w, r)
+	assert.Equal(t, 200, w.Code)
+
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", q+"&page[number]=1&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listWorkspaces(w, r)
+		app.listWorkspaceVCSRepos(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.NotContains(t, w.Body.String(), "Previous Page")
 		assert.Contains(t, w.Body.String(), "Next Page")
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", q+"&page[number]=2&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listWorkspaces(w, r)
+		app.listWorkspaceVCSRepos(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.Contains(t, w.Body.String(), "Next Page")
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", q+"&page[number]=3&page[size]=2", nil)
 		w := httptest.NewRecorder()
-		app.listWorkspaces(w, r)
+		app.listWorkspaceVCSRepos(w, r)
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.NotContains(t, w.Body.String(), "Next Page")
@@ -84,7 +96,7 @@ func TestSelectWorkspaceRepoHandler(t *testing.T) {
 
 type fakeWorkspaceHandlerApp struct {
 	workspaces []*otf.Workspace
-	provider *otf.VCSProvider
+	provider   *otf.VCSProvider
 	otf.Application
 }
 
