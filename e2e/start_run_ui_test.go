@@ -70,6 +70,24 @@ func TestStartRunUI(t *testing.T) {
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
 		ss.screenshot(t),
+		// confirm plan begins and ends
+		chromedp.WaitReady(`body`),
+		ss.screenshot(t),
+		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		ss.screenshot(t),
+		chromedp.WaitReady(`#plan-status.phase-status-finished`),
+		ss.screenshot(t),
+		// wait for run to enter planned state
+		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='planned']`, chromedp.BySearch),
+		ss.screenshot(t),
+		// click 'confirm & apply' button once it becomes visible
+		chromedp.Click(`//button[text()='Confirm & Apply']`, chromedp.NodeVisible, chromedp.BySearch),
+		ss.screenshot(t),
+		// confirm apply begins and ends
+		chromedp.WaitReady(`//*[@id='tailed-apply-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
+		chromedp.WaitReady(`#apply-status.phase-status-finished`),
+		// confirm run ends in applied state
+		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
 	})
 	require.NoError(t, err)
 }

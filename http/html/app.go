@@ -183,6 +183,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.applyRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/discard", app.discardRun)
 
 		// this handles the link the terraform CLI shows during a plan/apply.
 		r.GET("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)

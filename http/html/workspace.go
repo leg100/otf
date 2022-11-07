@@ -299,42 +299,40 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// render HTML snippets and send as payload in SSE event
-				item := new(bytes.Buffer)
-				if err := app.renderTemplate("run_item.tmpl", item, run); err != nil {
+				itemHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("run_item.tmpl", itemHTML, run); err != nil {
 					app.Error(err, "rendering template for run item")
 					continue
 				}
-				runStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("run_status.tmpl", runStatus, run); err != nil {
+				runStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
 					app.Error(err, "rendering run status template")
 					continue
 				}
-				planStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("phase_status.tmpl", planStatus, run.Plan()); err != nil {
+				planStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", planStatusHTML, run.Plan()); err != nil {
 					app.Error(err, "rendering plan status template")
 					continue
 				}
-				applyStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("phase_status.tmpl", applyStatus, run.Apply()); err != nil {
+				applyStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply()); err != nil {
 					app.Error(err, "rendering apply status template")
 					continue
 				}
 				js, err := json.Marshal(struct {
-					ID string `json:"id"`
-					// the run item box
-					RunItem string `json:"html"`
-					// the color-coded run status
-					RunStatus string `json:"run-status"`
-					// the color-coded plan status
-					PlanStatus string `json:"plan-status"`
-					// the color-coded apply status
-					ApplyStatus string `json:"apply-status"`
+					ID              string        `json:"id"`
+					RunStatus       otf.RunStatus `json:"run-status"`
+					RunItemHTML     string        `json:"run-item-html"`
+					RunStatusHTML   string        `json:"run-status-html"`
+					PlanStatusHTML  string        `json:"plan-status-html"`
+					ApplyStatusHTML string        `json:"apply-status-html"`
 				}{
-					ID:          run.ID(),
-					RunItem:     item.String(),
-					RunStatus:   runStatus.String(),
-					PlanStatus:  planStatus.String(),
-					ApplyStatus: applyStatus.String(),
+					ID:              run.ID(),
+					RunStatus:       run.Status(),
+					RunItemHTML:     itemHTML.String(),
+					RunStatusHTML:   runStatusHTML.String(),
+					PlanStatusHTML:  planStatusHTML.String(),
+					ApplyStatusHTML: applyStatusHTML.String(),
 				})
 				if err != nil {
 					app.Error(err, "marshalling watched run", "run", run.ID())

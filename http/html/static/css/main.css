@@ -533,3 +533,10 @@ button.delete:hover {
 .resource-summary-destructions {
   color: red;
 }
+
+/* container for confirm/discard buttons at bottom of run page,
+ * visible only when run is in planned state */
+#run-confirm-container {
+  display: flex;
+  gap: 1em;
+}
