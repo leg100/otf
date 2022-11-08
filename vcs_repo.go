@@ -13,6 +13,10 @@ type VCSRepo struct {
 	Branch string
 }
 
+func NewVCSRepo(cloud Cloud) *VCSRepo {
+	return nil
+}
+
 func (r VCSRepo) String() string { return r.Identifier }
 func (r VCSRepo) Owner() string  { return strings.Split(r.Identifier, "/")[0] }
 func (r VCSRepo) Repo() string   { return strings.Split(r.Identifier, "/")[1] }

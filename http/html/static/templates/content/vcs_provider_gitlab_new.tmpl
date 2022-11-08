@@ -11,7 +11,7 @@
     Create a Gitlab VCS provider using a <a class="show-underline" href="https://gitlab.com/-/profile/personal_access_tokens">personal token.</a>
   </div>
   <form class="main-form" action="{{ createVCSProviderPath .Content "github" }}" method="POST">
-    <input type="hidden" name="cloud" id="cloud" value="gitlab">
+    <input type="hidden" name="cloud_name" id="cloud_name" value="gitlab">
     <ul>
       <li class="field">
         <label for="token">Token</label>

@@ -15,7 +15,7 @@ func TestGithub_GetUser(t *testing.T) {
 	org := NewTestOrganization(t)
 	team := NewTeam("fake-team", org)
 	want := NewUser("fake-user", WithOrganizationMemberships(org), WithTeamMemberships(team))
-	srv := NewTestGithubServer(t, want)
+	srv := NewTestGithubServer(t, WithGithubUser(want))
 
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
@@ -43,4 +43,38 @@ func TestGithub_GetUser(t *testing.T) {
 	if assert.Equal(t, 1, len(got.Teams())) {
 		assert.Equal(t, team.Name(), got.Teams()[0].Name())
 	}
+}
+
+func TestGithub_GetRepoTarball(t *testing.T) {
+	ctx := context.Background()
+
+	want := NewTestTarball(t, `file1 contents`, `file2 contents`)
+
+	srv := NewTestGithubServer(t,
+		WithGithubRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
+		WithGithubArchive(want),
+	)
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	cloud := &GithubCloud{
+		&GithubConfig{
+			cloudConfig{
+				hostname:            u.Host,
+				skipTLSVerification: true,
+			},
+		},
+	}
+	client, err := cloud.NewDirectoryClient(ctx, DirectoryClientOptions{
+		OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
+	})
+	require.NoError(t, err)
+
+	got, err := client.GetRepoTarball(ctx, &VCSRepo{
+		Identifier: "acme/terraform",
+		Branch:     "master",
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, compress(t, want), got)
 }

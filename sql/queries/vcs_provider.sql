@@ -4,6 +4,8 @@ INSERT INTO vcs_providers (
     token,
     created_at,
     name,
+    hostname,
+    skip_tls_verification,
     cloud,
     organization_name
 ) VALUES (
@@ -11,6 +13,8 @@ INSERT INTO vcs_providers (
     pggen.arg('token'),
     pggen.arg('created_at'),
     pggen.arg('name'),
+    pggen.arg('hostname'),
+    pggen.arg('skip_tls_verification'),
     pggen.arg('cloud'),
     pggen.arg('organization_name')
 );

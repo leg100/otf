@@ -70,7 +70,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 	if result.VCSRepo != nil {
 		ws.repo = &VCSRepo{
 			Identifier: result.VCSRepo.Identifier.String,
-			Branch:     result.VCSRepo.Identifier.String,
+			Branch:     result.VCSRepo.Branch.String,
 			ProviderID: result.VCSRepo.VCSProviderID.String,
 		}
 	}

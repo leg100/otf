@@ -10,14 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestStartRunUI tests starting a run via the Web UI.
+// TestStartRunUI tests starting a run via the Web UI before confirming and
+// applying the run.
 func TestStartRunUI(t *testing.T) {
 	addBuildsToPath(t)
 
 	user := otf.NewTestUser(t)
 	// test using user's personal organization
 	org := user.Username()
-	hostname := startDaemon(t, user)
+
+	daemon := &daemon{}
+	daemon.withGithubUser(user)
+	hostname := daemon.start(t)
 	url := "https://" + hostname
 
 	token := createAPIToken(t, hostname)
@@ -26,8 +30,8 @@ func TestStartRunUI(t *testing.T) {
 	workspace := createWebWorkspace(t, allocator, url, org)
 
 	//
-	// start run UI requires an existing config version, so create one first
-	// by running a plan via the CLI
+	// start run UI functionality requires an existing config version, so
+	// create one first by running a plan via the CLI
 	//
 	root := newRootModule(t, hostname, org, workspace)
 
@@ -46,33 +50,31 @@ func TestStartRunUI(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 
-	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
-	workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
-
-	allocater := newBrowserAllocater(t)
-	ctx, cancel := chromedp.NewContext(allocater)
+	//
+	// now we have a config version, start a run via the browser
+	//
+	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
 
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(ctx, append(chromedp.Tasks{
 		chromedp.Navigate(url),
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
-		// select org
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
+	}, startRunTasks(t, hostname, org, workspace)))
+	require.NoError(t, err)
+}
+
+func startRunTasks(t *testing.T, hostname, org, workspace string) chromedp.Tasks {
+	return []chromedp.Action{
+		// go to workspace page
+		chromedp.Navigate(fmt.Sprintf("https://%s/organizations/%s/workspaces/%s", hostname, org, workspace)),
 		chromedp.WaitReady(`body`),
-		// list workspaces
-		chromedp.Click("#menu-item-workspaces > a", chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.WaitReady(`body`),
-		// select workspace
-		chromedp.Click(workspaceSelector, chromedp.NodeVisible),
-		ss.screenshot(t),
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),
 		ss.screenshot(t),
 		// confirm plan begins and ends
 		chromedp.WaitReady(`body`),
-		ss.screenshot(t),
 		chromedp.WaitReady(`//*[@id='tailed-plan-logs']//text()[contains(.,'Initializing the backend')]`, chromedp.BySearch),
 		ss.screenshot(t),
 		chromedp.WaitReady(`#plan-status.phase-status-finished`),
@@ -88,6 +90,6 @@ func TestStartRunUI(t *testing.T) {
 		chromedp.WaitReady(`#apply-status.phase-status-finished`),
 		// confirm run ends in applied state
 		chromedp.WaitReady(`//*[@id='run-status']//*[normalize-space(text())='applied']`, chromedp.BySearch),
-	})
-	require.NoError(t, err)
+		ss.screenshot(t),
+	}
 }

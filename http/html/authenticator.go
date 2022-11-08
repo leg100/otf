@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -25,27 +24,6 @@ const oauthCookieName = "oauth-state"
 type Authenticator struct {
 	otf.Cloud
 	otf.Application
-}
-
-// NewAuthenticatorsFromConfig constructs authenticators from the given cloud
-// configurations. If config is unspecified then its corresponding cloud
-// authenticator is skipped.
-func NewAuthenticatorsFromConfig(app otf.Application, configs ...otf.CloudConfig) ([]*Authenticator, error) {
-	var authenticators []*Authenticator
-	for _, cfg := range configs {
-		err := cfg.Valid()
-		if errors.Is(err, otf.ErrOAuthCredentialsUnspecified) {
-			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("invalid cloud config: %w", err)
-		}
-		cloud, err := cfg.NewCloud()
-		if err != nil {
-			return nil, err
-		}
-		authenticators = append(authenticators, &Authenticator{cloud, app})
-	}
-	return authenticators, nil
 }
 
 func (a *Authenticator) RequestPath() string {

@@ -45,6 +45,12 @@ func NewGitlabConfigFromFlags(flags *pflag.FlagSet) *GitlabConfig {
 	return cfg
 }
 
+func NewGitlabCloud(opts *cloudConfigOptions) *gitlabCloud {
+	cloud := &gitlabCloud{defaultGitlabConfig()}
+	cloud.override(opts)
+	return cloud
+}
+
 func (cfg *GitlabConfig) NewCloud() (Cloud, error) {
 	return &gitlabCloud{GitlabConfig: cfg}, nil
 }

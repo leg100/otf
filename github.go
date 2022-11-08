@@ -57,8 +57,10 @@ type GithubCloud struct {
 	*GithubConfig
 }
 
-func NewGithubCloud() *GithubCloud {
-	return &GithubCloud{defaultGithubConfig()}
+func NewGithubCloud(opts *cloudConfigOptions) *GithubCloud {
+	cloud := &GithubCloud{defaultGithubConfig()}
+	cloud.override(opts)
+	return cloud
 }
 
 func (g *GithubCloud) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
@@ -200,7 +202,7 @@ func (g *githubProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]b
 		return nil, err
 	}
 
-	resp, err := http.Get(link.String())
+	resp, err := g.client.Client().Get(link.String())
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -499,7 +500,7 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -529,7 +530,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		}
 		tarball, err := client.GetRepoTarball(ctx, ws.VCSRepo())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 		}
 		cv, err = app.CreateConfigurationVersion(ctx, ws.ID(), opts)
 		if err != nil {

@@ -19,7 +19,10 @@ func TestWeb(t *testing.T) {
 	owners := otf.NewTeam("owners", org)
 	devops := otf.NewTeam("devops", org)
 	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
-	hostname := startDaemon(t, user)
+
+	daemon := &daemon{}
+	daemon.withGithubUser(user)
+	hostname := daemon.start(t)
 	url := "https://" + hostname
 
 	// TODO: move tests out of subtests - we're not testing bits of functionality

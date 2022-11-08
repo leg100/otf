@@ -27,6 +27,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 		"organization_name": {"acme-corp"},
 		"token":             {"secret-token"},
 		"name":              {"my-new-vcs-provider"},
+		"cloud_name":        {"fake-cloud"},
 	}.Encode())
 
 	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", form)
@@ -39,15 +40,17 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
 		assert.Equal(t, "/organizations/acme-corp/vcs-providers", redirect.Path)
+	} else {
+		t.Log(w.Body.String())
 	}
 }
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	app := newFakeWebApp(t, &fakeVCSProviderApp{providers: []*otf.VCSProvider{
-		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
-		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
-		otf.NewTestVCSProvider(org, otf.NewTestCloud()),
+		otf.NewTestVCSProvider(t, org, otf.NewTestCloud()),
+		otf.NewTestVCSProvider(t, org, otf.NewTestCloud()),
+		otf.NewTestVCSProvider(t, org, otf.NewTestCloud()),
 	}})
 
 	r := httptest.NewRequest("GET", "/organization/acme-corp/vcs-providers", nil)
@@ -79,8 +82,8 @@ type fakeVCSProviderApp struct {
 	providers []*otf.VCSProvider
 }
 
-func (f *fakeVCSProviderApp) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
-	return otf.NewVCSProvider(opts), nil
+func (f *fakeVCSProviderApp) CreateVCSProvider(ctx context.Context, cloud otf.Cloud, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
+	return otf.NewVCSProvider(cloud, opts)
 }
 
 func (f *fakeVCSProviderApp) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {

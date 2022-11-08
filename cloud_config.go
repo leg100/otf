@@ -8,6 +8,7 @@ type CloudConfig interface {
 	Valid() error
 	NewCloud() (Cloud, error)
 	CloudName() string
+	Hostname() string
 	Endpoint() (oauth2.Endpoint, error)
 	Scopes() []string
 	ClientID() string
@@ -24,6 +25,12 @@ type cloudConfig struct {
 	endpoint            oauth2.Endpoint
 	scopes              []string
 	skipTLSVerification bool
+}
+
+// optional overrides
+type cloudConfigOptions struct {
+	hostname            *string
+	skipTLSVerification *bool
 }
 
 func (g cloudConfig) CloudName() string         { return g.cloudName }
@@ -44,4 +51,16 @@ func (g cloudConfig) Endpoint() (oauth2.Endpoint, error) {
 		return oauth2.Endpoint{}, err
 	}
 	return endpoint, nil
+}
+
+func (g *cloudConfig) override(opts *cloudConfigOptions) {
+	if opts == nil {
+		return
+	}
+	if opts.hostname != nil {
+		g.hostname = *opts.hostname
+	}
+	if opts.skipTLSVerification != nil {
+		g.skipTLSVerification = *opts.skipTLSVerification
+	}
 }

@@ -56,9 +56,9 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	cloud := otf.NewTestCloud()
 	providers := []*otf.VCSProvider{
-		otf.NewTestVCSProvider(org, cloud),
-		otf.NewTestVCSProvider(org, cloud),
-		otf.NewTestVCSProvider(org, cloud),
+		otf.NewTestVCSProvider(t, org, cloud),
+		otf.NewTestVCSProvider(t, org, cloud),
+		otf.NewTestVCSProvider(t, org, cloud),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
 
@@ -78,7 +78,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		otf.NewTestRepo(),
 		otf.NewTestRepo(),
 	}
-	provider := otf.NewTestVCSProvider(org, otf.NewTestCloud(otf.WithRepos(repos...)))
+	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud(otf.WithRepos(repos...)))
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: []*otf.VCSProvider{provider}})
 
 	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
@@ -119,7 +119,7 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	repo := otf.NewTestRepo()
-	provider := otf.NewTestVCSProvider(org, otf.NewTestCloud(otf.WithRepos(repo)))
+	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud(otf.WithRepos(repo)))
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
 		providers:  []*otf.VCSProvider{provider},
@@ -197,7 +197,7 @@ func TestStartRunHandler(t *testing.T) {
 func TestStartRun(t *testing.T) {
 	ctx := context.Background()
 	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(org, otf.NewTestCloud())
+	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud())
 
 	t.Run("not connected to repo", func(t *testing.T) {
 		ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})

@@ -20,7 +20,11 @@ func TestPlanPermission(t *testing.T) {
 	owners := otf.NewTeam("owners", org)
 	devops := otf.NewTeam("devops", org)
 	boss := otf.NewUser("boss", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
-	hostname := startDaemon(t, boss)
+
+	// Build and start a daemon specifically for the boss
+	bossDaemon := &daemon{}
+	bossDaemon.withGithubUser(boss)
+	hostname := bossDaemon.start(t)
 	url := "https://" + hostname
 
 	// create workspace via web - note this also syncs the org and owner
@@ -30,15 +34,17 @@ func TestPlanPermission(t *testing.T) {
 	// assign plan permissions to devops team
 	addWorkspacePermission(t, allocater, url, org.Name(), workspace, devops.Name(), "plan")
 
-	// setup non-owner user - note we start another daemon because this is the
+	// setup non-owner engineer user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
 	engineer := otf.NewUser("engineer", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(devops))
-	hostname = startDaemon(t, engineer)
+	engineerDaemon := &daemon{}
+	engineerDaemon.withGithubUser(engineer)
+	engineerHostname := engineerDaemon.start(t)
 
-	engineerToken := createAPIToken(t, hostname)
-	login(t, hostname, engineerToken)
+	engineerToken := createAPIToken(t, engineerHostname)
+	login(t, engineerHostname, engineerToken)
 
-	root := newRootModule(t, hostname, org.Name(), workspace)
+	root := newRootModule(t, engineerHostname, org.Name(), workspace)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")

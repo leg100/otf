@@ -27,6 +27,9 @@ type DirectoryClient interface {
 }
 
 // Repo is a VCS repository belonging to a cloud
+//
+// TODO: remove or do something to this because there is too much overlap with
+// VCSRepo
 type Repo struct {
 	// Identifier is <repo_owner>/<repo_name>
 	Identifier string `schema:"identifier,required"`

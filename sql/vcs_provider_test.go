@@ -13,7 +13,7 @@ func TestVCSProvider_Create(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	provider := otf.NewTestVCSProvider(org, otf.NewGithubCloud())
+	provider := otf.NewTestVCSProvider(t, org, otf.NewGithubCloud(nil))
 
 	defer db.DeleteVCSProvider(ctx, provider.Token())
 

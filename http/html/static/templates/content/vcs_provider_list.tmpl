@@ -17,12 +17,11 @@
     {{ end }}
   </div>
 
-  <form action="{{ newVCSProviderPath .Content "github" }}" method="GET">
-    <button type="submit">New Github VCS Provider</button>
+  {{ range .Content.Clouds }}
+  <form action="{{ newVCSProviderPath $.Content .CloudName }}" method="GET">
+    <button type="submit">New {{ title .CloudName }} VCS Provider</button>
   </form>
-  <form action="{{ newVCSProviderPath .Content "gitlab" }}" method="GET">
-    <button type="submit">New Gitlab VCS Provider</button>
-  </form>
+  {{ end }}
 {{ end }}
 
 {{ define "content-list-item" }}

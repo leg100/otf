@@ -16,8 +16,10 @@ import (
 )
 
 var (
+	// chromedp browser config
 	allocator context.Context
-	ss        = &screenshotter{m: make(map[string]int)}
+	// for taking browser screenshots
+	ss = &screenshotter{m: make(map[string]int)}
 )
 
 func TestMain(t *testing.M) {
@@ -58,6 +60,7 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org strin
 		chromedp.Click(orgSelector, chromedp.NodeVisible),
 		ss.screenshot(t),
 		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
+		// sometimes get stuck on this one...
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		ss.screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),

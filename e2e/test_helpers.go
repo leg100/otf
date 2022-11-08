@@ -25,23 +25,57 @@ import (
 
 var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl=true`)
 
-// startDaemon starts an instance of the otfd daemon along with a github stub
-// seeded with the given user. The hostname of the otfd daemon is returned.
-func startDaemon(t *testing.T, user *otf.User, flags ...string) string {
-	githubServer := otf.NewTestGithubServer(t, user)
-	githubURL, err := url.Parse(githubServer.URL)
-	require.NoError(t, err)
+// daemon builds and starts a daemon
+type daemon struct {
+	flags         []string
+	enableGithub  bool
+	githubOptions []otf.TestGithubServerOption
+}
 
-	flags = append(flags,
+func (d *daemon) withFlags(flags ...string) {
+	d.flags = append(d.flags, flags...)
+}
+
+func (d *daemon) withGithubUser(user *otf.User) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, otf.WithGithubUser(user))
+}
+
+func (d *daemon) withGithubRepo(repo *otf.Repo) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, otf.WithGithubRepo(repo))
+}
+
+func (d *daemon) withGithubTarball(tarball []byte) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, otf.WithGithubArchive(tarball))
+}
+
+// start an instance of the otfd daemon and return its hostname.
+func (d *daemon) start(t *testing.T) string {
+	database, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
+	require.True(t, ok, "OTF_TEST_DATABASE_URL not set")
+
+	flags := append(d.flags,
 		"--address", ":0",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
-		"--github-client-id", "stub-client-id",
-		"--github-client-secret", "stub-client-secret",
-		"--github-skip-tls-verification",
-		"--github-hostname", githubURL.Host,
+		"--database", database,
 	)
+
+	if d.enableGithub {
+		githubServer := otf.NewTestGithubServer(t, d.githubOptions...)
+		githubURL, err := url.Parse(githubServer.URL)
+		require.NoError(t, err)
+
+		flags = append(flags,
+			"--github-client-id", "stub-client-id",
+			"--github-client-secret", "stub-client-secret",
+			"--github-skip-tls-verification",
+			"--github-hostname", githubURL.Host,
+		)
+	}
 
 	cmd := exec.Command("otfd", flags...)
 	out, err := cmd.StdoutPipe()
@@ -157,6 +191,7 @@ func createAgentToken(t *testing.T, organization, hostname string) string {
 	return matches[1]
 }
 
+// newRootModule creates a terraform root module, returning its directory path
 func newRootModule(t *testing.T, hostname, organization, workspace string) string {
 	config := []byte(fmt.Sprintf(`
 terraform {
@@ -222,6 +257,7 @@ func addBuildsToPath(t *testing.T) {
 	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
 }
 
+// TODO: remove this, we have a single package var instead
 func newBrowserAllocater(t *testing.T) context.Context {
 	headless := true
 	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {

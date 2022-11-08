@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,17 +10,41 @@ import (
 )
 
 func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
-	tmpl := "vcs_provider_" + mux.Vars(r)["cloud_name"] + "_new.tmpl"
-	app.render(tmpl, w, r, organizationRequest{r})
+	name := mux.Vars(r)["cloud_name"]
+	cloud, ok := app.clouds[name]
+	if !ok {
+		writeError(w, "no such cloud configured: "+name, http.StatusUnprocessableEntity)
+		return
+	}
+
+	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", name)
+	app.render(tmpl, w, r, struct {
+		organizationRoute
+		otf.Cloud
+	}{
+		organizationRoute: organizationRequest{r},
+		Cloud:             cloud,
+	})
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
-	var opts otf.VCSProviderCreateOptions
+	type options struct {
+		otf.VCSProviderCreateOptions
+		CloudName string `schema:"cloud_name,required"`
+	}
+	var opts options
 	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	provider, err := app.CreateVCSProvider(r.Context(), opts)
+
+	cloud, ok := app.clouds[opts.CloudName]
+	if !ok {
+		writeError(w, "no such cloud configured: "+opts.CloudName, http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := app.CreateVCSProvider(r.Context(), cloud, opts.VCSProviderCreateOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -36,10 +61,12 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 	}
 
 	app.render("vcs_provider_list.tmpl", w, r, struct {
-		Items []*otf.VCSProvider
+		Items  []*otf.VCSProvider
+		Clouds map[string]otf.Cloud
 		organizationRoute
 	}{
 		Items:             providers,
+		Clouds:            app.clouds,
 		organizationRoute: organizationRequest{r},
 	})
 }

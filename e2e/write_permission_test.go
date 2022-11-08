@@ -19,25 +19,31 @@ func TestWritePermission(t *testing.T) {
 	owners := otf.NewTeam("owners", org)
 	devops := otf.NewTeam("devops", org)
 	boss := otf.NewUser("boss", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
-	hostname := startDaemon(t, boss)
-	url := "https://" + hostname
+
+	// Build and start a daemon specifically for the boss
+	bossDaemon := &daemon{}
+	bossDaemon.withGithubUser(boss)
+	bossHostname := bossDaemon.start(t)
+	bossURL := "https://" + bossHostname
 
 	// create workspace via web - note this also syncs the org and owner
 	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, url, org.Name())
+	workspace := createWebWorkspace(t, allocater, bossURL, org.Name())
 
 	// assign write permissions to devops team
-	addWorkspacePermission(t, allocater, url, org.Name(), workspace, devops.Name(), "write")
+	addWorkspacePermission(t, allocater, bossURL, org.Name(), workspace, devops.Name(), "write")
 
 	// setup non-owner user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
 	engineer := otf.NewUser("engineer", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(devops))
-	hostname = startDaemon(t, engineer)
+	engineerDaemon := &daemon{}
+	engineerDaemon.withGithubUser(engineer)
+	engineerHostname := engineerDaemon.start(t)
 
-	engineerToken := createAPIToken(t, hostname)
-	login(t, hostname, engineerToken)
+	engineerToken := createAPIToken(t, engineerHostname)
+	login(t, engineerHostname, engineerToken)
 
-	root := newRootModule(t, hostname, org.Name(), workspace)
+	root := newRootModule(t, engineerHostname, org.Name(), workspace)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")
@@ -71,21 +77,21 @@ func TestWritePermission(t *testing.T) {
 	require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock workspace
-	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name(), "--address", hostname)
+	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name(), "--address", engineerHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// unlock workspace
-	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name(), "--address", hostname)
+	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name(), "--address", engineerHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// list workspaces
-	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name(), "--address", hostname)
+	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name(), "--address", engineerHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))

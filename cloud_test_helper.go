@@ -35,7 +35,7 @@ func WithRepos(repos ...*Repo) TestCloudOption {
 func NewTestCloud(opts ...TestCloudOption) *testCloud {
 	cloud := &testCloud{
 		cloudConfig: cloudConfig{
-			cloudName:           "fake",
+			cloudName:           "fake-cloud",
 			endpoint:            oauth2github.Endpoint,
 			skipTLSVerification: true,
 			OAuthCredentials: &OAuthCredentials{

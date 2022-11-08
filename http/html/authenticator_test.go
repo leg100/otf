@@ -29,7 +29,7 @@ func TestAuthenticator_RequestHandler(t *testing.T) {
 	loc, err := w.Result().Location()
 	require.NoError(t, err)
 	assert.Equal(t, "gitlab.com", loc.Host)
-	assert.Equal(t, "http://example.com/oauth/fake/callback", loc.Query().Get("redirect_uri"))
+	assert.Equal(t, "http://example.com/oauth/fake-cloud/callback", loc.Query().Get("redirect_uri"))
 
 	if assert.Equal(t, 1, len(w.Result().Cookies())) {
 		assert.Equal(t, w.Result().Cookies()[0].Value, loc.Query().Get("state"))

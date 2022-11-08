@@ -1,6 +1,8 @@
 package html
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -49,6 +51,8 @@ type Application struct {
 	authenticators []*Authenticator
 	// site admin's authentication token
 	siteToken string
+	// user-enabled clouds
+	clouds map[string]otf.Cloud
 }
 
 type ApplicationOption func(*Application)
@@ -86,12 +90,26 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 		siteToken:    srvConfig.SiteToken,
 	}
 
-	// Add authenticators for clouds the user has configured
-	authenticators, err := NewAuthenticatorsFromConfig(services, config.cloudConfigs...)
-	if err != nil {
-		return err
+	// Add clouds the user has enabled - a user is deemed to have enabled a
+	// cloud if they have specified at least its oauth credentials.
+	app.clouds = make(map[string]otf.Cloud)
+	for _, cfg := range config.cloudConfigs {
+		err := cfg.Valid()
+		if errors.Is(err, otf.ErrOAuthCredentialsUnspecified) {
+			continue
+		} else if err != nil {
+			return fmt.Errorf("invalid cloud config: %w", err)
+		}
+		cloud, err := cfg.NewCloud()
+		if err != nil {
+			return err
+		}
+		app.clouds[cloud.CloudName()] = cloud
+
+		// and add an authenticator for each cloud the user has enabled so users
+		// can sign in.
+		app.authenticators = append(app.authenticators, &Authenticator{cloud, services})
 	}
-	app.authenticators = authenticators
 
 	app.addRoutes(router)
 	return nil

@@ -7,7 +7,6 @@ import (
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,11 +16,11 @@ import (
 func TestSiteAdmin(t *testing.T) {
 	addBuildsToPath(t)
 
-	// Create test user merely because startDaemon expects one, but this test
-	// doesn't use it.
-	user := otf.NewTestUser(t)
+	daemon := &daemon{}
+	daemon.withFlags("--site-token", "abc123")
+	hostname := daemon.start(t)
+
 	orgName := uuid.NewString()
-	hostname := startDaemon(t, user, "--site-token", "abc123")
 
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()

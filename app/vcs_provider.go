@@ -6,13 +6,17 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
+func (a *Application) CreateVCSProvider(ctx context.Context, cloud otf.Cloud, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
 	subject, err := a.CanAccessOrganization(ctx, otf.CreateVCSProviderAction, opts.OrganizationName)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := otf.NewVCSProvider(opts)
+	provider, err := otf.NewVCSProvider(cloud, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := a.db.CreateVCSProvider(ctx, provider); err != nil {
 		a.Error(err, "creating vcs provider", "organization", opts.OrganizationName, "id", provider.ID(), "subject", subject)
 		return nil, err
