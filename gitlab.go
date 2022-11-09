@@ -174,7 +174,7 @@ func (g *gitlabProvider) ListRepositories(ctx context.Context, lopts ListOptions
 }
 
 func (g *gitlabProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
-	tarball, _, err := g.client.Repositories.Archive(url.PathEscape(repo.Identifier), &gitlab.ArchiveOptions{
+	tarball, _, err := g.client.Repositories.Archive(repo.Identifier, &gitlab.ArchiveOptions{
 		Format: String("tar.gz"),
 	})
 	if err != nil {

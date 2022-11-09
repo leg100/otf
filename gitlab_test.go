@@ -41,6 +41,36 @@ func TestGitlab_GetUser(t *testing.T) {
 
 		assert.Equal(t, want, got)
 	})
+
+	t.Run("ListRepositories", func(t *testing.T) {
+		// TODO: test pagination - our test server doesn't currently implement it
+		want := &RepoList{
+			Items:      []*Repo{{Identifier: "acme/terraform", Branch: "master"}},
+			Pagination: &Pagination{},
+		}
+
+		provider := newTestGitlabClient(t, WithGitlabRepo(want.Items[0]))
+
+		got, err := provider.ListRepositories(ctx, ListOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, want, got)
+	})
+	t.Run("GetRepoTarball", func(t *testing.T) {
+		want := NewTestTarball(t, `file1 contents`, `file2 contents`)
+		provider := newTestGitlabClient(t,
+			WithGitlabRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
+			WithGitlabTarball(want),
+		)
+
+		got, err := provider.GetRepoTarball(ctx, &VCSRepo{
+			Identifier: "acme/terraform",
+			Branch:     "master",
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t, want, got)
+	})
 }
 
 func newTestGitlabClient(t *testing.T, opts ...TestGitlabServerOption) *gitlabProvider {

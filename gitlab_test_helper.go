@@ -85,6 +85,18 @@ func NewTestGitlabServer(t *testing.T, opts ...TestGitlabServerOption) *httptest
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
+		mux.HandleFunc("/api/v4/projects", func(w http.ResponseWriter, r *http.Request) {
+			out, err := json.Marshal([]*gitlab.Project{db.project})
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
+	}
+	if db.project != nil && db.tarball != nil {
+		path := "/api/v4/projects/" + db.project.PathWithNamespace + "/repository/archive.tar.gz"
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			w.Write(db.tarball)
+		})
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +148,7 @@ func WithGitlabRepo(repo *Repo) TestGitlabServerOption {
 	}
 }
 
-func WithGitlabArchive(tarball []byte) TestGitlabServerOption {
+func WithGitlabTarball(tarball []byte) TestGitlabServerOption {
 	return func(db *testGitlabServerDB) {
 		db.tarball = tarball
 	}
