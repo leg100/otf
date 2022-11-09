@@ -48,23 +48,23 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(out)
 	})
-	mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
-		out, err := json.Marshal(&github.User{Login: String(db.user.Username())})
-		require.NoError(t, err)
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(out)
-	})
-	mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
-		var orgs []*github.Organization
-		for _, org := range db.user.Organizations() {
-			orgs = append(orgs, &github.Organization{Login: String(org.Name())})
-		}
-		out, err := json.Marshal(orgs)
-		require.NoError(t, err)
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(out)
-	})
 	if db.user != nil {
+		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
+			out, err := json.Marshal(&github.User{Login: String(db.user.Username())})
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
+		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
+			var orgs []*github.Organization
+			for _, org := range db.user.Organizations() {
+				orgs = append(orgs, &github.Organization{Login: String(org.Name())})
+			}
+			out, err := json.Marshal(orgs)
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
 		for _, org := range db.user.Organizations() {
 			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Membership{
@@ -116,16 +116,18 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
+		// https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-tar
+		mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier+"/tarball/"+db.repo.Branch, func(w http.ResponseWriter, r *http.Request) {
+			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
+			http.Redirect(w, r, link.String(), http.StatusFound)
+		})
 	}
 
-	// https://docs.github.com/en/rest/repos/contents#download-a-repository-archive-tar
-	mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier+"/tarball/"+db.repo.Branch, func(w http.ResponseWriter, r *http.Request) {
-		link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
-		http.Redirect(w, r, link.String(), http.StatusFound)
-	})
-	mux.HandleFunc("/mytarball", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(db.tarball)
-	})
+	if db.tarball != nil {
+		mux.HandleFunc("/mytarball", func(w http.ResponseWriter, r *http.Request) {
+			w.Write(db.tarball)
+		})
+	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		t.Logf("github server received request for non-existent path: %s", r.URL.Path)
