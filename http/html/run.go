@@ -12,6 +12,15 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
+// runRequest exposes the route parameters for a run resource
+type runRequest struct {
+	workspaceRequest
+}
+
+func (r runRequest) RunID() string {
+	return param(r.r, "run_id")
+}
+
 type htmlLogChunk struct {
 	otf.Chunk
 }
@@ -50,8 +59,15 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	streamID := "watch-ws-runs-" + otf.GenerateRandomString(5)
-	app.render("run_list.tmpl", w, r, runList{runs, opts, streamID})
+	app.render("run_list.tmpl", w, r, struct {
+		*otf.RunList
+		workspaceRoute
+		StreamID string
+	}{
+		RunList:        runs,
+		workspaceRoute: workspaceRequest{r},
+		StreamID:       "watch-ws-runs-" + otf.GenerateRandomString(5),
+	})
 }
 
 func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {
@@ -62,25 +78,6 @@ func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {
 		Organization: mux.Vars(r)["organization_name"],
 		Workspace:    mux.Vars(r)["workspace_name"],
 	})
-}
-
-func (app *Application) createRun(w http.ResponseWriter, r *http.Request) {
-	var opts otf.RunCreateOptions
-	if err := decode.Route(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	if err := decode.Form(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	ws := workspaceRequest{r}.Spec()
-	created, err := app.CreateRun(r.Context(), ws, opts)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, getRunPath(created), http.StatusFound)
 }
 
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +131,24 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
+}
+
+func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
+	err := app.ApplyRun(r.Context(), mux.Vars(r)["run_id"], otf.RunApplyOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}}), http.StatusFound)
+}
+
+func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
+	err := app.DiscardRun(r.Context(), mux.Vars(r)["run_id"], otf.RunDiscardOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}}), http.StatusFound)
 }
 
 func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {

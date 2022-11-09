@@ -69,8 +69,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 	if err != nil {
 		return err
 	}
-	err = cb(newDB(conn))
-	return err
+	return cb(newDB(conn))
 }
 
 // tx is the same as exported Tx but for use within the sql pkg, passing the
@@ -91,12 +90,10 @@ func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 }
 
 // New constructs a new DB
-//
-// TODO: pass in context
-func New(logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
+func New(ctx context.Context, logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
 	logger = logger.WithValues("component", "database")
 
-	conn, err := pgxpool.Connect(context.Background(), path)
+	conn, err := pgxpool.Connect(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +106,7 @@ func New(logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.
 	db := newDB(conn)
 
 	if cleanupInterval > 0 {
-		go db.startCleanup(cleanupInterval)
+		go db.startCleanup(ctx, cleanupInterval)
 	}
 
 	return db, nil

@@ -176,6 +176,9 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, &WorkspaceList{r.Context(), s.Application, wsl})
 }
 
+// UpdateWorkspace updates a workspace.
+//
+// TODO: support updating workspace's vcs repo.
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	opts := dto.WorkspaceUpdateOptions{}
 	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {

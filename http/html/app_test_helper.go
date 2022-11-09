@@ -13,10 +13,13 @@ func newFakeWebApp(t *testing.T, app otf.Application, opts ...ApplicationOption)
 	views, err := newViewEngine(false)
 	require.NoError(t, err)
 
+	cloud := otf.NewTestCloud()
+
 	a := &Application{
 		Application: app,
 		Logger:      logr.Discard(),
 		viewEngine:  views,
+		clouds:      map[string]otf.Cloud{cloud.CloudName(): cloud},
 	}
 
 	for _, o := range opts {
@@ -43,6 +46,7 @@ type fakeApp struct {
 	otf.ConfigurationVersionService
 	otf.EventService
 	otf.CurrentRunService
+	otf.VCSProviderService
 	otf.LockableApplication
 }
 

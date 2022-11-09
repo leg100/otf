@@ -25,7 +25,7 @@ func (a *Application) CreateAgentToken(ctx context.Context, opts otf.AgentTokenC
 }
 
 func (a *Application) ListAgentTokens(ctx context.Context, organizationName string) ([]*otf.AgentToken, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListAgentTokenActions, organizationName)
+	subject, err := a.CanAccessOrganization(ctx, otf.ListAgentTokensAction, organizationName)
 	if err != nil {
 		return nil, err
 	}

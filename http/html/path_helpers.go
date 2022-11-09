@@ -23,6 +23,13 @@ type workspaceRoute interface {
 	WorkspaceName() string
 }
 
+// vcsProviderRoute provides info about a route for a vcs provider resource
+type vcsProviderRoute interface {
+	OrganizationName() string
+	WorkspaceName() string
+	VCSProviderID() string
+}
+
 // runRoute provides info about a route for a run resource
 type runRoute interface {
 	// ID of run
@@ -89,6 +96,22 @@ func newAgentTokenPath(route organizationRoute) string {
 	return path.Join(getOrganizationPath(route), "agent-tokens", "new")
 }
 
+func listVCSProviderPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers")
+}
+
+func newVCSProviderPath(route organizationRoute, cloud string) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "new")
+}
+
+func createVCSProviderPath(route organizationRoute, cloud string) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "create")
+}
+
+func deleteVCSProviderPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "vcs-providers", "delete")
+}
+
 func listOrganizationPath() string {
 	return "/organizations"
 }
@@ -153,6 +176,26 @@ func getWorkspacePath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s", ws.OrganizationName(), ws.WorkspaceName())
 }
 
+func listWorkspaceVCSProvidersPath(ws workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers", ws.OrganizationName(), ws.WorkspaceName())
+}
+
+func listWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos", ws.OrganizationName(), ws.WorkspaceName(), providerID)
+}
+
+func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
+}
+
+func disconnectWorkspaceRepoPath(ws workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/repo/disconnect", ws.OrganizationName(), ws.WorkspaceName())
+}
+
+func startRunPath(ws workspaceRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/start-run", ws.OrganizationName(), ws.WorkspaceName())
+}
+
 func editWorkspacePath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", ws.OrganizationName(), ws.WorkspaceName())
 }
@@ -189,10 +232,6 @@ func newRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func createRunPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/create", ws.OrganizationName(), ws.WorkspaceName())
-}
-
 func getRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
@@ -211,6 +250,14 @@ func deleteRunPath(run runRoute) string {
 
 func cancelRunPath(run runRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/cancel", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+}
+
+func applyRunPath(run runRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+}
+
+func discardRunPath(run runRoute) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/discard", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }
 
 func addHelpersToFuncMap(m template.FuncMap) {
@@ -249,14 +296,24 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["unsetWorkspacePermissionPath"] = unsetWorkspacePermissionPath
 	m["listRunPath"] = listRunPath
 	m["newRunPath"] = newRunPath
-	m["createRunPath"] = createRunPath
 	m["getRunPath"] = getRunPath
 	m["watchWorkspacePath"] = watchWorkspacePath
 	m["tailRunPath"] = tailRunPath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
+	m["applyRunPath"] = applyRunPath
+	m["discardRunPath"] = discardRunPath
 	m["listAgentTokenPath"] = listAgentTokenPath
 	m["deleteAgentTokenPath"] = deleteAgentTokenPath
 	m["createAgentTokenPath"] = createAgentTokenPath
 	m["newAgentTokenPath"] = newAgentTokenPath
+	m["listVCSProviderPath"] = listVCSProviderPath
+	m["newVCSProviderPath"] = newVCSProviderPath
+	m["createVCSProviderPath"] = createVCSProviderPath
+	m["deleteVCSProviderPath"] = deleteVCSProviderPath
+	m["listWorkspaceVCSProvidersPath"] = listWorkspaceVCSProvidersPath
+	m["listWorkspaceRepoPath"] = listWorkspaceRepoPath
+	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
+	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
+	m["startRunPath"] = startRunPath
 }

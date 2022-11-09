@@ -67,7 +67,7 @@ func (cv *ConfigurationVersion) AddStatusTimestamp(status ConfigurationStatus, t
 // Upload saves the config to the db and updates status accordingly.
 func (cv *ConfigurationVersion) Upload(ctx context.Context, config []byte, uploader ConfigUploader) error {
 	if cv.status != ConfigurationPending {
-		return fmt.Errorf("attempted to upload configuration version with non-pending status: %s", cv.status)
+		return fmt.Errorf("cannot upload config for a configuration version with non-pending status: %s", cv.status)
 	}
 
 	// check config untars successfully and set errored status if not
@@ -117,6 +117,9 @@ type ConfigurationVersionCreateOptions struct {
 
 type ConfigurationVersionService interface {
 	CreateConfigurationVersion(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
+	// CloneConfigurationVersion creates a new configuration version using the
+	// config tarball of an existing configuration version.
+	CloneConfigurationVersion(ctx context.Context, cvID string, opts ConfigurationVersionCreateOptions) (*ConfigurationVersion, error)
 	GetConfigurationVersion(ctx context.Context, id string) (*ConfigurationVersion, error)
 	GetLatestConfigurationVersion(ctx context.Context, workspaceID string) (*ConfigurationVersion, error)
 	ListConfigurationVersions(ctx context.Context, workspaceID string, opts ConfigurationVersionListOptions) (*ConfigurationVersionList, error)

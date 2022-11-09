@@ -69,12 +69,57 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 			TriggerPrefixes:            ws.TriggerPrefixes(),
 			WorkingDirectory:           String(ws.WorkingDirectory()),
 		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 	return ws, err
+}
+
+func (db *DB) ConnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	_, err = db.InsertVCSRepo(ctx, pggen.InsertVCSRepoParams{
+		Identifier:    String(repo.Identifier),
+		Branch:        String(repo.Branch),
+		VCSProviderID: String(repo.ProviderID),
+		WorkspaceID:   workspaceID,
+	})
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	ws, err := db.GetWorkspace(ctx, spec)
+	return ws, databaseError(err)
+}
+
+func (db *DB) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+	workspaceID, err := db.getWorkspaceID(ctx, spec)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	_, err = db.UpdateVCSRepo(ctx, pggen.UpdateVCSRepoParams{
+		Identifier:    String(repo.Identifier),
+		VCSProviderID: String(repo.ProviderID),
+		WorkspaceID:   workspaceID,
+	})
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	ws, err := db.GetWorkspace(ctx, spec)
+	return ws, databaseError(err)
+}
+
+func (db *DB) DisconnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	id, err := db.getWorkspaceID(ctx, spec)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	_, err = db.DeleteVCSRepo(ctx, id)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	ws, err := db.GetWorkspace(ctx, spec)
+	return ws, databaseError(err)
 }
 
 // LockWorkspace locks the specified workspace.

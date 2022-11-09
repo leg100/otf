@@ -46,6 +46,7 @@ type Application interface {
 	TeamService
 	AgentTokenService
 	CurrentRunService
+	VCSProviderService
 	LockableApplication
 }
 
@@ -72,6 +73,7 @@ type DB interface {
 	ConfigurationVersionStore
 	ChunkStore
 	AgentTokenStore
+	VCSProviderStore
 }
 
 // Identity is an identifiable otf entity.

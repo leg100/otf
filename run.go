@@ -661,12 +661,20 @@ type RunService interface {
 	// EnqueuePlan enqueues a plan
 	EnqueuePlan(ctx context.Context, id string) (*Run, error)
 	// Apply a run with the given ID.
+	//
+	// TODO: return run
 	ApplyRun(ctx context.Context, id string, opts RunApplyOptions) error
 	// Discard discards a run with the given ID.
+	//
+	// TODO: return run
 	DiscardRun(ctx context.Context, id string, opts RunDiscardOptions) error
 	// Cancel run.
+	//
+	// TODO: return run
 	CancelRun(ctx context.Context, id string, opts RunCancelOptions) error
 	// Forcefully cancel a run.
+	//
+	// TODO: return run
 	ForceCancelRun(ctx context.Context, id string, opts RunForceCancelOptions) error
 	// Start a run phase.
 	StartPhase(ctx context.Context, id string, phase PhaseType, opts PhaseStartOptions) (*Run, error)
@@ -694,10 +702,8 @@ type RunCreateOptions struct {
 	RefreshOnly            *bool
 	Message                *string
 	ConfigurationVersionID *string
-	WorkspaceID            *string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
-	WorkspaceSpec          WorkspaceSpec
 }
 
 // TestRunCreateOptions is for testing purposes only.

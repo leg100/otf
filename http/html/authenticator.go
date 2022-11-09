@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -23,29 +22,8 @@ const oauthCookieName = "oauth-state"
 // user account and various organization and team memberships from an external
 // directory.
 type Authenticator struct {
-	Cloud
+	otf.Cloud
 	otf.Application
-}
-
-// NewAuthenticatorsFromConfig constructs authenticators from the given cloud
-// configurations. If config is unspecified then its corresponding cloud
-// authenticator is skipped.
-func NewAuthenticatorsFromConfig(app otf.Application, configs ...CloudConfig) ([]*Authenticator, error) {
-	var authenticators []*Authenticator
-	for _, cfg := range configs {
-		err := cfg.Valid()
-		if errors.Is(err, ErrOAuthCredentialsUnspecified) {
-			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("invalid cloud config: %w", err)
-		}
-		cloud, err := cfg.NewCloud()
-		if err != nil {
-			return nil, err
-		}
-		authenticators = append(authenticators, &Authenticator{cloud, app})
-	}
-	return authenticators, nil
 }
 
 func (a *Authenticator) RequestPath() string {
@@ -118,9 +96,8 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	client, err := a.NewDirectoryClient(r.Context(), DirectoryClientOptions{
-		Token:  token,
-		Config: cfg,
+	client, err := a.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
+		OAuthToken: token,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -188,7 +165,7 @@ func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oa
 	return cfg.Exchange(ctx, resp.AuthCode)
 }
 
-func (a *Authenticator) synchronise(ctx context.Context, client DirectoryClient) (*otf.User, error) {
+func (a *Authenticator) synchronise(ctx context.Context, client otf.DirectoryClient) (*otf.User, error) {
 	// service calls are made using the privileged app user
 	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
 

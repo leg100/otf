@@ -27,8 +27,10 @@ func TestCluster(t *testing.T) {
 	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
 	// start two daemons
-	userDaemon := startDaemon(t, user)
-	agentDaemon := startDaemon(t, user)
+	daemon := &daemon{}
+	daemon.withGithubUser(user)
+	userDaemon := daemon.start(t)
+	agentDaemon := daemon.start(t)
 
 	// creating api token via web also syncs org
 	userToken := createAPIToken(t, userDaemon)

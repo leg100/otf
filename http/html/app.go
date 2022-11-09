@@ -1,6 +1,8 @@
 package html
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -16,7 +18,7 @@ const DefaultPathPrefix = "/"
 type Config struct {
 	DevMode bool
 
-	cloudConfigs []CloudConfig
+	cloudConfigs []otf.CloudConfig
 }
 
 // NewConfigFromFlags binds flags to the config. The flagset must be parsed
@@ -24,8 +26,8 @@ type Config struct {
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 
-	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGithubConfigFromFlags(flags))
-	cfg.cloudConfigs = append(cfg.cloudConfigs, NewGitlabConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGithubConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGitlabConfigFromFlags(flags))
 
 	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
 	return &cfg
@@ -49,6 +51,8 @@ type Application struct {
 	authenticators []*Authenticator
 	// site admin's authentication token
 	siteToken string
+	// user-enabled clouds
+	clouds map[string]otf.Cloud
 }
 
 type ApplicationOption func(*Application)
@@ -86,12 +90,26 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 		siteToken:    srvConfig.SiteToken,
 	}
 
-	// Add authenticators for clouds the user has configured
-	authenticators, err := NewAuthenticatorsFromConfig(services, config.cloudConfigs...)
-	if err != nil {
-		return err
+	// Add clouds the user has enabled - a user is deemed to have enabled a
+	// cloud if they have specified at least its oauth credentials.
+	app.clouds = make(map[string]otf.Cloud)
+	for _, cfg := range config.cloudConfigs {
+		err := cfg.Valid()
+		if errors.Is(err, otf.ErrOAuthCredentialsUnspecified) {
+			continue
+		} else if err != nil {
+			return fmt.Errorf("invalid cloud config: %w", err)
+		}
+		cloud, err := cfg.NewCloud()
+		if err != nil {
+			return err
+		}
+		app.clouds[cloud.CloudName()] = cloud
+
+		// and add an authenticator for each cloud the user has enabled so users
+		// can sign in.
+		app.authenticators = append(app.authenticators, &Authenticator{cloud, services})
 	}
-	app.authenticators = authenticators
 
 	app.addRoutes(router)
 	return nil
@@ -137,6 +155,11 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/agent-tokens/create", app.createAgentToken)
 		r.GET("/organizations/{organization_name}/agent-tokens/new", app.newAgentToken)
 
+		r.GET("/organizations/{organization_name}/vcs-providers", app.listVCSProviders)
+		r.GET("/organizations/{organization_name}/vcs-providers/{cloud_name}/new", app.newVCSProvider)
+		r.PST("/organizations/{organization_name}/vcs-providers/{cloud_name}/create", app.createVCSProvider)
+		r.PST("/organizations/{organization_name}/vcs-providers/delete", app.deleteVCSProvider)
+
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)
 		r.PST("/organizations/create", app.createOrganization)
@@ -165,15 +188,21 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/unlock", app.unlockWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions", app.setWorkspacePermission)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions/unset", app.unsetWorkspacePermission)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers", app.listWorkspaceVCSProviders)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos", app.listWorkspaceVCSRepos)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/new", app.newRun)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/create", app.createRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}", app.getRun)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/tail", app.tailRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/delete", app.deleteRun)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/cancel", app.cancelRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/apply", app.applyRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/runs/{run_id}/discard", app.discardRun)
 
 		// this handles the link the terraform CLI shows during a plan/apply.
 		r.GET("/app/{organization_name}/{workspace_name}/runs/{run_id}", app.getRun)

@@ -15,6 +15,17 @@
 {{ end }}
 
 {{ define "content" }}
+  <div>
+    {{ if .Content.VCSRepo }}
+      <form action="{{ disconnectWorkspaceRepoPath .Content }}" method="POST">
+        <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.VCSRepo.Identifier }}</button>
+      </form>
+    {{ else }}
+      <form action="{{ listWorkspaceVCSProvidersPath .Content }}" method="GET">
+        <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
+      </form>
+    {{ end }}
+  </div>
   <form class="main-form" action="{{ updateWorkspacePath .Content }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
@@ -43,5 +54,8 @@
     <div class="field">
       <button>Save changes</button>
     </div>
+  </form>
+  <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content }}" method="POST">
+    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
   </form>
 {{ end }}
