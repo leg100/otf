@@ -33,7 +33,11 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
     env:
+      # for unit and e2e tests
       OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+      # for go-tfe tests
+      # TODO: have go-tfe-tests use OTF_TEST_DATABASE_URL instead
+      OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
     steps:
       -
         name: Checkout
