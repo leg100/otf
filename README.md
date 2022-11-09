@@ -12,7 +12,7 @@ An open source alternative to Terraform Enterprise:
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
 
-Docs: https://otf-project.readthedocs.io/
+Docs: https://docs.otf.ninja/
 
 ## Quickstart Demo
 

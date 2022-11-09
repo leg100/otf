@@ -1,12 +1,6 @@
 site_name: otf
+site_url: https://docs.otf.ninja
 theme: readthedocs
-nav:
-  - Home: index.md
-  - install_from_source.md
-  - install_from_helm_chart.md
-  - Github: github.md
-  - Agent: agents.md
-  - client.md
 
 markdown_extensions:
   - admonition
