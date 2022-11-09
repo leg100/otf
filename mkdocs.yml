@@ -4,6 +4,3 @@ theme: readthedocs
 
 markdown_extensions:
   - admonition
-
-extra_css:
-  - stylesheets/extra.css
