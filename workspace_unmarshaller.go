@@ -38,6 +38,7 @@ type WorkspaceResult struct {
 	Organization               *pggen.Organizations `json:"organization"`
 	UserLock                   *pggen.Users         `json:"user_lock"`
 	RunLock                    *pggen.Runs          `json:"run_lock"`
+	VCSRepo                    *pggen.VCSRepos      `json:"vcs_repo"`
 }
 
 func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
@@ -64,6 +65,14 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		triggerPrefixes:            result.TriggerPrefixes,
 		workingDirectory:           result.WorkingDirectory.String,
 		organization:               UnmarshalOrganizationRow(*result.Organization),
+	}
+
+	if result.VCSRepo != nil {
+		ws.repo = &VCSRepo{
+			Identifier: result.VCSRepo.Identifier.String,
+			Branch:     result.VCSRepo.Branch.String,
+			ProviderID: result.VCSRepo.VCSProviderID.String,
+		}
 	}
 
 	if result.LatestRunID.Status == pgtype.Present {

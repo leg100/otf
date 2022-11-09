@@ -1,7 +1,6 @@
-package html
+package otf
 
 import (
-	"github.com/leg100/otf"
 	"golang.org/x/oauth2"
 )
 
@@ -9,6 +8,7 @@ type CloudConfig interface {
 	Valid() error
 	NewCloud() (Cloud, error)
 	CloudName() string
+	Hostname() string
 	Endpoint() (oauth2.Endpoint, error)
 	Scopes() []string
 	ClientID() string
@@ -27,6 +27,12 @@ type cloudConfig struct {
 	skipTLSVerification bool
 }
 
+// optional overrides
+type cloudConfigOptions struct {
+	hostname            *string
+	skipTLSVerification *bool
+}
+
 func (g cloudConfig) CloudName() string         { return g.cloudName }
 func (g cloudConfig) Hostname() string          { return g.hostname }
 func (g cloudConfig) Scopes() []string          { return g.scopes }
@@ -36,13 +42,25 @@ func (g cloudConfig) Endpoint() (oauth2.Endpoint, error) {
 	var err error
 	var endpoint oauth2.Endpoint
 
-	endpoint.AuthURL, err = otf.UpdateHost(g.endpoint.AuthURL, g.hostname)
+	endpoint.AuthURL, err = UpdateHost(g.endpoint.AuthURL, g.hostname)
 	if err != nil {
 		return oauth2.Endpoint{}, err
 	}
-	endpoint.TokenURL, err = otf.UpdateHost(g.endpoint.TokenURL, g.hostname)
+	endpoint.TokenURL, err = UpdateHost(g.endpoint.TokenURL, g.hostname)
 	if err != nil {
 		return oauth2.Endpoint{}, err
 	}
 	return endpoint, nil
+}
+
+func (g *cloudConfig) override(opts *cloudConfigOptions) {
+	if opts == nil {
+		return
+	}
+	if opts.hostname != nil {
+		g.hostname = *opts.hostname
+	}
+	if opts.skipTLSVerification != nil {
+		g.skipTLSVerification = *opts.skipTLSVerification
+	}
 }

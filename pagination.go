@@ -27,7 +27,7 @@ func (p *Pagination) TotalCount() int  { return p.count }
 
 // PrevPage returns the previous page number or nil if there isn't one.
 func (p *Pagination) PrevPage() *int {
-	if p.opts.sanitizedPageNumber() > 1 {
+	if p.opts.SanitizedPageNumber() > 1 {
 		return Int(p.opts.prevPage())
 	}
 	return nil
@@ -35,22 +35,38 @@ func (p *Pagination) PrevPage() *int {
 
 // NextPage returns the next page number or nil if there isn't one.
 func (p *Pagination) NextPage() *int {
-	if p.opts.sanitizedPageNumber() < p.TotalPages() {
+	if p.opts.SanitizedPageNumber() < p.TotalPages() {
 		return Int(p.opts.nextPage())
 	}
 	return nil
 }
 
 func (p *Pagination) TotalPages() int {
-	pages := float64(p.count) / float64(p.opts.sanitizedPageSize())
+	pages := float64(p.count) / float64(p.opts.SanitizedPageSize())
 	// total must be a round number greater than 0
 	return int(math.Max(1, math.Ceil(pages)))
+}
+
+// NextPageQuery produces query params for the next page
+func (p *Pagination) NextPageQuery() string {
+	q := url.Values{}
+	q.Add("page[number]", strconv.Itoa(p.opts.nextPage()))
+	q.Add("page[size]", strconv.Itoa(p.opts.SanitizedPageSize()))
+	return q.Encode()
+}
+
+// PrevPageQuery produces query params for the previous page
+func (p *Pagination) PrevPageQuery() string {
+	q := url.Values{}
+	q.Add("page[number]", strconv.Itoa(p.opts.prevPage()))
+	q.Add("page[size]", strconv.Itoa(p.opts.SanitizedPageSize()))
+	return q.Encode()
 }
 
 // ToJSONAPI assembles a JSON-API DTO for wire serialization.
 func (p *Pagination) ToJSONAPI() *jsonapi.Pagination {
 	return &jsonapi.Pagination{
-		CurrentPage:  p.opts.sanitizedPageNumber(),
+		CurrentPage:  p.opts.SanitizedPageNumber(),
 		PreviousPage: p.PrevPage(),
 		NextPage:     p.NextPage(),
 		TotalPages:   p.TotalPages(),
@@ -84,48 +100,32 @@ type ListOptions struct {
 
 // GetOffset calculates the offset for use in SQL queries.
 func (o ListOptions) GetOffset() int {
-	return (o.sanitizedPageNumber() - 1) * o.sanitizedPageSize()
+	return (o.SanitizedPageNumber() - 1) * o.SanitizedPageSize()
 }
 
 // GetLimit calculates the limit for use in SQL queries.
 func (o ListOptions) GetLimit() int {
-	return o.sanitizedPageSize()
-}
-
-// NextPageQuery produces query params for the next page
-func (o ListOptions) NextPageQuery() string {
-	q := url.Values{}
-	q.Add("page[number]", strconv.Itoa(o.nextPage()))
-	q.Add("page[size]", strconv.Itoa(o.sanitizedPageSize()))
-	return q.Encode()
-}
-
-// PrevPageQuery produces query params for the previous page
-func (o ListOptions) PrevPageQuery() string {
-	q := url.Values{}
-	q.Add("page[number]", strconv.Itoa(o.prevPage()))
-	q.Add("page[size]", strconv.Itoa(o.sanitizedPageSize()))
-	return q.Encode()
+	return o.SanitizedPageSize()
 }
 
 func (o ListOptions) nextPage() int {
-	return o.sanitizedPageNumber() + 1
+	return o.SanitizedPageNumber() + 1
 }
 
 func (o ListOptions) prevPage() int {
-	return o.sanitizedPageNumber() - 1
+	return o.SanitizedPageNumber() - 1
 }
 
-// sanitizedPageNumber is the page number following sanitization.
-func (o ListOptions) sanitizedPageNumber() int {
+// SanitizedPageNumber is the page number following sanitization.
+func (o ListOptions) SanitizedPageNumber() int {
 	if o.PageNumber == 0 {
 		return 1
 	}
 	return o.PageNumber
 }
 
-// sanitizedPageSize is the page size following sanitization.
-func (o ListOptions) sanitizedPageSize() int {
+// SanitizedPageSize is the page size following sanitization.
+func (o ListOptions) SanitizedPageSize() int {
 	if o.PageSize == 0 {
 		return DefaultPageSize
 	}

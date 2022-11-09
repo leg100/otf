@@ -33,7 +33,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 		interval = sessionCleanupIntervalOverride[0]
 	}
 
-	db, err := New(logr.Discard(), u.String(), nil, interval)
+	db, err := New(context.Background(), logr.Discard(), u.String(), nil, interval)
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })
@@ -157,4 +157,17 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 		db.DeleteToken(ctx, token.Token())
 	})
 	return token
+}
+
+func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
+	provider := otf.NewTestVCSProvider(t, organization, otf.NewGithubCloud(nil))
+	ctx := context.Background()
+
+	err := db.CreateVCSProvider(ctx, provider)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteVCSProvider(ctx, provider.ID())
+	})
+	return provider
 }

@@ -2,11 +2,19 @@
 
 You can install the otf server on Kubernetes using the helm chart.
 
-Clone the repo:
+## Instructions
 
 ```bash
-git clone https://github.com/leg100/otf
-cd otf
+helm repo add otf https://leg100.github.io/otf-charts
+helm upgrade --install otf otf/otf
 ```
 
-Check the `values.yaml` for required variables before running `helm install`.
+To see all configurable options with detailed comments:
+
+```
+helm show values otf/otf
+```
+
+!!! note
+    The helm chart is maintained in a separate [github repo](https://github.com/leg100/otf-charts).
+

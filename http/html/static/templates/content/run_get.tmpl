@@ -22,7 +22,10 @@
       watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
     });
   </script>
-  {{ template "run-status" .Content.Run }} {{ template "identifier" .Content.Run }}
+  <div id="run-status">
+    {{ template "run-status" .Content.Run }}
+  </div>
+  {{ template "identifier" .Content.Run }}
   <div id="plan" class="item">
     <div class="item-heading">
       <span class="inline-heading">plan</span>
@@ -51,5 +54,13 @@
       setupTail({{ tailRunPath .Content.Run }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
+  <div id="run-confirm-container" style="{{ if ne .Content.Run.Status "planned" }}display: none;{{ end }}">
+    <form action="{{ applyRunPath .Content.Run }}" method="POST">
+      <button>Confirm & Apply</button>
+    </form>
+    <form action="{{ discardRunPath .Content.Run }}" method="POST">
+      <button>Discard Run</button>
+    </form>
+  </div>
 {{ end }}
 

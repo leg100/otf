@@ -94,13 +94,6 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	}
 	logger.Info("started cache", "max_size", cacheCfg.Size, "ttl", cacheCfg.TTL.String())
 
-	// Setup database(s)
-	db, err := sql.New(logger, dbConnStr, cache, sql.DefaultSessionCleanupInterval)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
 	// Group several daemons and if any one of them errors then terminate them
 	// all
 	g, ctx := errgroup.WithContext(ctx)
@@ -110,12 +103,18 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// all other calls to services are made as the privileged app user
 	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
 
+	// Setup database(s)
+	db, err := sql.New(ctx, logger, dbConnStr, cache, sql.DefaultSessionCleanupInterval)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
 	// Setup pub sub broker
 	pubsub, err := sql.NewPubSub(logger, db)
 	if err != nil {
 		return fmt.Errorf("setting up pub sub broker")
 	}
-	g.Go(func() error { return pubsub.Start(ctx) })
 
 	// Setup application services
 	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
@@ -123,36 +122,40 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
+	g.Go(func() error { return pubsub.Start(ctx) })
+
 	// Run scheduler - if there is another scheduler running already then
 	// this'll wait until the other scheduler exits.
-	go otf.ExclusiveScheduler(ctx, logger, app)
+	g.Go(func() error {
+		return otf.ExclusiveScheduler(ctx, logger, app)
+	})
 
 	// Run local agent in background
-	agent, err := agent.NewAgent(
-		logger.WithValues("component", "agent"),
-		app,
-		*agentCfg)
-	if err != nil {
-		return fmt.Errorf("initializing agent: %w", err)
-	}
 	g.Go(func() error {
+		agent, err := agent.NewAgent(
+			logger.WithValues("component", "agent"),
+			app,
+			*agentCfg)
+		if err != nil {
+			return fmt.Errorf("initializing agent: %w", err)
+		}
 		if err := agent.Start(agentCtx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}
 		return nil
 	})
 
-	// construct HTTP/JSON-API server
-	server, err := http.NewServer(logger, *serverCfg, app, db, cache)
-	if err != nil {
-		return fmt.Errorf("setting up http server: %w", err)
-	}
-	// add Web App routes
-	if err := html.AddRoutes(logger, htmlCfg, serverCfg, app, server.Router); err != nil {
-		return err
-	}
-
+	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {
+		server, err := http.NewServer(logger, *serverCfg, app, db, cache)
+		if err != nil {
+			return fmt.Errorf("setting up http server: %w", err)
+		}
+		// add Web App routes
+		if err := html.AddRoutes(logger, htmlCfg, serverCfg, app, server.Router); err != nil {
+			return err
+		}
+
 		if err := server.Open(ctx); err != nil {
 			return fmt.Errorf("web server terminated: %w", err)
 		}

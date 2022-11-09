@@ -2,13 +2,16 @@ package html
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
+	"golang.org/x/oauth2"
 )
 
 // workspaceRequest provides metadata about a request for a workspace
@@ -31,6 +34,15 @@ func (w workspaceRequest) Spec() otf.WorkspaceSpec {
 	}
 }
 
+// vcsProviderRequest provides metadata about a request for a vcs provider
+type vcsProviderRequest struct {
+	workspaceRequest
+}
+
+func (r vcsProviderRequest) VCSProviderID() string {
+	return param(r.r, "vcs_provider_id")
+}
+
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
 	if err := decode.Route(&opts, r); err != nil {
@@ -46,7 +58,13 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_list.tmpl", w, r, workspaceList{workspaces, opts})
+	app.render("workspace_list.tmpl", w, r, struct {
+		*otf.WorkspaceList
+		organizationRoute
+	}{
+		WorkspaceList:     workspaces,
+		organizationRoute: organizationRequest{r},
+	})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -171,6 +189,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 		http.Redirect(w, r, editWorkspacePath(workspaceRequest{r}), http.StatusFound)
 		return
 	}
+	// TODO: add support for updating vcs repo, e.g. branch, etc.
 	workspace, err := app.UpdateWorkspace(r.Context(), spec, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -281,42 +300,40 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// render HTML snippets and send as payload in SSE event
-				item := new(bytes.Buffer)
-				if err := app.renderTemplate("run_item.tmpl", item, run); err != nil {
+				itemHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("run_item.tmpl", itemHTML, run); err != nil {
 					app.Error(err, "rendering template for run item")
 					continue
 				}
-				runStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("run_status.tmpl", runStatus, run); err != nil {
+				runStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("run_status.tmpl", runStatusHTML, run); err != nil {
 					app.Error(err, "rendering run status template")
 					continue
 				}
-				planStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("phase_status.tmpl", planStatus, run.Plan()); err != nil {
+				planStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", planStatusHTML, run.Plan()); err != nil {
 					app.Error(err, "rendering plan status template")
 					continue
 				}
-				applyStatus := new(bytes.Buffer)
-				if err := app.renderTemplate("phase_status.tmpl", applyStatus, run.Apply()); err != nil {
+				applyStatusHTML := new(bytes.Buffer)
+				if err := app.renderTemplate("phase_status.tmpl", applyStatusHTML, run.Apply()); err != nil {
 					app.Error(err, "rendering apply status template")
 					continue
 				}
 				js, err := json.Marshal(struct {
-					ID string `json:"id"`
-					// the run item box
-					RunItem string `json:"html"`
-					// the color-coded run status
-					RunStatus string `json:"run-status"`
-					// the color-coded plan status
-					PlanStatus string `json:"plan-status"`
-					// the color-coded apply status
-					ApplyStatus string `json:"apply-status"`
+					ID              string        `json:"id"`
+					RunStatus       otf.RunStatus `json:"run-status"`
+					RunItemHTML     string        `json:"run-item-html"`
+					RunStatusHTML   string        `json:"run-status-html"`
+					PlanStatusHTML  string        `json:"plan-status-html"`
+					ApplyStatusHTML string        `json:"apply-status-html"`
 				}{
-					ID:          run.ID(),
-					RunItem:     item.String(),
-					RunStatus:   runStatus.String(),
-					PlanStatus:  planStatus.String(),
-					ApplyStatus: applyStatus.String(),
+					ID:              run.ID(),
+					RunStatus:       run.Status(),
+					RunItemHTML:     itemHTML.String(),
+					RunStatusHTML:   runStatusHTML.String(),
+					PlanStatusHTML:  planStatusHTML.String(),
+					ApplyStatusHTML: applyStatusHTML.String(),
 				})
 				if err != nil {
 					app.Error(err, "marshalling watched run", "run", run.ID())
@@ -330,4 +347,210 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	app.Server.ServeHTTP(w, r)
+}
+
+func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.render("workspace_vcs_provider_list.tmpl", w, r, struct {
+		Items []*otf.VCSProvider
+		workspaceRoute
+	}{
+		Items:          providers,
+		workspaceRoute: workspaceRequest{r},
+	})
+}
+
+func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
+	type options struct {
+		OrganizationName string `schema:"organization_name,required"`
+		WorkspaceName    string `schema:"workspace_name,required"`
+		VCSProviderID    string `schema:"vcs_provider_id,required"`
+		// Pagination
+		otf.ListOptions
+		// TODO: filters, public/private, etc
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// TODO(@leg100): how come this succeeds for gitlab when we're passing in a personal
+	// access token and not an oauth token? On github, the two are the same
+	// (AFAIK) so it makes sense that that works...
+	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
+		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repos, err := client.ListRepositories(r.Context(), opts.ListOptions)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
+		*otf.RepoList
+		vcsProviderRoute
+	}{
+		RepoList:         repos,
+		vcsProviderRoute: vcsProviderRequest{workspaceRequest{r}},
+	})
+}
+
+func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+	type options struct {
+		otf.WorkspaceSpec
+		VCSProviderID string `schema:"vcs_provider_id,required"`
+		Identifier    string `schema:"identifier,required"`
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, *opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
+		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repo, err := client.GetRepository(r.Context(), opts.Identifier)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
+		Branch:     repo.Branch,
+		HTTPURL:    repo.HTTPURL,
+		Identifier: opts.Identifier,
+		ProviderID: opts.VCSProviderID,
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	flashSuccess(w, "connected workspace to repo")
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+	var spec otf.WorkspaceSpec
+	if err := decode.All(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ws, err := app.DisconnectWorkspaceRepo(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	flashSuccess(w, "disconnected workspace from repo")
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
+	type options struct {
+		otf.WorkspaceSpec
+		Strategy string `schema:"strategy,required"`
+	}
+	var opts options
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	var speculative bool
+	switch opts.Strategy {
+	case "plan-only":
+		speculative = true
+	case "plan-and-apply":
+		speculative = false
+	default:
+		writeError(w, "invalid strategy", http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, getRunPath(run), http.StatusFound)
+}
+
+func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, speculative bool) (*otf.Run, error) {
+	ws, err := app.GetWorkspace(ctx, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	var cv *otf.ConfigurationVersion
+	opts := otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(speculative),
+	}
+	if ws.VCSRepo() != nil {
+		provider, err := app.GetVCSProvider(ctx, ws.VCSRepo().ProviderID, ws.OrganizationName())
+		if err != nil {
+			return nil, err
+		}
+		client, err := provider.NewDirectoryClient(ctx, otf.DirectoryClientOptions{
+			OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
+		})
+		if err != nil {
+			return nil, err
+		}
+		tarball, err := client.GetRepoTarball(ctx, ws.VCSRepo())
+		if err != nil {
+			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
+		}
+		cv, err = app.CreateConfigurationVersion(ctx, ws.ID(), opts)
+		if err != nil {
+			return nil, err
+		}
+		if err := app.UploadConfig(ctx, cv.ID(), tarball); err != nil {
+			return nil, err
+		}
+	} else {
+		latest, err := app.GetLatestConfigurationVersion(ctx, ws.ID())
+		if err != nil {
+			return nil, err
+		}
+		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return app.CreateRun(ctx, spec, otf.RunCreateOptions{
+		ConfigurationVersionID: otf.String(cv.ID()),
+	})
 }

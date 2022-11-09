@@ -4,7 +4,8 @@ RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 IMAGE_NAME = leg100/otf
 IMAGE_TAG ?= $(VERSION)-$(RANDOM_SUFFIX)
 LD_FLAGS = " \
-	-X 'github.com/leg100/otf.Version=$(VERSION)'	\
+    -s -w \
+	-X 'github.com/leg100/otf.Version=$(VERSION)' \
 	-X 'github.com/leg100/otf.Commit=$(GIT_COMMIT)'	\
 	-X 'github.com/leg100/otf.Built=$(shell date +%s)'	\
 	" \
@@ -90,7 +91,9 @@ sql:
 		--go-type 'bytea=[]byte' \
 		--acronym url \
 		--acronym sha \
-		--acronym json
+		--acronym json \
+		--acronym vcs \
+		--acronym tls
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen
 

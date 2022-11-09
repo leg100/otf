@@ -32,6 +32,12 @@ jobs:
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
+    env:
+      # for unit and e2e tests
+      OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
+      # for go-tfe tests
+      # TODO: have go-tfe-tests use OTF_TEST_DATABASE_URL instead
+      OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
     steps:
       -
         name: Checkout
@@ -47,8 +53,6 @@ jobs:
         name: Unit tests
         run: |
           make unit
-        env:
-          OTF_TEST_DATABASE_URL: postgres://postgres:postgres@localhost/postgres?sslmode=disable
       -
         name: E2E tests
         run: |
@@ -56,7 +60,6 @@ jobs:
           sudo update-ca-certificates
           make e2e go-tfe-tests
         env:
-          OTF_DATABASE: postgres://postgres:postgres@localhost/postgres?sslmode=disable
           OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
       -
         name: Archive E2E screenshots

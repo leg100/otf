@@ -105,13 +105,22 @@ function watchRunUpdates(path, stream, run) {
         const obj = JSON.parse(e.data);
 
         const runStatus = document.getElementById(obj.id + '-status');
-        runStatus.outerHTML = obj['run-status']
+        runStatus.outerHTML = obj['run-status-html']
 
         const planStatus = document.getElementById('plan-status');
-        planStatus.outerHTML = obj['plan-status']
+        planStatus.outerHTML = obj['plan-status-html']
 
         const applyStatus = document.getElementById('apply-status');
-        applyStatus.outerHTML = obj['apply-status']
+        applyStatus.outerHTML = obj['apply-status-html']
+
+        // show confirm/discard buttons when in planned state; hide them
+        // when in any other state
+        var actions = document.getElementById('run-confirm-container');
+        if (obj['run-status'] == 'planned') {
+            actions.style.display = 'flex';
+        } else {
+            actions.style.display = 'none';
+        }
     });
 }
 
@@ -123,7 +132,7 @@ function watchWorkspaceUpdates(path, stream) {
         const obj = JSON.parse(e.data);
 
         const latestRunElem = document.getElementById('latest-run');
-        latestRunElem.innerHTML = obj['html']
+        latestRunElem.innerHTML = obj['run-item-html']
     });
 }
 
@@ -144,6 +153,6 @@ function watchRuns(path, stream) {
 
         const runElem = document.getElementById(obj.id);
         runElem.remove();
-        listElem.insertAdjacentHTML("afterbegin", obj.html);
+        listElem.insertAdjacentHTML("afterbegin", obj['run-item-html']);
     });
 }

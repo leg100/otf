@@ -28,10 +28,17 @@
           <form action="{{ lockWorkspacePath .Content }}" method="POST"><button>Lock</button></form>
         {{ end }}
       </div>
-      <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content }}" method="POST">
-        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+      <form id="workspace-start-run-form" action="{{ startRunPath .Content }}" method="POST">
+        <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
+          <option value="" selected>--start run--</option>
+          <option value="plan-only">plan only</option>
+          <option value="plan-and-apply">plan and apply</option>
+        </select>
       </form>
     </div>
+    {{ with .Content.VCSRepo }}
+    <div>Connected to <span class="data">{{ .Identifier }}</span></div>
+    {{ end }}
     {{ with .Content.LatestRun }}
       <div>
         <h3>Latest Run</h3>

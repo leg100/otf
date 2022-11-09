@@ -12,10 +12,13 @@ import (
 // Unpack a .tar.gz byte stream to a directory
 func Unpack(r io.Reader, dst string) error {
 	// Decompress as we read.
+	//
+	// TODO: rename decompressor
 	decompressed, err := gzip.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("failed to decompress archive: %w", err)
 	}
+	// TODO: close decompressed
 
 	// Untar as we read.
 	untar := tar.NewReader(decompressed)

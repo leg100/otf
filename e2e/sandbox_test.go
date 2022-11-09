@@ -20,10 +20,16 @@ func TestSandbox(t *testing.T) {
 	addBuildsToPath(t)
 
 	user := otf.NewTestUser(t)
-	hostname := startDaemon(t, user, "--sandbox")
+	// test using user's personal organization
+	org := user.Username()
+
+	daemon := &daemon{}
+	daemon.withGithubUser(user)
+	daemon.withFlags("--sandbox")
+	hostname := daemon.start(t)
 
 	// create root module using user's personal organization
-	root := newRootModule(t, hostname, user.Username(), "dev")
+	root := newRootModule(t, hostname, org, "dev")
 
 	userToken := createAPIToken(t, hostname)
 	login(t, hostname, userToken)
