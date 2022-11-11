@@ -505,8 +505,7 @@ button.delete:hover {
 }
 
 .content-menu-item {
-  font-size: 1.5em;
-  font-weight: bolder;
+  font-size: 1.2em;
 }
 
 /* data is a nugget of factual information, e.g. terraform version */

@@ -3,11 +3,13 @@
 OTF is an open-source alternative to Terraform Enterprise, sharing many of its features:
 
 * Full Terraform CLI integration
-* Remote execution mode: plans and applies run on servers
+* Remote execution mode: plans and applies run on server
 * Agent execution mode: plans and applies run on agents
 * Remote state backend: state stored in PostgreSQL
-* SSO signin: github and gitlab supported
-* Team-based authorization: syncs your github teams / gitlab roles
+* SSO: sign in using github and gitlab
+* Organization and team synchronisation from github and gitlab
+* Authorization: control team access to workspaces
+* VCS integration: start runs from your git repository
 * Compatible with much of the Terraform Enterprise/Cloud API
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
@@ -277,6 +279,40 @@ And enter the token when prompted. It'll be persisted to a local credentials fil
 !!! note
     This is recommended only for testing purposes. You should use your SSO account in most cases.
 
+## VCS Providers
+
+VCS providers allow you to connect workspaces to git repositories. Once connected , you can trigger runs that source their configuration from a repository.
+
+Firstly, create a provider for your organization. On your organization's main menu, select 'VCS providers'.
+
+You'll be presented with a choice of providers to create. The choice is restricted to those for which you have enabled [SSO](#authentication). For instance, if you have enabled Github SSO then you can create a Github VCS provider.
+
+Select the provider you would like to create. You will then be prompted to enter a personal access token. Instructions for generating the token are included on the page. The token permits OTF to access your git repository and retrieve terraform configuration. Once you've generated and inserted the token into the field you also need to give the provider a name that describes it. 
+
+!!! note
+    Be sure to restrict the permissions on the token according to the instructions.
+
+!!! note
+    Other options for credentials will be offered in future, including OAuth access tokens.
+
+Create the provider and it'll appear on the list of providers. You can now proceed to connecting workspaces to the provider.
+
+### Connecting a workspace
+
+Once you have a provider you can connect a workspace to a git repository for that provider.
+
+Select a workspace. Go to its 'settings' (in the top right of the workspace page).
+
+Click 'Connect to VCS'.
+
+Select the provider.
+
+You'll then be presented with a list of repositories. Select the repository containing the terraform configuration you want to use in your workspace. If you cannot see your repository you can enter its name.
+
+Once connected you can start a run via the web UI. On the workspace page select the 'start run' drop-down box and select an option to either start a plan or both a plan and an apply.
+
+That will start a run, retrieving the configuration from the repository, and you will see the progress of its plan and apply.
+
 ## Agents
 
 OTF agents are dedicated processes for executing runs. They are functionally equivalent to [Terraform Cloud Agents](https://developer.hashicorp.com/terraform/cloud-docs/agents).
@@ -358,3 +394,11 @@ terraform login <otfd_hostname>
 
 !!! note
     Functionality is presently limited, restricted to a subset of what is available via the web app.
+
+## Roadmap
+
+A list of missing features planned for the near future:
+
+* Workspace webhooks: commits and pull requests to connected repositories automatically trigger runs. Currently, a user has to manually start a run from the web UI.
+* Module registry: a database of terraform modules. Leverages a webhook similar to the workspace webhook described above to trigger uploads when a commit is pushed to a connected repository.
+* Provider registry: a database of terraform providers.
