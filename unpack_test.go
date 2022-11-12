@@ -1,7 +1,9 @@
 package otf
 
 import (
+	"bytes"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -31,4 +33,33 @@ func TestUnpack(t *testing.T) {
 		"dir/symlink",
 		"file",
 	}, got)
+}
+
+// TestUnpack_Github tests unpacking a Github archive of a git repository. Their
+// archive is somewhat idiosyncratic in that it uses the PAX format, with
+// key-values embedded in the tar file. It's tripped up the unpack code before,
+// so putting this test in here to prevent a regression.
+func TestUnpack_Github(t *testing.T) {
+	tarball, err := os.Open("testdata/github.tar.gz")
+	require.NoError(t, err)
+
+	require.NoError(t, Unpack(tarball, t.TempDir()))
+}
+
+func TestPack(t *testing.T) {
+	tarball, err := Pack("testdata/pack")
+	require.NoError(t, err)
+
+	// unpack tarball to test its contents
+	dst := t.TempDir()
+	err = Unpack(bytes.NewReader(tarball), dst)
+	require.NoError(t, err)
+
+	assert.FileExists(t, path.Join(dst, "file"))
+	assert.DirExists(t, path.Join(dst, "dir"))
+	symlink, err := os.Readlink(path.Join(dst, "dir", "symlink"))
+	if assert.NoError(t, err) {
+		assert.Equal(t, "../file", symlink)
+	}
+	assert.FileExists(t, path.Join(dst, "dir", "file"))
 }

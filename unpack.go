@@ -2,6 +2,7 @@ package otf
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -11,21 +12,15 @@ import (
 
 // Unpack a .tar.gz byte stream to a directory
 func Unpack(r io.Reader, dst string) error {
-	// Decompress as we read.
-	//
-	// TODO: rename decompressor
-	decompressed, err := gzip.NewReader(r)
+	gr, err := gzip.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("failed to decompress archive: %w", err)
 	}
-	// TODO: close decompressed
+	tr := tar.NewReader(gr)
 
-	// Untar as we read.
-	untar := tar.NewReader(decompressed)
-
-	// Unpackage all the contents into the directory.
+	// Unpackage contents to the destination directory.
 	for {
-		header, err := untar.Next()
+		header, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
@@ -40,7 +35,7 @@ func Unpack(r io.Reader, dst string) error {
 		}
 		path = filepath.Join(dst, path)
 
-		// Make the directories to the path.
+		// Ensure path's parent directories exist
 		dir := filepath.Dir(path)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
@@ -56,11 +51,8 @@ func Unpack(r io.Reader, dst string) error {
 		}
 
 		// Only unpack regular files from this point on.
-		if header.Typeflag == tar.TypeDir {
+		if header.Typeflag != tar.TypeReg {
 			continue
-		} else if header.Typeflag != tar.TypeReg && header.Typeflag != tar.TypeRegA {
-			return fmt.Errorf("failed creating %q: unsupported type %c", path,
-				header.Typeflag)
 		}
 
 		// Open a handle to the destination.
@@ -80,7 +72,8 @@ func Unpack(r io.Reader, dst string) error {
 		}
 
 		// Copy the contents.
-		_, err = io.Copy(fh, untar)
+		_, err = io.Copy(fh, tr)
+		// TODO: why are we closing it here?
 		fh.Close()
 		if err != nil {
 			return fmt.Errorf("failed to copy file %q: %w", path, err)
@@ -94,4 +87,70 @@ func Unpack(r io.Reader, dst string) error {
 		}
 	}
 	return nil
+}
+
+// Pack a directory into tarball (.tar.gz) and return its contents
+func Pack(src string) ([]byte, error) {
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		target := info.Name()
+
+		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+			target, err = os.Readlink(path)
+			if err != nil {
+				return nil
+			}
+		}
+
+		hdr, err := tar.FileInfoHeader(info, target)
+		if err != nil {
+			return nil
+		}
+		name, err := filepath.Rel(src, path)
+		if err != nil {
+			return nil
+		}
+		hdr.Name = name
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		// Unless it's a normal file there's nothing more to be done
+		if hdr.Typeflag != tar.TypeReg {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(tw, f)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Write tar and gzip headers
+	if err := tw.Close(); err != nil {
+		return nil, err
+	}
+	if err := gw.Close(); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
