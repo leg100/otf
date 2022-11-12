@@ -139,7 +139,7 @@ func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}}), http.StatusFound)
+	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}})+"#apply", http.StatusFound)
 }
 
 func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
