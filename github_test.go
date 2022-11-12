@@ -1,8 +1,10 @@
 package otf
 
 import (
+	"bytes"
 	"context"
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +50,8 @@ func TestGithub_GetUser(t *testing.T) {
 func TestGithub_GetRepoTarball(t *testing.T) {
 	ctx := context.Background()
 
-	want := NewTestTarball(t, `file1 contents`, `file2 contents`)
+	want, err := os.ReadFile("testdata/github.tar.gz")
+	require.NoError(t, err)
 
 	srv := NewTestGithubServer(t,
 		WithGithubRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
@@ -76,5 +79,7 @@ func TestGithub_GetRepoTarball(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, compress(t, want), got)
+	dst := t.TempDir()
+	err = Unpack(bytes.NewReader(got), dst)
+	require.NoError(t, err)
 }

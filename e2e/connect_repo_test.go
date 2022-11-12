@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -22,12 +23,15 @@ func TestConnectRepo(t *testing.T) {
 	// test using user's personal organization
 	org := user.Username()
 
+	tarball, err := os.ReadFile("../testdata/github.tar.gz")
+	require.NoError(t, err)
+
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball.
 	daemon := &daemon{}
 	daemon.withGithubUser(user)
 	daemon.withGithubRepo(repo)
-	daemon.withGithubTarball(otf.NewTestTarball(t, `resource "null_resource" "e2e" {}`))
+	daemon.withGithubTarball(tarball)
 	hostname := daemon.start(t)
 	url := "https://" + hostname
 
@@ -36,7 +40,7 @@ func TestConnectRepo(t *testing.T) {
 
 	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
 
-	err := chromedp.Run(ctx, chromedp.Tasks{
+	err = chromedp.Run(ctx, chromedp.Tasks{
 		chromedp.Navigate(url),
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),

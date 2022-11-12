@@ -1,13 +1,12 @@
 package otf
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/google/go-github/v41/github"
@@ -206,18 +205,28 @@ func (g *githubProvider) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]b
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	// convert .tar to .tar.gz
-	tarball := new(bytes.Buffer)
-	compressor := gzip.NewWriter(tarball)
-	if _, err := io.Copy(compressor, resp.Body); err != nil {
+	// github tarball contains a parent directory of the format
+	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
+	// so we untar it to a temp dir, then tar it up the contents of the parent
+	// directory.
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", repo.Owner(), repo.Repo()))
+	if err != nil {
 		return nil, err
 	}
-	if err := compressor.Close(); err != nil {
+	if err := Unpack(resp.Body, untarpath); err != nil {
 		return nil, err
 	}
-
-	return tarball.Bytes(), nil
+	contents, err := os.ReadDir(untarpath)
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) != 1 {
+		return nil, fmt.Errorf("malformed tarball archive")
+	}
+	parentDir := path.Join(untarpath, contents[0].Name())
+	return Pack(parentDir)
 }
 
 func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {

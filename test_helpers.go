@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"io"
 	"testing"
 
 	"github.com/google/uuid"
@@ -83,12 +82,13 @@ func NewTestRepo() *Repo {
 	}
 }
 
-// NewTestTarball creates a tarball (.tar) consisting of files respectively populated with the
+// NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the
 // given contents. The files are assigned random names with the terraform file
 // extension appended (.tf)
 func NewTestTarball(t *testing.T, contents ...string) []byte {
 	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
 
 	for _, body := range contents {
 		header := &tar.Header{
@@ -103,21 +103,10 @@ func NewTestTarball(t *testing.T, contents ...string) []byte {
 		require.NoError(t, err)
 	}
 
-	tw.Close()
-	return buf.Bytes()
-}
-
-// NewTestTarGZ wraps NewTestTarball, creating a .tar.gz instead.
-func NewTestTarGZ(t *testing.T, contents ...string) []byte {
-	return compress(t, NewTestTarball(t, contents...))
-}
-
-// compress runs gzip compression on the input bytes
-func compress(t *testing.T, b []byte) []byte {
-	var buf bytes.Buffer
-	compressor := gzip.NewWriter(&buf)
-	_, err := io.Copy(compressor, bytes.NewReader(b))
+	err := tw.Close()
 	require.NoError(t, err)
-	compressor.Close()
+	err = gw.Close()
+	require.NoError(t, err)
+
 	return buf.Bytes()
 }
