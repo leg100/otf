@@ -14,7 +14,7 @@ const DefaultGitlabHostname = "gitlab.com"
 
 func defaultGitlabConfig() *GitlabConfig {
 	return &GitlabConfig{
-		cloudConfig: cloudConfig{
+		CloudConfigMixin: CloudConfigMixin{
 			OAuthCredentials: &OAuthCredentials{prefix: "gitlab"},
 			cloudName:        "gitlab",
 			endpoint:         oauth2gitlab.Endpoint,
@@ -33,7 +33,7 @@ type gitlabProvider struct {
 }
 
 type GitlabConfig struct {
-	cloudConfig
+	CloudConfigMixin
 }
 
 func NewGitlabConfigFromFlags(flags *pflag.FlagSet) *GitlabConfig {

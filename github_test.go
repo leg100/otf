@@ -24,7 +24,7 @@ func TestGithub_GetUser(t *testing.T) {
 
 	cloud := &GithubCloud{
 		&GithubConfig{
-			cloudConfig{
+			CloudConfigMixin{
 				hostname:            u.Host,
 				skipTLSVerification: true,
 			},
@@ -62,7 +62,7 @@ func TestGithub_GetRepoTarball(t *testing.T) {
 
 	cloud := &GithubCloud{
 		&GithubConfig{
-			cloudConfig{
+			CloudConfigMixin{
 				hostname:            u.Host,
 				skipTLSVerification: true,
 			},

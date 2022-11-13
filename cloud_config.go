@@ -1,13 +1,15 @@
 package otf
 
 import (
+	"context"
+
 	"golang.org/x/oauth2"
 )
 
 type CloudConfig interface {
+	NewClient(context.Context, CloudClientOptions) (CloudClient, error)
 	Valid() error
-	NewCloud() (Cloud, error)
-	CloudName() string
+	Name() string
 	Hostname() string
 	Endpoint() (oauth2.Endpoint, error)
 	Scopes() []string
@@ -16,8 +18,7 @@ type CloudConfig interface {
 	SkipTLSVerification() bool
 }
 
-// mixin for CloudConfig implementations
-type cloudConfig struct {
+type CloudConfigMixin struct {
 	*OAuthCredentials
 
 	cloudName           string
@@ -27,18 +28,17 @@ type cloudConfig struct {
 	skipTLSVerification bool
 }
 
-// optional overrides
 type cloudConfigOptions struct {
 	hostname            *string
 	skipTLSVerification *bool
 }
 
-func (g cloudConfig) CloudName() string         { return g.cloudName }
-func (g cloudConfig) Hostname() string          { return g.hostname }
-func (g cloudConfig) Scopes() []string          { return g.scopes }
-func (g cloudConfig) SkipTLSVerification() bool { return g.skipTLSVerification }
+func (g CloudConfigMixin) CloudName() string         { return g.cloudName }
+func (g CloudConfigMixin) Hostname() string          { return g.hostname }
+func (g CloudConfigMixin) Scopes() []string          { return g.scopes }
+func (g CloudConfigMixin) SkipTLSVerification() bool { return g.skipTLSVerification }
 
-func (g cloudConfig) Endpoint() (oauth2.Endpoint, error) {
+func (g CloudConfigMixin) Endpoint() (oauth2.Endpoint, error) {
 	var err error
 	var endpoint oauth2.Endpoint
 
@@ -53,7 +53,7 @@ func (g cloudConfig) Endpoint() (oauth2.Endpoint, error) {
 	return endpoint, nil
 }
 
-func (g *cloudConfig) override(opts *cloudConfigOptions) {
+func (g *CloudConfigMixin) override(opts *cloudConfigOptions) {
 	if opts == nil {
 		return
 	}

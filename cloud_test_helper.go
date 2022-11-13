@@ -7,7 +7,7 @@ import (
 )
 
 type testCloud struct {
-	cloudConfig
+	CloudConfigMixin
 	user  *User
 	repos []*Repo
 }
@@ -32,9 +32,9 @@ func WithRepos(repos ...*Repo) TestCloudOption {
 	}
 }
 
-func NewTestCloud(opts ...TestCloudOption) *testCloud {
+func NewTestCloudClient(opts ...TestCloudOption) *testCloud {
 	cloud := &testCloud{
-		cloudConfig: cloudConfig{
+		CloudConfigMixin: CloudConfigMixin{
 			cloudName:           "fake-cloud",
 			endpoint:            oauth2github.Endpoint,
 			skipTLSVerification: true,
@@ -50,19 +50,17 @@ func NewTestCloud(opts ...TestCloudOption) *testCloud {
 	return cloud
 }
 
-func (f *testCloud) NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error) {
+func (f *testCloud) NewDirectoryClient(context.Context, CloudClientOptions) (CloudClient, error) {
 	return &TestDirectoryClient{
 		User:  f.user,
 		Repos: f.repos,
 	}, nil
 }
 
-func (f *testCloud) NewCloud() (Cloud, error) { return nil, nil }
-
 type TestDirectoryClient struct {
 	User  *User
 	Repos []*Repo
-	DirectoryClient
+	CloudClient
 }
 
 func (f *TestDirectoryClient) GetUser(context.Context) (*User, error) {

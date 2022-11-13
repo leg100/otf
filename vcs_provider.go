@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/github"
 )
 
 const (
@@ -23,12 +24,12 @@ type VCSProvider struct {
 	createdAt time.Time
 	token     string
 	name      string
-	cloud     Cloud
+	cloud     CloudConfig
 	// vcs provider belongs to an organization
 	organizationName string
 }
 
-func NewVCSProvider(cloud Cloud, opts VCSProviderCreateOptions) (*VCSProvider, error) {
+func NewVCSProvider(cloud CloudConfig, opts VCSProviderCreateOptions) (*VCSProvider, error) {
 	return &VCSProvider{
 		id:               NewID("vcs"),
 		createdAt:        CurrentTimestamp(),
@@ -44,11 +45,11 @@ func (t *VCSProvider) String() string           { return t.name }
 func (t *VCSProvider) Token() string            { return t.token }
 func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
-func (t *VCSProvider) Cloud() Cloud             { return t.cloud }
+func (t *VCSProvider) Cloud() CloudConfig       { return t.cloud }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 
-func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts DirectoryClientOptions) (DirectoryClient, error) {
-	return t.cloud.NewDirectoryClient(ctx, opts)
+func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
+	return t.cloud.NewClient(ctx, opts)
 }
 
 type VCSProviderCreateOptions struct {
@@ -86,7 +87,7 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
 	}
 	switch row.Cloud.String {
 	case "github":
-		provider.cloud = NewGithubCloud(&opts)
+		provider.cloud = github.Config(&opts)
 	case "gitlab":
 		provider.cloud = NewGitlabCloud(&opts)
 	default:
@@ -98,7 +99,7 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
 
 // VCSProviderService provides access to vcs providers
 type VCSProviderService interface {
-	CreateVCSProvider(ctx context.Context, cloud Cloud, opts VCSProviderCreateOptions) (*VCSProvider, error)
+	CreateVCSProvider(ctx context.Context, cloud CloudConfig, opts VCSProviderCreateOptions) (*VCSProvider, error)
 	GetVCSProvider(ctx context.Context, id, organization string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id, organization string) error

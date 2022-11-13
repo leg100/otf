@@ -6,17 +6,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Cloud interface {
-	NewDirectoryClient(context.Context, DirectoryClientOptions) (DirectoryClient, error)
-	CloudConfig
-}
-
-type DirectoryClientOptions struct {
+type CloudClientOptions struct {
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
 }
 
-type DirectoryClient interface {
+type CloudClient interface {
 	GetUser(ctx context.Context) (*User, error)
 	// ListRepositories lists repositories accessible to the current user.
 	//

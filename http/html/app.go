@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
 	"github.com/spf13/pflag"
@@ -26,7 +27,7 @@ type Config struct {
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 
-	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGithubConfigFromFlags(flags))
+	cfg.cloudConfigs = append(cfg.cloudConfigs, github.NewConfigFromFlags(flags))
 	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGitlabConfigFromFlags(flags))
 
 	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
