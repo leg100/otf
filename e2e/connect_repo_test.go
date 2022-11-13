@@ -29,9 +29,7 @@ func TestConnectRepo(t *testing.T) {
 
 	user := otf.NewTestUser(t)
 	repo := otf.NewTestRepo()
-	// test using user's personal organization
-	org := user.Username()
-
+	org := user.Username() // we'll be using user's personal organization
 	tarball, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 
@@ -51,7 +49,7 @@ func TestConnectRepo(t *testing.T) {
 	hostname := daemon.start(t)
 	url := "https://" + hostname
 
-	// create chrome instance
+	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
 
@@ -59,15 +57,14 @@ func TestConnectRepo(t *testing.T) {
 	ctx, cancel = context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
-
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	// login and create vcs provider
+	tasks := chromedp.Tasks{
 		chromedp.Navigate(url),
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
 		// select org
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
+		chromedp.Click(fmt.Sprintf("#item-organization-%s a", org), chromedp.NodeVisible),
 		// select vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		ss.screenshot(t),
@@ -82,20 +79,17 @@ func TestConnectRepo(t *testing.T) {
 		ss.screenshot(t),
 		// submit form to create provider
 		chromedp.Submit("input#token"),
-	})
-	require.NoError(t, err)
+		ss.screenshot(t),
+	}
 
 	// create workspaceID via UI before we connect to a repo
 	_, workspaceID := createWebWorkspace(t, allocator, url, org)
-
-	// capture flash message confirming workspace has been connected
-	var workspaceConnected string
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(path.Join(url, "workspaces", workspaceID)),
 		ss.screenshot(t),
-		// navigate to workspace settings
+		// go to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		ss.screenshot(t),
 		// click connect button
@@ -108,16 +102,25 @@ func TestConnectRepo(t *testing.T) {
 		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
 		ss.screenshot(t),
 		// confirm connected
-		//
-		// did not work on two occasions
-		chromedp.Text(".flash-success", &workspaceConnected, chromedp.NodeVisible),
+		// capture flash message confirming workspace has been connected
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			var got string
+			err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
+			if err != nil {
+				return err
+			}
+			assert.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
+			return nil
+		}),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "connected workspace to repo", strings.TrimSpace(workspaceConnected))
 
 	// we can now start a run via the web ui, which'll retrieve the tarball from
 	// the fake github server
-	err = chromedp.Run(ctx, startRunTasks(t, hostname, workspaceID))
+	// start run
+	tasks = append(tasks, startRunTasks(t, hostname, workspaceID))
+
+	err = chromedp.Run(ctx, tasks)
 	require.NoError(t, err)
 
 	// Now we test the webhook functionality by sending an event to the daemon
