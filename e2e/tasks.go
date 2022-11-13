@@ -28,7 +28,7 @@ func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tas
 		chromedp.Navigate("https://" + hostname + "/organizations/" + org),
 		screenshot(t),
 		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
-		// sometimes get stuck on this one...
+		screenshot(t),
 		chromedp.Click("#new-workspace-button", chromedp.NodeVisible, chromedp.ByQuery),
 		screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
