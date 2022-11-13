@@ -31,8 +31,7 @@ func TestSandbox(t *testing.T) {
 	// create root module using user's personal organization
 	root := newRootModule(t, hostname, org, "dev")
 
-	userToken := createAPIToken(t, hostname)
-	login(t, hostname, userToken)
+	_ = terraformLoginTasks(t, hostname)
 
 	cmd := exec.Command("terraform", "init", "-no-color")
 	cmd.Dir = root

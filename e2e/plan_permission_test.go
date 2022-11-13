@@ -41,8 +41,7 @@ func TestPlanPermission(t *testing.T) {
 	engineerDaemon.withGithubUser(engineer)
 	engineerHostname := engineerDaemon.start(t)
 
-	engineerToken := createAPIToken(t, engineerHostname)
-	login(t, engineerHostname, engineerToken)
+	_ = terraformLoginTasks(t, engineerHostname)
 
 	root := newRootModule(t, engineerHostname, org.Name(), workspaceName)
 

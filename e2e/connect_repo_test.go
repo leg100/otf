@@ -48,6 +48,7 @@ func TestConnectRepo(t *testing.T) {
 
 	hostname := daemon.start(t)
 	url := "https://" + hostname
+	workspaceName := "workspace-connect"
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -59,13 +60,9 @@ func TestConnectRepo(t *testing.T) {
 
 	// login and create vcs provider
 	tasks := chromedp.Tasks{
-		chromedp.Navigate(url),
-		// login
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		// select org
-		chromedp.Click(fmt.Sprintf("#item-organization-%s a", org), chromedp.NodeVisible),
-		// select vcs providers
+		// go to org
+		chromedp.Navigate(path.Join(url, "organizations", org)),
+		// go to vcs providers
 		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
 		ss.screenshot(t),
 		// click 'New Github VCS Provider' button
@@ -80,16 +77,26 @@ func TestConnectRepo(t *testing.T) {
 		// submit form to create provider
 		chromedp.Submit("input#token"),
 		ss.screenshot(t),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			var got string
+			err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
+			if err != nil {
+				return err
+			}
+			require.Equal(t, "created provider: github", strings.TrimSpace(got))
+			return nil
+		}),
 	}
 
-	// create workspaceID via UI before we connect to a repo
-	_, workspaceID := createWebWorkspace(t, allocator, url, org)
+	// create workspace
+	tasks = append(tasks, createWorkspaceTasks(t, hostname, org, workspaceName))
 
-	err = chromedp.Run(ctx, chromedp.Tasks{
+	// connect workspace to vcs repo
+	tasks = append(tasks, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(path.Join(url, "workspaces", workspaceID)),
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
 		ss.screenshot(t),
-		// go to workspace settings
+		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		ss.screenshot(t),
 		// click connect button
@@ -109,7 +116,7 @@ func TestConnectRepo(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			assert.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
+			require.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
 			return nil
 		}),
 	})
@@ -118,7 +125,7 @@ func TestConnectRepo(t *testing.T) {
 	// we can now start a run via the web ui, which'll retrieve the tarball from
 	// the fake github server
 	// start run
-	tasks = append(tasks, startRunTasks(t, hostname, workspaceID))
+	tasks = append(tasks, startRunTasks(t, hostname, org, workspaceName))
 
 	err = chromedp.Run(ctx, tasks)
 	require.NoError(t, err)
@@ -159,7 +166,7 @@ func TestConnectRepo(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(fmt.Sprintf("%s/workspaces/%s", url, workspaceID)),
+		chromedp.Navigate(fmt.Sprintf("%s/organizations/%s/workspaces/%s", url, org, workspaceName)),
 		ss.screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),

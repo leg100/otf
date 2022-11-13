@@ -33,8 +33,7 @@ func TestCluster(t *testing.T) {
 	agentDaemon := daemon.start(t)
 
 	// creating api token via web also syncs org
-	userToken := createAPIToken(t, userDaemon)
-	login(t, userDaemon, userToken)
+	_ = terraformLoginTasks(t, userDaemon)
 
 	// org now sync'd, so we can create agent token via CLI
 	agentToken := createAgentToken(t, org.Name(), userDaemon)
