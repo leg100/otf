@@ -1,15 +1,9 @@
 package html
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/leg100/otf"
-)
-
-var (
-	ErrOAuthCredentialsUnspecified = errors.New("no oauth credentials have been specified")
-	ErrOAuthCredentialsIncomplete  = errors.New("must specify both client ID and client secret")
 )
 
 // Config is the web app configuration.
