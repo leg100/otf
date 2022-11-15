@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +12,7 @@ func TestVCSProvider_Create(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	provider := otf.NewTestVCSProvider(t, org, otf.NewGithubCloud(nil))
+	provider := newTestVCSProvider(org)
 
 	defer db.DeleteVCSProvider(ctx, provider.Token())
 

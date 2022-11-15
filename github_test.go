@@ -22,16 +22,10 @@ func TestGithub_GetUser(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	cloud := &GithubCloud{
-		&GithubConfig{
-			CloudConfigMixin{
-				hostname:            u.Host,
-				skipTLSVerification: true,
-			},
-		},
-	}
-	client, err := cloud.NewDirectoryClient(ctx, DirectoryClientOptions{
-		OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
+	client, err := NewGithubClient(ctx, ClientConfig{
+		Hostname:            u.Host,
+		SkipTLSVerification: true,
+		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
 	})
 	require.NoError(t, err)
 
@@ -60,16 +54,10 @@ func TestGithub_GetRepoTarball(t *testing.T) {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	cloud := &GithubCloud{
-		&GithubConfig{
-			CloudConfigMixin{
-				hostname:            u.Host,
-				skipTLSVerification: true,
-			},
-		},
-	}
-	client, err := cloud.NewDirectoryClient(ctx, DirectoryClientOptions{
-		OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
+	client, err := NewGithubClient(ctx, ClientConfig{
+		Hostname:            u.Host,
+		SkipTLSVerification: true,
+		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
 	})
 	require.NoError(t, err)
 

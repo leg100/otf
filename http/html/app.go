@@ -1,38 +1,15 @@
 package html
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/otf/github"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
-	"github.com/spf13/pflag"
 )
 
 const DefaultPathPrefix = "/"
-
-// Config is the web app configuration.
-type Config struct {
-	DevMode bool
-
-	cloudConfigs []otf.CloudConfig
-}
-
-// NewConfigFromFlags binds flags to the config. The flagset must be parsed
-// in order for the config to be populated.
-func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
-	cfg := Config{}
-
-	cfg.cloudConfigs = append(cfg.cloudConfigs, github.NewConfigFromFlags(flags))
-	cfg.cloudConfigs = append(cfg.cloudConfigs, otf.NewGitlabConfigFromFlags(flags))
-
-	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
-	return &cfg
-}
 
 // Application is the otf web app.
 type Application struct {
@@ -52,8 +29,8 @@ type Application struct {
 	authenticators []*Authenticator
 	// site admin's authentication token
 	siteToken string
-	// user-enabled clouds
-	clouds map[string]otf.Cloud
+	// mapping of cloud name to cloud
+	cloudConfigs map[string]cloudConfig
 }
 
 type ApplicationOption func(*Application)
@@ -89,27 +66,12 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 		Logger:       logger,
 		Server:       sseServer,
 		siteToken:    srvConfig.SiteToken,
+		cloudConfigs: config.cloudConfigs,
 	}
 
-	// Add clouds the user has enabled - a user is deemed to have enabled a
-	// cloud if they have specified at least its oauth credentials.
-	app.clouds = make(map[string]otf.Cloud)
-	for _, cfg := range config.cloudConfigs {
-		err := cfg.Valid()
-		if errors.Is(err, otf.ErrOAuthCredentialsUnspecified) {
-			continue
-		} else if err != nil {
-			return fmt.Errorf("invalid cloud config: %w", err)
-		}
-		cloud, err := cfg.NewCloud()
-		if err != nil {
-			return err
-		}
-		app.clouds[cloud.CloudName()] = cloud
-
-		// and add an authenticator for each cloud the user has enabled so users
-		// can sign in.
-		app.authenticators = append(app.authenticators, &Authenticator{cloud, services})
+	app.authenticators, err = newAuthenticators(services, config.cloudConfigs)
+	if err != nil {
+		return err
 	}
 
 	app.addRoutes(router)

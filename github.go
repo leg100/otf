@@ -1,7 +1,8 @@
-package github
+package otf
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,36 +10,83 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
+	"golang.org/x/oauth2"
 )
 
-type client struct {
+const (
+	GithubCloudName       CloudName = "github"
+	DefaultGithubHostname string    = "github.com"
+)
+
+type GithubCloud struct{}
+
+func (GithubCloud) NewClient(ctx context.Context, cfg ClientConfig) (CloudClient, error) {
+	return NewGithubClient(ctx, cfg)
+}
+
+type GithubClient struct {
 	client *github.Client
 }
 
-func NewEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
+func NewGithubClient(ctx context.Context, cfg ClientConfig) (*GithubClient, error) {
+	var err error
+	var client *github.Client
+
+	// Optionally skip TLS verification of github API
+	if cfg.SkipTLSVerification {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		})
+	}
+
+	// Github's oauth access token never expires
+	var src oauth2.TokenSource
+	if cfg.OAuthToken != nil {
+		src = oauth2.StaticTokenSource(cfg.OAuthToken)
+	} else if cfg.PersonalToken != nil {
+		src = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *cfg.PersonalToken})
+	} else {
+		return nil, fmt.Errorf("no credentials provided")
+	}
+
+	httpClient := oauth2.NewClient(ctx, src)
+
+	if cfg.Hostname != DefaultGithubHostname {
+		client, err = NewGithubEnterpriseClient(cfg.Hostname, httpClient)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		client = github.NewClient(httpClient)
+	}
+	return &GithubClient{client: client}, nil
+}
+
+func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
 	return github.NewEnterpriseClient(
 		"https://"+hostname,
 		"https://"+hostname,
 		httpClient)
 }
 
-func (g *client) GetUser(ctx context.Context) (*otf.User, error) {
+func (g *GithubClient) GetUser(ctx context.Context) (*User, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	var orgs []*otf.Organization
-	var teams []*otf.Team
+	var orgs []*Organization
+	var teams []*Team
 
 	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, gorg := range gorgs {
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(gorg.GetLogin()),
+		org, err := NewOrganization(OrganizationCreateOptions{
+			Name: String(gorg.GetLogin()),
 		})
 		if err != nil {
 			return nil, err
@@ -51,7 +99,7 @@ func (g *client) GetUser(ctx context.Context) (*otf.User, error) {
 			return nil, err
 		}
 		if membership.GetRole() == "admin" {
-			teams = append(teams, otf.NewTeam("owners", org))
+			teams = append(teams, NewTeam("owners", org))
 		}
 	}
 
@@ -60,20 +108,20 @@ func (g *client) GetUser(ctx context.Context) (*otf.User, error) {
 		return nil, err
 	}
 	for _, gteam := range gteams {
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(gteam.GetOrganization().GetLogin()),
+		org, err := NewOrganization(OrganizationCreateOptions{
+			Name: String(gteam.GetOrganization().GetLogin()),
 		})
 		if err != nil {
 			return nil, err
 		}
-		teams = append(teams, otf.NewTeam(gteam.GetName(), org))
+		teams = append(teams, NewTeam(gteam.GetName(), org))
 	}
 
-	user := otf.NewUser(guser.GetLogin(), otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
+	user := NewUser(guser.GetLogin(), WithOrganizationMemberships(orgs...), WithTeamMemberships(teams...))
 	return user, nil
 }
 
-func (g *client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {
+func (g *GithubClient) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", identifier)
@@ -83,14 +131,14 @@ func (g *client) GetRepository(ctx context.Context, identifier string) (*otf.Rep
 		return nil, err
 	}
 
-	return &otf.Repo{
+	return &Repo{
 		Identifier: repo.GetFullName(),
 		HTTPURL:    repo.GetURL(),
 		Branch:     repo.GetDefaultBranch(),
 	}, nil
 }
 
-func (g *client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*otf.RepoList, error) {
+func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error) {
 	repos, resp, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			Page:    opts.SanitizedPageNumber(),
@@ -102,22 +150,22 @@ func (g *client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 	}
 
 	// convert to common repo type before returning
-	var items []*otf.Repo
+	var items []*Repo
 	for _, repo := range repos {
-		items = append(items, &otf.Repo{
+		items = append(items, &Repo{
 			Identifier: repo.GetFullName(),
 			HTTPURL:    repo.GetURL(),
 			Branch:     repo.GetDefaultBranch(),
 		})
 	}
 
-	return &otf.RepoList{
+	return &RepoList{
 		Items:      items,
-		Pagination: otf.NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
+		Pagination: NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
 	}, nil
 }
 
-func (g *client) GetRepoTarball(ctx context.Context, repo *otf.VCSRepo) ([]byte, error) {
+func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
 	opts := github.RepositoryContentGetOptions{
 		Ref: repo.Branch,
 	}
@@ -140,7 +188,7 @@ func (g *client) GetRepoTarball(ctx context.Context, repo *otf.VCSRepo) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	if err := otf.Unpack(resp.Body, untarpath); err != nil {
+	if err := Unpack(resp.Body, untarpath); err != nil {
 		return nil, err
 	}
 	contents, err := os.ReadDir(untarpath)
@@ -151,5 +199,5 @@ func (g *client) GetRepoTarball(ctx context.Context, repo *otf.VCSRepo) ([]byte,
 		return nil, fmt.Errorf("malformed tarball archive")
 	}
 	parentDir := path.Join(untarpath, contents[0].Name())
-	return otf.Pack(parentDir)
+	return Pack(parentDir)
 }

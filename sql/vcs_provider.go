@@ -13,9 +13,9 @@ func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) 
 		VCSProviderID:       String(provider.ID()),
 		Token:               String(provider.Token()),
 		Name:                String(provider.Name()),
-		Hostname:            String(provider.Cloud().Hostname()),
-		Cloud:               String(provider.Cloud().CloudName()),
-		SkipTLSVerification: provider.Cloud().SkipTLSVerification(),
+		Hostname:            String(provider.Hostname()),
+		Cloud:               String(string(provider.CloudName())),
+		SkipTLSVerification: provider.SkipTLSVerification(),
 		OrganizationName:    String(provider.OrganizationName()),
 		CreatedAt:           Timestamptz(provider.CreatedAt()),
 	})

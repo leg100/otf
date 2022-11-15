@@ -53,13 +53,12 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 }
 
 func NewTestVCSProvider(t *testing.T, organization *Organization, cloud Cloud) *VCSProvider {
-	provider, err := NewVCSProvider(cloud, VCSProviderCreateOptions{
+	provider := NewVCSProvider(VCSProviderCreateOptions{
 		Name:             uuid.NewString(),
 		Token:            uuid.NewString(),
 		OrganizationName: organization.Name(),
+		Cloud:            cloud,
 	})
-	require.NoError(t, err)
-	provider.cloud = cloud
 	return provider
 }
 

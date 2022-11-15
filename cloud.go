@@ -6,7 +6,21 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type CloudClientOptions struct {
+// CloudName uniquely identifies a cloud provider
+type CloudName string
+
+// Cloud is an external provider of various cloud services e.g. identity provider, VCS
+// repositories etc.
+type Cloud interface {
+	NewClient(context.Context, ClientConfig) (CloudClient, error)
+}
+
+// ClientConfig is configuration for creating a new cloud client
+type ClientConfig struct {
+	Hostname            string
+	SkipTLSVerification bool
+
+	// one and only one token must be non-nil
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
 }

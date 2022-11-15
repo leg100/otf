@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 
@@ -159,8 +160,20 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	return token
 }
 
+func newTestVCSProvider(org *otf.Organization) *otf.VCSProvider {
+	return otf.NewVCSProvider(otf.VCSProviderCreateOptions{
+		OrganizationName: org.Name(),
+		// unit tests require a legitimate cloud name to avoid invalid foreign
+		// key error upon insert/update
+		CloudName: otf.GithubCloudName,
+		Cloud:     otf.GithubCloud{},
+		Hostname:  "fake.com",
+		Name:      uuid.NewString(),
+	})
+}
+
 func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := otf.NewTestVCSProvider(t, organization, otf.NewGithubCloud(nil))
+	provider := newTestVCSProvider(organization)
 	ctx := context.Background()
 
 	err := db.CreateVCSProvider(ctx, provider)

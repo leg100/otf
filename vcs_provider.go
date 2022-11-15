@@ -6,56 +6,62 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/leg100/otf/github"
 )
-
-const (
-	VCSProviderGithub VCSProviderCloud = "github"
-	VCSProviderGitlab VCSProviderCloud = "gitlab"
-)
-
-type VCSProviderCloud string
 
 // VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
 // TFE.
 type VCSProvider struct {
-	// TODO: do we need an id if name is unique?
+	config ClientConfig
+
 	id        string
 	createdAt time.Time
-	token     string
+	// TODO: name or description?
 	name      string
-	cloud     CloudConfig
+	cloud     Cloud
+	cloudName CloudName
+
 	// vcs provider belongs to an organization
 	organizationName string
 }
 
-func NewVCSProvider(cloud CloudConfig, opts VCSProviderCreateOptions) (*VCSProvider, error) {
+func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
 	return &VCSProvider{
 		id:               NewID("vcs"),
 		createdAt:        CurrentTimestamp(),
-		token:            opts.Token,
 		name:             opts.Name,
-		cloud:            cloud,
 		organizationName: opts.OrganizationName,
-	}, nil
+		cloud:            opts.Cloud,
+		cloudName:        opts.CloudName,
+		config: ClientConfig{
+			Hostname:            opts.Hostname,
+			SkipTLSVerification: opts.SkipTLSVerification,
+			PersonalToken:       String(opts.Token),
+		},
+	}
 }
 
-func (t *VCSProvider) ID() string               { return t.id }
-func (t *VCSProvider) String() string           { return t.name }
-func (t *VCSProvider) Token() string            { return t.token }
-func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
-func (t *VCSProvider) Name() string             { return t.name }
-func (t *VCSProvider) Cloud() CloudConfig       { return t.cloud }
-func (t *VCSProvider) OrganizationName() string { return t.organizationName }
+func (t *VCSProvider) ID() string                { return t.id }
+func (t *VCSProvider) String() string            { return t.name }
+func (t *VCSProvider) Token() string             { return *t.config.PersonalToken }
+func (t *VCSProvider) Hostname() string          { return t.config.Hostname }
+func (t *VCSProvider) CloudName() CloudName      { return t.cloudName }
+func (t *VCSProvider) SkipTLSVerification() bool { return t.config.SkipTLSVerification }
+func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
+func (t *VCSProvider) Name() string              { return t.name }
+func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
 
-func (t *VCSProvider) NewDirectoryClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
-	return t.cloud.NewClient(ctx, opts)
+func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
+	return t.cloud.NewClient(ctx, t.config)
 }
 
 type VCSProviderCreateOptions struct {
-	OrganizationName string `schema:"organization_name,required"`
-	Token            string `schema:"token,required"`
-	Name             string `schema:"name,required"`
+	OrganizationName    string
+	Token               string
+	Name                string
+	CloudName           CloudName
+	Cloud               Cloud
+	Hostname            string
+	SkipTLSVerification bool
 }
 
 // VCSProviderRow represents a database row for a vcs provider
@@ -72,34 +78,34 @@ type VCSProviderRow struct {
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
 func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
-	provider := &VCSProvider{
+	var cloud Cloud
+	switch CloudName(row.Cloud.String) {
+	case GithubCloudName:
+		cloud = GithubCloud{}
+	case GitlabCloudName:
+		cloud = GitlabCloud{}
+	default:
+		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+	}
+
+	return &VCSProvider{
 		id:               row.VCSProviderID.String,
 		createdAt:        row.CreatedAt.Time.UTC(),
-		token:            row.Token.String,
 		name:             row.Name.String,
 		organizationName: row.OrganizationName.String,
-	}
-
-	// unmarshal provider cloud
-	opts := cloudConfigOptions{
-		hostname:            String(row.Hostname.String),
-		skipTLSVerification: Bool(row.SkipTLSVerification),
-	}
-	switch row.Cloud.String {
-	case "github":
-		provider.cloud = github.Config(&opts)
-	case "gitlab":
-		provider.cloud = NewGitlabCloud(&opts)
-	default:
-		return nil, fmt.Errorf("unknown cloud: %s", row.Cloud.String)
-	}
-
-	return provider, nil
+		cloud:            cloud,
+		cloudName:        CloudName(row.Cloud.String),
+		config: ClientConfig{
+			Hostname:            row.Hostname.String,
+			SkipTLSVerification: row.SkipTLSVerification,
+			PersonalToken:       String(row.Token.String),
+		},
+	}, nil
 }
 
 // VCSProviderService provides access to vcs providers
 type VCSProviderService interface {
-	CreateVCSProvider(ctx context.Context, cloud CloudConfig, opts VCSProviderCreateOptions) (*VCSProvider, error)
+	CreateVCSProvider(ctx context.Context, opts VCSProviderCreateOptions) (*VCSProvider, error)
 	GetVCSProvider(ctx context.Context, id, organization string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id, organization string) error
