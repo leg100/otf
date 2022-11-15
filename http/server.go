@@ -39,6 +39,8 @@ type ServerConfig struct {
 	SiteToken string
 	// Secret for signing
 	Secret string
+	// Maximum permitted config upload size in bytes
+	MaxConfigSize int64
 }
 
 func (cfg *ServerConfig) Validate() error {
