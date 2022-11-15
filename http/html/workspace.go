@@ -11,7 +11,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
-	"golang.org/x/oauth2"
 )
 
 // workspaceRequest provides metadata about a request for a workspace
@@ -389,9 +388,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 	// TODO(@leg100): how come this succeeds for gitlab when we're passing in a personal
 	// access token and not an oauth token? On github, the two are the same
 	// (AFAIK) so it makes sense that that works...
-	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
-		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
-	})
+	client, err := provider.NewClient(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -430,9 +427,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	client, err := provider.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
-		OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
-	})
+	client, err := provider.NewClient(r.Context())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -522,9 +517,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		if err != nil {
 			return nil, err
 		}
-		client, err := provider.NewDirectoryClient(ctx, otf.DirectoryClientOptions{
-			OAuthToken: &oauth2.Token{AccessToken: provider.Token()},
-		})
+		client, err := provider.NewClient(ctx)
 		if err != nil {
 			return nil, err
 		}

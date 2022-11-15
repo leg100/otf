@@ -18,20 +18,45 @@ var authPrefix = "/oauth"
 
 const oauthCookieName = "oauth-state"
 
-// Authenticator logs people onto the system, synchronising their
-// user account and various organization and team memberships from an external
-// directory.
+// Authenticator logs people onto the system using an OAuth handshake with an
+// Identity provider before synchronising their user account and various organization
+// and team memberships from the provider.
 type Authenticator struct {
-	otf.Cloud
+	// OAuth identity provider config
+	*otf.CloudConfig
 	otf.Application
 }
 
+func newAuthenticators(app otf.Application, configs cloudDB) ([]*Authenticator, error) {
+	var authenticators []*Authenticator
+
+	for _, cfg := range configs {
+		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+			// skip cloud providers for which no oauth credentials have been
+			// configured
+			continue
+		}
+		authenticators = append(authenticators, &Authenticator{
+			CloudConfig: cfg,
+			Application: app,
+		})
+	}
+
+	return authenticators, nil
+}
+
+// String provides a human readable name for the authenticator, reflecting the
+// name of the cloud providing authentication.
+func (a *Authenticator) String() string {
+	return string(a.Name)
+}
+
 func (a *Authenticator) RequestPath() string {
-	return path.Join(authPrefix, a.CloudName(), "login")
+	return path.Join(authPrefix, string(a.Name), "login")
 }
 
 func (a *Authenticator) callbackPath() string {
-	return path.Join(authPrefix, a.CloudName(), "callback")
+	return path.Join(authPrefix, string(a.Name), "callback")
 }
 
 // requestHandler initiates the oauth flow, redirecting user to the IdP auth
@@ -53,51 +78,37 @@ func (a *Authenticator) requestHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true, // HTTPS only
 	})
 
-	cfg, err := a.oauthConfig(r)
-	if err != nil {
-		panic("unable to generate oauth config: " + err.Error())
-	}
-	http.Redirect(w, r, cfg.AuthCodeURL(state), http.StatusFound)
+	http.Redirect(w, r, a.oauthCfg(r).AuthCodeURL(state), http.StatusFound)
 }
 
 // oauthConfig generates an OAuth configuration - the current request is
 // necessary for obtaining the hostname and scheme for the redirect URL
-func (a *Authenticator) oauthConfig(r *http.Request) (*oauth2.Config, error) {
-	endpoint, err := a.Endpoint()
-	if err != nil {
-		return nil, err
-	}
+func (a *Authenticator) oauthCfg(r *http.Request) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     a.ClientID(),
-		ClientSecret: a.ClientSecret(),
-		Endpoint:     endpoint,
-		Scopes:       a.Scopes(),
+		ClientID:     a.ClientID,
+		ClientSecret: a.ClientSecret,
+		Endpoint:     a.Endpoint,
+		Scopes:       a.Scopes,
 		RedirectURL:  otf.Absolute(r, a.callbackPath()),
-	}, nil
+	}
 }
 
 // responseHandler completes the oauth flow, handling the callback response and
 // exchanging its auth code for a token.
 func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) {
-	// Generate oauth config
-	cfg, err := a.oauthConfig(r)
-	if err != nil {
-		flashError(w, err.Error())
-		http.Redirect(w, r, loginPath(), http.StatusFound)
-		return
-	}
-
 	// Handle oauth response; if there is an error, return user to login page
 	// along with flash error.
-	token, err := a.handleResponse(r, cfg)
+	token, err := a.handleResponse(r)
 	if err != nil {
 		flashError(w, err.Error())
 		http.Redirect(w, r, loginPath(), http.StatusFound)
 		return
 	}
 
-	client, err := a.NewDirectoryClient(r.Context(), otf.DirectoryClientOptions{
-		OAuthToken: token,
+	client, err := a.Cloud.NewClient(r.Context(), otf.ClientConfig{
+		Hostname:            a.Hostname,
+		SkipTLSVerification: a.SkipTLSVerification,
+		OAuthToken:          token,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +135,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oauth2.Token, error) {
+func (a *Authenticator) handleResponse(r *http.Request) (*oauth2.Token, error) {
 	// Parse query string
 	type response struct {
 		AuthCode string `schema:"code"`
@@ -153,7 +164,7 @@ func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oa
 
 	// Optionally skip TLS verification of auth code endpoint
 	ctx := r.Context()
-	if a.SkipTLSVerification() {
+	if a.SkipTLSVerification {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -162,10 +173,10 @@ func (a *Authenticator) handleResponse(r *http.Request, cfg *oauth2.Config) (*oa
 	}
 
 	// Exchange code for an access token
-	return cfg.Exchange(ctx, resp.AuthCode)
+	return a.oauthCfg(r).Exchange(ctx, resp.AuthCode)
 }
 
-func (a *Authenticator) synchronise(ctx context.Context, client otf.DirectoryClient) (*otf.User, error) {
+func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient) (*otf.User, error) {
 	// service calls are made using the privileged app user
 	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
 

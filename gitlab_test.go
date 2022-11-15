@@ -73,12 +73,12 @@ func TestGitlab_GetUser(t *testing.T) {
 	})
 }
 
-func newTestGitlabClient(t *testing.T, opts ...TestGitlabServerOption) *gitlabProvider {
+func newTestGitlabClient(t *testing.T, opts ...TestGitlabServerOption) *GitlabClient {
 	srv := NewTestGitlabServer(t, opts...)
 	t.Cleanup(srv.Close)
 
 	client, err := gitlab.NewOAuthClient("fake-oauth-token", gitlab.WithBaseURL(srv.URL))
 	require.NoError(t, err)
 
-	return &gitlabProvider{client: client}
+	return &GitlabClient{client: client}
 }

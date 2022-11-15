@@ -54,11 +54,10 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	cloud := otf.NewTestCloud()
 	providers := []*otf.VCSProvider{
-		otf.NewTestVCSProvider(t, org, cloud),
-		otf.NewTestVCSProvider(t, org, cloud),
-		otf.NewTestVCSProvider(t, org, cloud),
+		otf.NewTestVCSProvider(t, org, fakeCloud{}),
+		otf.NewTestVCSProvider(t, org, fakeCloud{}),
+		otf.NewTestVCSProvider(t, org, fakeCloud{}),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
 

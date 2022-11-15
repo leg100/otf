@@ -18,8 +18,8 @@
   </div>
 
   {{ range .Content.Clouds }}
-  <form action="{{ newVCSProviderPath $.Content .CloudName }}" method="GET">
-    <button type="submit">New {{ title .CloudName }} VCS Provider</button>
+  <form action="{{ newVCSProviderPath $.Content .String }}" method="GET">
+    <button type="submit">New {{ title .String }} VCS Provider</button>
   </form>
   {{ end }}
 {{ end }}
