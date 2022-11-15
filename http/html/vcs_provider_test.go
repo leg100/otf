@@ -22,7 +22,7 @@ func TestNewVCSProviderHandler(t *testing.T) {
 
 func TestCreateVCSProviderHandler(t *testing.T) {
 	app := newFakeWebApp(t, &fakeVCSProviderApp{})
-	app.cloudConfigs = map[string]cloudConfig{
+	app.cloudDB = cloudDB{
 		"fake-cloud": {},
 	}
 

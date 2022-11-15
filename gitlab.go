@@ -6,9 +6,20 @@ import (
 	"net/url"
 
 	"github.com/xanzy/go-gitlab"
+	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
 const GitlabCloudName CloudName = "gitlab"
+
+func GitlabDefaultConfig() *CloudConfig {
+	return &CloudConfig{
+		Name:     GitlabCloudName,
+		Hostname: "gitlab.com",
+		Endpoint: oauth2gitlab.Endpoint,
+		Scopes:   []string{"read_user", "read_api"},
+		Cloud:    GitlabCloud{},
+	}
+}
 
 type GitlabCloud struct{}
 

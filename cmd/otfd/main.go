@@ -60,7 +60,8 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
-	htmlCfg := html.NewConfigFromFlags(cmd.Flags())
+	cloudCfgs := newCloudConfigsFromFlags(cmd.Flags())
+	htmlCfg := newHTMLConfigFromFlags(cmd.Flags(), cloudCfgs)
 	agentCfg := agent.NewConfigFromFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
@@ -79,6 +80,16 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	if version {
 		fmt.Fprintln(cmd.OutOrStdout(), otf.Version)
 		return nil
+	}
+
+	// Validate and update configs following flag parsing
+	for _, cfg := range cloudCfgs {
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("invalid cloud config: %w", err)
+		}
+		if err := cfg.UpdateEndpoint(); err != nil {
+			return fmt.Errorf("updating oauth endpoints: %w", err)
+		}
 	}
 
 	// Setup logger
@@ -189,4 +200,38 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
 
 	return &cfg
+}
+
+// newCloudConfigFromFlags binds flags to web app config
+func newHTMLConfigFromFlags(flags *pflag.FlagSet, cloudConfigs []*otf.CloudConfig) *html.Config {
+	cfg := html.Config{
+		CloudConfigs: make(map[otf.CloudName]*otf.CloudConfig),
+	}
+
+	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
+
+	for _, cc := range cloudConfigs {
+		cfg.CloudConfigs[cc.Name] = cc
+	}
+
+	return &cfg
+}
+
+// newCloudConfigsFromFlags binds flags to cloud configs
+func newCloudConfigsFromFlags(flags *pflag.FlagSet) []*otf.CloudConfig {
+	cloudConfigs := []*otf.CloudConfig{
+		otf.GithubDefaultConfig(),
+		otf.GitlabDefaultConfig(),
+	}
+
+	for _, cc := range cloudConfigs {
+		nameStr := string(cc.Name)
+		flags.StringVar(&cc.ClientID, nameStr+"-client-id", "", nameStr+" client ID")
+		flags.StringVar(&cc.ClientSecret, nameStr+"-client-secret", "", nameStr+" client secret")
+
+		flags.StringVar(&cc.Hostname, nameStr+"-hostname", cc.Hostname, nameStr+" hostname")
+		flags.BoolVar(&cc.SkipTLSVerification, nameStr+"-skip-tls-verification", false, "Skip "+nameStr+" TLS verification")
+	}
+
+	return cloudConfigs
 }

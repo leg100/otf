@@ -30,7 +30,7 @@ type Application struct {
 	// site admin's authentication token
 	siteToken string
 	// mapping of cloud name to cloud
-	cloudConfigs map[string]cloudConfig
+	cloudDB cloudDB
 }
 
 type ApplicationOption func(*Application)
@@ -66,10 +66,10 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 		Logger:       logger,
 		Server:       sseServer,
 		siteToken:    srvConfig.SiteToken,
-		cloudConfigs: config.cloudConfigs,
+		cloudDB: config.CloudConfigs,
 	}
 
-	app.authenticators, err = newAuthenticators(services, config.cloudConfigs)
+	app.authenticators, err = newAuthenticators(services, config.CloudConfigs)
 	if err != nil {
 		return err
 	}

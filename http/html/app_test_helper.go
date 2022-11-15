@@ -17,7 +17,7 @@ func newFakeWebApp(t *testing.T, app otf.Application, opts ...ApplicationOption)
 		Application:  app,
 		Logger:       logr.Discard(),
 		viewEngine:   views,
-		cloudConfigs: map[string]cloudConfig{},
+		cloudDB: cloudDB{},
 	}
 
 	for _, o := range opts {

@@ -11,12 +11,23 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"golang.org/x/oauth2"
+	oauth2github "golang.org/x/oauth2/github"
 )
 
 const (
 	GithubCloudName       CloudName = "github"
 	DefaultGithubHostname string    = "github.com"
 )
+
+func GithubDefaultConfig() *CloudConfig {
+	return &CloudConfig{
+		Name:     GithubCloudName,
+		Hostname: "github.com",
+		Endpoint: oauth2github.Endpoint,
+		Scopes:   []string{"user:email", "read:org"},
+		Cloud:    GithubCloud{},
+	}
+}
 
 type GithubCloud struct{}
 

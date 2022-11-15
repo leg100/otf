@@ -3,7 +3,6 @@ package html
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -24,36 +23,21 @@ const oauthCookieName = "oauth-state"
 // and team memberships from the provider.
 type Authenticator struct {
 	// OAuth identity provider config
-	cloudConfig
+	*otf.CloudConfig
 	otf.Application
 }
 
-func newAuthenticators(app otf.Application, configs map[string]cloudConfig) ([]*Authenticator, error) {
+func newAuthenticators(app otf.Application, configs cloudDB) ([]*Authenticator, error) {
 	var authenticators []*Authenticator
 
 	for _, cfg := range configs {
-		err := cfg.validate()
-		if errors.Is(err, ErrOAuthCredentialsUnspecified) {
-			// user has specified neither client ID nor client secret so no
-			// authenticator is constructed correlating to this oauth config
+		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+			// skip cloud providers for which no oauth credentials have been
+			// configured
 			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("invalid OAuth config: %w", err)
 		}
-
-		// update oauth endpoint to use the hostname the user has
-		// configured
-		cfg.endpoint.AuthURL, err = otf.UpdateHost(cfg.endpoint.AuthURL, cfg.hostname)
-		if err != nil {
-			return nil, err
-		}
-		cfg.endpoint.TokenURL, err = otf.UpdateHost(cfg.endpoint.TokenURL, cfg.hostname)
-		if err != nil {
-			return nil, err
-		}
-
 		authenticators = append(authenticators, &Authenticator{
-			cloudConfig: cfg,
+			CloudConfig: cfg,
 			Application: app,
 		})
 	}
@@ -61,12 +45,18 @@ func newAuthenticators(app otf.Application, configs map[string]cloudConfig) ([]*
 	return authenticators, nil
 }
 
+// String provides a human readable name for the authenticator, reflecting the
+// name of the cloud providing authentication.
+func (a *Authenticator) String() string {
+	return string(a.Name)
+}
+
 func (a *Authenticator) RequestPath() string {
-	return path.Join(authPrefix, string(a.name), "login")
+	return path.Join(authPrefix, string(a.Name), "login")
 }
 
 func (a *Authenticator) callbackPath() string {
-	return path.Join(authPrefix, string(a.name), "callback")
+	return path.Join(authPrefix, string(a.Name), "callback")
 }
 
 // requestHandler initiates the oauth flow, redirecting user to the IdP auth
@@ -95,10 +85,10 @@ func (a *Authenticator) requestHandler(w http.ResponseWriter, r *http.Request) {
 // necessary for obtaining the hostname and scheme for the redirect URL
 func (a *Authenticator) oauthCfg(r *http.Request) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     a.clientID,
-		ClientSecret: a.clientSecret,
-		Endpoint:     a.endpoint,
-		Scopes:       a.scopes,
+		ClientID:     a.ClientID,
+		ClientSecret: a.ClientSecret,
+		Endpoint:     a.Endpoint,
+		Scopes:       a.Scopes,
 		RedirectURL:  otf.Absolute(r, a.callbackPath()),
 	}
 }
@@ -115,9 +105,9 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	client, err := a.cloud.NewClient(r.Context(), otf.ClientConfig{
-		Hostname:            a.hostname,
-		SkipTLSVerification: a.skipTLSVerification,
+	client, err := a.Cloud.NewClient(r.Context(), otf.ClientConfig{
+		Hostname:            a.Hostname,
+		SkipTLSVerification: a.SkipTLSVerification,
 		OAuthToken:          token,
 	})
 	if err != nil {
@@ -174,7 +164,7 @@ func (a *Authenticator) handleResponse(r *http.Request) (*oauth2.Token, error) {
 
 	// Optionally skip TLS verification of auth code endpoint
 	ctx := r.Context()
-	if a.skipTLSVerification {
+	if a.SkipTLSVerification {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

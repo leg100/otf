@@ -7,8 +7,8 @@
   <div class="center">
     <div class="login-buttons-container">
       {{ range .Content }}
-        <a class="login-button-{{ .CloudName }}" href="{{ .RequestPath }}">
-          {{ template "icons" .CloudName }}<span>Login with {{ title .CloudName }}</span>
+        <a class="login-button-{{ . }}" href="{{ .RequestPath }}">
+          {{ template "icons" .String }}<span>Login with {{ title .String }}</span>
         </a>
       {{ else }}
         No authenticators configured.

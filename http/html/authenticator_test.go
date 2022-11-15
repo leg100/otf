@@ -15,9 +15,9 @@ import (
 
 func TestAuthenticator_RequestHandler(t *testing.T) {
 	authenticator := &Authenticator{
-		cloudConfig{
-			name:     "fake-cloud",
-			endpoint: fakeEndpoint("https://fake.com/"),
+		&otf.CloudConfig{
+			Name:     otf.CloudName("fake-cloud"),
+			Endpoint: fakeEndpoint("https://fake.com/"),
 		},
 		&fakeAuthenticatorApp{},
 	}
@@ -70,7 +70,7 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 	team := otf.NewTeam("fake-team", org)
 	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
-	authenticator := &Authenticator{cloudConfig{}, &fakeAuthenticatorApp{}}
+	authenticator := &Authenticator{&otf.CloudConfig{}, &fakeAuthenticatorApp{}}
 	user, err := authenticator.synchronise(context.Background(), &otf.TestClient{User: user})
 	require.NoError(t, err)
 
@@ -137,11 +137,11 @@ func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, id, teamID str
 	return nil
 }
 
-func newFakeCloudConfig(url string, user *otf.User) cloudConfig {
-	return cloudConfig{
-		endpoint:            fakeEndpoint(url),
-		skipTLSVerification: true,
-		cloud: fakeCloud{
+func newFakeCloudConfig(url string, user *otf.User) *otf.CloudConfig {
+	return &otf.CloudConfig{
+		Endpoint:            fakeEndpoint(url),
+		SkipTLSVerification: true,
+		Cloud: fakeCloud{
 			user: user,
 		},
 	}
