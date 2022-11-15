@@ -198,6 +198,7 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	flags.BoolVar(&cfg.EnableRequestLogging, "log-http-requests", false, "Log HTTP requests")
 	flags.StringVar(&cfg.SiteToken, "site-token", "", "API token with site-wide unlimited permissions. Use with care.")
 	flags.StringVar(&cfg.Secret, "secret", "", "Secret string for signing short-lived URLs. Required.")
+	flags.Int64Var(&cfg.MaxConfigSize, "max-config-size", otf.DefaultConfigMaxSize, "Maximum permitted configuration size in bytes.")
 
 	return &cfg
 }
