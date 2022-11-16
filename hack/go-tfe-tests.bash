@@ -5,13 +5,21 @@
 
 set -e
 
+if [ -z $OTF_TEST_DATABASE_URL ]; then
+    echo OTF_TEST_DATABASE_URL not set
+    exit 1
+fi
+
 # go-tfe tests perform privileged operations (e.g.
 # creating organizations), so we use a site admin token.
 SITE_TOKEN=go-tfe-test-site-token
 
 # run otfd on random port in background, logging to a temp file
 logfile=$(tempfile)
-nohup _build/otfd --address :0 --log-level trace --log-http-requests --site-token $SITE_TOKEN > $logfile 2>&1 &
+nohup _build/otfd --address :0 \
+    --log-level trace --log-http-requests \
+    --site-token $SITE_TOKEN \
+    --database $OTF_TEST_DATABASE_URL > $logfile 2>&1 &
 pid=$!
 
 # print out logs upon error
