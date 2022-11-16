@@ -20,7 +20,6 @@ nohup _build/otfd --address :0 \
     --log-level trace --log-http-requests \
     --site-token $SITE_TOKEN \
     --secret ce6bf87f25118c87c8ca3d3066010c5ee56643c01ba5cab605642b0d83271e6e \
-    --secret fe56cd2eae641f73687349ee32af43048805a9624eb3fcd0bdaf5d5dc8ffd5bc \
     --ssl true \
     --dev-mode=false \
     --cert-file ./e2e/fixtures/cert.crt \
