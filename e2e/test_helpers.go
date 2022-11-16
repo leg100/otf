@@ -58,6 +58,8 @@ func (d *daemon) start(t *testing.T) string {
 
 	flags := append(d.flags,
 		"--address", ":0",
+		"--ssl", "true",
+		"--secret", "fe56cd2eae641f73687349ee32af43048805a9624eb3fcd0bdaf5d5dc8ffd5bc",
 		"--cert-file", "./fixtures/cert.crt",
 		"--key-file", "./fixtures/key.pem",
 		"--dev-mode=false",
