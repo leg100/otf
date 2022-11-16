@@ -29,6 +29,8 @@ type Application struct {
 	authenticators []*Authenticator
 	// site admin's authentication token
 	siteToken string
+	// secret for webhook signatures
+	secret string
 	// mapping of cloud name to cloud
 	cloudDB cloudDB
 }
@@ -42,6 +44,8 @@ func WithSiteToken(token string) ApplicationOption {
 }
 
 // AddRoutes adds routes for the html web app.
+//
+// TODO: merge config and srvConfig
 func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConfig, services otf.Application, router *otfhttp.Router) error {
 	if config.DevMode {
 		logger.Info("enabled developer mode")
@@ -66,7 +70,8 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 		Logger:       logger,
 		Server:       sseServer,
 		siteToken:    srvConfig.SiteToken,
-		cloudDB: config.CloudConfigs,
+		secret:       srvConfig.Secret,
+		cloudDB:      config.CloudConfigs,
 	}
 
 	app.authenticators, err = newAuthenticators(services, config.CloudConfigs)
@@ -156,6 +161,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/hook", app.handleGithubEvent)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)

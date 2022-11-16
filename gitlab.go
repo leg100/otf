@@ -159,3 +159,8 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 
 	return tarball, nil
 }
+
+// TODO
+func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
+	return nil
+}

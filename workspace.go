@@ -329,6 +329,10 @@ type WorkspaceStore interface {
 
 // WorkspaceRepoService manages a workspace's connection to a VCS repository.
 type WorkspaceRepoService interface {
+	// ConnectWorkspaceRepo connects a workspace to a VCS repository using a VCS
+	// provider.
+	//
+	// TODO: Rename to ConnectWorkspace
 	ConnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
 	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
 	DisconnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)

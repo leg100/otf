@@ -121,6 +121,10 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 			link := url.URL{Scheme: "https", Host: r.Host, Path: "/mytarball"}
 			http.Redirect(w, r, link.String(), http.StatusFound)
 		})
+		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
+		mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+		})
 	}
 
 	if db.tarball != nil {

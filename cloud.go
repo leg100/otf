@@ -36,6 +36,17 @@ type CloudClient interface {
 	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
 	GetRepository(ctx context.Context, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
+	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error
+}
+
+// CreateWebhookOptions are options for creating a webhook.
+type CreateWebhookOptions struct {
+	// The URL to which events should be sent
+	URL string
+	// Secret key for signing events
+	Secret string
+	// Repository identifier
+	Identifier string
 }
 
 // CloudConfig is configuation for a cloud provider

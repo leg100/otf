@@ -212,3 +212,36 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 	parentDir := path.Join(untarpath, contents[0].Name())
 	return Pack(parentDir)
 }
+
+// CreateWebhook creates a webhook on the github repository, subscribing the
+// workspace to certain github events so that runs can be triggered.
+func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+	_, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
+		Name: String("web"),
+		// default is [push]
+		Events: []string{"push"},
+		Config: map[string]any{
+			"url": opts.URL,
+			// For now use global secret as key that github takes, stores, and uses to
+			// generate HMAC hex digest signature value. This isn't ideal
+			// because 1) github have it and we don't trust 'em 2) if otf admin
+			// changes secret then they'll have to re-create all webhooks.
+			// TODO: create a secret for each webhook, and persist. On every
+			// incoming event, lookup secret corresponding to org/workspace and
+			// verify signature. We would progress to using a cache to make this
+			// lookup efficient.
+			"secret": opts.Secret,
+			// default is form
+			"content_type": "form",
+		},
+		Active: Bool(true),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}

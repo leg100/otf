@@ -2,6 +2,7 @@ package otf
 
 import "strings"
 
+// VCSRepo is a VCS repository accessible via a VCS provider.
 type VCSRepo struct {
 	// identifier is <repo_owner>/<repo_name>
 	Identifier string

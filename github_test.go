@@ -12,6 +12,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// TODO: refactor tests below, create helpers for creating server and client
+
 func TestGithub_GetUser(t *testing.T) {
 	ctx := context.Background()
 	org := NewTestOrganization(t)
@@ -69,5 +71,29 @@ func TestGithub_GetRepoTarball(t *testing.T) {
 
 	dst := t.TempDir()
 	err = Unpack(bytes.NewReader(got), dst)
+	require.NoError(t, err)
+}
+
+func TestGithub_CreateWebhook(t *testing.T) {
+	ctx := context.Background()
+
+	srv := NewTestGithubServer(t,
+		WithGithubRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
+	)
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	client, err := NewGithubClient(ctx, ClientConfig{
+		Hostname:            u.Host,
+		SkipTLSVerification: true,
+		OAuthToken:          &oauth2.Token{AccessToken: "fake-token"},
+	})
+	require.NoError(t, err)
+
+	err = client.CreateWebhook(ctx, CreateWebhookOptions{
+		Identifier: "acme/terraform",
+		URL:        "https://me-server/me-webhook",
+		Secret:     "me-secret",
+	})
 	require.NoError(t, err)
 }

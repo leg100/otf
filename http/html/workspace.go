@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
+	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
@@ -414,6 +416,10 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		otf.WorkspaceSpec
 		VCSProviderID string `schema:"vcs_provider_id,required"`
 		Identifier    string `schema:"identifier,required"`
+		// HTTPURL is the web url for the repo
+		HTTPURL string `schema:"http_url,required"`
+		// Branch is the default master Branch for a repo
+		Branch string `schema:"branch,required"`
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -433,15 +439,28 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	repo, err := client.GetRepository(r.Context(), opts.Identifier)
+	// retrieve repo just to confirm the identifier is correct
+	_, err = client.GetRepository(r.Context(), opts.Identifier)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// create webhook on vcs repo
+	url := url.URL{Scheme: "https", Host: r.Host, Path: webhookPath(workspaceRequest{r})}
+	err = client.CreateWebhook(r.Context(), otf.CreateWebhookOptions{
+		URL:        url.String(),
+		Secret:     app.secret,
+		Identifier: opts.Identifier,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
-		Branch:     repo.Branch,
-		HTTPURL:    repo.HTTPURL,
+		Branch:     opts.Branch,
+		HTTPURL:    opts.HTTPURL,
 		Identifier: opts.Identifier,
 		ProviderID: opts.VCSProviderID,
 	})
@@ -469,6 +488,23 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 
 	flashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+}
+
+func (app *Application) handleGithubEvent(w http.ResponseWriter, r *http.Request) {
+	_, err := github.ValidatePayload(r, []byte(app.secret))
+	if err != nil {
+		app.Error(err, "received invalid github event payload")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	event := github.WebHookType(r)
+	if event == "" {
+		app.Error(err, "received invalid github event type")
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	app.Info("received github event", "event", event)
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
