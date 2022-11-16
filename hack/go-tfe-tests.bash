@@ -19,28 +19,32 @@ logfile=$(tempfile)
 nohup _build/otfd --address :0 \
     --log-level trace --log-http-requests \
     --site-token $SITE_TOKEN \
+    --secret ce6bf87f25118c87c8ca3d3066010c5ee56643c01ba5cab605642b0d83271e6e \
+    --secret fe56cd2eae641f73687349ee32af43048805a9624eb3fcd0bdaf5d5dc8ffd5bc \
+    --ssl true \
+    --dev-mode=false \
+    --cert-file ./e2e/fixtures/cert.crt \
+    --key-file ./e2e/fixtures/key.pem \
     --database $OTF_TEST_DATABASE_URL > $logfile 2>&1 &
 pid=$!
-
-# print out logs upon error
-function print_logs()
-{
-    echo "--- otfd output ---"
-    echo
-    cat $logfile
-}
-trap print_logs ERR
 
 # stop otfd upon exit
 function cleanup()
 {
-    kill $pid
+    otfd_ecode=$?
+    [[ -d /proc/$pid ]] && kill $pid
     # wait til it's dead
     while [[ -d /proc/$pid ]]; do
         sleep 1
     done
+    # print out logs upon error
+    if [ "${otfd_ecode}" != "0" ]; then
+        echo "--- otfd output ---"
+        echo
+        cat $logfile
+    fi
 }
-trap cleanup EXIT
+trap cleanup EXIT ERR
 
 # wait for otfd to listen on port and capture port number
 tries=0
