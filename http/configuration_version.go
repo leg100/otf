@@ -68,7 +68,7 @@ func (s *Server) UploadConfigurationVersion() http.HandlerFunc {
 			return
 		}
 	})
-	return http.MaxBytesHandler(h, otf.ConfigMaxSize).ServeHTTP
+	return http.MaxBytesHandler(h, s.MaxConfigSize).ServeHTTP
 }
 
 func (s *Server) DownloadConfigurationVersion(w http.ResponseWriter, r *http.Request) {

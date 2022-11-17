@@ -2,7 +2,6 @@ package otf
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -15,11 +14,9 @@ const (
 	ConfigurationErrored  ConfigurationStatus = "errored"
 	ConfigurationPending  ConfigurationStatus = "pending"
 	ConfigurationUploaded ConfigurationStatus = "uploaded"
-	// Maximum config size is 10mb.
-	ConfigMaxSize int64 = 1024 * 1024 * 10
+	// Default maximum config size is 10mb.
+	DefaultConfigMaxSize int64 = 1024 * 1024 * 10
 )
-
-var ErrInvalidConfigurationVersionGetOptions = errors.New("invalid configuration version get options")
 
 // ConfigurationVersion is a representation of an uploaded or ingressed
 // Terraform configuration in  A workspace must have at least one configuration
