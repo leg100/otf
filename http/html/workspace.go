@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -495,7 +496,8 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
 	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
+		flashError(w, err.Error())
+		http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
 		return
 	}
 
@@ -535,6 +537,9 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 	} else {
 		latest, err := app.GetLatestConfigurationVersion(ctx, ws.ID())
 		if err != nil {
+			if errors.Is(err, otf.ErrResourceNotFound) {
+				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
+			}
 			return nil, err
 		}
 		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), opts)
