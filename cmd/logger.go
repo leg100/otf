@@ -45,6 +45,11 @@ func NewLogger(cfg *LoggerConfig) (logr.Logger, error) {
 		TimeFormat: time.RFC3339,
 	}
 	zerolog.DurationFieldInteger = true
+	// assign message string to a logfmt key, for easier/faster parsing by an
+	// upstream log parser, e.g. loki
+	consoleWriter.FormatMessage = func(msg interface{}) string {
+		return fmt.Sprintf(`msg="%s"`, msg)
+	}
 
 	switch cfg.color {
 	case "auto":
