@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v41/github"
@@ -176,6 +177,7 @@ func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (
 	}, nil
 }
 
+// TODO: take ref
 func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
 	opts := github.RepositoryContentGetOptions{
 		Ref: repo.Branch,
@@ -240,6 +242,22 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 		},
 		Active: Bool(true),
 	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+	hookID, err := strconv.ParseInt(opts.HookID, 10, 64)
+	if err != nil {
+		return err
+	}
+	_, err = g.client.Repositories.DeleteHook(ctx, owner, name, hookID)
 	if err != nil {
 		return err
 	}

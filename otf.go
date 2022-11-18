@@ -8,8 +8,6 @@ import (
 	crypto "crypto/rand"
 	"encoding/base64"
 	"math/rand"
-	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -220,42 +218,3 @@ func (*AppUser) CanAccessOrganization(Action, string) bool        { return true 
 func (*AppUser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
 func (*AppUser) String() string                                   { return "app-user" }
 func (*AppUser) ID() string                                       { return "app-user" }
-
-// Absolute returns an absolute URL for the given path. It uses the http request
-// to determine the correct hostname and scheme to use. Handles situations where
-// otf is sitting behind a reverse proxy, using the X-Forwarded-* headers the
-// proxy sets.
-//
-// TODO: move to http pkg
-func Absolute(r *http.Request, path string) string {
-	u := url.URL{
-		Host: r.Host,
-		Path: path,
-	}
-
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		u.Scheme = proto
-	} else if r.TLS != nil {
-		u.Scheme = "https"
-	} else {
-		u.Scheme = "http"
-	}
-
-	if host := r.Header.Get("X-Forwarded-Host"); host != "" {
-		u.Host = host
-	}
-
-	return u.String()
-}
-
-// UpdateHost updates the hostname in a URL
-func UpdateHost(u, host string) (string, error) {
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return "", err
-	}
-
-	parsed.Host = host
-
-	return parsed.String(), nil
-}

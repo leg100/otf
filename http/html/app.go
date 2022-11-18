@@ -103,6 +103,9 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	r.GET("/admin/login", app.adminLoginPromptHandler)
 	r.PST("/admin/login", app.adminLoginHandler)
 
+	// webhooks, authenticated using signature in header
+	r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/hook", app.handleGithubEvent)
+
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
 		r.Use((&authMiddleware{app, app}).authenticate)
@@ -161,7 +164,6 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/hook", app.handleGithubEvent)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/runs", app.listRuns)

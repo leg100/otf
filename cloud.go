@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"golang.org/x/oauth2"
 )
@@ -37,16 +38,25 @@ type CloudClient interface {
 	GetRepository(ctx context.Context, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
 	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error
+	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
 }
 
 // CreateWebhookOptions are options for creating a webhook.
 type CreateWebhookOptions struct {
+	// Repository identifier
+	Identifier string
 	// The URL to which events should be sent
 	URL string
 	// Secret key for signing events
 	Secret string
+}
+
+// DeleteWebhookOptions are options for deleting a webhook.
+type DeleteWebhookOptions struct {
 	// Repository identifier
 	Identifier string
+	// Hook ID, uniquely identifying the hook to delete in the repository
+	HookID string
 }
 
 // CloudConfig is configuation for a cloud provider
@@ -79,11 +89,11 @@ func (cfg *CloudConfig) Validate() error {
 
 // UpdateEndpoint updates a cloud's OAuth endpoint to use the configured hostname
 func (cfg *CloudConfig) UpdateEndpoint() (err error) {
-	cfg.Endpoint.AuthURL, err = UpdateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
+	cfg.Endpoint.AuthURL, err = updateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
 	if err != nil {
 		return err
 	}
-	cfg.Endpoint.TokenURL, err = UpdateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
+	cfg.Endpoint.TokenURL, err = updateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
 	if err != nil {
 		return err
 	}
@@ -109,4 +119,16 @@ func (r Repo) ID() string { return r.Identifier }
 type RepoList struct {
 	*Pagination
 	Items []*Repo
+}
+
+// updateHost updates the hostname in a URL
+func updateHost(u, host string) (string, error) {
+	parsed, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+
+	parsed.Host = host
+
+	return parsed.String(), nil
 }

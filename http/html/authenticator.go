@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"golang.org/x/oauth2"
 )
@@ -89,7 +90,7 @@ func (a *Authenticator) oauthCfg(r *http.Request) *oauth2.Config {
 		ClientSecret: a.ClientSecret,
 		Endpoint:     a.Endpoint,
 		Scopes:       a.Scopes,
-		RedirectURL:  otf.Absolute(r, a.callbackPath()),
+		RedirectURL:  otfhttp.Absolute(r, a.callbackPath()),
 	}
 }
 

@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
 )
@@ -447,9 +447,8 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	}
 
 	// create webhook on vcs repo
-	url := url.URL{Scheme: "https", Host: r.Host, Path: webhookPath(workspaceRequest{r})}
 	err = client.CreateWebhook(r.Context(), otf.CreateWebhookOptions{
-		URL:        url.String(),
+		URL:        otfhttp.Absolute(r, webhookPath(workspaceRequest{r})),
 		Secret:     app.secret,
 		Identifier: opts.Identifier,
 	})
@@ -463,6 +462,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		HTTPURL:    opts.HTTPURL,
 		Identifier: opts.Identifier,
 		ProviderID: opts.VCSProviderID,
+		// webhook ID?
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -490,6 +490,7 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 
+// TODO: move into http package
 func (app *Application) handleGithubEvent(w http.ResponseWriter, r *http.Request) {
 	_, err := github.ValidatePayload(r, []byte(app.secret))
 	if err != nil {

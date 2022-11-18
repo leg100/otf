@@ -17,6 +17,31 @@ import (
 // Query schema Encoder, caches structs, and safe for sharing
 var encoder = schema.NewEncoder()
 
+// Absolute returns an absolute URL for the given path. It uses the http request
+// to determine the correct hostname and scheme to use. Handles situations where
+// otf is sitting behind a reverse proxy, using the X-Forwarded-* headers the
+// proxy sets.
+func Absolute(r *http.Request, path string) string {
+	u := url.URL{
+		Host: r.Host,
+		Path: path,
+	}
+
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		u.Scheme = proto
+	} else if r.TLS != nil {
+		u.Scheme = "https"
+	} else {
+		u.Scheme = "http"
+	}
+
+	if host := r.Header.Get("X-Forwarded-Host"); host != "" {
+		u.Host = host
+	}
+
+	return u.String()
+}
+
 // SanitizeHostname ensures hostname is in the format <host>:<port>
 func SanitizeHostname(hostname string) (string, error) {
 	u, err := url.ParseRequestURI(hostname)

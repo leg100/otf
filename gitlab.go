@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/xanzy/go-gitlab"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
@@ -160,7 +161,28 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 	return tarball, nil
 }
 
-// TODO
 func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
+	_, _, err := g.client.Projects.AddProjectHook(opts.Identifier, &gitlab.AddProjectHookOptions{
+		EnableSSLVerification: Bool(true),
+		PushEvents:            Bool(true),
+		Token:                 String(opts.Secret),
+		URL:                   String(opts.URL),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
+	hookID, err := strconv.Atoi(opts.HookID)
+	if err != nil {
+		return err
+	}
+
+	_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, hookID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
