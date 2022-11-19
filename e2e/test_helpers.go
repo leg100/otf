@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var startedServerRegex = regexp.MustCompile(`started server address=.*:(\d+) ssl=true`)
+var startedServerRegex = regexp.MustCompile(`msg="started server" address=.*:(\d+) ssl=true`)
 
 // daemon builds and starts a daemon
 type daemon struct {

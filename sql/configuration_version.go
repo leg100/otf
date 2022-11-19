@@ -90,13 +90,13 @@ func (db *DB) GetConfigurationVersion(ctx context.Context, opts otf.Configuratio
 	if opts.ID != nil {
 		result, err := db.FindConfigurationVersionByID(ctx, String(*opts.ID))
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else if opts.WorkspaceID != nil {
 		result, err := db.FindConfigurationVersionLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
 		if err != nil {
-			return nil, err
+			return nil, databaseError(err)
 		}
 		return otf.UnmarshalConfigurationVersionResult(otf.ConfigurationVersionResult(result))
 	} else {
