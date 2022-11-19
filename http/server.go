@@ -74,6 +74,7 @@ type Server struct {
 	// the http router, exported so that other pkgs can add routes
 	*Router
 	*signer.Signer
+	vcsEventsHandler *otf.VCSEventHandler
 }
 
 // NewServer is the constructor for Server
@@ -106,8 +107,27 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/healthz", GetHealthz)
 
-	// These are signed URLs that expire after a given time. They don't use
-	// bearer authentication.
+	//
+	// VCS event handling
+	//
+	events := make(chan otf.VCSEvent, 100)
+	s.vcsEventsHandler = otf.NewVCSEventHandler(app, logger, events)
+
+	// VCS event webhooks, authenticated using signature in header
+	r.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/hook").Sub(func(hook *Router) {
+		hook.Handle("/github", &GithubEventHandler{
+			secret: cfg.Secret,
+			events: events,
+			Logger: logger,
+		}).Methods("POST")
+		hook.Handle("/gitlab", &GitlabEventHandler{
+			token:  cfg.Secret,
+			events: events,
+			Logger: logger,
+		}).Methods("POST")
+	})
+
+	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
 		signed.Use((&signatureVerifier{s.Signer}).handler)
 
@@ -122,7 +142,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		// Authenticated endpoints
 		api.Sub(func(r *Router) {
-			// Ensure request has valid API token
+			// Ensure request has valid API bearer token
 			r.Use((&authTokenMiddleware{
 				UserService:       app,
 				AgentTokenService: app,
@@ -214,6 +234,9 @@ func (s *Server) Open(ctx context.Context) (err error) {
 	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
 		return err
 	}
+
+	// start handling incoming VCS events
+	go s.vcsEventsHandler.Start(ctx)
 
 	errch := make(chan error)
 

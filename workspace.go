@@ -60,7 +60,7 @@ type Workspace struct {
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
 func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
-func (ws *Workspace) String() string                   { return ws.id }
+func (ws *Workspace) String() string                   { return ws.organization.Name() + "/" + ws.name }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) WorkspaceName() string            { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }

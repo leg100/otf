@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"path"
+
+	"github.com/leg100/otf"
 )
 
 // organizationRoute provides info about a route for an organization resource
@@ -196,8 +198,8 @@ func startRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/start-run", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func webhookPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/hook", ws.OrganizationName(), ws.WorkspaceName())
+func webhookPath(ws workspaceRoute, cloud otf.CloudName) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/hook/%s", ws.OrganizationName(), ws.WorkspaceName(), cloud)
 }
 
 func editWorkspacePath(ws workspaceRoute) string {

@@ -62,3 +62,7 @@ func (f *TestClient) GetRepository(context.Context, string) (*Repo, error) {
 func (f *TestClient) GetRepoTarball(context.Context, *VCSRepo) ([]byte, error) {
 	return nil, nil
 }
+
+func (f *TestClient) CreateWebhook(context.Context, CreateWebhookOptions) error {
+	return nil
+}

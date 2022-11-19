@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/go-github/v41/github"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
@@ -448,7 +447,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 
 	// create webhook on vcs repo
 	err = client.CreateWebhook(r.Context(), otf.CreateWebhookOptions{
-		URL:        otfhttp.Absolute(r, webhookPath(workspaceRequest{r})),
+		URL:        otfhttp.Absolute(r, webhookPath(workspaceRequest{r}, provider.CloudName())),
 		Secret:     app.secret,
 		Identifier: opts.Identifier,
 	})
@@ -488,24 +487,6 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 
 	flashSuccess(w, "disconnected workspace from repo")
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
-}
-
-// TODO: move into http package
-func (app *Application) handleGithubEvent(w http.ResponseWriter, r *http.Request) {
-	_, err := github.ValidatePayload(r, []byte(app.secret))
-	if err != nil {
-		app.Error(err, "received invalid github event payload")
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	event := github.WebHookType(r)
-	if event == "" {
-		app.Error(err, "received invalid github event type")
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-	app.Info("received github event", "event", event)
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {

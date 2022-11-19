@@ -129,6 +129,8 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 		"workspace_name":    {"fake-workspace"},
 		"vcs_provider_id":   {"fake-provider"},
 		"identifier":        {"acme/myrepo"},
+		"http_url":          {"https://fake-cloud/acme/myrepo"},
+		"branch":            {"master"},
 	}.Encode())
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")

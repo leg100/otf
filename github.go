@@ -177,7 +177,6 @@ func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (
 	}, nil
 }
 
-// TODO: take ref
 func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
 	opts := github.RepositoryContentGetOptions{
 		Ref: repo.Branch,

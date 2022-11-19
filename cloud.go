@@ -36,6 +36,9 @@ type CloudClient interface {
 	// TODO: add optional filters
 	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
 	GetRepository(ctx context.Context, identifier string) (*Repo, error)
+	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
+	//
+	// TODO: take ref
 	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
 	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error

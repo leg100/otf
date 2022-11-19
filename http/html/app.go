@@ -103,9 +103,6 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	r.GET("/admin/login", app.adminLoginPromptHandler)
 	r.PST("/admin/login", app.adminLoginHandler)
 
-	// webhooks, authenticated using signature in header
-	r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/hook", app.handleGithubEvent)
-
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
 		r.Use((&authMiddleware{app, app}).authenticate)
