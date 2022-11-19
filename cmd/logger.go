@@ -34,21 +34,24 @@ func NewLoggerConfigFromFlags(flags *pflag.FlagSet) *LoggerConfig {
 }
 
 func NewLogger(cfg *LoggerConfig) (logr.Logger, error) {
+	// disable "v=<log-level>" field on every log line
+	zerologr.VerbosityFieldName = ""
+	// don't display floats for time durations
+	zerolog.DurationFieldInteger = true
+
 	zlvl, err := zerolog.ParseLevel(cfg.level)
 	if err != nil {
 		return logr.Logger{}, err
 	}
 
-	// Setup logger
 	consoleWriter := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: time.RFC3339,
 	}
-	zerolog.DurationFieldInteger = true
-	// assign message string to a logfmt key, for easier/faster parsing by an
-	// upstream log parser, e.g. loki
+	// insert a delimiter, '|', between the message and the logfmt key values,
+	// to aid log parsing
 	consoleWriter.FormatMessage = func(msg interface{}) string {
-		return fmt.Sprintf(`msg="%s"`, msg)
+		return fmt.Sprintf(`%s |`, msg)
 	}
 
 	switch cfg.color {
@@ -65,17 +68,8 @@ func NewLogger(cfg *LoggerConfig) (logr.Logger, error) {
 		return logr.Logger{}, fmt.Errorf("invalid choice for log color: %s. Must be one of auto, true, or false", cfg.color)
 	}
 
-	logger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
-
-	if logger.GetLevel() < zerolog.InfoLevel {
-		// Inform the user that logging lower than INFO threshold has been
-		// enabled
-		logger.WithLevel(logger.GetLevel()).Msg("custom log level enabled")
-	}
-
-	// Disable "v=<log-level>" field on every log line
-	zerologr.VerbosityFieldName = ""
+	zlogger := zerolog.New(consoleWriter).Level(zlvl).With().Timestamp().Logger()
 
 	// wrap within logr wrapper
-	return zerologr.New(&logger), nil
+	return zerologr.New(&zlogger), nil
 }
