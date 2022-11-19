@@ -49,3 +49,27 @@ type ConfigurationVersionCreateOptions struct {
 	// When true, this configuration version can only be used for planning.
 	Speculative *bool `jsonapi:"attr,speculative,omitempty"`
 }
+
+type IngressAttributes struct {
+	ID                string `jsonapi:"primary,ingress-attributes"`
+	Branch            string `jsonapi:"attr,branch"`
+	CloneURL          string `jsonapi:"attr,clone-url"`
+	CommitMessage     string `jsonapi:"attr,commit-message"`
+	CommitSHA         string `jsonapi:"attr,commit-sha"`
+	CommitURL         string `jsonapi:"attr,commit-url"`
+	CompareURL        string `jsonapi:"attr,compare-url"`
+	Identifier        string `jsonapi:"attr,identifier"`
+	IsPullRequest     bool   `jsonapi:"attr,is-pull-request"`
+	OnDefaultBranch   bool   `jsonapi:"attr,on-default-branch"`
+	PullRequestNumber int    `jsonapi:"attr,pull-request-number"`
+	PullRequestURL    string `jsonapi:"attr,pull-request-url"`
+	PullRequestTitle  string `jsonapi:"attr,pull-request-title"`
+	PullRequestBody   string `jsonapi:"attr,pull-request-body"`
+	Tag               string `jsonapi:"attr,tag"`
+	SenderUsername    string `jsonapi:"attr,sender-username"`
+	SenderAvatarURL   string `jsonapi:"attr,sender-avatar-url"`
+	SenderHTMLURL     string `jsonapi:"attr,sender-html-url"`
+
+	// Links
+	Links map[string]interface{} `jsonapi:"links,omitempty"`
+}

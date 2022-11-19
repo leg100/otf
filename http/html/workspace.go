@@ -416,10 +416,6 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		otf.WorkspaceSpec
 		VCSProviderID string `schema:"vcs_provider_id,required"`
 		Identifier    string `schema:"identifier,required"`
-		// HTTPURL is the web url for the repo
-		HTTPURL string `schema:"http_url,required"`
-		// Branch is the default master Branch for a repo
-		Branch string `schema:"branch,required"`
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -440,7 +436,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	}
 
 	// retrieve repo just to confirm the identifier is correct
-	_, err = client.GetRepository(r.Context(), opts.Identifier)
+	repo, err := client.GetRepository(r.Context(), opts.Identifier)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -458,8 +454,8 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	}
 
 	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
-		Branch:     opts.Branch,
-		HTTPURL:    opts.HTTPURL,
+		Branch:     repo.Branch,
+		HTTPURL:    repo.HTTPURL,
 		Identifier: opts.Identifier,
 		ProviderID: opts.VCSProviderID,
 		// webhook ID?
