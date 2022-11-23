@@ -191,8 +191,8 @@ func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, 
 	// 2) lock workspace (if non-speculative)
 	// 3) update run status
 	var run *otf.Run
-	err = a.Tx(ctx, func(tx *Application) (err error) {
-		run, err = tx.db.UpdateStatus(ctx, runID, func(run *otf.Run) error {
+	err = a.Tx(ctx, func(tx otf.Application) (err error) {
+		run, err = tx.DB().UpdateStatus(ctx, runID, func(run *otf.Run) error {
 			return run.EnqueuePlan(ctx, tx)
 		})
 		return err

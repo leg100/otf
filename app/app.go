@@ -24,6 +24,7 @@ type Application struct {
 
 	*otf.RunFactory
 	*otf.WorkspaceFactory
+	*otf.WorkspaceConnector
 	Mapper
 	otf.PubSubService
 	logr.Logger
@@ -32,46 +33,58 @@ type Application struct {
 
 // NewApplication constructs an application, initialising various services and
 // daemons.
-func NewApplication(ctx context.Context, logger logr.Logger, db otf.DB, cache *bigcache.BigCache, pubsub otf.PubSubService) (*Application, error) {
+func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 	app := &Application{
-		PubSubService: pubsub,
-		cache:         cache,
-		db:            db,
-		Logger:        logger,
+		PubSubService: opts.PubSub,
+		cache:         opts.Cache,
+		db:            opts.DB,
+		Logger:        opts.Logger,
 	}
-	app.Authorizer = &authorizer{db, logger}
+	app.Authorizer = &authorizer{opts.DB, opts.Logger}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{
 		WorkspaceService:            app,
 		ConfigurationVersionService: app,
+	}
+	app.WorkspaceConnector = &otf.WorkspaceConnector{
+		Application: app,
 	}
 
 	// Setup ID mapper and start
 	mapper := inmem.NewMapper(app)
 	go func() {
 		if err := mapper.Start(ctx); ctx.Err() == nil {
-			logger.Error(err, "mapper unexpectedly terminated")
+			app.Error(err, "mapper unexpectedly terminated")
 		}
 	}()
 	app.Mapper = mapper
 
-	proxy, err := inmem.NewChunkProxy(app, logger, cache, db)
+	proxy, err := inmem.NewChunkProxy(app, opts.Logger, opts.Cache, opts.DB)
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
 	}
 	app.proxy = proxy
 	go func() {
 		if err := proxy.Start(ctx); ctx.Err() == nil {
-			logger.Error(err, "proxy unexpectedly terminated")
+			app.Error(err, "proxy unexpectedly terminated")
 		}
 	}()
 
 	return app, nil
 }
 
+type Options struct {
+	Logger logr.Logger
+	DB     otf.DB
+	Cache  *bigcache.BigCache
+	PubSub otf.PubSubService
+}
+
+func (a *Application) DB() otf.DB { return a.db }
+
 // Tx provides a callback in which all db interactions are wrapped within a
 // transaction. Useful for ensuring multiple service calls succeed together.
-func (a *Application) Tx(ctx context.Context, tx func(a *Application) error) error {
+func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) error {
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		// make a copy of the app and assign a db tx wrapper
 		appTx := &Application{

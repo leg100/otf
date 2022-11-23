@@ -178,8 +178,8 @@ func (a *Authenticator) handleResponse(r *http.Request) (*oauth2.Token, error) {
 }
 
 func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient) (*otf.User, error) {
-	// service calls are made using the privileged app user
-	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
+	// give authenticator unlimited access to services
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "authenticator"})
 
 	// Get cloud user
 	cuser, err := client.GetUser(ctx)

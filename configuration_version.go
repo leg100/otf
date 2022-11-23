@@ -22,14 +22,15 @@ const (
 // Terraform configuration in  A workspace must have at least one configuration
 // version before any runs may be queued on it.
 type ConfigurationVersion struct {
-	id               string
-	createdAt        time.Time
-	autoQueueRuns    bool
-	source           ConfigurationSource
-	speculative      bool
-	status           ConfigurationStatus
-	statusTimestamps []ConfigurationVersionStatusTimestamp
-	workspaceID      string
+	id                string
+	createdAt         time.Time
+	autoQueueRuns     bool
+	source            ConfigurationSource
+	speculative       bool
+	status            ConfigurationStatus
+	statusTimestamps  []ConfigurationVersionStatusTimestamp
+	workspaceID       string
+	ingressAttributes *IngressAttributes
 }
 
 func (cv *ConfigurationVersion) ID() string                  { return cv.id }
@@ -42,6 +43,7 @@ func (cv *ConfigurationVersion) Status() ConfigurationStatus { return cv.status 
 func (cv *ConfigurationVersion) StatusTimestamps() []ConfigurationVersionStatusTimestamp {
 	return cv.statusTimestamps
 }
+func (cv *ConfigurationVersion) IngressAttributes() *IngressAttributes { return cv.ingressAttributes }
 
 func (cv *ConfigurationVersion) StatusTimestamp(status ConfigurationStatus) (time.Time, error) {
 	for _, sts := range cv.statusTimestamps {
@@ -110,6 +112,28 @@ type ConfigurationVersionStatusTimestamp struct {
 type ConfigurationVersionCreateOptions struct {
 	AutoQueueRuns *bool
 	Speculative   *bool
+	*IngressAttributes
+}
+
+type IngressAttributes struct {
+	// ID     string
+	Branch string
+	// CloneURL          string
+	// CommitMessage     string
+	CommitSHA string
+	// CommitURL         string
+	// CompareURL        string
+	Identifier      string
+	IsPullRequest   bool
+	OnDefaultBranch bool
+	// PullRequestNumber int
+	// PullRequestURL    string
+	// PullRequestTitle  string
+	// PullRequestBody   string
+	// Tag               string
+	// SenderUsername    string
+	// SenderAvatarURL   string
+	// SenderHTMLURL     string
 }
 
 type ConfigurationVersionService interface {
@@ -191,6 +215,9 @@ func NewConfigurationVersion(workspaceID string, opts ConfigurationVersionCreate
 	}
 	if opts.Speculative != nil {
 		cv.speculative = *opts.Speculative
+	}
+	if opts.IngressAttributes != nil {
+		cv.ingressAttributes = opts.IngressAttributes
 	}
 	return &cv, nil
 }

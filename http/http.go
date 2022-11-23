@@ -23,7 +23,7 @@ var encoder = schema.NewEncoder()
 // proxy sets.
 func Absolute(r *http.Request, path string) string {
 	u := url.URL{
-		Host: r.Host,
+		Host: ExternalHost(r),
 		Path: path,
 	}
 
@@ -35,11 +35,16 @@ func Absolute(r *http.Request, path string) string {
 		u.Scheme = "http"
 	}
 
-	if host := r.Header.Get("X-Forwarded-Host"); host != "" {
-		u.Host = host
-	}
-
 	return u.String()
+}
+
+// ExternalHost uses the incoming HTTP request to determine the host:port on
+// which this server can be reached externally by clients and the internet.
+func ExternalHost(r *http.Request) string {
+	if host := r.Header.Get("X-Forwarded-Host"); host != "" {
+		return host
+	}
+	return r.Host
 }
 
 // SanitizeHostname ensures hostname is in the format <host>:<port>

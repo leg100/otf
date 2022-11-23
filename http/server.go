@@ -74,7 +74,7 @@ type Server struct {
 	// the http router, exported so that other pkgs can add routes
 	*Router
 	*signer.Signer
-	vcsEventsHandler *otf.VCSEventHandler
+	vcsEventsHandler *otf.Triggerer
 }
 
 // NewServer is the constructor for Server
@@ -111,21 +111,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// VCS event handling
 	//
 	events := make(chan otf.VCSEvent, 100)
-	s.vcsEventsHandler = otf.NewVCSEventHandler(app, logger, events)
+	s.vcsEventsHandler = otf.NewTriggerer(app, logger, events)
 
 	// VCS event webhooks, authenticated using signature in header
-	r.PathPrefix("/organizations/{organization_name}/workspaces/{workspace_name}/hook").Sub(func(hook *Router) {
-		hook.Handle("/github", &GithubEventHandler{
-			secret: cfg.Secret,
-			events: events,
-			Logger: logger,
-		}).Methods("POST")
-		hook.Handle("/gitlab", &GitlabEventHandler{
-			token:  cfg.Secret,
-			events: events,
-			Logger: logger,
-		}).Methods("POST")
-	})
+	r.Handle(otf.GithubEventPathPrefix, &otf.GithubEventHandler{
+		Events:              events,
+		Logger:              logger,
+		WebhookSecretGetter: app.DB(),
+	}).Methods("POST")
 
 	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {

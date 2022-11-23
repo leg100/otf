@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
@@ -37,21 +38,26 @@ type CloudClient interface {
 	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
 	GetRepository(ctx context.Context, identifier string) (*Repo, error)
 	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
-	//
-	// TODO: take ref
-	GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error)
-	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error
+	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
+	// CreateWebhook creates a webhook on the cloud provider, subscribing to
+	// VCS events to trigger runs. The implementation should handle creating the
+	// hook idempotently, gracefully handling existing hooks and upgrading hooks
+	// where there is a config change.
+	CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
+	SetStatus(ctx context.Context, opts SetStatusOptions) error
 }
 
-// CreateWebhookOptions are options for creating a webhook.
-type CreateWebhookOptions struct {
-	// Repository identifier
-	Identifier string
-	// The URL to which events should be sent
-	URL string
-	// Secret key for signing events
-	Secret string
+type CreateCloudWebhookOptions struct {
+	Identifier string    // repo identifier, <owner>/<repo>
+	Secret     string    // secret string for generating signature
+	Host       string    // external-facing host[:port]
+	WebhookID  uuid.UUID // unique id for webhook
+}
+
+type GetRepoTarballOptions struct {
+	Identifier string // repo identifier, <owner>/<repo>
+	Ref        string // branch/tag/SHA ref
 }
 
 // DeleteWebhookOptions are options for deleting a webhook.
@@ -61,6 +67,26 @@ type DeleteWebhookOptions struct {
 	// Hook ID, uniquely identifying the hook to delete in the repository
 	HookID string
 }
+
+// SetStatusOptions are options for setting a status on a VCS repo
+type SetStatusOptions struct {
+	Workspace   string
+	Identifier  string // <owner>/<repo>
+	Ref         string // git ref
+	Status      VCSStatus
+	TargetURL   string
+	Description string
+}
+
+type VCSStatus string
+
+const (
+	VCSPendingStatus VCSStatus = "pending"
+	VCSRunningStatus VCSStatus = "running"
+	VCSSuccessStatus VCSStatus = "success"
+	VCSErrorStatus   VCSStatus = "error"
+	VCSFailureStatus VCSStatus = "failure"
+)
 
 // CloudConfig is configuation for a cloud provider
 type CloudConfig struct {

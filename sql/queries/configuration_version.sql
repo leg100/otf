@@ -46,9 +46,11 @@ SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE workspaces.workspace_id = pggen.arg('workspace_id')
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset');
@@ -75,9 +77,11 @@ SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE configuration_version_id = pggen.arg('configuration_version_id');
 
 -- name: FindConfigurationVersionLatestByWorkspaceID :one
@@ -94,9 +98,11 @@ SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE workspace_id = pggen.arg('workspace_id')
 ORDER BY configuration_versions.created_at DESC;
 
@@ -114,11 +120,13 @@ SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE configuration_version_id = pggen.arg('configuration_version_id')
-FOR UPDATE;
+FOR UPDATE OF configuration_versions;
 
 -- DownloadConfigurationVersion gets a configuration_version config
 -- tarball.

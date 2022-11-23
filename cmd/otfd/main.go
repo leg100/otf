@@ -25,9 +25,6 @@ const (
 	DefaultDataDir  = "~/.otf-data"
 )
 
-// dbConnStr is the postgres connection string
-var dbConnStr string
-
 func main() {
 	// Configure ^C to terminate program
 	ctx, cancel := context.WithCancel(context.Background())
@@ -52,8 +49,10 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	cmd.SetOut(out)
 
 	var help, version bool
+	var dbConnStr, hostname string
 
 	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
+	cmd.Flags().StringVar(&hostname, "hostname", "localhost", "Hostname via which otfd is accessed")
 	cmd.Flags().BoolVarP(&version, "version", "v", false, "Print version of otfd")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 
@@ -109,10 +108,10 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// all
 	g, ctx := errgroup.WithContext(ctx)
 
-	// create context for local agent, in order to identify all calls it makes
-	agentCtx := otf.AddSubjectToContext(ctx, &otf.LocalAgent{})
-	// all other calls to services are made as the privileged app user
-	ctx = otf.AddSubjectToContext(ctx, &otf.AppUser{})
+	// give local agent unlimited access to services
+	agentCtx := otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "local-agent"})
+	// give other components unlimited access too
+	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
 
 	// Setup database(s)
 	db, err := sql.New(ctx, logger, dbConnStr, cache, sql.DefaultSessionCleanupInterval)
@@ -128,7 +127,13 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	}
 
 	// Setup application services
-	app, err := app.NewApplication(ctx, logger, db, cache, pubsub)
+	app, err := app.NewApplication(ctx, app.Options{
+		Logger: logger,
+		DB:     db,
+		Cache:  cache,
+		PubSub: pubsub,
+		Host:   hostname,
+	})
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
 	}
@@ -139,6 +144,12 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// this'll wait until the other scheduler exits.
 	g.Go(func() error {
 		return otf.ExclusiveScheduler(ctx, logger, app)
+	})
+
+	// Run PR reporter - if there is another reporter running already then
+	// this'll wait until the other reporter exits.
+	g.Go(func() error {
+		return otf.ExclusiveReporter(ctx, logger, hostname, app)
 	})
 
 	// Run local agent in background

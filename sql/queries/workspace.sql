@@ -53,12 +53,13 @@ SELECT
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"vcs_repos" AS vcs_repo
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND   o.name LIKE ANY(pggen.arg('organization_names'))
 ORDER BY w.updated_at DESC
@@ -74,19 +75,40 @@ WHERE w.name LIKE pggen.arg('prefix') || '%'
 AND   o.name LIKE ANY(pggen.arg('organization_names'))
 ;
 
+-- name: FindWorkspacesByWebhookID :many
+SELECT
+    w.*,
+    (o.*)::"organizations" AS organization,
+    (ul.*)::"users" AS user_lock,
+    (rl.*)::"runs" AS run_lock,
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
+FROM workspaces w
+JOIN organizations o USING (organization_id)
+JOIN workspace_permissions p USING (workspace_id)
+LEFT JOIN users ul ON w.lock_user_id = ul.user_id
+LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
+JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
+JOIN teams t USING (team_id)
+JOIN team_memberships tm USING (team_id)
+JOIN users u ON tm.user_id = u.user_id
+WHERE h.webhook_id = pggen.arg('webhook_id')
+;
+
 -- name: FindWorkspacesByUserID :many
 SELECT
     w.*,
     (o.*)::"organizations" AS organization,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
-    (vr.*)::"vcs_repos" AS vcs_repo
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
-LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.user_id = u.user_id
@@ -142,12 +164,13 @@ SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"vcs_repos" AS vcs_repo
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.name = pggen.arg('name')
 AND   o.name = pggen.arg('organization_name')
 ;
@@ -157,12 +180,13 @@ SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"vcs_repos" AS vcs_repo
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = pggen.arg('id')
 ;
 
@@ -171,12 +195,13 @@ SELECT w.*,
     (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
-    (vr.*)::"vcs_repos" AS vcs_repo
+    (vr.*)::"workspace_repos" AS workspace_repo,
+    (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
-LEFT JOIN vcs_repos vr ON w.workspace_id = vr.workspace_id
+LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
 WHERE w.workspace_id = pggen.arg('id')
 FOR UPDATE OF w;
 

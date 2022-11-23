@@ -381,22 +381,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, opts.OrganizationName)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// TODO(@leg100): how come this succeeds for gitlab when we're passing in a personal
-	// access token and not an oauth token? On github, the two are the same
-	// (AFAIK) so it makes sense that that works...
-	client, err := provider.NewClient(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	repos, err := client.ListRepositories(r.Context(), opts.ListOptions)
+	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, opts.ListOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -414,8 +399,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
 	type options struct {
 		otf.WorkspaceSpec
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Identifier    string `schema:"identifier,required"`
+		otf.ConnectWorkspaceOptions
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -423,43 +407,10 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, *opts.OrganizationName)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// extract externally-accessible host from request
+	opts.Host = otfhttp.ExternalHost(r)
 
-	client, err := provider.NewClient(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// retrieve repo just to confirm the identifier is correct
-	repo, err := client.GetRepository(r.Context(), opts.Identifier)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// create webhook on vcs repo
-	err = client.CreateWebhook(r.Context(), otf.CreateWebhookOptions{
-		URL:        otfhttp.Absolute(r, webhookPath(workspaceRequest{r}, provider.CloudName())),
-		Secret:     app.secret,
-		Identifier: opts.Identifier,
-	})
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
-		Branch:     repo.Branch,
-		HTTPURL:    repo.HTTPURL,
-		Identifier: opts.Identifier,
-		ProviderID: opts.VCSProviderID,
-		// webhook ID?
-	})
+	ws, err := app.ConnectWorkspace(r.Context(), opts.WorkspaceSpec, opts.ConnectWorkspaceOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -476,7 +427,7 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ws, err := app.DisconnectWorkspaceRepo(r.Context(), spec)
+	ws, err := app.DisconnectWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -529,15 +480,7 @@ func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, 
 		Speculative: otf.Bool(speculative),
 	}
 	if ws.VCSRepo() != nil {
-		provider, err := app.GetVCSProvider(ctx, ws.VCSRepo().ProviderID, ws.OrganizationName())
-		if err != nil {
-			return nil, err
-		}
-		client, err := provider.NewClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		tarball, err := client.GetRepoTarball(ctx, ws.VCSRepo())
+		tarball, err := app.GetRepoTarball(ctx, ws.VCSRepo().ProviderID, ws.VCSRepo())
 		if err != nil {
 			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
 		}

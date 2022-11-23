@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/xanzy/go-gitlab"
 )
@@ -54,10 +53,8 @@ func (h *GitlabEventHandler) handle(r *http.Request) error {
 	}
 
 	h.events <- otf.VCSEvent{
-		OrganizationName: mux.Vars(r)["organization_name"],
-		WorkspaceName:    mux.Vars(r)["workspace_name"],
-		Identifier:       push.Project.PathWithNamespace,
-		Branch:           refParts[2],
+		Identifier: push.Project.PathWithNamespace,
+		Branch:     refParts[2],
 	}
 
 	return nil

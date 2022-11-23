@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/leg100/otf"
@@ -74,14 +75,14 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 	return ws, err
 }
 
-func (db *DB) ConnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+func (db *DB) CreateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
 	workspaceID, err := db.getWorkspaceID(ctx, spec)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	_, err = db.InsertVCSRepo(ctx, pggen.InsertVCSRepoParams{
-		Identifier:    String(repo.Identifier),
+	_, err = db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
 		Branch:        String(repo.Branch),
+		WebhookID:     UUID(repo.WebhookID),
 		VCSProviderID: String(repo.ProviderID),
 		WorkspaceID:   workspaceID,
 	})
@@ -92,16 +93,12 @@ func (db *DB) ConnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, 
 	return ws, databaseError(err)
 }
 
-func (db *DB) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.VCSRepo) (*otf.Workspace, error) {
+func (db *DB) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
 	workspaceID, err := db.getWorkspaceID(ctx, spec)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	_, err = db.UpdateVCSRepo(ctx, pggen.UpdateVCSRepoParams{
-		Identifier:    String(repo.Identifier),
-		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   workspaceID,
-	})
+	_, err = db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), workspaceID)
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -109,12 +106,12 @@ func (db *DB) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, r
 	return ws, databaseError(err)
 }
 
-func (db *DB) DisconnectWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (db *DB) DeleteWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	id, err := db.getWorkspaceID(ctx, spec)
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	_, err = db.DeleteVCSRepo(ctx, id)
+	_, err = db.Querier.DeleteWorkspaceRepo(ctx, id)
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -243,6 +240,24 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 		Items:      items,
 		Pagination: otf.NewPagination(opts.ListOptions, *count),
 	}, nil
+}
+
+func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id string) ([]*otf.Workspace, error) {
+	rows, err := db.FindWorkspacesByWebhookID(ctx, UUID(uuid.MustParse(id)))
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Workspace
+	for _, r := range rows {
+		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(r))
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, ws)
+	}
+
+	return items, nil
 }
 
 func (db *DB) ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts otf.ListOptions) (*otf.WorkspaceList, error) {

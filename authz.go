@@ -10,11 +10,12 @@ type subjectCtxKeyType string
 
 const subjectCtxKey subjectCtxKeyType = "subject"
 
-// Subject is an entity attempting to carry out an action on a resource.
+// Subject is an entity that carries out actions on resources.
 type Subject interface {
 	CanAccessSite(action Action) bool
 	CanAccessOrganization(action Action, name string) bool
 	CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool
+
 	Identity
 }
 
@@ -84,12 +85,13 @@ func LockFromContext(ctx context.Context) (WorkspaceLockState, error) {
 	return lock, nil
 }
 
-// AllowAllSubject is a subject with unlimited privileges. Only to be used for
-// by-passing authz in tests.
-type AllowAllSubject struct{}
+// Superuser is a subject with unlimited privileges.
+type Superuser struct {
+	Username string
+}
 
-func (*AllowAllSubject) CanAccessSite(action Action) bool                 { return true }
-func (*AllowAllSubject) CanAccessOrganization(Action, string) bool        { return true }
-func (*AllowAllSubject) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
-func (*AllowAllSubject) String() string                                   { return "allow-all" }
-func (*AllowAllSubject) ID() string                                       { return "allow-all" }
+func (*Superuser) CanAccessSite(action Action) bool                 { return true }
+func (*Superuser) CanAccessOrganization(Action, string) bool        { return true }
+func (*Superuser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
+func (s *Superuser) String() string                                 { return s.Username }
+func (s *Superuser) ID() string                                     { return s.Username }

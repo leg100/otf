@@ -59,10 +59,10 @@ func (f *TestClient) GetRepository(context.Context, string) (*Repo, error) {
 	return f.Repos[0], nil
 }
 
-func (f *TestClient) GetRepoTarball(context.Context, *VCSRepo) ([]byte, error) {
+func (f *TestClient) GetRepoTarball(context.Context, GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
 }
 
-func (f *TestClient) CreateWebhook(context.Context, CreateWebhookOptions) error {
+func (f *TestClient) CreateWebhook(context.Context, CreateCloudWebhookOptions) error {
 	return nil
 }

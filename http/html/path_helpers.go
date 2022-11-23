@@ -238,8 +238,8 @@ func newRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func getRunPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func getRunPath(run otf.RunResource) string {
+	return otf.RunGetPathUI(run)
 }
 
 func watchWorkspacePath(ws workspaceRoute) string {

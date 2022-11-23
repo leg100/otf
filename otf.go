@@ -7,6 +7,7 @@ import (
 	"context"
 	crypto "crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"math/rand"
 	"os"
 	"regexp"
@@ -32,6 +33,9 @@ var reSemanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
 // Application provides access to the otf application services
 type Application interface {
+	// Tx provides a transaction within which to operate on the store.
+	Tx(ctx context.Context, tx func(Application) error) error
+	DB() DB
 	OrganizationService
 	WorkspaceService
 	StateVersionService
@@ -72,6 +76,7 @@ type DB interface {
 	ChunkStore
 	AgentTokenStore
 	VCSProviderStore
+	WebhookStore
 }
 
 // Identity is an identifiable otf entity.
@@ -143,6 +148,13 @@ func (r ResourceReport) HasChanges() bool {
 	return false
 }
 
+func (r ResourceReport) String() string {
+	// \u2212 is a proper minus sign; an ascii hyphen is too narrow (in the
+	// default github font at least) and looks incongruous alongside
+	// the wider '+' and '~' characters.
+	return fmt.Sprintf("+%d/~%d/\u2212%d", r.Additions, r.Changes, r.Destructions)
+}
+
 // ValidStringID checks if the given string pointer is non-nil and
 // contains a typical string identifier.
 func ValidStringID(v *string) bool {
@@ -207,14 +219,3 @@ func Exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
-
-// AppUser identifies the otf app itself for purposes of authentication. Some
-// processes require more privileged access than the invoking user possesses, so
-// it is necessary to escalate privileges by "sudo'ing" to this user.
-type AppUser struct{}
-
-func (*AppUser) CanAccessSite(action Action) bool                 { return true }
-func (*AppUser) CanAccessOrganization(Action, string) bool        { return true }
-func (*AppUser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
-func (*AppUser) String() string                                   { return "app-user" }
-func (*AppUser) ID() string                                       { return "app-user" }

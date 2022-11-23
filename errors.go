@@ -24,6 +24,11 @@ var (
 
 	// ErrInvalidName is returned when the name option has invalid value.
 	ErrInvalidName = errors.New("invalid value for name")
+
+	// ErrResourceReferenceViolation is returned when attempting to delete or
+	// update a resource that is referenced by another resource and the
+	// delete/update would orphan the reference.
+	ErrResourceReferenceViolation = errors.New("resource is referenced by another resource")
 )
 
 // Resource Errors

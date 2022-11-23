@@ -150,9 +150,10 @@ func (g *GitlabClient) ListRepositories(ctx context.Context, lopts ListOptions) 
 	}, nil
 }
 
-func (g *GitlabClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
-	tarball, _, err := g.client.Repositories.Archive(repo.Identifier, &gitlab.ArchiveOptions{
+func (g *GitlabClient) GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error) {
+	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
 		Format: String("tar.gz"),
+		SHA:    String(opts.Ref),
 	})
 	if err != nil {
 		return nil, err
@@ -161,12 +162,12 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 	return tarball, nil
 }
 
-func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
+func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error {
 	_, _, err := g.client.Projects.AddProjectHook(opts.Identifier, &gitlab.AddProjectHookOptions{
 		EnableSSLVerification: Bool(true),
 		PushEvents:            Bool(true),
 		Token:                 String(opts.Secret),
-		URL:                   String(opts.URL),
+		URL:                   String(opts.Host),
 	})
 	if err != nil {
 		return err
@@ -184,5 +185,10 @@ func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// TODO: implement
+func (g *GitlabClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {
 	return nil
 }

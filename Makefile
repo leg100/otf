@@ -93,6 +93,7 @@ sql:
 		--acronym sha \
 		--acronym json \
 		--acronym vcs \
+		--acronym http \
 		--acronym tls
 	goimports -w ./sql/pggen
 	go fmt ./sql/pggen

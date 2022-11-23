@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/leg100/otf"
@@ -15,6 +16,11 @@ import (
 // String converts a go-string into a postgres non-null string
 func String(s string) pgtype.Text {
 	return pgtype.Text{String: s, Status: pgtype.Present}
+}
+
+// UUID converts a google-go-uuid into a postgres non-null UUID
+func UUID(s uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{Bytes: s, Status: pgtype.Present}
 }
 
 // Timestamptz converts a go-time into a postgres non-null timestamptz
@@ -29,6 +35,8 @@ func databaseError(err error) error {
 		return otf.ErrResourceNotFound
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
+		case "23503": // foreign key violation
+			return otf.ErrResourceReferenceViolation
 		case "23505": // unique violation
 			return otf.ErrResourceAlreadyExists
 		}

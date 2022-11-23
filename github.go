@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -177,11 +178,16 @@ func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (
 	}, nil
 }
 
-func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byte, error) {
-	opts := github.RepositoryContentGetOptions{
-		Ref: repo.Branch,
+func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballOptions) ([]byte, error) {
+	owner, name, found := strings.Cut(topts.Identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", topts.Identifier)
 	}
-	link, _, err := g.client.Repositories.GetArchiveLink(ctx, repo.Owner(), repo.Repo(), github.Tarball, &opts, true)
+
+	opts := github.RepositoryContentGetOptions{
+		Ref: topts.Ref,
+	}
+	link, _, err := g.client.Repositories.GetArchiveLink(ctx, owner, name, github.Tarball, &opts, true)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +202,7 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
 	// so we untar it to a temp dir, then tar it up the contents of the parent
 	// directory.
-	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", repo.Owner(), repo.Repo()))
+	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", owner, name))
 	if err != nil {
 		return nil, err
 	}
@@ -214,37 +220,46 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, repo *VCSRepo) ([]byt
 	return Pack(parentDir)
 }
 
-// CreateWebhook creates a webhook on the github repository, subscribing the
-// workspace to certain github events so that runs can be triggered.
-func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
+// CreateWebhook creates a webhook on the github repository, subscribing
+// to certain github events so that runs can be triggered. If a hook with a
+// matching URL already exists then no action is taken.
+//
+// TODO: paginate through results of existing hooks
+// TODO: update hook if already exists but has different config - inevitably we
+// will implement this only if we decide to make a change to hook
+// configuration e.g. the type of events to subscribe to
+func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
 	}
-	_, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
-		Name: String("web"),
-		// default is [push]
-		Events: []string{"push"},
-		Config: map[string]any{
-			"url": opts.URL,
-			// For now use global secret as key that github takes, stores, and uses to
-			// generate HMAC hex digest signature value. This isn't ideal
-			// because 1) github have it and we don't trust 'em 2) if otf admin
-			// changes secret then they'll have to re-create all webhooks.
-			// TODO: create a secret for each webhook, and persist. On every
-			// incoming event, lookup secret corresponding to org/workspace and
-			// verify signature. We would progress to using a cache to make this
-			// lookup efficient.
-			"secret": opts.Secret,
-			// default is form
-			"content_type": "form",
-		},
-		Active: Bool(true),
-	})
+
+	endpoint := (&url.URL{
+		Scheme: "https",
+		Host:   opts.Host,
+		Path:   path.Join(GithubEventPathPrefix, opts.WebhookID.String()),
+	}).String()
+
+	hooks, _, err := g.client.Repositories.ListHooks(ctx, owner, name, nil)
 	if err != nil {
 		return err
 	}
-	return nil
+	for _, h := range hooks {
+		if h.GetURL() == endpoint {
+			// Skip creating hook.
+			return nil
+		}
+	}
+
+	_, _, err = g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
+		Events: []string{"push", "pull_request"},
+		Config: map[string]any{
+			"url":    endpoint,
+			"secret": opts.Secret,
+		},
+		Active: Bool(true),
+	})
+	return err
 }
 
 func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
@@ -261,4 +276,33 @@ func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 		return err
 	}
 	return nil
+}
+
+func (g *GithubClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
+	var status string
+	switch opts.Status {
+	case VCSPendingStatus, VCSRunningStatus:
+		status = "pending"
+	case VCSSuccessStatus:
+		status = "success"
+	case VCSErrorStatus:
+		status = "error"
+	case VCSFailureStatus:
+		status = "failure"
+	default:
+		return fmt.Errorf("invalid vcs status: %s", opts.Status)
+	}
+
+	_, _, err := g.client.Repositories.CreateStatus(ctx, owner, name, opts.Ref, &github.RepoStatus{
+		Context:     String(fmt.Sprintf("otf/%s", opts.Workspace)),
+		TargetURL:   String(opts.TargetURL),
+		Description: String(opts.Description),
+		State:       String(status),
+	})
+	return err
 }

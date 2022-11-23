@@ -62,11 +62,8 @@ func NewTestVCSProvider(t *testing.T, organization *Organization, cloud Cloud) *
 	return provider
 }
 
-func NewTestVCSRepo(provider *VCSProvider) *VCSRepo {
-	identifier := uuid.NewString()
-	return &VCSRepo{
-		Identifier: identifier,
-		HTTPURL:    "http://fake-cloud.org/" + identifier,
+func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
+	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
 	}

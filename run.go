@@ -336,6 +336,8 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 }
 
 // IncludeWorkspace adds a workspace for inclusion in the run's JSON-API object.
+//
+// TODO: remove; instead retrieve JSON-API inclusions in the http pkg
 func (r *Run) IncludeWorkspace(ws *Workspace) {
 	r.workspace = ws
 }
@@ -781,6 +783,8 @@ type RunListOptions struct {
 }
 
 // LogFields provides fields for logging
+//
+// TODO: use logr marshaller instead
 func (opts RunListOptions) LogFields() (fields []interface{}) {
 	if opts.WorkspaceID != nil {
 		fields = append(fields, "workspace_id", *opts.WorkspaceID)
@@ -804,4 +808,19 @@ func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 		}
 	}
 	return false
+}
+
+// A RunResource provides sufficient information to retrieve a run via the Web UI
+type RunResource interface {
+	// ID of run
+	RunID() string
+	// Name of run's workspace
+	WorkspaceName() string
+	// Name of run's organization
+	OrganizationName() string
+}
+
+// RunGetPathUI returns the URL path for retrieving a run via the Web UI
+func RunGetPathUI(run RunResource) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }

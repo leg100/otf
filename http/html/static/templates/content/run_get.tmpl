@@ -1,35 +1,34 @@
 {{ template "layout" . }}
 
-{{ define "title" }}{{ .Content.Run.ID }}{{ end }}
+{{ define "title" }}{{ .Content.ID }}{{ end }}
 
 {{ define "stylesheet" }}
   <link rel="stylesheet" href="{{ addHash "/static/css/terminal.css" }}">
 {{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content.Run }}">workspaces</a>
+  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content.Run }}">{{ .Content.Run.WorkspaceName }}</a>
+  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
   /
-  <a href="{{ listRunPath .Content.Run }}">runs</a>
+  <a href="{{ listRunPath .Content }}">runs</a>
   /
-  {{ .Content.Run.ID }}
+  {{ .Content.ID }}
 {{ end }}
 
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchRunUpdates({{ watchWorkspacePath .Content.Run }}, {{ randAlphaNum 6 }}, {{ .Content.Run.ID }});
+      watchRunUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }}, {{ .Content.ID }});
     });
   </script>
   <div id="run-status">
-    {{ template "run-status" .Content.Run }}
+    {{ template "run-item" .Content }}
   </div>
-  {{ template "identifier" .Content.Run }}
   <div id="plan" class="item">
     <div class="item-heading">
       <span class="inline-heading">plan</span>
-      {{ template "phase-status" .Content.Run.Plan }}
+      {{ template "phase-status" .Content.Plan }}
     </div>
     <div>
       <div class="term-container">
@@ -39,26 +38,26 @@
   <div id="apply" class="item">
     <div class="item-heading">
       <span class="inline-heading">apply</span>
-      {{ template "phase-status" .Content.Run.Apply }}
+      {{ template "phase-status" .Content.Apply }}
     </div>
     <div class="term-container">
       {{- trimHTML .Content.ApplyLogs.ToHTML }}<div id="tailed-apply-logs"></div></div>
   </div>
   {{ if not .Content.PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content.Run }}, 'plan', {{ .Content.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content }}, 'plan', {{ .Content.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
   {{ if not .Content.ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content.Run }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
-  <div id="run-confirm-container" style="{{ if ne .Content.Run.Status "planned" }}display: none;{{ end }}">
-    <form action="{{ applyRunPath .Content.Run }}" method="POST">
+  <div id="run-confirm-container" style="{{ if ne .Content.Status "planned" }}display: none;{{ end }}">
+    <form action="{{ applyRunPath .Content }}" method="POST">
       <button>Confirm & Apply</button>
     </form>
-    <form action="{{ discardRunPath .Content.Run }}" method="POST">
+    <form action="{{ discardRunPath .Content }}" method="POST">
       <button>Discard Run</button>
     </form>
   </div>
