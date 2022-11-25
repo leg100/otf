@@ -54,7 +54,19 @@ func (a *Application) ListRepositories(ctx context.Context, providerID string, o
 	return client.ListRepositories(ctx, opts)
 }
 
-func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts otf.CreateCloudWebhookOptions) error {
+func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts otf.CreateWebhookOptions) (string, error) {
+	provider, err := a.db.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return "", err
+	}
+	client, err := provider.NewClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	return client.CreateWebhook(ctx, opts)
+}
+
+func (a *Application) UpdateWebhook(ctx context.Context, providerID string, opts otf.UpdateWebhookOptions) error {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return err
@@ -63,5 +75,29 @@ func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts
 	if err != nil {
 		return err
 	}
-	return client.CreateWebhook(ctx, opts)
+	return client.UpdateWebhook(ctx, opts)
+}
+
+func (a *Application) GetWebhook(ctx context.Context, providerID string, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
+	provider, err := a.db.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	client, err := provider.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetWebhook(ctx, opts)
+}
+
+func (a *Application) DeleteWebhook(ctx context.Context, providerID string, opts otf.DeleteWebhookOptions) error {
+	provider, err := a.db.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return err
+	}
+	client, err := provider.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	return client.DeleteWebhook(ctx, opts)
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"strconv"
+	"path"
 
 	"github.com/xanzy/go-gitlab"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
@@ -162,7 +162,7 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, opts GetRepoTarballOp
 	return tarball, nil
 }
 
-func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error {
+func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
 	_, _, err := g.client.Projects.AddProjectHook(opts.Identifier, &gitlab.AddProjectHookOptions{
 		EnableSSLVerification: Bool(true),
 		PushEvents:            Bool(true),
@@ -176,15 +176,26 @@ func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateCloudWebhoo
 }
 
 func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
-	hookID, err := strconv.Atoi(opts.HookID)
+	endpoint := (&url.URL{
+		Scheme: "https",
+		Host:   opts.Host,
+		Path:   path.Join(GithubEventPathPrefix, opts.WebhookID.String()),
+	}).String()
+
+	hooks, _, err := g.client.Projects.ListProjectHooks(opts.Identifier, nil)
 	if err != nil {
 		return err
+	}
+	for _, h := range hooks {
+		if h.URL == endpoint {
+			_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, h.ID)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
 
-	_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, hookID)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

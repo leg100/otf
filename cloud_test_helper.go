@@ -63,6 +63,6 @@ func (f *TestClient) GetRepoTarball(context.Context, GetRepoTarballOptions) ([]b
 	return nil, nil
 }
 
-func (f *TestClient) CreateWebhook(context.Context, CreateCloudWebhookOptions) error {
+func (f *TestClient) CreateWebhook(context.Context, CreateWebhookOptions) error {
 	return nil
 }

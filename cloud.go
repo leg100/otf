@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
@@ -39,20 +38,23 @@ type CloudClient interface {
 	GetRepository(ctx context.Context, identifier string) (*Repo, error)
 	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
+
 	// CreateWebhook creates a webhook on the cloud provider, subscribing to
-	// VCS events to trigger runs. The implementation should handle creating the
-	// hook idempotently, gracefully handling existing hooks and upgrading hooks
-	// where there is a config change.
-	CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error
+	// VCS events to trigger runs.
+	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error)
+	UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error
+	GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error)
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
+
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
 }
 
-type CreateCloudWebhookOptions struct {
-	Identifier string    // repo identifier, <owner>/<repo>
-	Secret     string    // secret string for generating signature
-	Host       string    // external-facing host[:port]
-	WebhookID  uuid.UUID // unique id for webhook
+type VCSWebhook struct {
+	ID         string // vcs' ID
+	Identifier string // identifier is <repo_owner>/<repo_name>
+	HTTPURL    string // HTTPURL is the web url for the repo
+	Events     []VCSEventType
+	Endpoint   string
 }
 
 type GetRepoTarballOptions struct {
@@ -60,12 +62,29 @@ type GetRepoTarballOptions struct {
 	Ref        string // branch/tag/SHA ref
 }
 
+type CreateWebhookOptions struct {
+	Identifier string // repo identifier, <owner>/<repo>
+	Secret     string // secret string for generating signature
+	URL        string // external-facing host[:port]
+	Events     []VCSEventType
+}
+
+type UpdateWebhookOptions struct {
+	ID string // vcs' webhook ID
+
+	CreateWebhookOptions
+}
+
+// GetWebhookOptions are options for retrieving a webhook.
+type GetWebhookOptions struct {
+	Identifier string // Repository identifier, <owner>/<repo>
+	ID         string // vcs' webhook ID
+}
+
 // DeleteWebhookOptions are options for deleting a webhook.
 type DeleteWebhookOptions struct {
-	// Repository identifier
-	Identifier string
-	// Hook ID, uniquely identifying the hook to delete in the repository
-	HookID string
+	Identifier string // Repository identifier, <owner>/<repo>
+	ID         string // vcs' webhook ID
 }
 
 // SetStatusOptions are options for setting a status on a VCS repo

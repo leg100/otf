@@ -2,6 +2,8 @@ package otf
 
 // WorkspaceRepo represents a connection between a workspace and a VCS
 // repository.
+//
+// TODO: rename WorkspaceConnection
 type WorkspaceRepo struct {
 	ProviderID string
 	Branch     string // branch for which applies are run

@@ -1,11 +1,13 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS webhooks (
-    webhook_id UUID,
-    secret     TEXT NOT NULL,
-    identifier TEXT NOT NULL,
-    http_url   TEXT NOT NULL,
-               PRIMARY KEY (webhook_id),
-               UNIQUE (http_url)
+    webhook_id      UUID,
+    vcs_id          TEXT,
+    endpoint        TEXT NOT NULL,
+    secret          TEXT NOT NULL,
+    identifier      TEXT NOT NULL,
+    http_url        TEXT NOT NULL,
+                    PRIMARY KEY (webhook_id),
+                    UNIQUE (http_url)
 );
 
 CREATE TABLE IF NOT EXISTS workspace_repos (

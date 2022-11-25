@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -220,46 +219,107 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballO
 	return Pack(parentDir)
 }
 
-// CreateWebhook creates a webhook on the github repository, subscribing
-// to certain github events so that runs can be triggered. If a hook with a
-// matching URL already exists then no action is taken.
-//
-// TODO: paginate through results of existing hooks
-// TODO: update hook if already exists but has different config - inevitably we
-// will implement this only if we decide to make a change to hook
-// configuration e.g. the type of events to subscribe to
-func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateCloudWebhookOptions) error {
+// CreateWebhook creates a webhook on a github repository.
+func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return "", fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
+	var events []string
+	for _, event := range opts.Events {
+		switch event {
+		case VCSPushEventType:
+			events = append(events, "push")
+		case VCSPullEventType:
+			events = append(events, "pull_request")
+		}
+	}
+
+	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
+		Events: events,
+		Config: map[string]any{
+			"url":    opts.URL,
+			"secret": opts.Secret,
+		},
+		Active: Bool(true),
+	})
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatInt(hook.GetID(), 10), nil
+}
+
+func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
 	}
 
-	endpoint := (&url.URL{
-		Scheme: "https",
-		Host:   opts.Host,
-		Path:   path.Join(GithubEventPathPrefix, opts.WebhookID.String()),
-	}).String()
-
-	hooks, _, err := g.client.Repositories.ListHooks(ctx, owner, name, nil)
+	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return err
 	}
-	for _, h := range hooks {
-		if h.GetURL() == endpoint {
-			// Skip creating hook.
-			return nil
+
+	var events []string
+	for _, event := range opts.Events {
+		switch event {
+		case VCSPushEventType:
+			events = append(events, "push")
+		case VCSPullEventType:
+			events = append(events, "pull_request")
 		}
 	}
 
-	_, _, err = g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
-		Events: []string{"push", "pull_request"},
+	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
+		Events: events,
 		Config: map[string]any{
-			"url":    endpoint,
+			"url":    opts.URL,
 			"secret": opts.Secret,
 		},
 		Active: Bool(true),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *GithubClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
+	intID, err := strconv.ParseInt(opts.ID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
+	if err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+
+	var events []VCSEventType
+	for _, event := range hook.Events {
+		switch event {
+		case "push":
+			events = append(events, VCSPushEventType)
+		case "pull_request":
+			events = append(events, VCSPullEventType)
+		}
+	}
+
+	return &VCSWebhook{
+		ID:         strconv.FormatInt(hook.GetID(), 10),
+		Identifier: opts.Identifier,
+		Events:     events,
+		Endpoint:   hook.GetURL(),
+	}, nil
 }
 
 func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
@@ -267,15 +327,14 @@ func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
 	}
-	hookID, err := strconv.ParseInt(opts.HookID, 10, 64)
+
+	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
 		return err
 	}
-	_, err = g.client.Repositories.DeleteHook(ctx, owner, name, hookID)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	_, err = g.client.Repositories.DeleteHook(ctx, owner, name, intID)
+	return err
 }
 
 func (g *GithubClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {

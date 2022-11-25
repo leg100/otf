@@ -114,8 +114,10 @@ type VCSProviderService interface {
 	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
 	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
-	CreateWebhook(ctx context.Context, providerID string, opts CreateCloudWebhookOptions) error
-	DeleteWebhook(ctx context.Context, providerID string, hook *Webhook) error
+	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
+	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error
+	GetWebhook(ctx context.Context, providerID string, opts GetWebhookOptions) (*VCSWebhook, error)
+	DeleteWebhook(ctx context.Context, providerID string, opts DeleteWebhookOptions) error
 }
 
 // VCSProviderStore persists vcs providers

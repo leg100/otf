@@ -92,7 +92,7 @@ func TestGithub_CreateWebhook(t *testing.T) {
 
 	err = client.CreateWebhook(ctx, CreateWebhookOptions{
 		Identifier: "acme/terraform",
-		URL:        "https://me-server/me-webhook",
+		Host:       "https://me-server/me-webhook",
 		Secret:     "me-secret",
 	})
 	require.NoError(t, err)

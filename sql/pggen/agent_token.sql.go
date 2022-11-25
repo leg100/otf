@@ -667,6 +667,13 @@ type Querier interface {
 	// FindOrInsertWebhookScan scans the result of an executed FindOrInsertWebhookBatch query.
 	FindOrInsertWebhookScan(results pgx.BatchResults) (FindOrInsertWebhookRow, error)
 
+	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (pgconn.CommandTag, error)
+	// UpdateWebhookVCSIDBatch enqueues a UpdateWebhookVCSID query into batch to be executed
+	// later by the batch.
+	UpdateWebhookVCSIDBatch(batch genericBatch, vcsID pgtype.Text, webhookID pgtype.UUID)
+	// UpdateWebhookVCSIDScan scans the result of an executed UpdateWebhookVCSIDBatch query.
+	UpdateWebhookVCSIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindWebhookSecret(ctx context.Context, webhookID pgtype.UUID) (pgtype.Text, error)
 	// FindWebhookSecretBatch enqueues a FindWebhookSecret query into batch to be executed
 	// later by the batch.
@@ -1219,6 +1226,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findOrInsertWebhookSQL, findOrInsertWebhookSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrInsertWebhook': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findWebhookSecretSQL, findWebhookSecretSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookSecret': %w", err)
 	}
@@ -1402,6 +1412,8 @@ type Users struct {
 // Webhooks represents the Postgres composite type "webhooks".
 type Webhooks struct {
 	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Endpoint   pgtype.Text `json:"endpoint"`
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	HTTPURL    pgtype.Text `json:"http_url"`
@@ -1640,6 +1652,8 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"webhooks",
 		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
+		compositeField{"vcs_id", "text", &pgtype.Text{}},
+		compositeField{"endpoint", "text", &pgtype.Text{}},
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
 		compositeField{"http_url", "text", &pgtype.Text{}},

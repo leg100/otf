@@ -101,7 +101,7 @@ func (a *Application) DisconnectWorkspace(ctx context.Context, spec otf.Workspac
 		return nil, err
 	}
 
-	ws, err := a.db.DeleteWorkspaceRepo(ctx, spec)
+	ws, err := a.Disconnect(ctx, spec)
 	if err != nil {
 		a.Error(err, "disconnecting repo from workspace", append(spec.LogFields(), "subject", subject)...)
 		return nil, err
