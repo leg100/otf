@@ -242,8 +242,8 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	}, nil
 }
 
-func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id string) ([]*otf.Workspace, error) {
-	rows, err := db.FindWorkspacesByWebhookID(ctx, UUID(uuid.MustParse(id)))
+func (db *DB) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+	rows, err := db.FindWorkspacesByWebhookID(ctx, UUID(id))
 	if err != nil {
 		return nil, err
 	}

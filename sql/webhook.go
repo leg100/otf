@@ -26,7 +26,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 			err = databaseError(err)
 			if errors.Is(err, otf.ErrResourceNotFound) {
 				// create webhook
-				hook, err := opts.CreateWebhookFunc(ctx, otf.WebhookCreatorOptions{
+				hook, err = opts.CreateWebhookFunc(ctx, otf.WebhookCreatorOptions{
 					ProviderID: opts.ProviderID,
 					Identifier: opts.Identifier,
 					HTTPURL:    opts.HTTPURL,
@@ -36,7 +36,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					return err
 				}
 				// and persist
-				result, err = db.InsertWebhook(ctx, pggen.InsertWebhookParams{
+				_, err = db.InsertWebhook(ctx, pggen.InsertWebhookParams{
 					WebhookID:  UUID(hook.WebhookID),
 					VCSID:      String(hook.VCSID),
 					Secret:     String(hook.Secret),
@@ -46,7 +46,6 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 				if err != nil {
 					return databaseError(err)
 				}
-				hook = otf.UnmarshalWebhookRow(otf.WebhookRow(result))
 				return nil
 			}
 			return err

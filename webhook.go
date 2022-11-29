@@ -168,12 +168,7 @@ func webhookDiff(vcs *VCSWebhook, db *Webhook, otfHost string) bool {
 	}
 
 	endpoint := webhookEndpoint(otfHost, db.WebhookID.String())
-	if vcs.Endpoint != endpoint {
-		return true
-	}
-
-	// they're the same
-	return false
+	return vcs.Endpoint != endpoint
 }
 
 // webhookEndpoint returns the URL to the webhook's endpoint. Host is the
