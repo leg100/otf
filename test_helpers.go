@@ -78,6 +78,16 @@ func NewTestRepo() *Repo {
 	}
 }
 
+func NewTestWebhook(repo *Repo) *Webhook {
+	return &Webhook{
+		WebhookID:  uuid.New(),
+		VCSID:      "123",
+		Secret:     "secret",
+		Identifier: repo.Identifier,
+		HTTPURL:    repo.HTTPURL,
+	}
+}
+
 // NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the
 // given contents. The files are assigned random names with the terraform file
 // extension appended (.tf)

@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -183,4 +184,24 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 		db.DeleteVCSProvider(ctx, provider.ID())
 	})
 	return provider
+}
+
+func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
+	ctx := context.Background()
+	repo := otf.NewTestRepo()
+	hook := otf.NewTestWebhook(repo)
+
+	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
+		WebhookID:  UUID(hook.WebhookID),
+		VCSID:      String(hook.VCSID),
+		Secret:     String(hook.Secret),
+		Identifier: String(hook.Identifier),
+		HTTPURL:    String(hook.HTTPURL),
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWebhook(ctx, hook.WebhookID)
+	})
+	return hook
 }

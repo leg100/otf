@@ -151,6 +151,7 @@ type WebhookRow struct {
 func UnmarshalWebhookRow(row WebhookRow) *Webhook {
 	return &Webhook{
 		WebhookID:  row.WebhookID.Bytes,
+		VCSID:      row.VCSID.String,
 		Secret:     row.Secret.String,
 		Identifier: row.Identifier.String,
 		HTTPURL:    row.HTTPURL.String,

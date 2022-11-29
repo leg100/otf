@@ -12,16 +12,15 @@ import (
 func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*otf.Webhook, error) {
 	var hook *otf.Webhook
 	err := db.tx(ctx, func(tx *DB) error {
-		// Lock table because we're checking first whether webhook with given
+		// Prevent any modifications to table because we're checking first whether webhook with given
 		// url exists and if it does not then we're creating a webhook with that
 		// url, and we do not want another process to do the same thing
 		// in parallel and create a webhook in the intervening period...
-		_, err := tx.conn.Exec(ctx, "LOCK webhooks")
+		_, err := tx.Exec(ctx, "LOCK webhooks IN EXCLUSIVE MODE")
 		if err != nil {
 			return err
 		}
-		// Try to retrieve existing hook first
-		result, err := db.FindWebhookByURL(ctx, String(opts.HTTPURL))
+		result, err := tx.FindWebhookByURL(ctx, String(opts.HTTPURL))
 		if err != nil {
 			err = databaseError(err)
 			if errors.Is(err, otf.ErrResourceNotFound) {
@@ -36,7 +35,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					return err
 				}
 				// and persist
-				_, err = db.InsertWebhook(ctx, pggen.InsertWebhookParams{
+				_, err = tx.InsertWebhook(ctx, pggen.InsertWebhookParams{
 					WebhookID:  UUID(hook.WebhookID),
 					VCSID:      String(hook.VCSID),
 					Secret:     String(hook.Secret),
@@ -62,7 +61,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 			}
 			// Update VCS ID if has changed.
 			if hook.VCSID != id {
-				_, err = db.UpdateWebhookVCSID(ctx, String(id), UUID(hook.WebhookID))
+				_, err = tx.UpdateWebhookVCSID(ctx, String(id), UUID(hook.WebhookID))
 				if err != nil {
 					return databaseError(err)
 				}
