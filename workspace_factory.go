@@ -100,7 +100,7 @@ type WorkspaceCreateOptions struct {
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
 	OrganizationName           string `schema:"organization_name"`
-	VCSRepo                    *WorkspaceRepo
+	Repo                       *WorkspaceRepo
 
 	// Options for testing purposes only
 	LatestRunID *string

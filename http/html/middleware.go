@@ -10,8 +10,7 @@ import (
 // authUser middleware ensures the request has a valid session cookie, attaching
 // a session and user to the request context.
 type authMiddleware struct {
-	users    otf.UserService
-	sessions otf.SessionService
+	otf.Application
 }
 
 func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
@@ -21,7 +20,7 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			sendUserToLoginPage(w, r)
 			return
 		}
-		user, err := m.users.GetUser(r.Context(), otf.UserSpec{
+		user, err := m.GetUser(r.Context(), otf.UserSpec{
 			SessionToken: &cookie.Value,
 		})
 		if err != nil {
@@ -29,7 +28,7 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 			sendUserToLoginPage(w, r)
 			return
 		}
-		session, err := m.sessions.GetSessionByToken(r.Context(), cookie.Value)
+		session, err := m.GetSessionByToken(r.Context(), cookie.Value)
 		if err != nil {
 			flashError(w, "unable to find session: "+err.Error())
 			sendUserToLoginPage(w, r)

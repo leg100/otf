@@ -25,6 +25,7 @@ type Application struct {
 	*otf.RunFactory
 	*otf.WorkspaceFactory
 	*otf.WorkspaceConnector
+	*otf.RunStarter
 	Mapper
 	otf.PubSubService
 	logr.Logger
@@ -47,6 +48,9 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		ConfigurationVersionService: app,
 	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
+		Application: app,
+	}
+	app.RunStarter = &otf.RunStarter{
 		Application: app,
 	}
 

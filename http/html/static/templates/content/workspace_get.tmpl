@@ -36,7 +36,7 @@
         </select>
       </form>
     </div>
-    {{ with .Content.VCSRepo }}
+    {{ with .Content.Repo }}
     <div>Connected to <span class="data">{{ .Identifier }}</span></div>
     {{ end }}
     {{ with .Content.LatestRun }}

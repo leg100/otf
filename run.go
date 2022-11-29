@@ -694,6 +694,8 @@ type RunService interface {
 	LogService
 	// Tail logs of a run phase
 	Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
+	// StartRun creates and starts a run.
+	StartRun(ctx context.Context, spec WorkspaceSpec, opts ConfigurationVersionCreateOptions) (*Run, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

@@ -7,8 +7,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-// CreateRun constructs and persists a new run object to the db, before
-// scheduling the run.
+// CreateRun creates a run. Caller needs to have created a config version first.
 func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
 	subject, err := a.CanAccessWorkspace(ctx, otf.CreateRunAction, spec)
 	if err != nil {

@@ -2,10 +2,7 @@ package html
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -98,7 +95,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	if err := decode.All(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -438,6 +435,8 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
+	// TODO: set cv opts directly, populating speculative parameter rather a new
+	// strategy parameter.
 	type options struct {
 		otf.WorkspaceSpec
 		Strategy string `schema:"strategy,required"`
@@ -459,7 +458,9 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
+	run, err := app.StartRun(r.Context(), opts.WorkspaceSpec, otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(speculative),
+	})
 	if err != nil {
 		flashError(w, err.Error())
 		http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
@@ -467,45 +468,4 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, getRunPath(run), http.StatusFound)
-}
-
-func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, speculative bool) (*otf.Run, error) {
-	ws, err := app.GetWorkspace(ctx, spec)
-	if err != nil {
-		return nil, err
-	}
-
-	var cv *otf.ConfigurationVersion
-	opts := otf.ConfigurationVersionCreateOptions{
-		Speculative: otf.Bool(speculative),
-	}
-	if ws.VCSRepo() != nil {
-		tarball, err := app.GetRepoTarball(ctx, ws.VCSRepo().ProviderID, ws.VCSRepo())
-		if err != nil {
-			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
-		}
-		cv, err = app.CreateConfigurationVersion(ctx, ws.ID(), opts)
-		if err != nil {
-			return nil, err
-		}
-		if err := app.UploadConfig(ctx, cv.ID(), tarball); err != nil {
-			return nil, err
-		}
-	} else {
-		latest, err := app.GetLatestConfigurationVersion(ctx, ws.ID())
-		if err != nil {
-			if errors.Is(err, otf.ErrResourceNotFound) {
-				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
-			}
-			return nil, err
-		}
-		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return app.CreateRun(ctx, spec, otf.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID()),
-	})
 }
