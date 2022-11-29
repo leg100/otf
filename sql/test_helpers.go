@@ -186,6 +186,23 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 	return provider
 }
 
+func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *otf.VCSProvider, hook *otf.Webhook) *otf.WorkspaceRepo {
+	ctx := context.Background()
+
+	repo := otf.WorkspaceRepo{
+		ProviderID: provider.ID(),
+		Branch:     "master",
+		Webhook:    hook,
+	}
+	ws, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+	})
+	return ws.Repo()
+}
+
 func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 	ctx := context.Background()
 	repo := otf.NewTestRepo()

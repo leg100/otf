@@ -65,6 +65,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 				if err != nil {
 					return databaseError(err)
 				}
+				hook.VCSID = id
 			}
 			return nil
 		}

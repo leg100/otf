@@ -62,6 +62,63 @@ func TestWorkspace_Update(t *testing.T) {
 	}
 }
 
+func TestWorkspace_CreateRepo(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	provider := createTestVCSProvider(t, db, org)
+	hook := createTestWebhook(t, db)
+	repo := otf.WorkspaceRepo{
+		ProviderID: provider.ID(),
+		Branch:     "master",
+		Webhook:    hook,
+	}
+
+	_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+	require.NoError(t, err)
+
+	t.Run("Duplicate", func(t *testing.T) {
+		_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+		require.Equal(t, otf.ErrResourceAlreadyExists, err)
+	})
+}
+
+func TestWorkspace_UpdateRepo(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	provider := createTestVCSProvider(t, db, org)
+	hook := createTestWebhook(t, db)
+	repo := createTestWorkspaceRepo(t, db, ws, provider, hook)
+
+	// update branch
+	repo.Branch = "dev"
+
+	var err error
+	ws, err = db.UpdateWorkspaceRepo(ctx, ws.SpecID(), *repo)
+	require.NoError(t, err)
+
+	assert.Equal(t, "dev", ws.Repo().Branch)
+}
+
+func TestWorkspace_DeleteRepo(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
+	provider := createTestVCSProvider(t, db, org)
+	hook := createTestWebhook(t, db)
+	_ = createTestWorkspaceRepo(t, db, ws, provider, hook)
+
+	var err error
+	ws, err = db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+	require.NoError(t, err)
+
+	assert.Nil(t, ws.Repo())
+}
+
 func TestWorkspace_Get(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)

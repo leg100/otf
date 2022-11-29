@@ -28,6 +28,24 @@ func TestWebhook_Sync_Create(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestWebhook_Sync_Update(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	want := createTestWebhook(t, db)
+
+	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
+		return "updated-vcs-id", nil
+	}
+	opts := otf.SyncWebhookOptions{
+		UpdateWebhookFunc: updateFunc,
+		HTTPURL:           want.HTTPURL,
+	}
+
+	got, err := db.SyncWebhook(ctx, opts)
+	require.NoError(t, err)
+	assert.Equal(t, "updated-vcs-id", got.VCSID)
+}
+
 func TestWebhook_Sync_NoChange(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
