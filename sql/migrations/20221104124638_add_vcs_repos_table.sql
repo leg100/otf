@@ -2,7 +2,6 @@
 CREATE TABLE IF NOT EXISTS webhooks (
     webhook_id      UUID,
     vcs_id          TEXT,
-    endpoint        TEXT NOT NULL,
     secret          TEXT NOT NULL,
     identifier      TEXT NOT NULL,
     http_url        TEXT NOT NULL,

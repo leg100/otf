@@ -1,21 +1,20 @@
 -- FindOrInsertWebhook idempotently inserts a webhook,
 -- returning it if it already exists.
 --
--- name: FindOrInsertWebhook :one
+-- name: InsertWebhook :exec
 INSERT INTO webhooks (
     webhook_id,
-    endpoint,
+    vcs_id,
     secret,
     identifier,
     http_url
 ) VALUES (
     pggen.arg('webhook_id'),
-    pggen.arg('endpoint'),
+    pggen.arg('vcs_id'),
     pggen.arg('secret'),
     pggen.arg('identifier'),
     pggen.arg('http_url')
-) ON CONFLICT DO NOTHING
-RETURNING *;
+);
 
 -- name: UpdateWebhookVCSID :exec
 UPDATE webhooks
@@ -26,6 +25,11 @@ WHERE webhook_id = pggen.arg('webhook_id');
 SELECT secret
 FROM webhooks
 WHERE webhook_id = pggen.arg('webhook_id');
+
+-- name: FindWebhookByURL :one
+SELECT *
+FROM webhooks
+WHERE http_url = pggen.arg('http_url');
 
 -- name: DeleteWebhook :exec
 DELETE

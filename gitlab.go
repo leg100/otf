@@ -3,8 +3,9 @@ package otf
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
-	"path"
+	"strconv"
 
 	"github.com/xanzy/go-gitlab"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
@@ -162,41 +163,94 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, opts GetRepoTarballOp
 	return tarball, nil
 }
 
-func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) error {
-	_, _, err := g.client.Projects.AddProjectHook(opts.Identifier, &gitlab.AddProjectHookOptions{
+func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error) {
+	addOpts := &gitlab.AddProjectHookOptions{
 		EnableSSLVerification: Bool(true),
 		PushEvents:            Bool(true),
 		Token:                 String(opts.Secret),
-		URL:                   String(opts.Host),
-	})
+		URL:                   String(opts.OTFHost),
+	}
+	for _, event := range opts.Events {
+		switch event {
+		case VCSPushEventType:
+			addOpts.PushEvents = Bool(true)
+		case VCSPullEventType:
+			addOpts.MergeRequestsEvents = Bool(true)
+		}
+	}
+
+	hook, _, err := g.client.Projects.AddProjectHook(opts.Identifier, addOpts)
+	if err != nil {
+		return "", err
+	}
+	return strconv.Itoa(hook.ID), nil
+}
+
+func (g *GitlabClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error {
+	id, err := strconv.Atoi(opts.ID)
+	if err != nil {
+		return err
+	}
+
+	editOpts := &gitlab.EditProjectHookOptions{
+		EnableSSLVerification: Bool(true),
+		Token:                 String(opts.Secret),
+		URL:                   String(opts.OTFHost),
+	}
+	for _, event := range opts.Events {
+		switch event {
+		case VCSPushEventType:
+			editOpts.PushEvents = Bool(true)
+		case VCSPullEventType:
+			editOpts.MergeRequestsEvents = Bool(true)
+		}
+	}
+
+	_, _, err = g.client.Projects.EditProjectHook(opts.Identifier, id, editOpts)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
-	endpoint := (&url.URL{
-		Scheme: "https",
-		Host:   opts.Host,
-		Path:   path.Join(GithubEventPathPrefix, opts.WebhookID.String()),
-	}).String()
+func (g *GitlabClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error) {
+	id, err := strconv.Atoi(opts.ID)
+	if err != nil {
+		return nil, err
+	}
 
-	hooks, _, err := g.client.Projects.ListProjectHooks(opts.Identifier, nil)
+	hook, resp, err := g.client.Projects.GetProjectHook(opts.Identifier, id)
+	if err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
+	}
+
+	var events []VCSEventType
+	if hook.PushEvents {
+		events = append(events, VCSPushEventType)
+	}
+	if hook.MergeRequestsEvents {
+		events = append(events, VCSPullEventType)
+	}
+
+	return &VCSWebhook{
+		ID:         strconv.Itoa(id),
+		Identifier: opts.Identifier,
+		Events:     events,
+		Endpoint:   hook.URL,
+	}, nil
+}
+
+func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
+	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return err
 	}
-	for _, h := range hooks {
-		if h.URL == endpoint {
-			_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, h.ID)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
 
-	return nil
+	_, err = g.client.Projects.DeleteProjectHook(opts.Identifier, id)
+	return err
 }
 
 // TODO: implement

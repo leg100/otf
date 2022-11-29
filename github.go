@@ -239,7 +239,7 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.URL,
+			"url":    opts.OTFHost,
 			"secret": opts.Secret,
 		},
 		Active: Bool(true),
@@ -274,7 +274,7 @@ func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.URL,
+			"url":    opts.OTFHost,
 			"secret": opts.Secret,
 		},
 		Active: Bool(true),

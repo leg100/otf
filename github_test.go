@@ -63,9 +63,9 @@ func TestGithub_GetRepoTarball(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	got, err := client.GetRepoTarball(ctx, &VCSRepo{
+	got, err := client.GetRepoTarball(ctx, GetRepoTarballOptions{
 		Identifier: "acme/terraform",
-		Branch:     "master",
+		Ref:        "master",
 	})
 	require.NoError(t, err)
 
@@ -90,9 +90,8 @@ func TestGithub_CreateWebhook(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = client.CreateWebhook(ctx, CreateWebhookOptions{
+	_, err = client.CreateWebhook(ctx, CreateWebhookOptions{
 		Identifier: "acme/terraform",
-		Host:       "https://me-server/me-webhook",
 		Secret:     "me-secret",
 	})
 	require.NoError(t, err)

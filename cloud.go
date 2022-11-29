@@ -39,8 +39,8 @@ type CloudClient interface {
 	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
 
-	// CreateWebhook creates a webhook on the cloud provider, subscribing to
-	// VCS events to trigger runs.
+	// CreateWebhook creates a webhook on the cloud provider, returning the
+	// provider's unique ID for the webhook.
 	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error
 	GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error)
@@ -65,7 +65,7 @@ type GetRepoTarballOptions struct {
 type CreateWebhookOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Secret     string // secret string for generating signature
-	URL        string // external-facing host[:port]
+	OTFHost    string // otf's external-facing host[:port]
 	Events     []VCSEventType
 }
 

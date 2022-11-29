@@ -408,7 +408,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	}
 
 	// extract externally-accessible host from request
-	opts.Host = otfhttp.ExternalHost(r)
+	opts.OTFHost = otfhttp.ExternalHost(r)
 
 	ws, err := app.ConnectWorkspace(r.Context(), opts.WorkspaceSpec, opts.ConnectWorkspaceOptions)
 	if err != nil {

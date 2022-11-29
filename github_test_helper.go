@@ -123,7 +123,14 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 		})
 		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier+"/hooks", func(w http.ResponseWriter, r *http.Request) {
+			hook := github.Hook{
+				ID: Int64(123),
+			}
+			out, err := json.Marshal(hook)
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
+			w.Write(out)
 		})
 	}
 

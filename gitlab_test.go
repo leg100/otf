@@ -58,14 +58,14 @@ func TestGitlab_GetUser(t *testing.T) {
 	})
 	t.Run("GetRepoTarball", func(t *testing.T) {
 		want := NewTestTarball(t, `file1 contents`, `file2 contents`)
-		provider := newTestGitlabClient(t,
+		client := newTestGitlabClient(t,
 			WithGitlabRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
 			WithGitlabTarball(want),
 		)
 
-		got, err := provider.GetRepoTarball(ctx, &VCSRepo{
+		got, err := client.GetRepoTarball(ctx, GetRepoTarballOptions{
 			Identifier: "acme/terraform",
-			Branch:     "master",
+			Ref:        "master",
 		})
 		require.NoError(t, err)
 
