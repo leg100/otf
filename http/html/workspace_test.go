@@ -143,7 +143,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	})
 }
 
-func TestConnectWorkspaceRepoHandler(t *testing.T) {
+func TestConnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
@@ -161,7 +161,7 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.connectWorkspaceRepo(w, r)
+	app.connectWorkspace(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -170,7 +170,7 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 	}
 }
 
-func TestDisconnectWorkspaceRepoHandler(t *testing.T) {
+func TestDisconnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
@@ -184,7 +184,7 @@ func TestDisconnectWorkspaceRepoHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.disconnectWorkspaceRepo(w, r)
+	app.disconnectWorkspace(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()

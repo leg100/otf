@@ -393,7 +393,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 	})
 }
 
-func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	type options struct {
 		otf.WorkspaceSpec
 		otf.ConnectWorkspaceOptions
@@ -417,7 +417,7 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 
-func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
 	if err := decode.All(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
