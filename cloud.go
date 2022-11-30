@@ -34,6 +34,11 @@ type Cloud interface {
 	EventHandler
 }
 
+type CloudStore interface {
+	GetCloud(name string) (Cloud, error)
+	PutCloud(name string) (Cloud, error)
+}
+
 // ClientConfig is configuration for creating a new cloud client
 type ClientConfig struct {
 	Hostname            string

@@ -7,36 +7,31 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/google/go-github/v41/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGithubEventHandler(t *testing.T) {
-	events := make(chan VCSEvent, 1)
-	handler := &GithubEventHandler{
-		Events: events,
-		Logger: logr.Discard(),
-	}
+	handler := &GithubEventHandler{}
 
 	t.Run("push event", func(t *testing.T) {
 		r := newTestGithubPushEvent(t, "refs/heads/master")
 		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, r)
+		got := handler.HandleEvent(w, r, &Webhook{})
 
 		assert.Equal(t, 202, w.Code)
 
 		want := VCSEvent{
 			Branch: "master",
 		}
-		assert.Equal(t, want, <-events)
+		assert.Equal(t, want, got)
 	})
 
 	t.Run("pr event", func(t *testing.T) {
 		r := newTestGithubPullRequestEvent(t, "pr-1")
 		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, r)
+		got := handler.HandleEvent(w, r, &Webhook{})
 
 		assert.Equal(t, 202, w.Code)
 
@@ -44,7 +39,7 @@ func TestGithubEventHandler(t *testing.T) {
 			Branch:        "pr-1",
 			IsPullRequest: true,
 		}
-		assert.Equal(t, want, <-events)
+		assert.Equal(t, want, got)
 	})
 }
 

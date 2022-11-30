@@ -7,6 +7,8 @@ import (
 type testCloud struct {
 	user  *User
 	repos []*Repo
+
+	Cloud
 }
 
 func NewTestCloud(opts ...TestCloudOption) *testCloud {
