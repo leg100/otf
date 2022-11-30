@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
 	"reflect"
@@ -24,6 +25,7 @@ type Webhook struct {
 	Secret     string    // secret token
 	Identifier string    // identifier is <repo_owner>/<repo_name>
 	HTTPURL    string    // HTTPURL is the web url for the repo
+	Cloud                // cloud that webhook belongs to
 }
 
 func (h *Webhook) ID() string    { return h.WebhookID.String() }
@@ -39,6 +41,8 @@ type WebhookStore interface {
 	// identify the webhook. SyncWebhook will then update the store with the ID if
 	// it differs from its present value in the store.
 	SyncWebhook(ctx context.Context, opts SyncWebhookOptions) (*Webhook, error)
+	// GetWebhook retrieves a webhook by its ID
+	GetWebhook(ctx context.Context, id uuid.UUID) (*Webhook, error)
 	GetWebhookSecret(ctx context.Context, id uuid.UUID) (string, error)
 	// DeleteWebhook deletes the webhook from the store.
 	DeleteWebhook(ctx context.Context, id uuid.UUID) error
@@ -59,6 +63,7 @@ type WebhookCreatorOptions struct {
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
 	OTFHost    string // otf host
+	Cloud      Cloud  // cloud providing webhook
 }
 
 type WebhookCreator struct {
@@ -73,6 +78,11 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 	}
 	webhookID := uuid.New()
 	endpoint := webhookEndpoint(opts.OTFHost, webhookID.String())
+
+	provider, err := wc.VCSProviderService.GetVCSProvider(ctx, opts.ProviderID)
+	if err != nil {
+		return nil, err
+	}
 
 	// create webhook on vcs provider
 	id, err := wc.VCSProviderService.CreateWebhook(ctx, opts.ProviderID, CreateWebhookOptions{
@@ -91,6 +101,7 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 		Secret:     secret,
 		Identifier: opts.Identifier,
 		HTTPURL:    opts.HTTPURL,
+		Cloud:      provider.cloud,
 	}, nil
 }
 
@@ -146,16 +157,23 @@ type WebhookRow struct {
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
 	HTTPURL    pgtype.Text `json:"http_url"`
+	Cloud      pgtype.Text `json:"cloud"`
 }
 
-func UnmarshalWebhookRow(row WebhookRow) *Webhook {
+func UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
+	cloud, err := CloudName(row.Cloud.String).Unmarshal()
+	if err != nil {
+		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+	}
+
 	return &Webhook{
 		WebhookID:  row.WebhookID.Bytes,
 		VCSID:      row.VCSID.String,
 		Secret:     row.Secret.String,
 		Identifier: row.Identifier.String,
 		HTTPURL:    row.HTTPURL.String,
-	}
+		Cloud:      cloud,
+	}, nil
 }
 
 // webhookDiff determines whether the webhook config on the vcs provider differs from

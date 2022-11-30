@@ -1,91 +1,62 @@
 package otf
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/google/go-github/v41/github"
-	"github.com/google/uuid"
 )
 
-const GithubEventPathPrefix = "/webhooks/vcs/github"
+// GithubEventHandler handles incoming events from github
+type GithubEventHandler struct{}
 
-// GithubEventHandler handles incoming VCS events from github
-type GithubEventHandler struct {
-	Events chan<- VCSEvent
-	logr.Logger
-
-	WebhookSecretGetter
-}
-
-func (h *GithubEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rawWebhookID := strings.TrimPrefix(r.URL.Path, GithubEventPathPrefix)
-	webhookID, err := uuid.Parse(rawWebhookID)
+func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
+	event, err := h.handle(r, hook)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := h.handle(r, webhookID); err != nil {
-		h.Error(err, "handling github event", "webhook", webhookID)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil
 	}
 	w.WriteHeader(http.StatusAccepted)
+	return event
 }
 
-func (h *GithubEventHandler) handle(r *http.Request, webhookID uuid.UUID) error {
-	secret, err := h.GetWebhookSecret(r.Context(), webhookID)
+func (h *GithubEventHandler) handle(r *http.Request, hook *Webhook) (*VCSEvent, error) {
+	payload, err := github.ValidatePayload(r, []byte(hook.Secret))
 	if err != nil {
-		return fmt.Errorf("retrieving webhook secret: %w", err)
-	}
-
-	payload, err := github.ValidatePayload(r, []byte(secret))
-	if err != nil {
-		return fmt.Errorf("validating payload: %w", err)
+		return nil, fmt.Errorf("validating payload: %w", err)
 	}
 
 	rawEvent, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
-		return fmt.Errorf("parsing event: %w", err)
+		return nil, fmt.Errorf("parsing event: %w", err)
 	}
-
-	h.V(2).Info("received github event", "event", github.WebHookType(r))
 
 	switch event := rawEvent.(type) {
 	case *github.PushEvent:
 		branch, isBranch := ParseBranch(event.GetRef())
 		if !isBranch {
-			return nil
+			return nil, nil
 		}
-		h.Events <- VCSEvent{
+		return &VCSEvent{
 			Identifier:      event.GetRepo().GetFullName(),
 			Branch:          branch,
 			CommitSHA:       event.GetAfter(),
 			OnDefaultBranch: branch == event.GetRepo().GetDefaultBranch(),
-			WebhookID:       webhookID,
-		}
+			WebhookID:       hook.WebhookID,
+		}, nil
 	case *github.PullRequestEvent:
 		// github pr event ref *is* the branch name, not the standard git ref
 		// format refs/branches/<branch>
 		branch := event.PullRequest.Head.GetRef()
 
-		h.V(2).Info("forwarding pr event")
-		h.Events <- VCSEvent{
+		return &VCSEvent{
 			Identifier:    event.GetRepo().GetFullName(),
 			Branch:        branch,
 			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),
 			IsPullRequest: true,
-			WebhookID:     webhookID,
-		}
+			WebhookID:     hook.WebhookID,
+		}, nil
 	}
 
-	return nil
-}
-
-type WebhookSecretGetter interface {
-	GetWebhookSecret(ctx context.Context, id uuid.UUID) (string, error)
+	return nil, nil
 }

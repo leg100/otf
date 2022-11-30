@@ -21,18 +21,22 @@ func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProvide
 	return provider, nil
 }
 
-func (a *Application) GetVCSProvider(ctx context.Context, id, organization string) (*otf.VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.GetVCSProviderAction, organization)
-	if err != nil {
-		return nil, err
-	}
+func (a *Application) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
+	// Parameters only include VCS Provider ID, so we can only determine
+	// authorization _after_ retrieving the provider
 
 	provider, err := a.db.GetVCSProvider(ctx, id)
 	if err != nil {
-		a.Error(err, "retrieving vcs provider", "id", id, "organization", organization, "subject", subject)
+		a.Error(err, "retrieving vcs provider", "id", id)
 		return nil, err
 	}
-	a.V(2).Info("retrieved vcs provider", "id", id, "organization", organization, "subject", subject)
+
+	subject, err := a.CanAccessOrganization(ctx, otf.GetVCSProviderAction, provider.OrganizationName())
+	if err != nil {
+		return nil, err
+	}
+	a.V(2).Info("retrieved vcs provider", "id", id, "organization", provider.OrganizationName(), "subject", subject)
+
 	return provider, nil
 }
 

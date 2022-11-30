@@ -23,7 +23,7 @@ const (
 func GithubDefaultConfig() *CloudConfig {
 	return &CloudConfig{
 		Name:     GithubCloudName,
-		Hostname: "github.com",
+		Hostname: DefaultGithubHostname,
 		Endpoint: oauth2github.Endpoint,
 		Scopes:   []string{"user:email", "read:org"},
 		Cloud:    GithubCloud{},
@@ -35,6 +35,12 @@ type GithubCloud struct{}
 func (GithubCloud) NewClient(ctx context.Context, cfg ClientConfig) (CloudClient, error) {
 	return NewGithubClient(ctx, cfg)
 }
+
+func (GithubCloud) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
+	return nil
+}
+
+func (GithubCloud) Marshal() CloudName { return GithubCloudName }
 
 type GithubClient struct {
 	client *github.Client
@@ -201,6 +207,8 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballO
 	// <owner>-<repo>-<commit>. We need a tarball without this parent directory,
 	// so we untar it to a temp dir, then tar it up the contents of the parent
 	// directory.
+	//
+	// TODO: remove temp dir after finishing
 	untarpath, err := os.MkdirTemp("", fmt.Sprintf("github-%s-%s-*", owner, name))
 	if err != nil {
 		return nil, err

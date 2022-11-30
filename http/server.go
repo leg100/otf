@@ -111,17 +111,16 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// VCS event handling
 	//
 	events := make(chan otf.VCSEvent, 100)
+	r.Handle("/webhooks/vcs/{webhook_id}", &webhookHandler{
+		events:      events,
+		Logger:      logger,
+		Application: app,
+	})
 	s.vcsEventsHandler = otf.NewTriggerer(app, logger, events)
-
-	// VCS event webhooks, authenticated using signature in header
-	r.Handle(otf.GithubEventPathPrefix, &otf.GithubEventHandler{
-		Events:              events,
-		Logger:              logger,
-		WebhookSecretGetter: app.DB(),
-	}).Methods("POST")
 
 	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
+		// TODO: use mux.Middleware interface
 		signed.Use((&signatureVerifier{s.Signer}).handler)
 
 		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)

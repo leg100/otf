@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS webhooks (
     secret          TEXT NOT NULL,
     identifier      TEXT NOT NULL,
     http_url        TEXT NOT NULL,
+    cloud           TEXT REFERENCES clouds (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (webhook_id),
                     UNIQUE (http_url)
 );

@@ -19,7 +19,7 @@ func GitlabDefaultConfig() *CloudConfig {
 		Hostname: "gitlab.com",
 		Endpoint: oauth2gitlab.Endpoint,
 		Scopes:   []string{"read_user", "read_api"},
-		Cloud:    GitlabCloud{},
+		Cloud:    &GitlabCloud{},
 	}
 }
 
@@ -28,6 +28,12 @@ type GitlabCloud struct{}
 func (GitlabCloud) NewClient(ctx context.Context, cfg ClientConfig) (CloudClient, error) {
 	return NewGitlabClient(ctx, cfg)
 }
+
+func (GitlabCloud) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
+	return nil
+}
+
+func (GitlabCloud) Marshal() CloudName { return GitlabCloudName }
 
 type GitlabClient struct {
 	client *gitlab.Client

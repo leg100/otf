@@ -11,8 +11,6 @@ import (
 )
 
 func TestTail(t *testing.T) {
-	ctx := otf.AddSubjectToContext(context.Background(), &otf.AppUser{})
-
 	tests := []struct {
 		name string
 		opts otf.GetChunkOptions
@@ -133,8 +131,9 @@ func TestTail(t *testing.T) {
 				Mapper:        &fakeTailMapper{},
 				PubSubService: &fakePubSubTailService{event: tt.event},
 				Logger:        logr.Discard(),
-				Authorizer:    &fakeAuthorizer{&otf.AppUser{}},
+				Authorizer:    &fakeAuthorizer{&otf.Superuser{}},
 			}
+			ctx := otf.AddSubjectToContext(context.Background(), &otf.Superuser{})
 			stream, err := app.Tail(ctx, tt.opts)
 			require.NoError(t, err)
 

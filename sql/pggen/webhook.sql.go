@@ -16,13 +16,15 @@ const insertWebhookSQL = `INSERT INTO webhooks (
     vcs_id,
     secret,
     identifier,
-    http_url
+    http_url,
+    cloud
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 );`
 
 type InsertWebhookParams struct {
@@ -31,12 +33,13 @@ type InsertWebhookParams struct {
 	Secret     pgtype.Text
 	Identifier pgtype.Text
 	HTTPURL    pgtype.Text
+	Cloud      pgtype.Text
 }
 
 // InsertWebhook implements Querier.InsertWebhook.
 func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertWebhook")
-	cmdTag, err := q.conn.Exec(ctx, insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.HTTPURL)
+	cmdTag, err := q.conn.Exec(ctx, insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.HTTPURL, params.Cloud)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertWebhook: %w", err)
 	}
@@ -45,7 +48,7 @@ func (q *DBQuerier) InsertWebhook(ctx context.Context, params InsertWebhookParam
 
 // InsertWebhookBatch implements Querier.InsertWebhookBatch.
 func (q *DBQuerier) InsertWebhookBatch(batch genericBatch, params InsertWebhookParams) {
-	batch.Queue(insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.HTTPURL)
+	batch.Queue(insertWebhookSQL, params.WebhookID, params.VCSID, params.Secret, params.Identifier, params.HTTPURL, params.Cloud)
 }
 
 // InsertWebhookScan implements Querier.InsertWebhookScan.
@@ -85,6 +88,84 @@ func (q *DBQuerier) UpdateWebhookVCSIDScan(results pgx.BatchResults) (pgconn.Com
 	return cmdTag, err
 }
 
+const findWebhookByIDSQL = `SELECT *
+FROM webhooks
+WHERE webhook_id = $1;`
+
+type FindWebhookByIDRow struct {
+	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Secret     pgtype.Text `json:"secret"`
+	Identifier pgtype.Text `json:"identifier"`
+	HTTPURL    pgtype.Text `json:"http_url"`
+	Cloud      pgtype.Text `json:"cloud"`
+}
+
+// FindWebhookByID implements Querier.FindWebhookByID.
+func (q *DBQuerier) FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByID")
+	row := q.conn.QueryRow(ctx, findWebhookByIDSQL, webhookID)
+	var item FindWebhookByIDRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL, &item.Cloud); err != nil {
+		return item, fmt.Errorf("query FindWebhookByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindWebhookByIDBatch implements Querier.FindWebhookByIDBatch.
+func (q *DBQuerier) FindWebhookByIDBatch(batch genericBatch, webhookID pgtype.UUID) {
+	batch.Queue(findWebhookByIDSQL, webhookID)
+}
+
+// FindWebhookByIDScan implements Querier.FindWebhookByIDScan.
+func (q *DBQuerier) FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error) {
+	row := results.QueryRow()
+	var item FindWebhookByIDRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL, &item.Cloud); err != nil {
+		return item, fmt.Errorf("scan FindWebhookByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findWebhookByURLSQL = `SELECT *
+FROM webhooks
+WHERE http_url = $1;`
+
+type FindWebhookByURLRow struct {
+	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Secret     pgtype.Text `json:"secret"`
+	Identifier pgtype.Text `json:"identifier"`
+	HTTPURL    pgtype.Text `json:"http_url"`
+	Cloud      pgtype.Text `json:"cloud"`
+}
+
+// FindWebhookByURL implements Querier.FindWebhookByURL.
+func (q *DBQuerier) FindWebhookByURL(ctx context.Context, httpURL pgtype.Text) (FindWebhookByURLRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByURL")
+	row := q.conn.QueryRow(ctx, findWebhookByURLSQL, httpURL)
+	var item FindWebhookByURLRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL, &item.Cloud); err != nil {
+		return item, fmt.Errorf("query FindWebhookByURL: %w", err)
+	}
+	return item, nil
+}
+
+// FindWebhookByURLBatch implements Querier.FindWebhookByURLBatch.
+func (q *DBQuerier) FindWebhookByURLBatch(batch genericBatch, httpURL pgtype.Text) {
+	batch.Queue(findWebhookByURLSQL, httpURL)
+}
+
+// FindWebhookByURLScan implements Querier.FindWebhookByURLScan.
+func (q *DBQuerier) FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookByURLRow, error) {
+	row := results.QueryRow()
+	var item FindWebhookByURLRow
+	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL, &item.Cloud); err != nil {
+		return item, fmt.Errorf("scan FindWebhookByURLBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const findWebhookSecretSQL = `SELECT secret
 FROM webhooks
 WHERE webhook_id = $1;`
@@ -111,44 +192,6 @@ func (q *DBQuerier) FindWebhookSecretScan(results pgx.BatchResults) (pgtype.Text
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("scan FindWebhookSecretBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const findWebhookByURLSQL = `SELECT *
-FROM webhooks
-WHERE http_url = $1;`
-
-type FindWebhookByURLRow struct {
-	WebhookID  pgtype.UUID `json:"webhook_id"`
-	VCSID      pgtype.Text `json:"vcs_id"`
-	Secret     pgtype.Text `json:"secret"`
-	Identifier pgtype.Text `json:"identifier"`
-	HTTPURL    pgtype.Text `json:"http_url"`
-}
-
-// FindWebhookByURL implements Querier.FindWebhookByURL.
-func (q *DBQuerier) FindWebhookByURL(ctx context.Context, httpURL pgtype.Text) (FindWebhookByURLRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookByURL")
-	row := q.conn.QueryRow(ctx, findWebhookByURLSQL, httpURL)
-	var item FindWebhookByURLRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL); err != nil {
-		return item, fmt.Errorf("query FindWebhookByURL: %w", err)
-	}
-	return item, nil
-}
-
-// FindWebhookByURLBatch implements Querier.FindWebhookByURLBatch.
-func (q *DBQuerier) FindWebhookByURLBatch(batch genericBatch, httpURL pgtype.Text) {
-	batch.Queue(findWebhookByURLSQL, httpURL)
-}
-
-// FindWebhookByURLScan implements Querier.FindWebhookByURLScan.
-func (q *DBQuerier) FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookByURLRow, error) {
-	row := results.QueryRow()
-	var item FindWebhookByURLRow
-	if err := row.Scan(&item.WebhookID, &item.VCSID, &item.Secret, &item.Identifier, &item.HTTPURL); err != nil {
-		return item, fmt.Errorf("scan FindWebhookByURLBatch row: %w", err)
 	}
 	return item, nil
 }

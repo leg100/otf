@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 
 	"golang.org/x/oauth2"
@@ -13,10 +14,24 @@ var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and 
 // CloudName uniquely identifies a cloud provider
 type CloudName string
 
+func (n CloudName) Unmarshal() (Cloud, error) {
+	switch n {
+	case GithubCloudName:
+		return &GithubCloud{}, nil
+	case GitlabCloudName:
+		return &GitlabCloud{}, nil
+	default:
+		return nil, fmt.Errorf("unknown cloud: %s", n)
+	}
+}
+
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
 // repositories etc.
 type Cloud interface {
 	NewClient(context.Context, ClientConfig) (CloudClient, error)
+
+	Marshal() CloudName // for marshaling cloud to string for serializing to the DB
+	EventHandler
 }
 
 // ClientConfig is configuration for creating a new cloud client
@@ -146,6 +161,17 @@ func (cfg *CloudConfig) UpdateEndpoint() (err error) {
 		return err
 	}
 	return nil
+}
+
+func UnmarshalCloud(cloud CloudName) (Cloud, error) {
+	switch cloud {
+	case GithubCloudName:
+		return GithubCloud{}, nil
+	case GitlabCloudName:
+		return GitlabCloud{}, nil
+	default:
+		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+	}
 }
 
 // Repo is a VCS repository belonging to a cloud

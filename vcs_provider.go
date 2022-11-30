@@ -78,13 +78,8 @@ type VCSProviderRow struct {
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
 func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
-	var cloud Cloud
-	switch CloudName(row.Cloud.String) {
-	case GithubCloudName:
-		cloud = GithubCloud{}
-	case GitlabCloudName:
-		cloud = GitlabCloud{}
-	default:
+	cloud, err := CloudName(row.Cloud.String).Unmarshal()
+	if err != nil {
 		return nil, fmt.Errorf("unknown cloud: %s", cloud)
 	}
 
@@ -106,7 +101,7 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
 // VCSProviderService provides access to vcs providers
 type VCSProviderService interface {
 	CreateVCSProvider(ctx context.Context, opts VCSProviderCreateOptions) (*VCSProvider, error)
-	GetVCSProvider(ctx context.Context, id, organization string) (*VCSProvider, error)
+	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id, organization string) error
 
@@ -114,6 +109,7 @@ type VCSProviderService interface {
 	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
 	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
+
 	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error
 	GetWebhook(ctx context.Context, providerID string, opts GetWebhookOptions) (*VCSWebhook, error)

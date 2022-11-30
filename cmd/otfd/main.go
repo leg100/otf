@@ -132,7 +132,6 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		DB:     db,
 		Cache:  cache,
 		PubSub: pubsub,
-		Host:   hostname,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)

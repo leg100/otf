@@ -1,4 +1,4 @@
-package http
+package otf
 
 import (
 	"errors"
@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/leg100/otf"
 	"github.com/xanzy/go-gitlab"
 )
 
 // GitlabEventHandler handles incoming VCS events from gitlab
 type GitlabEventHandler struct {
 	token  string
-	events chan<- otf.VCSEvent
+	events chan<- VCSEvent
 	logr.Logger
 }
 
@@ -52,7 +51,7 @@ func (h *GitlabEventHandler) handle(r *http.Request) error {
 		return errors.New("expected ref to be in the format <string>/<string>/<string>")
 	}
 
-	h.events <- otf.VCSEvent{
+	h.events <- VCSEvent{
 		Identifier: push.Project.PathWithNamespace,
 		Branch:     refParts[2],
 	}

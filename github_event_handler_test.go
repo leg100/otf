@@ -1,4 +1,4 @@
-package http
+package otf
 
 import (
 	"bytes"
@@ -9,15 +9,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGithubEventHandler(t *testing.T) {
-	events := make(chan otf.VCSEvent, 1)
+	events := make(chan VCSEvent, 1)
 	handler := &GithubEventHandler{
-		events: events,
+		Events: events,
 		Logger: logr.Discard(),
 	}
 
@@ -28,7 +27,7 @@ func TestGithubEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSEvent{
+		want := VCSEvent{
 			Branch: "master",
 		}
 		assert.Equal(t, want, <-events)
@@ -41,7 +40,7 @@ func TestGithubEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSEvent{
+		want := VCSEvent{
 			Branch:        "pr-1",
 			IsPullRequest: true,
 		}
@@ -51,7 +50,7 @@ func TestGithubEventHandler(t *testing.T) {
 
 func newTestGithubPushEvent(t *testing.T, ref string) *http.Request {
 	push, err := json.Marshal(&github.PushEvent{
-		Ref: otf.String(ref),
+		Ref: String(ref),
 	})
 	require.NoError(t, err)
 
@@ -65,7 +64,7 @@ func newTestGithubPullRequestEvent(t *testing.T, ref string) *http.Request {
 	pr, err := json.Marshal(&github.PullRequestEvent{
 		PullRequest: &github.PullRequest{
 			Head: &github.PullRequestBranch{
-				Ref: otf.String(ref),
+				Ref: String(ref),
 			},
 		},
 	})
