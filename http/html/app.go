@@ -30,8 +30,7 @@ type Application struct {
 	// site admin's authentication token
 	siteToken string
 	// secret for webhook signatures
-	secret       string
-	oauthClients []*OAuthClient
+	secret string
 }
 
 // ApplicationOptions are options for configuring the web app

@@ -25,6 +25,7 @@ type oauthClient interface {
 	NewClient(ctx context.Context, token *oauth2.Token) (otf.CloudClient, error)
 	RequestPath() string
 	CallbackPath() string
+	String() string
 }
 
 func newAuthenticators(app otf.Application, clients []*OAuthClient) ([]*Authenticator, error) {

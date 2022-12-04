@@ -42,6 +42,7 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		cache:         opts.Cache,
 		db:            opts.DB,
 		Logger:        opts.Logger,
+		CloudService:  opts.CloudService,
 	}
 	app.Authorizer = &authorizer{opts.DB, opts.Logger}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
@@ -50,13 +51,13 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		ConfigurationVersionService: app,
 	}
 	app.VCSProviderFactory = &otf.VCSProviderFactory{
-		CloudService: app,
+		CloudService: opts.CloudService,
 	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
 		Application: app,
 		WebhookCreator: &otf.WebhookCreator{
 			VCSProviderService: app,
-			CloudService:       app,
+			CloudService:       opts.CloudService,
 		},
 		WebhookUpdater: &otf.WebhookUpdater{
 			VCSProviderService: app,

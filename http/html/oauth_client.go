@@ -58,8 +58,12 @@ func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
 	return client, nil
 }
 
+// String provides a human-readable identifier for the oauth client, using the
+// name of its underlying cloud provider
+func (a *OAuthClient) String() string { return a.Name }
+
 func (a *OAuthClient) RequestPath() string {
-	return path.Join("/auth", a.Name, "login")
+	return path.Join("/oauth", a.Name, "login")
 }
 
 // requestHandler initiates the oauth flow, redirecting user to the IdP auth
@@ -85,7 +89,7 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *OAuthClient) CallbackPath() string {
-	return path.Join("/auth", a.Name, "callback")
+	return path.Join("/oauth", a.Name, "callback")
 }
 
 func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
