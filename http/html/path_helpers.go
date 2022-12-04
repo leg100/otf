@@ -198,10 +198,6 @@ func startRunPath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/start-run", ws.OrganizationName(), ws.WorkspaceName())
 }
 
-func webhookPath(ws workspaceRoute, cloud otf.CloudName) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/hook/%s", ws.OrganizationName(), ws.WorkspaceName(), cloud)
-}
-
 func editWorkspacePath(ws workspaceRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", ws.OrganizationName(), ws.WorkspaceName())
 }
@@ -322,5 +318,4 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
 	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
 	m["startRunPath"] = startRunPath
-	m["webhookPath"] = webhookPath
 }

@@ -30,27 +30,26 @@ type Application struct {
 	// site admin's authentication token
 	siteToken string
 	// secret for webhook signatures
-	secret string
-	// mapping of cloud name to cloud
-	cloudDB cloudDB
+	secret       string
+	oauthClients []*OAuthClient
 }
 
-type ApplicationOption func(*Application)
+// ApplicationOptions are options for configuring the web app
+type ApplicationOptions struct {
+	DevMode      bool
+	OAuthClients []*OAuthClient
 
-func WithSiteToken(token string) ApplicationOption {
-	return func(app *Application) {
-		app.siteToken = token
-	}
+	*otfhttp.ServerConfig
+	*otfhttp.Router
+	otf.Application
 }
 
 // AddRoutes adds routes for the html web app.
-//
-// TODO: merge config and srvConfig
-func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConfig, services otf.Application, router *otfhttp.Router) error {
-	if config.DevMode {
+func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
+	if opts.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	views, err := newViewEngine(config.DevMode)
+	views, err := newViewEngine(opts.DevMode)
 	if err != nil {
 		return err
 	}
@@ -63,23 +62,22 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 	sseServer.AutoReplay = false
 
 	app := &Application{
-		Application:  services,
-		staticServer: newStaticServer(config.DevMode),
+		Application:  opts.Application,
+		staticServer: newStaticServer(opts.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 		Logger:       logger,
 		Server:       sseServer,
-		siteToken:    srvConfig.SiteToken,
-		secret:       srvConfig.Secret,
-		cloudDB:      config.CloudConfigs,
+		siteToken:    opts.SiteToken,
+		secret:       opts.Secret,
 	}
 
-	app.authenticators, err = newAuthenticators(services, config.CloudConfigs)
+	app.authenticators, err = newAuthenticators(opts.Application, opts.OAuthClients)
 	if err != nil {
 		return err
 	}
 
-	app.addRoutes(router)
+	app.addRoutes(opts.Router)
 	return nil
 }
 
@@ -97,8 +95,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	// routes that don't require authentication.
 	r.GET("/login", app.loginHandler)
 	for _, auth := range app.authenticators {
-		r.GET(auth.RequestPath(), auth.requestHandler)
-		r.GET(auth.callbackPath(), auth.responseHandler)
+		r.GET(auth.RequestPath(), auth.RequestHandler)
+		r.GET(auth.CallbackPath(), auth.responseHandler)
 	}
 	r.GET("/admin/login", app.adminLoginPromptHandler)
 	r.PST("/admin/login", app.adminLoginHandler)

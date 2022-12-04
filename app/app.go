@@ -23,10 +23,12 @@ type Application struct {
 	proxy otf.ChunkStore
 
 	*otf.RunFactory
+	*otf.VCSProviderFactory
 	*otf.WorkspaceFactory
 	*otf.WorkspaceConnector
 	*otf.RunStarter
 	Mapper
+	otf.CloudService
 	otf.PubSubService
 	logr.Logger
 	Authorizer
@@ -47,8 +49,18 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		WorkspaceService:            app,
 		ConfigurationVersionService: app,
 	}
+	app.VCSProviderFactory = &otf.VCSProviderFactory{
+		CloudService: app,
+	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
 		Application: app,
+		WebhookCreator: &otf.WebhookCreator{
+			VCSProviderService: app,
+			CloudService:       app,
+		},
+		WebhookUpdater: &otf.WebhookUpdater{
+			VCSProviderService: app,
+		},
 	}
 	app.RunStarter = &otf.RunStarter{
 		Application: app,
@@ -78,10 +90,11 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 }
 
 type Options struct {
-	Logger logr.Logger
-	DB     otf.DB
-	Cache  *bigcache.BigCache
-	PubSub otf.PubSubService
+	Logger       logr.Logger
+	DB           otf.DB
+	Cache        *bigcache.BigCache
+	PubSub       otf.PubSubService
+	CloudService otf.CloudService
 }
 
 func (a *Application) DB() otf.DB { return a.db }

@@ -18,20 +18,20 @@ func TestGithubEventHandler(t *testing.T) {
 	t.Run("push event", func(t *testing.T) {
 		r := newTestGithubPushEvent(t, "refs/heads/master")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, &Webhook{})
+		got := handler.HandleEvent(w, r, HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
 		want := VCSEvent{
 			Branch: "master",
 		}
-		assert.Equal(t, want, got)
+		assert.Equal(t, &want, got)
 	})
 
 	t.Run("pr event", func(t *testing.T) {
 		r := newTestGithubPullRequestEvent(t, "pr-1")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, &Webhook{})
+		got := handler.HandleEvent(w, r, HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
@@ -39,7 +39,7 @@ func TestGithubEventHandler(t *testing.T) {
 			Branch:        "pr-1",
 			IsPullRequest: true,
 		}
-		assert.Equal(t, want, got)
+		assert.Equal(t, &want, got)
 	})
 }
 

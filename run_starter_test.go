@@ -30,7 +30,7 @@ func TestStartRun(t *testing.T) {
 	})
 
 	t.Run("connected to repo", func(t *testing.T) {
-		provider := NewTestVCSProvider(t, org, NewTestCloud())
+		provider := NewTestVCSProvider(t, org)
 		repo := NewTestWorkspaceRepo(provider)
 		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{
 			Repo: repo,

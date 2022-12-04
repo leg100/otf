@@ -13,17 +13,16 @@ func TestWebhook_Sync_Create(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	repo := otf.NewTestRepo()
-	want := otf.NewTestWebhook(repo)
+	want := otf.NewTestWebhook(repo, otf.GithubDefaults())
 
 	createFunc := func(context.Context, otf.WebhookCreatorOptions) (*otf.Webhook, error) {
 		return want, nil
 	}
-	opts := otf.SyncWebhookOptions{
+
+	got, err := db.SyncWebhook(ctx, otf.SyncWebhookOptions{
 		CreateWebhookFunc: createFunc,
 		HTTPURL:           want.HTTPURL,
-	}
-
-	got, err := db.SyncWebhook(ctx, opts)
+	})
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }

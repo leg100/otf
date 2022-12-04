@@ -50,6 +50,7 @@ type Application interface {
 	CurrentRunService
 	VCSProviderService
 	LockableApplication
+	CloudService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -77,6 +78,11 @@ type DB interface {
 	AgentTokenStore
 	VCSProviderStore
 	WebhookStore
+}
+
+// Unmarshaler unmarshals database rows
+type Unmarshaler struct {
+	CloudService
 }
 
 // Identity is an identifiable otf entity.

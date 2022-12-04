@@ -8,42 +8,46 @@ import (
 	"strconv"
 
 	"github.com/xanzy/go-gitlab"
+	"golang.org/x/oauth2"
 	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
-const GitlabCloudName CloudName = "gitlab"
-
-func GitlabDefaultConfig() *CloudConfig {
-	return &CloudConfig{
-		Name:     GitlabCloudName,
+func GitlabDefaults() CloudConfig {
+	return CloudConfig{
+		Name:     "gitlab",
 		Hostname: "gitlab.com",
+		Cloud:    &GitlabCloud{},
+	}
+}
+
+func GitlabOAuthDefaults() *oauth2.Config {
+	return &oauth2.Config{
 		Endpoint: oauth2gitlab.Endpoint,
 		Scopes:   []string{"read_user", "read_api"},
-		Cloud:    &GitlabCloud{},
 	}
 }
 
 type GitlabCloud struct{}
 
-func (GitlabCloud) NewClient(ctx context.Context, cfg ClientConfig) (CloudClient, error) {
-	return NewGitlabClient(ctx, cfg)
+func (g *GitlabCloud) NewClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
+	return NewGitlabClient(ctx, opts)
 }
 
-func (GitlabCloud) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
+func (GitlabCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
 	return nil
 }
-
-func (GitlabCloud) Marshal() CloudName { return GitlabCloudName }
 
 type GitlabClient struct {
 	client *gitlab.Client
 }
 
-func NewGitlabClient(ctx context.Context, cfg ClientConfig) (*GitlabClient, error) {
+func NewGitlabClient(ctx context.Context, cfg CloudClientOptions) (*GitlabClient, error) {
 	var err error
 	var client *gitlab.Client
 
 	baseURL := (&url.URL{Scheme: "https", Host: cfg.Hostname}).String()
+
+	// TODO: apply skipTLS option
 
 	if cfg.OAuthToken != nil {
 		client, err = gitlab.NewOAuthClient(cfg.OAuthToken.AccessToken, gitlab.WithBaseURL(baseURL))
@@ -174,7 +178,7 @@ func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 		EnableSSLVerification: Bool(true),
 		PushEvents:            Bool(true),
 		Token:                 String(opts.Secret),
-		URL:                   String(opts.OTFHost),
+		URL:                   String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
@@ -201,7 +205,7 @@ func (g *GitlabClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	editOpts := &gitlab.EditProjectHookOptions{
 		EnableSSLVerification: Bool(true),
 		Token:                 String(opts.Secret),
-		URL:                   String(opts.OTFHost),
+		URL:                   String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {

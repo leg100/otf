@@ -12,7 +12,11 @@ func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProvide
 		return nil, err
 	}
 
-	provider := otf.NewVCSProvider(opts)
+	provider, err := a.NewVCSProvider(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := a.db.CreateVCSProvider(ctx, provider); err != nil {
 		a.Error(err, "creating vcs provider", "organization", opts.OrganizationName, "id", provider.ID(), "subject", subject)
 		return nil, err

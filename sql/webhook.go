@@ -30,6 +30,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					Identifier: opts.Identifier,
 					HTTPURL:    opts.HTTPURL,
 					OTFHost:    opts.OTFHost,
+					Cloud: opts.Cloud,
 				})
 				if err != nil {
 					return err
@@ -41,6 +42,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					Secret:     String(hook.Secret),
 					Identifier: String(hook.Identifier),
 					HTTPURL:    String(hook.HTTPURL),
+					Cloud:      String(hook.CloudName()),
 				})
 				if err != nil {
 					return databaseError(err)
@@ -49,7 +51,10 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 			}
 			return err
 		} else {
-			hook = otf.UnmarshalWebhookRow(otf.WebhookRow(result))
+			hook, err = db.UnmarshalWebhookRow(otf.WebhookRow(result))
+			if err != nil {
+				return err
+			}
 
 			id, err := opts.UpdateWebhookFunc(ctx, otf.WebhookUpdaterOptions{
 				ProviderID: opts.ProviderID,
@@ -71,6 +76,18 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 		}
 	})
 	return hook, err
+}
+
+func (db *DB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error) {
+	result, err := db.FindWebhookByID(ctx, UUID(id))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	hook, err := db.UnmarshalWebhookRow(otf.WebhookRow(result))
+	if err != nil {
+		return nil, err
+	}
+	return hook, nil
 }
 
 func (db *DB) GetWebhookSecret(ctx context.Context, id uuid.UUID) (string, error) {

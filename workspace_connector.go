@@ -9,8 +9,8 @@ import (
 // VCS events that trigger runs.
 type WorkspaceConnector struct {
 	Application
-	WebhookCreator
-	WebhookUpdater
+	*WebhookCreator
+	*WebhookUpdater
 }
 
 type ConnectWorkspaceOptions struct {
@@ -32,8 +32,8 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 			HTTPURL:           opts.HTTPURL,
 			ProviderID:        opts.ProviderID,
 			OTFHost:           opts.OTFHost,
-			CreateWebhookFunc: wc.WebhookCreator.Create,
-			UpdateWebhookFunc: wc.WebhookUpdater.Update,
+			CreateWebhookFunc: wc.Create,
+			UpdateWebhookFunc: wc.Update,
 		})
 		if err != nil {
 			return err
@@ -70,7 +70,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, spec WorkspaceSpec
 		}
 
 		err = app.DB().DeleteWebhook(ctx, repo.WebhookID)
-		if errors.Is(err, ErrResourceReferenceViolation) {
+		if errors.Is(err, ErrForeignKeyViolation) {
 			// webhook is still in use by another workspace
 			return nil
 		} else if err != nil {

@@ -9,6 +9,8 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
+// webhookHandler is point of entry for incoming VCS events, relaying them onto
+// a cloud-specific handler.
 type webhookHandler struct {
 	events chan<- otf.VCSEvent
 
@@ -32,7 +34,7 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if event := hook.HandleEvent(w, r, hook); event != nil {
+	if event := hook.HandleEvent(w, r); event != nil {
 		h.events <- *event
 	}
 }

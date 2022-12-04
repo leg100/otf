@@ -33,7 +33,7 @@ func WithRepos(repos ...*Repo) TestCloudOption {
 	}
 }
 
-func (f *testCloud) NewClient(context.Context, ClientConfig) (CloudClient, error) {
+func (f *testCloud) NewClient(context.Context, CloudClientOptions) (CloudClient, error) {
 	return &TestClient{
 		User:  f.user,
 		Repos: f.repos,

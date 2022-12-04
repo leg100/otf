@@ -4,8 +4,9 @@ Package sql implements persistent storage using the sql database.
 package sql
 
 import (
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -36,7 +37,7 @@ func databaseError(err error) error {
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
 		case "23503": // foreign key violation
-			return otf.ErrResourceReferenceViolation
+			return errors.Wrap(otf.ErrForeignKeyViolation, pgErr.Detail)
 		case "23505": // unique violation
 			return otf.ErrResourceAlreadyExists
 		}

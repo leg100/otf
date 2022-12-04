@@ -1,10 +1,19 @@
 package otf
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/google/uuid"
+)
 
 // EventHandler handles incoming events
 type EventHandler interface {
-	// HandleEvent retrieves an event from the http request corresponding to the
-	// given webhook.
-	HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent
+	// HandleEvent extracts a cloud-specific event from the http request, converting it into a
+	// VCS event. Returns nil if the event is to be ignored.
+	HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent
+}
+
+type HandleEventOptions struct {
+	Secret    string
+	WebhookID uuid.UUID
 }

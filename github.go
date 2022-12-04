@@ -16,37 +16,39 @@ import (
 )
 
 const (
-	GithubCloudName       CloudName = "github"
-	DefaultGithubHostname string    = "github.com"
+	DefaultGithubHostname string = "github.com"
 )
 
-func GithubDefaultConfig() *CloudConfig {
-	return &CloudConfig{
-		Name:     GithubCloudName,
+func GithubDefaults() CloudConfig {
+	return CloudConfig{
+		Name:     "github",
 		Hostname: DefaultGithubHostname,
+		Cloud:    &GithubCloud{},
+	}
+}
+
+func GithubOAuthDefaults() *oauth2.Config {
+	return &oauth2.Config{
 		Endpoint: oauth2github.Endpoint,
 		Scopes:   []string{"user:email", "read:org"},
-		Cloud:    GithubCloud{},
 	}
 }
 
 type GithubCloud struct{}
 
-func (GithubCloud) NewClient(ctx context.Context, cfg ClientConfig) (CloudClient, error) {
-	return NewGithubClient(ctx, cfg)
+func (g *GithubCloud) NewClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
+	return NewGithubClient(ctx, opts)
 }
 
-func (GithubCloud) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
+func (GithubCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
 	return nil
 }
-
-func (GithubCloud) Marshal() CloudName { return GithubCloudName }
 
 type GithubClient struct {
 	client *github.Client
 }
 
-func NewGithubClient(ctx context.Context, cfg ClientConfig) (*GithubClient, error) {
+func NewGithubClient(ctx context.Context, cfg CloudClientOptions) (*GithubClient, error) {
 	var err error
 	var client *github.Client
 
@@ -247,7 +249,7 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.OTFHost,
+			"url":    opts.Endpoint,
 			"secret": opts.Secret,
 		},
 		Active: Bool(true),
@@ -282,7 +284,7 @@ func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	_, _, err = g.client.Repositories.EditHook(ctx, owner, name, intID, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.OTFHost,
+			"url":    opts.Endpoint,
 			"secret": opts.Secret,
 		},
 		Active: Bool(true),

@@ -59,9 +59,9 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
 	serverCfg := newServerConfigFromFlags(cmd.Flags())
-	cloudCfgs := newCloudConfigsFromFlags(cmd.Flags())
-	htmlCfg := newHTMLConfigFromFlags(cmd.Flags(), cloudCfgs)
+	htmlCfg := newHTMLConfigFromFlags(cmd.Flags())
 	agentCfg := agent.NewConfigFromFlags(cmd.Flags())
+	cloudCfgs := cloudFlags(cmd.Flags())
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -81,14 +81,28 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return nil
 	}
 
-	// Validate and update configs following flag parsing
+	// create oauth clients
+	var oauthClients []*html.OAuthClient
 	for _, cfg := range cloudCfgs {
-		if err := cfg.Validate(); err != nil {
-			return fmt.Errorf("invalid cloud config: %w", err)
+		client, err := html.NewOAuthClient(html.OAuthClientConfig{
+			OTFHost:     hostname,
+			CloudConfig: cfg.CloudConfig,
+			Config:      cfg.Config,
+		})
+		if err != nil {
+			return err
 		}
-		if err := cfg.UpdateEndpoint(); err != nil {
-			return fmt.Errorf("updating oauth endpoints: %w", err)
-		}
+		oauthClients = append(oauthClients, client)
+	}
+
+	// populate cloud service with cloud configurations
+	var cloudServiceConfigs []otf.CloudConfig
+	for _, cc := range cloudCfgs {
+		cloudServiceConfigs = append(cloudServiceConfigs, cc.CloudConfig)
+	}
+	cloudService, err := inmem.NewCloudService(cloudServiceConfigs...)
+	if err != nil {
+		return err
 	}
 
 	// Setup logger
@@ -114,7 +128,13 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "app-user"})
 
 	// Setup database(s)
-	db, err := sql.New(ctx, logger, dbConnStr, cache, sql.DefaultSessionCleanupInterval)
+	db, err := sql.New(ctx, sql.Options{
+		Logger:          logger,
+		Path:            dbConnStr,
+		Cache:           cache,
+		CleanupInterval: sql.DefaultSessionCleanupInterval,
+		CloudService:    cloudService,
+	})
 	if err != nil {
 		return err
 	}
@@ -128,10 +148,11 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 
 	// Setup application services
 	app, err := app.NewApplication(ctx, app.Options{
-		Logger: logger,
-		DB:     db,
-		Cache:  cache,
-		PubSub: pubsub,
+		Logger:       logger,
+		DB:           db,
+		Cache:        cache,
+		PubSub:       pubsub,
+		CloudService: cloudService,
 	})
 	if err != nil {
 		return fmt.Errorf("setting up services: %w", err)
@@ -173,7 +194,11 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 			return fmt.Errorf("setting up http server: %w", err)
 		}
 		// add Web App routes
-		if err := html.AddRoutes(logger, htmlCfg, serverCfg, app, server.Router); err != nil {
+		htmlCfg.ServerConfig = serverCfg
+		htmlCfg.Application = app
+		htmlCfg.Router = server.Router
+		htmlCfg.OAuthClients = oauthClients
+		if err := html.AddRoutes(logger, *htmlCfg); err != nil {
 			return err
 		}
 
@@ -214,35 +239,8 @@ func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 }
 
 // newCloudConfigFromFlags binds flags to web app config
-func newHTMLConfigFromFlags(flags *pflag.FlagSet, cloudConfigs []*otf.CloudConfig) *html.Config {
-	cfg := html.Config{
-		CloudConfigs: make(map[otf.CloudName]*otf.CloudConfig),
-	}
-
+func newHTMLConfigFromFlags(flags *pflag.FlagSet) *html.ApplicationOptions {
+	cfg := html.ApplicationOptions{}
 	flags.BoolVar(&cfg.DevMode, "dev-mode", false, "Enable developer mode.")
-
-	for _, cc := range cloudConfigs {
-		cfg.CloudConfigs[cc.Name] = cc
-	}
-
 	return &cfg
-}
-
-// newCloudConfigsFromFlags binds flags to cloud configs
-func newCloudConfigsFromFlags(flags *pflag.FlagSet) []*otf.CloudConfig {
-	cloudConfigs := []*otf.CloudConfig{
-		otf.GithubDefaultConfig(),
-		otf.GitlabDefaultConfig(),
-	}
-
-	for _, cc := range cloudConfigs {
-		nameStr := string(cc.Name)
-		flags.StringVar(&cc.ClientID, nameStr+"-client-id", "", nameStr+" client ID")
-		flags.StringVar(&cc.ClientSecret, nameStr+"-client-secret", "", nameStr+" client secret")
-
-		flags.StringVar(&cc.Hostname, nameStr+"-hostname", cc.Hostname, nameStr+" hostname")
-		flags.BoolVar(&cc.SkipTLSVerification, nameStr+"-skip-tls-verification", false, "Skip "+nameStr+" TLS verification")
-	}
-
-	return cloudConfigs
 }

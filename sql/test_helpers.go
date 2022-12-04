@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 
@@ -35,7 +36,13 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 		interval = sessionCleanupIntervalOverride[0]
 	}
 
-	db, err := New(context.Background(), logr.Discard(), u.String(), nil, interval)
+	db, err := New(context.Background(), Options{
+		Logger:          logr.Discard(),
+		Path:            u.String(),
+		Cache:           nil,
+		CleanupInterval: interval,
+		CloudService:    inmem.NewTestCloudService(),
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })
@@ -161,20 +168,22 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	return token
 }
 
-func newTestVCSProvider(org *otf.Organization) *otf.VCSProvider {
-	return otf.NewVCSProvider(otf.VCSProviderCreateOptions{
+func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
+	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
+	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{
 		OrganizationName: org.Name(),
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		CloudName: otf.GithubCloudName,
-		Cloud:     otf.GithubCloud{},
-		Hostname:  "fake.com",
-		Name:      uuid.NewString(),
+		Cloud: "github",
+		Name:  uuid.NewString(),
+		Token: uuid.NewString(),
 	})
+	require.NoError(t, err)
+	return provider
 }
 
 func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := newTestVCSProvider(organization)
+	provider := newTestVCSProvider(t, organization)
 	ctx := context.Background()
 
 	err := db.CreateVCSProvider(ctx, provider)
@@ -206,7 +215,7 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 	ctx := context.Background()
 	repo := otf.NewTestRepo()
-	hook := otf.NewTestWebhook(repo)
+	hook := otf.NewTestWebhook(repo, otf.GithubDefaults())
 
 	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
 		WebhookID:  UUID(hook.WebhookID),
@@ -214,6 +223,7 @@ func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 		Secret:     String(hook.Secret),
 		Identifier: String(hook.Identifier),
 		HTTPURL:    String(hook.HTTPURL),
+		Cloud:      String(hook.CloudName()),
 	})
 	require.NoError(t, err)
 

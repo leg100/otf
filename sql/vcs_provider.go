@@ -14,7 +14,7 @@ func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) 
 		Token:               String(provider.Token()),
 		Name:                String(provider.Name()),
 		Hostname:            String(provider.Hostname()),
-		Cloud:               String(string(provider.CloudName())),
+		Cloud:               String(provider.CloudConfig().Name),
 		SkipTLSVerification: provider.SkipTLSVerification(),
 		OrganizationName:    String(provider.OrganizationName()),
 		CreatedAt:           Timestamptz(provider.CreatedAt()),
@@ -27,7 +27,7 @@ func (db *DB) GetVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, 
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	return otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider))
+	return db.UnmarshalVCSProviderRow(otf.VCSProviderRow(provider))
 }
 
 func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf.VCSProvider, error) {
@@ -37,7 +37,7 @@ func (db *DB) ListVCSProviders(ctx context.Context, organization string) ([]*otf
 	}
 	var providers []*otf.VCSProvider
 	for _, r := range rows {
-		provider, err := otf.UnmarshalVCSProviderRow(otf.VCSProviderRow(r))
+		provider, err := db.UnmarshalVCSProviderRow(otf.VCSProviderRow(r))
 		if err != nil {
 			return nil, err
 		}

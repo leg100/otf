@@ -83,9 +83,9 @@ func TestListWorkspacesHandler(t *testing.T) {
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	providers := []*otf.VCSProvider{
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
+		otf.NewTestVCSProvider(t, org),
+		otf.NewTestVCSProvider(t, org),
+		otf.NewTestVCSProvider(t, org),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
 
@@ -240,7 +240,7 @@ func (f *fakeWorkspaceHandlerApp) ListWorkspaces(ctx context.Context, opts otf.W
 	}, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID, organization string) (*otf.VCSProvider, error) {
+func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID string) (*otf.VCSProvider, error) {
 	return f.providers[0], nil
 }
 

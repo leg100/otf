@@ -11,57 +11,59 @@ import (
 // VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
 // TFE.
 type VCSProvider struct {
-	config ClientConfig
+	config CloudClientOptions
 
-	id        string
-	createdAt time.Time
-	// TODO: name or description?
-	name      string
-	cloud     Cloud
-	cloudName CloudName
+	id          string
+	createdAt   time.Time
+	name        string      // TODO: rename to description (?)
+	cloudConfig CloudConfig // cloud config for creating client
+	token       string      // credential for client
 
-	// vcs provider belongs to an organization
-	organizationName string
+	organizationName string // vcs provider belongs to an organization
 }
 
-func NewVCSProvider(opts VCSProviderCreateOptions) *VCSProvider {
+func (t *VCSProvider) ID() string                { return t.id }
+func (t *VCSProvider) String() string            { return t.name }
+func (t *VCSProvider) Token() string             { return t.token }
+func (t *VCSProvider) Hostname() string          { return t.config.Hostname }
+func (t *VCSProvider) SkipTLSVerification() bool { return t.config.SkipTLSVerification }
+func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
+func (t *VCSProvider) Name() string              { return t.name }
+func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
+func (t *VCSProvider) CloudConfig() CloudConfig  { return t.cloudConfig }
+
+func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
+	return t.cloudConfig.NewClient(ctx, CloudCredentials{
+		PersonalToken: &t.token,
+	})
+}
+
+// VCSProviderFactory makes vcs providers
+type VCSProviderFactory struct {
+	CloudService
+}
+
+func (f *VCSProviderFactory) NewVCSProvider(opts VCSProviderCreateOptions) (*VCSProvider, error) {
+	cloudConfig, err := f.GetCloud(opts.Cloud)
+	if err != nil {
+		return nil, err
+	}
+
 	return &VCSProvider{
 		id:               NewID("vcs"),
 		createdAt:        CurrentTimestamp(),
 		name:             opts.Name,
 		organizationName: opts.OrganizationName,
-		cloud:            opts.Cloud,
-		cloudName:        opts.CloudName,
-		config: ClientConfig{
-			Hostname:            opts.Hostname,
-			SkipTLSVerification: opts.SkipTLSVerification,
-			PersonalToken:       String(opts.Token),
-		},
-	}
-}
-
-func (t *VCSProvider) ID() string                { return t.id }
-func (t *VCSProvider) String() string            { return t.name }
-func (t *VCSProvider) Token() string             { return *t.config.PersonalToken }
-func (t *VCSProvider) Hostname() string          { return t.config.Hostname }
-func (t *VCSProvider) CloudName() CloudName      { return t.cloudName }
-func (t *VCSProvider) SkipTLSVerification() bool { return t.config.SkipTLSVerification }
-func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
-func (t *VCSProvider) Name() string              { return t.name }
-func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
-
-func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
-	return t.cloud.NewClient(ctx, t.config)
+		cloudConfig:      cloudConfig,
+		token:            opts.Token,
+	}, nil
 }
 
 type VCSProviderCreateOptions struct {
-	OrganizationName    string
-	Token               string
-	Name                string
-	CloudName           CloudName
-	Cloud               Cloud
-	Hostname            string
-	SkipTLSVerification bool
+	OrganizationName string
+	Token            string
+	Name             string
+	Cloud            string
 }
 
 // VCSProviderRow represents a database row for a vcs provider
@@ -77,10 +79,10 @@ type VCSProviderRow struct {
 }
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
-func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
-	cloud, err := CloudName(row.Cloud.String).Unmarshal()
+func (u *Unmarshaler) UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
+	cloudConfig, err := u.GetCloud(row.Cloud.String)
 	if err != nil {
-		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+		return nil, fmt.Errorf("unknown cloud: %s", cloudConfig)
 	}
 
 	return &VCSProvider{
@@ -88,13 +90,8 @@ func UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
 		createdAt:        row.CreatedAt.Time.UTC(),
 		name:             row.Name.String,
 		organizationName: row.OrganizationName.String,
-		cloud:            cloud,
-		cloudName:        CloudName(row.Cloud.String),
-		config: ClientConfig{
-			Hostname:            row.Hostname.String,
-			SkipTLSVerification: row.SkipTLSVerification,
-			PersonalToken:       String(row.Token.String),
-		},
+		cloudConfig:      cloudConfig,
+		token:            row.Token.String,
 	}, nil
 }
 

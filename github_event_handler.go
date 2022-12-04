@@ -10,8 +10,8 @@ import (
 // GithubEventHandler handles incoming events from github
 type GithubEventHandler struct{}
 
-func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, hook *Webhook) *VCSEvent {
-	event, err := h.handle(r, hook)
+func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
+	event, err := h.handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -20,8 +20,8 @@ func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request,
 	return event
 }
 
-func (h *GithubEventHandler) handle(r *http.Request, hook *Webhook) (*VCSEvent, error) {
-	payload, err := github.ValidatePayload(r, []byte(hook.Secret))
+func (h *GithubEventHandler) handle(r *http.Request, opts HandleEventOptions) (*VCSEvent, error) {
+	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
 		return nil, fmt.Errorf("validating payload: %w", err)
 	}
@@ -42,7 +42,7 @@ func (h *GithubEventHandler) handle(r *http.Request, hook *Webhook) (*VCSEvent, 
 			Branch:          branch,
 			CommitSHA:       event.GetAfter(),
 			OnDefaultBranch: branch == event.GetRepo().GetDefaultBranch(),
-			WebhookID:       hook.WebhookID,
+			WebhookID:       opts.WebhookID,
 		}, nil
 	case *github.PullRequestEvent:
 		// github pr event ref *is* the branch name, not the standard git ref
@@ -54,7 +54,7 @@ func (h *GithubEventHandler) handle(r *http.Request, hook *Webhook) (*VCSEvent, 
 			Branch:        branch,
 			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),
 			IsPullRequest: true,
-			WebhookID:     hook.WebhookID,
+			WebhookID:     opts.WebhookID,
 		}, nil
 	}
 

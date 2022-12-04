@@ -9,7 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newFakeWebApp(t *testing.T, app otf.Application, opts ...ApplicationOption) *Application {
+type fakeAppOption func(*Application)
+
+func withFakeSiteToken(token string) fakeAppOption {
+	return func(app *Application) {
+		app.siteToken = token
+	}
+}
+
+func newFakeWebApp(t *testing.T, app otf.Application, opts ...fakeAppOption) *Application {
 	views, err := newViewEngine(false)
 	require.NoError(t, err)
 
@@ -17,7 +25,6 @@ func newFakeWebApp(t *testing.T, app otf.Application, opts ...ApplicationOption)
 		Application: app,
 		Logger:      logr.Discard(),
 		viewEngine:  views,
-		cloudDB:     cloudDB{},
 	}
 
 	for _, o := range opts {

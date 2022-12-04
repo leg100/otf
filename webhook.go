@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"reflect"
@@ -25,12 +26,21 @@ type Webhook struct {
 	Secret     string    // secret token
 	Identifier string    // identifier is <repo_owner>/<repo_name>
 	HTTPURL    string    // HTTPURL is the web url for the repo
-	Cloud                // cloud that webhook belongs to
+
+	cloudConfig CloudConfig // provides handler for webhook's events
 }
 
-func (h *Webhook) ID() string    { return h.WebhookID.String() }
-func (h *Webhook) Owner() string { return strings.Split(h.Identifier, "/")[0] }
-func (h *Webhook) Repo() string  { return strings.Split(h.Identifier, "/")[1] }
+func (h *Webhook) ID() string        { return h.WebhookID.String() }
+func (h *Webhook) Owner() string     { return strings.Split(h.Identifier, "/")[0] }
+func (h *Webhook) Repo() string      { return strings.Split(h.Identifier, "/")[1] }
+func (h *Webhook) CloudName() string { return h.cloudConfig.Name }
+
+func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) *VCSEvent {
+	return h.cloudConfig.HandleEvent(w, r, HandleEventOptions{
+		WebhookID: h.WebhookID,
+		Secret:    h.Secret,
+	})
+}
 
 type WebhookStore interface {
 	// SyncWebhook ensures webhook configuration is present and
@@ -53,6 +63,7 @@ type SyncWebhookOptions struct {
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
 	OTFHost    string // otf host
+	Cloud      string // cloud that the webhook belongs to
 
 	CreateWebhookFunc func(context.Context, WebhookCreatorOptions) (*Webhook, error)
 	UpdateWebhookFunc func(context.Context, WebhookUpdaterOptions) (string, error)
@@ -62,46 +73,46 @@ type WebhookCreatorOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
-	OTFHost    string // otf host
-	Cloud      Cloud  // cloud providing webhook
+	OTFHost    string
+	Cloud      string // cloud providing webhook
 }
 
 type WebhookCreator struct {
 	VCSProviderService // for creating webhook on vcs provider
-	WebhookStore       // for persisting webhook to db
+	CloudService       // for retrieving event handler
 }
 
 func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions) (*Webhook, error) {
+	webhookID := uuid.New()
 	secret, err := GenerateToken()
 	if err != nil {
 		return nil, err
 	}
-	webhookID := uuid.New()
-	endpoint := webhookEndpoint(opts.OTFHost, webhookID.String())
 
-	provider, err := wc.VCSProviderService.GetVCSProvider(ctx, opts.ProviderID)
+	// lookup event cloudConfig using cloud name
+	cloudConfig, err := wc.GetCloud(opts.Cloud)
 	if err != nil {
 		return nil, err
 	}
 
 	// create webhook on vcs provider
-	id, err := wc.VCSProviderService.CreateWebhook(ctx, opts.ProviderID, CreateWebhookOptions{
+	id, err := wc.CreateWebhook(ctx, opts.ProviderID, CreateWebhookOptions{
 		Identifier: opts.Identifier,
 		Secret:     secret,
 		Events:     WebhookEvents,
-		OTFHost:    endpoint,
+		Endpoint:   webhookEndpoint(opts.OTFHost, webhookID.String()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	// now persist it to the db
+	// return webhook for persistence to db
 	return &Webhook{
-		WebhookID:  uuid.New(),
-		VCSID:      id,
-		Secret:     secret,
-		Identifier: opts.Identifier,
-		HTTPURL:    opts.HTTPURL,
-		Cloud:      provider.cloud,
+		WebhookID:   webhookID,
+		VCSID:       id,
+		Secret:      secret,
+		Identifier:  opts.Identifier,
+		HTTPURL:     opts.HTTPURL,
+		cloudConfig: cloudConfig,
 	}, nil
 }
 
@@ -128,7 +139,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 			Identifier: opts.Identifier,
 			Secret:     opts.Secret,
 			Events:     WebhookEvents,
-			OTFHost:    webhookEndpoint(opts.OTFHost, opts.WebhookID.String()),
+			Endpoint:   webhookEndpoint(opts.OTFHost, opts.WebhookID.String()),
 		})
 	} else if err != nil {
 		return "", err
@@ -141,7 +152,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 			CreateWebhookOptions: CreateWebhookOptions{
 				Identifier: opts.Identifier,
 				Secret:     opts.Secret,
-				OTFHost:    opts.OTFHost,
+				Endpoint:   opts.OTFHost,
 			},
 		})
 		if err != nil {
@@ -160,19 +171,19 @@ type WebhookRow struct {
 	Cloud      pgtype.Text `json:"cloud"`
 }
 
-func UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
-	cloud, err := CloudName(row.Cloud.String).Unmarshal()
+func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
+	cloudConfig, err := u.GetCloud(row.Cloud.String)
 	if err != nil {
-		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+		return nil, fmt.Errorf("unknown cloud: %s", cloudConfig)
 	}
 
 	return &Webhook{
-		WebhookID:  row.WebhookID.Bytes,
-		VCSID:      row.VCSID.String,
-		Secret:     row.Secret.String,
-		Identifier: row.Identifier.String,
-		HTTPURL:    row.HTTPURL.String,
-		Cloud:      cloud,
+		WebhookID:   row.WebhookID.Bytes,
+		VCSID:       row.VCSID.String,
+		Secret:      row.Secret.String,
+		Identifier:  row.Identifier.String,
+		HTTPURL:     row.HTTPURL.String,
+		cloudConfig: cloudConfig,
 	}, nil
 }
 

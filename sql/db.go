@@ -16,6 +16,7 @@ import (
 type DB struct {
 	conn
 	pggen.Querier
+	otf.Unmarshaler
 }
 
 // Close closes the DB's connections. If the DB has wrapped a transaction then
@@ -48,7 +49,7 @@ func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
 	if err != nil {
 		return err
 	}
-	if err := callback(newDB(tx)); err != nil {
+	if err := callback(db.copy(tx)); err != nil {
 		if err := tx.Rollback(ctx); err != nil {
 			return err
 		}
@@ -69,7 +70,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 	if err != nil {
 		return err
 	}
-	return cb(newDB(conn))
+	return cb(db.copy(conn))
 }
 
 // tx is the same as exported Tx but for use within the sql pkg, passing the
@@ -79,7 +80,7 @@ func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 	if err != nil {
 		return err
 	}
-	if err := callback(newDB(tx)); err != nil {
+	if err := callback(db.copy(tx)); err != nil {
 		if err := tx.Rollback(ctx); err != nil {
 			return err
 		}
@@ -89,34 +90,51 @@ func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 	return tx.Commit(ctx)
 }
 
-// New constructs a new DB
-func New(ctx context.Context, logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
-	logger = logger.WithValues("component", "database")
+// copy makes a copy of the DB object but with a new connection.
+func (db *DB) copy(conn conn) *DB {
+	return &DB{
+		conn:        conn,
+		Querier:     pggen.NewQuerier(conn),
+		Unmarshaler: db.Unmarshaler,
+	}
+}
 
-	conn, err := pgxpool.Connect(ctx, path)
+// New constructs a new DB
+func New(ctx context.Context, opts Options) (*DB, error) {
+	logger := opts.Logger.WithValues("component", "database")
+
+	conn, err := pgxpool.Connect(ctx, opts.Path)
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("successfully connected", "path", path)
+	logger.Info("successfully connected", "path", opts.Path)
 
-	if err := migrate(logger, path); err != nil {
+	if err := migrate(logger, opts.Path); err != nil {
 		return nil, err
 	}
 
-	db := newDB(conn)
+	db := &DB{
+		conn:    conn,
+		Querier: pggen.NewQuerier(conn),
+		Unmarshaler: otf.Unmarshaler{
+			CloudService: opts.CloudService,
+		},
+	}
 
-	if cleanupInterval > 0 {
-		go db.startCleanup(ctx, cleanupInterval)
+	if opts.CleanupInterval > 0 {
+		go db.startCleanup(ctx, opts.CleanupInterval)
 	}
 
 	return db, nil
 }
 
-func newDB(conn conn) *DB {
-	return &DB{
-		conn:    conn,
-		Querier: pggen.NewQuerier(conn),
-	}
+// Options for constructing a DB
+type Options struct {
+	Logger          logr.Logger
+	Path            string
+	Cache           otf.Cache
+	CleanupInterval time.Duration
+	CloudService      otf.CloudService
 }
 
 // conn is a postgres connection, i.e. *pgx.Pool, *pgx.Tx, etc

@@ -13,7 +13,7 @@ import (
 )
 
 func TestAdminLoginHandler(t *testing.T) {
-	app := newFakeWebApp(t, &fakeAdminLoginHandlerApp{}, WithSiteToken("secrettoken"))
+	app := newFakeWebApp(t, &fakeAdminLoginHandlerApp{}, withFakeSiteToken("secrettoken"))
 
 	tests := []struct {
 		name         string

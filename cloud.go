@@ -2,49 +2,39 @@ package otf
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"net/url"
+	"crypto/tls"
+	"net/http"
 
 	"golang.org/x/oauth2"
 )
 
-var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and client secret")
-
-// CloudName uniquely identifies a cloud provider
-type CloudName string
-
-func (n CloudName) Unmarshal() (Cloud, error) {
-	switch n {
-	case GithubCloudName:
-		return &GithubCloud{}, nil
-	case GitlabCloudName:
-		return &GitlabCloud{}, nil
-	default:
-		return nil, fmt.Errorf("unknown cloud: %s", n)
-	}
-}
-
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
 // repositories etc.
 type Cloud interface {
-	NewClient(context.Context, ClientConfig) (CloudClient, error)
-
-	Marshal() CloudName // for marshaling cloud to string for serializing to the DB
+	NewClient(context.Context, CloudClientOptions) (CloudClient, error)
 	EventHandler
 }
 
-type CloudStore interface {
-	GetCloud(name string) (Cloud, error)
-	PutCloud(name string) (Cloud, error)
-}
-
-// ClientConfig is configuration for creating a new cloud client
-type ClientConfig struct {
+// CloudConfig is configuration for a cloud provider
+type CloudConfig struct {
+	Name                string
 	Hostname            string
 	SkipTLSVerification bool
 
-	// one and only one token must be non-nil
+	Cloud
+}
+
+// CloudClientOptions are options for constructing a cloud client
+type CloudClientOptions struct {
+	Hostname            string
+	SkipTLSVerification bool
+
+	CloudCredentials
+}
+
+// CloudCredentials are credentials for a cloud client
+type CloudCredentials struct {
+	// tokens are mutually-exclusive - at least one must be specified
 	OAuthToken    *oauth2.Token
 	PersonalToken *string
 }
@@ -85,7 +75,7 @@ type GetRepoTarballOptions struct {
 type CreateWebhookOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Secret     string // secret string for generating signature
-	OTFHost    string // otf's external-facing host[:port]
+	Endpoint   string // otf's external-facing host[:port]
 	Events     []VCSEventType
 }
 
@@ -127,55 +117,30 @@ const (
 	VCSFailureStatus VCSStatus = "failure"
 )
 
-// CloudConfig is configuation for a cloud provider
-type CloudConfig struct {
-	Name                CloudName
-	Hostname            string
-	Cloud               Cloud
-	SkipTLSVerification bool
-
-	// OAuth config
-	ClientID     string
-	ClientSecret string
-	Endpoint     oauth2.Endpoint
-	Scopes       []string
+type CloudService interface {
+	GetCloud(name string) (CloudConfig, error)
+	ListClouds() []CloudConfig
 }
 
-func (cfg *CloudConfig) String() string {
+func (cfg CloudConfig) String() string {
 	return string(cfg.Name)
 }
 
-func (cfg *CloudConfig) Validate() error {
-	if cfg.ClientID == "" && cfg.ClientSecret != "" {
-		return ErrOAuthCredentialsIncomplete
-	}
-	if cfg.ClientID != "" && cfg.ClientSecret == "" {
-		return ErrOAuthCredentialsIncomplete
-	}
-	return nil
+func (cfg *CloudConfig) NewClient(ctx context.Context, creds CloudCredentials) (CloudClient, error) {
+	return cfg.Cloud.NewClient(ctx, CloudClientOptions{
+		Hostname:            cfg.Hostname,
+		SkipTLSVerification: cfg.SkipTLSVerification,
+		CloudCredentials:    creds,
+	})
 }
 
-// UpdateEndpoint updates a cloud's OAuth endpoint to use the configured hostname
-func (cfg *CloudConfig) UpdateEndpoint() (err error) {
-	cfg.Endpoint.AuthURL, err = updateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
-	if err != nil {
-		return err
-	}
-	cfg.Endpoint.TokenURL, err = updateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func UnmarshalCloud(cloud CloudName) (Cloud, error) {
-	switch cloud {
-	case GithubCloudName:
-		return GithubCloud{}, nil
-	case GitlabCloudName:
-		return GitlabCloud{}, nil
-	default:
-		return nil, fmt.Errorf("unknown cloud: %s", cloud)
+func (cfg *CloudConfig) HTTPClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: cfg.SkipTLSVerification,
+			},
+		},
 	}
 }
 
@@ -198,16 +163,4 @@ func (r Repo) ID() string { return r.Identifier }
 type RepoList struct {
 	*Pagination
 	Items []*Repo
-}
-
-// updateHost updates the hostname in a URL
-func updateHost(u, host string) (string, error) {
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return "", err
-	}
-
-	parsed.Host = host
-
-	return parsed.String(), nil
 }

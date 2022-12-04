@@ -52,14 +52,15 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	return session
 }
 
-func NewTestVCSProvider(t *testing.T, organization *Organization, cloud Cloud) *VCSProvider {
-	provider := NewVCSProvider(VCSProviderCreateOptions{
-		Name:             uuid.NewString(),
-		Token:            uuid.NewString(),
-		OrganizationName: organization.Name(),
-		Cloud:            cloud,
-	})
-	return provider
+func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
+	return &VCSProvider{
+		id:               NewID("vcs"),
+		createdAt:        CurrentTimestamp(),
+		name:             uuid.NewString(),
+		token:            uuid.NewString(),
+		organizationName: organization.Name(),
+		cloudConfig:      GithubDefaults(),
+	}
 }
 
 func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
@@ -78,13 +79,14 @@ func NewTestRepo() *Repo {
 	}
 }
 
-func NewTestWebhook(repo *Repo) *Webhook {
+func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 	return &Webhook{
-		WebhookID:  uuid.New(),
-		VCSID:      "123",
-		Secret:     "secret",
-		Identifier: repo.Identifier,
-		HTTPURL:    repo.HTTPURL,
+		WebhookID:   uuid.New(),
+		VCSID:       "123",
+		Secret:      "secret",
+		Identifier:  repo.Identifier,
+		HTTPURL:     repo.HTTPURL,
+		cloudConfig: cloudConfig,
 	}
 }
 
