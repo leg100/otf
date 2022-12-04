@@ -127,18 +127,18 @@ func (u *fakeApp) GetChunk(context.Context, otf.GetChunkOptions) (otf.Chunk, err
 	return otf.Chunk{Data: []byte("fake-logs")}, nil
 }
 
-func (f *fakeApp) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+func (u *fakeApp) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
 	return otf.NewAgentToken(opts)
 }
 
-func (f *fakeApp) GetAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
-	return f.fakeAgentToken, nil
+func (u *fakeApp) GetAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
+	return u.fakeAgentToken, nil
 }
 
-func (f *fakeApp) ListAgentTokens(ctx context.Context, _ string) ([]*otf.AgentToken, error) {
-	return []*otf.AgentToken{f.fakeAgentToken}, nil
+func (u *fakeApp) ListAgentTokens(ctx context.Context, _ string) ([]*otf.AgentToken, error) {
+	return []*otf.AgentToken{u.fakeAgentToken}, nil
 }
 
-func (f *fakeApp) DeleteAgentToken(ctx context.Context, id string, organizationName string) error {
+func (u *fakeApp) DeleteAgentToken(ctx context.Context, id string, organizationName string) error {
 	return nil
 }

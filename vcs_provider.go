@@ -44,7 +44,7 @@ type VCSProviderFactory struct {
 }
 
 func (f *VCSProviderFactory) NewVCSProvider(opts VCSProviderCreateOptions) (*VCSProvider, error) {
-	cloudConfig, err := f.GetCloud(opts.Cloud)
+	cloudConfig, err := f.GetCloudConfig(opts.Cloud)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ type VCSProviderRow struct {
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.
 func (u *Unmarshaler) UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider, error) {
-	cloudConfig, err := u.GetCloud(row.Cloud.String)
+	cloudConfig, err := u.GetCloudConfig(row.Cloud.String)
 	if err != nil {
 		return nil, fmt.Errorf("unknown cloud: %s", cloudConfig)
 	}

@@ -263,7 +263,6 @@ func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 	return err
 }
 
-// TODO: implement
 func (g *GitlabClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {
 	return nil
 }

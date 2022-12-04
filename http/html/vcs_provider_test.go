@@ -93,6 +93,6 @@ func (f *fakeVCSProviderApp) DeleteVCSProvider(context.Context, string, string) 
 	return nil
 }
 
-func (f *fakeVCSProviderApp) ListClouds() []otf.CloudConfig {
+func (f *fakeVCSProviderApp) ListCloudConfigs() []otf.CloudConfig {
 	return nil
 }

@@ -66,8 +66,7 @@ func (a *OAuthClient) RequestPath() string {
 	return path.Join("/oauth", a.Name, "login")
 }
 
-// requestHandler initiates the oauth flow, redirecting user to the IdP auth
-// endpoint.
+// RequestHandler initiates the oauth flow, redirecting user to the auth server
 func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 	state, err := otf.GenerateToken()
 	if err != nil {

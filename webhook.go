@@ -90,7 +90,7 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 	}
 
 	// lookup event cloudConfig using cloud name
-	cloudConfig, err := wc.GetCloud(opts.Cloud)
+	cloudConfig, err := wc.GetCloudConfig(opts.Cloud)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ type WebhookRow struct {
 }
 
 func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
-	cloudConfig, err := u.GetCloud(row.Cloud.String)
+	cloudConfig, err := u.GetCloudConfig(row.Cloud.String)
 	if err != nil {
 		return nil, fmt.Errorf("unknown cloud: %s", cloudConfig)
 	}

@@ -58,7 +58,7 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 		organizationRoute
 	}{
 		Items:             providers,
-		CloudConfigs:      app.ListClouds(),
+		CloudConfigs:      app.ListCloudConfigs(),
 		organizationRoute: organizationRequest{r},
 	})
 }

@@ -18,8 +18,7 @@ func NewCloudService(configs ...otf.CloudConfig) (*CloudService, error) {
 	return &CloudService{db}, nil
 }
 
-// TODO: rename to GetCloudConfig
-func (cs *CloudService) GetCloud(name string) (otf.CloudConfig, error) {
+func (cs *CloudService) GetCloudConfig(name string) (otf.CloudConfig, error) {
 	cfg, ok := cs.db[name]
 	if !ok {
 		return otf.CloudConfig{}, fmt.Errorf("unknown cloud: %s", cfg)
@@ -27,8 +26,7 @@ func (cs *CloudService) GetCloud(name string) (otf.CloudConfig, error) {
 	return cfg, nil
 }
 
-// TODO: rename to ListCloudConfigs()
-func (cs *CloudService) ListClouds() []otf.CloudConfig {
+func (cs *CloudService) ListCloudConfigs() []otf.CloudConfig {
 	var configs []otf.CloudConfig
 	for _, cfg := range cs.db {
 		configs = append(configs, cfg)

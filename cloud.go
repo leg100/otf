@@ -118,8 +118,8 @@ const (
 )
 
 type CloudService interface {
-	GetCloud(name string) (CloudConfig, error)
-	ListClouds() []CloudConfig
+	GetCloudConfig(name string) (CloudConfig, error)
+	ListCloudConfigs() []CloudConfig
 }
 
 func (cfg CloudConfig) String() string {

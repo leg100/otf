@@ -112,3 +112,9 @@ migrate-redo:
 .PHONY: serve-docs
 serve-docs:
 	mkdocs serve -a localhost:9999
+
+# Create tunnel between local server and cloudflare - useful for testing
+# webhooks, e.g. a github webhook sending events to local server.
+.PHONY: tunnel
+tunnel:
+	cloudflared tunnel run otf

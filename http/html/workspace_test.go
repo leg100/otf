@@ -280,17 +280,17 @@ func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, otf.WorkspaceSpec, o
 	return f.runs[0], nil
 }
 
-func (u *fakeWorkspaceHandlerApp) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+func (f *fakeWorkspaceHandlerApp) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
 	return nil, nil
 }
 
-func (u *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Team, error) {
+func (f *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Team, error) {
 	return nil, nil
 }
 
-func (u *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
+func (f *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
 	return &otf.RepoList{
-		Items:      u.repos,
-		Pagination: otf.NewPagination(opts, len(u.repos)),
+		Items:      f.repos,
+		Pagination: otf.NewPagination(opts, len(f.repos)),
 	}, nil
 }
