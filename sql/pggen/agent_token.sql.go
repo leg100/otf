@@ -688,13 +688,6 @@ type Querier interface {
 	// FindWebhookByURLScan scans the result of an executed FindWebhookByURLBatch query.
 	FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookByURLRow, error)
 
-	FindWebhookSecret(ctx context.Context, webhookID pgtype.UUID) (pgtype.Text, error)
-	// FindWebhookSecretBatch enqueues a FindWebhookSecret query into batch to be executed
-	// later by the batch.
-	FindWebhookSecretBatch(batch genericBatch, webhookID pgtype.UUID)
-	// FindWebhookSecretScan scans the result of an executed FindWebhookSecretBatch query.
-	FindWebhookSecretScan(results pgx.BatchResults) (pgtype.Text, error)
-
 	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error)
 	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
 	// later by the batch.
@@ -1248,9 +1241,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findWebhookByURLSQL, findWebhookByURLSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByURL': %w", err)
-	}
-	if _, err := p.Prepare(ctx, findWebhookSecretSQL, findWebhookSecretSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookSecret': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookSQL, deleteWebhookSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhook': %w", err)

@@ -63,15 +63,6 @@ func TestWebhook_Sync_NoChange(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestWebhook_GetSecret(t *testing.T) {
-	db := newTestDB(t)
-	hook := createTestWebhook(t, db)
-
-	got, err := db.GetWebhookSecret(context.Background(), hook.WebhookID)
-	require.NoError(t, err)
-	assert.Equal(t, "secret", got)
-}
-
 func TestWebhook_Delete(t *testing.T) {
 	db := newTestDB(t)
 	hook := createTestWebhook(t, db)

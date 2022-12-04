@@ -166,36 +166,6 @@ func (q *DBQuerier) FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookB
 	return item, nil
 }
 
-const findWebhookSecretSQL = `SELECT secret
-FROM webhooks
-WHERE webhook_id = $1;`
-
-// FindWebhookSecret implements Querier.FindWebhookSecret.
-func (q *DBQuerier) FindWebhookSecret(ctx context.Context, webhookID pgtype.UUID) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindWebhookSecret")
-	row := q.conn.QueryRow(ctx, findWebhookSecretSQL, webhookID)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindWebhookSecret: %w", err)
-	}
-	return item, nil
-}
-
-// FindWebhookSecretBatch implements Querier.FindWebhookSecretBatch.
-func (q *DBQuerier) FindWebhookSecretBatch(batch genericBatch, webhookID pgtype.UUID) {
-	batch.Queue(findWebhookSecretSQL, webhookID)
-}
-
-// FindWebhookSecretScan implements Querier.FindWebhookSecretScan.
-func (q *DBQuerier) FindWebhookSecretScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan FindWebhookSecretBatch row: %w", err)
-	}
-	return item, nil
-}
-
 const deleteWebhookSQL = `DELETE
 FROM webhooks
 WHERE webhook_id = $1;`

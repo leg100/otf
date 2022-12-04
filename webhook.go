@@ -53,7 +53,6 @@ type WebhookStore interface {
 	SyncWebhook(ctx context.Context, opts SyncWebhookOptions) (*Webhook, error)
 	// GetWebhook retrieves a webhook by its ID
 	GetWebhook(ctx context.Context, id uuid.UUID) (*Webhook, error)
-	GetWebhookSecret(ctx context.Context, id uuid.UUID) (string, error)
 	// DeleteWebhook deletes the webhook from the store.
 	DeleteWebhook(ctx context.Context, id uuid.UUID) error
 }

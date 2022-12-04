@@ -31,7 +31,7 @@ func TestOAuthClient_RequestHandler(t *testing.T) {
 	}
 }
 
-func TestOAuthClient_ResponseHandler(t *testing.T) {
+func TestOAuthClient_CallbackHandler(t *testing.T) {
 	client := newTestOAuthServerClient(t)
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
 	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
@@ -42,7 +42,7 @@ func TestOAuthClient_ResponseHandler(t *testing.T) {
 }
 
 // newTestOAuthServerClient creates an OAuth server for testing purposes and
-// returns a clietn configured to access the server.
+// returns a client configured to access the server.
 func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})

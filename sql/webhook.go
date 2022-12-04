@@ -30,7 +30,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					Identifier: opts.Identifier,
 					HTTPURL:    opts.HTTPURL,
 					OTFHost:    opts.OTFHost,
-					Cloud: opts.Cloud,
+					Cloud:      opts.Cloud,
 				})
 				if err != nil {
 					return err
@@ -88,11 +88,6 @@ func (db *DB) GetWebhook(ctx context.Context, id uuid.UUID) (*otf.Webhook, error
 		return nil, err
 	}
 	return hook, nil
-}
-
-func (db *DB) GetWebhookSecret(ctx context.Context, id uuid.UUID) (string, error) {
-	secret, err := db.FindWebhookSecret(ctx, UUID(id))
-	return secret.String, databaseError(err)
 }
 
 func (db *DB) DeleteWebhook(ctx context.Context, id uuid.UUID) error {

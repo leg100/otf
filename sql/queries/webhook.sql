@@ -33,11 +33,6 @@ SELECT *
 FROM webhooks
 WHERE http_url = pggen.arg('http_url');
 
--- name: FindWebhookSecret :one
-SELECT secret
-FROM webhooks
-WHERE webhook_id = pggen.arg('webhook_id');
-
 -- name: DeleteWebhook :exec
 DELETE
 FROM webhooks

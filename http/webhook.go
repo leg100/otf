@@ -9,7 +9,7 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
-// webhookHandler is point of entry for incoming VCS events, relaying them onto
+// webhookHandler is the point of entry for incoming VCS events, relaying them onto
 // a cloud-specific handler.
 type webhookHandler struct {
 	events chan<- otf.VCSEvent
