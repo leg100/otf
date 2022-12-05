@@ -11,26 +11,22 @@ import (
 // VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
 // TFE.
 type VCSProvider struct {
-	config CloudClientOptions
-
 	id          string
 	createdAt   time.Time
 	name        string      // TODO: rename to description (?)
 	cloudConfig CloudConfig // cloud config for creating client
-	token       string      // credential for client
+	token       string      // credential for creating client
 
 	organizationName string // vcs provider belongs to an organization
 }
 
-func (t *VCSProvider) ID() string                { return t.id }
-func (t *VCSProvider) String() string            { return t.name }
-func (t *VCSProvider) Token() string             { return t.token }
-func (t *VCSProvider) Hostname() string          { return t.config.Hostname }
-func (t *VCSProvider) SkipTLSVerification() bool { return t.config.SkipTLSVerification }
-func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
-func (t *VCSProvider) Name() string              { return t.name }
-func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
-func (t *VCSProvider) CloudConfig() CloudConfig  { return t.cloudConfig }
+func (t *VCSProvider) ID() string               { return t.id }
+func (t *VCSProvider) String() string           { return t.name }
+func (t *VCSProvider) Token() string            { return t.token }
+func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
+func (t *VCSProvider) Name() string             { return t.name }
+func (t *VCSProvider) OrganizationName() string { return t.organizationName }
+func (t *VCSProvider) CloudConfig() CloudConfig { return t.cloudConfig }
 
 func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
 	return t.cloudConfig.NewClient(ctx, CloudCredentials{
@@ -68,14 +64,12 @@ type VCSProviderCreateOptions struct {
 
 // VCSProviderRow represents a database row for a vcs provider
 type VCSProviderRow struct {
-	VCSProviderID       pgtype.Text        `json:"id"`
-	Token               pgtype.Text        `json:"token"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	Name                pgtype.Text        `json:"name"`
-	Hostname            pgtype.Text        `json:"hostname"`
-	SkipTLSVerification bool               `json:"skip_tls_verification"`
-	Cloud               pgtype.Text        `json:"cloud"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
+	VCSProviderID    pgtype.Text        `json:"id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
 // UnmarshalVCSProviderRow unmarshals a vcs provider row from the database.

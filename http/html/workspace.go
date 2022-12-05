@@ -407,6 +407,13 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 	// extract externally-accessible host from request
 	opts.OTFHost = otfhttp.ExternalHost(r)
 
+	provider, err := app.GetVCSProvider(r.Context(), opts.ProviderID)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	opts.Cloud = provider.CloudConfig().Name
+
 	ws, err := app.ConnectWorkspace(r.Context(), opts.WorkspaceSpec, opts.ConnectWorkspaceOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

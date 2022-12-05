@@ -10,14 +10,12 @@ import (
 // CreateVCSProvider inserts an agent token, associating it with an organization
 func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) error {
 	_, err := db.InsertVCSProvider(ctx, pggen.InsertVCSProviderParams{
-		VCSProviderID:       String(provider.ID()),
-		Token:               String(provider.Token()),
-		Name:                String(provider.Name()),
-		Hostname:            String(provider.Hostname()),
-		Cloud:               String(provider.CloudConfig().Name),
-		SkipTLSVerification: provider.SkipTLSVerification(),
-		OrganizationName:    String(provider.OrganizationName()),
-		CreatedAt:           Timestamptz(provider.CreatedAt()),
+		VCSProviderID:    String(provider.ID()),
+		Token:            String(provider.Token()),
+		Name:             String(provider.Name()),
+		Cloud:            String(provider.CloudConfig().Name),
+		OrganizationName: String(provider.OrganizationName()),
+		CreatedAt:        Timestamptz(provider.CreatedAt()),
 	})
 	return err
 }

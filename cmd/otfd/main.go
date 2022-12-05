@@ -52,7 +52,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	var dbConnStr, hostname string
 
 	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&hostname, "hostname", "localhost", "Hostname via which otfd is accessed")
+	cmd.Flags().StringVar(&hostname, "hostname", DefaultAddress, "Hostname via which otfd is accessed")
 	cmd.Flags().BoolVarP(&version, "version", "v", false, "Print version of otfd")
 	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
 
@@ -84,6 +84,10 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// create oauth clients
 	var oauthClients []*html.OAuthClient
 	for _, cfg := range cloudCfgs {
+		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+			// skip creating oauth client where creds are unspecified
+			continue
+		}
 		client, err := html.NewOAuthClient(html.OAuthClientConfig{
 			OTFHost:     hostname,
 			CloudConfig: cfg.CloudConfig,

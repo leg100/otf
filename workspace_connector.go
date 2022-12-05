@@ -18,6 +18,7 @@ type ConnectWorkspaceOptions struct {
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Branch     string `schema:"branch,required"`
+	Cloud      string // cloud host of the repo
 	OTFHost    string // externally-facing host[:port], the destination for VCS events
 }
 
@@ -32,6 +33,7 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 			HTTPURL:           opts.HTTPURL,
 			ProviderID:        opts.ProviderID,
 			OTFHost:           opts.OTFHost,
+			Cloud:             opts.Cloud,
 			CreateWebhookFunc: wc.Create,
 			UpdateWebhookFunc: wc.Update,
 		})
@@ -79,7 +81,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, spec WorkspaceSpec
 
 		err = app.DeleteWebhook(ctx, repo.ProviderID, DeleteWebhookOptions{
 			Identifier: repo.Identifier,
-			ID:         repo.Webhook.VCSID,
+			ID:         repo.VCSID,
 		})
 		if err != nil {
 			return err
