@@ -15,22 +15,25 @@ type WorkspaceConnector struct {
 
 type ConnectWorkspaceOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
-	Branch     string `schema:"branch,required"`
 	Cloud      string // cloud host of the repo
 	OTFHost    string // externally-facing host[:port], the destination for VCS events
 }
 
 func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, opts ConnectWorkspaceOptions) (*Workspace, error) {
+	repo, err := wc.GetRepository(ctx, opts.ProviderID, opts.Identifier)
+	if err != nil {
+		return nil, err
+	}
+
 	// Inside transaction:
 	// 1. synchronise webhook config
 	// 2. create workspace repo in store
 	var ws *Workspace
-	err := wc.Tx(ctx, func(app Application) (err error) {
+	err = wc.Tx(ctx, func(app Application) (err error) {
 		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
 			Identifier:        opts.Identifier,
-			HTTPURL:           opts.HTTPURL,
+			HTTPURL:           repo.HTTPURL,
 			ProviderID:        opts.ProviderID,
 			OTFHost:           opts.OTFHost,
 			Cloud:             opts.Cloud,
@@ -42,7 +45,7 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 		}
 
 		ws, err = app.DB().CreateWorkspaceRepo(ctx, spec, WorkspaceRepo{
-			Branch:     opts.Branch,
+			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
 			Webhook:    webhook,
 		})

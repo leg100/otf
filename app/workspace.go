@@ -108,11 +108,11 @@ func (a *Application) DisconnectWorkspace(ctx context.Context, spec otf.Workspac
 
 	ws, err := a.Disconnect(ctx, spec)
 	if err != nil {
-		a.Error(err, "disconnecting repo from workspace", append(spec.LogFields(), "subject", subject)...)
+		a.Error(err, "disconnecting workspace", append(spec.LogFields(), "subject", subject)...)
 		return nil, err
 	}
 
-	a.V(0).Info("disconnected repo from workspace", append(spec.LogFields(), "subject", subject)...)
+	a.V(0).Info("disconnected workspace", append(spec.LogFields(), "subject", subject)...)
 
 	return ws, nil
 }

@@ -88,8 +88,10 @@ func TestConnectRepo(t *testing.T) {
 		ss.screenshot(t),
 		// select provider
 		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
+		ss.screenshot(t),
 		// connect to first repo in list (there should only be one)
 		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
+		ss.screenshot(t),
 		// confirm connected
 		//
 		// did not work on two occasions
