@@ -58,22 +58,13 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 
 // Tx provides the caller with a callback in which all operations are conducted
 // within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	if err := callback(db.copy(tx)); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
+	return db.tx(ctx, func(tx *DB) error {
+		return callback(tx)
+	})
 }
 
-// tx is the same as exported Tx but for use within the sql pkg, passing
-// *sql.DB to the callback instead of otf.DB
-func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
+func (db *DB) tx(ctx context.Context, callback func(*DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err

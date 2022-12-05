@@ -2,13 +2,14 @@ package otf
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"reflect"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
@@ -102,7 +103,7 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 		Endpoint:   webhookEndpoint(opts.OTFHost, webhookID.String()),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "creating webhook")
 	}
 	// return webhook for persistence to db
 	return &Webhook{

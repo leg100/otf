@@ -65,7 +65,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 			if err != nil {
 				return err
 			}
-			// Update VCS ID if has changed.
+			// Update VCS' ID if has changed.
 			if hook.VCSID != id {
 				_, err = tx.UpdateWebhookVCSID(ctx, String(id), UUID(hook.WebhookID))
 				if err != nil {
