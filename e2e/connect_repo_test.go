@@ -1,10 +1,12 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
@@ -35,7 +37,12 @@ func TestConnectRepo(t *testing.T) {
 	hostname := daemon.start(t)
 	url := "https://" + hostname
 
+	// create chrome instance
 	ctx, cancel := chromedp.NewContext(allocator)
+	defer cancel()
+
+	// create timeout
+	ctx, cancel = context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
 	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
