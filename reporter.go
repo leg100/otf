@@ -10,8 +10,7 @@ import (
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
-// ReporterLockID is shared by one or more reporters and is used to guarantee
-// that only one reporter will run at any time.
+// ReporterLockID is a unique ID guaranteeing only one reporter on a cluster is running at any time.
 const ReporterLockID int64 = 179366396344335597
 
 // Reporter reports back to VCS providers the current status of VCS-triggered

@@ -14,5 +14,5 @@ func (g *Cloud) NewClient(ctx context.Context, opts otf.CloudClientOptions) (otf
 }
 
 func (Cloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) *otf.VCSEvent {
-	return nil
+	return HandleEvent(w, r, opts)
 }

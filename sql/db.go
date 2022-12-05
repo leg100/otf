@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
+	"github.com/pkg/errors"
 )
 
 // DB provides access to the postgres db
@@ -47,16 +48,19 @@ func (db *DB) Pool() *pgxpool.Pool {
 func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "beginning transaction")
 	}
 	if err := callback(db.copy(tx)); err != nil {
 		if err := tx.Rollback(ctx); err != nil {
-			return err
+			return errors.Wrap(err, "rolling back transaction")
 		}
 		// return original callback error if rollback succeeds
 		return err
 	}
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+	return nil
 }
 
 func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) error {
@@ -134,7 +138,7 @@ type Options struct {
 	Path            string
 	Cache           otf.Cache
 	CleanupInterval time.Duration
-	CloudService      otf.CloudService
+	CloudService    otf.CloudService
 }
 
 // conn is a postgres connection, i.e. *pgx.Pool, *pgx.Tx, etc

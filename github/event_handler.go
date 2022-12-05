@@ -1,18 +1,16 @@
 package github
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
+	"github.com/pkg/errors"
 )
 
-// EventHandler handles incoming events from github
-type EventHandler struct{}
-
-func (h *EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) *otf.VCSEvent {
-	event, err := h.handle(r, opts)
+// HandleEvent handles incoming events from github
+func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) *otf.VCSEvent {
+	event, err := handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
@@ -21,15 +19,15 @@ func (h *EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts 
 	return event
 }
 
-func (h *EventHandler) handle(r *http.Request, opts otf.HandleEventOptions) (*otf.VCSEvent, error) {
+func handle(r *http.Request, opts otf.HandleEventOptions) (*otf.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
-		return nil, fmt.Errorf("validating payload: %w", err)
+		return nil, errors.Wrapf(err, "secret: %s", opts.Secret)
 	}
 
 	rawEvent, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
-		return nil, fmt.Errorf("parsing event: %w", err)
+		return nil, err
 	}
 
 	switch event := rawEvent.(type) {
@@ -57,7 +55,7 @@ func (h *EventHandler) handle(r *http.Request, opts otf.HandleEventOptions) (*ot
 			IsPullRequest: true,
 			WebhookID:     opts.WebhookID,
 		}, nil
+	default:
+		return nil, nil
 	}
-
-	return nil, nil
 }
