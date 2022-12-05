@@ -1,4 +1,4 @@
-package otf
+package github
 
 import (
 	"context"
@@ -11,44 +11,15 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/leg100/otf"
 	"golang.org/x/oauth2"
-	oauth2github "golang.org/x/oauth2/github"
 )
 
-const (
-	DefaultGithubHostname string = "github.com"
-)
-
-func GithubDefaults() CloudConfig {
-	return CloudConfig{
-		Name:     "github",
-		Hostname: DefaultGithubHostname,
-		Cloud:    &GithubCloud{},
-	}
-}
-
-func GithubOAuthDefaults() *oauth2.Config {
-	return &oauth2.Config{
-		Endpoint: oauth2github.Endpoint,
-		Scopes:   []string{"user:email", "read:org"},
-	}
-}
-
-type GithubCloud struct{}
-
-func (g *GithubCloud) NewClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
-	return NewGithubClient(ctx, opts)
-}
-
-func (GithubCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
-	return nil
-}
-
-type GithubClient struct {
+type Client struct {
 	client *github.Client
 }
 
-func NewGithubClient(ctx context.Context, cfg CloudClientOptions) (*GithubClient, error) {
+func NewClient(ctx context.Context, cfg otf.CloudClientOptions) (*Client, error) {
 	var err error
 	var client *github.Client
 
@@ -74,39 +45,39 @@ func NewGithubClient(ctx context.Context, cfg CloudClientOptions) (*GithubClient
 	httpClient := oauth2.NewClient(ctx, src)
 
 	if cfg.Hostname != DefaultGithubHostname {
-		client, err = NewGithubEnterpriseClient(cfg.Hostname, httpClient)
+		client, err = NewEnterpriseClient(cfg.Hostname, httpClient)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		client = github.NewClient(httpClient)
 	}
-	return &GithubClient{client: client}, nil
+	return &Client{client: client}, nil
 }
 
-func NewGithubEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
+func NewEnterpriseClient(hostname string, httpClient *http.Client) (*github.Client, error) {
 	return github.NewEnterpriseClient(
 		"https://"+hostname,
 		"https://"+hostname,
 		httpClient)
 }
 
-func (g *GithubClient) GetUser(ctx context.Context) (*User, error) {
+func (g *Client) GetUser(ctx context.Context) (*otf.User, error) {
 	guser, _, err := g.client.Users.Get(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	var orgs []*Organization
-	var teams []*Team
+	var orgs []*otf.Organization
+	var teams []*otf.Team
 
 	gorgs, _, err := g.client.Organizations.List(ctx, "", nil)
 	if err != nil {
 		return nil, err
 	}
 	for _, gorg := range gorgs {
-		org, err := NewOrganization(OrganizationCreateOptions{
-			Name: String(gorg.GetLogin()),
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(gorg.GetLogin()),
 		})
 		if err != nil {
 			return nil, err
@@ -119,7 +90,7 @@ func (g *GithubClient) GetUser(ctx context.Context) (*User, error) {
 			return nil, err
 		}
 		if membership.GetRole() == "admin" {
-			teams = append(teams, NewTeam("owners", org))
+			teams = append(teams, otf.NewTeam("owners", org))
 		}
 	}
 
@@ -128,20 +99,20 @@ func (g *GithubClient) GetUser(ctx context.Context) (*User, error) {
 		return nil, err
 	}
 	for _, gteam := range gteams {
-		org, err := NewOrganization(OrganizationCreateOptions{
-			Name: String(gteam.GetOrganization().GetLogin()),
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(gteam.GetOrganization().GetLogin()),
 		})
 		if err != nil {
 			return nil, err
 		}
-		teams = append(teams, NewTeam(gteam.GetName(), org))
+		teams = append(teams, otf.NewTeam(gteam.GetName(), org))
 	}
 
-	user := NewUser(guser.GetLogin(), WithOrganizationMemberships(orgs...), WithTeamMemberships(teams...))
+	user := otf.NewUser(guser.GetLogin(), otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
 	return user, nil
 }
 
-func (g *GithubClient) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", identifier)
@@ -151,14 +122,14 @@ func (g *GithubClient) GetRepository(ctx context.Context, identifier string) (*R
 		return nil, err
 	}
 
-	return &Repo{
+	return &otf.Repo{
 		Identifier: repo.GetFullName(),
 		HTTPURL:    repo.GetURL(),
 		Branch:     repo.GetDefaultBranch(),
 	}, nil
 }
 
-func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error) {
+func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*otf.RepoList, error) {
 	repos, resp, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			Page:    opts.SanitizedPageNumber(),
@@ -170,22 +141,22 @@ func (g *GithubClient) ListRepositories(ctx context.Context, opts ListOptions) (
 	}
 
 	// convert to common repo type before returning
-	var items []*Repo
+	var items []*otf.Repo
 	for _, repo := range repos {
-		items = append(items, &Repo{
+		items = append(items, &otf.Repo{
 			Identifier: repo.GetFullName(),
 			HTTPURL:    repo.GetURL(),
 			Branch:     repo.GetDefaultBranch(),
 		})
 	}
 
-	return &RepoList{
+	return &otf.RepoList{
 		Items:      items,
-		Pagination: NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
+		Pagination: otf.NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
 	}, nil
 }
 
-func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, topts otf.GetRepoTarballOptions) ([]byte, error) {
 	owner, name, found := strings.Cut(topts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", topts.Identifier)
@@ -215,7 +186,7 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballO
 	if err != nil {
 		return nil, err
 	}
-	if err := Unpack(resp.Body, untarpath); err != nil {
+	if err := otf.Unpack(resp.Body, untarpath); err != nil {
 		return nil, err
 	}
 	contents, err := os.ReadDir(untarpath)
@@ -226,11 +197,11 @@ func (g *GithubClient) GetRepoTarball(ctx context.Context, topts GetRepoTarballO
 		return nil, fmt.Errorf("malformed tarball archive")
 	}
 	parentDir := path.Join(untarpath, contents[0].Name())
-	return Pack(parentDir)
+	return otf.Pack(parentDir)
 }
 
 // CreateWebhook creates a webhook on a github repository.
-func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOptions) (string, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return "", fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -239,9 +210,9 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case VCSPushEventType:
+		case otf.VCSPushEventType:
 			events = append(events, "push")
-		case VCSPullEventType:
+		case otf.VCSPullEventType:
 			events = append(events, "pull_request")
 		}
 	}
@@ -252,7 +223,7 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 			"url":    opts.Endpoint,
 			"secret": opts.Secret,
 		},
-		Active: Bool(true),
+		Active: otf.Bool(true),
 	})
 	if err != nil {
 		return "", err
@@ -260,7 +231,7 @@ func (g *GithubClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 	return strconv.FormatInt(hook.GetID(), 10), nil
 }
 
-func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -274,9 +245,9 @@ func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case VCSPushEventType:
+		case otf.VCSPushEventType:
 			events = append(events, "push")
-		case VCSPullEventType:
+		case otf.VCSPullEventType:
 			events = append(events, "pull_request")
 		}
 	}
@@ -287,7 +258,7 @@ func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 			"url":    opts.Endpoint,
 			"secret": opts.Secret,
 		},
-		Active: Bool(true),
+		Active: otf.Bool(true),
 	})
 	if err != nil {
 		return err
@@ -295,7 +266,7 @@ func (g *GithubClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	return nil
 }
 
-func (g *GithubClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -309,22 +280,22 @@ func (g *GithubClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, ErrResourceNotFound
+			return nil, otf.ErrResourceNotFound
 		}
 		return nil, err
 	}
 
-	var events []VCSEventType
+	var events []otf.VCSEventType
 	for _, event := range hook.Events {
 		switch event {
 		case "push":
-			events = append(events, VCSPushEventType)
+			events = append(events, otf.VCSPushEventType)
 		case "pull_request":
-			events = append(events, VCSPullEventType)
+			events = append(events, otf.VCSPullEventType)
 		}
 	}
 
-	return &VCSWebhook{
+	return &otf.VCSWebhook{
 		ID:         strconv.FormatInt(hook.GetID(), 10),
 		Identifier: opts.Identifier,
 		Events:     events,
@@ -332,7 +303,7 @@ func (g *GithubClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (
 	}, nil
 }
 
-func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -347,7 +318,7 @@ func (g *GithubClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 	return err
 }
 
-func (g *GithubClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts otf.SetStatusOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -355,23 +326,23 @@ func (g *GithubClient) SetStatus(ctx context.Context, opts SetStatusOptions) err
 
 	var status string
 	switch opts.Status {
-	case VCSPendingStatus, VCSRunningStatus:
+	case otf.VCSPendingStatus, otf.VCSRunningStatus:
 		status = "pending"
-	case VCSSuccessStatus:
+	case otf.VCSSuccessStatus:
 		status = "success"
-	case VCSErrorStatus:
+	case otf.VCSErrorStatus:
 		status = "error"
-	case VCSFailureStatus:
+	case otf.VCSFailureStatus:
 		status = "failure"
 	default:
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)
 	}
 
 	_, _, err := g.client.Repositories.CreateStatus(ctx, owner, name, opts.Ref, &github.RepoStatus{
-		Context:     String(fmt.Sprintf("otf/%s", opts.Workspace)),
-		TargetURL:   String(opts.TargetURL),
-		Description: String(opts.Description),
-		State:       String(status),
+		Context:     otf.String(fmt.Sprintf("otf/%s", opts.Workspace)),
+		TargetURL:   otf.String(opts.TargetURL),
+		Description: otf.String(opts.Description),
+		State:       otf.String(status),
 	})
 	return err
 }

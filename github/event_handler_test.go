@@ -1,4 +1,4 @@
-package otf
+package github
 
 import (
 	"bytes"
@@ -8,34 +8,35 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGithubEventHandler(t *testing.T) {
-	handler := &GithubEventHandler{}
+func TestEventHandler(t *testing.T) {
+	handler := &EventHandler{}
 
 	t.Run("push event", func(t *testing.T) {
-		r := newTestGithubPushEvent(t, "refs/heads/master")
+		r := newTestPushEvent(t, "refs/heads/master")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, HandleEventOptions{})
+		got := handler.HandleEvent(w, r, otf.HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
-		want := VCSEvent{
+		want := otf.VCSEvent{
 			Branch: "master",
 		}
 		assert.Equal(t, &want, got)
 	})
 
 	t.Run("pr event", func(t *testing.T) {
-		r := newTestGithubPullRequestEvent(t, "pr-1")
+		r := newTestPullRequestEvent(t, "pr-1")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, HandleEventOptions{})
+		got := handler.HandleEvent(w, r, otf.HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
-		want := VCSEvent{
+		want := otf.VCSEvent{
 			Branch:        "pr-1",
 			IsPullRequest: true,
 		}
@@ -43,9 +44,9 @@ func TestGithubEventHandler(t *testing.T) {
 	})
 }
 
-func newTestGithubPushEvent(t *testing.T, ref string) *http.Request {
+func newTestPushEvent(t *testing.T, ref string) *http.Request {
 	push, err := json.Marshal(&github.PushEvent{
-		Ref: String(ref),
+		Ref: otf.String(ref),
 	})
 	require.NoError(t, err)
 
@@ -55,11 +56,11 @@ func newTestGithubPushEvent(t *testing.T, ref string) *http.Request {
 	return r
 }
 
-func newTestGithubPullRequestEvent(t *testing.T, ref string) *http.Request {
+func newTestPullRequestEvent(t *testing.T, ref string) *http.Request {
 	pr, err := json.Marshal(&github.PullRequestEvent{
 		PullRequest: &github.PullRequest{
 			Head: &github.PullRequestBranch{
-				Ref: String(ref),
+				Ref: otf.String(ref),
 			},
 		},
 	})

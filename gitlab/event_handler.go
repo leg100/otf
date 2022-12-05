@@ -1,4 +1,4 @@
-package otf
+package gitlab
 
 import (
 	"errors"
@@ -7,17 +7,18 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf"
 	"github.com/xanzy/go-gitlab"
 )
 
-// GitlabEventHandler handles incoming VCS events from gitlab
-type GitlabEventHandler struct {
+// EventHandler handles incoming VCS events from gitlab
+type EventHandler struct {
 	token  string
-	events chan<- VCSEvent
+	events chan<- otf.VCSEvent
 	logr.Logger
 }
 
-func (h *GitlabEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := h.handle(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -25,7 +26,7 @@ func (h *GitlabEventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *GitlabEventHandler) handle(r *http.Request) error {
+func (h *EventHandler) handle(r *http.Request) error {
 	if token := r.Header.Get("X-Gitlab-Token"); token != h.token {
 		return errors.New("token validation failed")
 	}
@@ -51,7 +52,7 @@ func (h *GitlabEventHandler) handle(r *http.Request) error {
 		return errors.New("expected ref to be in the format <string>/<string>/<string>")
 	}
 
-	h.events <- VCSEvent{
+	h.events <- otf.VCSEvent{
 		Identifier: push.Project.PathWithNamespace,
 		Branch:     refParts[2],
 	}

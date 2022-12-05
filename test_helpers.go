@@ -59,7 +59,10 @@ func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
 		name:             uuid.NewString(),
 		token:            uuid.NewString(),
 		organizationName: organization.Name(),
-		cloudConfig:      GithubDefaults(),
+		cloudConfig: CloudConfig{
+			Name:     "fake-cloud",
+			Hostname: "fake-cloud.org",
+		},
 	}
 }
 

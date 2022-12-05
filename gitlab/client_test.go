@@ -1,23 +1,24 @@
-package otf
+package gitlab
 
 import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 )
 
-func TestGitlab_GetUser(t *testing.T) {
+func TestClient(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("GetUser", func(t *testing.T) {
-		org := NewTestOrganization(t)
-		team := NewTeam("maintainers", org)
-		want := NewUser("fake-user", WithOrganizationMemberships(org), WithTeamMemberships(team))
+		org := otf.NewTestOrganization(t)
+		team := otf.NewTeam("maintainers", org)
+		want := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
-		provider := newTestGitlabClient(t, WithGitlabUser(want))
+		provider := newTestClient(t, WithGitlabUser(want))
 
 		user, err := provider.GetUser(ctx)
 		require.NoError(t, err)
@@ -32,9 +33,9 @@ func TestGitlab_GetUser(t *testing.T) {
 	})
 
 	t.Run("GetRepository", func(t *testing.T) {
-		want := &Repo{Identifier: "acme/terraform", Branch: "master"}
+		want := &otf.Repo{Identifier: "acme/terraform", Branch: "master"}
 
-		provider := newTestGitlabClient(t, WithGitlabRepo(want))
+		provider := newTestClient(t, WithGitlabRepo(want))
 
 		got, err := provider.GetRepository(ctx, want.Identifier)
 		require.NoError(t, err)
@@ -44,26 +45,26 @@ func TestGitlab_GetUser(t *testing.T) {
 
 	t.Run("ListRepositories", func(t *testing.T) {
 		// TODO: test pagination - our test server doesn't currently implement it
-		want := &RepoList{
-			Items:      []*Repo{{Identifier: "acme/terraform", Branch: "master"}},
-			Pagination: &Pagination{},
+		want := &otf.RepoList{
+			Items:      []*otf.Repo{{Identifier: "acme/terraform", Branch: "master"}},
+			Pagination: &otf.Pagination{},
 		}
 
-		provider := newTestGitlabClient(t, WithGitlabRepo(want.Items[0]))
+		provider := newTestClient(t, WithGitlabRepo(want.Items[0]))
 
-		got, err := provider.ListRepositories(ctx, ListOptions{})
+		got, err := provider.ListRepositories(ctx, otf.ListOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
 	})
 	t.Run("GetRepoTarball", func(t *testing.T) {
-		want := NewTestTarball(t, `file1 contents`, `file2 contents`)
-		client := newTestGitlabClient(t,
-			WithGitlabRepo(&Repo{Identifier: "acme/terraform", Branch: "master"}),
+		want := otf.NewTestTarball(t, `file1 contents`, `file2 contents`)
+		client := newTestClient(t,
+			WithGitlabRepo(&otf.Repo{Identifier: "acme/terraform", Branch: "master"}),
 			WithGitlabTarball(want),
 		)
 
-		got, err := client.GetRepoTarball(ctx, GetRepoTarballOptions{
+		got, err := client.GetRepoTarball(ctx, otf.GetRepoTarballOptions{
 			Identifier: "acme/terraform",
 			Ref:        "master",
 		})
@@ -73,12 +74,12 @@ func TestGitlab_GetUser(t *testing.T) {
 	})
 }
 
-func newTestGitlabClient(t *testing.T, opts ...TestGitlabServerOption) *GitlabClient {
-	srv := NewTestGitlabServer(t, opts...)
+func newTestClient(t *testing.T, opts ...TestGitlabServerOption) *Client {
+	srv := NewTestServer(t, opts...)
 	t.Cleanup(srv.Close)
 
 	client, err := gitlab.NewOAuthClient("fake-oauth-token", gitlab.WithBaseURL(srv.URL))
 	require.NoError(t, err)
 
-	return &GitlabClient{client: client}
+	return &Client{client: client}
 }

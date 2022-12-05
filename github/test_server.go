@@ -1,4 +1,4 @@
-package otf
+package github
 
 import (
 	"encoding/json"
@@ -8,18 +8,19 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-type testGithubServerDB struct {
-	user    *User
-	repo    *Repo
+type testServerDB struct {
+	user    *otf.User
+	repo    *otf.Repo
 	tarball []byte
 }
 
-func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest.Server {
-	db := &testGithubServerDB{}
+func NewTestServer(t *testing.T, opts ...TestServerOption) *httptest.Server {
+	db := &testServerDB{}
 	for _, o := range opts {
 		o(db)
 	}
@@ -28,7 +29,7 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
-		q.Add("code", GenerateRandomString(10))
+		q.Add("code", otf.GenerateRandomString(10))
 
 		referrer, err := url.Parse(r.Referer())
 		require.NoError(t, err)
@@ -50,7 +51,7 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 	})
 	if db.user != nil {
 		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
-			out, err := json.Marshal(&github.User{Login: String(db.user.Username())})
+			out, err := json.Marshal(&github.User{Login: otf.String(db.user.Username())})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
@@ -58,7 +59,7 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 			var orgs []*github.Organization
 			for _, org := range db.user.Organizations() {
-				orgs = append(orgs, &github.Organization{Login: String(org.Name())})
+				orgs = append(orgs, &github.Organization{Login: otf.String(org.Name())})
 			}
 			out, err := json.Marshal(orgs)
 			require.NoError(t, err)
@@ -68,7 +69,7 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 		for _, org := range db.user.Organizations() {
 			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Membership{
-					Role: String("member"),
+					Role: otf.String("member"),
 				})
 				require.NoError(t, err)
 				w.Header().Add("Content-Type", "application/json")
@@ -79,9 +80,9 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 			var teams []*github.Team
 			for _, team := range db.user.Teams() {
 				teams = append(teams, &github.Team{
-					Name: String(team.Name()),
+					Name: otf.String(team.Name()),
 					Organization: &github.Organization{
-						Login: String(team.OrganizationName()),
+						Login: otf.String(team.OrganizationName()),
 					},
 				})
 			}
@@ -94,9 +95,9 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 	mux.HandleFunc("/api/v3/user/repos", func(w http.ResponseWriter, r *http.Request) {
 		repos := []*github.Repository{
 			{
-				FullName:      String(db.repo.Identifier),
-				URL:           String(db.repo.HTTPURL),
-				DefaultBranch: String(db.repo.Branch),
+				FullName:      otf.String(db.repo.Identifier),
+				URL:           otf.String(db.repo.HTTPURL),
+				DefaultBranch: otf.String(db.repo.Branch),
 			},
 		}
 		out, err := json.Marshal(repos)
@@ -107,9 +108,9 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 	if db.repo != nil {
 		mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier, func(w http.ResponseWriter, r *http.Request) {
 			repo := &github.Repository{
-				FullName:      String(db.repo.Identifier),
-				URL:           String(db.repo.HTTPURL),
-				DefaultBranch: String(db.repo.Branch),
+				FullName:      otf.String(db.repo.Identifier),
+				URL:           otf.String(db.repo.HTTPURL),
+				DefaultBranch: otf.String(db.repo.Branch),
 			}
 			out, err := json.Marshal(repo)
 			require.NoError(t, err)
@@ -124,7 +125,7 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 		// docs.github.com/en/rest/webhooks/repos#create-a-repository-webhook
 		mux.HandleFunc("/api/v3/repos/"+db.repo.Identifier+"/hooks", func(w http.ResponseWriter, r *http.Request) {
 			hook := github.Hook{
-				ID: Int64(123),
+				ID: otf.Int64(123),
 			}
 			out, err := json.Marshal(hook)
 			require.NoError(t, err)
@@ -150,22 +151,22 @@ func NewTestGithubServer(t *testing.T, opts ...TestGithubServerOption) *httptest
 	return srv
 }
 
-type TestGithubServerOption func(*testGithubServerDB)
+type TestServerOption func(*testServerDB)
 
-func WithGithubUser(user *User) TestGithubServerOption {
-	return func(db *testGithubServerDB) {
+func WithUser(user *otf.User) TestServerOption {
+	return func(db *testServerDB) {
 		db.user = user
 	}
 }
 
-func WithGithubRepo(repo *Repo) TestGithubServerOption {
-	return func(db *testGithubServerDB) {
+func WithRepo(repo *otf.Repo) TestServerOption {
+	return func(db *testServerDB) {
 		db.repo = repo
 	}
 }
 
-func WithGithubArchive(tarball []byte) TestGithubServerOption {
-	return func(db *testGithubServerDB) {
+func WithArchive(tarball []byte) TestServerOption {
+	return func(db *testServerDB) {
 		db.tarball = tarball
 	}
 }

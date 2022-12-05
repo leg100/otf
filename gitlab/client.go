@@ -1,4 +1,4 @@
-package otf
+package gitlab
 
 import (
 	"context"
@@ -7,41 +7,15 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/leg100/otf"
 	"github.com/xanzy/go-gitlab"
-	"golang.org/x/oauth2"
-	oauth2gitlab "golang.org/x/oauth2/gitlab"
 )
 
-func GitlabDefaults() CloudConfig {
-	return CloudConfig{
-		Name:     "gitlab",
-		Hostname: "gitlab.com",
-		Cloud:    &GitlabCloud{},
-	}
-}
-
-func GitlabOAuthDefaults() *oauth2.Config {
-	return &oauth2.Config{
-		Endpoint: oauth2gitlab.Endpoint,
-		Scopes:   []string{"read_user", "read_api"},
-	}
-}
-
-type GitlabCloud struct{}
-
-func (g *GitlabCloud) NewClient(ctx context.Context, opts CloudClientOptions) (CloudClient, error) {
-	return NewGitlabClient(ctx, opts)
-}
-
-func (GitlabCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
-	return nil
-}
-
-type GitlabClient struct {
+type Client struct {
 	client *gitlab.Client
 }
 
-func NewGitlabClient(ctx context.Context, cfg CloudClientOptions) (*GitlabClient, error) {
+func NewClient(ctx context.Context, cfg otf.CloudClientOptions) (*Client, error) {
 	var err error
 	var client *gitlab.Client
 
@@ -63,31 +37,31 @@ func NewGitlabClient(ctx context.Context, cfg CloudClientOptions) (*GitlabClient
 		return nil, fmt.Errorf("no credentials provided")
 	}
 
-	return &GitlabClient{client: client}, nil
+	return &Client{client: client}, nil
 }
 
 // GetUser retrieves a user from gitlab. The user's organizations map to gitlab
 // groups and the user's teams map to their access level on the groups, e.g. a
 // user with maintainer access level on group acme maps to a user in the
 // maintainer team in the acme organization.
-func (g *GitlabClient) GetUser(ctx context.Context) (*User, error) {
+func (g *Client) GetUser(ctx context.Context) (*otf.User, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
 		return nil, err
 	}
 
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
-		TopLevelOnly: Bool(true),
+		TopLevelOnly: otf.Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	var orgs []*Organization
-	var teams []*Team
+	var orgs []*otf.Organization
+	var teams []*otf.Team
 	for _, group := range groups {
 		// Create org for each top-level group
-		org, err := NewOrganization(OrganizationCreateOptions{
-			Name: String(group.Path),
+		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
+			Name: otf.String(group.Path),
 		})
 		if err != nil {
 			return nil, err
@@ -115,26 +89,26 @@ func (g *GitlabClient) GetUser(ctx context.Context) (*User, error) {
 			// TODO: skip unknown access levels without error
 			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
 		}
-		teams = append(teams, NewTeam(teamName, org))
+		teams = append(teams, otf.NewTeam(teamName, org))
 	}
-	user := NewUser(guser.Username, WithOrganizationMemberships(orgs...), WithTeamMemberships(teams...))
+	user := otf.NewUser(guser.Username, otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
 	return user, nil
 }
 
-func (g *GitlabClient) GetRepository(ctx context.Context, identifier string) (*Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Repo{
+	return &otf.Repo{
 		Identifier: proj.PathWithNamespace,
 		HTTPURL:    proj.WebURL,
 		Branch:     proj.DefaultBranch,
 	}, nil
 }
 
-func (g *GitlabClient) ListRepositories(ctx context.Context, lopts ListOptions) (*RepoList, error) {
+func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*otf.RepoList, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			Page:    lopts.PageNumber,
@@ -147,24 +121,24 @@ func (g *GitlabClient) ListRepositories(ctx context.Context, lopts ListOptions) 
 	}
 
 	// convert to common repo type before returning
-	var items []*Repo
+	var items []*otf.Repo
 	for _, proj := range projects {
-		items = append(items, &Repo{
+		items = append(items, &otf.Repo{
 			Identifier: proj.PathWithNamespace,
 			HTTPURL:    proj.WebURL,
 			Branch:     proj.DefaultBranch,
 		})
 	}
-	return &RepoList{
+	return &otf.RepoList{
 		Items:      items,
-		Pagination: NewPagination(lopts, resp.TotalItems),
+		Pagination: otf.NewPagination(lopts, resp.TotalItems),
 	}, nil
 }
 
-func (g *GitlabClient) GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, opts otf.GetRepoTarballOptions) ([]byte, error) {
 	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
-		Format: String("tar.gz"),
-		SHA:    String(opts.Ref),
+		Format: otf.String("tar.gz"),
+		SHA:    otf.String(opts.Ref),
 	})
 	if err != nil {
 		return nil, err
@@ -173,19 +147,19 @@ func (g *GitlabClient) GetRepoTarball(ctx context.Context, opts GetRepoTarballOp
 	return tarball, nil
 }
 
-func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOptions) (string, error) {
 	addOpts := &gitlab.AddProjectHookOptions{
-		EnableSSLVerification: Bool(true),
-		PushEvents:            Bool(true),
-		Token:                 String(opts.Secret),
-		URL:                   String(opts.Endpoint),
+		EnableSSLVerification: otf.Bool(true),
+		PushEvents:            otf.Bool(true),
+		Token:                 otf.String(opts.Secret),
+		URL:                   otf.String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case VCSPushEventType:
-			addOpts.PushEvents = Bool(true)
-		case VCSPullEventType:
-			addOpts.MergeRequestsEvents = Bool(true)
+		case otf.VCSPushEventType:
+			addOpts.PushEvents = otf.Bool(true)
+		case otf.VCSPullEventType:
+			addOpts.MergeRequestsEvents = otf.Bool(true)
 		}
 	}
 
@@ -196,23 +170,23 @@ func (g *GitlabClient) CreateWebhook(ctx context.Context, opts CreateWebhookOpti
 	return strconv.Itoa(hook.ID), nil
 }
 
-func (g *GitlabClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOptions) error {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return err
 	}
 
 	editOpts := &gitlab.EditProjectHookOptions{
-		EnableSSLVerification: Bool(true),
-		Token:                 String(opts.Secret),
-		URL:                   String(opts.Endpoint),
+		EnableSSLVerification: otf.Bool(true),
+		Token:                 otf.String(opts.Secret),
+		URL:                   otf.String(opts.Endpoint),
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case VCSPushEventType:
-			editOpts.PushEvents = Bool(true)
-		case VCSPullEventType:
-			editOpts.MergeRequestsEvents = Bool(true)
+		case otf.VCSPushEventType:
+			editOpts.PushEvents = otf.Bool(true)
+		case otf.VCSPullEventType:
+			editOpts.MergeRequestsEvents = otf.Bool(true)
 		}
 	}
 
@@ -223,7 +197,7 @@ func (g *GitlabClient) UpdateWebhook(ctx context.Context, opts UpdateWebhookOpti
 	return nil
 }
 
-func (g *GitlabClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return nil, err
@@ -232,20 +206,20 @@ func (g *GitlabClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (
 	hook, resp, err := g.client.Projects.GetProjectHook(opts.Identifier, id)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, ErrResourceNotFound
+			return nil, otf.ErrResourceNotFound
 		}
 		return nil, err
 	}
 
-	var events []VCSEventType
+	var events []otf.VCSEventType
 	if hook.PushEvents {
-		events = append(events, VCSPushEventType)
+		events = append(events, otf.VCSPushEventType)
 	}
 	if hook.MergeRequestsEvents {
-		events = append(events, VCSPullEventType)
+		events = append(events, otf.VCSPullEventType)
 	}
 
-	return &VCSWebhook{
+	return &otf.VCSWebhook{
 		ID:         strconv.Itoa(id),
 		Identifier: opts.Identifier,
 		Events:     events,
@@ -253,7 +227,7 @@ func (g *GitlabClient) GetWebhook(ctx context.Context, opts GetWebhookOptions) (
 	}, nil
 }
 
-func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOptions) error {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return err
@@ -263,6 +237,6 @@ func (g *GitlabClient) DeleteWebhook(ctx context.Context, opts DeleteWebhookOpti
 	return err
 }
 
-func (g *GitlabClient) SetStatus(ctx context.Context, opts SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts otf.SetStatusOptions) error {
 	return nil
 }

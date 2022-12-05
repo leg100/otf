@@ -47,7 +47,6 @@ func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan Se
 type fakeReporterApp struct {
 	ws            *Workspace
 	cv            *ConfigurationVersion
-	events        chan Event
 	statusUpdates chan SetStatusOptions
 
 	Application

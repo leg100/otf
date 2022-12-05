@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/gitlab"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +32,7 @@ func TestNewCloudConfigsFromFlags(t *testing.T) {
 			CloudConfig: otf.CloudConfig{
 				Name:     "github",
 				Hostname: "my-own-github.com",
-				Cloud:    &otf.GithubCloud{},
+				Cloud:    &github.Cloud{},
 			},
 			Config: &oauth2.Config{
 				Scopes: []string{"user:email", "read:org"},
@@ -46,7 +48,7 @@ func TestNewCloudConfigsFromFlags(t *testing.T) {
 			CloudConfig: otf.CloudConfig{
 				Name:                "gitlab",
 				Hostname:            "my-own-gitlab.com",
-				Cloud:               &otf.GitlabCloud{},
+				Cloud:               &gitlab.Cloud{},
 				SkipTLSVerification: true,
 			},
 			Config: &oauth2.Config{

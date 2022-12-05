@@ -1,16 +1,17 @@
-package otf
+package github
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/google/go-github/v41/github"
+	"github.com/leg100/otf"
 )
 
-// GithubEventHandler handles incoming events from github
-type GithubEventHandler struct{}
+// EventHandler handles incoming events from github
+type EventHandler struct{}
 
-func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts HandleEventOptions) *VCSEvent {
+func (h *EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) *otf.VCSEvent {
 	event, err := h.handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -20,7 +21,7 @@ func (h *GithubEventHandler) HandleEvent(w http.ResponseWriter, r *http.Request,
 	return event
 }
 
-func (h *GithubEventHandler) handle(r *http.Request, opts HandleEventOptions) (*VCSEvent, error) {
+func (h *EventHandler) handle(r *http.Request, opts otf.HandleEventOptions) (*otf.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
 		return nil, fmt.Errorf("validating payload: %w", err)
@@ -33,11 +34,11 @@ func (h *GithubEventHandler) handle(r *http.Request, opts HandleEventOptions) (*
 
 	switch event := rawEvent.(type) {
 	case *github.PushEvent:
-		branch, isBranch := ParseBranch(event.GetRef())
+		branch, isBranch := otf.ParseBranch(event.GetRef())
 		if !isBranch {
 			return nil, nil
 		}
-		return &VCSEvent{
+		return &otf.VCSEvent{
 			Identifier:      event.GetRepo().GetFullName(),
 			Branch:          branch,
 			CommitSHA:       event.GetAfter(),
@@ -49,7 +50,7 @@ func (h *GithubEventHandler) handle(r *http.Request, opts HandleEventOptions) (*
 		// format refs/branches/<branch>
 		branch := event.PullRequest.Head.GetRef()
 
-		return &VCSEvent{
+		return &otf.VCSEvent{
 			Identifier:    event.GetRepo().GetFullName(),
 			Branch:        branch,
 			CommitSHA:     event.GetPullRequest().GetHead().GetSHA(),

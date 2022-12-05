@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
@@ -215,7 +216,7 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 	ctx := context.Background()
 	repo := otf.NewTestRepo()
-	hook := otf.NewTestWebhook(repo, otf.GithubDefaults())
+	hook := otf.NewTestWebhook(repo, github.Defaults())
 
 	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
 		WebhookID:  UUID(hook.WebhookID),

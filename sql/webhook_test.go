@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +14,7 @@ func TestWebhook_Sync_Create(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	repo := otf.NewTestRepo()
-	want := otf.NewTestWebhook(repo, otf.GithubDefaults())
+	want := otf.NewTestWebhook(repo, github.Defaults())
 
 	createFunc := func(context.Context, otf.WebhookCreatorOptions) (*otf.Webhook, error) {
 		return want, nil

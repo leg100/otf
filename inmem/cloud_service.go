@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/gitlab"
 )
 
 type CloudService struct {
@@ -37,8 +39,8 @@ func (cs *CloudService) ListCloudConfigs() []otf.CloudConfig {
 func NewTestCloudService() *CloudService {
 	return &CloudService{
 		db: map[string]otf.CloudConfig{
-			"github": otf.GithubDefaults(),
-			"gitlab": otf.GitlabDefaults(),
+			"github": github.Defaults(),
+			"gitlab": gitlab.Defaults(),
 		},
 	}
 }

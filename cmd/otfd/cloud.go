@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/gitlab"
 	"github.com/spf13/pflag"
 	"golang.org/x/oauth2"
 )
@@ -18,13 +20,13 @@ func cloudFlags(flags *pflag.FlagSet) []*cloudConfig {
 	configs := []*cloudConfig{
 		// github
 		{
-			CloudConfig: otf.GithubDefaults(),
-			Config:      otf.GithubOAuthDefaults(),
+			CloudConfig: github.Defaults(),
+			Config:      github.OAuthDefaults(),
 		},
 		// gitlab
 		{
-			CloudConfig: otf.GitlabDefaults(),
-			Config:      otf.GitlabOAuthDefaults(),
+			CloudConfig: gitlab.Defaults(),
+			Config:      gitlab.OAuthDefaults(),
 		},
 	}
 	for _, cc := range configs {
