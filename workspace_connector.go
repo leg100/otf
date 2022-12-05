@@ -52,7 +52,10 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 		})
 		return errors.Wrap(err, "creating workspace repo")
 	})
-	return ws, err
+	if err != nil {
+		return nil, errors.Wrap(err, "transaction error")
+	}
+	return ws, nil
 }
 
 // Disconnect a repo from a workspace. The repo's webhook is deleted if no other
