@@ -172,9 +172,9 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 
 	// Run PR reporter - if there is another reporter running already then
 	// this'll wait until the other reporter exits.
-	g.Go(func() error {
-		return otf.ExclusiveReporter(ctx, logger, hostname, app)
-	})
+	// g.Go(func() error {
+	// 	return otf.ExclusiveReporter(ctx, logger, hostname, app)
+	// })
 
 	// Run local agent in background
 	g.Go(func() error {
