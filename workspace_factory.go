@@ -78,6 +78,9 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 	if opts.LatestRunID != nil {
 		ws.latestRunID = opts.LatestRunID
 	}
+	if opts.Repo != nil {
+		ws.repo = opts.Repo
+	}
 	return &ws, nil
 }
 

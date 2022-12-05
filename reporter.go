@@ -19,7 +19,8 @@ const ReporterLockID int64 = 179366396344335597
 type Reporter struct {
 	Application
 	logr.Logger
-	hostname string // otfd hostname
+
+	otfHost string // otfd host:[port]
 }
 
 // NewReporter constructs and initialises the reporter.
@@ -27,7 +28,7 @@ func NewReporter(logger logr.Logger, app Application, hostname string) *Reporter
 	s := &Reporter{
 		Application: app,
 		Logger:      logger.WithValues("component", "reporter"),
-		hostname:    hostname,
+		otfHost:     hostname,
 	}
 	s.V(2).Info("started")
 
@@ -71,73 +72,77 @@ func (r *Reporter) reinitialize(ctx context.Context) error {
 				// Skip non-run events
 				continue
 			}
-
-			cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
-			if err != nil {
-				return err
-			}
-
-			// Skip runs that were not triggered via VCS
-			if cv.IngressAttributes() == nil {
-				continue
-			}
-
-			// need run's CV to determine if triggered via VCS
-			// if not, skip
-			// if so, then we need run's workspace's VCS provider to create a
-			// VCS client
-			// we then use VCS client to talk to relevant status API
-
-			var status VCSStatus
-			var description string
-			switch run.Status() {
-			case RunPending, RunPlanQueued, RunApplyQueued:
-				status = VCSPendingStatus
-			case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
-				status = VCSRunningStatus
-			case RunPlannedAndFinished:
-				status = VCSSuccessStatus
-				if run.HasChanges() {
-					description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
-				} else {
-					description = "no changes"
-				}
-			case RunApplied:
-				status = VCSSuccessStatus
-				description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
-			case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
-				status = VCSErrorStatus
-				description = run.Status().String()
-			default:
-				return fmt.Errorf("unknown run status: %s", run.Status())
-			}
-
-			ws, err := r.GetWorkspace(ctx, WorkspaceSpec{ID: String(run.WorkspaceID())})
-			if err != nil {
-				return err
-			}
-
-			if ws.Repo() == nil {
-				return fmt.Errorf("workspace not connect to repo: %s", ws.ID())
-			}
-
-			err = r.SetStatus(ctx, ws.Repo().ProviderID, SetStatusOptions{
-				Workspace:   ws.Name(),
-				Ref:         cv.IngressAttributes().CommitSHA,
-				Identifier:  ws.Repo().Identifier,
-				Status:      status,
-				Description: description,
-				TargetURL: (&url.URL{
-					Scheme: "https",
-					Host:   r.hostname,
-					Path:   RunGetPathUI(run),
-				}).String(),
-			})
-			if err != nil {
+			if err := r.handleRun(ctx, run); err != nil {
 				return err
 			}
 		}
 	}
+}
+
+// reinitialize retrieves workspaces and runs from the DB and listens to events,
+// creating/deleting workspace queues accordingly and forwarding events to
+// queues for scheduling.
+func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
+	cv, err := r.GetConfigurationVersion(ctx, run.ConfigurationVersionID())
+	if err != nil {
+		return err
+	}
+
+	// Skip runs that were not triggered via VCS
+	if cv.IngressAttributes() == nil {
+		return nil
+	}
+
+	// need run's CV to determine if triggered via VCS
+	// if not, skip
+	// if so, then we need run's workspace's VCS provider to create a
+	// VCS client
+	// we then use VCS client to talk to relevant status API
+
+	var status VCSStatus
+	var description string
+	switch run.Status() {
+	case RunPending, RunPlanQueued, RunApplyQueued:
+		status = VCSPendingStatus
+	case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
+		status = VCSRunningStatus
+	case RunPlannedAndFinished:
+		status = VCSSuccessStatus
+		if run.HasChanges() {
+			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
+		} else {
+			description = "no changes"
+		}
+	case RunApplied:
+		status = VCSSuccessStatus
+		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
+	case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
+		status = VCSErrorStatus
+		description = run.Status().String()
+	default:
+		return fmt.Errorf("unknown run status: %s", run.Status())
+	}
+
+	ws, err := r.GetWorkspace(ctx, WorkspaceSpec{ID: String(run.WorkspaceID())})
+	if err != nil {
+		return err
+	}
+	if ws.Repo() == nil {
+		return fmt.Errorf("workspace not connected to repo: %s", ws.ID())
+	}
+
+	return r.SetStatus(ctx, ws.Repo().ProviderID, SetStatusOptions{
+		Workspace:   ws.Name(),
+		Ref:         cv.IngressAttributes().CommitSHA,
+		Identifier:  ws.Repo().Identifier,
+		Status:      status,
+		Description: description,
+		TargetURL: (&url.URL{
+			Scheme: "https",
+			Host:   r.otfHost,
+			Path:   RunGetPathUI(run),
+		}).String(),
+	})
 }
 
 // ExclusiveReporter runs a reporter, ensuring it is the *only* reporter

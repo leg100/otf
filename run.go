@@ -710,15 +710,6 @@ type RunCreateOptions struct {
 	ReplaceAddrs           []string
 }
 
-// TestRunCreateOptions is for testing purposes only.
-type TestRunCreateOptions struct {
-	// override ID of run
-	ID          *string
-	Speculative bool
-	Status      RunStatus
-	AutoApply   bool
-}
-
 // RunApplyOptions represents the options for applying a run.
 type RunApplyOptions struct {
 	// An optional comment about the run.

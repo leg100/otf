@@ -49,7 +49,7 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 		oauthClient: &fakeOAuthClient{user: user},
 	}
 
-	user, err := authenticator.synchronise(context.Background(), &otf.TestClient{User: user})
+	user, err := authenticator.synchronise(context.Background(), &fakeCloudClient{user: user})
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())

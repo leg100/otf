@@ -67,6 +67,10 @@ func NewTestWorkspaceRepo(provider *VCSProvider) *WorkspaceRepo {
 	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
+		Webhook: NewTestWebhook(NewTestRepo(), CloudConfig{
+			Name:     "fake-cloud",
+			Hostname: "fake-cloud.org",
+		}),
 	}
 }
 

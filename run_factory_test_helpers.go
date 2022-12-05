@@ -7,15 +7,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestRunCreateOptions is for testing purposes only.
+type TestRunCreateOptions struct {
+	// override ID of run
+	ID                *string
+	Speculative       bool
+	Status            RunStatus
+	AutoApply         bool
+	Repo              *WorkspaceRepo
+	IngressAttributes *IngressAttributes
+}
+
 // NewTestRun creates a new run. Expressly for testing purposes.
 func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	org, err := NewOrganization(OrganizationCreateOptions{Name: String("test-org")})
 	require.NoError(t, err)
 
-	ws, err := NewWorkspace(org, WorkspaceCreateOptions{Name: "test-ws", AutoApply: Bool(opts.AutoApply)})
+	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
+		Name:      "test-ws",
+		AutoApply: Bool(opts.AutoApply),
+		Repo:      opts.Repo,
+	})
 	require.NoError(t, err)
 
-	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{Speculative: Bool(opts.Speculative)})
+	cv, err := NewConfigurationVersion(ws.ID(), ConfigurationVersionCreateOptions{
+		IngressAttributes: opts.IngressAttributes,
+		Speculative:       Bool(opts.Speculative),
+	})
 	require.NoError(t, err)
 
 	run := NewRun(cv, ws, RunCreateOptions{})

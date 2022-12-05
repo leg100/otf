@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 )
 
@@ -59,6 +60,10 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 	a.V(0).Info("updated workspace", append(spec.LogFields(), "subject", subject)...)
 
 	return updated, nil
+}
+
+func (a *Application) ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*otf.Workspace, error) {
+	return a.db.ListWorkspacesByWebhookID(ctx, id)
 }
 
 func (a *Application) ConnectWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.ConnectWorkspaceOptions) (*otf.Workspace, error) {
