@@ -14,12 +14,10 @@ import (
 )
 
 func TestEventHandler(t *testing.T) {
-	handler := &EventHandler{}
-
 	t.Run("push event", func(t *testing.T) {
 		r := newTestPushEvent(t, "refs/heads/master")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, otf.HandleEventOptions{})
+		got := HandleEvent(w, r, otf.HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
@@ -32,7 +30,7 @@ func TestEventHandler(t *testing.T) {
 	t.Run("pr event", func(t *testing.T) {
 		r := newTestPullRequestEvent(t, "pr-1")
 		w := httptest.NewRecorder()
-		got := handler.HandleEvent(w, r, otf.HandleEventOptions{})
+		got := HandleEvent(w, r, otf.HandleEventOptions{})
 
 		assert.Equal(t, 202, w.Code)
 
