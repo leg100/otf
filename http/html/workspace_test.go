@@ -148,6 +148,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
+		providers:  []*otf.VCSProvider{otf.NewTestVCSProvider(t, org)},
 	})
 
 	form := strings.NewReader(url.Values{
