@@ -43,26 +43,6 @@ func (db *DB) Pool() *pgxpool.Pool {
 	return nil
 }
 
-// Tx provides the caller with a callback in which all operations are conducted
-// within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return errors.Wrap(err, "beginning transaction")
-	}
-	if err := callback(db.copy(tx)); err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return errors.Wrap(err, "rolling back transaction")
-		}
-		// return original callback error if rollback succeeds
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-	return nil
-}
-
 func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) error {
 	conn, err := db.Pool().Acquire(ctx)
 	if err != nil {
@@ -75,6 +55,24 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 		return err
 	}
 	return cb(db.copy(conn))
+}
+
+// Tx provides the caller with a callback in which all operations are conducted
+// within a transaction.
+func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return errors.Wrap(err, "beginning transaction")
+	}
+	defer tx.Rollback(ctx)
+
+	if err := callback(db.copy(tx)); err != nil {
+		return errors.Wrap(err, "callback error")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+	return nil
 }
 
 // tx is the same as exported Tx but for use within the sql pkg, passing the
