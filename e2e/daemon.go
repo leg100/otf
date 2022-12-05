@@ -88,19 +88,16 @@ func (d *daemon) start(t *testing.T) string {
 	loglines := []string{}
 
 	t.Cleanup(func() {
-		t.Log("killing otfd gracefully")
 		// kill otfd gracefully
 		cmd.Process.Signal(os.Interrupt)
 		assert.NoError(t, cmd.Wait())
 
-		// upon failure dump stdout
+		// upon failure dump stdout+stderr
 		if t.Failed() {
 			t.Log("test failed; here are the otfd logs:\n")
 			for _, ll := range loglines {
-				t.Log(ll)
+				t.Logf(ll)
 			}
-		} else {
-			t.Log("test did not fail")
 		}
 	})
 

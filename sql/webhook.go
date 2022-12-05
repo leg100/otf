@@ -2,7 +2,8 @@ package sql
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
@@ -18,7 +19,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 		// in parallel and create a webhook in the intervening period...
 		_, err := tx.Exec(ctx, "LOCK webhooks IN EXCLUSIVE MODE")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "locking webhook table")
 		}
 		result, err := tx.FindWebhookByURL(ctx, String(opts.HTTPURL))
 		if err != nil {

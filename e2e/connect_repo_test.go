@@ -111,4 +111,8 @@ func TestConnectRepo(t *testing.T) {
 	// the fake github server
 	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspace))
 	require.NoError(t, err)
+
+	// Now we test the webhook functionality by sending an event to the daemon
+	// (which would in reality be triggered by a git push to github). The event
+	// should trigger a run on the workspace.
 }

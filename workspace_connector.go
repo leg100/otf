@@ -2,7 +2,8 @@ package otf
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 )
 
 // WorkspaceConnector connects a workspace to a VCS repo, subscribing it to
@@ -23,7 +24,7 @@ type ConnectWorkspaceOptions struct {
 func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, opts ConnectWorkspaceOptions) (*Workspace, error) {
 	repo, err := wc.GetRepository(ctx, opts.ProviderID, opts.Identifier)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "retrieving repository info")
 	}
 
 	// Inside transaction:
@@ -41,7 +42,7 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 			UpdateWebhookFunc: wc.Update,
 		})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "syncing webhook")
 		}
 
 		ws, err = app.DB().CreateWorkspaceRepo(ctx, spec, WorkspaceRepo{
@@ -49,7 +50,7 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 			ProviderID: opts.ProviderID,
 			Webhook:    webhook,
 		})
-		return err
+		return errors.Wrap(err, "creating workspace repo")
 	})
 	return ws, err
 }
