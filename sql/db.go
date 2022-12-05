@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
-	"github.com/pkg/errors"
 )
 
 // DB provides access to the postgres db
@@ -62,31 +61,26 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return errors.Wrap(err, "beginning transaction")
+		return err
 	}
 	defer tx.Rollback(ctx)
 
 	if err := callback(db.copy(tx)); err != nil {
-		return errors.Wrap(err, "callback error")
+		return err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-	return nil
+	return tx.Commit(ctx)
 }
 
-// tx is the same as exported Tx but for use within the sql pkg, passing the
-// full *DB to the callback.
+// tx is the same as exported Tx but for use within the sql pkg, passing
+// *sql.DB to the callback instead of otf.DB
 func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
+
 	if err := callback(db.copy(tx)); err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		// return original callback error if rollback succeeds
 		return err
 	}
 	return tx.Commit(ctx)
