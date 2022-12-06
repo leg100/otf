@@ -39,7 +39,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 
 	db, err := New(context.Background(), Options{
 		Logger:          logr.Discard(),
-		Path:            u.String(),
+		ConnString:            u.String(),
 		Cache:           nil,
 		CleanupInterval: interval,
 		CloudService:    inmem.NewTestCloudService(),

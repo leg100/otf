@@ -134,7 +134,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// Setup database(s)
 	db, err := sql.New(ctx, sql.Options{
 		Logger:          logger,
-		Path:            dbConnStr,
+		ConnString:      dbConnStr,
 		Cache:           cache,
 		CleanupInterval: sql.DefaultSessionCleanupInterval,
 		CloudService:    cloudService,
