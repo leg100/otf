@@ -38,7 +38,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("successfully connected", "connection string", connString)
+	logger.Info("successfully connected", "connection", connString)
 
 	if err := migrate(logger, opts.ConnString); err != nil {
 		return nil, err
