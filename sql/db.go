@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -12,10 +13,59 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+const defaultMaxConnections = "20" // max conns avail in a pgx pool
+
 // DB provides access to the postgres db
 type DB struct {
 	conn
 	pggen.Querier
+	otf.Unmarshaler
+}
+
+// New constructs a new DB
+func New(ctx context.Context, opts Options) (*DB, error) {
+	logger := opts.Logger.WithValues("component", "database")
+
+	// Bump max number of connections in a pool. By default pgx sets it to the
+	// greater of 4 or the num of CPUs. However, otfd acquires several dedicated
+	// connections for session-level advisory locks and can easily exhaust this.
+	connString, err := setDefaultMaxConnections(opts.ConnString)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := pgxpool.Connect(ctx, connString)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("successfully connected", "connection", connString)
+
+	if err := migrate(logger, opts.ConnString); err != nil {
+		return nil, err
+	}
+
+	db := &DB{
+		conn:    conn,
+		Querier: pggen.NewQuerier(conn),
+		Unmarshaler: otf.Unmarshaler{
+			CloudService: opts.CloudService,
+		},
+	}
+
+	if opts.CleanupInterval > 0 {
+		go db.startCleanup(ctx, opts.CleanupInterval)
+	}
+
+	return db, nil
+}
+
+// Options for constructing a DB
+type Options struct {
+	Logger          logr.Logger
+	ConnString      string
+	Cache           otf.Cache
+	CleanupInterval time.Duration
+	CloudService    otf.CloudService
 }
 
 // Close closes the DB's connections. If the DB has wrapped a transaction then
@@ -41,23 +91,6 @@ func (db *DB) Pool() *pgxpool.Pool {
 	return nil
 }
 
-// Tx provides the caller with a callback in which all operations are conducted
-// within a transaction.
-func (db *DB) Tx(ctx context.Context, callback func(tx otf.DB) error) error {
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	if err := callback(newDB(tx)); err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		// return original callback error if rollback succeeds
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
 func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) error {
 	conn, err := db.Pool().Acquire(ctx)
 	if err != nil {
@@ -69,53 +102,36 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, cb func(otf.DB) error) 
 	if err != nil {
 		return err
 	}
-	return cb(newDB(conn))
+	return cb(db.copy(conn))
 }
 
-// tx is the same as exported Tx but for use within the sql pkg, passing the
-// full *DB to the callback.
-func (db *DB) tx(ctx context.Context, callback func(tx *DB) error) error {
+// Tx provides the caller with a callback in which all operations are conducted
+// within a transaction.
+func (db *DB) Tx(ctx context.Context, callback func(otf.DB) error) error {
+	return db.tx(ctx, func(tx *DB) error {
+		return callback(tx)
+	})
+}
+
+func (db *DB) tx(ctx context.Context, callback func(*DB) error) error {
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	if err := callback(newDB(tx)); err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		// return original callback error if rollback succeeds
+	defer tx.Rollback(ctx)
+
+	if err := callback(db.copy(tx)); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
-// New constructs a new DB
-func New(ctx context.Context, logger logr.Logger, path string, cache otf.Cache, cleanupInterval time.Duration) (*DB, error) {
-	logger = logger.WithValues("component", "database")
-
-	conn, err := pgxpool.Connect(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("successfully connected", "path", path)
-
-	if err := migrate(logger, path); err != nil {
-		return nil, err
-	}
-
-	db := newDB(conn)
-
-	if cleanupInterval > 0 {
-		go db.startCleanup(ctx, cleanupInterval)
-	}
-
-	return db, nil
-}
-
-func newDB(conn conn) *DB {
+// copy makes a copy of the DB object but with a new connection.
+func (db *DB) copy(conn conn) *DB {
 	return &DB{
-		conn:    conn,
-		Querier: pggen.NewQuerier(conn),
+		conn:        conn,
+		Querier:     pggen.NewQuerier(conn),
+		Unmarshaler: db.Unmarshaler,
 	}
 }
 
@@ -126,4 +142,15 @@ type conn interface {
 	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+}
+
+func setDefaultMaxConnections(connString string) (string, error) {
+	u, err := url.Parse(connString)
+	if err != nil {
+		return "", err
+	}
+	q := u.Query()
+	q.Add("pool_max_conns", defaultMaxConnections)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }

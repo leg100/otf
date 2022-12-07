@@ -47,25 +47,19 @@ func TestApp(t *testing.T) {
 
 	// construct services
 	app := &fakeApp{
-		fakeUserService: &fakeUserService{
-			fakeUser: fakeUser,
-		},
-		fakeOrganizationService: &fakeOrganizationService{
-			fakeOrganization: fakeOrganization,
-		},
-		fakeWorkspaceService: &fakeWorkspaceService{
-			fakeWorkspace: fakeWorkspace,
-		},
-		fakeRunService: &fakeRunService{
-			fakeRun: fakeRun,
-		},
-		fakeAgentTokenService: &fakeAgentTokenService{
-			fakeAgentToken: fakeAgentToken,
-		},
+		fakeUser:         fakeUser,
+		fakeOrganization: fakeOrganization,
+		fakeWorkspace:    fakeWorkspace,
+		fakeRun:          fakeRun,
+		fakeAgentToken:   fakeAgentToken,
 	}
 	// Add web app routes.
 	router := otfhttp.NewRouter()
-	err = AddRoutes(logr.Discard(), &Config{}, &otfhttp.ServerConfig{}, app, router)
+	err = AddRoutes(logr.Discard(), ApplicationOptions{
+		ServerConfig: &otfhttp.ServerConfig{},
+		Application:  app,
+		Router:       router,
+	})
 	require.NoError(t, err)
 	// setup server
 	srv := httptest.NewTLSServer(router)

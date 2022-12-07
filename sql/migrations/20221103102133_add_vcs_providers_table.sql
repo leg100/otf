@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS vcs_providers (
     token                   TEXT        NOT NULL,
     created_at              TIMESTAMPTZ NOT NULL,
     name                    TEXT        NOT NULL,
-    hostname                TEXT        NOT NULL,
-    skip_tls_verification   BOOL        NOT NULL,
     cloud                   TEXT REFERENCES clouds (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
     organization_name       TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                             PRIMARY KEY (vcs_provider_id)

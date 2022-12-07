@@ -11,6 +11,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/github"
+	"github.com/leg100/otf/inmem"
+	"github.com/leg100/otf/sql/pggen"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/jackc/pgx/v4"
@@ -34,7 +37,13 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 		interval = sessionCleanupIntervalOverride[0]
 	}
 
-	db, err := New(context.Background(), logr.Discard(), u.String(), nil, interval)
+	db, err := New(context.Background(), Options{
+		Logger:          logr.Discard(),
+		ConnString:      u.String(),
+		Cache:           nil,
+		CleanupInterval: interval,
+		CloudService:    inmem.NewTestCloudService(),
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })
@@ -75,59 +84,64 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	return team
 }
 
-func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
-	err := db.CreateWorkspace(context.Background(), ws)
+func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
+	ctx := context.Background()
+	ws := otf.NewTestWorkspace(t, org, opts...)
+	err := db.CreateWorkspace(ctx, ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWorkspace(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.DeleteWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 	return ws
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
+	ctx := context.Background()
 	cv := otf.NewTestConfigurationVersion(t, ws, opts)
-	err := db.CreateConfigurationVersion(context.Background(), cv)
+	err := db.CreateConfigurationVersion(ctx, cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteConfigurationVersion(context.Background(), cv.ID())
+		db.DeleteConfigurationVersion(ctx, cv.ID())
 	})
 	return cv
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
+	ctx := context.Background()
 	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.CreateStateVersion(context.Background(), ws.ID(), sv)
+	err := db.CreateStateVersion(ctx, ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteStateVersion(context.Background(), sv.ID())
+		db.DeleteStateVersion(ctx, sv.ID())
 	})
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	ctx := context.Background()
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	err := db.CreateRun(context.Background(), run)
+	err := db.CreateRun(ctx, run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteRun(context.Background(), run.ID())
+		db.DeleteRun(ctx, run.ID())
 	})
 	return run
 }
 
 func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
+	ctx := context.Background()
 	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
 	user := otf.NewUser(username, opts...)
 
-	err := db.CreateUser(context.Background(), user)
+	err := db.CreateUser(ctx, user)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
+		db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	})
 	return user
 }
@@ -160,20 +174,22 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	return token
 }
 
-func newTestVCSProvider(org *otf.Organization) *otf.VCSProvider {
-	return otf.NewVCSProvider(otf.VCSProviderCreateOptions{
+func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
+	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
+	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{
 		OrganizationName: org.Name(),
 		// unit tests require a legitimate cloud name to avoid invalid foreign
 		// key error upon insert/update
-		CloudName: otf.GithubCloudName,
-		Cloud:     otf.GithubCloud{},
-		Hostname:  "fake.com",
-		Name:      uuid.NewString(),
+		Cloud: "github",
+		Name:  uuid.NewString(),
+		Token: uuid.NewString(),
 	})
+	require.NoError(t, err)
+	return provider
 }
 
 func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organization) *otf.VCSProvider {
-	provider := newTestVCSProvider(organization)
+	provider := newTestVCSProvider(t, organization)
 	ctx := context.Background()
 
 	err := db.CreateVCSProvider(ctx, provider)
@@ -183,4 +199,43 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 		db.DeleteVCSProvider(ctx, provider.ID())
 	})
 	return provider
+}
+
+func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *otf.VCSProvider, hook *otf.Webhook) *otf.WorkspaceRepo {
+	ctx := context.Background()
+
+	ws, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), otf.WorkspaceRepo{
+		ProviderID: provider.ID(),
+		Branch:     "master",
+		WebhookID:  hook.WebhookID,
+		Identifier: hook.Identifier,
+		HTTPURL:    hook.HTTPURL,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+	})
+	return ws.Repo()
+}
+
+func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
+	ctx := context.Background()
+	repo := otf.NewTestRepo()
+	hook := otf.NewTestWebhook(repo, github.Defaults())
+
+	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{
+		WebhookID:  UUID(hook.WebhookID),
+		VCSID:      String(hook.VCSID),
+		Secret:     String(hook.Secret),
+		Identifier: String(hook.Identifier),
+		HTTPURL:    String(hook.HTTPURL),
+		Cloud:      String(hook.CloudName()),
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteWebhook(ctx, hook.WebhookID)
+	})
+	return hook
 }

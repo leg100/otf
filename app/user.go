@@ -14,7 +14,7 @@ func (a *Application) CreateUser(ctx context.Context, username string) (*otf.Use
 		return nil, err
 	}
 
-	a.V(1).Info("created user", "username", username)
+	a.V(0).Info("created user", "username", username)
 
 	return user, nil
 }

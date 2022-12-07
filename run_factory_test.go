@@ -9,10 +9,8 @@ import (
 
 func TestRunFactory(t *testing.T) {
 	org := NewTestOrganization(t)
-	ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
-	autoApplyWS := NewTestWorkspace(t, org, WorkspaceCreateOptions{
-		AutoApply: Bool(true),
-	})
+	ws := NewTestWorkspace(t, org)
+	autoApplyWS := NewTestWorkspace(t, org, AutoApply())
 	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 	speculativeCV := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
 		Speculative: Bool(true),

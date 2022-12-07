@@ -257,17 +257,16 @@ a.show-underline {
   text-decoration: underline;
 }
 
-/* the identifier for a resource, de-emphasised because it's not
+/* the identifier for a resource; de-emphasised because it's not
  * usually relevant to the user */
 .identifier {
   font-family: var(--alt-font);
   font-size: 0.8rem;
 }
 
-.identifier-container {
-  display: flex;
-  gap: 0.5em;
-
+/* the commit sha for a resource; de-emphasised because it's not
+ * usually relevant to the user */
+.commit {
   font-family: var(--alt-font);
   font-size: 0.8rem;
 }

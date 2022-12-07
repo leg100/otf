@@ -13,14 +13,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: rename tests to TestWorkspace_<handler>
+
+func TestGetWorkspaceHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+
+	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.getWorkspace(w, r)
+	if !assert.Equal(t, 200, w.Code) {
+		t.Log(t, w.Body.String())
+	}
+}
+
+func TestEditWorkspaceHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+
+	q := "/?"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.editWorkspace(w, r)
+	assert.Equal(t, 200, w.Code)
+}
+
 func TestListWorkspacesHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	workspaces := []*otf.Workspace{
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: workspaces})
 
@@ -55,9 +83,9 @@ func TestListWorkspacesHandler(t *testing.T) {
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	providers := []*otf.VCSProvider{
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
+		otf.NewTestVCSProvider(t, org),
+		otf.NewTestVCSProvider(t, org),
+		otf.NewTestVCSProvider(t, org),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
 
@@ -69,22 +97,23 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	repos := []*otf.Repo{
-		otf.NewTestRepo(),
-		otf.NewTestRepo(),
-		otf.NewTestRepo(),
-		otf.NewTestRepo(),
-		otf.NewTestRepo(),
-	}
-	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud(otf.WithRepos(repos...)))
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: []*otf.VCSProvider{provider}})
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
+		repos: []*otf.Repo{
+			otf.NewTestRepo(),
+			otf.NewTestRepo(),
+			otf.NewTestRepo(),
+			otf.NewTestRepo(),
+			otf.NewTestRepo(),
+		},
+	})
 
 	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSRepos(w, r)
-	assert.Equal(t, 200, w.Code)
+	if !assert.Equal(t, 200, w.Code) {
+		t.Log(t, w.Body.String())
+	}
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", q+"&page[number]=1&page[size]=2", nil)
@@ -114,14 +143,12 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	})
 }
 
-func TestConnectWorkspaceRepoHandler(t *testing.T) {
+func TestConnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
-	repo := otf.NewTestRepo()
-	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud(otf.WithRepos(repo)))
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
-		providers:  []*otf.VCSProvider{provider},
+		providers:  []*otf.VCSProvider{otf.NewTestVCSProvider(t, org)},
 	})
 
 	form := strings.NewReader(url.Values{
@@ -129,11 +156,14 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 		"workspace_name":    {"fake-workspace"},
 		"vcs_provider_id":   {"fake-provider"},
 		"identifier":        {"acme/myrepo"},
+		"http_url":          {"https://fake-cloud/acme/myrepo"},
+		"branch":            {"master"},
+		"cloud":             {"fake-cloud"},
 	}.Encode())
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.connectWorkspaceRepo(w, r)
+	app.connectWorkspace(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -142,9 +172,9 @@ func TestConnectWorkspaceRepoHandler(t *testing.T) {
 	}
 }
 
-func TestDisconnectWorkspaceRepoHandler(t *testing.T) {
+func TestDisconnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
 	})
@@ -156,7 +186,7 @@ func TestDisconnectWorkspaceRepoHandler(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	app.disconnectWorkspaceRepo(w, r)
+	app.disconnectWorkspace(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
@@ -167,13 +197,11 @@ func TestDisconnectWorkspaceRepoHandler(t *testing.T) {
 
 func TestStartRunHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		runs:           []*otf.Run{run},
-		workspaces:     []*otf.Workspace{ws},
-		configVersions: []*otf.ConfigurationVersion{cv},
+		runs: []*otf.Run{run},
 	})
 
 	form := strings.NewReader(url.Values{
@@ -193,50 +221,13 @@ func TestStartRunHandler(t *testing.T) {
 	}
 }
 
-func TestStartRun(t *testing.T) {
-	ctx := context.Background()
-	org := otf.NewTestOrganization(t)
-	provider := otf.NewTestVCSProvider(t, org, otf.NewTestCloud())
-
-	t.Run("not connected to repo", func(t *testing.T) {
-		ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
-		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		want := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-			runs:           []*otf.Run{want},
-			workspaces:     []*otf.Workspace{ws},
-			configVersions: []*otf.ConfigurationVersion{cv},
-		})
-
-		got, err := startRun(ctx, app, ws.SpecName(), false)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-	})
-
-	t.Run("connected to repo", func(t *testing.T) {
-		repo := otf.NewTestVCSRepo(provider)
-		ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{
-			VCSRepo: repo,
-		})
-		cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
-		want := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-		app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-			runs:           []*otf.Run{want},
-			workspaces:     []*otf.Workspace{ws},
-			configVersions: []*otf.ConfigurationVersion{cv},
-		})
-
-		got, err := startRun(ctx, app, ws.SpecName(), false)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-	})
-}
-
 type fakeWorkspaceHandlerApp struct {
 	runs           []*otf.Run
 	workspaces     []*otf.Workspace
 	configVersions []*otf.ConfigurationVersion
 	providers      []*otf.VCSProvider
+	repos          []*otf.Repo
+
 	otf.Application
 }
 
@@ -251,7 +242,7 @@ func (f *fakeWorkspaceHandlerApp) ListWorkspaces(ctx context.Context, opts otf.W
 	}, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID, organization string) (*otf.VCSProvider, error) {
+func (f *fakeWorkspaceHandlerApp) GetVCSProvider(ctx context.Context, providerID string) (*otf.VCSProvider, error) {
 	return f.providers[0], nil
 }
 
@@ -259,11 +250,11 @@ func (f *fakeWorkspaceHandlerApp) ListVCSProviders(context.Context, string) ([]*
 	return f.providers, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ConnectWorkspaceRepo(context.Context, otf.WorkspaceSpec, otf.VCSRepo) (*otf.Workspace, error) {
+func (f *fakeWorkspaceHandlerApp) ConnectWorkspace(context.Context, otf.WorkspaceSpec, otf.ConnectWorkspaceOptions) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) DisconnectWorkspaceRepo(context.Context, otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeWorkspaceHandlerApp) DisconnectWorkspace(context.Context, otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -285,4 +276,23 @@ func (f *fakeWorkspaceHandlerApp) CloneConfigurationVersion(context.Context, str
 
 func (f *fakeWorkspaceHandlerApp) CreateRun(context.Context, otf.WorkspaceSpec, otf.RunCreateOptions) (*otf.Run, error) {
 	return f.runs[0], nil
+}
+
+func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, otf.WorkspaceSpec, otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
+	return f.runs[0], nil
+}
+
+func (f *fakeWorkspaceHandlerApp) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+	return nil, nil
+}
+
+func (f *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Team, error) {
+	return nil, nil
+}
+
+func (f *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
+	return &otf.RepoList{
+		Items:      f.repos,
+		Pagination: otf.NewPagination(opts, len(f.repos)),
+	}, nil
 }

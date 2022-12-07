@@ -26,14 +26,14 @@ func NewScheduler(logger logr.Logger, app Application) *Scheduler {
 		queues:                make(map[string]eventHandler),
 		workspaceQueueFactory: queueMaker{},
 	}
-	s.Info("started")
+	s.V(2).Info("started")
 
 	return s
 }
 
 // Start starts the scheduler daemon. Should be invoked in a go routine.
 func (s *Scheduler) Start(ctx context.Context) error {
-	ctx = AddSubjectToContext(ctx, &schedulerUser{})
+	ctx = AddSubjectToContext(ctx, &Superuser{"scheduler"})
 
 	op := func() error {
 		return s.reinitialize(ctx)
@@ -152,20 +152,3 @@ func (s *Scheduler) createQueue(ctx context.Context, ws *Workspace) eventHandler
 	s.queues[ws.ID()] = q
 	return q
 }
-
-// schedulerUser identifiers the scheduler for auth purposes
-type schedulerUser struct{}
-
-// CanAccessSite - scheduler needs to retrieve runs across site
-func (*schedulerUser) CanAccessSite(action Action) bool { return true }
-
-// CanAccessOrganization - scheduler needs to access any org
-func (*schedulerUser) CanAccessOrganization(Action, string) bool { return true }
-
-// CanAccessWorkspace -  scheduler accesses all workspaces.
-//
-// TODO: proscribe authz, scheduler does not need to do much.
-func (*schedulerUser) CanAccessWorkspace(Action, *WorkspacePolicy) bool { return true }
-
-func (*schedulerUser) String() string { return "scheduler" }
-func (*schedulerUser) ID() string     { return "scheduler" }

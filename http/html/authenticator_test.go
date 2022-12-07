@@ -2,7 +2,6 @@ package html
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,39 +12,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func TestAuthenticator_RequestHandler(t *testing.T) {
-	authenticator := &Authenticator{
-		&otf.CloudConfig{
-			Name:     otf.CloudName("fake-cloud"),
-			Endpoint: fakeEndpoint("https://fake.com/"),
-		},
-		&fakeAuthenticatorApp{},
-	}
-
-	r := httptest.NewRequest("GET", "/auth", nil)
-	w := httptest.NewRecorder()
-	authenticator.requestHandler(w, r)
-
-	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
-
-	loc, err := w.Result().Location()
-	require.NoError(t, err)
-	assert.Equal(t, "fake.com", loc.Host)
-	assert.Equal(t, "http://example.com/oauth/fake-cloud/callback", loc.Query().Get("redirect_uri"))
-
-	if assert.Equal(t, 1, len(w.Result().Cookies())) {
-		assert.Equal(t, w.Result().Cookies()[0].Value, loc.Query().Get("state"))
-	}
-}
-
 func TestAuthenticator_ResponseHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	team := otf.NewTeam("fake-team", org)
 	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
 	authenticator := &Authenticator{
-		newFakeCloudConfig(fakeOAuthServer(t), user),
-		&fakeAuthenticatorApp{},
+		Application: &fakeAuthenticatorApp{},
+		oauthClient: &fakeOAuthClient{user: user},
 	}
 
 	r := httptest.NewRequest("GET", "/auth?state=state", nil)
@@ -70,8 +44,12 @@ func TestAuthenticator_Synchronise(t *testing.T) {
 	team := otf.NewTeam("fake-team", org)
 	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
 
-	authenticator := &Authenticator{&otf.CloudConfig{}, &fakeAuthenticatorApp{}}
-	user, err := authenticator.synchronise(context.Background(), &otf.TestClient{User: user})
+	authenticator := &Authenticator{
+		Application: &fakeAuthenticatorApp{},
+		oauthClient: &fakeOAuthClient{user: user},
+	}
+
+	user, err := authenticator.synchronise(context.Background(), &fakeCloudClient{user: user})
 	require.NoError(t, err)
 
 	assert.Equal(t, "fake-user", user.Username())
@@ -137,40 +115,16 @@ func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, id, teamID str
 	return nil
 }
 
-func newFakeCloudConfig(url string, user *otf.User) *otf.CloudConfig {
-	return &otf.CloudConfig{
-		Endpoint:            fakeEndpoint(url),
-		SkipTLSVerification: true,
-		Cloud: fakeCloud{
-			user: user,
-		},
-	}
-}
-
-func fakeEndpoint(url string) oauth2.Endpoint {
-	return oauth2.Endpoint{
-		AuthURL:  url,
-		TokenURL: url,
-	}
-}
-
-// OAuth Identity Provider stub
-func fakeOAuthServer(t *testing.T) string {
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		out, err := json.Marshal(&oauth2.Token{AccessToken: "fake_token"})
-		require.NoError(t, err)
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(out)
-	}))
-	t.Cleanup(srv.Close)
-	return srv.URL
-}
-
-type fakeCloud struct {
+type fakeOAuthClient struct {
 	user *otf.User
+	oauthClient
 }
 
-func (f fakeCloud) NewClient(context.Context, otf.ClientConfig) (otf.CloudClient, error) {
+func (f *fakeOAuthClient) CallbackHandler(*http.Request) (*oauth2.Token, error) {
+	return &oauth2.Token{}, nil
+}
+
+func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (otf.CloudClient, error) {
 	return &fakeCloudClient{user: f.user}, nil
 }
 

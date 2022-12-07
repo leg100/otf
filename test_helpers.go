@@ -18,11 +18,29 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-func NewTestWorkspace(t *testing.T, org *Organization, opts WorkspaceCreateOptions) *Workspace {
-	if opts.Name == "" {
-		opts.Name = uuid.NewString()
+type NewTestWorkspaceOption func(*WorkspaceCreateOptions)
+
+func AutoApply() NewTestWorkspaceOption {
+	return func(opts *WorkspaceCreateOptions) {
+		opts.AutoApply = Bool(true)
 	}
-	ws, err := NewWorkspace(org, opts)
+}
+
+func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
+	return func(opts *WorkspaceCreateOptions) {
+		opts.Repo = repo
+	}
+}
+
+func NewTestWorkspace(t *testing.T, org *Organization, opts ...NewTestWorkspaceOption) *Workspace {
+	var createOpts WorkspaceCreateOptions
+	for _, o := range opts {
+		o(&createOpts)
+	}
+	if createOpts.Name == "" {
+		createOpts.Name = uuid.NewString()
+	}
+	ws, err := NewWorkspace(org, createOpts)
 	require.NoError(t, err)
 	return ws
 }
@@ -52,23 +70,26 @@ func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Sess
 	return session
 }
 
-func NewTestVCSProvider(t *testing.T, organization *Organization, cloud Cloud) *VCSProvider {
-	provider := NewVCSProvider(VCSProviderCreateOptions{
-		Name:             uuid.NewString(),
-		Token:            uuid.NewString(),
-		OrganizationName: organization.Name(),
-		Cloud:            cloud,
-	})
-	return provider
+func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
+	return &VCSProvider{
+		id:               NewID("vcs"),
+		createdAt:        CurrentTimestamp(),
+		name:             uuid.NewString(),
+		token:            uuid.NewString(),
+		organizationName: organization.Name(),
+		cloudConfig: CloudConfig{
+			Name:     "fake-cloud",
+			Hostname: "fake-cloud.org",
+		},
+	}
 }
 
-func NewTestVCSRepo(provider *VCSProvider) *VCSRepo {
-	identifier := uuid.NewString()
-	return &VCSRepo{
-		Identifier: identifier,
-		HTTPURL:    "http://fake-cloud.org/" + identifier,
+func NewTestWorkspaceRepo(provider *VCSProvider, hook *Webhook) *WorkspaceRepo {
+	return &WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
+		Identifier: hook.Identifier,
+		HTTPURL:    hook.HTTPURL,
 	}
 }
 
@@ -78,6 +99,25 @@ func NewTestRepo() *Repo {
 		Identifier: identifier,
 		HTTPURL:    "http://fake-cloud.org/" + identifier,
 		Branch:     "master",
+	}
+}
+
+func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
+	return &Webhook{
+		WebhookID:   uuid.New(),
+		VCSID:       "123",
+		Secret:      "secret",
+		Identifier:  repo.Identifier,
+		HTTPURL:     repo.HTTPURL,
+		cloudConfig: cloudConfig,
+	}
+}
+
+func NewTestCloudConfig(cloud Cloud) CloudConfig {
+	return CloudConfig{
+		Name:     "fake-cloud",
+		Hostname: "fake-cloud.org",
+		Cloud:    cloud,
 	}
 }
 

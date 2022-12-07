@@ -16,6 +16,7 @@ type ConfigurationVersionResult struct {
 	Status                               pgtype.Text                                  `json:"status"`
 	WorkspaceID                          pgtype.Text                                  `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []pggen.ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *pggen.IngressAttributes                     `json:"ingress_attributes"`
 }
 
 func UnmarshalConfigurationVersionResult(result ConfigurationVersionResult) (*ConfigurationVersion, error) {
@@ -28,6 +29,15 @@ func UnmarshalConfigurationVersionResult(result ConfigurationVersionResult) (*Co
 		status:           ConfigurationStatus(result.Status.String),
 		statusTimestamps: unmarshalConfigurationVersionStatusTimestampRows(result.ConfigurationVersionStatusTimestamps),
 		workspaceID:      result.WorkspaceID.String,
+	}
+	if result.IngressAttributes != nil {
+		cv.ingressAttributes = &IngressAttributes{
+			Branch:          result.IngressAttributes.Branch.String,
+			CommitSHA:       result.IngressAttributes.CommitSHA.String,
+			Identifier:      result.IngressAttributes.Identifier.String,
+			IsPullRequest:   result.IngressAttributes.IsPullRequest,
+			OnDefaultBranch: result.IngressAttributes.IsPullRequest,
+		}
 	}
 	return &cv, nil
 }

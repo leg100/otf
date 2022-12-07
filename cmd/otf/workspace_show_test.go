@@ -10,7 +10,7 @@ import (
 
 func TestWorkspaceShow(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	factory := &fakeClientFactory{ws: ws}
 
 	cmd := WorkspaceShowCommand(factory)

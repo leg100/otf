@@ -12,6 +12,7 @@
     </div>
     <div class="item-content">
       {{ template "identifier" . }}
+      {{ if .Commit }}<span class="commit">#{{ substr 0 7 .Commit }}</span>{{ end }}
       {{ if eq .Status "applied" }}
         <div class="resource-summary">
           <span class="resource-summary-additions">+{{ .Apply.Additions }}</span>

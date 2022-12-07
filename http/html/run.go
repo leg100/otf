@@ -105,7 +105,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.render("run_get.tmpl", w, r, struct {
-		Run       *otf.Run
+		*otf.Run
 		PlanLogs  *htmlLogChunk
 		ApplyLogs *htmlLogChunk
 	}{

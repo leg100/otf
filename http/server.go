@@ -74,6 +74,7 @@ type Server struct {
 	// the http router, exported so that other pkgs can add routes
 	*Router
 	*signer.Signer
+	vcsEventsHandler *otf.Triggerer
 }
 
 // NewServer is the constructor for Server
@@ -106,9 +107,20 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/healthz", GetHealthz)
 
-	// These are signed URLs that expire after a given time. They don't use
-	// bearer authentication.
+	//
+	// VCS event handling
+	//
+	events := make(chan otf.VCSEvent, 100)
+	r.Handle("/webhooks/vcs/{webhook_id}", &webhookHandler{
+		events:      events,
+		Logger:      logger,
+		Application: app,
+	})
+	s.vcsEventsHandler = otf.NewTriggerer(app, logger, events)
+
+	// These are signed URLs that expire after a given time.
 	r.PathPrefix("/signed/{signature.expiry}").Sub(func(signed *Router) {
+		// TODO: use mux.Middleware interface
 		signed.Use((&signatureVerifier{s.Signer}).handler)
 
 		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
@@ -122,7 +134,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		// Authenticated endpoints
 		api.Sub(func(r *Router) {
-			// Ensure request has valid API token
+			// Ensure request has valid API bearer token
 			r.Use((&authTokenMiddleware{
 				UserService:       app,
 				AgentTokenService: app,
@@ -214,6 +226,9 @@ func (s *Server) Open(ctx context.Context) (err error) {
 	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
 		return err
 	}
+
+	// start handling incoming VCS events
+	go s.vcsEventsHandler.Start(ctx)
 
 	errch := make(chan error)
 

@@ -21,7 +21,7 @@ func TestMapper(t *testing.T) {
 		close(ch)
 
 		// Populate db
-		ws1 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+		ws1 := otf.NewTestWorkspace(t, org)
 		cv1 := otf.NewTestConfigurationVersion(t, ws1, otf.ConfigurationVersionCreateOptions{})
 		run1 := otf.NewRun(cv1, ws1, otf.RunCreateOptions{})
 		app := &fakeMapperApp{
@@ -49,7 +49,7 @@ func TestMapper(t *testing.T) {
 	})
 
 	t.Run("add workspace and run from events", func(t *testing.T) {
-		ws1 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+		ws1 := otf.NewTestWorkspace(t, org)
 		cv1 := otf.NewTestConfigurationVersion(t, ws1, otf.ConfigurationVersionCreateOptions{})
 		run1 := otf.NewRun(cv1, ws1, otf.RunCreateOptions{})
 
@@ -76,7 +76,7 @@ func TestMapper(t *testing.T) {
 	})
 
 	t.Run("update workspace mapping", func(t *testing.T) {
-		ws1 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+		ws1 := otf.NewTestWorkspace(t, org)
 
 		app := &fakeMapperApp{
 			workspaces: []*otf.Workspace{ws1},
@@ -104,7 +104,7 @@ func TestMapper(t *testing.T) {
 	})
 
 	t.Run("remove workspace mapping", func(t *testing.T) {
-		ws1 := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+		ws1 := otf.NewTestWorkspace(t, org)
 
 		app := &fakeMapperApp{
 			workspaces: []*otf.Workspace{ws1},

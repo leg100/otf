@@ -2,6 +2,7 @@ package html
 
 import (
 	"context"
+	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -21,10 +22,8 @@ func TestNewVCSProviderHandler(t *testing.T) {
 }
 
 func TestCreateVCSProviderHandler(t *testing.T) {
-	app := newFakeWebApp(t, &fakeVCSProviderApp{})
-	app.cloudDB = cloudDB{
-		"fake-cloud": {},
-	}
+	org := otf.NewTestOrganization(t)
+	app := newFakeWebApp(t, &fakeVCSProviderApp{provider: otf.NewTestVCSProvider(t, org)})
 
 	form := strings.NewReader(url.Values{
 		"organization_name": {"acme-corp"},
@@ -42,7 +41,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, "/organizations/acme-corp/vcs-providers", redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/organizations/%s/vcs-providers", org.Name()), redirect.Path)
 	} else {
 		t.Log(w.Body.String())
 	}
@@ -50,11 +49,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 
 func TestListVCSProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	app := newFakeWebApp(t, &fakeVCSProviderApp{providers: []*otf.VCSProvider{
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-		otf.NewTestVCSProvider(t, org, fakeCloud{}),
-	}})
+	app := newFakeWebApp(t, &fakeVCSProviderApp{provider: otf.NewTestVCSProvider(t, org)})
 
 	r := httptest.NewRequest("GET", "/organization/acme-corp/vcs-providers", nil)
 	w := httptest.NewRecorder()
@@ -81,18 +76,23 @@ func TestDeleteVCSProvidersHandler(t *testing.T) {
 }
 
 type fakeVCSProviderApp struct {
+	provider *otf.VCSProvider
+
 	otf.Application
-	providers []*otf.VCSProvider
 }
 
 func (f *fakeVCSProviderApp) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
-	return otf.NewVCSProvider(opts), nil
+	return f.provider, nil
 }
 
 func (f *fakeVCSProviderApp) ListVCSProviders(context.Context, string) ([]*otf.VCSProvider, error) {
-	return f.providers, nil
+	return []*otf.VCSProvider{f.provider}, nil
 }
 
 func (f *fakeVCSProviderApp) DeleteVCSProvider(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeVCSProviderApp) ListCloudConfigs() []otf.CloudConfig {
 	return nil
 }

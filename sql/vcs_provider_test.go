@@ -12,7 +12,7 @@ func TestVCSProvider_Create(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	provider := newTestVCSProvider(org)
+	provider := newTestVCSProvider(t, org)
 
 	defer db.DeleteVCSProvider(ctx, provider.Token())
 

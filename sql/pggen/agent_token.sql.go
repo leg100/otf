@@ -151,6 +151,13 @@ type Querier interface {
 	// DeleteConfigurationVersionByIDScan scans the result of an executed DeleteConfigurationVersionByIDBatch query.
 	DeleteConfigurationVersionByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertIngressAttributes(ctx context.Context, params InsertIngressAttributesParams) (pgconn.CommandTag, error)
+	// InsertIngressAttributesBatch enqueues a InsertIngressAttributes query into batch to be executed
+	// later by the batch.
+	InsertIngressAttributesBatch(batch genericBatch, params InsertIngressAttributesParams)
+	// InsertIngressAttributesScan scans the result of an executed InsertIngressAttributesBatch query.
+	InsertIngressAttributesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -650,26 +657,43 @@ type Querier interface {
 	// DeleteVCSProviderByIDScan scans the result of an executed DeleteVCSProviderByIDBatch query.
 	DeleteVCSProviderByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertVCSRepo(ctx context.Context, params InsertVCSRepoParams) (pgconn.CommandTag, error)
-	// InsertVCSRepoBatch enqueues a InsertVCSRepo query into batch to be executed
+	// FindOrInsertWebhook idempotently inserts a webhook,
+	// returning it if it already exists.
+	//
+	InsertWebhook(ctx context.Context, params InsertWebhookParams) (pgconn.CommandTag, error)
+	// InsertWebhookBatch enqueues a InsertWebhook query into batch to be executed
 	// later by the batch.
-	InsertVCSRepoBatch(batch genericBatch, params InsertVCSRepoParams)
-	// InsertVCSRepoScan scans the result of an executed InsertVCSRepoBatch query.
-	InsertVCSRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	InsertWebhookBatch(batch genericBatch, params InsertWebhookParams)
+	// InsertWebhookScan scans the result of an executed InsertWebhookBatch query.
+	InsertWebhookScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	UpdateVCSRepo(ctx context.Context, params UpdateVCSRepoParams) (pgtype.Text, error)
-	// UpdateVCSRepoBatch enqueues a UpdateVCSRepo query into batch to be executed
+	UpdateWebhookVCSID(ctx context.Context, vcsID pgtype.Text, webhookID pgtype.UUID) (pgconn.CommandTag, error)
+	// UpdateWebhookVCSIDBatch enqueues a UpdateWebhookVCSID query into batch to be executed
 	// later by the batch.
-	UpdateVCSRepoBatch(batch genericBatch, params UpdateVCSRepoParams)
-	// UpdateVCSRepoScan scans the result of an executed UpdateVCSRepoBatch query.
-	UpdateVCSRepoScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateWebhookVCSIDBatch(batch genericBatch, vcsID pgtype.Text, webhookID pgtype.UUID)
+	// UpdateWebhookVCSIDScan scans the result of an executed UpdateWebhookVCSIDBatch query.
+	UpdateWebhookVCSIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteVCSRepo(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error)
-	// DeleteVCSRepoBatch enqueues a DeleteVCSRepo query into batch to be executed
+	FindWebhookByID(ctx context.Context, webhookID pgtype.UUID) (FindWebhookByIDRow, error)
+	// FindWebhookByIDBatch enqueues a FindWebhookByID query into batch to be executed
 	// later by the batch.
-	DeleteVCSRepoBatch(batch genericBatch, workspaceID pgtype.Text)
-	// DeleteVCSRepoScan scans the result of an executed DeleteVCSRepoBatch query.
-	DeleteVCSRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+	FindWebhookByIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
+	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
+
+	FindWebhookByURL(ctx context.Context, httpURL pgtype.Text) (FindWebhookByURLRow, error)
+	// FindWebhookByURLBatch enqueues a FindWebhookByURL query into batch to be executed
+	// later by the batch.
+	FindWebhookByURLBatch(batch genericBatch, httpURL pgtype.Text)
+	// FindWebhookByURLScan scans the result of an executed FindWebhookByURLBatch query.
+	FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookByURLRow, error)
+
+	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error)
+	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
+	// later by the batch.
+	DeleteWebhookBatch(batch genericBatch, webhookID pgtype.UUID)
+	// DeleteWebhookScan scans the result of an executed DeleteWebhookBatch query.
+	DeleteWebhookScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
 	InsertWorkspace(ctx context.Context, params InsertWorkspaceParams) (pgconn.CommandTag, error)
 	// InsertWorkspaceBatch enqueues a InsertWorkspace query into batch to be executed
@@ -691,6 +715,13 @@ type Querier interface {
 	CountWorkspacesBatch(batch genericBatch, prefix pgtype.Text, organizationNames []string)
 	// CountWorkspacesScan scans the result of an executed CountWorkspacesBatch query.
 	CountWorkspacesScan(results pgx.BatchResults) (*int, error)
+
+	FindWorkspacesByWebhookID(ctx context.Context, webhookID pgtype.UUID) ([]FindWorkspacesByWebhookIDRow, error)
+	// FindWorkspacesByWebhookIDBatch enqueues a FindWorkspacesByWebhookID query into batch to be executed
+	// later by the batch.
+	FindWorkspacesByWebhookIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// FindWorkspacesByWebhookIDScan scans the result of an executed FindWorkspacesByWebhookIDBatch query.
+	FindWorkspacesByWebhookIDScan(results pgx.BatchResults) ([]FindWorkspacesByWebhookIDRow, error)
 
 	FindWorkspacesByUserID(ctx context.Context, params FindWorkspacesByUserIDParams) ([]FindWorkspacesByUserIDRow, error)
 	// FindWorkspacesByUserIDBatch enqueues a FindWorkspacesByUserID query into batch to be executed
@@ -831,6 +862,27 @@ type Querier interface {
 	DeleteWorkspacePermissionByNameBatch(batch genericBatch, params DeleteWorkspacePermissionByNameParams)
 	// DeleteWorkspacePermissionByNameScan scans the result of an executed DeleteWorkspacePermissionByNameBatch query.
 	DeleteWorkspacePermissionByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertWorkspaceRepo(ctx context.Context, params InsertWorkspaceRepoParams) (pgconn.CommandTag, error)
+	// InsertWorkspaceRepoBatch enqueues a InsertWorkspaceRepo query into batch to be executed
+	// later by the batch.
+	InsertWorkspaceRepoBatch(batch genericBatch, params InsertWorkspaceRepoParams)
+	// InsertWorkspaceRepoScan scans the result of an executed InsertWorkspaceRepoBatch query.
+	InsertWorkspaceRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	UpdateWorkspaceRepoByID(ctx context.Context, branch pgtype.Text, workspaceID pgtype.Text) (pgtype.Text, error)
+	// UpdateWorkspaceRepoByIDBatch enqueues a UpdateWorkspaceRepoByID query into batch to be executed
+	// later by the batch.
+	UpdateWorkspaceRepoByIDBatch(batch genericBatch, branch pgtype.Text, workspaceID pgtype.Text)
+	// UpdateWorkspaceRepoByIDScan scans the result of an executed UpdateWorkspaceRepoByIDBatch query.
+	UpdateWorkspaceRepoByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteWorkspaceRepo(ctx context.Context, workspaceID pgtype.Text) (DeleteWorkspaceRepoRow, error)
+	// DeleteWorkspaceRepoBatch enqueues a DeleteWorkspaceRepo query into batch to be executed
+	// later by the batch.
+	DeleteWorkspaceRepoBatch(batch genericBatch, workspaceID pgtype.Text)
+	// DeleteWorkspaceRepoScan scans the result of an executed DeleteWorkspaceRepoBatch query.
+	DeleteWorkspaceRepoScan(results pgx.BatchResults) (DeleteWorkspaceRepoRow, error)
 }
 
 type DBQuerier struct {
@@ -961,6 +1013,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteConfigurationVersionByIDSQL, deleteConfigurationVersionByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteConfigurationVersionByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
@@ -1175,14 +1230,20 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteVCSProviderByIDSQL, deleteVCSProviderByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteVCSProviderByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, insertVCSRepoSQL, insertVCSRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'InsertVCSRepo': %w", err)
+	if _, err := p.Prepare(ctx, insertWebhookSQL, insertWebhookSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWebhook': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateVCSRepoSQL, updateVCSRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateVCSRepo': %w", err)
+	if _, err := p.Prepare(ctx, updateWebhookVCSIDSQL, updateWebhookVCSIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWebhookVCSID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteVCSRepoSQL, deleteVCSRepoSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteVCSRepo': %w", err)
+	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWebhookByURLSQL, findWebhookByURLSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByURL': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteWebhookSQL, deleteWebhookSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWebhook': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertWorkspaceSQL, insertWorkspaceSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertWorkspace': %w", err)
@@ -1192,6 +1253,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, countWorkspacesSQL, countWorkspacesSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountWorkspaces': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findWorkspacesByWebhookIDSQL, findWorkspacesByWebhookIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWorkspacesByWebhookID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findWorkspacesByUserIDSQL, findWorkspacesByUserIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWorkspacesByUserID': %w", err)
@@ -1250,6 +1314,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteWorkspacePermissionByNameSQL, deleteWorkspacePermissionByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspacePermissionByName': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertWorkspaceRepoSQL, insertWorkspaceRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertWorkspaceRepo': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateWorkspaceRepoByIDSQL, updateWorkspaceRepoByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateWorkspaceRepoByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteWorkspaceRepoSQL, deleteWorkspaceRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteWorkspaceRepo': %w", err)
+	}
 	return nil
 }
 
@@ -1258,6 +1331,16 @@ type ConfigurationVersionStatusTimestamps struct {
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
 	Status                 pgtype.Text        `json:"status"`
 	Timestamp              pgtype.Timestamptz `json:"timestamp"`
+}
+
+// IngressAttributes represents the Postgres composite type "ingress_attributes".
+type IngressAttributes struct {
+	Branch                 pgtype.Text `json:"branch"`
+	CommitSHA              pgtype.Text `json:"commit_sha"`
+	Identifier             pgtype.Text `json:"identifier"`
+	IsPullRequest          bool        `json:"is_pull_request"`
+	OnDefaultBranch        bool        `json:"on_default_branch"`
+	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 }
 
 // Organizations represents the Postgres composite type "organizations".
@@ -1336,10 +1419,20 @@ type Users struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-// VCSRepos represents the Postgres composite type "vcs_repos".
-type VCSRepos struct {
-	Identifier    pgtype.Text `json:"identifier"`
+// Webhooks represents the Postgres composite type "webhooks".
+type Webhooks struct {
+	WebhookID  pgtype.UUID `json:"webhook_id"`
+	VCSID      pgtype.Text `json:"vcs_id"`
+	Secret     pgtype.Text `json:"secret"`
+	Identifier pgtype.Text `json:"identifier"`
+	HTTPURL    pgtype.Text `json:"http_url"`
+	Cloud      pgtype.Text `json:"cloud"`
+}
+
+// WorkspaceRepos represents the Postgres composite type "workspace_repos".
+type WorkspaceRepos struct {
 	Branch        pgtype.Text `json:"branch"`
+	WebhookID     pgtype.UUID `json:"webhook_id"`
 	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 	WorkspaceID   pgtype.Text `json:"workspace_id"`
 }
@@ -1438,6 +1531,20 @@ func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTr
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+	)
+}
+
+// newIngressAttributes creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'ingress_attributes'.
+func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"ingress_attributes",
+		compositeField{"branch", "text", &pgtype.Text{}},
+		compositeField{"commit_sha", "text", &pgtype.Text{}},
+		compositeField{"identifier", "text", &pgtype.Text{}},
+		compositeField{"is_pull_request", "bool", &pgtype.Bool{}},
+		compositeField{"on_default_branch", "bool", &pgtype.Bool{}},
+		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
 	)
 }
 
@@ -1549,13 +1656,27 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 	)
 }
 
-// newVCSRepos creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'vcs_repos'.
-func (tr *typeResolver) newVCSRepos() pgtype.ValueTranscoder {
+// newWebhooks creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'webhooks'.
+func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
-		"vcs_repos",
+		"webhooks",
+		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
+		compositeField{"vcs_id", "text", &pgtype.Text{}},
+		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
+		compositeField{"http_url", "text", &pgtype.Text{}},
+		compositeField{"cloud", "text", &pgtype.Text{}},
+	)
+}
+
+// newWorkspaceRepos creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'workspace_repos'.
+func (tr *typeResolver) newWorkspaceRepos() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"workspace_repos",
 		compositeField{"branch", "text", &pgtype.Text{}},
+		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
 		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 	)

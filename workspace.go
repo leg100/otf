@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -54,13 +56,13 @@ type Workspace struct {
 	workingDirectory           string
 	organization               *Organization
 	latestRunID                *string
-	repo                       *VCSRepo
+	repo                       *WorkspaceRepo
 }
 
 func (ws *Workspace) ID() string                       { return ws.id }
 func (ws *Workspace) CreatedAt() time.Time             { return ws.createdAt }
 func (ws *Workspace) UpdatedAt() time.Time             { return ws.updatedAt }
-func (ws *Workspace) String() string                   { return ws.id }
+func (ws *Workspace) String() string                   { return ws.organization.Name() + "/" + ws.name }
 func (ws *Workspace) Name() string                     { return ws.name }
 func (ws *Workspace) WorkspaceName() string            { return ws.name }
 func (ws *Workspace) AllowDestroyPlan() bool           { return ws.allowDestroyPlan }
@@ -85,7 +87,7 @@ func (ws *Workspace) OrganizationID() string           { return ws.organization.
 func (ws *Workspace) OrganizationName() string         { return ws.organization.name }
 func (ws *Workspace) Organization() *Organization      { return ws.organization }
 func (ws *Workspace) LatestRunID() *string             { return ws.latestRunID }
-func (ws *Workspace) VCSRepo() *VCSRepo                { return ws.repo }
+func (ws *Workspace) Repo() *WorkspaceRepo             { return ws.repo }
 
 // ExecutionModes returns a list of possible execution modes
 func (ws *Workspace) ExecutionModes() []string {
@@ -196,11 +198,11 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		ws.workingDirectory = *opts.WorkingDirectory
 		ws.updatedAt = CurrentTimestamp()
 	}
-	if opts.VCSRepo != nil {
+	if opts.WorkspaceRepo != nil {
 		if ws.repo != nil {
 			return fmt.Errorf("updating workspace vcs repo not supported")
 		}
-		ws.repo = opts.VCSRepo
+		ws.repo = opts.WorkspaceRepo
 	}
 
 	return nil
@@ -229,7 +231,7 @@ type WorkspaceUpdateOptions struct {
 	TerraformVersion           *string `schema:"terraform_version"`
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	*VCSRepo
+	*WorkspaceRepo
 }
 
 func (o WorkspaceUpdateOptions) Valid() error {
@@ -247,7 +249,7 @@ func (o WorkspaceUpdateOptions) Valid() error {
 		o.TerraformVersion == nil &&
 		o.TriggerPrefixes == nil &&
 		o.WorkingDirectory == nil &&
-		o.VCSRepo == nil {
+		o.WorkspaceRepo == nil {
 		return fmt.Errorf("must set at least one option to update")
 	}
 	if o.Name != nil && !ValidStringID(o.Name) {
@@ -288,13 +290,20 @@ type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
+	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
-	WorkspaceRepoService
+	WorkspaceConnectionService
+}
+
+type WorkspaceConnectionService interface {
+	ConnectWorkspace(ctx context.Context, spec WorkspaceSpec, opts ConnectWorkspaceOptions) (*Workspace, error)
+	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
+	DisconnectWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 }
 
 type WorkspacePermissionService interface {
@@ -314,6 +323,7 @@ type WorkspaceStore interface {
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
+	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
 	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
@@ -321,17 +331,18 @@ type WorkspaceStore interface {
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 
+	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
+	CreateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
+	// UpdateWorkspaceRepo updates a workspace's repo in the persistence store.
+	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
+	// DeleteWorkspaceRepo deletes a workspace's repo from the persistence
+	// store, returning the workspace without the repo as well the original repo, or an
+	// error.
+	DeleteWorkspaceRepo(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+
 	WorkspaceLockService
 	CurrentRunService
 	WorkspacePermissionService
-	WorkspaceRepoService
-}
-
-// WorkspaceRepoService manages a workspace's connection to a VCS repository.
-type WorkspaceRepoService interface {
-	ConnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
-	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo VCSRepo) (*Workspace, error)
-	DisconnectWorkspaceRepo(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
 }
 
 // CurrentRunService provides interaction with the current run for a workspace,
@@ -368,6 +379,8 @@ type WorkspaceSpec struct {
 }
 
 // LogFields provides fields for logging
+//
+// TODO: use logr marshaller instead
 func (spec WorkspaceSpec) LogFields() (fields []interface{}) {
 	if spec.ID != nil {
 		fields = append(fields, "id", *spec.ID)

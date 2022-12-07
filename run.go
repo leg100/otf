@@ -83,6 +83,9 @@ type Run struct {
 	workspaceID            string
 	configurationVersionID string
 	latest                 bool
+
+	commit *string // commit sha that triggered this run
+
 	// Relations
 	plan      *Plan
 	apply     *Apply
@@ -111,6 +114,8 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
+
+func (r *Run) Commit() *string { return r.commit }
 
 // Latest determines whether run is the latest run for a workspace, i.e.
 // its current run, or the most recent current run.
@@ -336,6 +341,8 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 }
 
 // IncludeWorkspace adds a workspace for inclusion in the run's JSON-API object.
+//
+// TODO: remove; instead retrieve JSON-API inclusions in the http pkg
 func (r *Run) IncludeWorkspace(ws *Workspace) {
 	r.workspace = ws
 }
@@ -692,6 +699,8 @@ type RunService interface {
 	LogService
 	// Tail logs of a run phase
 	Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
+	// StartRun creates and starts a run.
+	StartRun(ctx context.Context, spec WorkspaceSpec, opts ConfigurationVersionCreateOptions) (*Run, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See
@@ -704,15 +713,6 @@ type RunCreateOptions struct {
 	ConfigurationVersionID *string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
-}
-
-// TestRunCreateOptions is for testing purposes only.
-type TestRunCreateOptions struct {
-	// override ID of run
-	ID          *string
-	Speculative bool
-	Status      RunStatus
-	AutoApply   bool
 }
 
 // RunApplyOptions represents the options for applying a run.
@@ -781,6 +781,8 @@ type RunListOptions struct {
 }
 
 // LogFields provides fields for logging
+//
+// TODO: use logr marshaller instead
 func (opts RunListOptions) LogFields() (fields []interface{}) {
 	if opts.WorkspaceID != nil {
 		fields = append(fields, "workspace_id", *opts.WorkspaceID)
@@ -804,4 +806,19 @@ func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 		}
 	}
 	return false
+}
+
+// A RunResource provides sufficient information to retrieve a run via the Web UI
+type RunResource interface {
+	// ID of run
+	RunID() string
+	// Name of run's workspace
+	WorkspaceName() string
+	// Name of run's organization
+	OrganizationName() string
+}
+
+// RunGetPathUI returns the URL path for retrieving a run via the Web UI
+func RunGetPathUI(run RunResource) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
 }

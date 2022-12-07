@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/leg100/otf"
 )
 
 // Signer is capable of signing URLs with a limited lifespan.
@@ -41,7 +39,7 @@ func (s *Server) signedLogURL(r *http.Request, runID, phase string) string {
 		panic("signing url: " + url + "; error: " + err.Error())
 	}
 	// Terraform CLI expects an absolute URL
-	return otf.Absolute(r, url)
+	return Absolute(r, url)
 }
 
 // signedUploadURL creates a signed URL for uploading a configuration version

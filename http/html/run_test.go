@@ -17,7 +17,7 @@ import (
 
 func TestListRunsHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 	runs := []*otf.Run{
 		otf.NewRun(cv, ws, otf.RunCreateOptions{}),

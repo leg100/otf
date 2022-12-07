@@ -16,8 +16,6 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     token,
     created_at,
     name,
-    hostname,
-    skip_tls_verification,
     cloud,
     organization_name
 ) VALUES (
@@ -26,26 +24,22 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
     $3,
     $4,
     $5,
-    $6,
-    $7,
-    $8
+    $6
 );`
 
 type InsertVCSProviderParams struct {
-	VCSProviderID       pgtype.Text
-	Token               pgtype.Text
-	CreatedAt           pgtype.Timestamptz
-	Name                pgtype.Text
-	Hostname            pgtype.Text
-	SkipTLSVerification bool
-	Cloud               pgtype.Text
-	OrganizationName    pgtype.Text
+	VCSProviderID    pgtype.Text
+	Token            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+	Name             pgtype.Text
+	Cloud            pgtype.Text
+	OrganizationName pgtype.Text
 }
 
 // InsertVCSProvider implements Querier.InsertVCSProvider.
 func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertVCSProvider")
-	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Hostname, params.SkipTLSVerification, params.Cloud, params.OrganizationName)
+	cmdTag, err := q.conn.Exec(ctx, insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Cloud, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertVCSProvider: %w", err)
 	}
@@ -54,7 +48,7 @@ func (q *DBQuerier) InsertVCSProvider(ctx context.Context, params InsertVCSProvi
 
 // InsertVCSProviderBatch implements Querier.InsertVCSProviderBatch.
 func (q *DBQuerier) InsertVCSProviderBatch(batch genericBatch, params InsertVCSProviderParams) {
-	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Hostname, params.SkipTLSVerification, params.Cloud, params.OrganizationName)
+	batch.Queue(insertVCSProviderSQL, params.VCSProviderID, params.Token, params.CreatedAt, params.Name, params.Cloud, params.OrganizationName)
 }
 
 // InsertVCSProviderScan implements Querier.InsertVCSProviderScan.
@@ -72,14 +66,12 @@ WHERE organization_name = $1
 ;`
 
 type FindVCSProvidersRow struct {
-	VCSProviderID       pgtype.Text        `json:"vcs_provider_id"`
-	Token               pgtype.Text        `json:"token"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	Name                pgtype.Text        `json:"name"`
-	Hostname            pgtype.Text        `json:"hostname"`
-	SkipTLSVerification bool               `json:"skip_tls_verification"`
-	Cloud               pgtype.Text        `json:"cloud"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
@@ -93,7 +85,7 @@ func (q *DBQuerier) FindVCSProviders(ctx context.Context, organizationName pgtyp
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Hostname, &item.SkipTLSVerification, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProviders row: %w", err)
 		}
 		items = append(items, item)
@@ -119,7 +111,7 @@ func (q *DBQuerier) FindVCSProvidersScan(results pgx.BatchResults) ([]FindVCSPro
 	items := []FindVCSProvidersRow{}
 	for rows.Next() {
 		var item FindVCSProvidersRow
-		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Hostname, &item.SkipTLSVerification, &item.Cloud, &item.OrganizationName); err != nil {
+		if err := rows.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindVCSProvidersBatch row: %w", err)
 		}
 		items = append(items, item)
@@ -136,14 +128,12 @@ WHERE vcs_provider_id = $1
 ;`
 
 type FindVCSProviderRow struct {
-	VCSProviderID       pgtype.Text        `json:"vcs_provider_id"`
-	Token               pgtype.Text        `json:"token"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	Name                pgtype.Text        `json:"name"`
-	Hostname            pgtype.Text        `json:"hostname"`
-	SkipTLSVerification bool               `json:"skip_tls_verification"`
-	Cloud               pgtype.Text        `json:"cloud"`
-	OrganizationName    pgtype.Text        `json:"organization_name"`
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	Cloud            pgtype.Text        `json:"cloud"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
 // FindVCSProvider implements Querier.FindVCSProvider.
@@ -151,7 +141,7 @@ func (q *DBQuerier) FindVCSProvider(ctx context.Context, vcsProviderID pgtype.Te
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindVCSProvider")
 	row := q.conn.QueryRow(ctx, findVCSProviderSQL, vcsProviderID)
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Hostname, &item.SkipTLSVerification, &item.Cloud, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindVCSProvider: %w", err)
 	}
 	return item, nil
@@ -166,7 +156,7 @@ func (q *DBQuerier) FindVCSProviderBatch(batch genericBatch, vcsProviderID pgtyp
 func (q *DBQuerier) FindVCSProviderScan(results pgx.BatchResults) (FindVCSProviderRow, error) {
 	row := results.QueryRow()
 	var item FindVCSProviderRow
-	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Hostname, &item.SkipTLSVerification, &item.Cloud, &item.OrganizationName); err != nil {
+	if err := row.Scan(&item.VCSProviderID, &item.Token, &item.CreatedAt, &item.Name, &item.Cloud, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindVCSProviderBatch row: %w", err)
 	}
 	return item, nil

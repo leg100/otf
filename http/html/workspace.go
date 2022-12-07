@@ -2,14 +2,12 @@ package html
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/r3labs/sse/v2"
 )
@@ -97,7 +95,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	if err := decode.All(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -380,22 +378,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, opts.OrganizationName)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// TODO(@leg100): how come this succeeds for gitlab when we're passing in a personal
-	// access token and not an oauth token? On github, the two are the same
-	// (AFAIK) so it makes sense that that works...
-	client, err := provider.NewClient(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	repos, err := client.ListRepositories(r.Context(), opts.ListOptions)
+	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, opts.ListOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -410,11 +393,10 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 	})
 }
 
-func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	type options struct {
 		otf.WorkspaceSpec
-		VCSProviderID string `schema:"vcs_provider_id,required"`
-		Identifier    string `schema:"identifier,required"`
+		otf.ConnectWorkspaceOptions
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -422,30 +404,17 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID, *opts.OrganizationName)
+	// extract externally-accessible host from request
+	opts.OTFHost = otfhttp.ExternalHost(r)
+
+	provider, err := app.GetVCSProvider(r.Context(), opts.ProviderID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	opts.Cloud = provider.CloudConfig().Name
 
-	client, err := provider.NewClient(r.Context())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	repo, err := client.GetRepository(r.Context(), opts.Identifier)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	ws, err := app.ConnectWorkspaceRepo(r.Context(), opts.WorkspaceSpec, otf.VCSRepo{
-		Branch:     repo.Branch,
-		HTTPURL:    repo.HTTPURL,
-		Identifier: opts.Identifier,
-		ProviderID: opts.VCSProviderID,
-	})
+	ws, err := app.ConnectWorkspace(r.Context(), opts.WorkspaceSpec, opts.ConnectWorkspaceOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -455,14 +424,14 @@ func (app *Application) connectWorkspaceRepo(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 
-func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.Request) {
+func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
 	var spec otf.WorkspaceSpec
 	if err := decode.All(&spec, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.DisconnectWorkspaceRepo(r.Context(), spec)
+	ws, err := app.DisconnectWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -473,6 +442,8 @@ func (app *Application) disconnectWorkspaceRepo(w http.ResponseWriter, r *http.R
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
+	// TODO: set cv opts directly, populating speculative parameter rather a new
+	// strategy parameter.
 	type options struct {
 		otf.WorkspaceSpec
 		Strategy string `schema:"strategy,required"`
@@ -494,7 +465,9 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	run, err := startRun(r.Context(), app.Application, opts.WorkspaceSpec, speculative)
+	run, err := app.StartRun(r.Context(), opts.WorkspaceSpec, otf.ConfigurationVersionCreateOptions{
+		Speculative: otf.Bool(speculative),
+	})
 	if err != nil {
 		flashError(w, err.Error())
 		http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
@@ -502,53 +475,4 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, getRunPath(run), http.StatusFound)
-}
-
-func startRun(ctx context.Context, app otf.Application, spec otf.WorkspaceSpec, speculative bool) (*otf.Run, error) {
-	ws, err := app.GetWorkspace(ctx, spec)
-	if err != nil {
-		return nil, err
-	}
-
-	var cv *otf.ConfigurationVersion
-	opts := otf.ConfigurationVersionCreateOptions{
-		Speculative: otf.Bool(speculative),
-	}
-	if ws.VCSRepo() != nil {
-		provider, err := app.GetVCSProvider(ctx, ws.VCSRepo().ProviderID, ws.OrganizationName())
-		if err != nil {
-			return nil, err
-		}
-		client, err := provider.NewClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		tarball, err := client.GetRepoTarball(ctx, ws.VCSRepo())
-		if err != nil {
-			return nil, fmt.Errorf("retrieving repository tarball: %w", err)
-		}
-		cv, err = app.CreateConfigurationVersion(ctx, ws.ID(), opts)
-		if err != nil {
-			return nil, err
-		}
-		if err := app.UploadConfig(ctx, cv.ID(), tarball); err != nil {
-			return nil, err
-		}
-	} else {
-		latest, err := app.GetLatestConfigurationVersion(ctx, ws.ID())
-		if err != nil {
-			if errors.Is(err, otf.ErrResourceNotFound) {
-				return nil, fmt.Errorf("missing configuration: you need to either start a run via terraform, or connect a repository")
-			}
-			return nil, err
-		}
-		cv, err = app.CloneConfigurationVersion(ctx, latest.ID(), opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return app.CreateRun(ctx, spec, otf.RunCreateOptions{
-		ConfigurationVersionID: otf.String(cv.ID()),
-	})
 }

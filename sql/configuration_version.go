@@ -24,6 +24,21 @@ func (db *DB) CreateConfigurationVersion(ctx context.Context, cv *otf.Configurat
 			return err
 		}
 
+		if cv.IngressAttributes() != nil {
+			ia := cv.IngressAttributes()
+			_, err := tx.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
+				Branch:                 String(ia.Branch),
+				CommitSHA:              String(ia.CommitSHA),
+				Identifier:             String(ia.Identifier),
+				IsPullRequest:          ia.IsPullRequest,
+				OnDefaultBranch:        ia.OnDefaultBranch,
+				ConfigurationVersionID: String(cv.ID()),
+			})
+			if err != nil {
+				return err
+			}
+		}
+
 		// Insert timestamp for current status
 		if err := tx.insertCVStatusTimestamp(ctx, cv); err != nil {
 			return fmt.Errorf("inserting configuration version status timestamp: %w", err)

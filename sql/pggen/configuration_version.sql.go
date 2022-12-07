@@ -125,9 +125,11 @@ const findConfigurationVersionsByWorkspaceIDSQL = `SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE workspaces.workspace_id = $1
 LIMIT $2
 OFFSET $3;`
@@ -147,6 +149,7 @@ type FindConfigurationVersionsByWorkspaceIDRow struct {
 	Status                               pgtype.Text                            `json:"status"`
 	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *IngressAttributes                     `json:"ingress_attributes"`
 }
 
 // FindConfigurationVersionsByWorkspaceID implements Querier.FindConfigurationVersionsByWorkspaceID.
@@ -159,12 +162,16 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceID(ctx context.Context, 
 	defer rows.Close()
 	items := []FindConfigurationVersionsByWorkspaceIDRow{}
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
+	ingressAttributesRow := q.types.newIngressAttributes()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceID row: %w", err)
 		}
 		if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+			return nil, fmt.Errorf("assign FindConfigurationVersionsByWorkspaceID row: %w", err)
+		}
+		if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 			return nil, fmt.Errorf("assign FindConfigurationVersionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
@@ -189,12 +196,16 @@ func (q *DBQuerier) FindConfigurationVersionsByWorkspaceIDScan(results pgx.Batch
 	defer rows.Close()
 	items := []FindConfigurationVersionsByWorkspaceIDRow{}
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
+	ingressAttributesRow := q.types.newIngressAttributes()
 	for rows.Next() {
 		var item FindConfigurationVersionsByWorkspaceIDRow
-		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+		if err := rows.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 			return nil, fmt.Errorf("scan FindConfigurationVersionsByWorkspaceIDBatch row: %w", err)
 		}
 		if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+			return nil, fmt.Errorf("assign FindConfigurationVersionsByWorkspaceID row: %w", err)
+		}
+		if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 			return nil, fmt.Errorf("assign FindConfigurationVersionsByWorkspaceID row: %w", err)
 		}
 		items = append(items, item)
@@ -249,9 +260,11 @@ const findConfigurationVersionByIDSQL = `SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE configuration_version_id = $1;`
 
 type FindConfigurationVersionByIDRow struct {
@@ -263,6 +276,7 @@ type FindConfigurationVersionByIDRow struct {
 	Status                               pgtype.Text                            `json:"status"`
 	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *IngressAttributes                     `json:"ingress_attributes"`
 }
 
 // FindConfigurationVersionByID implements Querier.FindConfigurationVersionByID.
@@ -271,10 +285,14 @@ func (q *DBQuerier) FindConfigurationVersionByID(ctx context.Context, configurat
 	row := q.conn.QueryRow(ctx, findConfigurationVersionByIDSQL, configurationVersionID)
 	var item FindConfigurationVersionByIDRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionByID: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionByID row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionByID row: %w", err)
 	}
 	return item, nil
@@ -290,10 +308,14 @@ func (q *DBQuerier) FindConfigurationVersionByIDScan(results pgx.BatchResults) (
 	row := results.QueryRow()
 	var item FindConfigurationVersionByIDRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionByIDBatch row: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionByID row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionByID row: %w", err)
 	}
 	return item, nil
@@ -312,9 +334,11 @@ const findConfigurationVersionLatestByWorkspaceIDSQL = `SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE workspace_id = $1
 ORDER BY configuration_versions.created_at DESC;`
 
@@ -327,6 +351,7 @@ type FindConfigurationVersionLatestByWorkspaceIDRow struct {
 	Status                               pgtype.Text                            `json:"status"`
 	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *IngressAttributes                     `json:"ingress_attributes"`
 }
 
 // FindConfigurationVersionLatestByWorkspaceID implements Querier.FindConfigurationVersionLatestByWorkspaceID.
@@ -335,10 +360,14 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceID(ctx context.Cont
 	row := q.conn.QueryRow(ctx, findConfigurationVersionLatestByWorkspaceIDSQL, workspaceID)
 	var item FindConfigurationVersionLatestByWorkspaceIDRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionLatestByWorkspaceID: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionLatestByWorkspaceID row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionLatestByWorkspaceID row: %w", err)
 	}
 	return item, nil
@@ -354,10 +383,14 @@ func (q *DBQuerier) FindConfigurationVersionLatestByWorkspaceIDScan(results pgx.
 	row := results.QueryRow()
 	var item FindConfigurationVersionLatestByWorkspaceIDRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionLatestByWorkspaceIDBatch row: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionLatestByWorkspaceID row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionLatestByWorkspaceID row: %w", err)
 	}
 	return item, nil
@@ -376,11 +409,13 @@ const findConfigurationVersionByIDForUpdateSQL = `SELECT
         FROM configuration_version_status_timestamps t
         WHERE t.configuration_version_id = configuration_versions.configuration_version_id
         GROUP BY configuration_version_id
-    ) AS configuration_version_status_timestamps
+    ) AS configuration_version_status_timestamps,
+    (ingress_attributes.*)::"ingress_attributes"
 FROM configuration_versions
 JOIN workspaces USING (workspace_id)
+LEFT JOIN ingress_attributes USING (configuration_version_id)
 WHERE configuration_version_id = $1
-FOR UPDATE;`
+FOR UPDATE OF configuration_versions;`
 
 type FindConfigurationVersionByIDForUpdateRow struct {
 	ConfigurationVersionID               pgtype.Text                            `json:"configuration_version_id"`
@@ -391,6 +426,7 @@ type FindConfigurationVersionByIDForUpdateRow struct {
 	Status                               pgtype.Text                            `json:"status"`
 	WorkspaceID                          pgtype.Text                            `json:"workspace_id"`
 	ConfigurationVersionStatusTimestamps []ConfigurationVersionStatusTimestamps `json:"configuration_version_status_timestamps"`
+	IngressAttributes                    *IngressAttributes                     `json:"ingress_attributes"`
 }
 
 // FindConfigurationVersionByIDForUpdate implements Querier.FindConfigurationVersionByIDForUpdate.
@@ -399,10 +435,14 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdate(ctx context.Context, c
 	row := q.conn.QueryRow(ctx, findConfigurationVersionByIDForUpdateSQL, configurationVersionID)
 	var item FindConfigurationVersionByIDForUpdateRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("query FindConfigurationVersionByIDForUpdate: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionByIDForUpdate row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionByIDForUpdate row: %w", err)
 	}
 	return item, nil
@@ -418,10 +458,14 @@ func (q *DBQuerier) FindConfigurationVersionByIDForUpdateScan(results pgx.BatchR
 	row := results.QueryRow()
 	var item FindConfigurationVersionByIDForUpdateRow
 	configurationVersionStatusTimestampsArray := q.types.newConfigurationVersionStatusTimestampsArray()
-	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray); err != nil {
+	ingressAttributesRow := q.types.newIngressAttributes()
+	if err := row.Scan(&item.ConfigurationVersionID, &item.CreatedAt, &item.AutoQueueRuns, &item.Source, &item.Speculative, &item.Status, &item.WorkspaceID, configurationVersionStatusTimestampsArray, ingressAttributesRow); err != nil {
 		return item, fmt.Errorf("scan FindConfigurationVersionByIDForUpdateBatch row: %w", err)
 	}
 	if err := configurationVersionStatusTimestampsArray.AssignTo(&item.ConfigurationVersionStatusTimestamps); err != nil {
+		return item, fmt.Errorf("assign FindConfigurationVersionByIDForUpdate row: %w", err)
+	}
+	if err := ingressAttributesRow.AssignTo(&item.IngressAttributes); err != nil {
 		return item, fmt.Errorf("assign FindConfigurationVersionByIDForUpdate row: %w", err)
 	}
 	return item, nil

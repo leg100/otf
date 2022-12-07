@@ -10,30 +10,20 @@ import (
 )
 
 func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
-	name := mux.Vars(r)["cloud_name"]
-
-	cloud, err := app.cloudDB.lookup(otf.CloudName(name))
-	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
-	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", name)
+	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", mux.Vars(r)["cloud_name"])
 	app.render(tmpl, w, r, struct {
 		organizationRoute
-		*otf.CloudConfig
 	}{
 		organizationRoute: organizationRequest{r},
-		CloudConfig:       cloud,
 	})
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
 	type options struct {
-		OrganizationName string        `schema:"organization_name,required"`
-		Token            string        `schema:"token,required"`
-		Name             string        `schema:"name,required"`
-		Cloud            otf.CloudName `schema:"cloud_name,required"`
+		OrganizationName string `schema:"organization_name,required"`
+		Token            string `schema:"token,required"`
+		Name             string `schema:"name,required"`
+		Cloud            string `schema:"cloud_name,required"`
 	}
 	var opts options
 	if err := decode.All(&opts, r); err != nil {
@@ -41,20 +31,11 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	cloud, err := app.cloudDB.lookup(opts.Cloud)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-
 	provider, err := app.CreateVCSProvider(r.Context(), otf.VCSProviderCreateOptions{
-		OrganizationName:    opts.OrganizationName,
-		Token:               opts.Token,
-		Name:                opts.Name,
-		CloudName:           cloud.Name,
-		Hostname:            cloud.Hostname,
-		SkipTLSVerification: cloud.SkipTLSVerification,
-		Cloud:               cloud.Cloud,
+		OrganizationName: opts.OrganizationName,
+		Token:            opts.Token,
+		Name:             opts.Name,
+		Cloud:            opts.Cloud,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -72,12 +53,12 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 	}
 
 	app.render("vcs_provider_list.tmpl", w, r, struct {
-		Items  []*otf.VCSProvider
-		Clouds cloudDB
+		Items        []*otf.VCSProvider
+		CloudConfigs []otf.CloudConfig
 		organizationRoute
 	}{
 		Items:             providers,
-		Clouds:            app.cloudDB,
+		CloudConfigs:      app.ListCloudConfigs(),
 		organizationRoute: organizationRequest{r},
 	})
 }

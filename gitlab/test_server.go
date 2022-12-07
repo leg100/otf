@@ -1,4 +1,4 @@
-package otf
+package gitlab
 
 import (
 	"encoding/json"
@@ -8,12 +8,13 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
 )
 
-type testGitlabServerDB struct {
+type testServerDB struct {
 	user *gitlab.User
 	// top-level group memberships
 	groups []*gitlab.Group
@@ -24,8 +25,8 @@ type testGitlabServerDB struct {
 	tarball []byte
 }
 
-func NewTestGitlabServer(t *testing.T, opts ...TestGitlabServerOption) *httptest.Server {
-	db := &testGitlabServerDB{}
+func NewTestServer(t *testing.T, opts ...TestGitlabServerOption) *httptest.Server {
+	db := &testServerDB{}
 	for _, o := range opts {
 		o(db)
 	}
@@ -34,7 +35,7 @@ func NewTestGitlabServer(t *testing.T, opts ...TestGitlabServerOption) *httptest
 	mux.HandleFunc("/login/oauth/authorize", func(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Add("state", r.URL.Query().Get("state"))
-		q.Add("code", GenerateRandomString(10))
+		q.Add("code", otf.GenerateRandomString(10))
 
 		referrer, err := url.Parse(r.Referer())
 		require.NoError(t, err)
@@ -113,10 +114,10 @@ func NewTestGitlabServer(t *testing.T, opts ...TestGitlabServerOption) *httptest
 	return srv
 }
 
-type TestGitlabServerOption func(*testGitlabServerDB)
+type TestGitlabServerOption func(*testServerDB)
 
-func WithGitlabUser(user *User) TestGitlabServerOption {
-	return func(db *testGitlabServerDB) {
+func WithGitlabUser(user *otf.User) TestGitlabServerOption {
+	return func(db *testServerDB) {
 		db.user = &gitlab.User{Username: user.Username(), ID: 1}
 		db.access = make(map[int]gitlab.AccessLevelValue)
 
@@ -139,8 +140,8 @@ func WithGitlabUser(user *User) TestGitlabServerOption {
 	}
 }
 
-func WithGitlabRepo(repo *Repo) TestGitlabServerOption {
-	return func(db *testGitlabServerDB) {
+func WithGitlabRepo(repo *otf.Repo) TestGitlabServerOption {
+	return func(db *testServerDB) {
 		db.project = &gitlab.Project{
 			PathWithNamespace: repo.Identifier,
 			DefaultBranch:     repo.Branch,
@@ -149,7 +150,7 @@ func WithGitlabRepo(repo *Repo) TestGitlabServerOption {
 }
 
 func WithGitlabTarball(tarball []byte) TestGitlabServerOption {
-	return func(db *testGitlabServerDB) {
+	return func(db *testServerDB) {
 		db.tarball = tarball
 	}
 }

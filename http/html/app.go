@@ -29,24 +29,26 @@ type Application struct {
 	authenticators []*Authenticator
 	// site admin's authentication token
 	siteToken string
-	// mapping of cloud name to cloud
-	cloudDB cloudDB
+	// secret for webhook signatures
+	secret string
 }
 
-type ApplicationOption func(*Application)
+// ApplicationOptions are options for configuring the web app
+type ApplicationOptions struct {
+	DevMode      bool
+	OAuthClients []*OAuthClient
 
-func WithSiteToken(token string) ApplicationOption {
-	return func(app *Application) {
-		app.siteToken = token
-	}
+	*otfhttp.ServerConfig
+	*otfhttp.Router
+	otf.Application
 }
 
 // AddRoutes adds routes for the html web app.
-func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConfig, services otf.Application, router *otfhttp.Router) error {
-	if config.DevMode {
+func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
+	if opts.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	views, err := newViewEngine(config.DevMode)
+	views, err := newViewEngine(opts.DevMode)
 	if err != nil {
 		return err
 	}
@@ -59,22 +61,22 @@ func AddRoutes(logger logr.Logger, config *Config, srvConfig *otfhttp.ServerConf
 	sseServer.AutoReplay = false
 
 	app := &Application{
-		Application:  services,
-		staticServer: newStaticServer(config.DevMode),
+		Application:  opts.Application,
+		staticServer: newStaticServer(opts.DevMode),
 		pathPrefix:   DefaultPathPrefix,
 		viewEngine:   views,
 		Logger:       logger,
 		Server:       sseServer,
-		siteToken:    srvConfig.SiteToken,
-		cloudDB: config.CloudConfigs,
+		siteToken:    opts.SiteToken,
+		secret:       opts.Secret,
 	}
 
-	app.authenticators, err = newAuthenticators(services, config.CloudConfigs)
+	app.authenticators, err = newAuthenticators(opts.Application, opts.OAuthClients)
 	if err != nil {
 		return err
 	}
 
-	app.addRoutes(router)
+	app.addRoutes(opts.Router)
 	return nil
 }
 
@@ -92,15 +94,15 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 	// routes that don't require authentication.
 	r.GET("/login", app.loginHandler)
 	for _, auth := range app.authenticators {
-		r.GET(auth.RequestPath(), auth.requestHandler)
-		r.GET(auth.callbackPath(), auth.responseHandler)
+		r.GET(auth.RequestPath(), auth.RequestHandler)
+		r.GET(auth.CallbackPath(), auth.responseHandler)
 	}
 	r.GET("/admin/login", app.adminLoginPromptHandler)
 	r.PST("/admin/login", app.adminLoginHandler)
 
 	// routes that require authentication.
 	r.Sub(func(r *otfhttp.Router) {
-		r.Use((&authMiddleware{app, app}).authenticate)
+		r.Use((&authMiddleware{app}).authenticate)
 		r.Use(setOrganization)
 
 		r.PST("/logout", app.logoutHandler)
@@ -153,8 +155,8 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/permissions/unset", app.unsetWorkspacePermission)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers", app.listWorkspaceVCSProviders)
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos", app.listWorkspaceVCSRepos)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspaceRepo)
-		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspaceRepo)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/vcs-providers/{vcs_provider_id}/repos/connect", app.connectWorkspace)
+		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/repo/disconnect", app.disconnectWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/start-run", app.startRun)
 
 		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}/watch", app.watchWorkspace)

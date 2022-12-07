@@ -42,10 +42,18 @@ type PubSubService interface {
 // EventService allows interacting with events. Access is authenticated.
 type EventService interface {
 	// Watch provides access to a stream of events. The WatchOptions filters
-	// events.
+	// events. Context must be cancelled to close stream.
+	//
+	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
+	// returning a stream object with a Close() method. The calling code would
+	// call Watch(), and then defer a Close(), which is more readable IMO.
 	Watch(context.Context, WatchOptions) (<-chan Event, error)
 	// WatchLogs provides access to a stream of phase logs. The WatchLogsOptions filters
-	// events.
+	// events. Context must be cancelled to close stream.
+	//
+	// TODO(@leg100): it would be clearer to the caller if the stream is closed by
+	// returning a stream object with a Close() method. The calling code would
+	// call WatchLogs(), and then defer a Close(), which is more readable IMO.
 	WatchLogs(context.Context, WatchLogsOptions) (<-chan Chunk, error)
 }
 
