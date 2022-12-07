@@ -83,6 +83,9 @@ type Run struct {
 	workspaceID            string
 	configurationVersionID string
 	latest                 bool
+
+	commit *string // commit sha that triggered this run
+
 	// Relations
 	plan      *Plan
 	apply     *Apply
@@ -111,6 +114,8 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
+
+func (r *Run) Commit() *string { return r.commit }
 
 // Latest determines whether run is the latest run for a workspace, i.e.
 // its current run, or the most recent current run.

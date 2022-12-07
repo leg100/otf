@@ -85,13 +85,9 @@ SELECT
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
 JOIN organizations o USING (organization_id)
-JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
-JOIN teams t USING (team_id)
-JOIN team_memberships tm USING (team_id)
-JOIN users u ON tm.user_id = u.user_id
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 

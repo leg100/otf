@@ -25,10 +25,9 @@ func TestReporter_HandleRun(t *testing.T) {
 func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan SetStatusOptions) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
-	repo := NewTestWorkspaceRepo(provider)
-	ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{
-		Repo: repo,
-	})
+	hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+	repo := NewTestWorkspaceRepo(provider, hook)
+	ws := NewTestWorkspace(t, org, WithRepo(repo))
 	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
 		IngressAttributes: &IngressAttributes{},
 	})

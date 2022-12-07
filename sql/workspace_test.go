@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 func TestWorkspace_Create(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 
 	err := db.CreateWorkspace(context.Background(), ws)
 	require.NoError(t, err)
@@ -72,7 +73,9 @@ func TestWorkspace_CreateRepo(t *testing.T) {
 	repo := otf.WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
-		Webhook:    hook,
+		WebhookID:  hook.WebhookID,
+		Identifier: hook.Identifier,
+		HTTPURL:    hook.HTTPURL,
 	}
 
 	_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
@@ -184,6 +187,45 @@ func TestWorkspace_Lock(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
+}
+
+func TestWorkspace_ListByWebhookID(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	provider := createTestVCSProvider(t, db, org)
+	hook := createTestWebhook(t, db)
+	repo := otf.NewWorkspaceRepo(otf.NewWorkspaceRepoOptions{
+		ProviderID: provider.ID(),
+		Webhook:    hook,
+		Branch:     "master",
+	})
+	ws1 := createTestWorkspace(t, db, org, otf.WithRepo(&repo))
+	ws2 := createTestWorkspace(t, db, org, otf.WithRepo(&repo))
+
+	tests := []struct {
+		name      string
+		webhookID uuid.UUID
+		want      func(*testing.T, []*otf.Workspace)
+	}{
+		{
+			name:      "list both workspaces",
+			webhookID: hook.WebhookID,
+			want: func(t *testing.T, results []*otf.Workspace) {
+				assert.Equal(t, 2, len(results))
+				assert.Contains(t, results, ws1)
+				assert.Contains(t, results, ws2)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := db.ListWorkspacesByWebhookID(context.Background(), tt.webhookID)
+			require.NoError(t, err)
+
+			tt.want(t, results)
+		})
+	}
 }
 
 func TestWorkspace_ListByUserID(t *testing.T) {

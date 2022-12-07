@@ -61,5 +61,8 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	if opts.Refresh != nil {
 		run.refresh = *opts.Refresh
 	}
+	if cv.ingressAttributes != nil {
+		run.commit = &cv.ingressAttributes.CommitSHA
+	}
 	return &run
 }

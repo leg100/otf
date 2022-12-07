@@ -62,6 +62,7 @@ SELECT
          ELSE false
     END AS latest,
     organizations.name AS organization_name,
+    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -85,7 +86,7 @@ SELECT
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN configuration_versions USING(configuration_version_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE
@@ -138,6 +139,7 @@ SELECT
          ELSE false
     END AS latest,
     organizations.name AS organization_name,
+    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -161,7 +163,7 @@ SELECT
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN configuration_versions USING(configuration_version_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
@@ -193,6 +195,7 @@ SELECT
          ELSE false
     END AS latest,
     organizations.name AS organization_name,
+    (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
         FROM run_status_timestamps rst
@@ -216,11 +219,11 @@ SELECT
 FROM runs
 JOIN plans USING (run_id)
 JOIN applies USING (run_id)
-JOIN configuration_versions USING(configuration_version_id)
+JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
 JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
-FOR UPDATE
+FOR UPDATE of runs, plans, applies
 ;
 
 -- name: PutLockFile :one

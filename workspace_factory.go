@@ -118,3 +118,4 @@ func (o WorkspaceCreateOptions) Valid() error {
 	}
 	return nil
 }
+

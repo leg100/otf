@@ -17,7 +17,7 @@ import (
 
 func TestGetWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
 
 	q := "/?organization_name=acme-corp&workspace_name=fake-ws"
@@ -31,7 +31,7 @@ func TestGetWorkspaceHandler(t *testing.T) {
 
 func TestEditWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
 
 	q := "/?"
@@ -44,11 +44,11 @@ func TestEditWorkspaceHandler(t *testing.T) {
 func TestListWorkspacesHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	workspaces := []*otf.Workspace{
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
-		otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{}),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
+		otf.NewTestWorkspace(t, org),
 	}
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: workspaces})
 
@@ -145,7 +145,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 
 func TestConnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
 		providers:  []*otf.VCSProvider{otf.NewTestVCSProvider(t, org)},
@@ -174,7 +174,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 
 func TestDisconnectWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
 		workspaces: []*otf.Workspace{ws},
 	})
@@ -197,7 +197,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 
 func TestStartRunHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
+	ws := otf.NewTestWorkspace(t, org)
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{

@@ -220,8 +220,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOption
 	hook, _, err := g.client.Repositories.CreateHook(ctx, owner, name, &github.Hook{
 		Events: events,
 		Config: map[string]any{
-			"url":    opts.Endpoint,
-			"secret": opts.Secret,
+			"url":          opts.Endpoint,
+			"secret":       opts.Secret,
+			"content_type": "json",
 		},
 		Active: otf.Bool(true),
 	})

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/github"
 	"github.com/mitchellh/iochan"
@@ -22,6 +23,7 @@ type daemon struct {
 	flags         []string
 	enableGithub  bool
 	githubOptions []github.TestServerOption
+	githubServer  *github.TestServer
 }
 
 func (d *daemon) withFlags(flags ...string) {
@@ -43,6 +45,11 @@ func (d *daemon) withGithubTarball(tarball []byte) {
 	d.githubOptions = append(d.githubOptions, github.WithArchive(tarball))
 }
 
+func (d *daemon) registerStatusCallback(callback func(*gogithub.StatusEvent)) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, github.WithStatusCallback(callback))
+}
+
 // start an instance of the otfd daemon and return its hostname.
 func (d *daemon) start(t *testing.T) string {
 	database, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
@@ -59,8 +66,8 @@ func (d *daemon) start(t *testing.T) string {
 	)
 
 	if d.enableGithub {
-		githubServer := github.NewTestServer(t, d.githubOptions...)
-		githubURL, err := url.Parse(githubServer.URL)
+		d.githubServer = github.NewTestServer(t, d.githubOptions...)
+		githubURL, err := url.Parse(d.githubServer.URL)
 		require.NoError(t, err)
 
 		flags = append(flags,

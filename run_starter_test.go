@@ -13,7 +13,7 @@ func TestStartRun(t *testing.T) {
 	org := NewTestOrganization(t)
 
 	t.Run("not connected to repo", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		want := NewRun(cv, ws, RunCreateOptions{})
 		app := RunStarter{
@@ -31,10 +31,9 @@ func TestStartRun(t *testing.T) {
 
 	t.Run("connected to repo", func(t *testing.T) {
 		provider := NewTestVCSProvider(t, org)
-		repo := NewTestWorkspaceRepo(provider)
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{
-			Repo: repo,
-		})
+		hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+		repo := NewTestWorkspaceRepo(provider, hook)
+		ws := NewTestWorkspace(t, org, WithRepo(repo))
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		want := NewRun(cv, ws, RunCreateOptions{})
 		app := RunStarter{

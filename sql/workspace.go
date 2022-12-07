@@ -12,29 +12,46 @@ import (
 )
 
 func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
-	_, err := db.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
-		ID:                         String(ws.ID()),
-		CreatedAt:                  Timestamptz(ws.CreatedAt()),
-		UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
-		Name:                       String(ws.Name()),
-		AllowDestroyPlan:           ws.AllowDestroyPlan(),
-		CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
-		Environment:                String(ws.Environment()),
-		Description:                String(ws.Description()),
-		ExecutionMode:              String(string(ws.ExecutionMode())),
-		FileTriggersEnabled:        ws.FileTriggersEnabled(),
-		GlobalRemoteState:          ws.GlobalRemoteState(),
-		MigrationEnvironment:       String(ws.MigrationEnvironment()),
-		SourceName:                 String(ws.SourceName()),
-		SourceURL:                  String(ws.SourceURL()),
-		SpeculativeEnabled:         ws.SpeculativeEnabled(),
-		StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
-		TerraformVersion:           String(ws.TerraformVersion()),
-		TriggerPrefixes:            ws.TriggerPrefixes(),
-		QueueAllRuns:               ws.QueueAllRuns(),
-		AutoApply:                  ws.AutoApply(),
-		WorkingDirectory:           String(ws.WorkingDirectory()),
-		OrganizationID:             String(ws.OrganizationID()),
+	err := db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertWorkspace(ctx, pggen.InsertWorkspaceParams{
+			ID:                         String(ws.ID()),
+			CreatedAt:                  Timestamptz(ws.CreatedAt()),
+			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
+			Name:                       String(ws.Name()),
+			AllowDestroyPlan:           ws.AllowDestroyPlan(),
+			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
+			Environment:                String(ws.Environment()),
+			Description:                String(ws.Description()),
+			ExecutionMode:              String(string(ws.ExecutionMode())),
+			FileTriggersEnabled:        ws.FileTriggersEnabled(),
+			GlobalRemoteState:          ws.GlobalRemoteState(),
+			MigrationEnvironment:       String(ws.MigrationEnvironment()),
+			SourceName:                 String(ws.SourceName()),
+			SourceURL:                  String(ws.SourceURL()),
+			SpeculativeEnabled:         ws.SpeculativeEnabled(),
+			StructuredRunOutputEnabled: ws.StructuredRunOutputEnabled(),
+			TerraformVersion:           String(ws.TerraformVersion()),
+			TriggerPrefixes:            ws.TriggerPrefixes(),
+			QueueAllRuns:               ws.QueueAllRuns(),
+			AutoApply:                  ws.AutoApply(),
+			WorkingDirectory:           String(ws.WorkingDirectory()),
+			OrganizationID:             String(ws.OrganizationID()),
+		})
+		if err != nil {
+			return databaseError(err)
+		}
+		if ws.Repo() != nil {
+			_, err = tx.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
+				Branch:        String(ws.Repo().Branch),
+				WebhookID:     UUID(ws.Repo().WebhookID),
+				VCSProviderID: String(ws.Repo().ProviderID),
+				WorkspaceID:   String(ws.ID()),
+			})
+			if err != nil {
+				return databaseError(err)
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return databaseError(err)

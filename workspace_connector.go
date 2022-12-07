@@ -48,7 +48,7 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 		ws, err = app.DB().CreateWorkspaceRepo(ctx, spec, WorkspaceRepo{
 			Branch:     repo.Branch,
 			ProviderID: opts.ProviderID,
-			Webhook:    webhook,
+			WebhookID:  webhook.WebhookID,
 		})
 		return errors.Wrap(err, "creating workspace repo")
 	})
@@ -78,6 +78,11 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, spec WorkspaceSpec
 			return err
 		}
 
+		hook, err := app.DB().GetWebhook(ctx, repo.WebhookID)
+		if err != nil {
+			return err
+		}
+
 		err = app.DB().DeleteWebhook(ctx, repo.WebhookID)
 		if errors.Is(err, ErrForeignKeyViolation) {
 			// webhook is still in use by another workspace
@@ -88,7 +93,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, spec WorkspaceSpec
 
 		err = app.DeleteWebhook(ctx, repo.ProviderID, DeleteWebhookOptions{
 			Identifier: repo.Identifier,
-			ID:         repo.VCSID,
+			ID:         hook.VCSID,
 		})
 		if err != nil {
 			return err

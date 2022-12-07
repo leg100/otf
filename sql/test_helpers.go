@@ -39,7 +39,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 
 	db, err := New(context.Background(), Options{
 		Logger:          logr.Discard(),
-		ConnString:            u.String(),
+		ConnString:      u.String(),
 		Cache:           nil,
 		CleanupInterval: interval,
 		CloudService:    inmem.NewTestCloudService(),
@@ -84,59 +84,64 @@ func createTestTeam(t *testing.T, db otf.DB, org *otf.Organization) *otf.Team {
 	return team
 }
 
-func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization) *otf.Workspace {
-	ws := otf.NewTestWorkspace(t, org, otf.WorkspaceCreateOptions{})
-	err := db.CreateWorkspace(context.Background(), ws)
+func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ...otf.NewTestWorkspaceOption) *otf.Workspace {
+	ctx := context.Background()
+	ws := otf.NewTestWorkspace(t, org, opts...)
+	err := db.CreateWorkspace(ctx, ws)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWorkspace(context.Background(), otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.DeleteWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(ws.ID())})
 	})
 	return ws
 }
 
 func createTestConfigurationVersion(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.ConfigurationVersionCreateOptions) *otf.ConfigurationVersion {
+	ctx := context.Background()
 	cv := otf.NewTestConfigurationVersion(t, ws, opts)
-	err := db.CreateConfigurationVersion(context.Background(), cv)
+	err := db.CreateConfigurationVersion(ctx, cv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteConfigurationVersion(context.Background(), cv.ID())
+		db.DeleteConfigurationVersion(ctx, cv.ID())
 	})
 	return cv
 }
 
 func createTestStateVersion(t *testing.T, db otf.DB, ws *otf.Workspace, outputs ...otf.StateOutput) *otf.StateVersion {
+	ctx := context.Background()
 	sv := otf.NewTestStateVersion(t, outputs...)
-	err := db.CreateStateVersion(context.Background(), ws.ID(), sv)
+	err := db.CreateStateVersion(ctx, ws.ID(), sv)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteStateVersion(context.Background(), sv.ID())
+		db.DeleteStateVersion(ctx, sv.ID())
 	})
 	return sv
 }
 
 func createTestRun(t *testing.T, db otf.DB, ws *otf.Workspace, cv *otf.ConfigurationVersion) *otf.Run {
+	ctx := context.Background()
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
-	err := db.CreateRun(context.Background(), run)
+	err := db.CreateRun(ctx, run)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteRun(context.Background(), run.ID())
+		db.DeleteRun(ctx, run.ID())
 	})
 	return run
 }
 
 func createTestUser(t *testing.T, db otf.DB, opts ...otf.NewUserOption) *otf.User {
+	ctx := context.Background()
 	username := fmt.Sprintf("mr-%s", otf.GenerateRandomString(6))
 	user := otf.NewUser(username, opts...)
 
-	err := db.CreateUser(context.Background(), user)
+	err := db.CreateUser(ctx, user)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteUser(context.Background(), otf.UserSpec{Username: otf.String(user.Username())})
+		db.DeleteUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	})
 	return user
 }
@@ -199,12 +204,13 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *otf.VCSProvider, hook *otf.Webhook) *otf.WorkspaceRepo {
 	ctx := context.Background()
 
-	repo := otf.WorkspaceRepo{
+	ws, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), otf.WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
-		Webhook:    hook,
-	}
-	ws, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+		WebhookID:  hook.WebhookID,
+		Identifier: hook.Identifier,
+		HTTPURL:    hook.HTTPURL,
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

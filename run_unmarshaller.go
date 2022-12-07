@@ -30,6 +30,7 @@ type RunResult struct {
 	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 	Latest                 bool                          `json:"latest"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
+	IngressAttributes      *pggen.IngressAttributes      `json:"ingress_attributes"`
 	RunStatusTimestamps    []pggen.RunStatusTimestamps   `json:"run_status_timestamps"`
 	PlanStatusTimestamps   []pggen.PhaseStatusTimestamps `json:"plan_status_timestamps"`
 	ApplyStatusTimestamps  []pggen.PhaseStatusTimestamps `json:"apply_status_timestamps"`
@@ -74,6 +75,9 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 	}
 	if result.ForceCancelAvailableAt.Status == pgtype.Present {
 		run.forceCancelAvailableAt = Time(result.ForceCancelAvailableAt.Time.UTC())
+	}
+	if result.IngressAttributes != nil {
+		run.commit = &result.IngressAttributes.CommitSHA.String
 	}
 	return &run, nil
 }

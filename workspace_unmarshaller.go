@@ -72,13 +72,9 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		ws.repo = &WorkspaceRepo{
 			Branch:     result.WorkspaceRepo.Branch.String,
 			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
-			Webhook: &Webhook{
-				WebhookID:  result.Webhook.WebhookID.Bytes,
-				Identifier: result.Webhook.Identifier.String,
-				Secret:     result.Webhook.Secret.String,
-				HTTPURL:    result.Webhook.HTTPURL.String,
-				VCSID:      result.Webhook.VCSID.String,
-			},
+			WebhookID:  result.Webhook.WebhookID.Bytes,
+			Identifier: result.Webhook.Identifier.String,
+			HTTPURL:    result.Webhook.HTTPURL.String,
 		}
 	}
 

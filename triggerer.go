@@ -30,7 +30,7 @@ func (h *Triggerer) Start(ctx context.Context) {
 	for {
 		select {
 		case event := <-h.events:
-			h.Info("handling event")
+			h.Info("handling event", "webhook", event.WebhookID)
 			if err := h.handle(ctx, event); err != nil {
 				h.Error(err, "handling event")
 			}

@@ -13,12 +13,13 @@ import (
 func TestTriggerer(t *testing.T) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
-	repo := NewTestWorkspaceRepo(provider)
+	hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+	repo := NewTestWorkspaceRepo(provider, hook)
 	app := &fakeTriggererApp{
 		workspaces: []*Workspace{
-			NewTestWorkspace(t, org, WorkspaceCreateOptions{Repo: repo}),
-			NewTestWorkspace(t, org, WorkspaceCreateOptions{Repo: repo}),
-			NewTestWorkspace(t, org, WorkspaceCreateOptions{Repo: repo}),
+			NewTestWorkspace(t, org, WithRepo(repo)),
+			NewTestWorkspace(t, org, WithRepo(repo)),
+			NewTestWorkspace(t, org, WithRepo(repo)),
 		},
 	}
 	triggerer := Triggerer{

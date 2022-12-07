@@ -16,7 +16,7 @@ func TestWorkspaceQueue(t *testing.T) {
 	org := NewTestOrganization(t)
 
 	t.Run("handle several runs", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
 		cv1 := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run1 := NewRun(cv1, ws, RunCreateOptions{})
@@ -73,7 +73,7 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("speculative run", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
 			Speculative: Bool(true),
@@ -88,7 +88,7 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("user locked", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
@@ -114,7 +114,7 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("do not schedule non-pending run", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
@@ -127,7 +127,7 @@ func TestWorkspaceQueue(t *testing.T) {
 	})
 
 	t.Run("do not set current run if already latest run on workspace", func(t *testing.T) {
-		ws := NewTestWorkspace(t, org, WorkspaceCreateOptions{})
+		ws := NewTestWorkspace(t, org)
 		q := newTestWorkspaceQueue(ws)
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
 		run := NewRun(cv, ws, RunCreateOptions{})
