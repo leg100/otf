@@ -307,7 +307,7 @@ type WorkspaceConnectionService interface {
 }
 
 type WorkspacePermissionService interface {
-	SetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string, role WorkspaceRole) error
+	SetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string, role Role) error
 	ListWorkspacePermissions(ctx context.Context, spec WorkspaceSpec) ([]*WorkspacePermission, error)
 	UnsetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string) error
 }

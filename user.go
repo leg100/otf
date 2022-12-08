@@ -90,14 +90,15 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 			}
 
 			if team.access.ManageWorkspaces {
-				// check if workspace manager role allows action
-				if WorkspaceManagerRole.permissions[action] {
+				if WorkspaceManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
-			// TODO: as we add more organization-level features, such as a
-			// registry, policies, etc, we'll introduce further manager roles
-			// and check if roles allow action here.
+			if team.access.ManageVCS {
+				if VCSManagerRole.IsAllowed(action) {
+					return true
+				}
+			}
 		}
 	}
 	return false

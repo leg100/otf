@@ -30,7 +30,10 @@ func TestTeam_Update_ByID(t *testing.T) {
 
 	_, err := db.UpdateTeam(ctx, team.Name(), org.Name(), func(team *otf.Team) error {
 		return team.Update(otf.TeamUpdateOptions{
-			ManageWorkspaces: true,
+			OrganizationAccess: otf.OrganizationAccess{
+				ManageWorkspaces: true,
+				ManageVCS:        true,
+			},
 		})
 	})
 	require.NoError(t, err)
@@ -39,6 +42,7 @@ func TestTeam_Update_ByID(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
+	assert.True(t, got.OrganizationAccess().ManageVCS)
 }
 
 func TestTeam_Get(t *testing.T) {

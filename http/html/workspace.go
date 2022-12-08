@@ -142,14 +142,14 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		LatestStreamID string
 		Permissions    []*otf.WorkspacePermission
 		Teams          []*otf.Team
-		Roles          []otf.WorkspaceRole
+		Roles          []otf.Role
 	}{
 		Workspace:      ws,
 		LatestRun:      latest,
 		LatestStreamID: "latest-" + otf.GenerateRandomString(5),
 		Permissions:    perms,
 		Teams:          teams,
-		Roles: []otf.WorkspaceRole{
+		Roles: []otf.Role{
 			otf.WorkspaceReadRole,
 			otf.WorkspacePlanRole,
 			otf.WorkspaceWriteRole,

@@ -3,7 +3,9 @@ package otf
 import "fmt"
 
 var (
-	WorkspaceReadRole = WorkspaceRole{
+	// WorkspaceReadRole is scoped to a workspace and permits read-only actions
+	// on the workspace.
+	WorkspaceReadRole = Role{
 		name: "read",
 		permissions: map[Action]bool{
 			ListRunsAction:                     true,
@@ -17,7 +19,9 @@ var (
 		},
 	}
 
-	WorkspacePlanRole = WorkspaceRole{
+	// WorkspacePlanRole is scoped to a workspace and permits creating plans on
+	// the workspace.
+	WorkspacePlanRole = Role{
 		name: "plan",
 		permissions: map[Action]bool{
 			CreateRunAction:                  true,
@@ -25,7 +29,9 @@ var (
 		},
 	}
 
-	WorkspaceWriteRole = WorkspaceRole{
+	// WorkspaceWriteRole is scoped to a workspace and permits write actions on
+	// the workspace.
+	WorkspaceWriteRole = Role{
 		name: "write",
 		permissions: map[Action]bool{
 			ApplyRunAction:        true,
@@ -34,7 +40,9 @@ var (
 		},
 	}
 
-	WorkspaceAdminRole = WorkspaceRole{
+	// WorkspaceAdminRole is scoped to a workspace and permits management of the
+	// workspace.
+	WorkspaceAdminRole = Role{
 		name: "admin",
 		permissions: map[Action]bool{
 			GetConfigurationVersionAction: true,
@@ -43,7 +51,9 @@ var (
 		},
 	}
 
-	WorkspaceManagerRole = WorkspaceRole{
+	// WorkspaceManagerRole is scoped to an organization and permits management
+	// of workspaces.
+	WorkspaceManagerRole = Role{
 		name: "workspace-manager",
 		permissions: map[Action]bool{
 			CreateWorkspaceAction:          true,
@@ -51,6 +61,16 @@ var (
 			UpdateWorkspaceAction:          true,
 			SetWorkspacePermissionAction:   true,
 			UnsetWorkspacePermissionAction: true,
+		},
+	}
+
+	// VCSManagerRole is scoped to an organization and permits management of VCS
+	// providers.
+	VCSManagerRole = Role{
+		name: "vcs-manager",
+		permissions: map[Action]bool{
+			CreateVCSProviderAction: true,
+			DeleteVCSProviderAction: true,
 		},
 	}
 )
@@ -74,21 +94,21 @@ func init() {
 	}
 }
 
-// WorkspaceRole is a set of permitted actions
-type WorkspaceRole struct {
+// Role is a set of permitted actions
+type Role struct {
 	name        string
 	permissions map[Action]bool
 }
 
-func (r WorkspaceRole) IsAllowed(action Action) bool {
+func (r Role) IsAllowed(action Action) bool {
 	return r.permissions[action]
 }
 
-func (r WorkspaceRole) String() string {
+func (r Role) String() string {
 	return r.name
 }
 
-func WorkspaceRoleFromString(role string) (WorkspaceRole, error) {
+func WorkspaceRoleFromString(role string) (Role, error) {
 	switch role {
 	case "read":
 		return WorkspaceReadRole, nil
@@ -99,6 +119,6 @@ func WorkspaceRoleFromString(role string) (WorkspaceRole, error) {
 	case "admin":
 		return WorkspaceAdminRole, nil
 	default:
-		return WorkspaceRole{}, fmt.Errorf("unknown role: %s", role)
+		return Role{}, fmt.Errorf("unknown role: %s", role)
 	}
 }

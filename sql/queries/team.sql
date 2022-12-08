@@ -43,7 +43,9 @@ FOR UPDATE OF t
 
 -- name: UpdateTeamByName :one
 UPDATE teams
-SET permission_manage_workspaces = pggen.arg('permission_manage_workspaces')
+SET
+    permission_manage_workspaces = pggen.arg('permission_manage_workspaces'),
+    permission_manage_vcs = pggen.arg('permission_manage_vcs')
 FROM organizations o
 WHERE teams.organization_id = o.organization_id
 AND   o.name = pggen.arg('organization_name')
