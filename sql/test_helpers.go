@@ -51,7 +51,7 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 	return db
 }
 
-func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.WorkspaceRole) *otf.WorkspacePermission {
+func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.Role) *otf.WorkspacePermission {
 	ctx := context.Background()
 	err := db.SetWorkspacePermission(ctx, ws.SpecName(), team.Name(), role)
 	require.NoError(t, err)

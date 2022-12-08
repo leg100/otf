@@ -104,7 +104,7 @@ func (u *fakeApp) ListWorkspacePermissions(ctx context.Context, spec otf.Workspa
 	return nil, nil
 }
 
-func (u *fakeApp) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string, role otf.WorkspaceRole) error {
+func (u *fakeApp) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string, role otf.Role) error {
 	return nil
 }
 

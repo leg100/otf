@@ -12,6 +12,7 @@ type TeamResult struct {
 	CreatedAt                  pgtype.Timestamptz   `json:"created_at"`
 	OrganizationID             pgtype.Text          `json:"organization_id"`
 	PermissionManageWorkspaces bool                 `json:"permission_manage_workspaces"`
+	PermissionManageVCS        bool                 `json:"permission_manage_vcs"`
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
@@ -23,6 +24,7 @@ func UnmarshalTeamResult(row TeamResult, opts ...NewTeamOption) *Team {
 		organization: UnmarshalOrganizationRow(*row.Organization),
 		access: OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
+			ManageVCS:        row.PermissionManageVCS,
 		},
 	}
 }

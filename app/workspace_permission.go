@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.WorkspaceRole) error {
+func (a *Application) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.Role) error {
 	subject, err := a.CanAccessWorkspace(ctx, otf.SetWorkspacePermissionAction, spec)
 	if err != nil {
 		return err

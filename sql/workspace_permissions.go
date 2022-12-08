@@ -8,7 +8,7 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
-func (db *DB) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.WorkspaceRole) error {
+func (db *DB) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.Role) error {
 	workspaceID, err := db.GetWorkspaceID(ctx, spec)
 	if err != nil {
 		return databaseError(err)

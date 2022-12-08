@@ -24,14 +24,11 @@ func (db *DB) UpdateTeam(ctx context.Context, name, organization string, fn func
 		var err error
 
 		// retrieve team
-		result, err := db.FindTeamByNameForUpdate(ctx, String(name), String(organization))
+		result, err := tx.FindTeamByNameForUpdate(ctx, String(name), String(organization))
 		if err != nil {
 			return err
 		}
-		team, err = otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
-		if err != nil {
-			return err
-		}
+		team = otf.UnmarshalTeamResult(otf.TeamResult(result))
 
 		// update team
 		if err := fn(team); err != nil {
@@ -40,6 +37,7 @@ func (db *DB) UpdateTeam(ctx context.Context, name, organization string, fn func
 		// persist update
 		_, err = tx.UpdateTeamByName(ctx, pggen.UpdateTeamByNameParams{
 			PermissionManageWorkspaces: team.OrganizationAccess().ManageWorkspaces,
+			PermissionManageVCS:        team.OrganizationAccess().ManageVCS,
 			OrganizationName:           String(organization),
 			Name:                       String(name),
 		})

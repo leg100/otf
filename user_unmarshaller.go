@@ -37,6 +37,7 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 					CreatedAt:                  tr.CreatedAt,
 					OrganizationID:             tr.OrganizationID,
 					PermissionManageWorkspaces: tr.PermissionManageWorkspaces,
+					PermissionManageVCS:        tr.PermissionManageVCS,
 					Organization:               &or,
 				}))
 			}
