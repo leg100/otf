@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,16 +18,23 @@ type Module struct {
 	name         string
 	provider     string
 	organization *Organization // Module belongs to an organization
-	repo         *ModuleRepo
+	repo         *ModuleRepo   // Module optionally connected to vcs repo
 	versions     []*ModuleVersion
+}
+
+func (m *Module) LatestVersion() *ModuleVersion {
+	if len(m.versions) == 0 {
+		return nil
+	}
+	sort.Sort(ByModuleVersion(m.versions))
+	return m.versions[0]
 }
 
 type ModuleVersion struct {
 	version   string
 	createdAt time.Time
 	updatedAt time.Time
-	content   []byte  // tar.gz
-	module    *Module // ModuleVersion belongs to a module
+	// TODO: download counter
 }
 
 type ModuleRepo struct {
@@ -37,10 +45,15 @@ type ModuleRepo struct {
 }
 
 type ModuleService interface {
+	// TODO: rename option structs for *all* service endpoints, so that the name
+	// reflects the method name, e.g. CreateModule -> CreateModuleOptions
+
 	CreateModule(context.Context, ModuleCreateOptions) (*Module, error)
 	CreateModuleVersion(context.Context, ModuleCreateVersionOptions) (*ModuleVersion, error)
-	ListModules(context.Context, ModuleListOptions) (*ModuleList, error)
-	GetModule(context.Context, ModuleListOptions) (*Module, error)
+	ListModules(context.Context, ModuleListOptions) ([]*Module, error)
+	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	UploadModule(ctx context.Context, opts UploadModuleOptions) error
+	DownloadModule(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 }
 
 type (
@@ -52,11 +65,26 @@ type (
 	}
 	ModuleCreateVersionOptions struct {
 		ModuleID string
+		Version  string
+	}
+	GetModuleOptions struct {
+		Name         string
+		Provider     string
+		Organization *Organization
+	}
+	UploadModuleOptions struct {
+		Name     string
+		Provider string
+		Version  string
 		Tarball  []byte
+	}
+	DownloadModuleOptions struct {
+		Name     string
+		Provider string
 		Version  string
 	}
 	ModuleListOptions struct {
-		ListOptions
+		Organization string // filter by organization name
 	}
 	ModuleList struct {
 		*Pagination
@@ -86,23 +114,33 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 				return nil, fmt.Errorf("malformed git tag ref: %s", tag.Ref)
 			}
 
+			// skip tags that are not semantic versions
+			if !isValidSemVer(version) {
+				continue
+			}
+
 			// strip off 'v' prefix if it has one
 			version = strings.TrimPrefix(version, "v")
 
-			// skip tags that are not semantic versions
-			if !semver.IsValid(version) {
-				continue
+			modVersion, err := mm.CreateModuleVersion(ctx, ModuleCreateVersionOptions{
+				ModuleID: mod.id,
+				Version:  version,
+			})
+			if err != nil {
+				return nil, err
 			}
+			mod.versions = append(mod.versions, modVersion)
+
 			tarball, err := mm.GetRepoTarball(ctx, opts.Repo.ProviderID, GetRepoTarballOptions{
 				Ref: tag.Ref,
 			})
 			if err != nil {
 				return nil, err
 			}
-			_, err = mm.CreateModuleVersion(ctx, ModuleCreateVersionOptions{
-				ModuleID: mod.id,
-				Version:  version,
-				Tarball:  tarball,
+
+			// upload tarball
+			err = mm.UploadModule(ctx, UploadModuleOptions{
+				Tarball: tarball,
 			})
 			if err != nil {
 				return nil, err
@@ -122,4 +160,28 @@ func NewModule(opts ModuleCreateOptions) *Module {
 		organization: opts.Organization,
 	}
 	return &m
+}
+
+// ByModuleVersion implements sort.Interface for sorting module versions.
+type ByModuleVersion []*ModuleVersion
+
+func (l ByModuleVersion) Len() int { return len(l) }
+func (l ByModuleVersion) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
+func (l ByModuleVersion) Less(i, j int) bool {
+	cmp := semver.Compare(l[i].version, l[j].version)
+	if cmp != 0 {
+		return cmp < 0
+	}
+	return l[i].version < l[j].version
+}
+
+func isValidSemVer(s string) bool {
+	// semver lib requires 'v' prefix
+	if !strings.HasPrefix(s, "v") {
+		s = "v" + s
+	}
+	return semver.IsValid(s)
 }

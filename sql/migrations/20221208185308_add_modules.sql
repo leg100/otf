@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS module_versions (
     version         TEXT NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,
-    module          BYTEA,
+    tarball         BYTEA,
     module_id       TEXT REFERENCES modules ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     UNIQUE (module_id, version)
 );
