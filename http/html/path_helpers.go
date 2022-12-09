@@ -114,6 +114,14 @@ func deleteVCSProviderPath(route organizationRoute) string {
 	return path.Join(getOrganizationPath(route), "vcs-providers", "delete")
 }
 
+func listModulesPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "modules")
+}
+
+func listModuleVCSProvidersPath(route organizationRoute) string {
+	return path.Join(getOrganizationPath(route), "modules", "vcs-providers")
+}
+
 func listOrganizationPath() string {
 	return "/organizations"
 }
@@ -318,4 +326,6 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
 	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
 	m["startRunPath"] = startRunPath
+	m["listModulesPath"] = listModulesPath
+	m["listModuleVCSProvidersPath"] = listModuleVCSProvidersPath
 }

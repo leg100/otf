@@ -135,6 +135,24 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 	}, nil
 }
 
+func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.VCSRef, error) {
+	results, _, err := g.client.Tags.ListTags(opts.Identifier, &gitlab.ListTagsOptions{
+		Search: otf.String("^" + opts.Prefix),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var tags []otf.VCSRef
+	for _, ref := range results {
+		tags = append(tags, otf.VCSRef{
+			Ref: fmt.Sprint("refs/tags/%s", ref.Name),
+			SHA: ref.Commit.ID,
+		})
+	}
+	return tags, nil
+}
+
 func (g *Client) GetRepoTarball(ctx context.Context, opts otf.GetRepoTarballOptions) ([]byte, error) {
 	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
 		Format: otf.String("tar.gz"),

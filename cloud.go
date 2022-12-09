@@ -57,6 +57,8 @@ type CloudClient interface {
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
 
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
+
+	ListTags(ctx context.Context, opts ListTagsOptions) ([]VCSRef, error)
 }
 
 type VCSWebhook struct {
@@ -70,6 +72,12 @@ type VCSWebhook struct {
 type GetRepoTarballOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Ref        string // branch/tag/SHA ref
+}
+
+// ListTagsOptions are options for listing tags on a vcs repository
+type ListTagsOptions struct {
+	Identifier string // repo identifier, <owner>/<repo>
+	Prefix     string // only list tags that start with this string
 }
 
 type CreateWebhookOptions struct {
@@ -163,4 +171,9 @@ func (r Repo) ID() string { return r.Identifier }
 type RepoList struct {
 	*Pagination
 	Items []*Repo
+}
+
+type VCSRef struct {
+	Ref string
+	SHA string
 }

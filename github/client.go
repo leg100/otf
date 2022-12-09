@@ -156,6 +156,29 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 	}, nil
 }
 
+func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.VCSRef, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
+	results, _, err := g.client.Git.ListMatchingRefs(ctx, owner, name, &github.ReferenceListOptions{
+		Ref: opts.Prefix,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var tags []otf.VCSRef
+	for _, ref := range results {
+		tags = append(tags, otf.VCSRef{
+			Ref: ref.GetRef(),
+			SHA: ref.GetObject().GetSHA(),
+		})
+	}
+	return tags, nil
+}
+
 func (g *Client) GetRepoTarball(ctx context.Context, topts otf.GetRepoTarballOptions) ([]byte, error) {
 	owner, name, found := strings.Cut(topts.Identifier, "/")
 	if !found {

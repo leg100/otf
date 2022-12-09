@@ -125,6 +125,9 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/organizations/{organization_name}/vcs-providers/{cloud_name}/create", app.createVCSProvider)
 		r.PST("/organizations/{organization_name}/vcs-providers/delete", app.deleteVCSProvider)
 
+		r.GET("/organizations/{organization_name}/modules", app.listModules)
+		r.GET("/organizations/{organization_name}/modules/vcs-providers", app.listModuleVCSProviders)
+
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)
 		r.PST("/organizations/create", app.createOrganization)

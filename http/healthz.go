@@ -9,7 +9,7 @@ import (
 
 var currentHealthz = Healthz{
 	Version: otf.Version,
-	Commit:  otf.Commit,
+	Commit:  otf.VCSRef,
 	Built:   otf.Built,
 }
 
