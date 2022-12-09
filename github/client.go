@@ -163,7 +163,7 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.
 	}
 
 	results, _, err := g.client.Git.ListMatchingRefs(ctx, owner, name, &github.ReferenceListOptions{
-		Ref: opts.Prefix,
+		Ref: "tags/" + opts.Prefix,
 	})
 	if err != nil {
 		return nil, err

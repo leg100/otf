@@ -174,6 +174,6 @@ type RepoList struct {
 }
 
 type VCSRef struct {
-	Ref string
+	Ref string // heads/*, tags/*, or sha
 	SHA string
 }

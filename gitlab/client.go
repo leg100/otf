@@ -146,7 +146,7 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.
 	var tags []otf.VCSRef
 	for _, ref := range results {
 		tags = append(tags, otf.VCSRef{
-			Ref: fmt.Sprint("refs/tags/%s", ref.Name),
+			Ref: fmt.Sprintf("tags/%s", ref.Name),
 			SHA: ref.Commit.ID,
 		})
 	}

@@ -2,6 +2,8 @@ package otf
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,11 +80,17 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 		if err != nil {
 			return nil, err
 		}
-		// skip tags that are not semvers
-		// fetch tarball for each tag
-		// create module version for each tag
 		for _, tag := range tags {
-			if !semver.IsValid(tag.Ref) {
+			_, version, found := strings.Cut(tag.Ref, "/")
+			if !found {
+				return nil, fmt.Errorf("malformed git tag ref: %s", tag.Ref)
+			}
+
+			// strip off 'v' prefix if it has one
+			version = strings.TrimPrefix(version, "v")
+
+			// skip tags that are not semantic versions
+			if !semver.IsValid(version) {
 				continue
 			}
 			tarball, err := mm.GetRepoTarball(ctx, opts.Repo.ProviderID, GetRepoTarballOptions{
@@ -93,7 +101,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 			}
 			_, err = mm.CreateModuleVersion(ctx, ModuleCreateVersionOptions{
 				ModuleID: mod.id,
-				Version:  tag.Ref,
+				Version:  version,
 				Tarball:  tarball,
 			})
 			if err != nil {
