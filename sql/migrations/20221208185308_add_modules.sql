@@ -1,12 +1,12 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS modules (
-    module_id               TEXT,
-    created_at              TIMESTAMPTZ NOT NULL,
-    updated_at              TIMESTAMPTZ NOT NULL,
-    name                    TEXT        NOT NULL,
-    provider                TEXT        NOT NULL,
-    organization_name       TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                            PRIMARY KEY (module_id)
+    module_id       TEXT,
+    created_at      TIMESTAMPTZ NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    name            TEXT        NOT NULL,
+    provider        TEXT        NOT NULL,
+    organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                    PRIMARY KEY (module_id)
 );
 
 CREATE TABLE IF NOT EXISTS module_versions (

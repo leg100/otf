@@ -158,6 +158,55 @@ type Querier interface {
 	// InsertIngressAttributesScan scans the result of an executed InsertIngressAttributesBatch query.
 	InsertIngressAttributesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
+	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
+	// later by the batch.
+	InsertModuleBatch(batch genericBatch, params InsertModuleParams)
+	// InsertModuleScan scans the result of an executed InsertModuleBatch query.
+	InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertModuleVersion(ctx context.Context, params InsertModuleVersionParams) (InsertModuleVersionRow, error)
+	// InsertModuleVersionBatch enqueues a InsertModuleVersion query into batch to be executed
+	// later by the batch.
+	InsertModuleVersionBatch(batch genericBatch, params InsertModuleVersionParams)
+	// InsertModuleVersionScan scans the result of an executed InsertModuleVersionBatch query.
+	InsertModuleVersionScan(results pgx.BatchResults) (InsertModuleVersionRow, error)
+
+	ListModulesByOrganization(ctx context.Context, organizationName pgtype.Text) ([]ListModulesByOrganizationRow, error)
+	// ListModulesByOrganizationBatch enqueues a ListModulesByOrganization query into batch to be executed
+	// later by the batch.
+	ListModulesByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
+	// ListModulesByOrganizationScan scans the result of an executed ListModulesByOrganizationBatch query.
+	ListModulesByOrganizationScan(results pgx.BatchResults) ([]ListModulesByOrganizationRow, error)
+
+	FindModuleByName(ctx context.Context, params FindModuleByNameParams) (FindModuleByNameRow, error)
+	// FindModuleByNameBatch enqueues a FindModuleByName query into batch to be executed
+	// later by the batch.
+	FindModuleByNameBatch(batch genericBatch, params FindModuleByNameParams)
+	// FindModuleByNameScan scans the result of an executed FindModuleByNameBatch query.
+	FindModuleByNameScan(results pgx.BatchResults) (FindModuleByNameRow, error)
+
+	UploadModuleVersion(ctx context.Context, params UploadModuleVersionParams) (pgtype.Text, error)
+	// UploadModuleVersionBatch enqueues a UploadModuleVersion query into batch to be executed
+	// later by the batch.
+	UploadModuleVersionBatch(batch genericBatch, params UploadModuleVersionParams)
+	// UploadModuleVersionScan scans the result of an executed UploadModuleVersionBatch query.
+	UploadModuleVersionScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DownloadModuleVersion(ctx context.Context, moduleID pgtype.Text, version pgtype.Text) ([]byte, error)
+	// DownloadModuleVersionBatch enqueues a DownloadModuleVersion query into batch to be executed
+	// later by the batch.
+	DownloadModuleVersionBatch(batch genericBatch, moduleID pgtype.Text, version pgtype.Text)
+	// DownloadModuleVersionScan scans the result of an executed DownloadModuleVersionBatch query.
+	DownloadModuleVersionScan(results pgx.BatchResults) ([]byte, error)
+
+	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
+	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleByIDBatch(batch genericBatch, id pgtype.Text)
+	// DeleteModuleByIDScan scans the result of an executed DeleteModuleByIDBatch query.
+	DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -1016,6 +1065,27 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModule': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleVersionSQL, insertModuleVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, listModulesByOrganizationSQL, listModulesByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'ListModulesByOrganization': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleByNameSQL, findModuleByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, uploadModuleVersionSQL, uploadModuleVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'UploadModuleVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, downloadModuleVersionSQL, downloadModuleVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'DownloadModuleVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)

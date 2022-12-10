@@ -22,6 +22,15 @@ type Module struct {
 	versions     []*ModuleVersion
 }
 
+func (m *Module) ID() string                  { return m.id }
+func (m *Module) CreatedAt() time.Time        { return m.createdAt }
+func (m *Module) UpdatedAt() time.Time        { return m.updatedAt }
+func (m *Module) Name() string                { return m.name }
+func (m *Module) Provider() string            { return m.provider }
+func (m *Module) Repo() *ModuleRepo           { return m.repo }
+func (m *Module) Versions() []*ModuleVersion  { return m.versions }
+func (m *Module) Organization() *Organization { return m.organization }
+
 func (m *Module) LatestVersion() *ModuleVersion {
 	if len(m.versions) == 0 {
 		return nil
@@ -31,11 +40,17 @@ func (m *Module) LatestVersion() *ModuleVersion {
 }
 
 type ModuleVersion struct {
+	moduleID  string
 	version   string
 	createdAt time.Time
 	updatedAt time.Time
 	// TODO: download counter
 }
+
+func (v *ModuleVersion) ModuleID() string     { return v.moduleID }
+func (v *ModuleVersion) Version() string      { return v.version }
+func (v *ModuleVersion) CreatedAt() time.Time { return v.createdAt }
+func (v *ModuleVersion) UpdatedAt() time.Time { return v.updatedAt }
 
 type ModuleRepo struct {
 	ProviderID string
@@ -45,25 +60,31 @@ type ModuleRepo struct {
 }
 
 type ModuleService interface {
-	// TODO: rename option structs for *all* service endpoints, so that the name
-	// reflects the method name, e.g. CreateModule -> CreateModuleOptions
-
-	CreateModule(context.Context, ModuleCreateOptions) (*Module, error)
-	CreateModuleVersion(context.Context, ModuleCreateVersionOptions) (*ModuleVersion, error)
-	ListModules(context.Context, ModuleListOptions) ([]*Module, error)
+	CreateModule(context.Context, CreateModuleOptions) (*Module, error)
+	CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
+	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-	UploadModule(ctx context.Context, opts UploadModuleOptions) error
-	DownloadModule(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
+	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
+	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
+}
+
+type ModuleStore interface {
+	CreateModule(context.Context, *Module) error
+	CreateModuleVersion(context.Context, *ModuleVersion) (*ModuleVersion, error)
+	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
+	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
+	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 }
 
 type (
-	ModuleCreateOptions struct {
+	CreateModuleOptions struct {
 		Name         string
 		Provider     string
 		Repo         *ModuleRepo
 		Organization *Organization
 	}
-	ModuleCreateVersionOptions struct {
+	CreateModuleVersionOptions struct {
 		ModuleID string
 		Version  string
 	}
@@ -72,18 +93,16 @@ type (
 		Provider     string
 		Organization *Organization
 	}
-	UploadModuleOptions struct {
-		Name     string
-		Provider string
+	UploadModuleVersionOptions struct {
+		ModuleID string
 		Version  string
 		Tarball  []byte
 	}
 	DownloadModuleOptions struct {
-		Name     string
-		Provider string
+		ModuleID string
 		Version  string
 	}
-	ModuleListOptions struct {
+	ListModulesOptions struct {
 		Organization string // filter by organization name
 	}
 	ModuleList struct {
@@ -93,11 +112,10 @@ type (
 )
 
 type ModuleMaker struct {
-	ModuleService
-	VCSProviderService
+	Application
 }
 
-func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) (*Module, error) {
+func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) (*Module, error) {
 	mod := NewModule(opts)
 
 	if opts.Repo != nil {
@@ -122,7 +140,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 			// strip off 'v' prefix if it has one
 			version = strings.TrimPrefix(version, "v")
 
-			modVersion, err := mm.CreateModuleVersion(ctx, ModuleCreateVersionOptions{
+			modVersion, err := mm.CreateModuleVersion(ctx, CreateModuleVersionOptions{
 				ModuleID: mod.id,
 				Version:  version,
 			})
@@ -139,7 +157,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 			}
 
 			// upload tarball
-			err = mm.UploadModule(ctx, UploadModuleOptions{
+			err = mm.UploadModuleVersion(ctx, UploadModuleVersionOptions{
 				Tarball: tarball,
 			})
 			if err != nil {
@@ -150,7 +168,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts ModuleCreateOptions) 
 	return mod, nil
 }
 
-func NewModule(opts ModuleCreateOptions) *Module {
+func NewModule(opts CreateModuleOptions) *Module {
 	m := Module{
 		id:           NewID("mod"),
 		createdAt:    CurrentTimestamp(),

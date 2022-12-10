@@ -10,63 +10,37 @@ import (
 )
 
 func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
-	return db.tx(ctx, func(tx *DB) error {
-		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
-			ID:            String(mod.ID()),
-			CreatedAt:     Timestamptz(mod.CreatedAt()),
-			AutoQueueRuns: mod.AutoQueueRuns(),
-			Source:        String(string(mod.Source())),
-			Speculative:   mod.Speculative(),
-			Status:        String(string(mod.Status())),
-			WorkspaceID:   String(mod.WorkspaceID()),
-		})
-		if err != nil {
-			return err
-		}
-
-		if mod.IngressAttributes() != nil {
-			ia := mod.IngressAttributes()
-			_, err := tx.InsertIngressAttributes(ctx, pggen.InsertIngressAttributesParams{
-				Branch:                 String(ia.Branch),
-				CommitSHA:              String(ia.CommitSHA),
-				Identifier:             String(ia.Identifier),
-				IsPullRequest:          ia.IsPullRequest,
-				OnDefaultBranch:        ia.OnDefaultBranch,
-				ModuleID: String(mod.ID()),
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-		// Insert timestamp for current status
-		if err := tx.insertCVStatusTimestamp(ctx, mod); err != nil {
-			return fmt.Errorf("inserting configuration version status timestamp: %w", err)
-		}
-		return nil
+	_, err := db.InsertModule(ctx, pggen.InsertModuleParams{
+		ID:             String(mod.ID()),
+		CreatedAt:      Timestamptz(mod.CreatedAt()),
+		UpdatedAt:      Timestamptz(mod.UpdatedAt()),
+		OrganizationID: String(mod.Organization().ID()),
 	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (db *DB) UploadModule(ctx context.Context, id string, fn func(*otf.Module, otf.ConfigUploader) error) error {
-	return db.tx(ctx, func(tx *DB) error {
-		// select ...for update
-		result, err := tx.FindModuleByIDForUpdate(ctx, String(id))
-		if err != nil {
-			return err
-		}
-		cv, err := otf.UnmarshalModuleResult(otf.ModuleResult(result))
-		if err != nil {
-			return err
-		}
-
-		if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
-			return err
-		}
-		return nil
+func (db *DB) UploadModuleVersion(ctx context.Context, opts otf.UploadModuleVersionOptions) error {
+	result, err := db.Querier.UploadModuleVersion(ctx, pggen.UploadModuleVersionParams{
+		Tarball   : opts.Tarball,
+		UpdatedAt :
+		ModuleID  :
+		Version   :
 	})
+	cv, err := otf.UnmarshalModuleResult(otf.ModuleResult(result))
+	if err != nil {
+		return err
+	}
+
+	if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (db *DB) ListModules(ctx context.Context, workspaceID string, opts otf.ModuleListOptions) (*otf.ModuleList, error) {
+func (db *DB) ListModules(ctx context.Context, workspaceID string, opts otf.ListModulesOptions) (*otf.ModuleList, error) {
 	batch := &pgx.Batch{}
 	db.FindModulesByWorkspaceIDBatch(batch, pggen.FindModulesByWorkspaceIDParams{
 		WorkspaceID: String(workspaceID),

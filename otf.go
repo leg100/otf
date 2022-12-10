@@ -51,6 +51,7 @@ type Application interface {
 	VCSProviderService
 	LockableApplication
 	CloudService
+	ModuleService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
