@@ -235,7 +235,7 @@ func (l ByModuleVersion) Less(i, j int) bool {
 	return l[i].version < l[j].version
 }
 
-// ModuleRow is a resultset row from a database query for modules.
+// ModuleRow is a row from a database query for modules.
 type ModuleRow struct {
 	ModuleID     pgtype.Text            `json:"module_id"`
 	CreatedAt    pgtype.Timestamptz     `json:"created_at"`
@@ -248,6 +248,7 @@ type ModuleRow struct {
 	Versions     []pggen.ModuleVersions `json:"versions"`
 }
 
+// UnmarshalModuleRow unmarshals a module database row into a module
 func UnmarshalModuleRow(row ModuleRow) *Module {
 	module := &Module{
 		id:           row.ModuleID.String,
