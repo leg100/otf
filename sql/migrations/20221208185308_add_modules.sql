@@ -10,12 +10,18 @@ CREATE TABLE IF NOT EXISTS modules (
 );
 
 CREATE TABLE IF NOT EXISTS module_versions (
-    version         TEXT NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL,
-    updated_at      TIMESTAMPTZ NOT NULL,
-    tarball         BYTEA,
-    module_id       TEXT REFERENCES modules ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                    UNIQUE (module_id, version)
+    module_version_id TEXT,
+    version           TEXT NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL,
+    updated_at        TIMESTAMPTZ NOT NULL,
+    module_id         TEXT REFERENCES modules ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                      PRIMARY KEY (module_version_id)
+);
+
+CREATE TABLE IF NOT EXISTS module_tarballs (
+    tarball           BYTEA NOT NULL,
+    module_version_id TEXT REFERENCES module_versions ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                    UNIQUE (module_version_id)
 );
 
 CREATE TABLE IF NOT EXISTS module_repos (
@@ -31,5 +37,6 @@ CREATE TABLE IF NOT EXISTS module_repos (
 
 -- +goose Down
 DROP TABLE IF EXISTS module_repos;
+DROP TABLE IF EXISTS module_tarballs;
 DROP TABLE IF EXISTS module_versions;
 DROP TABLE IF EXISTS modules;

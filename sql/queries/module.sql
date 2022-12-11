@@ -17,11 +17,13 @@ INSERT INTO modules (
 
 -- name: InsertModuleVersion :one
 INSERT INTO module_versions (
+    module_version_id,
     version,
     created_at,
     updated_at,
     module_id
 ) VALUES (
+    pggen.arg('module_version_id'),
     pggen.arg('version'),
     pggen.arg('created_at'),
     pggen.arg('updated_at'),
@@ -36,9 +38,17 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
-    (o.*)::"organizations" AS organization
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
 FROM modules m
 JOIN organizations o USING (organization_id)
+LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE o.name = pggen.arg('organization_name')
 ;
 
@@ -49,28 +59,58 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
-    (o.*)::"organizations" AS organization
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
 FROM modules m
 JOIN organizations o USING (organization_id)
+LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE o.name = pggen.arg('organizaton_name')
 AND   m.name = pggen.arg('name')
 AND   m.provider = pggen.arg('provider')
 ;
 
--- name: UploadModuleVersion :one
-UPDATE module_versions
-SET
-    tarball = pggen.arg('tarball'),
-    updated_at = pggen.arg('updated_at')
-WHERE module_id = pggen.arg('module_id')
-AND   version = pggen.arg('version')
-RETURNING version;
+-- name: FindModuleByWebhookID :one
+SELECT
+    m.module_id,
+    m.created_at,
+    m.updated_at,
+    m.name,
+    m.provider,
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
+FROM modules m
+JOIN organizations o USING (organization_id)
+JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+WHERE h.webhook_id = pggen.arg('webhook_id')
+;
 
--- name: DownloadModuleVersion :one
+
+-- name: InsertModuleTarball :one
+INSERT INTO module_tarballs (
+    tarball,
+    module_version_id
+) VALUES (
+    pggen.arg('tarball'),
+    pggen.arg('module_version_id')
+)
+RETURNING module_version_id;
+
+-- name: FindModuleTarball :one
 SELECT tarball
-FROM module_versions
-WHERE module_id = pggen.arg('module_id')
-AND   version = pggen.arg('version')
+FROM module_tarballs
+WHERE module_version_id = pggen.arg('module_version_id')
 ;
 
 -- name: DeleteModuleByID :one

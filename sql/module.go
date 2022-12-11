@@ -2,9 +2,8 @@ package sql
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -22,98 +21,67 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 	return nil
 }
 
+func (db *DB) CreateModuleVersion(ctx context.Context, version *otf.ModuleVersion) error {
+	_, err := db.InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
+		ModuleVersionID: String(version.ID()),
+		Version:         String(version.Version()),
+		CreatedAt:       Timestamptz(version.CreatedAt()),
+		UpdatedAt:       Timestamptz(version.UpdatedAt()),
+		ModuleID:        String(version.ModuleID()),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *DB) UploadModuleVersion(ctx context.Context, opts otf.UploadModuleVersionOptions) error {
-	result, err := db.Querier.UploadModuleVersion(ctx, pggen.UploadModuleVersionParams{
-		Tarball   : opts.Tarball,
-		UpdatedAt :
-		ModuleID  :
-		Version   :
-	})
-	cv, err := otf.UnmarshalModuleResult(otf.ModuleResult(result))
+	_, err := db.InsertModuleTarball(ctx, opts.Tarball, String(opts.ModuleVersionID))
 	if err != nil {
-		return err
-	}
-
-	if err := fn(cv, newConfigUploader(tx, cv.ID())); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *DB) ListModules(ctx context.Context, workspaceID string, opts otf.ListModulesOptions) (*otf.ModuleList, error) {
-	batch := &pgx.Batch{}
-	db.FindModulesByWorkspaceIDBatch(batch, pggen.FindModulesByWorkspaceIDParams{
-		WorkspaceID: String(workspaceID),
-		Limit:       opts.GetLimit(),
-		Offset:      opts.GetOffset(),
-	})
-	db.CountModulesByWorkspaceIDBatch(batch, String(workspaceID))
-	results := db.SendBatch(ctx, batch)
-	defer results.Close()
-
-	rows, err := db.FindModulesByWorkspaceIDScan(results)
-	if err != nil {
-		return nil, err
-	}
-	count, err := db.CountModulesByWorkspaceIDScan(results)
+func (db *DB) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
+	rows, err := db.ListModulesByOrganization(ctx, String(opts.Organization))
 	if err != nil {
 		return nil, err
 	}
 
-	var items []*otf.Module
+	var modules []*otf.Module
 	for _, r := range rows {
-		cv, err := otf.UnmarshalModuleResult(otf.ModuleResult(r))
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, cv)
+		modules = append(modules, otf.UnmarshalModuleRow(otf.ModuleRow(r)))
 	}
-
-	return &otf.ModuleList{
-		Items:      items,
-		Pagination: otf.NewPagination(opts.ListOptions, *count),
-	}, nil
+	return modules, nil
 }
 
-func (db *DB) GetModule(ctx context.Context, opts otf.ModuleGetOptions) (*otf.Module, error) {
-	if opts.ID != nil {
-		result, err := db.FindModuleByID(ctx, String(*opts.ID))
-		if err != nil {
-			return nil, databaseError(err)
-		}
-		return otf.UnmarshalModuleResult(otf.ModuleResult(result))
-	} else if opts.WorkspaceID != nil {
-		result, err := db.FindModuleLatestByWorkspaceID(ctx, String(*opts.WorkspaceID))
-		if err != nil {
-			return nil, databaseError(err)
-		}
-		return otf.UnmarshalModuleResult(otf.ModuleResult(result))
-	} else {
-		return nil, fmt.Errorf("no configuration version spec provided")
-	}
-}
-
-func (db *DB) GetConfig(ctx context.Context, id string) ([]byte, error) {
-	return db.DownloadModule(ctx, String(id))
-}
-
-func (db *DB) DeleteModule(ctx context.Context, id string) error {
-	_, err := db.DeleteModuleByID(ctx, String(id))
-	if err != nil {
-		return databaseError(err)
-	}
-	return nil
-}
-
-func (db *DB) insertCVStatusTimestamp(ctx context.Context, cv *otf.Module) error {
-	sts, err := cv.StatusTimestamp(cv.Status())
-	if err != nil {
-		return err
-	}
-	_, err = db.InsertModuleStatusTimestamp(ctx, pggen.InsertModuleStatusTimestampParams{
-		ID:        String(cv.ID()),
-		Status:    String(string(cv.Status())),
-		Timestamp: Timestamptz(sts),
+func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
+	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
+		Name:            String(opts.Name),
+		Provider:        String(opts.Provider),
+		OrganizatonName: String(opts.Organization.Name()),
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
+}
+
+func (db *DB) GetModuleByWebhook(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
+	row, err := db.FindModuleByWebhookID(ctx, UUID(id))
+	if err != nil {
+		return nil, err
+	}
+
+	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
+}
+
+func (db *DB) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModuleOptions) ([]byte, error) {
+	tarball, err := db.FindModuleTarball(ctx, String(opts.ModuleVersionID))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return tarball, nil
 }

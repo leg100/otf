@@ -79,6 +79,7 @@ type DB interface {
 	AgentTokenStore
 	VCSProviderStore
 	WebhookStore
+	ModuleStore
 }
 
 // Unmarshaler unmarshals database rows

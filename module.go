@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/mod/semver"
+	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/semver"
+	"github.com/leg100/otf/sql/pggen"
 )
 
 type Module struct {
@@ -40,6 +42,7 @@ func (m *Module) LatestVersion() *ModuleVersion {
 }
 
 type ModuleVersion struct {
+	id        string
 	moduleID  string
 	version   string
 	createdAt time.Time
@@ -47,6 +50,7 @@ type ModuleVersion struct {
 	// TODO: download counter
 }
 
+func (v *ModuleVersion) ID() string           { return v.id }
 func (v *ModuleVersion) ModuleID() string     { return v.moduleID }
 func (v *ModuleVersion) Version() string      { return v.version }
 func (v *ModuleVersion) CreatedAt() time.Time { return v.createdAt }
@@ -64,16 +68,18 @@ type ModuleService interface {
 	CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
 	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 }
 
 type ModuleStore interface {
 	CreateModule(context.Context, *Module) error
-	CreateModuleVersion(context.Context, *ModuleVersion) (*ModuleVersion, error)
+	CreateModuleVersion(context.Context, *ModuleVersion) error
+	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
-	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
+	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 }
 
@@ -94,13 +100,11 @@ type (
 		Organization *Organization
 	}
 	UploadModuleVersionOptions struct {
-		ModuleID string
-		Version  string
-		Tarball  []byte
+		ModuleVersionID string
+		Tarball         []byte
 	}
 	DownloadModuleOptions struct {
-		ModuleID string
-		Version  string
+		ModuleVersionID string
 	}
 	ListModulesOptions struct {
 		Organization string // filter by organization name
@@ -111,59 +115,51 @@ type (
 	}
 )
 
+// ModuleMaker makes new modules, including its versions, one for each tag found
+// in its connected repo (if connected to a repo).
 type ModuleMaker struct {
 	Application
+	*ModulePublisher
 }
 
 func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) (*Module, error) {
 	mod := NewModule(opts)
 
-	if opts.Repo != nil {
-		// list all tags starting with 'v' in the module's repo
-		tags, err := mm.ListTags(ctx, opts.Repo.ProviderID, ListTagsOptions{
+	// If not connected to a repo there is nothing more to be done.
+	if opts.Repo == nil {
+		return mod, nil
+	}
+
+	// list all tags starting with 'v' in the module's repo
+	tags, err := mm.ListTags(ctx, opts.Repo.ProviderID, ListTagsOptions{
+		Identifier: opts.Repo.Identifier,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, tag := range tags {
+		_, version, found := strings.Cut(tag.Ref, "/")
+		if !found {
+			return nil, fmt.Errorf("malformed git ref: %s", tag.Ref)
+		}
+
+		// skip tags that are not semantic versions
+		if !semver.IsValid(version) {
+			continue
+		}
+
+		modVersion, err := mm.Publish(ctx, PublishModuleVersionOptions{
+			ModuleID: mod.ID(),
+			// strip off v prefix if it has one
+			Version:    strings.TrimPrefix(version, "v"),
+			Ref:        tag.SHA,
 			Identifier: opts.Repo.Identifier,
+			ProviderID: mod.Repo().ProviderID,
 		})
 		if err != nil {
 			return nil, err
 		}
-		for _, tag := range tags {
-			_, version, found := strings.Cut(tag.Ref, "/")
-			if !found {
-				return nil, fmt.Errorf("malformed git tag ref: %s", tag.Ref)
-			}
-
-			// skip tags that are not semantic versions
-			if !isValidSemVer(version) {
-				continue
-			}
-
-			// strip off 'v' prefix if it has one
-			version = strings.TrimPrefix(version, "v")
-
-			modVersion, err := mm.CreateModuleVersion(ctx, CreateModuleVersionOptions{
-				ModuleID: mod.id,
-				Version:  version,
-			})
-			if err != nil {
-				return nil, err
-			}
-			mod.versions = append(mod.versions, modVersion)
-
-			tarball, err := mm.GetRepoTarball(ctx, opts.Repo.ProviderID, GetRepoTarballOptions{
-				Ref: tag.Ref,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			// upload tarball
-			err = mm.UploadModuleVersion(ctx, UploadModuleVersionOptions{
-				Tarball: tarball,
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
+		mod.versions = append(mod.versions, modVersion)
 	}
 	return mod, nil
 }
@@ -178,6 +174,49 @@ func NewModule(opts CreateModuleOptions) *Module {
 		organization: opts.Organization,
 	}
 	return &m
+}
+
+// ModulePublisher publishes new module versions.
+type ModulePublisher struct {
+	Application
+}
+
+type PublishModuleVersionOptions struct {
+	ModuleID   string
+	Version    string
+	Ref        string
+	Identifier string
+	ProviderID string
+}
+
+// Publish a module version, retrieving its contents from a repository and
+// uploading it to the module store.
+func (p *ModulePublisher) Publish(ctx context.Context, opts PublishModuleVersionOptions) (*ModuleVersion, error) {
+	version, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
+		ModuleID: opts.ModuleID,
+		Version:  opts.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, GetRepoTarballOptions{
+		Identifier: opts.Identifier,
+		Ref:        opts.Ref,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
+	}
+
+	// upload tarball
+	err = p.UploadModuleVersion(ctx, UploadModuleVersionOptions{
+		ModuleVersionID: version.ID(),
+		Tarball:         tarball,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return version, nil
 }
 
 // ByModuleVersion implements sort.Interface for sorting module versions.
@@ -196,10 +235,44 @@ func (l ByModuleVersion) Less(i, j int) bool {
 	return l[i].version < l[j].version
 }
 
-func isValidSemVer(s string) bool {
-	// semver lib requires 'v' prefix
-	if !strings.HasPrefix(s, "v") {
-		s = "v" + s
+// ModuleRow is a resultset row from a database query for modules.
+type ModuleRow struct {
+	ModuleID     pgtype.Text            `json:"module_id"`
+	CreatedAt    pgtype.Timestamptz     `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz     `json:"updated_at"`
+	Name         pgtype.Text            `json:"name"`
+	Provider     pgtype.Text            `json:"provider"`
+	Organization *pggen.Organizations   `json:"organization"`
+	ModuleRepo   *pggen.ModuleRepos     `json:"module_repo"`
+	Webhook      *pggen.Webhooks        `json:"webhook"`
+	Versions     []pggen.ModuleVersions `json:"versions"`
+}
+
+func UnmarshalModuleRow(row ModuleRow) *Module {
+	module := &Module{
+		id:           row.ModuleID.String,
+		createdAt:    row.CreatedAt.Time.UTC(),
+		updatedAt:    row.UpdatedAt.Time.UTC(),
+		name:         row.Name.String,
+		provider:     row.Provider.String,
+		organization: UnmarshalOrganizationRow(*row.Organization),
 	}
-	return semver.IsValid(s)
+	if row.ModuleRepo != nil {
+		module.repo = &ModuleRepo{
+			ProviderID: row.ModuleRepo.VCSProviderID.String,
+			WebhookID:  row.Webhook.WebhookID.Bytes,
+			Identifier: row.Webhook.Identifier.String,
+			HTTPURL:    row.Webhook.HTTPURL.String,
+		}
+	}
+	for _, version := range row.Versions {
+		module.versions = append(module.versions, &ModuleVersion{
+			id:        version.ModuleVersionID.String,
+			version:   version.Version.String,
+			createdAt: row.CreatedAt.Time.UTC(),
+			updatedAt: row.UpdatedAt.Time.UTC(),
+			moduleID:  row.ModuleID.String,
+		})
+	}
+	return module
 }

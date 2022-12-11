@@ -186,19 +186,26 @@ type Querier interface {
 	// FindModuleByNameScan scans the result of an executed FindModuleByNameBatch query.
 	FindModuleByNameScan(results pgx.BatchResults) (FindModuleByNameRow, error)
 
-	UploadModuleVersion(ctx context.Context, params UploadModuleVersionParams) (pgtype.Text, error)
-	// UploadModuleVersionBatch enqueues a UploadModuleVersion query into batch to be executed
+	FindModuleByWebhookID(ctx context.Context, webhookID pgtype.UUID) (FindModuleByWebhookIDRow, error)
+	// FindModuleByWebhookIDBatch enqueues a FindModuleByWebhookID query into batch to be executed
 	// later by the batch.
-	UploadModuleVersionBatch(batch genericBatch, params UploadModuleVersionParams)
-	// UploadModuleVersionScan scans the result of an executed UploadModuleVersionBatch query.
-	UploadModuleVersionScan(results pgx.BatchResults) (pgtype.Text, error)
+	FindModuleByWebhookIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
+	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
 
-	DownloadModuleVersion(ctx context.Context, moduleID pgtype.Text, version pgtype.Text) ([]byte, error)
-	// DownloadModuleVersionBatch enqueues a DownloadModuleVersion query into batch to be executed
+	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
+	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
 	// later by the batch.
-	DownloadModuleVersionBatch(batch genericBatch, moduleID pgtype.Text, version pgtype.Text)
-	// DownloadModuleVersionScan scans the result of an executed DownloadModuleVersionBatch query.
-	DownloadModuleVersionScan(results pgx.BatchResults) ([]byte, error)
+	InsertModuleTarballBatch(batch genericBatch, tarball []byte, moduleVersionID pgtype.Text)
+	// InsertModuleTarballScan scans the result of an executed InsertModuleTarballBatch query.
+	InsertModuleTarballScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	FindModuleTarball(ctx context.Context, moduleVersionID pgtype.Text) ([]byte, error)
+	// FindModuleTarballBatch enqueues a FindModuleTarball query into batch to be executed
+	// later by the batch.
+	FindModuleTarballBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// FindModuleTarballScan scans the result of an executed FindModuleTarballBatch query.
+	FindModuleTarballScan(results pgx.BatchResults) ([]byte, error)
 
 	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
 	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
@@ -1078,11 +1085,14 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleByNameSQL, findModuleByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByName': %w", err)
 	}
-	if _, err := p.Prepare(ctx, uploadModuleVersionSQL, uploadModuleVersionSQL); err != nil {
-		return fmt.Errorf("prepare query 'UploadModuleVersion': %w", err)
+	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, downloadModuleVersionSQL, downloadModuleVersionSQL); err != nil {
-		return fmt.Errorf("prepare query 'DownloadModuleVersion': %w", err)
+	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleTarballSQL, findModuleTarballSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleTarball': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
@@ -1413,6 +1423,22 @@ type IngressAttributes struct {
 	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 }
 
+// ModuleRepos represents the Postgres composite type "module_repos".
+type ModuleRepos struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	ModuleID      pgtype.Text `json:"module_id"`
+}
+
+// ModuleVersions represents the Postgres composite type "module_versions".
+type ModuleVersions struct {
+	ModuleVersionID pgtype.Text        `json:"module_version_id"`
+	Version         pgtype.Text        `json:"version"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ModuleID        pgtype.Text        `json:"module_id"`
+}
+
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
 	OrganizationID  pgtype.Text        `json:"organization_id"`
@@ -1619,6 +1645,30 @@ func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 	)
 }
 
+// newModuleRepos creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'module_repos'.
+func (tr *typeResolver) newModuleRepos() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"module_repos",
+		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{"module_id", "text", &pgtype.Text{}},
+	)
+}
+
+// newModuleVersions creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'module_versions'.
+func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"module_versions",
+		compositeField{"module_version_id", "text", &pgtype.Text{}},
+		compositeField{"version", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"module_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'organizations'.
 func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
@@ -1758,6 +1808,12 @@ func (tr *typeResolver) newWorkspaceRepos() pgtype.ValueTranscoder {
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_configuration_version_status_timestamps", "configuration_version_status_timestamps", tr.newConfigurationVersionStatusTimestamps)
+}
+
+// newModuleVersionsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_module_versions' array type.
+func (tr *typeResolver) newModuleVersionsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_module_versions", "module_versions", tr.newModuleVersions)
 }
 
 // newOrganizationsArray creates a new pgtype.ValueTranscoder for the Postgres

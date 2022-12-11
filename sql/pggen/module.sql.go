@@ -61,6 +61,7 @@ func (q *DBQuerier) InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTa
 }
 
 const insertModuleVersionSQL = `INSERT INTO module_versions (
+    module_version_id,
     version,
     created_at,
     updated_at,
@@ -69,31 +70,33 @@ const insertModuleVersionSQL = `INSERT INTO module_versions (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 )
 RETURNING *;`
 
 type InsertModuleVersionParams struct {
-	Version   pgtype.Text
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	ModuleID  pgtype.Text
+	ModuleVersionID pgtype.Text
+	Version         pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
+	ModuleID        pgtype.Text
 }
 
 type InsertModuleVersionRow struct {
-	Version   pgtype.Text        `json:"version"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Tarball   []byte             `json:"tarball"`
-	ModuleID  pgtype.Text        `json:"module_id"`
+	ModuleVersionID pgtype.Text        `json:"module_version_id"`
+	Version         pgtype.Text        `json:"version"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ModuleID        pgtype.Text        `json:"module_id"`
 }
 
 // InsertModuleVersion implements Querier.InsertModuleVersion.
 func (q *DBQuerier) InsertModuleVersion(ctx context.Context, params InsertModuleVersionParams) (InsertModuleVersionRow, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertModuleVersion")
-	row := q.conn.QueryRow(ctx, insertModuleVersionSQL, params.Version, params.CreatedAt, params.UpdatedAt, params.ModuleID)
+	row := q.conn.QueryRow(ctx, insertModuleVersionSQL, params.ModuleVersionID, params.Version, params.CreatedAt, params.UpdatedAt, params.ModuleID)
 	var item InsertModuleVersionRow
-	if err := row.Scan(&item.Version, &item.CreatedAt, &item.UpdatedAt, &item.Tarball, &item.ModuleID); err != nil {
+	if err := row.Scan(&item.ModuleVersionID, &item.Version, &item.CreatedAt, &item.UpdatedAt, &item.ModuleID); err != nil {
 		return item, fmt.Errorf("query InsertModuleVersion: %w", err)
 	}
 	return item, nil
@@ -101,14 +104,14 @@ func (q *DBQuerier) InsertModuleVersion(ctx context.Context, params InsertModule
 
 // InsertModuleVersionBatch implements Querier.InsertModuleVersionBatch.
 func (q *DBQuerier) InsertModuleVersionBatch(batch genericBatch, params InsertModuleVersionParams) {
-	batch.Queue(insertModuleVersionSQL, params.Version, params.CreatedAt, params.UpdatedAt, params.ModuleID)
+	batch.Queue(insertModuleVersionSQL, params.ModuleVersionID, params.Version, params.CreatedAt, params.UpdatedAt, params.ModuleID)
 }
 
 // InsertModuleVersionScan implements Querier.InsertModuleVersionScan.
 func (q *DBQuerier) InsertModuleVersionScan(results pgx.BatchResults) (InsertModuleVersionRow, error) {
 	row := results.QueryRow()
 	var item InsertModuleVersionRow
-	if err := row.Scan(&item.Version, &item.CreatedAt, &item.UpdatedAt, &item.Tarball, &item.ModuleID); err != nil {
+	if err := row.Scan(&item.ModuleVersionID, &item.Version, &item.CreatedAt, &item.UpdatedAt, &item.ModuleID); err != nil {
 		return item, fmt.Errorf("scan InsertModuleVersionBatch row: %w", err)
 	}
 	return item, nil
@@ -120,9 +123,17 @@ const listModulesByOrganizationSQL = `SELECT
     m.updated_at,
     m.name,
     m.provider,
-    (o.*)::"organizations" AS organization
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
 FROM modules m
 JOIN organizations o USING (organization_id)
+LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE o.name = $1
 ;`
 
@@ -133,6 +144,9 @@ type ListModulesByOrganizationRow struct {
 	Name         pgtype.Text        `json:"name"`
 	Provider     pgtype.Text        `json:"provider"`
 	Organization *Organizations     `json:"organization"`
+	ModuleRepo   *ModuleRepos       `json:"module_repo"`
+	Webhook      *Webhooks          `json:"webhook"`
+	Versions     []ModuleVersions   `json:"versions"`
 }
 
 // ListModulesByOrganization implements Querier.ListModulesByOrganization.
@@ -145,12 +159,24 @@ func (q *DBQuerier) ListModulesByOrganization(ctx context.Context, organizationN
 	defer rows.Close()
 	items := []ListModulesByOrganizationRow{}
 	organizationRow := q.types.newOrganizations()
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
 	for rows.Next() {
 		var item ListModulesByOrganizationRow
-		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow); err != nil {
+		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
 			return nil, fmt.Errorf("scan ListModulesByOrganization row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := versionsArray.AssignTo(&item.Versions); err != nil {
 			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
 		}
 		items = append(items, item)
@@ -175,12 +201,24 @@ func (q *DBQuerier) ListModulesByOrganizationScan(results pgx.BatchResults) ([]L
 	defer rows.Close()
 	items := []ListModulesByOrganizationRow{}
 	organizationRow := q.types.newOrganizations()
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
 	for rows.Next() {
 		var item ListModulesByOrganizationRow
-		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow); err != nil {
+		if err := rows.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
 			return nil, fmt.Errorf("scan ListModulesByOrganizationBatch row: %w", err)
 		}
 		if err := organizationRow.AssignTo(&item.Organization); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
+		}
+		if err := versionsArray.AssignTo(&item.Versions); err != nil {
 			return nil, fmt.Errorf("assign ListModulesByOrganization row: %w", err)
 		}
 		items = append(items, item)
@@ -197,9 +235,17 @@ const findModuleByNameSQL = `SELECT
     m.updated_at,
     m.name,
     m.provider,
-    (o.*)::"organizations" AS organization
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
 FROM modules m
 JOIN organizations o USING (organization_id)
+LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE o.name = $1
 AND   m.name = $2
 AND   m.provider = $3
@@ -218,6 +264,9 @@ type FindModuleByNameRow struct {
 	Name         pgtype.Text        `json:"name"`
 	Provider     pgtype.Text        `json:"provider"`
 	Organization *Organizations     `json:"organization"`
+	ModuleRepo   *ModuleRepos       `json:"module_repo"`
+	Webhook      *Webhooks          `json:"webhook"`
+	Versions     []ModuleVersions   `json:"versions"`
 }
 
 // FindModuleByName implements Querier.FindModuleByName.
@@ -226,10 +275,22 @@ func (q *DBQuerier) FindModuleByName(ctx context.Context, params FindModuleByNam
 	row := q.conn.QueryRow(ctx, findModuleByNameSQL, params.OrganizatonName, params.Name, params.Provider)
 	var item FindModuleByNameRow
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow); err != nil {
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("query FindModuleByName: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
+	}
+	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
 		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
 	}
 	return item, nil
@@ -245,84 +306,179 @@ func (q *DBQuerier) FindModuleByNameScan(results pgx.BatchResults) (FindModuleBy
 	row := results.QueryRow()
 	var item FindModuleByNameRow
 	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow); err != nil {
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
 		return item, fmt.Errorf("scan FindModuleByNameBatch row: %w", err)
 	}
 	if err := organizationRow.AssignTo(&item.Organization); err != nil {
 		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
 	}
-	return item, nil
-}
-
-const uploadModuleVersionSQL = `UPDATE module_versions
-SET
-    tarball = $1,
-    updated_at = $2
-WHERE module_id = $3
-AND   version = $4
-RETURNING version;`
-
-type UploadModuleVersionParams struct {
-	Tarball   []byte
-	UpdatedAt pgtype.Timestamptz
-	ModuleID  pgtype.Text
-	Version   pgtype.Text
-}
-
-// UploadModuleVersion implements Querier.UploadModuleVersion.
-func (q *DBQuerier) UploadModuleVersion(ctx context.Context, params UploadModuleVersionParams) (pgtype.Text, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "UploadModuleVersion")
-	row := q.conn.QueryRow(ctx, uploadModuleVersionSQL, params.Tarball, params.UpdatedAt, params.ModuleID, params.Version)
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query UploadModuleVersion: %w", err)
+	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
+		return item, fmt.Errorf("assign FindModuleByName row: %w", err)
 	}
 	return item, nil
 }
 
-// UploadModuleVersionBatch implements Querier.UploadModuleVersionBatch.
-func (q *DBQuerier) UploadModuleVersionBatch(batch genericBatch, params UploadModuleVersionParams) {
-	batch.Queue(uploadModuleVersionSQL, params.Tarball, params.UpdatedAt, params.ModuleID, params.Version)
-}
-
-// UploadModuleVersionScan implements Querier.UploadModuleVersionScan.
-func (q *DBQuerier) UploadModuleVersionScan(results pgx.BatchResults) (pgtype.Text, error) {
-	row := results.QueryRow()
-	var item pgtype.Text
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan UploadModuleVersionBatch row: %w", err)
-	}
-	return item, nil
-}
-
-const downloadModuleVersionSQL = `SELECT tarball
-FROM module_versions
-WHERE module_id = $1
-AND   version = $2
+const findModuleByWebhookIDSQL = `SELECT
+    m.module_id,
+    m.created_at,
+    m.updated_at,
+    m.name,
+    m.provider,
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
+FROM modules m
+JOIN organizations o USING (organization_id)
+JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+WHERE h.webhook_id = $1
 ;`
 
-// DownloadModuleVersion implements Querier.DownloadModuleVersion.
-func (q *DBQuerier) DownloadModuleVersion(ctx context.Context, moduleID pgtype.Text, version pgtype.Text) ([]byte, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DownloadModuleVersion")
-	row := q.conn.QueryRow(ctx, downloadModuleVersionSQL, moduleID, version)
-	item := []byte{}
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query DownloadModuleVersion: %w", err)
+type FindModuleByWebhookIDRow struct {
+	ModuleID     pgtype.Text        `json:"module_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Name         pgtype.Text        `json:"name"`
+	Provider     pgtype.Text        `json:"provider"`
+	Organization *Organizations     `json:"organization"`
+	ModuleRepo   *ModuleRepos       `json:"module_repo"`
+	Webhook      *Webhooks          `json:"webhook"`
+	Versions     []ModuleVersions   `json:"versions"`
+}
+
+// FindModuleByWebhookID implements Querier.FindModuleByWebhookID.
+func (q *DBQuerier) FindModuleByWebhookID(ctx context.Context, webhookID pgtype.UUID) (FindModuleByWebhookIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleByWebhookID")
+	row := q.conn.QueryRow(ctx, findModuleByWebhookIDSQL, webhookID)
+	var item FindModuleByWebhookIDRow
+	organizationRow := q.types.newOrganizations()
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+		return item, fmt.Errorf("query FindModuleByWebhookID: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
 	}
 	return item, nil
 }
 
-// DownloadModuleVersionBatch implements Querier.DownloadModuleVersionBatch.
-func (q *DBQuerier) DownloadModuleVersionBatch(batch genericBatch, moduleID pgtype.Text, version pgtype.Text) {
-	batch.Queue(downloadModuleVersionSQL, moduleID, version)
+// FindModuleByWebhookIDBatch implements Querier.FindModuleByWebhookIDBatch.
+func (q *DBQuerier) FindModuleByWebhookIDBatch(batch genericBatch, webhookID pgtype.UUID) {
+	batch.Queue(findModuleByWebhookIDSQL, webhookID)
 }
 
-// DownloadModuleVersionScan implements Querier.DownloadModuleVersionScan.
-func (q *DBQuerier) DownloadModuleVersionScan(results pgx.BatchResults) ([]byte, error) {
+// FindModuleByWebhookIDScan implements Querier.FindModuleByWebhookIDScan.
+func (q *DBQuerier) FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error) {
+	row := results.QueryRow()
+	var item FindModuleByWebhookIDRow
+	organizationRow := q.types.newOrganizations()
+	moduleRepoRow := q.types.newModuleRepos()
+	webhookRow := q.types.newWebhooks()
+	versionsArray := q.types.newModuleVersionsArray()
+	if err := row.Scan(&item.ModuleID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.Provider, organizationRow, moduleRepoRow, webhookRow, versionsArray); err != nil {
+		return item, fmt.Errorf("scan FindModuleByWebhookIDBatch row: %w", err)
+	}
+	if err := organizationRow.AssignTo(&item.Organization); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := moduleRepoRow.AssignTo(&item.ModuleRepo); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := webhookRow.AssignTo(&item.Webhook); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	if err := versionsArray.AssignTo(&item.Versions); err != nil {
+		return item, fmt.Errorf("assign FindModuleByWebhookID row: %w", err)
+	}
+	return item, nil
+}
+
+const insertModuleTarballSQL = `INSERT INTO module_tarballs (
+    tarball,
+    module_version_id
+) VALUES (
+    $1,
+    $2
+)
+RETURNING module_version_id;`
+
+// InsertModuleTarball implements Querier.InsertModuleTarball.
+func (q *DBQuerier) InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertModuleTarball")
+	row := q.conn.QueryRow(ctx, insertModuleTarballSQL, tarball, moduleVersionID)
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query InsertModuleTarball: %w", err)
+	}
+	return item, nil
+}
+
+// InsertModuleTarballBatch implements Querier.InsertModuleTarballBatch.
+func (q *DBQuerier) InsertModuleTarballBatch(batch genericBatch, tarball []byte, moduleVersionID pgtype.Text) {
+	batch.Queue(insertModuleTarballSQL, tarball, moduleVersionID)
+}
+
+// InsertModuleTarballScan implements Querier.InsertModuleTarballScan.
+func (q *DBQuerier) InsertModuleTarballScan(results pgx.BatchResults) (pgtype.Text, error) {
+	row := results.QueryRow()
+	var item pgtype.Text
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("scan InsertModuleTarballBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findModuleTarballSQL = `SELECT tarball
+FROM module_tarballs
+WHERE module_version_id = $1
+;`
+
+// FindModuleTarball implements Querier.FindModuleTarball.
+func (q *DBQuerier) FindModuleTarball(ctx context.Context, moduleVersionID pgtype.Text) ([]byte, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindModuleTarball")
+	row := q.conn.QueryRow(ctx, findModuleTarballSQL, moduleVersionID)
+	item := []byte{}
+	if err := row.Scan(&item); err != nil {
+		return item, fmt.Errorf("query FindModuleTarball: %w", err)
+	}
+	return item, nil
+}
+
+// FindModuleTarballBatch implements Querier.FindModuleTarballBatch.
+func (q *DBQuerier) FindModuleTarballBatch(batch genericBatch, moduleVersionID pgtype.Text) {
+	batch.Queue(findModuleTarballSQL, moduleVersionID)
+}
+
+// FindModuleTarballScan implements Querier.FindModuleTarballScan.
+func (q *DBQuerier) FindModuleTarballScan(results pgx.BatchResults) ([]byte, error) {
 	row := results.QueryRow()
 	item := []byte{}
 	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("scan DownloadModuleVersionBatch row: %w", err)
+		return item, fmt.Errorf("scan FindModuleTarballBatch row: %w", err)
 	}
 	return item, nil
 }
