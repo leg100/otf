@@ -58,7 +58,7 @@ type CloudClient interface {
 
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
 
-	ListTags(ctx context.Context, opts ListTagsOptions) ([]VCSRef, error)
+	ListTags(ctx context.Context, opts ListTagsOptions) ([]TagRef, error)
 }
 
 type VCSWebhook struct {
@@ -177,3 +177,6 @@ type VCSRef struct {
 	Ref string // heads/*, tags/*, or sha
 	SHA string
 }
+
+// TagRef is a git reference for a tag, in the format 'tags/<tag>'
+type TagRef string

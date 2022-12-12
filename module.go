@@ -41,6 +41,17 @@ func (m *Module) LatestVersion() *ModuleVersion {
 	return m.versions[0]
 }
 
+func (v *Module) MarshalLog() any {
+	return struct {
+		ID, Organization, Name, Provider string
+	}{
+		ID:           v.id,
+		Organization: v.organization.name,
+		Name:         v.name,
+		Provider:     v.provider,
+	}
+}
+
 type ModuleVersion struct {
 	id        string
 	moduleID  string
@@ -55,6 +66,16 @@ func (v *ModuleVersion) ModuleID() string     { return v.moduleID }
 func (v *ModuleVersion) Version() string      { return v.version }
 func (v *ModuleVersion) CreatedAt() time.Time { return v.createdAt }
 func (v *ModuleVersion) UpdatedAt() time.Time { return v.updatedAt }
+
+func (v *ModuleVersion) MarshalLog() any {
+	return struct {
+		ID, ModuleID, Version string
+	}{
+		ID:       v.id,
+		ModuleID: v.moduleID,
+		Version:  v.version,
+	}
+}
 
 type ModuleRepo struct {
 	ProviderID string
@@ -79,8 +100,10 @@ type ModuleStore interface {
 	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	GetModuleByID(ctx context.Context, id string) (*Module, error)
 	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
+	DeleteModule(ctx context.Context, id string) error
 }
 
 type (
@@ -97,7 +120,7 @@ type (
 	GetModuleOptions struct {
 		Name         string
 		Provider     string
-		Organization *Organization
+		Organization string
 	}
 	UploadModuleVersionOptions struct {
 		ModuleVersionID string
@@ -138,9 +161,9 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) 
 		return nil, err
 	}
 	for _, tag := range tags {
-		_, version, found := strings.Cut(tag.Ref, "/")
+		_, version, found := strings.Cut(string(tag), "/")
 		if !found {
-			return nil, fmt.Errorf("malformed git ref: %s", tag.Ref)
+			return nil, fmt.Errorf("malformed git ref: %s", tag)
 		}
 
 		// skip tags that are not semantic versions
@@ -152,7 +175,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) 
 			ModuleID: mod.ID(),
 			// strip off v prefix if it has one
 			Version:    strings.TrimPrefix(version, "v"),
-			Ref:        tag.SHA,
+			Ref:        string(tag),
 			Identifier: opts.Repo.Identifier,
 			ProviderID: mod.Repo().ProviderID,
 		})
@@ -174,6 +197,16 @@ func NewModule(opts CreateModuleOptions) *Module {
 		organization: opts.Organization,
 	}
 	return &m
+}
+
+func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
+	return &ModuleVersion{
+		id:        NewID("mv"),
+		createdAt: CurrentTimestamp(),
+		updatedAt: CurrentTimestamp(),
+		moduleID:  opts.ModuleID,
+		version:   opts.Version,
+	}
 }
 
 // ModulePublisher publishes new module versions.

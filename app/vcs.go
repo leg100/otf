@@ -54,6 +54,18 @@ func (a *Application) ListRepositories(ctx context.Context, providerID string, o
 	return client.ListRepositories(ctx, opts)
 }
 
+func (a *Application) ListTags(ctx context.Context, providerID string, opts otf.ListTagsOptions) ([]otf.TagRef, error) {
+	provider, err := a.db.GetVCSProvider(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	client, err := provider.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListTags(ctx, opts)
+}
+
 func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts otf.CreateWebhookOptions) (string, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {

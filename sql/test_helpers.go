@@ -219,6 +219,19 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 	return ws.Repo()
 }
 
+func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
+	ctx := context.Background()
+
+	module := otf.NewTestModule(org)
+	err := db.CreateModule(ctx, module)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteModule(ctx, module.ID())
+	})
+	return module
+}
+
 func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 	ctx := context.Background()
 	repo := otf.NewTestRepo()

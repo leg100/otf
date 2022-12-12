@@ -35,6 +35,6 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if event := hook.HandleEvent(w, r); event != nil {
-		h.events <- *event
+		h.events <- event
 	}
 }

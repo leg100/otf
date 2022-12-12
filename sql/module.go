@@ -13,6 +13,8 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 		ID:             String(mod.ID()),
 		CreatedAt:      Timestamptz(mod.CreatedAt()),
 		UpdatedAt:      Timestamptz(mod.UpdatedAt()),
+		Name:           String(mod.Name()),
+		Provider:       String(mod.Provider()),
 		OrganizationID: String(mod.Organization().ID()),
 	})
 	if err != nil {
@@ -60,7 +62,7 @@ func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Mo
 	row, err := db.FindModuleByName(ctx, pggen.FindModuleByNameParams{
 		Name:            String(opts.Name),
 		Provider:        String(opts.Provider),
-		OrganizatonName: String(opts.Organization.Name()),
+		OrganizatonName: String(opts.Organization),
 	})
 	if err != nil {
 		return nil, err
@@ -69,7 +71,16 @@ func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Mo
 	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
 }
 
-func (db *DB) GetModuleByWebhook(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
+func (db *DB) GetModuleByID(ctx context.Context, id string) (*otf.Module, error) {
+	row, err := db.FindModuleByID(ctx, String(id))
+	if err != nil {
+		return nil, err
+	}
+
+	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
+}
+
+func (db *DB) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
 	row, err := db.FindModuleByWebhookID(ctx, UUID(id))
 	if err != nil {
 		return nil, err
@@ -84,4 +95,12 @@ func (db *DB) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModule
 		return nil, databaseError(err)
 	}
 	return tarball, nil
+}
+
+func (db *DB) DeleteModule(ctx context.Context, id string) error {
+	_, err := db.DeleteModuleByID(ctx, String(id))
+	if err != nil {
+		return databaseError(err)
+	}
+	return nil
 }

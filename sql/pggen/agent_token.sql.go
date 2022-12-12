@@ -186,6 +186,13 @@ type Querier interface {
 	// FindModuleByNameScan scans the result of an executed FindModuleByNameBatch query.
 	FindModuleByNameScan(results pgx.BatchResults) (FindModuleByNameRow, error)
 
+	FindModuleByID(ctx context.Context, id pgtype.Text) (FindModuleByIDRow, error)
+	// FindModuleByIDBatch enqueues a FindModuleByID query into batch to be executed
+	// later by the batch.
+	FindModuleByIDBatch(batch genericBatch, id pgtype.Text)
+	// FindModuleByIDScan scans the result of an executed FindModuleByIDBatch query.
+	FindModuleByIDScan(results pgx.BatchResults) (FindModuleByIDRow, error)
+
 	FindModuleByWebhookID(ctx context.Context, webhookID pgtype.UUID) (FindModuleByWebhookIDRow, error)
 	// FindModuleByWebhookIDBatch enqueues a FindModuleByWebhookID query into batch to be executed
 	// later by the batch.
@@ -1084,6 +1091,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findModuleByNameSQL, findModuleByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleByIDSQL, findModuleByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)

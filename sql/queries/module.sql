@@ -75,6 +75,27 @@ AND   m.name = pggen.arg('name')
 AND   m.provider = pggen.arg('provider')
 ;
 
+-- name: FindModuleByID :one
+SELECT
+    m.module_id,
+    m.created_at,
+    m.updated_at,
+    m.name,
+    m.provider,
+    (o.*)::"organizations" AS organization,
+    (r.*)::"module_repos" AS module_repo,
+    (h.*)::"webhooks" AS webhook,
+    (
+        SELECT array_agg(v.*) AS versions
+        FROM module_versions v
+        WHERE v.module_id = m.module_id
+    ) AS versions
+FROM modules m
+JOIN organizations o USING (organization_id)
+LEFT JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
+WHERE m.module_id = pggen.arg('id')
+;
+
 -- name: FindModuleByWebhookID :one
 SELECT
     m.module_id,

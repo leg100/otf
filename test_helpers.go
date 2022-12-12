@@ -113,6 +113,14 @@ func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 	}
 }
 
+func NewTestModule(org *Organization) *Module {
+	return NewModule(CreateModuleOptions{
+		Organization: org,
+		Provider:     uuid.NewString(),
+		Name:         uuid.NewString(),
+	})
+}
+
 func NewTestCloudConfig(cloud Cloud) CloudConfig {
 	return CloudConfig{
 		Name:     "fake-cloud",

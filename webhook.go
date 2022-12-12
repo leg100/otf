@@ -36,7 +36,7 @@ func (h *Webhook) Owner() string     { return strings.Split(h.Identifier, "/")[0
 func (h *Webhook) Repo() string      { return strings.Split(h.Identifier, "/")[1] }
 func (h *Webhook) CloudName() string { return h.cloudConfig.Name }
 
-func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) *VCSEvent {
+func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) VCSEvent {
 	return h.cloudConfig.HandleEvent(w, r, HandleEventOptions{
 		WebhookID: h.WebhookID,
 		Secret:    h.Secret,
