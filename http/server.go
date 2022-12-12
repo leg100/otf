@@ -89,6 +89,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 	// configure URL signer
 	s.Signer = surl.New([]byte(cfg.Secret),
+		surl.PrefixPath("/signed"),
 		surl.WithPathFormatter(),
 		surl.WithBase58Expiry(),
 		surl.SkipQuery(),
