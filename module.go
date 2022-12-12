@@ -130,7 +130,7 @@ func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) 
 		return mod, nil
 	}
 
-	// list all tags starting with 'v' in the module's repo
+	// Make new version for each tag that looks like a semantic version.
 	tags, err := mm.ListTags(ctx, opts.Repo.ProviderID, ListTagsOptions{
 		Identifier: opts.Repo.Identifier,
 	})
@@ -187,6 +187,50 @@ type PublishModuleVersionOptions struct {
 	Ref        string
 	Identifier string
 	ProviderID string
+}
+
+// Publish a module version in response to a vcs event.
+func (p *ModulePublisher) PublishFromEvent(ctx context.Context, event VCSEvent) error {
+	// only publish when new tag is created
+	tag, ok := event.(*VCSTagEvent)
+	if !ok {
+		return nil
+	}
+	if tag.Action != VCSTagEventCreatedAction {
+		return nil
+	}
+	// only interested in tags that look like semantic versions
+	if !semver.IsValid(tag.Tag) {
+		return nil
+	}
+
+	module, err := p.GetModuleByWebhookID(ctx, tag.WebhookID)
+	if err != nil {
+		return err
+	}
+	if module.Repo() == nil {
+		return fmt.Errorf("module is not connected to a repo: %s", module.ID())
+	}
+
+	// skip older or equal versions
+	currentVersion := module.LatestVersion().Version()
+	if n := semver.Compare(tag.Tag, currentVersion); n <= 0 {
+		return nil
+	}
+
+	_, err = p.Publish(ctx, PublishModuleVersionOptions{
+		ModuleID: module.ID(),
+		// strip off v prefix if it has one
+		Version:    strings.TrimPrefix(tag.Tag, "v"),
+		Ref:        tag.CommitSHA,
+		Identifier: tag.Identifier,
+		ProviderID: module.Repo().ProviderID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Publish a module version, retrieving its contents from a repository and

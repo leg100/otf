@@ -3,11 +3,9 @@ package otf
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
-	"github.com/leg100/otf/semver"
 )
 
 // Triggerer triggers jobs in response to incoming VCS events.
@@ -49,7 +47,7 @@ func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
 		return err
 	}
 
-	if err := h.publish(ctx, event); err != nil {
+	if err := h.PublishFromEvent(ctx, event); err != nil {
 		return err
 	}
 
@@ -141,49 +139,5 @@ func (h *Triggerer) triggerRun(ctx context.Context, event VCSEvent) error {
 			return err
 		}
 	}
-	return nil
-}
-
-// publish triggers the publishing of a module upon receipt of a event.
-func (h *Triggerer) publish(ctx context.Context, event VCSEvent) error {
-	// only publish when new tag is created
-	tag, ok := event.(*VCSTagEvent)
-	if !ok {
-		return nil
-	}
-	if tag.Action != VCSTagEventCreatedAction {
-		return nil
-	}
-	// only interested in tags that look like semantic versions
-	if !semver.IsValid(tag.Tag) {
-		return nil
-	}
-
-	module, err := h.GetModuleByWebhookID(ctx, tag.WebhookID)
-	if err != nil {
-		return err
-	}
-	if module.Repo() == nil {
-		return fmt.Errorf("module is not connected to a repo: %s", module.ID())
-	}
-
-	// skip older or equal versions
-	currentVersion := module.LatestVersion().Version()
-	if n := semver.Compare(tag.Tag, currentVersion); n <= 0 {
-		return nil
-	}
-
-	_, err = h.Publish(ctx, PublishModuleVersionOptions{
-		ModuleID: module.ID(),
-		// strip off v prefix if it has one
-		Version:    strings.TrimPrefix(tag.Tag, "v"),
-		Ref:        tag.CommitSHA,
-		Identifier: tag.Identifier,
-		ProviderID: module.Repo().ProviderID,
-	})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
