@@ -13,7 +13,7 @@ import (
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/dto"
-	"github.com/leg100/signer"
+	"github.com/leg100/surl"
 	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +26,7 @@ func TestWatch(t *testing.T) {
 		Application:  &fakeEventsApp{ch: serverCh},
 		Logger:       logr.Discard(),
 		eventsServer: newSSEServer(),
-		Signer:       signer.New([]byte("secretsauce")),
+		Signer:       surl.New([]byte("secretsauce")),
 	}
 
 	// setup web server

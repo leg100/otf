@@ -15,7 +15,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
-	"github.com/leg100/signer"
+	"github.com/leg100/surl"
 )
 
 const (
@@ -73,7 +73,7 @@ type Server struct {
 	eventsServer *sse.Server
 	// the http router, exported so that other pkgs can add routes
 	*Router
-	*signer.Signer
+	*surl.Signer
 	vcsEventsHandler *otf.Triggerer
 }
 
@@ -85,8 +85,15 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
-		Signer:       signer.New([]byte(cfg.Secret), signer.SkipQuery()),
 	}
+
+	// configure URL signer
+	s.Signer = surl.New([]byte(cfg.Secret),
+		surl.PrefixPath("/signed"),
+		surl.WithPathFormatter(),
+		surl.WithBase58Expiry(),
+		surl.SkipQuery(),
+	)
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
