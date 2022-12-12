@@ -85,8 +85,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		ServerConfig: cfg,
 		Application:  app,
 		eventsServer: newSSEServer(),
-		Signer:       surl.New([]byte(cfg.Secret), surl.SkipQuery(), surl.WithBase58Expiry()),
 	}
+
+	// configure URL signer
+	s.Signer = surl.New([]byte(cfg.Secret),
+		surl.WithPathFormatter(),
+		surl.WithBase58Expiry(),
+		surl.SkipQuery(),
+	)
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
