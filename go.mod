@@ -28,6 +28,7 @@ require (
 	github.com/jackc/pgx/v4 v4.16.0
 	github.com/leg100/jsonapi v1.0.1-0.20210703183827-d0513d61dc3f
 	github.com/leg100/signer v0.0.2
+	github.com/leg100/surl v0.0.5
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/iochan v1.0.0
 	github.com/natefinch/atomic v1.0.1
@@ -65,6 +66,7 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/itchyny/base58-go v0.2.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

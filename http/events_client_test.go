@@ -9,7 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
-	"github.com/leg100/signer"
+	"github.com/leg100/surl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func TestWatchClient(t *testing.T) {
 		Application:  &fakeEventsApp{ch: serverCh},
 		Logger:       logr.Discard(),
 		eventsServer: newSSEServer(),
-		Signer:       signer.New([]byte("secretsauce")),
+		Signer:       surl.New([]byte("secretsauce")),
 	}
 
 	// setup web server
