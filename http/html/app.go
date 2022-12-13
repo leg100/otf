@@ -127,6 +127,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 		r.GET("/organizations/{organization_name}/modules", app.listModules)
 		r.GET("/organizations/{organization_name}/modules/vcs-providers", app.listModuleVCSProviders)
+		r.GET("/organizations/{organization_name}/modules/vcs-providers/{vcs_provider_id}/repos", app.listModuleVCSRepos)
 
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)

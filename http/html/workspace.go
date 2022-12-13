@@ -32,12 +32,12 @@ func (w workspaceRequest) Spec() otf.WorkspaceSpec {
 	}
 }
 
-// vcsProviderRequest provides metadata about a request for a vcs provider
-type vcsProviderRequest struct {
+// workspaceRepoRequest provides metadata about a request for a workspace repo
+type workspaceRepoRequest struct {
 	workspaceRequest
 }
 
-func (r vcsProviderRequest) VCSProviderID() string {
+func (r workspaceRepoRequest) VCSProviderID() string {
 	return param(r.r, "vcs_provider_id")
 }
 
@@ -365,9 +365,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 
 func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	type options struct {
-		OrganizationName string `schema:"organization_name,required"`
-		WorkspaceName    string `schema:"workspace_name,required"`
-		VCSProviderID    string `schema:"vcs_provider_id,required"`
+		VCSProviderID string `schema:"vcs_provider_id,required"`
 		// Pagination
 		otf.ListOptions
 		// TODO: filters, public/private, etc
@@ -386,10 +384,10 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 
 	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		*otf.RepoList
-		vcsProviderRoute
+		workspaceRepoRoute
 	}{
-		RepoList:         repos,
-		vcsProviderRoute: vcsProviderRequest{workspaceRequest{r}},
+		RepoList:           repos,
+		workspaceRepoRoute: workspaceRepoRequest{workspaceRequest{r}},
 	})
 }
 

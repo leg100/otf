@@ -27,6 +27,7 @@ func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 func (t *VCSProvider) CloudConfig() CloudConfig { return t.cloudConfig }
+func (t *VCSProvider) VCSProviderID() string    { return t.id } // implement html.vcsProviderResource
 
 func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
 	return t.cloudConfig.NewClient(ctx, CloudCredentials{

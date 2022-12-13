@@ -130,7 +130,7 @@ type (
 		ModuleVersionID string
 	}
 	ListModulesOptions struct {
-		Organization string // filter by organization name
+		Organization string `schema:"organization_name,required"` // filter by organization name
 	}
 	ModuleList struct {
 		*Pagination

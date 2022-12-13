@@ -25,10 +25,16 @@ type workspaceRoute interface {
 	WorkspaceName() string
 }
 
+// workspaceRepoRoute provides info about a route for a workspace repo resource
+type workspaceRepoRoute interface {
+	OrganizationName() string
+	WorkspaceName() string
+	VCSProviderID() string
+}
+
 // vcsProviderRoute provides info about a route for a vcs provider resource
 type vcsProviderRoute interface {
 	OrganizationName() string
-	WorkspaceName() string
 	VCSProviderID() string
 }
 
@@ -122,6 +128,14 @@ func listModuleVCSProvidersPath(route organizationRoute) string {
 	return path.Join(getOrganizationPath(route), "modules", "vcs-providers")
 }
 
+func listModuleRepoPath(route vcsProviderRoute) string {
+	return path.Join(getOrganizationPath(route), "modules", "vcs-providers", route.VCSProviderID(), "repos")
+}
+
+func connectModuleRepoPath(route organizationRoute, providerID string) string {
+	return path.Join(getOrganizationPath(route), "modules", "vcs-providers", providerID, "repos", "connect")
+}
+
 func listOrganizationPath() string {
 	return "/organizations"
 }
@@ -194,7 +208,7 @@ func listWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos", ws.OrganizationName(), ws.WorkspaceName(), providerID)
 }
 
-func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
+func connectWorkspaceRepoPath(vcs workspaceRepoRoute) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
 }
 
@@ -328,4 +342,6 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["startRunPath"] = startRunPath
 	m["listModulesPath"] = listModulesPath
 	m["listModuleVCSProvidersPath"] = listModuleVCSProvidersPath
+	m["listModuleRepoPath"] = listModuleRepoPath
+	m["connectModuleRepoPath"] = connectModuleRepoPath
 }
