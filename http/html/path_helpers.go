@@ -25,13 +25,6 @@ type workspaceRoute interface {
 	WorkspaceName() string
 }
 
-// vcsProviderRoute provides info about a route for a vcs provider resource
-type vcsProviderRoute interface {
-	OrganizationName() string
-	WorkspaceName() string
-	VCSProviderID() string
-}
-
 // runRoute provides info about a route for a run resource
 type runRoute interface {
 	// ID of run
@@ -186,8 +179,8 @@ func listWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
 	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos", ws.OrganizationName(), ws.WorkspaceName(), providerID)
 }
 
-func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
+func connectWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", ws.OrganizationName(), ws.WorkspaceName(), providerID)
 }
 
 func disconnectWorkspaceRepoPath(ws workspaceRoute) string {

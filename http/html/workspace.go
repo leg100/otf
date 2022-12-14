@@ -12,43 +12,15 @@ import (
 	"github.com/r3labs/sse/v2"
 )
 
-// workspaceRequest provides metadata about a request for a workspace
-type workspaceRequest struct {
-	r *http.Request
-}
-
-func (w workspaceRequest) OrganizationName() string {
-	return param(w.r, "organization_name")
-}
-
-func (w workspaceRequest) WorkspaceName() string {
-	return param(w.r, "workspace_name")
-}
-
-func (w workspaceRequest) Spec() otf.WorkspaceSpec {
-	return otf.WorkspaceSpec{
-		Name:             otf.String(w.WorkspaceName()),
-		OrganizationName: otf.String(w.OrganizationName()),
-	}
-}
-
-// vcsProviderRequest provides metadata about a request for a vcs provider
-type vcsProviderRequest struct {
-	workspaceRequest
-}
-
-func (r vcsProviderRequest) VCSProviderID() string {
-	return param(r.r, "vcs_provider_id")
-}
-
 func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	var opts otf.WorkspaceListOptions
-	if err := decode.Route(&opts, r); err != nil {
+	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+	org, err := app.GetOrganization(r.Context(), *opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	workspaces, err := app.ListWorkspaces(r.Context(), opts)
@@ -58,15 +30,20 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 	app.render("workspace_list.tmpl", w, r, struct {
 		*otf.WorkspaceList
-		organizationRoute
+		*otf.Organization
 	}{
-		WorkspaceList:     workspaces,
-		organizationRoute: organizationRequest{r},
+		WorkspaceList: workspaces,
+		Organization:  org,
 	})
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	app.render("workspace_new.tmpl", w, r, organizationRequest{r})
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.render("workspace_new.tmpl", w, r, org)
 }
 
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -79,10 +56,16 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+
+	org, err := app.GetOrganization(r.Context(), opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	workspace, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
-		http.Redirect(w, r, newWorkspacePath(organizationRequest{r}), http.StatusFound)
+		http.Redirect(w, r, newWorkspacePath(org), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -182,20 +165,26 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	if err := decode.Form(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 	}
-	if err := opts.Valid(); err != nil {
-		flashError(w, err.Error())
-		http.Redirect(w, r, editWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	ws, err := app.GetWorkspace(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if err := opts.Valid(); err != nil {
+		flashError(w, err.Error())
+		http.Redirect(w, r, editWorkspacePath(ws), http.StatusFound)
+		return
+	}
+
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	workspace, err := app.UpdateWorkspace(r.Context(), spec, opts)
+	ws, err = app.UpdateWorkspace(r.Context(), spec, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, editWorkspacePath(workspace), http.StatusFound)
+	http.Redirect(w, r, editWorkspacePath(ws), http.StatusFound)
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -204,13 +193,19 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	err := app.DeleteWorkspace(r.Context(), spec)
+
+	org, err := app.GetOrganization(r.Context(), *spec.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = app.DeleteWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "deleted workspace: "+*spec.Name)
-	http.Redirect(w, r, listWorkspacePath(organizationRequest{r}), http.StatusFound)
+	http.Redirect(w, r, listWorkspacePath(org), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -348,6 +343,17 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
+	var spec otf.WorkspaceSpec
+	if err := decode.All(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	ws, err := app.GetWorkspace(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -356,10 +362,10 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 
 	app.render("workspace_vcs_provider_list.tmpl", w, r, struct {
 		Items []*otf.VCSProvider
-		workspaceRoute
+		*otf.Workspace
 	}{
-		Items:          providers,
-		workspaceRoute: workspaceRequest{r},
+		Items:     providers,
+		Workspace: ws,
 	})
 }
 
@@ -378,6 +384,19 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{
+		Name:             &opts.WorkspaceName,
+		OrganizationName: &opts.OrganizationName,
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	provider, err := app.GetVCSProvider(r.Context(), opts.VCSProviderID)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, opts.ListOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -386,10 +405,12 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 
 	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
 		*otf.RepoList
-		vcsProviderRoute
+		*otf.Workspace
+		Provider *otf.VCSProvider
 	}{
-		RepoList:         repos,
-		vcsProviderRoute: vcsProviderRequest{workspaceRequest{r}},
+		RepoList:  repos,
+		Workspace: ws,
+		Provider:  provider,
 	})
 }
 
@@ -465,12 +486,17 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ws, err := app.GetWorkspace(r.Context(), opts.WorkspaceSpec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	run, err := app.StartRun(r.Context(), opts.WorkspaceSpec, otf.ConfigurationVersionCreateOptions{
 		Speculative: otf.Bool(speculative),
 	})
 	if err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+		http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 		return
 	}
 

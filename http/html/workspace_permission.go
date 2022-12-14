@@ -26,13 +26,18 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 	}
 
 	spec := otf.WorkspaceSpec{Name: otf.String(perm.Name), OrganizationName: otf.String(perm.OrganizationName)}
+	ws, err := app.GetWorkspace(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	err = app.SetWorkspacePermission(r.Context(), spec, perm.TeamName, role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }
 
 func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -48,11 +53,16 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 	}
 
 	spec := otf.WorkspaceSpec{Name: otf.String(perm.Name), OrganizationName: otf.String(perm.OrganizationName)}
-	err := app.UnsetWorkspacePermission(r.Context(), spec, perm.TeamName)
+	ws, err := app.GetWorkspace(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = app.UnsetWorkspacePermission(r.Context(), spec, perm.TeamName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
 }

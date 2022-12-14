@@ -189,11 +189,11 @@ func TestApp(t *testing.T) {
 		},
 		{
 			method: "POST",
-			path:   "/organizations/fake-org/agent-tokens/delete",
+			path:   "/organizations/org-fake/agent-tokens/delete",
 			form: url.Values{
 				"id": []string{"ut-fake"},
 			},
-			redirect: "/organizations/fake-org/agent-tokens",
+			redirect: "/organizations/org-fake/agent-tokens",
 		},
 	}
 	for _, tt := range tests {

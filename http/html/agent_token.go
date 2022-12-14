@@ -9,7 +9,12 @@ import (
 )
 
 func (app *Application) newAgentToken(w http.ResponseWriter, r *http.Request) {
-	app.render("agent_token_new.tmpl", w, r, organizationRequest{r})
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.render("agent_token_new.tmpl", w, r, org)
 }
 
 func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -35,28 +40,36 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) {
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	tokens, err := app.ListAgentTokens(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// tokenList exposes a list of tokens to a template
-	type tokenList struct {
+	app.render("agent_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
 		Items []*otf.AgentToken
-		organizationRoute
-	}
-	app.render("agent_token_list.tmpl", w, r, tokenList{
-		Pagination:        &otf.Pagination{},
-		Items:             tokens,
-		organizationRoute: organizationRequest{r},
+		*otf.Organization
+	}{
+		Pagination:   &otf.Pagination{},
+		Items:        tokens,
+		Organization: org,
 	})
 }
 
 func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	id := r.FormValue("id")
 	if id == "" {
 		writeError(w, "missing id", http.StatusUnprocessableEntity)
@@ -67,5 +80,5 @@ func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, listAgentTokenPath(organizationRequest{r}), http.StatusFound)
+	http.Redirect(w, r, listAgentTokenPath(org), http.StatusFound)
 }

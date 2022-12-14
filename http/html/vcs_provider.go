@@ -10,11 +10,16 @@ import (
 )
 
 func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", mux.Vars(r)["cloud_name"])
 	app.render(tmpl, w, r, struct {
-		organizationRoute
+		*otf.Organization
 	}{
-		organizationRoute: organizationRequest{r},
+		Organization: org,
 	})
 }
 
@@ -46,6 +51,11 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request) {
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -55,11 +65,11 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 	app.render("vcs_provider_list.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
 		CloudConfigs []otf.CloudConfig
-		organizationRoute
+		*otf.Organization
 	}{
-		Items:             providers,
-		CloudConfigs:      app.ListCloudConfigs(),
-		organizationRoute: organizationRequest{r},
+		Items:        providers,
+		CloudConfigs: app.ListCloudConfigs(),
+		Organization: org,
 	})
 }
 
@@ -73,11 +83,16 @@ func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	err := app.DeleteVCSProvider(r.Context(), opts.ID, opts.OrganizationName)
+	org, err := app.GetOrganization(r.Context(), opts.OrganizationName)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = app.DeleteVCSProvider(r.Context(), opts.ID, opts.OrganizationName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "deleted provider: "+opts.ID)
-	http.Redirect(w, r, listVCSProviderPath(organizationRequest{r}), http.StatusFound)
+	http.Redirect(w, r, listVCSProviderPath(org), http.StatusFound)
 }

@@ -26,7 +26,7 @@ func TestListRunsHandler(t *testing.T) {
 		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
 		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
 	}
-	app := newFakeWebApp(t, &fakeListRunsApp{runs: runs})
+	app := newFakeWebApp(t, &fakeListRunsApp{ws: ws, runs: runs})
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
@@ -107,8 +107,13 @@ func TestTailLogs(t *testing.T) {
 }
 
 type fakeListRunsApp struct {
+	ws   *otf.Workspace
 	runs []*otf.Run
 	otf.Application
+}
+
+func (f *fakeListRunsApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	return f.ws, nil
 }
 
 func (f *fakeListRunsApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
