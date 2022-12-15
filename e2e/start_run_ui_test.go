@@ -27,13 +27,13 @@ func TestStartRunUI(t *testing.T) {
 	token := createAPIToken(t, hostname)
 	login(t, hostname, token)
 
-	workspace := createWebWorkspace(t, allocator, url, org)
+	workspaceName, workspaceID := createWebWorkspace(t, allocator, url, org)
 
 	//
 	// start run UI functionality requires an existing config version, so
 	// create one first by running a plan via the CLI
 	//
-	root := newRootModule(t, hostname, org, workspace)
+	root := newRootModule(t, hostname, org, workspaceName)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")
@@ -61,14 +61,14 @@ func TestStartRunUI(t *testing.T) {
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
-	}, startRunTasks(t, hostname, org, workspace)))
+	}, startRunTasks(t, hostname, workspaceID)))
 	require.NoError(t, err)
 }
 
-func startRunTasks(t *testing.T, hostname, org, workspace string) chromedp.Tasks {
+func startRunTasks(t *testing.T, hostname, workspaceID string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
-		chromedp.Navigate(fmt.Sprintf("https://%s/organizations/%s/workspaces/%s", hostname, org, workspace)),
+		chromedp.Navigate(fmt.Sprintf("https://%s/workspaces/%s", hostname, workspaceID)),
 		chromedp.WaitReady(`body`),
 		// select strategy for run
 		chromedp.SetValue(`//select[@id="start-run-strategy"]`, "plan-and-apply", chromedp.BySearch),

@@ -71,6 +71,22 @@ func All(dst interface{}, r *http.Request) error {
 	return nil
 }
 
+// Param retrieves a single parameter by name from the request, first checking the body
+// (if POST/PUT/PATCH) and the query, falling back to looking for a path variable.
+func Param(name string, r *http.Request) (string, error) {
+	// Parses both query and req body
+	if err := r.ParseForm(); err != nil {
+		return "", err
+	}
+	if v := r.Form.Get(name); v != "" {
+		return v, nil
+	}
+	if v, ok := mux.Vars(r)[name]; ok {
+		return v, nil
+	}
+	return "", fmt.Errorf("missing required parameter: %s", name)
+}
+
 func convertStrMapToStrSliceMap(m map[string]string) map[string][]string {
 	mm := make(map[string][]string, len(m))
 	for k, v := range m {

@@ -72,7 +72,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		setCookie(w, pathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
-		http.Redirect(w, r, getProfilePath(), http.StatusFound)
+		http.Redirect(w, r, profilePath(), http.StatusFound)
 	}
 }
 
@@ -119,14 +119,20 @@ func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient)
 
 	// Create user's teams as necessary
 	for _, team := range cuser.Teams() {
-		team, err = a.EnsureCreatedTeam(ctx, team.Name(), team.Organization().Name())
+		team, err = a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
+			Name:         team.Name(),
+			Organization: team.Organization().Name(),
+		})
 		if err != nil {
 			return nil, err
 		}
 		teams = append(teams, team)
 	}
 	// And make them an owner of their personal org
-	team, err := a.EnsureCreatedTeam(ctx, "owners", personal.Name())
+	team, err := a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
+		Name:         "owners",
+		Organization: personal.Name(),
+	})
 	if err != nil {
 		return nil, err
 	}

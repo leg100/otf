@@ -7,11 +7,11 @@
 {{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ workspacePath .Content.WorkspaceID }}">{{ .Content.WorkspaceName }}</a>
   /
-  <a href="{{ listRunPath .Content }}">runs</a>
+  <a href="{{ workspaceRunsPath .Content.WorkspaceID }}">runs</a>
   /
   {{ .Content.ID }}
 {{ end }}
@@ -19,7 +19,7 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchRunUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }}, {{ .Content.ID }});
+      watchRunUpdates({{ watchWorkspacePath .Content.WorkspaceID }}, {{ randAlphaNum 6 }}, {{ .Content.ID }});
     });
   </script>
   <div id="run-status">
@@ -45,19 +45,19 @@
   </div>
   {{ if not .Content.PlanLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content }}, 'plan', {{ .Content.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content.ID }}, 'plan', {{ .Content.PlanLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
   {{ if not .Content.ApplyLogs.IsEnd }}
     <script type="text/javascript">
-      setupTail({{ tailRunPath .Content }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
+      setupTail({{ tailRunPath .Content.ID }}, 'apply', {{ .Content.ApplyLogs.NextOffset }}, {{ randAlphaNum 6 }});
     </script>
   {{ end }}
   <div id="run-confirm-container" style="{{ if ne .Content.Status "planned" }}display: none;{{ end }}">
-    <form action="{{ applyRunPath .Content }}" method="POST">
+    <form action="{{ applyRunPath .Content.ID }}" method="POST">
       <button>Confirm & Apply</button>
     </form>
-    <form action="{{ discardRunPath .Content }}" method="POST">
+    <form action="{{ discardRunPath .Content.ID }}" method="POST">
       <button>Discard Run</button>
     </form>
   </div>

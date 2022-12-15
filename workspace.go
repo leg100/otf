@@ -371,7 +371,7 @@ type WorkspaceListOptions struct {
 // both Name and OrganizationName must be specfiied.
 type WorkspaceSpec struct {
 	// Specify workspace using its ID
-	ID *string
+	ID *string `schema:"workspace_id"`
 
 	// Specify workspace using its name and organization
 	Name             *string `schema:"workspace_name"`

@@ -46,7 +46,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 	}
 	flashSuccess(w, buf.String())
 
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
+	http.Redirect(w, r, tokensPath(), http.StatusFound)
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
@@ -88,5 +88,5 @@ func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
+	http.Redirect(w, r, tokensPath(), http.StatusFound)
 }

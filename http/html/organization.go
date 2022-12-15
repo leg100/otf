@@ -8,17 +8,8 @@ import (
 	"github.com/leg100/otf/http/decode"
 )
 
-// organizationRequest provides metadata about a request for a organization
-type organizationRequest struct {
-	r *http.Request
-}
-
-func (w organizationRequest) OrganizationName() string {
-	return param(w.r, "organization_name")
-}
-
 func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {
-	app.render("organization_new.tmpl", w, r, organizationRequest{r})
+	app.render("organization_new.tmpl", w, r, nil)
 }
 
 func (app *Application) createOrganization(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +29,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "created organization: "+org.Name())
-	http.Redirect(w, r, getOrganizationPath(org), http.StatusFound)
+	http.Redirect(w, r, organizationPath(org.Name()), http.StatusFound)
 }
 
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +82,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "updated organization")
-	http.Redirect(w, r, editOrganizationPath(org), http.StatusFound)
+	http.Redirect(w, r, editOrganizationPath(org.Name()), http.StatusFound)
 }
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +93,7 @@ func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "deleted organization: "+organizationName)
-	http.Redirect(w, r, listOrganizationPath(), http.StatusFound)
+	http.Redirect(w, r, organizationsPath(), http.StatusFound)
 }
 
 func (app *Application) listOrganizationPermissions(w http.ResponseWriter, r *http.Request) {

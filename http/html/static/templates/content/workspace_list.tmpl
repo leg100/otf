@@ -5,7 +5,7 @@
 {{ define "container-header" }}workspaces{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ newWorkspacePath .Content }}" method="GET">
+  <form action="{{ newWorkspacePath .Content.Name }}" method="GET">
     <button id="new-workspace-button" type="submit">New Workspace</button>
   </form>
 {{ end }}
@@ -17,7 +17,7 @@
 {{ define "content-list-item" }}
   <div class="item" id="item-workspace-{{ .Name }}">
     <div class="item-heading">
-      <a class="status" href="{{ getWorkspacePath . }}">{{ .Name }}</a>
+      <a class="status" href="{{ workspacePath .ID }}">{{ .Name }}</a>
     </div>
     {{ template "identifier" . }}
   </div>

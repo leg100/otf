@@ -89,14 +89,14 @@ func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *ot
 	return user, err
 }
 
-func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, name, organizationName string) (*otf.Team, error) {
+func (f *fakeAuthenticatorApp) EnsureCreatedTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
 	org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-		Name: otf.String(organizationName),
+		Name: otf.String(opts.Organization),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return otf.NewTeam(name, org), nil
+	return otf.NewTeam(opts.Name, org), nil
 }
 
 type fakeUserStore struct {

@@ -164,11 +164,11 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace)
 			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace)
 			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace)
-			r.PTC("/workspaces/{id}", s.UpdateWorkspace)
-			r.GET("/workspaces/{id}", s.GetWorkspace)
-			r.DEL("/workspaces/{id}", s.DeleteWorkspace)
-			r.PST("/workspaces/{id}/actions/lock", s.LockWorkspace)
-			r.PST("/workspaces/{id}/actions/unlock", s.UnlockWorkspace)
+			r.PTC("/workspaces/{workspace_id}", s.UpdateWorkspace)
+			r.GET("/workspaces/{workspace_id}", s.GetWorkspace)
+			r.DEL("/workspaces/{workspace_id}", s.DeleteWorkspace)
+			r.PST("/workspaces/{workspace_id}/actions/lock", s.LockWorkspace)
+			r.PST("/workspaces/{workspace_id}/actions/unlock", s.UnlockWorkspace)
 
 			// StateVersion routes
 			r.PST("/workspaces/{workspace_id}/state-versions", s.CreateStateVersion)

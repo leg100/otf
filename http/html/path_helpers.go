@@ -8,40 +8,6 @@ import (
 	"github.com/leg100/otf"
 )
 
-// organizationRoute provides info about a route for an organization resource
-type organizationRoute interface {
-	OrganizationName() string
-}
-
-// teamRoute provides info about a route for an team resource
-type teamRoute interface {
-	OrganizationName() string
-	TeamName() string
-}
-
-// workspaceRoute provides info about a route for a workspace resource
-type workspaceRoute interface {
-	OrganizationName() string
-	WorkspaceName() string
-}
-
-// vcsProviderRoute provides info about a route for a vcs provider resource
-type vcsProviderRoute interface {
-	OrganizationName() string
-	WorkspaceName() string
-	VCSProviderID() string
-}
-
-// runRoute provides info about a route for a run resource
-type runRoute interface {
-	// ID of run
-	RunID() string
-	// Name of run's workspace
-	WorkspaceName() string
-	// Name of run's organization
-	OrganizationName() string
-}
-
 func loginPath() string {
 	return "/login"
 }
@@ -54,11 +20,11 @@ func adminLoginPath() string {
 	return "/admin/login"
 }
 
-func getProfilePath() string {
+func profilePath() string {
 	return "/profile"
 }
 
-func listSessionPath() string {
+func sessionsPath() string {
 	return "/profile/sessions"
 }
 
@@ -66,7 +32,7 @@ func revokeSessionPath() string {
 	return "/profile/sessions/revoke"
 }
 
-func listTokenPath() string {
+func tokensPath() string {
 	return "/profile/tokens"
 }
 
@@ -82,52 +48,52 @@ func createTokenPath() string {
 	return "/profile/tokens/create"
 }
 
-func listAgentTokenPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "agent-tokens")
+func agentTokensPath(organization string) string {
+	return path.Join("/organizations", organization, "agent-tokens")
 }
 
-func deleteAgentTokenPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "agent-tokens", "delete")
+func deleteAgentTokenPath(organization string) string {
+	return path.Join("/organizations", organization, "agent-tokens", "delete")
 }
 
-func createAgentTokenPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "agent-tokens", "create")
+func createAgentTokenPath(organization string) string {
+	return path.Join("/organizations", organization, "agent-tokens", "create")
 }
 
-func newAgentTokenPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "agent-tokens", "new")
+func newAgentTokenPath(organization string) string {
+	return path.Join("/organizations", organization, "agent-tokens", "new")
 }
 
-func listVCSProviderPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers")
+func vcsProvidersPath(organization string) string {
+	return path.Join("/organizations", organization, "vcs-providers")
 }
 
-func newVCSProviderPath(route organizationRoute, cloud string) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "new")
+func newVCSProviderPath(organization string, cloud string) string {
+	return path.Join("/organizations", organization, "vcs-providers", cloud, "new")
 }
 
-func createVCSProviderPath(route organizationRoute, cloud string) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers", cloud, "create")
+func createVCSProviderPath(organization string, cloud string) string {
+	return path.Join("/organizations", organization, "vcs-providers", cloud, "create")
 }
 
-func deleteVCSProviderPath(route organizationRoute) string {
-	return path.Join(getOrganizationPath(route), "vcs-providers", "delete")
+func deleteVCSProviderPath(organization string) string {
+	return path.Join("/organizations", organization, "vcs-providers", "delete")
 }
 
-func listOrganizationPath() string {
+func organizationsPath() string {
 	return "/organizations"
 }
 
-func getOrganizationPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s", name.OrganizationName())
+func organizationPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s", organization)
 }
 
-func editOrganizationPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/edit", name.OrganizationName())
+func editOrganizationPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/edit", organization)
 }
 
-func updateOrganizationPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/update", name.OrganizationName())
+func updateOrganizationPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/update", organization)
 }
 
 func newOrganizationPath() string {
@@ -138,157 +104,157 @@ func createOrganizationPath() string {
 	return "/organizations/create"
 }
 
-func deleteOrganizationPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/delete", name.OrganizationName())
+func deleteOrganizationPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/delete", organization)
 }
 
-func listUsersPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/users", name.OrganizationName())
+func usersPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/users", organization)
 }
 
-func listTeamsPath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/teams", name.OrganizationName())
+func teamsPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/teams", organization)
 }
 
-func getTeamPath(name teamRoute) string {
-	return fmt.Sprintf("/organizations/%s/teams/%s", name.OrganizationName(), name.TeamName())
+func teamPath(teamID string) string {
+	return fmt.Sprintf("/teams/%s", teamID)
 }
 
-func updateTeamPath(name teamRoute) string {
-	return fmt.Sprintf("/organizations/%s/teams/%s/update", name.OrganizationName(), name.TeamName())
+func updateTeamPath(teamID string) string {
+	return fmt.Sprintf("/teams/%s/update", teamID)
 }
 
-func listTeamUsersPath(name teamRoute) string {
-	return fmt.Sprintf("/organizations/%s/teams/%s/users", name.OrganizationName(), name.TeamName())
+func teamUsersPath(teamID string) string {
+	return fmt.Sprintf("/teams/%s/users", teamID)
 }
 
-func listWorkspacePath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces", name.OrganizationName())
+func workspacesPath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces", organization)
 }
 
-func newWorkspacePath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/new", name.OrganizationName())
+func newWorkspacePath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/new", organization)
 }
 
-func createWorkspacePath(name organizationRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/create", name.OrganizationName())
+func createWorkspacePath(organization string) string {
+	return fmt.Sprintf("/organizations/%s/workspaces/create", organization)
 }
 
-func getWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s", ws.OrganizationName(), ws.WorkspaceName())
+func workspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s", workspaceID)
 }
 
-func listWorkspaceVCSProvidersPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers", ws.OrganizationName(), ws.WorkspaceName())
+func workspaceVCSProvidersPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/vcs-providers", workspaceID)
 }
 
-func listWorkspaceRepoPath(ws workspaceRoute, providerID string) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos", ws.OrganizationName(), ws.WorkspaceName(), providerID)
+func workspaceReposPath(workspaceID, providerID string) string {
+	return fmt.Sprintf("/workspaces/%s/vcs-providers/%s/repos", workspaceID, providerID)
 }
 
-func connectWorkspaceRepoPath(vcs vcsProviderRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/vcs-providers/%s/repos/connect", vcs.OrganizationName(), vcs.WorkspaceName(), vcs.VCSProviderID())
+func connectWorkspaceRepoPath(workspaceID, providerID string) string {
+	return fmt.Sprintf("/workspaces/%s/vcs-providers/%s/repos/connect", workspaceID, providerID)
 }
 
-func disconnectWorkspaceRepoPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/repo/disconnect", ws.OrganizationName(), ws.WorkspaceName())
+func disconnectWorkspaceRepoPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/repo/disconnect", workspaceID)
 }
 
-func startRunPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/start-run", ws.OrganizationName(), ws.WorkspaceName())
+func startRunPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/start-run", workspaceID)
 }
 
-func editWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/edit", ws.OrganizationName(), ws.WorkspaceName())
+func editWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/edit", workspaceID)
 }
 
-func updateWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/update", ws.OrganizationName(), ws.WorkspaceName())
+func updateWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/update", workspaceID)
 }
 
-func deleteWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/delete", ws.OrganizationName(), ws.WorkspaceName())
+func deleteWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/delete", workspaceID)
 }
 
-func lockWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/lock", ws.OrganizationName(), ws.WorkspaceName())
+func lockWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/lock", workspaceID)
 }
 
-func unlockWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/unlock", ws.OrganizationName(), ws.WorkspaceName())
+func unlockWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/unlock", workspaceID)
 }
 
-func setWorkspacePermissionPath(name workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/permissions", name.OrganizationName(), name.WorkspaceName())
+func setWorkspacePermissionPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/permissions", workspaceID)
 }
 
-func unsetWorkspacePermissionPath(name workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/permissions/unset", name.OrganizationName(), name.WorkspaceName())
+func unsetWorkspacePermissionPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/permissions/unset", workspaceID)
 }
 
-func listRunPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs", ws.OrganizationName(), ws.WorkspaceName())
+func workspaceRunsPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/runs", workspaceID)
 }
 
-func newRunPath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/new", ws.OrganizationName(), ws.WorkspaceName())
+func newRunPath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/runs/new", workspaceID)
 }
 
-func getRunPath(run otf.RunResource) string {
-	return otf.RunGetPathUI(run)
+func runPath(runID string) string {
+	return otf.RunGetPathUI(runID)
 }
 
-func watchWorkspacePath(ws workspaceRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/watch", ws.OrganizationName(), ws.WorkspaceName())
+func watchWorkspacePath(workspaceID string) string {
+	return fmt.Sprintf("/workspaces/%s/watch", workspaceID)
 }
 
-func tailRunPath(run runRoute) string {
-	return path.Join(getRunPath(run), "tail")
+func tailRunPath(runID string) string {
+	return path.Join("/runs", runID, "tail")
 }
 
-func deleteRunPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/delete", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func deleteRunPath(runID string) string {
+	return fmt.Sprintf("/runs/%s/delete", runID)
 }
 
-func cancelRunPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/cancel", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func cancelRunPath(runID string) string {
+	return fmt.Sprintf("/runs/%s/cancel", runID)
 }
 
-func applyRunPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/apply", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func applyRunPath(runID string) string {
+	return fmt.Sprintf("/runs/%s/apply", runID)
 }
 
-func discardRunPath(run runRoute) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s/discard", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func discardRunPath(runID string) string {
+	return fmt.Sprintf("/runs/%s/discard", runID)
 }
 
 func addHelpersToFuncMap(m template.FuncMap) {
 	m["loginPath"] = loginPath
 	m["logoutPath"] = logoutPath
 	m["adminLoginPath"] = adminLoginPath
-	m["getProfilePath"] = getProfilePath
-	m["listSessionPath"] = listSessionPath
+	m["profilePath"] = profilePath
+	m["sessionsPath"] = sessionsPath
 	m["revokeSessionPath"] = revokeSessionPath
-	m["listTokenPath"] = listTokenPath
+	m["tokensPath"] = tokensPath
 	m["deleteTokenPath"] = deleteTokenPath
 	m["newTokenPath"] = newTokenPath
 	m["createTokenPath"] = createTokenPath
-	m["listOrganizationPath"] = listOrganizationPath
-	m["getOrganizationPath"] = getOrganizationPath
+	m["organizationsPath"] = organizationsPath
+	m["organizationPath"] = organizationPath
 	m["editOrganizationPath"] = editOrganizationPath
 	m["updateOrganizationPath"] = updateOrganizationPath
 	m["deleteOrganizationPath"] = deleteOrganizationPath
 	m["newOrganizationPath"] = newOrganizationPath
 	m["createOrganizationPath"] = createOrganizationPath
-	m["listUsersPath"] = listUsersPath
-	m["getTeamPath"] = getTeamPath
+	m["usersPath"] = usersPath
+	m["teamPath"] = teamPath
 	m["updateTeamPath"] = updateTeamPath
-	m["listTeamsPath"] = listTeamsPath
-	m["listTeamUsersPath"] = listTeamUsersPath
-	m["listWorkspacePath"] = listWorkspacePath
+	m["teamsPath"] = teamsPath
+	m["teamUsersPath"] = teamUsersPath
+	m["workspacesPath"] = workspacesPath
 	m["newWorkspacePath"] = newWorkspacePath
 	m["createWorkspacePath"] = createWorkspacePath
-	m["getWorkspacePath"] = getWorkspacePath
+	m["workspacePath"] = workspacePath
 	m["editWorkspacePath"] = editWorkspacePath
 	m["updateWorkspacePath"] = updateWorkspacePath
 	m["deleteWorkspacePath"] = deleteWorkspacePath
@@ -296,25 +262,25 @@ func addHelpersToFuncMap(m template.FuncMap) {
 	m["unlockWorkspacePath"] = unlockWorkspacePath
 	m["setWorkspacePermissionPath"] = setWorkspacePermissionPath
 	m["unsetWorkspacePermissionPath"] = unsetWorkspacePermissionPath
-	m["listRunPath"] = listRunPath
+	m["workspaceRunsPath"] = workspaceRunsPath
 	m["newRunPath"] = newRunPath
-	m["getRunPath"] = getRunPath
+	m["runPath"] = runPath
 	m["watchWorkspacePath"] = watchWorkspacePath
 	m["tailRunPath"] = tailRunPath
 	m["deleteRunPath"] = deleteRunPath
 	m["cancelRunPath"] = cancelRunPath
 	m["applyRunPath"] = applyRunPath
 	m["discardRunPath"] = discardRunPath
-	m["listAgentTokenPath"] = listAgentTokenPath
+	m["agentTokensPath"] = agentTokensPath
 	m["deleteAgentTokenPath"] = deleteAgentTokenPath
 	m["createAgentTokenPath"] = createAgentTokenPath
 	m["newAgentTokenPath"] = newAgentTokenPath
-	m["listVCSProviderPath"] = listVCSProviderPath
+	m["vcsProvidersPath"] = vcsProvidersPath
 	m["newVCSProviderPath"] = newVCSProviderPath
 	m["createVCSProviderPath"] = createVCSProviderPath
 	m["deleteVCSProviderPath"] = deleteVCSProviderPath
-	m["listWorkspaceVCSProvidersPath"] = listWorkspaceVCSProvidersPath
-	m["listWorkspaceRepoPath"] = listWorkspaceRepoPath
+	m["workspaceVCSProvidersPath"] = workspaceVCSProvidersPath
+	m["workspaceReposPath"] = workspaceReposPath
 	m["connectWorkspaceRepoPath"] = connectWorkspaceRepoPath
 	m["disconnectWorkspaceRepoPath"] = disconnectWorkspaceRepoPath
 	m["startRunPath"] = startRunPath

@@ -34,7 +34,7 @@ func (u *Team) IsOwners() bool {
 	return u.name == "owners"
 }
 
-func (u *Team) Update(opts TeamUpdateOptions) error {
+func (u *Team) Update(opts UpdateTeamOptions) error {
 	u.access.ManageWorkspaces = opts.ManageWorkspaces
 	u.access.ManageVCS = opts.ManageVCS
 	return nil
@@ -45,24 +45,29 @@ func (u *Team) Update(opts TeamUpdateOptions) error {
 type TeamService interface {
 	// CreateTeam creates a team with the given name belong to the named
 	// organization.
-	CreateTeam(ctx context.Context, name, organization string) (*Team, error)
-	UpdateTeam(ctx context.Context, name, organization string, opts TeamUpdateOptions) (*Team, error)
+	CreateTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+	UpdateTeam(ctx context.Context, teamID string, opts UpdateTeamOptions) (*Team, error)
 	// EnsureCreatedTeam retrieves a team; if they don't exist they'll be
 	// created.
-	EnsureCreatedTeam(ctx context.Context, name, organization string) (*Team, error)
-	// Get retrieves a team according to the spec.
-	GetTeam(ctx context.Context, name, organization string) (*Team, error)
+	EnsureCreatedTeam(ctx context.Context, opts CreateTeamOptions) (*Team, error)
+	// Get retrieves a team with the given ID
+	GetTeam(ctx context.Context, teamID string) (*Team, error)
 	// ListTeams lists teams in an organization.
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
+	// ListTeamMembers lists users that are members of the given team
+	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 }
 
 // TeamStore is a persistence store for team accounts.
 type TeamStore interface {
 	CreateTeam(ctx context.Context, team *Team) error
-	UpdateTeam(ctx context.Context, name, organization string, fn func(*Team) error) (*Team, error)
+	UpdateTeam(ctx context.Context, teamID string, fn func(*Team) error) (*Team, error)
 	GetTeam(ctx context.Context, name, organization string) (*Team, error)
-	DeleteTeam(ctx context.Context, name, organization string) error
+	GetTeamByID(ctx context.Context, teamID string) (*Team, error)
+	DeleteTeam(ctx context.Context, teamID string) error
 	ListTeams(ctx context.Context, organization string) ([]*Team, error)
+	// ListTeamMembers lists users that are members of the given team
+	ListTeamMembers(ctx context.Context, teamID string) ([]*User, error)
 }
 
 type TeamSpec struct {
@@ -76,7 +81,12 @@ type OrganizationAccess struct {
 	ManageVCS        bool `schema:"manage_vcs"`        // manage VCS providers
 }
 
-type TeamUpdateOptions struct {
+type CreateTeamOptions struct {
+	Name         string `schema:"team_name,required"`
+	Organization string `schema:"organization_name,required"`
+}
+
+type UpdateTeamOptions struct {
 	OrganizationAccess
 }
 

@@ -15,6 +15,19 @@ import (
 
 // TODO: rename tests to TestWorkspace_<handler>
 
+func TestNewWorkspaceHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{org: org})
+
+	q := "/?organization_name=acme-corp"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.newWorkspace(w, r)
+	if !assert.Equal(t, 200, w.Code) {
+		t.Log(t, w.Body.String())
+	}
+}
+
 func TestGetWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org)
@@ -50,10 +63,10 @@ func TestListWorkspacesHandler(t *testing.T) {
 		otf.NewTestWorkspace(t, org),
 		otf.NewTestWorkspace(t, org),
 	}
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: workspaces})
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{org: org, workspaces: workspaces})
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=1&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -62,7 +75,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=2&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -71,7 +84,7 @@ func TestListWorkspacesHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?organization_name=acme&page[number]=3&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listWorkspaces(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -82,14 +95,20 @@ func TestListWorkspacesHandler(t *testing.T) {
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
+	workspaces := []*otf.Workspace{
+		otf.NewTestWorkspace(t, org),
+	}
 	providers := []*otf.VCSProvider{
 		otf.NewTestVCSProvider(t, org),
 		otf.NewTestVCSProvider(t, org),
 		otf.NewTestVCSProvider(t, org),
 	}
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{providers: providers})
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
+		providers:  providers,
+		workspaces: workspaces,
+	})
 
-	q := "/?"
+	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSProviders(w, r)
@@ -97,7 +116,14 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 }
 
 func TestListWorkspaceReposHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
+		providers: []*otf.VCSProvider{
+			otf.NewTestVCSProvider(t, org),
+		},
+		workspaces: []*otf.Workspace{
+			otf.NewTestWorkspace(t, org),
+		},
 		repos: []*otf.Repo{
 			otf.NewTestRepo(),
 			otf.NewTestRepo(),
@@ -107,7 +133,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		},
 	})
 
-	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
+	q := "/?workspace_id=ws-123&vcs_provider_id=fake-provider"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSRepos(w, r)
@@ -168,7 +194,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s", org.Name(), ws.Name()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
 	}
 }
 
@@ -191,7 +217,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s", org.Name(), ws.Name()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
 	}
 }
 
@@ -201,27 +227,24 @@ func TestStartRunHandler(t *testing.T) {
 	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
 	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
 	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
-		runs: []*otf.Run{run},
+		workspaces: []*otf.Workspace{ws},
+		runs:       []*otf.Run{run},
 	})
 
-	form := strings.NewReader(url.Values{
-		"organization_name": {"fake-org"},
-		"workspace_name":    {"fake-workspace"},
-		"strategy":          {"plan-only"},
-	}.Encode())
-	r := httptest.NewRequest("POST", "/", form)
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	q := "/?workspace_id=ws-123&strategy=plan-only"
+	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	app.startRun(w, r)
 
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", org.Name(), ws.Name(), run.ID()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/runs/%s", run.ID()), redirect.Path)
 	}
 }
 
 type fakeWorkspaceHandlerApp struct {
+	org            *otf.Organization
 	runs           []*otf.Run
 	workspaces     []*otf.Workspace
 	configVersions []*otf.ConfigurationVersion
@@ -229,6 +252,10 @@ type fakeWorkspaceHandlerApp struct {
 	repos          []*otf.Repo
 
 	otf.Application
+}
+
+func (f *fakeWorkspaceHandlerApp) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {
+	return f.org, nil
 }
 
 func (f *fakeWorkspaceHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {

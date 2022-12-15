@@ -6,84 +6,91 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) CreateTeam(ctx context.Context, name, organization string) (*otf.Team, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateTeamAction, organization)
+func (a *Application) CreateTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateTeamAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.db.GetOrganization(ctx, organization)
+	org, err := a.db.GetOrganization(ctx, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
 
-	team := otf.NewTeam(name, org)
+	team := otf.NewTeam(opts.Name, org)
 
 	if err := a.db.CreateTeam(ctx, team); err != nil {
-		a.Error(err, "creating team", "name", name, "organization", organization, "subject", subject)
+		a.Error(err, "creating team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created team", "name", name, "organization", organization, "subject", subject)
-
-	return team, nil
-}
-
-func (a *Application) UpdateTeam(ctx context.Context, name, organization string, opts otf.TeamUpdateOptions) (*otf.Team, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.UpdateTeamAction, organization)
-	if err != nil {
-		return nil, err
-	}
-
-	team, err := a.db.UpdateTeam(ctx, name, organization, func(team *otf.Team) error {
-		return team.Update(opts)
-	})
-	if err != nil {
-		a.Error(err, "updating team", "name", name, "organization", organization, "subject", subject)
-		return nil, err
-	}
-
-	a.V(2).Info("updated team", "name", name, "organization", organization, "subject", subject)
+	a.V(0).Info("created team", "name", opts.Name, "organization", opts.Organization, "subject", subject)
 
 	return team, nil
 }
 
 // EnsureCreatedTeam retrieves the team or creates the team if it doesn't exist.
-func (a *Application) EnsureCreatedTeam(ctx context.Context, name, organization string) (*otf.Team, error) {
-	team, err := a.GetTeam(ctx, name, organization)
+func (a *Application) EnsureCreatedTeam(ctx context.Context, opts otf.CreateTeamOptions) (*otf.Team, error) {
+	team, err := a.db.GetTeam(ctx, opts.Name, opts.Organization)
 	if err == otf.ErrResourceNotFound {
-		return a.CreateTeam(ctx, name, organization)
+		return a.CreateTeam(ctx, opts)
 	} else if err != nil {
-		a.Error(err, "retrieving team", "name", name, "organization", organization)
+		a.Error(err, "retrieving team", "name", opts.Name, "organization", opts.Organization)
 		return nil, err
 	} else {
 		return team, nil
 	}
 }
 
+func (a *Application) UpdateTeam(ctx context.Context, teamID string, opts otf.UpdateTeamOptions) (*otf.Team, error) {
+	team, err := a.db.GetTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
+		return nil, err
+	}
+	subject, err := a.CanAccessOrganization(ctx, otf.UpdateTeamAction, team.OrganizationName())
+	if err != nil {
+		return nil, err
+	}
+
+	team, err = a.db.UpdateTeam(ctx, teamID, func(team *otf.Team) error {
+		return team.Update(opts)
+	})
+	if err != nil {
+		a.Error(err, "updating team", "name", team.Name(), "organization", team.OrganizationName(), "subject", subject)
+		return nil, err
+	}
+
+	a.V(2).Info("updated team", "name", team.Name(), "organization", team.OrganizationName(), "subject", subject)
+
+	return team, nil
+}
+
 // GetTeam retrieves a team in an organization. If the caller is an unprivileged
 // user i.e. not an owner nor a site admin then they are only permitted to
 // retrieve a team they are a member of.
-func (a *Application) GetTeam(ctx context.Context, name, organization string) (*otf.Team, error) {
-	if user, err := otf.UserFromContext(ctx); err == nil && user.IsUnprivilegedUser(organization) {
-		team, err := user.Team(name, organization)
-		if err != nil {
-			return nil, otf.ErrAccessNotPermitted
+func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, error) {
+	team, err := a.db.GetTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
+		return nil, err
+	}
+
+	// Check organization-wide authority
+	subject, err := a.CanAccessOrganization(ctx, otf.GetTeamAction, team.OrganizationName())
+	if err != nil {
+		// Fallback to checking if they are member of the team
+		if user, ok := subject.(*otf.User); ok {
+			if !user.IsTeamMember(teamID) {
+				// User is not a member; refuse access
+				return nil, err
+			}
+		} else {
+			// non-user without organization-wide authority; refuse access
+			return nil, err
 		}
-		a.V(2).Info("retrieved team", "organization", organization, "team", name, "subject", user)
-		return team, nil
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.GetTeamAction, organization)
-	if err != nil {
-		return nil, err
-	}
-
-	team, err := a.db.GetTeam(ctx, name, organization)
-	if err != nil {
-		a.V(2).Info("retrieving team", "team", name, "organization", organization, "subject", subject)
-		return nil, err
-	}
-	a.V(2).Info("retrieved team", "team", name, "organization", organization, "subject", subject)
+	a.V(2).Info("retrieved team", "team", team.Name(), "organization", team.OrganizationName(), "subject", subject)
 
 	return team, nil
 }
@@ -109,4 +116,40 @@ func (a *Application) ListTeams(ctx context.Context, organization string) ([]*ot
 	a.V(2).Info("listed teams", "organization", organization, "subject", subject)
 
 	return teams, nil
+}
+
+// ListTeamMembers lists users that are members of the given team. The caller
+// needs either organization-wide authority to call this endpoint, or they need
+// to be a member of the team.
+func (a *Application) ListTeamMembers(ctx context.Context, teamID string) ([]*otf.User, error) {
+	team, err := a.db.GetTeamByID(ctx, teamID)
+	if err != nil {
+		a.Error(err, "retrieving team", "team_id", teamID)
+		return nil, err
+	}
+
+	// Check organization-wide authority
+	subject, err := a.CanAccessOrganization(ctx, otf.ListTeamsAction, team.OrganizationName())
+	if err != nil {
+		// Fallback to checking if they are member of the team
+		if user, ok := subject.(*otf.User); ok {
+			if !user.IsTeamMember(teamID) {
+				// User is not a member; refuse access
+				return nil, err
+			}
+		} else {
+			// non-user without organization-wide authority; refuse access
+			return nil, err
+		}
+	}
+
+	members, err := a.db.ListTeamMembers(ctx, teamID)
+	if err != nil {
+		a.Error(err, "listing team members", "team_id", teamID, "subject", subject)
+		return nil, err
+	}
+
+	a.V(2).Info("listed team members", "team_id", teamID, "subject", subject)
+
+	return members, nil
 }

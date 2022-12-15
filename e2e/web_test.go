@@ -83,10 +83,10 @@ func TestWeb(t *testing.T) {
 	})
 
 	t.Run("add write workspace permission to owners team", func(t *testing.T) {
-		workspace := createWebWorkspace(t, allocator, url, org.Name())
+		_, workspaceID := createWebWorkspace(t, allocator, url, org.Name())
 
 		// assign write permissions to team
-		addWorkspacePermission(t, allocator, url, org.Name(), workspace, devops.Name(), "write")
+		addWorkspacePermission(t, allocator, url, org.Name(), workspaceID, devops.Name(), "write")
 	})
 
 	t.Run("list users", func(t *testing.T) {
