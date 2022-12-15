@@ -13,7 +13,7 @@
   <div>
     Follow <a class="show-underline" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token">Github's instructions</a> on how to create a personal token with fine-grained permissions.
   </div>
-  <form class="main-form" action="{{ createVCSProviderPath .Content "github" }}" method="POST">
+  <form class="main-form" action="{{ createVCSProviderPath .Content.Name "github" }}" method="POST">
     <input type="hidden" name="cloud_name" id="cloud_name" value="github">
     <ul>
       <li class="field">

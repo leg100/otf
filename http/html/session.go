@@ -49,5 +49,5 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	flashSuccess(w, "Revoked session")
-	http.Redirect(w, r, listSessionPath(), http.StatusFound)
+	http.Redirect(w, r, sessionsPath(), http.StatusFound)
 }

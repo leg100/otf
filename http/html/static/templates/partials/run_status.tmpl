@@ -1,6 +1,6 @@
 {{ define "run-status" }}
   <span id="{{ .ID }}-status" class="status status-{{ .Status }}">
-    <a href="{{ getRunPath . }}">{{ .Status.String | replace "_" " "}}</a>
+    <a href="{{ runPath .ID }}">{{ .Status.String | replace "_" " "}}</a>
   </span>
 {{ end }}
 

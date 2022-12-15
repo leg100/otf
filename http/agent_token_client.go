@@ -8,7 +8,7 @@ import (
 )
 
 // CreateOrganization creates a new organization with the given options.
-func (c *client) CreateAgentToken(ctx context.Context, options otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+func (c *client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	req, err := c.newRequest("POST", "agent/create", &dto.AgentTokenCreateOptions{
 		Description:      options.Description,
 		OrganizationName: options.OrganizationName,

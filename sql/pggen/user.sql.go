@@ -310,6 +310,100 @@ func (q *DBQuerier) FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersBy
 	return items, err
 }
 
+const findUsersByTeamIDSQL = `SELECT
+    u.*,
+    (
+        SELECT array_agg(o)
+        FROM organizations o
+        JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
+    (
+        SELECT array_agg(t)
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
+FROM users u
+JOIN team_memberships tm USING (user_id)
+JOIN teams t USING (team_id)
+WHERE t.team_id = $1
+GROUP BY u.user_id
+;`
+
+type FindUsersByTeamIDRow struct {
+	UserID        pgtype.Text        `json:"user_id"`
+	Username      pgtype.Text        `json:"username"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Organizations []Organizations    `json:"organizations"`
+	Teams         []Teams            `json:"teams"`
+}
+
+// FindUsersByTeamID implements Querier.FindUsersByTeamID.
+func (q *DBQuerier) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindUsersByTeamID")
+	rows, err := q.conn.Query(ctx, findUsersByTeamIDSQL, teamID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindUsersByTeamID: %w", err)
+	}
+	defer rows.Close()
+	items := []FindUsersByTeamIDRow{}
+	organizationsArray := q.types.newOrganizationsArray()
+	teamsArray := q.types.newTeamsArray()
+	for rows.Next() {
+		var item FindUsersByTeamIDRow
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+			return nil, fmt.Errorf("scan FindUsersByTeamID row: %w", err)
+		}
+		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
+		}
+		if err := teamsArray.AssignTo(&item.Teams); err != nil {
+			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindUsersByTeamID rows: %w", err)
+	}
+	return items, err
+}
+
+// FindUsersByTeamIDBatch implements Querier.FindUsersByTeamIDBatch.
+func (q *DBQuerier) FindUsersByTeamIDBatch(batch genericBatch, teamID pgtype.Text) {
+	batch.Queue(findUsersByTeamIDSQL, teamID)
+}
+
+// FindUsersByTeamIDScan implements Querier.FindUsersByTeamIDScan.
+func (q *DBQuerier) FindUsersByTeamIDScan(results pgx.BatchResults) ([]FindUsersByTeamIDRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindUsersByTeamIDBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindUsersByTeamIDRow{}
+	organizationsArray := q.types.newOrganizationsArray()
+	teamsArray := q.types.newTeamsArray()
+	for rows.Next() {
+		var item FindUsersByTeamIDRow
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+			return nil, fmt.Errorf("scan FindUsersByTeamIDBatch row: %w", err)
+		}
+		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
+			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
+		}
+		if err := teamsArray.AssignTo(&item.Teams); err != nil {
+			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindUsersByTeamIDBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const findUserByIDSQL = `SELECT u.*,
     (
         SELECT array_remove(array_agg(o), NULL)

@@ -14,7 +14,7 @@ func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	at, err := s.Application.CreateAgentToken(r.Context(), otf.AgentTokenCreateOptions{
+	at, err := s.Application.CreateAgentToken(r.Context(), otf.CreateAgentTokenOptions{
 		Description:      opts.Description,
 		OrganizationName: opts.OrganizationName,
 	})

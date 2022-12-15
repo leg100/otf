@@ -21,17 +21,17 @@
           {{ with .CurrentUser }}
           <li class="current-organization">
             {{ if $.CurrentOrganization }}
-            <a href="{{ getOrganizationPath $.CurrentOrganization }}">
+            <a href="{{ organizationPath $.CurrentOrganization }}">
               {{ template "building_icon" }}
-              <span>{{ $.CurrentOrganization.OrganizationName }}</span>
+              <span>{{ $.CurrentOrganization }}</span>
             </a>
             {{ end }}
           </li>
           <li>
-            <a href="{{ listOrganizationPath }}">organizations</a>
+            <a href="{{ organizationsPath }}">organizations</a>
           </li>
           <li id="top-right-profile-link" class="profile">
-            <a href="{{ getProfilePath }}"><span class="current-user">{{ .Username }}</span></a>
+            <a href="{{ profilePath }}"><span class="current-user">{{ .Username }}</span></a>
           </li>
           {{ end }}
         </ul>

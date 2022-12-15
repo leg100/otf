@@ -47,7 +47,7 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 	flashSuccess(w, "created provider: "+provider.Name())
-	http.Redirect(w, r, listVCSProviderPath(provider), http.StatusFound)
+	http.Redirect(w, r, vcsProvidersPath(provider.OrganizationName()), http.StatusFound)
 }
 
 func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -94,5 +94,5 @@ func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 	flashSuccess(w, "deleted provider: "+opts.ID)
-	http.Redirect(w, r, listVCSProviderPath(org), http.StatusFound)
+	http.Redirect(w, r, vcsProvidersPath(org.Name()), http.StatusFound)
 }

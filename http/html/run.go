@@ -40,7 +40,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{Name: opts.WorkspaceName})
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: opts.WorkspaceID})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -123,7 +123,7 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +142,7 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, listRunPath(ws), http.StatusFound)
+	http.Redirect(w, r, workspaceRunsPath(ws.Name()), http.StatusFound)
 }
 
 func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +156,7 @@ func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getRunPath(run)+"#apply", http.StatusFound)
+	http.Redirect(w, r, runPath(run.ID())+"#apply", http.StatusFound)
 }
 
 func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +170,7 @@ func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getRunPath(run), http.StatusFound)
+	http.Redirect(w, r, runPath(run.ID()), http.StatusFound)
 }
 
 func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {

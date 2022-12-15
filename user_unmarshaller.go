@@ -15,7 +15,7 @@ type UserResult struct {
 	Teams         []pggen.Teams         `json:"teams"`
 }
 
-func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
+func UnmarshalUserResult(row UserResult, opts ...NewUserOption) *User {
 	user := User{
 		id:        row.UserID.String,
 		createdAt: row.CreatedAt.Time.UTC(),
@@ -47,5 +47,5 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) (*User, error) {
 		o(&user)
 	}
 
-	return &user, nil
+	return &user
 }

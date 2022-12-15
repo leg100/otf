@@ -37,7 +37,7 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 	flashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -64,5 +64,5 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 		return
 	}
 	flashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }

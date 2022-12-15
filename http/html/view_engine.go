@@ -62,21 +62,13 @@ func (v *view) CurrentUser() *otf.User {
 	return user
 }
 
-type currentOrganization struct {
-	name string
-}
-
-func (c *currentOrganization) OrganizationName() string {
-	return c.name
-}
-
 // CurrentOrganization retrieves the user's current organization
-func (v *view) CurrentOrganization() *currentOrganization {
+func (v *view) CurrentOrganization() *string {
 	name, err := organizationFromContext(v.request.Context())
 	if err != nil {
 		return nil
 	}
-	return &currentOrganization{name}
+	return &name
 }
 
 func (v *view) CurrentPath() string {

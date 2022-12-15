@@ -59,6 +59,10 @@ func NewTestTeam(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
 	return NewTeam(uuid.NewString(), org, opts...)
 }
 
+func NewTestOwners(t *testing.T, org *Organization, opts ...NewTeamOption) *Team {
+	return NewTeam("owners", org, opts...)
+}
+
 func NewTestSession(t *testing.T, userID string, opts ...NewSessionOption) *Session {
 	session, err := NewSession(userID, "127.0.0.1")
 	require.NoError(t, err)
@@ -119,6 +123,15 @@ func NewTestCloudConfig(cloud Cloud) CloudConfig {
 		Hostname: "fake-cloud.org",
 		Cloud:    cloud,
 	}
+}
+
+func NewTestAgentToken(t *testing.T, org *Organization) *AgentToken {
+	token, err := NewAgentToken(CreateAgentTokenOptions{
+		OrganizationName: org.Name(),
+		Description:      "lorem ipsum...",
+	})
+	require.NoError(t, err)
+	return token
 }
 
 // NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the

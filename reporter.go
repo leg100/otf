@@ -139,7 +139,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		TargetURL: (&url.URL{
 			Scheme: "https",
 			Host:   r.otfHost,
-			Path:   RunGetPathUI(run),
+			Path:   RunGetPathUI(run.ID()),
 		}).String(),
 	})
 }

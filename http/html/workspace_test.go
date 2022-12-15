@@ -194,7 +194,7 @@ func TestConnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s", org.Name(), ws.Name()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
 	}
 }
 
@@ -217,7 +217,7 @@ func TestDisconnectWorkspaceHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s", org.Name(), ws.Name()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/workspaces/%s", ws.ID()), redirect.Path)
 	}
 }
 
@@ -244,7 +244,7 @@ func TestStartRunHandler(t *testing.T) {
 	if assert.Equal(t, 302, w.Code) {
 		redirect, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", org.Name(), ws.Name(), run.ID()), redirect.Path)
+		assert.Equal(t, fmt.Sprintf("/runs/%s", run.ID()), redirect.Path)
 	}
 }
 

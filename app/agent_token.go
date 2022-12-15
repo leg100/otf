@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+func (a *Application) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	subject, err := a.CanAccessOrganization(ctx, otf.CreateAgentTokenAction, opts.OrganizationName)
 	if err != nil {
 		return nil, err

@@ -15,7 +15,7 @@ func TestTeam_Create(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := otf.NewTeam("team-awesome", org)
 
-	defer db.DeleteTeam(ctx, team.Name(), org.Name())
+	defer db.DeleteTeam(ctx, team.ID())
 
 	err := db.CreateTeam(ctx, team)
 	require.NoError(t, err)
@@ -28,8 +28,8 @@ func TestTeam_Update_ByID(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 
-	_, err := db.UpdateTeam(ctx, team.Name(), org.Name(), func(team *otf.Team) error {
-		return team.Update(otf.TeamUpdateOptions{
+	_, err := db.UpdateTeam(ctx, team.ID(), func(team *otf.Team) error {
+		return team.Update(otf.UpdateTeamOptions{
 			OrganizationAccess: otf.OrganizationAccess{
 				ManageWorkspaces: true,
 				ManageVCS:        true,
@@ -57,6 +57,18 @@ func TestTeam_Get(t *testing.T) {
 	assert.Equal(t, team, got)
 }
 
+func TestTeam_GetByID(t *testing.T) {
+	db := newTestDB(t)
+
+	org := createTestOrganization(t, db)
+	want := createTestTeam(t, db, org)
+
+	got, err := db.GetTeamByID(context.Background(), want.ID())
+	require.NoError(t, err)
+
+	assert.Equal(t, want, got)
+}
+
 func TestTeam_List(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
@@ -70,4 +82,22 @@ func TestTeam_List(t *testing.T) {
 	assert.Contains(t, got, team1)
 	assert.Contains(t, got, team2)
 	assert.Contains(t, got, team3)
+}
+
+func TestTeam_ListTeamMembers(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	team := createTestTeam(t, db, org)
+	memberships := []otf.NewUserOption{
+		otf.WithOrganizationMemberships(org),
+		otf.WithTeamMemberships(team),
+	}
+	user1 := createTestUser(t, db, memberships...)
+	user2 := createTestUser(t, db, memberships...)
+
+	got, err := db.ListTeamMembers(context.Background(), team.ID())
+	require.NoError(t, err)
+
+	assert.Contains(t, got, user1)
+	assert.Contains(t, got, user2)
 }

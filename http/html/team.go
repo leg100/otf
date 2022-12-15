@@ -3,25 +3,23 @@ package html
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
 )
 
 func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
-	spec := otf.TeamSpec{
-		OrganizationName: mux.Vars(r)["organization_name"],
-		Name:             mux.Vars(r)["team_name"],
+	teamID, err := decode.Param("team_id", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
-	team, err := app.GetTeam(r.Context(), spec.Name, spec.OrganizationName)
+
+	team, err := app.GetTeam(r.Context(), teamID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	members, err := app.ListUsers(r.Context(), otf.UserListOptions{
-		OrganizationName: otf.String(spec.OrganizationName),
-		TeamName:         otf.String(spec.Name),
-	})
+	members, err := app.ListTeamMembers(r.Context(), teamID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -36,41 +34,37 @@ func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) updateTeam(w http.ResponseWriter, r *http.Request) {
-	spec := otf.TeamSpec{
-		OrganizationName: mux.Vars(r)["organization_name"],
-		Name:             mux.Vars(r)["team_name"],
-	}
-	opts := otf.TeamUpdateOptions{}
-	if err := decode.Form(&opts, r); err != nil {
+	teamID, err := decode.Param("team_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
-	team, err := app.UpdateTeam(r.Context(), spec.Name, spec.OrganizationName, opts)
+	opts := otf.UpdateTeamOptions{}
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	team, err := app.UpdateTeam(r.Context(), teamID, opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, getTeamPath(team), http.StatusFound)
+	http.Redirect(w, r, teamPath(team.ID()), http.StatusFound)
 }
 
 func (app *Application) listTeams(w http.ResponseWriter, r *http.Request) {
-	teams, err := app.ListTeams(r.Context(), mux.Vars(r)["organization_name"])
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	teams, err := app.ListTeams(r.Context(), organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	app.render("team_list.tmpl", w, r, teams)
-}
-
-func (app *Application) listTeamUsers(w http.ResponseWriter, r *http.Request) {
-	opts := otf.UserListOptions{
-		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
-		TeamName:         otf.String(mux.Vars(r)["team_name"]),
-	}
-	users, err := app.ListUsers(r.Context(), opts)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	app.render("team_users_list.tmpl", w, r, UserList{users, opts})
 }

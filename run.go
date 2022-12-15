@@ -808,17 +808,7 @@ func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 	return false
 }
 
-// A RunResource provides sufficient information to retrieve a run via the Web UI
-type RunResource interface {
-	// ID of run
-	RunID() string
-	// Name of run's workspace
-	WorkspaceName() string
-	// Name of run's organization
-	OrganizationName() string
-}
-
 // RunGetPathUI returns the URL path for retrieving a run via the Web UI
-func RunGetPathUI(run RunResource) string {
-	return fmt.Sprintf("/organizations/%s/workspaces/%s/runs/%s", run.OrganizationName(), run.WorkspaceName(), run.RunID())
+func RunGetPathUI(runID string) string {
+	return fmt.Sprintf("/runs/%s", runID)
 }

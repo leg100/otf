@@ -38,7 +38,13 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
-	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	org, err := app.GetOrganization(r.Context(), organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,7 +71,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 	workspace, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
-		http.Redirect(w, r, newWorkspacePath(org), http.StatusFound)
+		http.Redirect(w, r, newWorkspacePath(org.Name()), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -73,7 +79,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "created workspace: "+workspace.Name())
-	http.Redirect(w, r, getWorkspacePath(workspace), http.StatusFound)
+	http.Redirect(w, r, workspacePath(workspace.ID()), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +110,7 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	teams, err := app.ListTeams(r.Context(), *spec.OrganizationName)
+	teams, err := app.ListTeams(r.Context(), ws.OrganizationName())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -172,7 +178,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := opts.Valid(); err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, editWorkspacePath(ws), http.StatusFound)
+		http.Redirect(w, r, editWorkspacePath(ws.ID()), http.StatusFound)
 		return
 	}
 
@@ -184,7 +190,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 	flashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, editWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, editWorkspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +211,7 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "deleted workspace: "+*spec.Name)
-	http.Redirect(w, r, listWorkspacePath(org), http.StatusFound)
+	http.Redirect(w, r, workspacesPath(org.Name()), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +225,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +239,7 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -442,7 +448,7 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 	}
 
 	flashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -459,7 +465,7 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 	}
 
 	flashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
@@ -496,9 +502,9 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, getWorkspacePath(ws), http.StatusFound)
+		http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, getRunPath(run), http.StatusFound)
+	http.Redirect(w, r, runPath(run.ID()), http.StatusFound)
 }
