@@ -26,7 +26,7 @@ func TestListRunsHandler(t *testing.T) {
 		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
 		otf.NewRun(cv, ws, otf.RunCreateOptions{}),
 	}
-	app := newFakeWebApp(t, &fakeListRunsApp{ws: ws, runs: runs})
+	app := newFakeWebApp(t, &fakeRunsHandlerApp{ws: ws, runs: runs})
 
 	t.Run("first page", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
@@ -54,6 +54,24 @@ func TestListRunsHandler(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.NotContains(t, w.Body.String(), "Next Page")
 	})
+}
+
+func TestRuns_CancelHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	cv := otf.NewTestConfigurationVersion(t, ws, otf.ConfigurationVersionCreateOptions{})
+	run := otf.NewRun(cv, ws, otf.RunCreateOptions{})
+	app := newFakeWebApp(t, &fakeRunsHandlerApp{
+		runs: []*otf.Run{run},
+	})
+
+	r := httptest.NewRequest("POST", "/?run_id=run-123", nil)
+	w := httptest.NewRecorder()
+	app.cancelRun(w, r)
+	if assert.Equal(t, 302, w.Code) {
+		redirect, _ := w.Result().Location()
+		assert.Equal(t, workspaceRunsPath(ws.ID()), redirect.Path)
+	}
 }
 
 func TestTailLogs(t *testing.T) {
@@ -106,21 +124,29 @@ func TestTailLogs(t *testing.T) {
 	assert.Equal(t, "no more logs", string(finished.Data))
 }
 
-type fakeListRunsApp struct {
+type fakeRunsHandlerApp struct {
 	ws   *otf.Workspace
 	runs []*otf.Run
 	otf.Application
 }
 
-func (f *fakeListRunsApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeRunsHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeListRunsApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
+func (f *fakeRunsHandlerApp) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	return &otf.RunList{
 		Items:      f.runs,
 		Pagination: otf.NewPagination(opts.ListOptions, len(f.runs)),
 	}, nil
+}
+
+func (f *fakeRunsHandlerApp) GetRun(ctx context.Context, runID string) (*otf.Run, error) {
+	return f.runs[0], nil
+}
+
+func (f *fakeRunsHandlerApp) CancelRun(ctx context.Context, runID string, opts otf.RunCancelOptions) error {
+	return nil
 }
 
 type fakeTailApp struct {

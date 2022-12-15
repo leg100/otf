@@ -108,7 +108,7 @@ func TestListWorkspaceProvidersHandler(t *testing.T) {
 		workspaces: workspaces,
 	})
 
-	q := "/?"
+	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSProviders(w, r)
@@ -133,7 +133,7 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		},
 	})
 
-	q := "/?organization_name=fake-org&workspace_name=fake-workspace&vcs_provider_id=fake-provider"
+	q := "/?workspace_id=ws-123&vcs_provider_id=fake-provider"
 	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
 	app.listWorkspaceVCSRepos(w, r)
@@ -231,13 +231,8 @@ func TestStartRunHandler(t *testing.T) {
 		runs:       []*otf.Run{run},
 	})
 
-	form := strings.NewReader(url.Values{
-		"organization_name": {"fake-org"},
-		"workspace_name":    {"fake-workspace"},
-		"strategy":          {"plan-only"},
-	}.Encode())
-	r := httptest.NewRequest("POST", "/", form)
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	q := "/?workspace_id=ws-123&strategy=plan-only"
+	r := httptest.NewRequest("POST", q, nil)
 	w := httptest.NewRecorder()
 	app.startRun(w, r)
 

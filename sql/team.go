@@ -57,7 +57,7 @@ func (db *DB) GetTeam(ctx context.Context, name, organization string) (*otf.Team
 	return otf.UnmarshalTeamResult(otf.TeamResult(result)), nil
 }
 
-// GetTeam retrieves a team from the DB by ID.
+// GetTeamByID retrieves a team from the DB by ID.
 func (db *DB) GetTeamByID(ctx context.Context, id string) (*otf.Team, error) {
 	result, err := db.FindTeamByID(ctx, String(id))
 	if err != nil {

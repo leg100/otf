@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -243,15 +242,24 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
-	streamID := r.URL.Query().Get("stream")
-	if streamID == "" {
-		writeError(w, "missing required query parameter: stream", http.StatusUnprocessableEntity)
+	type parameters struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		StreamID    string `schema:"stream,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	events, err := app.Watch(r.Context(), otf.WatchOptions{
-		WorkspaceName:    otf.String(mux.Vars(r)["workspace_name"]),
-		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
+		WorkspaceName:    otf.String(ws.Name()),
+		OrganizationName: otf.String(ws.OrganizationName()),
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -338,7 +346,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 					app.Error(err, "marshalling watched run", "run", run.ID())
 					continue
 				}
-				app.Server.Publish(streamID, &sse.Event{
+				app.Server.Publish(params.StreamID, &sse.Event{
 					Data:  js,
 					Event: []byte(event.Type),
 				})
@@ -349,18 +357,18 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.All(&spec, r); err != nil {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), spec)
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &workspaceID})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := app.ListVCSProviders(r.Context(), mux.Vars(r)["organization_name"])
+	providers, err := app.ListVCSProviders(r.Context(), ws.OrganizationName())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -377,11 +385,9 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 
 func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Request) {
 	type options struct {
-		OrganizationName string `schema:"organization_name,required"`
-		WorkspaceName    string `schema:"workspace_name,required"`
-		VCSProviderID    string `schema:"vcs_provider_id,required"`
-		// Pagination
-		otf.ListOptions
+		WorkspaceID     string `schema:"workspace_id,required"`
+		VCSProviderID   string `schema:"vcs_provider_id,required"`
+		otf.ListOptions        // Pagination
 		// TODO: filters, public/private, etc
 	}
 	var opts options
@@ -390,10 +396,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{
-		Name:             &opts.WorkspaceName,
-		OrganizationName: &opts.OrganizationName,
-	})
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &opts.WorkspaceID})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -469,20 +472,18 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
-	// TODO: set cv opts directly, populating speculative parameter rather a new
-	// strategy parameter.
-	type options struct {
-		otf.WorkspaceSpec
-		Strategy string `schema:"strategy,required"`
+	type parameters struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		Strategy    string `schema:"strategy,required"`
 	}
-	var opts options
-	if err := decode.All(&opts, r); err != nil {
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	var speculative bool
-	switch opts.Strategy {
+	switch params.Strategy {
 	case "plan-only":
 		speculative = true
 	case "plan-and-apply":
@@ -492,12 +493,12 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), opts.WorkspaceSpec)
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	run, err := app.StartRun(r.Context(), opts.WorkspaceSpec, otf.ConfigurationVersionCreateOptions{
+	run, err := app.StartRun(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID}, otf.ConfigurationVersionCreateOptions{
 		Speculative: otf.Bool(speculative),
 	})
 	if err != nil {

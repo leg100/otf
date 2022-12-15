@@ -127,22 +127,24 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.All(&spec, r); err != nil {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), spec)
+
+	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.CancelRun(r.Context(), mux.Vars(r)["run_id"], otf.RunCancelOptions{})
+	err = app.CancelRun(r.Context(), runID, otf.RunCancelOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, workspaceRunsPath(ws.Name()), http.StatusFound)
+
+	http.Redirect(w, r, workspaceRunsPath(run.WorkspaceID()), http.StatusFound)
 }
 
 func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {

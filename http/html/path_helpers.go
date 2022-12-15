@@ -217,7 +217,7 @@ func deleteRunPath(runID string) string {
 }
 
 func cancelRunPath(runID string) string {
-	return fmt.Sprintf("runs/%s/cancel", runID)
+	return fmt.Sprintf("/runs/%s/cancel", runID)
 }
 
 func applyRunPath(runID string) string {

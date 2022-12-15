@@ -19,7 +19,7 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchRunUpdates({{ watchWorkspacePath .Content.ID }}, {{ randAlphaNum 6 }}, {{ .Content.ID }});
+      watchRunUpdates({{ watchWorkspacePath .Content.WorkspaceID }}, {{ randAlphaNum 6 }}, {{ .Content.ID }});
     });
   </script>
   <div id="run-status">
