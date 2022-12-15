@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -84,22 +85,16 @@ func TestConnectRepo(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// create workspace via UI before we connect to a repo
-	workspace := createWebWorkspace(t, allocator, url, org)
-	workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
+	// create workspaceID via UI before we connect to a repo
+	workspaceID := createWebWorkspace(t, allocator, url, org)
 
 	// capture flash message confirming workspace has been connected
 	var workspaceConnected string
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to list of organizations
-		chromedp.Navigate(url + "/organizations"),
-		// select my org
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
-		// go to list of workspaces
-		chromedp.Click("#menu-item-workspaces > a", chromedp.ByQuery),
-		// select my workspace
-		chromedp.Click(workspaceSelector, chromedp.NodeVisible),
+		chromedp.Navigate(path.Join(url, "workspaces", workspaceID)),
+		ss.screenshot(t),
 		// navigate to workspace settings
 		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
 		ss.screenshot(t),
@@ -122,7 +117,7 @@ func TestConnectRepo(t *testing.T) {
 
 	// we can now start a run via the web ui, which'll retrieve the tarball from
 	// the fake github server
-	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspace))
+	err = chromedp.Run(ctx, startRunTasks(t, hostname, workspaceID))
 	require.NoError(t, err)
 
 	// Now we test the webhook functionality by sending an event to the daemon
@@ -161,7 +156,7 @@ func TestConnectRepo(t *testing.T) {
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
-		chromedp.Navigate(fmt.Sprintf("%s/organizations/%s/workspaces/%s", url, org, workspace)),
+		chromedp.Navigate(fmt.Sprintf("%s/workspaces/%s", url, workspaceID)),
 		ss.screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),

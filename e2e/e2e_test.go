@@ -46,11 +46,12 @@ func TestMain(t *testing.M) {
 	os.Exit(t.Run())
 }
 
+// createWebWorkspace creates a workspace via the UI and returns its ID
 func createWebWorkspace(t *testing.T, ctx context.Context, url string, org string) string {
 	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
-	var gotFlashSuccess string
+	var gotFlashSuccess, workspaceID string
 	workspaceName := "workspace-" + otf.GenerateRandomString(4)
 	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
 
@@ -68,12 +69,14 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org strin
 		chromedp.Click("#create-workspace-button"),
 		ss.screenshot(t),
 		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
+		ss.screenshot(t),
+		chromedp.Text(".identifier", &workspaceID, chromedp.NodeVisible),
 	})
 	require.NoError(t, err)
 
 	assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
 
-	return workspaceName
+	return workspaceID
 }
 
 // addWorkspacePermission adds a workspace permission via the web app, assigning

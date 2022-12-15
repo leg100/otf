@@ -18,6 +18,7 @@
   </script>
   <div class="content-menu">
     <div class="workspace-info">
+      <div>{{ template "identifier" .Content }}</span></div>
       <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
       <div class="workspace-lock">
         {{ if .Content.Locked }}
