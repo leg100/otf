@@ -27,13 +27,13 @@ func TestStartRunUI(t *testing.T) {
 	token := createAPIToken(t, hostname)
 	login(t, hostname, token)
 
-	workspace := createWebWorkspace(t, allocator, url, org)
+	workspaceName, workspaceID := createWebWorkspace(t, allocator, url, org)
 
 	//
 	// start run UI functionality requires an existing config version, so
 	// create one first by running a plan via the CLI
 	//
-	root := newRootModule(t, hostname, org, workspace)
+	root := newRootModule(t, hostname, org, workspaceName)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")
@@ -61,7 +61,7 @@ func TestStartRunUI(t *testing.T) {
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
-	}, startRunTasks(t, hostname, workspace)))
+	}, startRunTasks(t, hostname, workspaceID)))
 	require.NoError(t, err)
 }
 

@@ -8,30 +8,29 @@ import (
 )
 
 func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type workspacePermission struct {
-		Name             string `schema:"workspace_name,required"`
-		OrganizationName string `schema:"organization_name,required"`
-		TeamName         string `schema:"team_name,required"`
-		Role             string `schema:"role,required"`
+	type parameters struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		TeamName    string `schema:"team_name,required"`
+		Role        string `schema:"role,required"`
 	}
-	perm := workspacePermission{}
-	if err := decode.All(&perm, r); err != nil {
+	params := parameters{}
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	role, err := otf.WorkspaceRoleFromString(perm.Role)
+	role, err := otf.WorkspaceRoleFromString(params.Role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	spec := otf.WorkspaceSpec{Name: otf.String(perm.Name), OrganizationName: otf.String(perm.OrganizationName)}
+	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
 	ws, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.SetWorkspacePermission(r.Context(), spec, perm.TeamName, role)
+	err = app.SetWorkspacePermission(r.Context(), spec, params.TeamName, role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -41,24 +40,23 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 }
 
 func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
-	type workspacePermission struct {
-		Name             string `schema:"workspace_name,required"`
-		OrganizationName string `schema:"organization_name,required"`
-		TeamName         string `schema:"team_name,required"`
+	type parameters struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		TeamName    string `schema:"team_name,required"`
 	}
-	perm := workspacePermission{}
-	if err := decode.All(&perm, r); err != nil {
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	spec := otf.WorkspaceSpec{Name: otf.String(perm.Name), OrganizationName: otf.String(perm.OrganizationName)}
+	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
 	ws, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.UnsetWorkspacePermission(r.Context(), spec, perm.TeamName)
+	err = app.UnsetWorkspacePermission(r.Context(), spec, params.TeamName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

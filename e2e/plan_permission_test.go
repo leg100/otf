@@ -29,10 +29,10 @@ func TestPlanPermission(t *testing.T) {
 
 	// create workspace via web - note this also syncs the org and owner
 	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, url, org.Name())
+	workspaceName, workspaceID := createWebWorkspace(t, allocater, url, org.Name())
 
 	// assign plan permissions to devops team
-	addWorkspacePermission(t, allocater, url, org.Name(), workspace, devops.Name(), "plan")
+	addWorkspacePermission(t, allocater, url, org.Name(), workspaceID, devops.Name(), "plan")
 
 	// setup non-owner engineer user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
@@ -44,7 +44,7 @@ func TestPlanPermission(t *testing.T) {
 	engineerToken := createAPIToken(t, engineerHostname)
 	login(t, engineerHostname, engineerToken)
 
-	root := newRootModule(t, engineerHostname, org.Name(), workspace)
+	root := newRootModule(t, engineerHostname, org.Name(), workspaceName)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")

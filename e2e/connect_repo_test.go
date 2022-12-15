@@ -86,13 +86,13 @@ func TestConnectRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	// create workspaceID via UI before we connect to a repo
-	workspaceID := createWebWorkspace(t, allocator, url, org)
+	_, workspaceID := createWebWorkspace(t, allocator, url, org)
 
 	// capture flash message confirming workspace has been connected
 	var workspaceConnected string
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
-		// go to list of organizations
+		// go to workspace
 		chromedp.Navigate(path.Join(url, "workspaces", workspaceID)),
 		ss.screenshot(t),
 		// navigate to workspace settings

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,8 +47,8 @@ func TestMain(t *testing.M) {
 	os.Exit(t.Run())
 }
 
-// createWebWorkspace creates a workspace via the UI and returns its ID
-func createWebWorkspace(t *testing.T, ctx context.Context, url string, org string) string {
+// createWebWorkspace creates a workspace via the UI and returns its name and ID
+func createWebWorkspace(t *testing.T, ctx context.Context, url string, org string) (string, string) {
 	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
@@ -76,12 +77,12 @@ func createWebWorkspace(t *testing.T, ctx context.Context, url string, org strin
 
 	assert.Equal(t, "created workspace: "+workspaceName, strings.TrimSpace(gotFlashSuccess))
 
-	return workspaceID
+	return workspaceName, workspaceID
 }
 
 // addWorkspacePermission adds a workspace permission via the web app, assigning
 // a role to a team on a workspace in an org.
-func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, workspace, team, role string) {
+func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, workspaceID, team, role string) {
 	ctx, cancel := chromedp.NewContext(allocater)
 	defer cancel()
 
@@ -89,21 +90,13 @@ func addWorkspacePermission(t *testing.T, allocater context.Context, url, org, w
 	var gotOwnersRole string
 	var gotFlashSuccess string
 
-	orgSelector := fmt.Sprintf("#item-organization-%s a", org)
-	workspaceSelector := fmt.Sprintf("#item-workspace-%s a", workspace)
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		chromedp.Navigate(url),
 		// login
 		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		// select org
-		chromedp.Click(orgSelector, chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		// list workspaces
-		chromedp.Click("#menu-item-workspaces > a", chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.WaitReady(`body`),
-		// select workspace
-		chromedp.Click(workspaceSelector, chromedp.NodeVisible),
+		ss.screenshot(t),
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "workspaces", workspaceID)),
 		ss.screenshot(t),
 		// confirm builtin admin permission for owners team
 		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),

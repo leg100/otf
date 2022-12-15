@@ -28,10 +28,10 @@ func TestWritePermission(t *testing.T) {
 
 	// create workspace via web - note this also syncs the org and owner
 	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, bossURL, org.Name())
+	workspaceName, workspaceID := createWebWorkspace(t, allocater, bossURL, org.Name())
 
 	// assign write permissions to devops team
-	addWorkspacePermission(t, allocater, bossURL, org.Name(), workspace, devops.Name(), "write")
+	addWorkspacePermission(t, allocater, bossURL, org.Name(), workspaceID, devops.Name(), "write")
 
 	// setup non-owner user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
@@ -43,7 +43,7 @@ func TestWritePermission(t *testing.T) {
 	engineerToken := createAPIToken(t, engineerHostname)
 	login(t, engineerHostname, engineerToken)
 
-	root := newRootModule(t, engineerHostname, org.Name(), workspace)
+	root := newRootModule(t, engineerHostname, org.Name(), workspaceName)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")
@@ -77,14 +77,14 @@ func TestWritePermission(t *testing.T) {
 	require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock workspace
-	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name(), "--address", engineerHostname)
+	cmd = exec.Command("otf", "workspaces", "lock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// unlock workspace
-	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name(), "--address", engineerHostname)
+	cmd = exec.Command("otf", "workspaces", "unlock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
@@ -96,5 +96,5 @@ func TestWritePermission(t *testing.T) {
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
-	require.Contains(t, string(out), workspace)
+	require.Contains(t, string(out), workspaceName)
 }
