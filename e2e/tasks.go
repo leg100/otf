@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"testing"
 	"time"
 
@@ -63,15 +62,7 @@ func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tas
 		input.InsertText(name),
 		chromedp.Click("#create-workspace-button"),
 		screenshot(t),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			var got string
-			err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
-			if err != nil {
-				return err
-			}
-			require.Equal(t, "created workspace: "+name, strings.TrimSpace(got))
-			return nil
-		}),
+		matchText(t, ".flash-success", "created workspace: "+name),
 	}
 }
 
@@ -157,35 +148,19 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 // addWorkspacePermissionTasks adds a workspace permission via the UI, assigning
 // a role to a team.
 func addWorkspacePermissionTasks(t *testing.T, url, org, workspaceName, team, role string) chromedp.Tasks {
-	var gotOwnersTeam string
-	var gotOwnersRole string
-	var gotFlashSuccess string
-
 	return chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
 		screenshot(t),
 		// confirm builtin admin permission for owners team
-		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			require.Equal(t, "owners", gotOwnersTeam)
-			return nil
-		}),
-		chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			require.Equal(t, "admin", gotOwnersRole)
-			return nil
-		}),
+		matchText(t, "#permissions-owners td:first-child", "owners"),
+		matchText(t, "#permissions-owners td:last-child", "admin"),
 		// assign role to team
 		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
 		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
 		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
 		screenshot(t),
-		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			require.Equal(t, "updated workspace permissions", gotFlashSuccess)
-			return nil
-		}),
+		matchText(t, ".flash-success", "updated workspace permissions"),
 	}
 }
 

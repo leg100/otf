@@ -80,15 +80,7 @@ func TestConnectRepo(t *testing.T) {
 			// submit form to create provider
 			chromedp.Submit("input#token"),
 			screenshot(t),
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				var got string
-				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
-				if err != nil {
-					return err
-				}
-				require.Equal(t, "created provider: github", strings.TrimSpace(got))
-				return nil
-			}),
+			matchText(t, ".flash-success", "created provider: github"),
 		},
 		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),
@@ -110,16 +102,7 @@ func TestConnectRepo(t *testing.T) {
 			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
 			screenshot(t),
 			// confirm connected
-			// capture flash message confirming workspace has been connected
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				var got string
-				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
-				if err != nil {
-					return err
-				}
-				require.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
-				return nil
-			}),
+			matchText(t, ".flash-success", "connected workspace to repo"),
 		},
 		// we can now start a run via the web ui, which'll retrieve the tarball from
 		// the fake github server

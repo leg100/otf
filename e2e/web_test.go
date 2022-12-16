@@ -1,15 +1,12 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,14 +47,9 @@ func TestWeb(t *testing.T) {
 			chromedp.Click("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			// submit form
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
-			// capture flash message
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				var got string
-				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible, chromedp.ByQuery))
-				require.NoError(t, err)
-				assert.Equal(t, "team permissions updated", strings.TrimSpace(got))
-				return nil
-			}),
+			screenshot(t),
+			// confirm permissions updated
+			matchText(t, ".flash-success", "team permissions updated"),
 		},
 		// add write permission on workspace to devops team
 		addWorkspacePermissionTasks(t, url, org.Name(), workspaceName, devops.Name(), "write"),
