@@ -144,6 +144,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/workspaces", app.listWorkspaces)
 		r.GET("/organizations/{organization_name}/workspaces/new", app.newWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/create", app.createWorkspace)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace)
 		r.GET("/workspaces/{workspace_id}", app.getWorkspace)
 		r.GET("/workspaces/{workspace_id}/edit", app.editWorkspace)
 		r.PST("/workspaces/{workspace_id}/update", app.updateWorkspace)

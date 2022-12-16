@@ -8,14 +8,12 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -86,99 +84,20 @@ resource "null_resource" "e2e" {}
 	return root
 }
 
-func createOrganization(t *testing.T) string {
-	organization := uuid.NewString()
-	cmd := exec.Command("otf", "organizations", "new", organization)
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-	return organization
-}
-
-// login invokes 'terraform login <hostname>', configuring credentials for the
-// given hostname with the given token.
-func login(t *testing.T, hostname, token string) {
-	tfpath, err := exec.LookPath("terraform")
-	require.NoErrorf(t, err, "terraform executable not found in path")
-
-	// nullifying PATH temporarily to make `terraform login` skip opening a browser
-	// window
-	path := os.Getenv("PATH")
-	os.Setenv("PATH", "")
-	defer os.Setenv("PATH", path)
-
-	e, tferr, err := expect.SpawnWithArgs(
-		[]string{tfpath, "login", hostname},
-		time.Minute,
-		expect.PartialMatch(true),
-		expect.Verbose(testing.Verbose()))
-	require.NoError(t, err)
-	defer e.Close()
-
-	e.ExpectBatch([]expect.Batcher{
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: "yes\n"},
-		&expect.BExp{R: "Enter a value:"}, &expect.BSnd{S: token + "\n"},
-		&expect.BExp{R: "Success! Logged in to Terraform Enterprise"},
-	}, time.Minute)
-	require.NoError(t, <-tferr)
-}
-
 func addBuildsToPath(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
 }
 
-// TODO: remove this, we have a single package var instead
-func newBrowserAllocater(t *testing.T) context.Context {
-	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-		var err error
-		headless, err = strconv.ParseBool(v)
+// matchText is a custom chromedp Task that extracts text content using the
+// selector and asserts that it matches the wanted string.
+func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		var got string
+		err := chromedp.Text(selector, &got, chromedp.NodeVisible).Do(ctx)
 		require.NoError(t, err)
+		require.Equal(t, want, strings.TrimSpace(got))
+		return nil
 	}
-
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
-	t.Cleanup(cancel)
-
-	return ctx
-}
-
-// createAPIToken creates an API token via the web app
-func createAPIToken(t *testing.T, hostname string) string {
-	allocater := newBrowserAllocater(t)
-
-	ctx, cancel := chromedp.NewContext(allocater)
-	defer cancel()
-
-	var token string
-
-	err := chromedp.Run(ctx, chromedp.Tasks{
-		chromedp.Navigate("https://" + hostname),
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		chromedp.Click("#top-right-profile-link > a", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		chromedp.Click("#user-tokens-link > a", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		chromedp.Click("#new-user-token-button", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
-		chromedp.Focus("#description", chromedp.NodeVisible),
-		input.InsertText("e2e-test"),
-		chromedp.Submit("#description"),
-		chromedp.WaitReady(`body`),
-		chromedp.Text(".flash-success > .data", &token, chromedp.NodeVisible),
-	})
-	require.NoError(t, err)
-
-	assert.Regexp(t, `user\.(.+)`, token)
-
-	return token
 }

@@ -28,27 +28,30 @@ func TestSiteAdmin(t *testing.T) {
 	var footerLoginText, loginConfirmation, orgCreated, orgLocation string
 
 	err := chromedp.Run(ctx, chromedp.Tasks{
+		// login as site admin
 		chromedp.Navigate("https://" + hostname + "/login"),
-		ss.screenshot(t),
+		screenshot(t),
+		// use the link in the bottom right corner
 		chromedp.Text(".footer-site-login", &footerLoginText, chromedp.NodeVisible),
 		chromedp.Click(".footer-site-login > a", chromedp.NodeVisible),
-		ss.screenshot(t),
+		screenshot(t),
+		// enter token
 		chromedp.Focus("input#token", chromedp.NodeVisible),
 		input.InsertText("abc123"),
-		ss.screenshot(t),
+		screenshot(t),
 		chromedp.Submit("input#token"),
-		ss.screenshot(t),
+		screenshot(t),
 		chromedp.Text(".content > p", &loginConfirmation, chromedp.NodeVisible),
 		// now go to the list of organizations
 		chromedp.Navigate("https://" + hostname + "/organizations"),
 		// add an org
 		chromedp.Click("#new-organization-button", chromedp.NodeVisible),
-		ss.screenshot(t),
+		screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
 		input.InsertText(orgName),
-		ss.screenshot(t),
+		screenshot(t),
 		chromedp.Submit("input#name"),
-		ss.screenshot(t),
+		screenshot(t),
 		chromedp.Location(&orgLocation),
 		chromedp.Text(".flash-success", &orgCreated, chromedp.NodeVisible),
 	})
