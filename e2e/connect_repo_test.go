@@ -58,76 +58,73 @@ func TestConnectRepo(t *testing.T) {
 	ctx, cancel = context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	// login and create vcs provider
-	tasks := chromedp.Tasks{
-		// go to org
-		chromedp.Navigate(path.Join(url, "organizations", org)),
-		// go to vcs providers
-		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
-		ss.screenshot(t),
-		// click 'New Github VCS Provider' button
-		chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// enter fake github token and name
-		chromedp.Focus("input#token", chromedp.NodeVisible),
-		input.InsertText("fake-github-personal-token"),
-		chromedp.Focus("input#name"),
-		input.InsertText("github"),
-		ss.screenshot(t),
-		// submit form to create provider
-		chromedp.Submit("input#token"),
-		ss.screenshot(t),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			var got string
-			err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
-			if err != nil {
-				return err
-			}
-			require.Equal(t, "created provider: github", strings.TrimSpace(got))
-			return nil
-		}),
-	}
-
-	// create workspace
-	tasks = append(tasks, createWorkspaceTasks(t, hostname, org, workspaceName))
-
-	// connect workspace to vcs repo
-	tasks = append(tasks, chromedp.Tasks{
-		// go to workspace
-		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
-		ss.screenshot(t),
-		// navigate to workspace settings
-		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// click connect button
-		chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// select provider
-		chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// connect to first repo in list (there should only be one)
-		chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
-		ss.screenshot(t),
-		// confirm connected
-		// capture flash message confirming workspace has been connected
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			var got string
-			err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
-			if err != nil {
-				return err
-			}
-			require.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
-			return nil
-		}),
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		// login
+		githubLoginTasks(t, hostname, user.Username()),
+		// create github vcs provider
+		chromedp.Tasks{
+			// go to org
+			chromedp.Navigate(path.Join(url, "organizations", org)),
+			// go to vcs providers
+			chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+			screenshot(t),
+			// click 'New Github VCS Provider' button
+			chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
+			screenshot(t),
+			// enter fake github token and name
+			chromedp.Focus("input#token", chromedp.NodeVisible),
+			input.InsertText("fake-github-personal-token"),
+			chromedp.Focus("input#name"),
+			input.InsertText("github"),
+			screenshot(t),
+			// submit form to create provider
+			chromedp.Submit("input#token"),
+			screenshot(t),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				var got string
+				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
+				if err != nil {
+					return err
+				}
+				require.Equal(t, "created provider: github", strings.TrimSpace(got))
+				return nil
+			}),
+		},
+		// create workspace via UI
+		createWorkspaceTasks(t, hostname, org, workspaceName),
+		// connect workspace to vcs repo
+		chromedp.Tasks{
+			// go to workspace
+			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			screenshot(t),
+			// navigate to workspace settings
+			chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+			screenshot(t),
+			// click connect button
+			chromedp.Click(`//button[text()='Connect to VCS']`, chromedp.NodeVisible),
+			screenshot(t),
+			// select provider
+			chromedp.Click(`//a[normalize-space(text())='github']`, chromedp.NodeVisible),
+			screenshot(t),
+			// connect to first repo in list (there should only be one)
+			chromedp.Click(`//div[@class='content-list']//button[text()='connect']`, chromedp.NodeVisible),
+			screenshot(t),
+			// confirm connected
+			// capture flash message confirming workspace has been connected
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				var got string
+				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible))
+				if err != nil {
+					return err
+				}
+				require.Equal(t, "connected workspace to repo", strings.TrimSpace(got))
+				return nil
+			}),
+		},
+		// we can now start a run via the web ui, which'll retrieve the tarball from
+		// the fake github server
+		startRunTasks(t, hostname, org, workspaceName),
 	})
-	require.NoError(t, err)
-
-	// we can now start a run via the web ui, which'll retrieve the tarball from
-	// the fake github server
-	// start run
-	tasks = append(tasks, startRunTasks(t, hostname, org, workspaceName))
-
-	err = chromedp.Run(ctx, tasks)
 	require.NoError(t, err)
 
 	// Now we test the webhook functionality by sending an event to the daemon
@@ -167,10 +164,10 @@ func TestConnectRepo(t *testing.T) {
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to workspace
 		chromedp.Navigate(fmt.Sprintf("%s/organizations/%s/workspaces/%s", url, org, workspaceName)),
-		ss.screenshot(t),
+		screenshot(t),
 		// commit should match that of push event
 		chromedp.WaitVisible(`//div[@id='latest-run']//span[@class='commit' and text()='#42d6fc7']`),
-		ss.screenshot(t),
+		screenshot(t),
 	})
 	require.NoError(t, err)
 

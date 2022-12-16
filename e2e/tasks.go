@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -15,14 +16,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func githubLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
+// githubLoginTasks logs into the UI using github; upon success a session cookie
+// is created
+func githubLoginTasks(t *testing.T, hostname, username string) chromedp.Tasks {
 	return chromedp.Tasks{
-		chromedp.Navigate("https://" + hostname),
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
+		// go to login page
+		chromedp.Navigate("https://" + hostname + "/login"),
 		chromedp.WaitReady(`body`),
+		// login
+		chromedp.Click("a.login-button-github", chromedp.NodeVisible),
+		screenshot(t),
+		// check login confirmation message
+		matchText(t, ".content > p", "You are logged in as "+username),
 	}
 }
 
+// logoutTasks logs out of the UI
+func logoutTasks(t *testing.T, hostname string) chromedp.Tasks {
+	var gotLoginLocation string
+	return chromedp.Tasks{
+		// go to profile
+		chromedp.Click("#top-right-profile-link > a", chromedp.NodeVisible),
+		chromedp.WaitReady(`body`),
+		// logout
+		chromedp.Click("button#logout", chromedp.NodeVisible),
+		screenshot(t),
+		// should be redirected to login page
+		chromedp.Location(&gotLoginLocation),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			require.Equal(t, fmt.Sprintf("https://%s/login", hostname), gotLoginLocation)
+			return nil
+		}),
+	}
+}
+
+// createWorkspaceTasks creates a workspace via the UI
 func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate("https://" + hostname + "/organizations/" + org),
@@ -47,6 +75,7 @@ func createWorkspaceTasks(t *testing.T, hostname, org, name string) chromedp.Tas
 	}
 }
 
+// startRunTasks starts a run via the UI
 func startRunTasks(t *testing.T, hostname, organization string, workspaceName string) chromedp.Tasks {
 	return []chromedp.Action{
 		// go to workspace page
@@ -81,20 +110,22 @@ func startRunTasks(t *testing.T, hostname, organization string, workspaceName st
 func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 	var token string
 	return []chromedp.Action{
-		chromedp.Navigate("https://" + hostname),
-		chromedp.Click(".login-button-github", chromedp.NodeVisible),
-		chromedp.WaitReady(`body`),
+		// go to profile
 		chromedp.Click("#top-right-profile-link > a", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
+		// go to tokens
 		chromedp.Click("#user-tokens-link > a", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
+		// create new token
 		chromedp.Click("#new-user-token-button", chromedp.NodeVisible),
 		chromedp.WaitReady(`body`),
 		chromedp.Focus("#description", chromedp.NodeVisible),
 		input.InsertText("e2e-test"),
 		chromedp.Submit("#description"),
 		chromedp.WaitReady(`body`),
+		// capture token
 		chromedp.Text(".flash-success > .data", &token, chromedp.NodeVisible),
+		// pass token to terraform login
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			tfpath, err := exec.LookPath("terraform")
 			require.NoErrorf(t, err, "terraform executable not found in path")
@@ -121,4 +152,61 @@ func terraformLoginTasks(t *testing.T, hostname string) chromedp.Tasks {
 			return <-tferr
 		}),
 	}
+}
+
+// addWorkspacePermissionTasks adds a workspace permission via the UI, assigning
+// a role to a team.
+func addWorkspacePermissionTasks(t *testing.T, url, org, workspaceName, team, role string) chromedp.Tasks {
+	var gotOwnersTeam string
+	var gotOwnersRole string
+	var gotFlashSuccess string
+
+	return chromedp.Tasks{
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+		screenshot(t),
+		// confirm builtin admin permission for owners team
+		chromedp.Text("#permissions-owners td:first-child", &gotOwnersTeam, chromedp.NodeVisible),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			require.Equal(t, "owners", gotOwnersTeam)
+			return nil
+		}),
+		chromedp.Text("#permissions-owners td:last-child", &gotOwnersRole, chromedp.NodeVisible),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			require.Equal(t, "admin", gotOwnersRole)
+			return nil
+		}),
+		// assign role to team
+		chromedp.SetValue(`//select[@id="permissions-add-select-role"]`, role, chromedp.BySearch),
+		chromedp.SetValue(`//select[@id="permissions-add-select-team"]`, team, chromedp.BySearch),
+		chromedp.Click("#permissions-add-button", chromedp.NodeVisible),
+		screenshot(t),
+		chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			require.Equal(t, "updated workspace permissions", gotFlashSuccess)
+			return nil
+		}),
+	}
+}
+
+func terraformInitTasks(t *testing.T, path string) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		cmd := exec.Command("terraform", "init", "-no-color")
+		cmd.Dir = path
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		return err
+	})
+}
+
+func terraformPlanTasks(t *testing.T, root string) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		cmd := exec.Command("terraform", "plan", "-no-color")
+		cmd.Dir = root
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		require.NoError(t, err)
+		require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
+		return nil
+	})
 }

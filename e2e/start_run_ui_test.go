@@ -26,12 +26,11 @@ func TestStartRunUI(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
 
-	_ = terraformLoginTasks(t, hostname)
-
 	// in browser, login and create workspace
 	err := chromedp.Run(ctx,
-		githubLoginTasks(t, hostname),
+		githubLoginTasks(t, hostname, user.Username()),
 		createWorkspaceTasks(t, hostname, org, workspaceName),
+		terraformLoginTasks(t, hostname),
 	)
 	require.NoError(t, err)
 
@@ -55,13 +54,7 @@ func TestStartRunUI(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
 
-	//
 	// now we have a config version, start a run via the browser
-
-	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspaceName))
-	require.NoError(t, err)
-
-	// start run via browser
 	err = chromedp.Run(ctx, startRunTasks(t, hostname, org, workspaceName))
 	require.NoError(t, err)
 }

@@ -8,13 +8,12 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,39 +84,20 @@ resource "null_resource" "e2e" {}
 	return root
 }
 
-func createOrganization(t *testing.T) string {
-	organization := uuid.NewString()
-	cmd := exec.Command("otf", "organizations", "new", organization)
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-	return organization
-}
-
 func addBuildsToPath(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	t.Setenv("PATH", path.Join(wd, "../_build")+":"+os.Getenv("PATH"))
 }
 
-// TODO: remove this, we have a single package var instead
-func newBrowserAllocater(t *testing.T) context.Context {
-	headless := true
-	if v, ok := os.LookupEnv("OTF_E2E_HEADLESS"); ok {
-		var err error
-		headless, err = strconv.ParseBool(v)
+// matchText is a custom chromedp Task that extracts text content using the
+// selector and asserts that it matches the wanted string.
+func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		var got string
+		err := chromedp.Text(selector, &got, chromedp.NodeVisible).Do(ctx)
 		require.NoError(t, err)
+		require.Equal(t, want, strings.TrimSpace(got))
+		return nil
 	}
-
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", headless),
-			chromedp.Flag("hide-scrollbars", true),
-			chromedp.Flag("mute-audio", true),
-			chromedp.Flag("ignore-certificate-errors", true),
-			chromedp.Flag("disable-gpu", true),
-		)...)
-	t.Cleanup(cancel)
-
-	return ctx
 }

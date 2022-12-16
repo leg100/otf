@@ -6,18 +6,23 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/chromedp/chromedp"
 )
 
-// screenshotRecord maps test name to a counter
+// screenshotRecord maps test name to a count of number of screenshots taken
 var screenshotRecord map[string]int
+var screenshotMutex sync.Mutex
 
 // screenshot takes a screenshot of a browser and saves it to disk, using the
 // test name and a counter to uniquely name the file.
 func screenshot(t *testing.T) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
+		screenshotMutex.Lock()
+		defer screenshotMutex.Unlock()
+
 		// increment counter
 		if screenshotRecord == nil {
 			screenshotRecord = make(map[string]int)

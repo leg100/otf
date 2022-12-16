@@ -1,7 +1,9 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"path"
 	"strings"
 	"testing"
 
@@ -24,119 +26,63 @@ func TestWeb(t *testing.T) {
 	daemon.withGithubUser(user)
 	hostname := daemon.start(t)
 	url := "https://" + hostname
+	workspaceName := "test-web"
 
-	// TODO: move tests out of subtests - we're not testing bits of functionality
-	// independently but serially.
+	// create browser
+	ctx, cancel := chromedp.NewContext(allocator)
+	defer cancel()
 
-	t.Run("login", func(t *testing.T) {
-		ctx, cancel := chromedp.NewContext(allocator)
-		defer cancel()
-
-		var gotLoginPrompt string
-		var gotLocationOrganizations string
-
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate(url),
-			ss.screenshot(t),
-			chromedp.Text(".center", &gotLoginPrompt, chromedp.NodeVisible),
-			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			ss.screenshot(t),
-			chromedp.Location(&gotLocationOrganizations),
-		})
-		require.NoError(t, err)
-
-		assert.Equal(t, "Login with Github", strings.TrimSpace(gotLoginPrompt))
-		assert.Equal(t, url+"/organizations", gotLocationOrganizations)
-	})
-
-	t.Run("new workspace", func(t *testing.T) {
-		createWebWorkspace(t, allocator, url, org.Name())
-	})
-
-	t.Run("assign workspace manager role to devops team", func(t *testing.T) {
-		ctx, cancel := chromedp.NewContext(allocator)
-		defer cancel()
-
-		var gotFlashSuccess string
-		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate(url),
-			// login
-			chromedp.Click(".login-button-github", chromedp.NodeVisible, chromedp.ByQuery),
-			// select org
-			chromedp.Click(orgSelector, chromedp.NodeVisible, chromedp.ByQuery),
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		// login
+		githubLoginTasks(t, hostname, user.Username()),
+		// create workspace
+		createWorkspaceTasks(t, hostname, org.Name(), workspaceName),
+		// assign workspace manager role to devops team
+		chromedp.Tasks{
+			// go to org
+			chromedp.Navigate(path.Join(url, "organizations", org.Name())),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible, chromedp.ByQuery),
 			// select devops team
 			chromedp.Click("#item-team-devops a", chromedp.NodeVisible, chromedp.ByQuery),
-			ss.screenshot(t),
+			screenshot(t),
 			// tick checkbox for workspace manager role
 			chromedp.Click("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			// submit form
 			chromedp.Submit("#manage_workspaces", chromedp.NodeVisible, chromedp.ByQuery),
 			// capture flash message
-			chromedp.Text(".flash-success", &gotFlashSuccess, chromedp.NodeVisible, chromedp.ByQuery),
-		})
-		require.NoError(t, err)
-
-		assert.Equal(t, "team permissions updated", strings.TrimSpace(gotFlashSuccess))
-	})
-
-	t.Run("add write workspace permission to owners team", func(t *testing.T) {
-		_, workspaceID := createWebWorkspace(t, allocator, url, org.Name())
-
-		// assign write permissions to team
-		addWorkspacePermission(t, allocator, url, org.Name(), workspaceID, devops.Name(), "write")
-	})
-
-	t.Run("list users", func(t *testing.T) {
-		ctx, cancel := chromedp.NewContext(allocator)
-		defer cancel()
-
-		var gotUser string
-		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
-		userSelector := fmt.Sprintf("#item-user-%s .status", user.Username())
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate(url),
-			// login
-			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			// select org
-			chromedp.Click(orgSelector, chromedp.NodeVisible),
-			ss.screenshot(t),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				var got string
+				err := chromedp.Run(ctx, chromedp.Text(".flash-success", &got, chromedp.NodeVisible, chromedp.ByQuery))
+				require.NoError(t, err)
+				assert.Equal(t, "team permissions updated", strings.TrimSpace(got))
+				return nil
+			}),
+		},
+		// add write permission on workspace to devops team
+		addWorkspacePermissionTasks(t, url, org.Name(), workspaceName, devops.Name(), "write"),
+		// list users
+		chromedp.Tasks{
+			// go to org
+			chromedp.Navigate(path.Join(url, "organizations", org.Name())),
+			screenshot(t),
 			// list users
 			chromedp.Click("#users > a", chromedp.NodeVisible),
-			ss.screenshot(t),
-			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
-		})
-		require.NoError(t, err)
-
-		assert.Equal(t, user.Username(), strings.TrimSpace(gotUser))
-	})
-
-	t.Run("list team members", func(t *testing.T) {
-		ctx, cancel := chromedp.NewContext(allocator)
-		defer cancel()
-
-		var gotUser string
-		orgSelector := fmt.Sprintf("#item-organization-%s a", org.Name())
-		userSelector := fmt.Sprintf("#item-user-%s .status", user.Username())
-		err := chromedp.Run(ctx, chromedp.Tasks{
-			chromedp.Navigate(url),
-			// login
-			chromedp.Click(".login-button-github", chromedp.NodeVisible),
-			// select org
-			chromedp.Click(orgSelector, chromedp.NodeVisible),
-			ss.screenshot(t),
+			screenshot(t),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username()), user.Username()),
+		},
+		// list team members
+		chromedp.Tasks{
+			// go to org
+			chromedp.Navigate(path.Join(url, "organizations", org.Name())),
+			screenshot(t),
 			// list teams
 			chromedp.Click("#teams > a", chromedp.NodeVisible),
-			ss.screenshot(t),
 			// select owners team
 			chromedp.Click("#item-team-owners a", chromedp.NodeVisible),
-			ss.screenshot(t),
-			chromedp.Text(userSelector, &gotUser, chromedp.NodeVisible),
-		})
-		require.NoError(t, err)
-
-		assert.Equal(t, user.Username(), strings.TrimSpace(gotUser))
+			screenshot(t),
+			matchText(t, fmt.Sprintf("#item-user-%s .status", user.Username()), user.Username()),
+		},
 	})
+	require.NoError(t, err)
 }
