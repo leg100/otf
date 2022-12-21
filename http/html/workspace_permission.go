@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +37,7 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 	flashSuccess(w, "updated workspace permissions")
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.Request) {
@@ -62,5 +63,5 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 		return
 	}
 	flashSuccess(w, "deleted workspace permission")
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) newOrganization(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +22,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 	org, err := app.CreateOrganization(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		flashError(w, "organization already exists: "+*opts.Name)
-		http.Redirect(w, r, newOrganizationPath(), http.StatusFound)
+		http.Redirect(w, r, paths.NewOrganization(), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -29,7 +30,7 @@ func (app *Application) createOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "created organization: "+org.Name())
-	http.Redirect(w, r, organizationPath(org.Name()), http.StatusFound)
+	http.Redirect(w, r, paths.Organization(org.Name()), http.StatusFound)
 }
 
 func (app *Application) listOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +83,7 @@ func (app *Application) updateOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "updated organization")
-	http.Redirect(w, r, editOrganizationPath(org.Name()), http.StatusFound)
+	http.Redirect(w, r, paths.EditOrganization(org.Name()), http.StatusFound)
 }
 
 func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +94,7 @@ func (app *Application) deleteOrganization(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "deleted organization: "+organizationName)
-	http.Redirect(w, r, organizationsPath(), http.StatusFound)
+	http.Redirect(w, r, paths.Organizations(), http.StatusFound)
 }
 
 func (app *Application) listOrganizationPermissions(w http.ResponseWriter, r *http.Request) {

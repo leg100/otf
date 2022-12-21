@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +45,7 @@ func TestTeam_UpdateHandler(t *testing.T) {
 	app.updateTeam(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, teamPath(team.ID()), redirect.Path)
+		assert.Equal(t, paths.Team(team.ID()), redirect.Path)
 	}
 }
 

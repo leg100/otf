@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +38,7 @@ func TestAgentToken_CreateHandler(t *testing.T) {
 	app.createAgentToken(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, agentTokensPath("acme"), redirect.Path)
+		assert.Equal(t, paths.AgentTokens("acme"), redirect.Path)
 	}
 }
 
@@ -67,7 +68,7 @@ func TestAgentToken_DeleteHandler(t *testing.T) {
 	app.deleteAgentToken(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, agentTokensPath("acme"), redirect.Path)
+		assert.Equal(t, paths.AgentTokens("acme"), redirect.Path)
 	}
 }
 

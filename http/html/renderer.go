@@ -11,6 +11,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 const (
@@ -109,7 +110,9 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	// make version available to templates
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	// make path helpers available to templates
-	addHelpersToFuncMap(funcs)
+	for k, v := range paths.FuncMap() {
+		funcs[k] = v
+	}
 
 	for _, page := range pages {
 		name := filepath.Base(page)

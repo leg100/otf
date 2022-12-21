@@ -17,11 +17,11 @@
 {{ define "content" }}
   <div>
     {{ if .Content.Repo }}
-      <form action="{{ disconnectWorkspaceRepoPath .Content.ID }}" method="POST">
+      <form action="{{ disconnectWorkspacePath .Content.ID }}" method="POST">
         <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.Repo.Identifier }}</button>
       </form>
     {{ else }}
-      <form action="{{ workspaceVCSProvidersPath .Content.ID }}" method="GET">
+      <form action="{{ setupConnectionProviderWorkspacePath .Content.ID }}" method="GET">
         <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
       </form>
     {{ end }}

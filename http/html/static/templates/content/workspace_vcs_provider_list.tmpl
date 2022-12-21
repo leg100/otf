@@ -20,7 +20,7 @@
       <div class="item">
         <div class="item-heading">
           <span class="status">
-            <a href="{{ workspaceReposPath $.Content.ID .ID }}">
+            <a href="{{ setupConnectionRepoWorkspacePath $.Content.ID }}?vcs_provider_id={{ .ID }}">
               {{ .Name }}
             </a>
           </span>

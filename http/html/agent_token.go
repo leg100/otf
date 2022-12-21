@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) newAgentToken(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 	}
 	flashSuccess(w, buf.String())
 
-	http.Redirect(w, r, agentTokensPath(opts.OrganizationName), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(opts.OrganizationName), http.StatusFound)
 }
 
 func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) {
@@ -86,5 +87,5 @@ func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, agentTokensPath(params.Organization), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(params.Organization), http.StatusFound)
 }

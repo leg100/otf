@@ -807,8 +807,3 @@ func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
 	}
 	return false
 }
-
-// RunGetPathUI returns the URL path for retrieving a run via the Web UI
-func RunGetPathUI(runID string) string {
-	return fmt.Sprintf("/runs/%s", runID)
-}
