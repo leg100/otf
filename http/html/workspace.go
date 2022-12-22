@@ -8,6 +8,7 @@ import (
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -70,7 +71,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 	workspace, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
 		flashError(w, "workspace already exists: "+opts.Name)
-		http.Redirect(w, r, newWorkspacePath(org.Name()), http.StatusFound)
+		http.Redirect(w, r, paths.NewWorkspace(org.Name()), http.StatusFound)
 		return
 	}
 	if err != nil {
@@ -78,7 +79,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "created workspace: "+workspace.Name())
-	http.Redirect(w, r, workspacePath(workspace.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(workspace.ID()), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -177,7 +178,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := opts.Valid(); err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, editWorkspacePath(ws.ID()), http.StatusFound)
+		http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 		return
 	}
 
@@ -189,7 +190,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 	flashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
-	http.Redirect(w, r, editWorkspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +211,7 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "deleted workspace: "+*spec.Name)
-	http.Redirect(w, r, workspacesPath(org.Name()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspaces(org.Name()), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +225,7 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +239,7 @@ func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) 
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -451,7 +452,7 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 	}
 
 	flashSuccess(w, "connected workspace to repo")
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -468,7 +469,7 @@ func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Reque
 	}
 
 	flashSuccess(w, "disconnected workspace from repo")
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
@@ -503,9 +504,9 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+		http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, runPath(run.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,7 +71,7 @@ func TestRuns_CancelHandler(t *testing.T) {
 	app.cancelRun(w, r)
 	if assert.Equal(t, 302, w.Code) {
 		redirect, _ := w.Result().Location()
-		assert.Equal(t, workspaceRunsPath(ws.ID()), redirect.Path)
+		assert.Equal(t, paths.Runs(ws.ID()), redirect.Path)
 	}
 }
 

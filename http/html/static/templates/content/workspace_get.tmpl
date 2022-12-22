@@ -29,7 +29,7 @@
           <form action="{{ lockWorkspacePath .Content.ID }}" method="POST"><button>Lock</button></form>
         {{ end }}
       </div>
-      <form id="workspace-start-run-form" action="{{ startRunPath .Content.ID }}" method="POST">
+      <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Content.ID }}" method="POST">
         <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
           <option value="" selected>--start run--</option>
           <option value="plan-only">plan only</option>
@@ -70,7 +70,7 @@
                 <tr>
                   <td>{{ .Team.Name }}</td>
                   <td>
-                    <form class="horizontal-form" action="{{ setWorkspacePermissionPath $.Content.ID }}" method="POST">
+                    <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
                       <input name="team_name" value="{{ .Team.Name }}" type="hidden">
                       <select name="role" id="role-select">
                         {{ $currentRole := .Role.String }}
@@ -86,7 +86,7 @@
                     </form>
                   </td>
                   <td>
-                    <form class="horizontal-form" action="{{ unsetWorkspacePermissionPath $.Content.ID }}" method="POST">
+                    <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
                       <input name="team_name" value="{{ .Team.Name }}" type="hidden">
                       <button class="delete">Remove</button>
                     </form>
@@ -94,7 +94,7 @@
                 </tr>
               {{ end }}
               <tr>
-                <form id="permissions-add-form" class="horizontal-form" action="{{ setWorkspacePermissionPath .Content.ID }}" method="POST"></form>
+                <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Content.ID }}" method="POST"></form>
                 <td>
                   <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
                     <option value="">--team--</option>

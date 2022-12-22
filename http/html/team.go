@@ -5,6 +5,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) getTeam(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +52,7 @@ func (app *Application) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	flashSuccess(w, "team permissions updated")
-	http.Redirect(w, r, teamPath(team.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Team(team.ID()), http.StatusFound)
 }
 
 func (app *Application) listTeams(w http.ResponseWriter, r *http.Request) {

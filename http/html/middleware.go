@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 // authUser middleware ensures the request has a valid session cookie, attaching
@@ -42,7 +43,7 @@ func (m *authMiddleware) authenticate(next http.Handler) http.Handler {
 
 func sendUserToLoginPage(w http.ResponseWriter, r *http.Request) {
 	setCookie(w, pathCookie, r.URL.Path, nil)
-	http.Redirect(w, r, loginPath(), http.StatusFound)
+	http.Redirect(w, r, paths.Login(), http.StatusFound)
 }
 
 // setOrganization ensures the session's organization reflects the most recently

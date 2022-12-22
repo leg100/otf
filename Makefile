@@ -118,3 +118,9 @@ serve-docs:
 .PHONY: tunnel
 tunnel:
 	cloudflared tunnel run otf
+
+# Generate path helpers
+.PHONY: paths
+paths:
+	go generate ./http/html/paths
+	goimports -w ./http/html/paths

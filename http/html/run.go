@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
 )
 
@@ -123,7 +124,7 @@ func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, workspacePath(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +145,7 @@ func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, workspaceRunsPath(run.WorkspaceID()), http.StatusFound)
+	http.Redirect(w, r, paths.Runs(run.WorkspaceID()), http.StatusFound)
 }
 
 func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +159,7 @@ func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, runPath(run.ID())+"#apply", http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID())+"#apply", http.StatusFound)
 }
 
 func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +173,7 @@ func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, runPath(run.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }
 
 func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {

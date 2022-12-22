@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"golang.org/x/oauth2"
 )
 
@@ -46,7 +47,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	token, err := a.CallbackHandler(r)
 	if err != nil {
 		flashError(w, err.Error())
-		http.Redirect(w, r, loginPath(), http.StatusFound)
+		http.Redirect(w, r, paths.Login(), http.StatusFound)
 		return
 	}
 
@@ -72,7 +73,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 		setCookie(w, pathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
-		http.Redirect(w, r, profilePath(), http.StatusFound)
+		http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	}
 }
 
