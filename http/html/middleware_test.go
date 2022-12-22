@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +41,7 @@ func Test_AuthenticateUser(t *testing.T) {
 		assert.Equal(t, 302, w.Code)
 		loc, err := w.Result().Location()
 		require.NoError(t, err)
-		assert.Equal(t, loginPath(), loc.Path)
+		assert.Equal(t, paths.Login(), loc.Path)
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/http/html/paths"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 
@@ -139,7 +140,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		TargetURL: (&url.URL{
 			Scheme: "https",
 			Host:   r.otfHost,
-			Path:   RunGetPathUI(run),
+			Path:   paths.Run(run.ID()),
 		}).String(),
 	})
 }

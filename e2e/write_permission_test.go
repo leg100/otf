@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
@@ -16,6 +17,7 @@ func TestWritePermission(t *testing.T) {
 	// First we need to setup an organization with a user who is both in the
 	// owners team and the devops team.
 	org := otf.NewTestOrganization(t)
+	workspaceName := "write-perms"
 	owners := otf.NewTeam("owners", org)
 	devops := otf.NewTeam("devops", org)
 	boss := otf.NewUser("boss", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
@@ -26,13 +28,6 @@ func TestWritePermission(t *testing.T) {
 	bossHostname := bossDaemon.start(t)
 	bossURL := "https://" + bossHostname
 
-	// create workspace via web - note this also syncs the org and owner
-	allocater := newBrowserAllocater(t)
-	workspace := createWebWorkspace(t, allocater, bossURL, org.Name())
-
-	// assign write permissions to devops team
-	addWorkspacePermission(t, allocater, bossURL, org.Name(), workspace, devops.Name(), "write")
-
 	// setup non-owner user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
 	engineer := otf.NewUser("engineer", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(devops))
@@ -40,21 +35,35 @@ func TestWritePermission(t *testing.T) {
 	engineerDaemon.withGithubUser(engineer)
 	engineerHostname := engineerDaemon.start(t)
 
-	engineerToken := createAPIToken(t, engineerHostname)
-	login(t, engineerHostname, engineerToken)
+	// create terraform config
+	config := newRootModule(t, engineerHostname, org.Name(), workspaceName)
 
-	root := newRootModule(t, engineerHostname, org.Name(), workspace)
+	// create browser
+	ctx, cancel := chromedp.NewContext(allocator)
+	defer cancel()
+
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		// login to UI as boss
+		githubLoginTasks(t, bossHostname, boss.Username()),
+		// create workspace via UI
+		createWorkspaceTasks(t, bossHostname, org.Name(), workspaceName),
+		// assign write permissions to devops team
+		addWorkspacePermissionTasks(t, bossURL, org.Name(), workspaceName, devops.Name(), "write"),
+		// run terraform login as engineer
+		terraformLoginTasks(t, engineerHostname),
+	})
+	require.NoError(t, err)
 
 	// terraform init
 	cmd := exec.Command("terraform", "init", "-no-color")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// terraform plan
 	cmd = exec.Command("terraform", "plan", "-no-color")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
@@ -62,7 +71,7 @@ func TestWritePermission(t *testing.T) {
 
 	// terraform apply
 	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
@@ -70,31 +79,31 @@ func TestWritePermission(t *testing.T) {
 
 	// terraform destroy
 	cmd = exec.Command("terraform", "destroy", "-no-color", "-auto-approve")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	require.NoError(t, err)
 	t.Log(string(out))
 	require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock workspace
-	cmd = exec.Command("otf", "workspaces", "lock", workspace, "--organization", org.Name(), "--address", engineerHostname)
-	cmd.Dir = root
+	cmd = exec.Command("otf", "workspaces", "lock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// unlock workspace
-	cmd = exec.Command("otf", "workspaces", "unlock", workspace, "--organization", org.Name(), "--address", engineerHostname)
-	cmd.Dir = root
+	cmd = exec.Command("otf", "workspaces", "unlock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// list workspaces
 	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name(), "--address", engineerHostname)
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
-	require.Contains(t, string(out), workspace)
+	require.Contains(t, string(out), workspaceName)
 }

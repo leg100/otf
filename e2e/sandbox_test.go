@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/chromedp/chromedp"
 	"github.com/leg100/otf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,29 +21,36 @@ func TestSandbox(t *testing.T) {
 	addBuildsToPath(t)
 
 	user := otf.NewTestUser(t)
-	// test using user's personal organization
-	org := user.Username()
+	org := user.Username() // use user's personal organization
 
 	daemon := &daemon{}
 	daemon.withGithubUser(user)
 	daemon.withFlags("--sandbox")
 	hostname := daemon.start(t)
 
-	// create root module using user's personal organization
-	root := newRootModule(t, hostname, org, "dev")
+	// create terraform config
+	config := newRootModule(t, hostname, org, "dev")
 
-	userToken := createAPIToken(t, hostname)
-	login(t, hostname, userToken)
+	// create browser
+	ctx, cancel := chromedp.NewContext(allocator)
+	defer cancel()
+
+	// create api token and pass token to terraform login
+	err := chromedp.Run(ctx, chromedp.Tasks{
+		githubLoginTasks(t, hostname, user.Username()),
+		terraformLoginTasks(t, hostname),
+	})
+	require.NoError(t, err)
 
 	cmd := exec.Command("terraform", "init", "-no-color")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// terraform apply
 	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
-	cmd.Dir = root
+	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)

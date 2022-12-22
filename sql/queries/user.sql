@@ -51,6 +51,28 @@ AND   t.name = pggen.arg('team_name')
 GROUP BY u.user_id
 ;
 
+-- name: FindUsersByTeamID :many
+SELECT
+    u.*,
+    (
+        SELECT array_agg(o)
+        FROM organizations o
+        JOIN organization_memberships om USING (organization_id)
+        WHERE om.user_id = u.user_id
+    ) AS organizations,
+    (
+        SELECT array_agg(t)
+        FROM teams t
+        JOIN team_memberships tm USING (team_id)
+        WHERE tm.user_id = u.user_id
+    ) AS teams
+FROM users u
+JOIN team_memberships tm USING (user_id)
+JOIN teams t USING (team_id)
+WHERE t.team_id = pggen.arg('team_id')
+GROUP BY u.user_id
+;
+
 -- name: FindUserByID :one
 SELECT u.*,
     (

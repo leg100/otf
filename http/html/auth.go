@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +54,7 @@ func (app *Application) adminLoginHandler(w http.ResponseWriter, r *http.Request
 	}
 	if *form.Token != app.siteToken {
 		flashError(w, "incorrect token")
-		http.Redirect(w, r, adminLoginPath(), http.StatusFound)
+		http.Redirect(w, r, paths.AdminLogin(), http.StatusFound)
 		return
 	}
 
@@ -67,7 +68,7 @@ func (app *Application) adminLoginHandler(w http.ResponseWriter, r *http.Request
 		setCookie(w, pathCookie, "", &time.Time{})
 		http.Redirect(w, r, cookie.Value, http.StatusFound)
 	} else {
-		http.Redirect(w, r, getProfilePath(), http.StatusFound)
+		http.Redirect(w, r, paths.Profile(), http.StatusFound)
 	}
 }
 

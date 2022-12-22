@@ -3,9 +3,9 @@
 {{ define "title" }}Edit Workspace{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content }}">{{ .Content.Name }}</a>
+  <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
   /
   settings
 {{ end }}
@@ -17,16 +17,16 @@
 {{ define "content" }}
   <div>
     {{ if .Content.Repo }}
-      <form action="{{ disconnectWorkspaceRepoPath .Content }}" method="POST">
+      <form action="{{ disconnectWorkspacePath .Content.ID }}" method="POST">
         <button id="disconnect-workspace-repo-button" type="submit">Disconnect from {{ .Content.Repo.Identifier }}</button>
       </form>
     {{ else }}
-      <form action="{{ listWorkspaceVCSProvidersPath .Content }}" method="GET">
+      <form action="{{ setupConnectionProviderWorkspacePath .Content.ID }}" method="GET">
         <button id="list-workspace-vcs-providers-button" type="submit">Connect to VCS</button>
       </form>
     {{ end }}
   </div>
-  <form class="main-form" action="{{ updateWorkspacePath .Content }}" method="POST">
+  <form class="main-form" action="{{ updateWorkspacePath .Content.ID }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input type="text" name="name" id="name" value="{{ .Content.Name }}" required>
@@ -55,7 +55,7 @@
       <button>Save changes</button>
     </div>
   </form>
-  <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content }}" method="POST">
+  <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content.ID }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
   </form>
 {{ end }}

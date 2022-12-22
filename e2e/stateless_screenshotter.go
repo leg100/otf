@@ -12,23 +12,26 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// screenshotter takes and persists screenshots
-type screenshotter struct {
-	// map of test name to counter
-	m  map[string]int
-	mu sync.Mutex
-}
+// screenshotRecord maps test name to a count of number of screenshots taken
+var screenshotRecord map[string]int
+var screenshotMutex sync.Mutex
 
-func (ss *screenshotter) screenshot(t *testing.T) chromedp.ActionFunc {
+// screenshot takes a screenshot of a browser and saves it to disk, using the
+// test name and a counter to uniquely name the file.
+func screenshot(t *testing.T) chromedp.ActionFunc {
 	return func(ctx context.Context) error {
-		ss.mu.Lock()
-		defer ss.mu.Unlock()
+		screenshotMutex.Lock()
+		defer screenshotMutex.Unlock()
 
-		counter, ok := ss.m[t.Name()]
-		if !ok {
-			ss.m[t.Name()] = 0
+		// increment counter
+		if screenshotRecord == nil {
+			screenshotRecord = make(map[string]int)
 		}
-		ss.m[t.Name()]++
+		counter, ok := screenshotRecord[t.Name()]
+		if !ok {
+			screenshotRecord[t.Name()] = 0
+		}
+		screenshotRecord[t.Name()]++
 
 		// take screenshot
 		var image []byte

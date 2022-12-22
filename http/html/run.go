@@ -9,17 +9,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
 )
-
-// runRequest exposes the route parameters for a run resource
-type runRequest struct {
-	workspaceRequest
-}
-
-func (r runRequest) RunID() string {
-	return param(r.r, "run_id")
-}
 
 type htmlLogChunk struct {
 	otf.Chunk
@@ -45,12 +37,13 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		// We don't list speculative runs on the UI
 		Speculative: otf.Bool(false),
 	}
-	if err := decode.Query(&opts, r.URL.Query()); err != nil {
+	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := decode.Route(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: opts.WorkspaceID})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	runs, err := app.ListRuns(r.Context(), opts)
@@ -61,12 +54,12 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 
 	app.render("run_list.tmpl", w, r, struct {
 		*otf.RunList
-		workspaceRoute
+		*otf.Workspace
 		StreamID string
 	}{
-		RunList:        runs,
-		workspaceRoute: workspaceRequest{r},
-		StreamID:       "watch-ws-runs-" + otf.GenerateRandomString(5),
+		RunList:   runs,
+		Workspace: ws,
+		StreamID:  "watch-ws-runs-" + otf.GenerateRandomString(5),
 	})
 }
 
@@ -116,39 +109,71 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
-	err := app.DeleteRun(r.Context(), mux.Vars(r)["run_id"])
+	var spec otf.WorkspaceSpec
+	if err := decode.All(&spec, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	ws, err := app.GetWorkspace(r.Context(), spec)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getWorkspacePath(workspaceRequest{r}), http.StatusFound)
+	err = app.DeleteRun(r.Context(), mux.Vars(r)["run_id"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {
-	err := app.CancelRun(r.Context(), mux.Vars(r)["run_id"], otf.RunCancelOptions{})
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, listRunPath(workspaceRequest{r}), http.StatusFound)
+	err = app.CancelRun(r.Context(), runID, otf.RunCancelOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, paths.Runs(run.WorkspaceID()), http.StatusFound)
 }
 
 func (app *Application) applyRun(w http.ResponseWriter, r *http.Request) {
-	err := app.ApplyRun(r.Context(), mux.Vars(r)["run_id"], otf.RunApplyOptions{})
+	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}})+"#apply", http.StatusFound)
+	err = app.ApplyRun(r.Context(), mux.Vars(r)["run_id"], otf.RunApplyOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, paths.Run(run.ID())+"#apply", http.StatusFound)
 }
 
 func (app *Application) discardRun(w http.ResponseWriter, r *http.Request) {
-	err := app.DiscardRun(r.Context(), mux.Vars(r)["run_id"], otf.RunDiscardOptions{})
+	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, getRunPath(runRequest{workspaceRequest{r}}), http.StatusFound)
+	err = app.DiscardRun(r.Context(), mux.Vars(r)["run_id"], otf.RunDiscardOptions{})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, paths.Run(run.ID()), http.StatusFound)
 }
 
 func (app *Application) tailRun(w http.ResponseWriter, r *http.Request) {

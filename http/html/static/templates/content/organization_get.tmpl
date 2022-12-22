@@ -7,23 +7,23 @@
 {{ define "content" }}
   <div class="content-menu">
     <span id="menu-item-workspaces" class="content-menu-item">
-      <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+      <a href="{{ workspacesPath .Content.Name }}">workspaces</a>
     </span>
     <span id="modules" class="content-menu-item">
       <a href="{{ listModulesPath .Content }}">modules</a>
     </span>
     <span id="teams" class="content-menu-item">
-      <a href="{{ listTeamsPath .Content }}">teams</a>
+      <a href="{{ teamsPath .Content.Name }}">teams</a>
     </span>
     {{ if or (.CurrentUser.IsOwner .Content.Name) .CurrentUser.IsSiteAdmin }}
     <span id="users" class="content-menu-item">
-      <a href="{{ listUsersPath .Content }}">users</a>
+      <a href="{{ usersPath .Content.Name }}">users</a>
     </span>
     <span id="agent_tokens" class="content-menu-item">
-      <a href="{{ listAgentTokenPath .Content }}">agent tokens</a>
+      <a href="{{ agentTokensPath .Content.Name }}">agent tokens</a>
     </span>
     <span id="vcs_providers" class="content-menu-item">
-      <a href="{{ listVCSProviderPath .Content }}">VCS providers</a>
+      <a href="{{ vcsProvidersPath .Content.Name }}">VCS providers</a>
     </span>
     {{ end }}
   </div>

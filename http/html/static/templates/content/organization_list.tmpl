@@ -19,7 +19,7 @@
 {{ define "content-list-item" }}
   <div id="item-organization-{{ .Name }}" class="item">
     <div class="item-heading">
-    <a class="status" href="{{ getOrganizationPath . }}">{{ .Name }}</a>
+    <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
     {{ template "identifier" . }}
   </div>

@@ -3,9 +3,9 @@
 {{ define "title" }}VCS providers{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a>
   /
-  <a href="{{ getWorkspacePath .Content }}">{{ .Content.WorkspaceName }}</a>
+  <a href="{{ workspacePath .Content.ID }}">{{ .Content.WorkspaceName }}</a>
   /
   vcs providers
 {{ end }}
@@ -20,7 +20,7 @@
       <div class="item">
         <div class="item-heading">
           <span class="status">
-            <a href="{{ listWorkspaceRepoPath $.Content .ID }}">
+            <a href="{{ setupConnectionRepoWorkspacePath $.Content.ID }}?vcs_provider_id={{ .ID }}">
               {{ .Name }}
             </a>
           </span>

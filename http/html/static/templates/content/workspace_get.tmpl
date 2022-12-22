@@ -3,7 +3,7 @@
 {{ define "title" }}workspace: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a> / {{ .Content.Name }}
+  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a> / {{ .Content.Name }}
 {{ end }}
 
 {{ define "container-header-links" }}
@@ -13,22 +13,23 @@
 {{ define "content" }}
   <script type="text/javascript">
     window.addEventListener('load', (e) => {
-      watchWorkspaceUpdates({{ watchWorkspacePath .Content }}, {{ randAlphaNum 6 }});
+      watchWorkspaceUpdates({{ watchWorkspacePath .Content.ID }}, {{ randAlphaNum 6 }});
     });
   </script>
   <div class="content-menu">
     <div class="workspace-info">
+      <div>{{ template "identifier" .Content }}</span></div>
       <div>Terraform Version: <span class="data">v{{ .Content.TerraformVersion }}</span></div>
       <div class="workspace-lock">
         {{ if .Content.Locked }}
           <span class="workspace-lock-status workspace-lock-status-locked" title="locked by {{ .Content.GetLock }}">Locked</span>
-          <form action="{{ unlockWorkspacePath .Content }}" method="POST"><button>Unlock</button></form>
+          <form action="{{ unlockWorkspacePath .Content.ID }}" method="POST"><button>Unlock</button></form>
         {{ else }}
           <span class="workspace-lock-status workspace-lock-status-unlocked">Unlocked</span>
-          <form action="{{ lockWorkspacePath .Content }}" method="POST"><button>Lock</button></form>
+          <form action="{{ lockWorkspacePath .Content.ID }}" method="POST"><button>Lock</button></form>
         {{ end }}
       </div>
-      <form id="workspace-start-run-form" action="{{ startRunPath .Content }}" method="POST">
+      <form id="workspace-start-run-form" action="{{ startRunWorkspacePath .Content.ID }}" method="POST">
         <select name="strategy" id="start-run-strategy" onchange="this.form.submit()">
           <option value="" selected>--start run--</option>
           <option value="plan-only">plan only</option>
@@ -69,7 +70,7 @@
                 <tr>
                   <td>{{ .Team.Name }}</td>
                   <td>
-                    <form class="horizontal-form" action="{{ setWorkspacePermissionPath $.Content }}" method="POST">
+                    <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
                       <input name="team_name" value="{{ .Team.Name }}" type="hidden">
                       <select name="role" id="role-select">
                         {{ $currentRole := .Role.String }}
@@ -85,7 +86,7 @@
                     </form>
                   </td>
                   <td>
-                    <form class="horizontal-form" action="{{ unsetWorkspacePermissionPath $.Content }}" method="POST">
+                    <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
                       <input name="team_name" value="{{ .Team.Name }}" type="hidden">
                       <button class="delete">Remove</button>
                     </form>
@@ -93,7 +94,7 @@
                 </tr>
               {{ end }}
               <tr>
-                <form id="permissions-add-form" class="horizontal-form" action="{{ setWorkspacePermissionPath .Content }}" method="POST"></form>
+                <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Content.ID }}" method="POST"></form>
                 <td>
                   <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
                     <option value="">--team--</option>

@@ -45,12 +45,12 @@ func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) 
 	return t.organizationName == policy.OrganizationName
 }
 
-type AgentTokenCreateOptions struct {
-	OrganizationName string
-	Description      string
+type CreateAgentTokenOptions struct {
+	OrganizationName string `schema:"organization_name,required"`
+	Description      string `schema:"description,required"`
 }
 
-func NewAgentToken(opts AgentTokenCreateOptions) (*AgentToken, error) {
+func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {
 	if opts.OrganizationName == "" {
 		return nil, fmt.Errorf("organization name cannot be an empty string")
 	}
@@ -103,7 +103,7 @@ func UnmarshalAgentTokenResult(row AgentTokenRow) *AgentToken {
 
 // AgentTokenService provides access to agent tokens
 type AgentTokenService interface {
-	CreateAgentToken(ctx context.Context, opts AgentTokenCreateOptions) (*AgentToken, error)
+	CreateAgentToken(ctx context.Context, opts CreateAgentTokenOptions) (*AgentToken, error)
 	// GetAgentToken retrieves AgentToken using its cryptographic
 	// authentication token.
 	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)

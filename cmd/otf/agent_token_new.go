@@ -9,7 +9,7 @@ import (
 )
 
 func AgentTokenNewCommand(factory http.ClientFactory) *cobra.Command {
-	opts := otf.AgentTokenCreateOptions{}
+	opts := otf.CreateAgentTokenOptions{}
 
 	cmd := &cobra.Command{
 		Use:           "new [description]",

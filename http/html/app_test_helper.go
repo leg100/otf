@@ -127,7 +127,7 @@ func (u *fakeApp) GetChunk(context.Context, otf.GetChunkOptions) (otf.Chunk, err
 	return otf.Chunk{Data: []byte("fake-logs")}, nil
 }
 
-func (u *fakeApp) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+func (u *fakeApp) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	return otf.NewAgentToken(opts)
 }
 

@@ -3,29 +3,29 @@
 {{ define "title" }}team: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listTeamsPath .Content }}">teams</a>
+  <a href="{{ teamsPath .Content.OrganizationName }}">teams</a>
   /
 {{ .Content.Name }}{{ end }}
 
 {{ define "content" }}
   {{ if .CurrentUser.IsOwner .Content.Team.OrganizationName }}
-  <h3>Permissions</h3>
-  <form class="permissions-form" action="{{ updateTeamPath .Content }}" method="POST">
-    <div class="field">
-      <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Content.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
-      <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
-    </div>
-    <div class="field">
-      <input type="checkbox" name="manage_vcs" id="manage_vcs" value="true" {{ if .Content.OrganizationAccess.ManageVCS }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
-      <label for="manage_vcs">Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.</label>
-    </div>
-    {{ if not .Content.IsOwners }}
+    <h3>Permissions</h3>
+    <form class="permissions-form" action="{{ updateTeamPath .Content.ID }}" method="POST">
       <div class="field">
-        <button>Save changes</button>
+        <input type="checkbox" name="manage_workspaces" id="manage_workspaces" value="true" {{ if .Content.OrganizationAccess.ManageWorkspaces }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
+        <label for="manage_workspaces">Manage Workspaces: Allows members to create and administrate all workspaces within the organization.</label>
       </div>
-    {{ end }}
-  </form>
-  <br>
+      <div class="field">
+        <input type="checkbox" name="manage_vcs" id="manage_vcs" value="true" {{ if .Content.OrganizationAccess.ManageVCS }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
+        <label for="manage_vcs">Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.</label>
+      </div>
+      {{ if not .Content.IsOwners }}
+        <div class="field">
+          <button>Save changes</button>
+        </div>
+      {{ end }}
+    </form>
+    <br>
   {{ end }}
   <h3>Members</h3>
   <div id="content-list" class="content-list">

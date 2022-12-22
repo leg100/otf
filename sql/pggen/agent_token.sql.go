@@ -566,26 +566,33 @@ type Querier interface {
 	// FindTeamByNameScan scans the result of an executed FindTeamByNameBatch query.
 	FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error)
 
-	FindTeamByNameForUpdate(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindTeamByNameForUpdateRow, error)
-	// FindTeamByNameForUpdateBatch enqueues a FindTeamByNameForUpdate query into batch to be executed
+	FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindTeamByIDRow, error)
+	// FindTeamByIDBatch enqueues a FindTeamByID query into batch to be executed
 	// later by the batch.
-	FindTeamByNameForUpdateBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// FindTeamByNameForUpdateScan scans the result of an executed FindTeamByNameForUpdateBatch query.
-	FindTeamByNameForUpdateScan(results pgx.BatchResults) (FindTeamByNameForUpdateRow, error)
+	FindTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamByIDScan scans the result of an executed FindTeamByIDBatch query.
+	FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error)
 
-	UpdateTeamByName(ctx context.Context, params UpdateTeamByNameParams) (pgtype.Text, error)
-	// UpdateTeamByNameBatch enqueues a UpdateTeamByName query into batch to be executed
+	FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Text) (FindTeamByIDForUpdateRow, error)
+	// FindTeamByIDForUpdateBatch enqueues a FindTeamByIDForUpdate query into batch to be executed
 	// later by the batch.
-	UpdateTeamByNameBatch(batch genericBatch, params UpdateTeamByNameParams)
-	// UpdateTeamByNameScan scans the result of an executed UpdateTeamByNameBatch query.
-	UpdateTeamByNameScan(results pgx.BatchResults) (pgtype.Text, error)
+	FindTeamByIDForUpdateBatch(batch genericBatch, teamID pgtype.Text)
+	// FindTeamByIDForUpdateScan scans the result of an executed FindTeamByIDForUpdateBatch query.
+	FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTeamByIDForUpdateRow, error)
 
-	DeleteTeamByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
-	// DeleteTeamByNameBatch enqueues a DeleteTeamByName query into batch to be executed
+	UpdateTeamByID(ctx context.Context, params UpdateTeamByIDParams) (pgtype.Text, error)
+	// UpdateTeamByIDBatch enqueues a UpdateTeamByID query into batch to be executed
 	// later by the batch.
-	DeleteTeamByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// DeleteTeamByNameScan scans the result of an executed DeleteTeamByNameBatch query.
-	DeleteTeamByNameScan(results pgx.BatchResults) (pgtype.Text, error)
+	UpdateTeamByIDBatch(batch genericBatch, params UpdateTeamByIDParams)
+	// UpdateTeamByIDScan scans the result of an executed UpdateTeamByIDBatch query.
+	UpdateTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteTeamByID(ctx context.Context, teamID pgtype.Text) (pgtype.Text, error)
+	// DeleteTeamByIDBatch enqueues a DeleteTeamByID query into batch to be executed
+	// later by the batch.
+	DeleteTeamByIDBatch(batch genericBatch, teamID pgtype.Text)
+	// DeleteTeamByIDScan scans the result of an executed DeleteTeamByIDBatch query.
+	DeleteTeamByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertTeamMembership(ctx context.Context, userID pgtype.Text, teamID pgtype.Text) (pgconn.CommandTag, error)
 	// InsertTeamMembershipBatch enqueues a InsertTeamMembership query into batch to be executed
@@ -649,6 +656,13 @@ type Querier interface {
 	FindUsersByTeamBatch(batch genericBatch, organizationName pgtype.Text, teamName pgtype.Text)
 	// FindUsersByTeamScan scans the result of an executed FindUsersByTeamBatch query.
 	FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersByTeamRow, error)
+
+	FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) ([]FindUsersByTeamIDRow, error)
+	// FindUsersByTeamIDBatch enqueues a FindUsersByTeamID query into batch to be executed
+	// later by the batch.
+	FindUsersByTeamIDBatch(batch genericBatch, teamID pgtype.Text)
+	// FindUsersByTeamIDScan scans the result of an executed FindUsersByTeamIDBatch query.
+	FindUsersByTeamIDScan(results pgx.BatchResults) ([]FindUsersByTeamIDRow, error)
 
 	FindUserByID(ctx context.Context, userID pgtype.Text) (FindUserByIDRow, error)
 	// FindUserByIDBatch enqueues a FindUserByID query into batch to be executed
@@ -1254,14 +1268,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findTeamByNameSQL, findTeamByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindTeamByName': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findTeamByNameForUpdateSQL, findTeamByNameForUpdateSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindTeamByNameForUpdate': %w", err)
+	if _, err := p.Prepare(ctx, findTeamByIDSQL, findTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, updateTeamByNameSQL, updateTeamByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'UpdateTeamByName': %w", err)
+	if _, err := p.Prepare(ctx, findTeamByIDForUpdateSQL, findTeamByIDForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindTeamByIDForUpdate': %w", err)
 	}
-	if _, err := p.Prepare(ctx, deleteTeamByNameSQL, deleteTeamByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteTeamByName': %w", err)
+	if _, err := p.Prepare(ctx, updateTeamByIDSQL, updateTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateTeamByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteTeamByIDSQL, deleteTeamByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteTeamByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertTeamMembershipSQL, insertTeamMembershipSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertTeamMembership': %w", err)
@@ -1289,6 +1306,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findUsersByTeamSQL, findUsersByTeamSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUsersByTeam': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findUsersByTeamIDSQL, findUsersByTeamIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindUsersByTeamID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findUserByIDSQL, findUserByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindUserByID': %w", err)

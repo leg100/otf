@@ -50,6 +50,6 @@ func (f *fakeClient) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec
 	return f.ws, nil
 }
 
-func (f *fakeClient) CreateAgentToken(ctx context.Context, opts otf.AgentTokenCreateOptions) (*otf.AgentToken, error) {
+func (f *fakeClient) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	return otf.NewAgentToken(opts)
 }

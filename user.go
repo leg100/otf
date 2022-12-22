@@ -59,6 +59,16 @@ func (u *User) Team(name, organization string) (*Team, error) {
 	return nil, fmt.Errorf("no team found with the name: %s", name)
 }
 
+// IsTeamMember determines whether user is a member of the given team.
+func (u *User) IsTeamMember(teamID string) bool {
+	for _, t := range u.teams {
+		if t.ID() == teamID {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) IsUnprivilegedUser(organization string) bool {
 	return !u.IsSiteAdmin() && !u.IsOwner(organization)
 }

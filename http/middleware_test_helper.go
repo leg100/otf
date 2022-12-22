@@ -32,7 +32,7 @@ func (f *fakeAgentTokenService) GetAgentToken(ctx context.Context, token string)
 		return nil, otf.ErrResourceNotFound
 	}
 
-	return otf.NewAgentToken(otf.AgentTokenCreateOptions{
+	return otf.NewAgentToken(otf.CreateAgentTokenOptions{
 		OrganizationName: "fake-org",
 		Description:      "fake token",
 	})

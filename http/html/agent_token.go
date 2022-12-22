@@ -6,17 +6,26 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) newAgentToken(w http.ResponseWriter, r *http.Request) {
-	app.render("agent_token_new.tmpl", w, r, organizationRequest{r})
+	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	app.render("agent_token_new.tmpl", w, r, org)
 }
 
 func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request) {
-	opts := otf.AgentTokenCreateOptions{
-		Description:      r.FormValue("description"),
-		OrganizationName: mux.Vars(r)["organization_name"],
+	var opts otf.CreateAgentTokenOptions
+	if err := decode.All(&opts, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
 	}
+
 	token, err := app.CreateAgentToken(r.Context(), opts)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -24,6 +33,8 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 	}
 
 	// render a small templated flash message
+	//
+	// TODO: replace with a helper func, 'flashTemplate'
 	buf := new(bytes.Buffer)
 	if err := app.renderTemplate("token_created.tmpl", buf, token.Token()); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -31,41 +42,50 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 	}
 	flashSuccess(w, buf.String())
 
-	http.Redirect(w, r, listAgentTokenPath(token), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(opts.OrganizationName), http.StatusFound)
 }
 
 func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := app.ListAgentTokens(r.Context(), mux.Vars(r)["organization_name"])
+	organization, err := decode.Param("organization_name", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	tokens, err := app.ListAgentTokens(r.Context(), organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// tokenList exposes a list of tokens to a template
-	type tokenList struct {
+	app.render("agent_token_list.tmpl", w, r, struct {
 		// list template expects pagination object but we don't paginate token
 		// listing
 		*otf.Pagination
-		Items []*otf.AgentToken
-		organizationRoute
-	}
-	app.render("agent_token_list.tmpl", w, r, tokenList{
-		Pagination:        &otf.Pagination{},
-		Items:             tokens,
-		organizationRoute: organizationRequest{r},
+		Items        []*otf.AgentToken
+		Organization string
+	}{
+		Pagination:   &otf.Pagination{},
+		Items:        tokens,
+		Organization: organization,
 	})
 }
 
 func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
-	if id == "" {
-		writeError(w, "missing id", http.StatusUnprocessableEntity)
+	type parameters struct {
+		Organization string `schema:"organization_name,required"`
+		ID           string `schema:"id,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	if err := app.DeleteAgentToken(r.Context(), id, mux.Vars(r)["organization_name"]); err != nil {
+
+	if err := app.DeleteAgentToken(r.Context(), params.ID, params.Organization); err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, listAgentTokenPath(organizationRequest{r}), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(params.Organization), http.StatusFound)
 }

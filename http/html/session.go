@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 func (app *Application) sessionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,5 +50,5 @@ func (app *Application) revokeSessionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	flashSuccess(w, "Revoked session")
-	http.Redirect(w, r, listSessionPath(), http.StatusFound)
+	http.Redirect(w, r, paths.Sessions(), http.StatusFound)
 }

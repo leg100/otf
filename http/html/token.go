@@ -7,6 +7,7 @@ import (
 
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/decode"
+	"github.com/leg100/otf/http/html/paths"
 )
 
 // tokenList exposes a list of tokens to a template
@@ -46,7 +47,7 @@ func (app *Application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 	}
 	flashSuccess(w, buf.String())
 
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
+	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }
 
 func (app *Application) tokensHandler(w http.ResponseWriter, r *http.Request) {
@@ -88,5 +89,5 @@ func (app *Application) deleteTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, listTokenPath(), http.StatusFound)
+	http.Redirect(w, r, paths.Tokens(), http.StatusFound)
 }

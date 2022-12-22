@@ -3,13 +3,13 @@
 {{ define "title" }}New Workspace{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ listWorkspacePath .Content }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.Name }}">workspaces</a>
   /
   new
 {{ end }}
 
 {{ define "content" }}
-  <form class="main-form" action="{{ createWorkspacePath .Content }}" method="POST">
+  <form class="main-form" action="{{ createWorkspacePath .Content.Name }}" method="POST">
     <div class="field">
       <label for="name">Name</label>
       <input type="text" name="name" id="name" required>
