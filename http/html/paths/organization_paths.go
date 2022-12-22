@@ -5,15 +5,15 @@ package paths
 import "fmt"
 
 func Organizations() string {
-	return "/organization"
+	return "/organizations"
 }
 
 func CreateOrganization() string {
-	return "/organization"
+	return "/organizations/create"
 }
 
 func NewOrganization() string {
-	return "/organization"
+	return "/organizations/new"
 }
 
 func Organization(organization string) string {

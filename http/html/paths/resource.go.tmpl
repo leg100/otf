@@ -9,7 +9,7 @@ func {{ $.HelperName . }}({{ $.HelperParams . }}) string {
 {{- if $.HelperParams . }}
     return fmt.Sprintf("{{ $.FormatString . }}", {{ $.FormatArgs . }})
 {{- else }}
-    return "{{ $.Path }}"{{ end }}
+    return "{{ $.FormatString . }}"{{ end }}
 }
 
 {{ end -}}

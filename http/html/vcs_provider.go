@@ -11,12 +11,22 @@ import (
 )
 
 func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
-	org, err := app.GetOrganization(r.Context(), mux.Vars(r)["organization_name"])
+	type parameters struct {
+		Organization string `schema:"organization_name,required"`
+		Cloud        string `schema:"cloud,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	org, err := app.GetOrganization(r.Context(), params.Organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", mux.Vars(r)["cloud_name"])
+	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
 	app.render(tmpl, w, r, struct {
 		*otf.Organization
 	}{
@@ -25,23 +35,23 @@ func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
-	type options struct {
+	type parameters struct {
 		OrganizationName string `schema:"organization_name,required"`
 		Token            string `schema:"token,required"`
 		Name             string `schema:"name,required"`
-		Cloud            string `schema:"cloud_name,required"`
+		Cloud            string `schema:"cloud,required"`
 	}
-	var opts options
-	if err := decode.All(&opts, r); err != nil {
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	provider, err := app.CreateVCSProvider(r.Context(), otf.VCSProviderCreateOptions{
-		OrganizationName: opts.OrganizationName,
-		Token:            opts.Token,
-		Name:             opts.Name,
-		Cloud:            opts.Cloud,
+		OrganizationName: params.OrganizationName,
+		Token:            params.Token,
+		Name:             params.Name,
+		Cloud:            params.Cloud,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)

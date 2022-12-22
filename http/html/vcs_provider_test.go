@@ -14,11 +14,16 @@ import (
 )
 
 func TestNewVCSProviderHandler(t *testing.T) {
-	app := newFakeWebApp(t, &fakeVCSProviderApp{})
-	r := httptest.NewRequest("GET", "/organization/acme-corp/vcs-providers/new", nil)
+	org := otf.NewTestOrganization(t)
+	app := newFakeWebApp(t, &fakeVCSProviderApp{org: org})
+
+	q := "/?organization_name=acme-corp&cloud=github"
+	r := httptest.NewRequest("GET", q, nil)
 	w := httptest.NewRecorder()
-	app.newOrganization(w, r)
-	assert.Equal(t, 200, w.Code)
+	app.newVCSProvider(w, r)
+	if !assert.Equal(t, 200, w.Code) {
+		t.Log(w.Body.String())
+	}
 }
 
 func TestCreateVCSProviderHandler(t *testing.T) {
@@ -29,7 +34,7 @@ func TestCreateVCSProviderHandler(t *testing.T) {
 		"organization_name": {"acme-corp"},
 		"token":             {"secret-token"},
 		"name":              {"my-new-vcs-provider"},
-		"cloud_name":        {"fake-cloud"},
+		"cloud":             {"fake-cloud"},
 	}.Encode())
 
 	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/create", form)

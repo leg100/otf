@@ -247,10 +247,12 @@ func (r controller) FormatString(action action) string {
 		return r.Path()
 	}
 	var b strings.Builder
-	if action.collection && r.Parent != nil {
-		b.WriteString(r.Parent.Path())
-		b.WriteString("s")
-		b.WriteString("/%s")
+	if action.collection {
+		if r.Parent != nil {
+			b.WriteString(r.Parent.Path())
+			b.WriteString("s")
+			b.WriteString("/%s")
+		}
 	}
 	b.WriteString(r.Path())
 	b.WriteString("s")
