@@ -5,7 +5,7 @@
 {{ define "container-header" }}Modules{{ end }}
 
 {{ define "container-header-actions" }}
-  <form action="{{ listModuleVCSProvidersPath .Content }}" method="GET">
+  <form action="{{ newModulePath .Content.Organization }}" method="GET">
     <button id="list-module-vcs-providers-button" type="submit">Publish</button>
   </form>
 {{ end }}

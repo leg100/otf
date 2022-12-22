@@ -75,6 +75,10 @@ func (v *view) CurrentPath() string {
 	return v.request.URL.Path
 }
 
+func (v *view) CurrentURL() string {
+	return v.request.URL.String()
+}
+
 // IsOrganizationRoute determines if the current request is for a route that
 // contains the current organization name, or the list of organizations.
 func (v *view) IsOrganizationRoute() bool {

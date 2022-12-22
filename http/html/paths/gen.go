@@ -213,6 +213,10 @@ var specs = []controllerSpec{
 				camel:          "VCSProvider",
 				lowerCamel:     "vcsProvider",
 			},
+			{
+				Name:           "module",
+				controllerType: resourcePath,
+			},
 		},
 	},
 }
