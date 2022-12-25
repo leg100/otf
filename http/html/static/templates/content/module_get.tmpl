@@ -1,0 +1,20 @@
+{{ template "layout" . }}
+
+{{ define "title" }}module: {{ .Content.Name }}{{ end }}
+
+{{ define "container-header" }}
+  <a href="{{ modulesPath .Content.Organization.Name }}">modules</a> / {{ .Content.Name }}
+{{ end }}
+
+{{ define "content" }}
+  <div>
+    {{ .Content.Repo.Identifier }}
+  </div>
+  <div class="content-menu">
+    {{ range .Content.Versions }}
+      <div>
+        .Version
+      </div>
+    {{ end }}
+  </div>
+{{ end }}

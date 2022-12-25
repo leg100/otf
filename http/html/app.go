@@ -127,6 +127,9 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 		r.GET("/organizations/{organization_name}/modules", app.listModules)
 		r.GET("/organizations/{organization_name}/modules/new", app.newModule)
+		r.GET("/organizations/{organization_name}/modules/create", app.createModule)
+		r.GET("/modules/{module_id}", app.getModule)
+		r.PST("/modules/{module_id}/delete", app.deleteModule)
 
 		r.GET("/organizations", app.listOrganizations)
 		r.GET("/organizations/new", app.newOrganization)

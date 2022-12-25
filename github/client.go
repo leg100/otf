@@ -135,6 +135,8 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 			Page:    opts.SanitizedPageNumber(),
 			PerPage: opts.SanitizedPageSize(),
 		},
+		// retrieve repositories in order of most recently pushed to
+		Sort: "pushed",
 	})
 	if err != nil {
 		return nil, err

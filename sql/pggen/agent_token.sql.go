@@ -165,6 +165,13 @@ type Querier interface {
 	// InsertModuleScan scans the result of an executed InsertModuleBatch query.
 	InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertModuleRepo(ctx context.Context, params InsertModuleRepoParams) (pgconn.CommandTag, error)
+	// InsertModuleRepoBatch enqueues a InsertModuleRepo query into batch to be executed
+	// later by the batch.
+	InsertModuleRepoBatch(batch genericBatch, params InsertModuleRepoParams)
+	// InsertModuleRepoScan scans the result of an executed InsertModuleRepoBatch query.
+	InsertModuleRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
 	InsertModuleVersion(ctx context.Context, params InsertModuleVersionParams) (InsertModuleVersionRow, error)
 	// InsertModuleVersionBatch enqueues a InsertModuleVersion query into batch to be executed
 	// later by the batch.
@@ -1096,6 +1103,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModule': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleRepoSQL, insertModuleRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleRepo': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertModuleVersionSQL, insertModuleVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleVersion': %w", err)

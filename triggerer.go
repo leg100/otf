@@ -11,7 +11,7 @@ import (
 // Triggerer triggers jobs in response to incoming VCS events.
 type Triggerer struct {
 	Application
-	*ModulePublisher
+	*Publisher
 	logr.Logger
 
 	events <-chan VCSEvent

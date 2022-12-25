@@ -15,6 +15,17 @@ INSERT INTO modules (
     pggen.arg('organization_id')
 );
 
+-- name: InsertModuleRepo :exec
+INSERT INTO module_repos (
+    webhook_id,
+    vcs_provider_id,
+    module_id
+) VALUES (
+    pggen.arg('webhook_id'),
+    pggen.arg('vcs_provider_id'),
+    pggen.arg('module_id')
+);
+
 -- name: InsertModuleVersion :one
 INSERT INTO module_versions (
     module_version_id,

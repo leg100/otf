@@ -85,13 +85,17 @@ type ModuleRepo struct {
 }
 
 type ModuleService interface {
+	// PublishModule publishes a module from a VCS repository.
+	PublishModule(context.Context, PublishModuleOptions) (*Module, error)
+	// CreateModule creates a module without a connection to a VCS repository.
 	CreateModule(context.Context, CreateModuleOptions) (*Module, error)
 	CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
-	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	GetModule(ctx context.Context, id string) (*Module, error)
 	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
 	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
+	DeleteModule(ctx context.Context, id string) error
 }
 
 type ModuleStore interface {
@@ -107,11 +111,17 @@ type ModuleStore interface {
 }
 
 type (
+	PublishModuleOptions struct {
+		Identifier   string
+		ProviderID   string
+		OTFHost      string
+		Organization *Organization
+	}
 	CreateModuleOptions struct {
 		Name         string
 		Provider     string
-		Repo         *ModuleRepo
 		Organization *Organization
+		Repo         *ModuleRepo
 	}
 	CreateModuleVersionOptions struct {
 		ModuleID string
@@ -138,65 +148,16 @@ type (
 	}
 )
 
-// ModuleMaker makes new modules, including its versions, one for each tag found
-// in its connected repo (if connected to a repo).
-type ModuleMaker struct {
-	Application
-	*ModulePublisher
-}
-
-func (mm *ModuleMaker) NewModule(ctx context.Context, opts CreateModuleOptions) (*Module, error) {
-	mod := NewModule(opts)
-
-	// If not connected to a repo there is nothing more to be done.
-	if opts.Repo == nil {
-		return mod, nil
-	}
-
-	// Make new version for each tag that looks like a semantic version.
-	tags, err := mm.ListTags(ctx, opts.Repo.ProviderID, ListTagsOptions{
-		Identifier: opts.Repo.Identifier,
-	})
-	if err != nil {
-		return nil, err
-	}
-	for _, tag := range tags {
-		_, version, found := strings.Cut(string(tag), "/")
-		if !found {
-			return nil, fmt.Errorf("malformed git ref: %s", tag)
-		}
-
-		// skip tags that are not semantic versions
-		if !semver.IsValid(version) {
-			continue
-		}
-
-		modVersion, err := mm.Publish(ctx, PublishModuleVersionOptions{
-			ModuleID: mod.ID(),
-			// strip off v prefix if it has one
-			Version:    strings.TrimPrefix(version, "v"),
-			Ref:        string(tag),
-			Identifier: opts.Repo.Identifier,
-			ProviderID: mod.Repo().ProviderID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		mod.versions = append(mod.versions, modVersion)
-	}
-	return mod, nil
-}
-
 func NewModule(opts CreateModuleOptions) *Module {
-	m := Module{
+	return &Module{
 		id:           NewID("mod"),
 		createdAt:    CurrentTimestamp(),
 		updatedAt:    CurrentTimestamp(),
 		name:         opts.Name,
 		provider:     opts.Provider,
 		organization: opts.Organization,
+		repo:         opts.Repo,
 	}
-	return &m
 }
 
 func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
@@ -207,93 +168,6 @@ func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
 		moduleID:  opts.ModuleID,
 		version:   opts.Version,
 	}
-}
-
-// ModulePublisher publishes new module versions.
-type ModulePublisher struct {
-	Application
-}
-
-type PublishModuleVersionOptions struct {
-	ModuleID   string
-	Version    string
-	Ref        string
-	Identifier string
-	ProviderID string
-}
-
-// Publish a module version in response to a vcs event.
-func (p *ModulePublisher) PublishFromEvent(ctx context.Context, event VCSEvent) error {
-	// only publish when new tag is created
-	tag, ok := event.(*VCSTagEvent)
-	if !ok {
-		return nil
-	}
-	if tag.Action != VCSTagEventCreatedAction {
-		return nil
-	}
-	// only interested in tags that look like semantic versions
-	if !semver.IsValid(tag.Tag) {
-		return nil
-	}
-
-	module, err := p.GetModuleByWebhookID(ctx, tag.WebhookID)
-	if err != nil {
-		return err
-	}
-	if module.Repo() == nil {
-		return fmt.Errorf("module is not connected to a repo: %s", module.ID())
-	}
-
-	// skip older or equal versions
-	currentVersion := module.LatestVersion().Version()
-	if n := semver.Compare(tag.Tag, currentVersion); n <= 0 {
-		return nil
-	}
-
-	_, err = p.Publish(ctx, PublishModuleVersionOptions{
-		ModuleID: module.ID(),
-		// strip off v prefix if it has one
-		Version:    strings.TrimPrefix(tag.Tag, "v"),
-		Ref:        tag.CommitSHA,
-		Identifier: tag.Identifier,
-		ProviderID: module.Repo().ProviderID,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Publish a module version, retrieving its contents from a repository and
-// uploading it to the module store.
-func (p *ModulePublisher) Publish(ctx context.Context, opts PublishModuleVersionOptions) (*ModuleVersion, error) {
-	version, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
-		ModuleID: opts.ModuleID,
-		Version:  opts.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, GetRepoTarballOptions{
-		Identifier: opts.Identifier,
-		Ref:        opts.Ref,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
-	}
-
-	// upload tarball
-	err = p.UploadModuleVersion(ctx, UploadModuleVersionOptions{
-		ModuleVersionID: version.ID(),
-		Tarball:         tarball,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return version, nil
 }
 
 // ByModuleVersion implements sort.Interface for sorting module versions.
@@ -325,7 +199,7 @@ type ModuleRow struct {
 	Versions     []pggen.ModuleVersions `json:"versions"`
 }
 
-// UnmarshalModuleRow unmarshals a module database row into a module
+// UnmarshalModuleRow unmarshals a database row into a module
 func UnmarshalModuleRow(row ModuleRow) *Module {
 	module := &Module{
 		id:           row.ModuleID.String,
@@ -353,4 +227,31 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 		})
 	}
 	return module
+}
+
+// ListModuleRepositories wraps the ListRepositories endpoint, returning only
+// those repositories with a name matching the format
+// '<something>-<provider>-<module>'.
+//
+// NOTE: no pagination is performed, only matching results from the first page
+// are retrieved
+func ListModuleRepositories(ctx context.Context, app Application, providerID string) ([]*Repo, error) {
+	list, err := app.ListRepositories(ctx, providerID, ListOptions{
+		PageSize: MaxPageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var filtered []*Repo
+	for _, repo := range list.Items {
+		_, name, found := strings.Cut(repo.Identifier, "/")
+		if !found {
+			return nil, fmt.Errorf("malformed identifier: %s", repo.Identifier)
+		}
+		parts := strings.SplitN(name, "-", 3)
+		if len(parts) >= 3 {
+			filtered = append(filtered, repo)
+		}
+	}
+	return filtered, nil
 }

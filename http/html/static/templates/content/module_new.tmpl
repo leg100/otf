@@ -50,7 +50,7 @@
   {{ else if eq .Content.Step "select-repo" }}
     <h3>Choose a repository</h2>
     <div>
-      Select a VCS repository to connect this workspace to. Either select a repository from the list or enter the name of a repository below.
+      Choose the repository that hosts your module source code. We'll watch this for commits and tags. The format of your repository name should be {{ "terraform-<PROVIDER>-<NAME>" }}.
     </div>
     <form action="{{ newModulePath $.Content.Organization }}" method="GET">
       <input type="hidden" name="vcs_provider_id" id="vcs_provider_id" value="{{ .Content.VCSProviderID }}">
@@ -78,14 +78,6 @@
       {{ else }}
         No repositories found.
       {{ end }}
-      <div class="content-list-footer">
-        {{ if .Content.PrevPage }}
-        <a href="{{ mergeQuery $.CurrentURL .Content.PrevPageQuery }}">Previous Page</a>
-        {{ end }}
-        {{ if .Content.NextPage }}
-        <a href="{{ mergeQuery $.CurrentURL .Content.NextPageQuery }}">Next Page</a>
-        {{ end }}
-      </div>
     </div>
   {{ else if eq .Content.Step "confirm-selection" }}
     <h3>Confirm module details</h2>

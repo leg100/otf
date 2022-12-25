@@ -7,6 +7,21 @@ import (
 	"github.com/leg100/otf"
 )
 
+func (a *Application) PublishModule(ctx context.Context, opts otf.PublishModuleOptions) (*otf.Module, error) {
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, opts.Organization.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	module, err := a.Publisher.PublishModule(ctx, opts)
+	if err != nil {
+		a.Error(err, "publishing module", "subject", subject, "module", module)
+		return nil, err
+	}
+	a.V(0).Info("published module", "subject", subject, "module", module)
+	return module, nil
+}
+
 func (a *Application) CreateModule(ctx context.Context, opts otf.CreateModuleOptions) (*otf.Module, error) {
 	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, opts.Organization.Name())
 	if err != nil {
@@ -61,16 +76,18 @@ func (a *Application) ListModules(ctx context.Context, opts otf.ListModulesOptio
 	return modules, nil
 }
 
-func (a *Application) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Module, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListModulesAction, opts.Organization)
+func (a *Application) GetModule(ctx context.Context, id string) (*otf.Module, error) {
+	module, err := a.db.GetModuleByID(ctx, id)
+	if err != nil {
+		a.Error(err, "retrieving module", "id", id)
+		return nil, err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, otf.ListModulesAction, module.Organization().Name())
 	if err != nil {
 		return nil, err
 	}
-	module, err := a.db.GetModule(ctx, opts)
-	if err != nil {
-		a.Error(err, "retrieving module", "organization", opts.Organization, "subject", subject, "name", opts.Name, "provider", opts.Provider)
-		return nil, err
-	}
+
 	a.V(2).Info("listed modules", "subject", subject, "module", module)
 	return module, nil
 }
@@ -85,4 +102,26 @@ func (a *Application) UploadModuleVersion(ctx context.Context, opts otf.UploadMo
 
 func (a *Application) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModuleOptions) ([]byte, error) {
 	return a.db.DownloadModuleVersion(ctx, opts)
+}
+
+func (a *Application) DeleteModule(ctx context.Context, id string) error {
+	module, err := a.db.GetModuleByID(ctx, id)
+	if err != nil {
+		a.Error(err, "retrieving module", "id", id)
+		return err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteModuleAction, module.Organization().Name())
+	if err != nil {
+		return err
+	}
+
+	err = a.db.DeleteModule(ctx, id)
+	if err != nil {
+		a.Error(err, "deleting module", "subject", subject, "module", module)
+		return err
+	}
+
+	a.V(2).Info("deleted module", "subject", subject, "module", module)
+	return nil
 }

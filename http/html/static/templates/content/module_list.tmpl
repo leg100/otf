@@ -24,8 +24,9 @@
 {{ define "content-list-item" }}
   <div class="item">
     <div class="item-heading">
-      <span class="status">{{ .Name }}</span>
+      <a class="status" href="{{ modulePath .ID }}">{{ .Name }}</a>
       <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
     </div>
+    {{ template "identifier" . }}
   </div>
 {{ end }}

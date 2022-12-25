@@ -9,16 +9,30 @@ import (
 )
 
 func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
-	_, err := db.InsertModule(ctx, pggen.InsertModuleParams{
-		ID:             String(mod.ID()),
-		CreatedAt:      Timestamptz(mod.CreatedAt()),
-		UpdatedAt:      Timestamptz(mod.UpdatedAt()),
-		Name:           String(mod.Name()),
-		Provider:       String(mod.Provider()),
-		OrganizationID: String(mod.Organization().ID()),
+	err := db.tx(ctx, func(tx *DB) error {
+		_, err := tx.InsertModule(ctx, pggen.InsertModuleParams{
+			ID:             String(mod.ID()),
+			CreatedAt:      Timestamptz(mod.CreatedAt()),
+			UpdatedAt:      Timestamptz(mod.UpdatedAt()),
+			Name:           String(mod.Name()),
+			Provider:       String(mod.Provider()),
+			OrganizationID: String(mod.Organization().ID()),
+		})
+		if err != nil {
+			return err
+		}
+		_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
+			WebhookID:     UUID(mod.Repo().WebhookID),
+			VCSProviderID: String(mod.Repo().ProviderID),
+			ModuleID:      String(mod.ID()),
+		})
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
-		return err
+		return databaseError(err)
 	}
 	return nil
 }

@@ -27,6 +27,7 @@ type Application struct {
 	*otf.WorkspaceFactory
 	*otf.WorkspaceConnector
 	*otf.RunStarter
+	*otf.Publisher
 	Mapper
 	otf.CloudService
 	otf.PubSubService
@@ -54,6 +55,16 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		CloudService: opts.CloudService,
 	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
+		Application: app,
+		WebhookCreator: &otf.WebhookCreator{
+			VCSProviderService: app,
+			CloudService:       opts.CloudService,
+		},
+		WebhookUpdater: &otf.WebhookUpdater{
+			VCSProviderService: app,
+		},
+	}
+	app.Publisher = &otf.Publisher{
 		Application: app,
 		WebhookCreator: &otf.WebhookCreator{
 			VCSProviderService: app,

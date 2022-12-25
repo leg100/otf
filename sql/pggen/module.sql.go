@@ -60,6 +60,46 @@ func (q *DBQuerier) InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTa
 	return cmdTag, err
 }
 
+const insertModuleRepoSQL = `INSERT INTO module_repos (
+    webhook_id,
+    vcs_provider_id,
+    module_id
+) VALUES (
+    $1,
+    $2,
+    $3
+);`
+
+type InsertModuleRepoParams struct {
+	WebhookID     pgtype.UUID
+	VCSProviderID pgtype.Text
+	ModuleID      pgtype.Text
+}
+
+// InsertModuleRepo implements Querier.InsertModuleRepo.
+func (q *DBQuerier) InsertModuleRepo(ctx context.Context, params InsertModuleRepoParams) (pgconn.CommandTag, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "InsertModuleRepo")
+	cmdTag, err := q.conn.Exec(ctx, insertModuleRepoSQL, params.WebhookID, params.VCSProviderID, params.ModuleID)
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec query InsertModuleRepo: %w", err)
+	}
+	return cmdTag, err
+}
+
+// InsertModuleRepoBatch implements Querier.InsertModuleRepoBatch.
+func (q *DBQuerier) InsertModuleRepoBatch(batch genericBatch, params InsertModuleRepoParams) {
+	batch.Queue(insertModuleRepoSQL, params.WebhookID, params.VCSProviderID, params.ModuleID)
+}
+
+// InsertModuleRepoScan implements Querier.InsertModuleRepoScan.
+func (q *DBQuerier) InsertModuleRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
+	cmdTag, err := results.Exec()
+	if err != nil {
+		return cmdTag, fmt.Errorf("exec InsertModuleRepoBatch: %w", err)
+	}
+	return cmdTag, err
+}
+
 const insertModuleVersionSQL = `INSERT INTO module_versions (
     module_version_id,
     version,
