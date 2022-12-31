@@ -79,7 +79,7 @@ func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Mo
 		OrganizatonName: String(opts.Organization),
 	})
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
@@ -88,7 +88,7 @@ func (db *DB) GetModule(ctx context.Context, opts otf.GetModuleOptions) (*otf.Mo
 func (db *DB) GetModuleByID(ctx context.Context, id string) (*otf.Module, error) {
 	row, err := db.FindModuleByID(ctx, String(id))
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
@@ -97,7 +97,7 @@ func (db *DB) GetModuleByID(ctx context.Context, id string) (*otf.Module, error)
 func (db *DB) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Module, error) {
 	row, err := db.FindModuleByWebhookID(ctx, UUID(id))
 	if err != nil {
-		return nil, err
+		return nil, databaseError(err)
 	}
 
 	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil

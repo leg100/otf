@@ -24,6 +24,18 @@ type Module struct {
 	versions     []*ModuleVersion
 }
 
+func NewModule(opts CreateModuleOptions) *Module {
+	return &Module{
+		id:           NewID("mod"),
+		createdAt:    CurrentTimestamp(),
+		updatedAt:    CurrentTimestamp(),
+		name:         opts.Name,
+		provider:     opts.Provider,
+		organization: opts.Organization,
+		repo:         opts.Repo,
+	}
+}
+
 func (m *Module) ID() string                  { return m.id }
 func (m *Module) CreatedAt() time.Time        { return m.createdAt }
 func (m *Module) UpdatedAt() time.Time        { return m.updatedAt }
@@ -38,7 +50,22 @@ func (m *Module) LatestVersion() *ModuleVersion {
 		return nil
 	}
 	sort.Sort(ByModuleVersion(m.versions))
-	return m.versions[0]
+	return m.versions[len(m.versions)-1]
+}
+
+// Version returns the specified module version. If the empty string, then the
+// latest version is returned. If there is no matching version or no versions at
+// all then nil is returned.
+func (m *Module) Version(version string) *ModuleVersion {
+	if version == "" {
+		return m.LatestVersion()
+	}
+	for _, v := range m.versions {
+		if v.version == version {
+			return v
+		}
+	}
+	return nil
 }
 
 func (v *Module) MarshalLog() any {
@@ -49,31 +76,6 @@ func (v *Module) MarshalLog() any {
 		Organization: v.organization.name,
 		Name:         v.name,
 		Provider:     v.provider,
-	}
-}
-
-type ModuleVersion struct {
-	id        string
-	moduleID  string
-	version   string
-	createdAt time.Time
-	updatedAt time.Time
-	// TODO: download counter
-}
-
-func (v *ModuleVersion) ID() string           { return v.id }
-func (v *ModuleVersion) ModuleID() string     { return v.moduleID }
-func (v *ModuleVersion) Version() string      { return v.version }
-func (v *ModuleVersion) CreatedAt() time.Time { return v.createdAt }
-func (v *ModuleVersion) UpdatedAt() time.Time { return v.updatedAt }
-
-func (v *ModuleVersion) MarshalLog() any {
-	return struct {
-		ID, ModuleID, Version string
-	}{
-		ID:       v.id,
-		ModuleID: v.moduleID,
-		Version:  v.version,
 	}
 }
 
@@ -91,7 +93,8 @@ type ModuleService interface {
 	CreateModule(context.Context, CreateModuleOptions) (*Module, error)
 	CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
-	GetModule(ctx context.Context, id string) (*Module, error)
+	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
+	GetModuleByID(ctx context.Context, id string) (*Module, error)
 	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
 	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
 	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
@@ -147,28 +150,6 @@ type (
 		Items []*Module
 	}
 )
-
-func NewModule(opts CreateModuleOptions) *Module {
-	return &Module{
-		id:           NewID("mod"),
-		createdAt:    CurrentTimestamp(),
-		updatedAt:    CurrentTimestamp(),
-		name:         opts.Name,
-		provider:     opts.Provider,
-		organization: opts.Organization,
-		repo:         opts.Repo,
-	}
-}
-
-func NewModuleVersion(opts CreateModuleVersionOptions) *ModuleVersion {
-	return &ModuleVersion{
-		id:        NewID("mv"),
-		createdAt: CurrentTimestamp(),
-		updatedAt: CurrentTimestamp(),
-		moduleID:  opts.ModuleID,
-		version:   opts.Version,
-	}
-}
 
 // ByModuleVersion implements sort.Interface for sorting module versions.
 type ByModuleVersion []*ModuleVersion

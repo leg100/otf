@@ -72,41 +72,43 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			return errors.Wrap(err, "persisting module")
 		}
 
-		// Make new version for each tag that looks like a semantic version.
-		tags, err := p.ListTags(ctx, opts.ProviderID, ListTagsOptions{
-			Identifier: opts.Identifier,
-		})
-		if err != nil {
-			return err
-		}
-		for _, tag := range tags {
-			_, version, found := strings.Cut(string(tag), "/")
-			if !found {
-				return fmt.Errorf("malformed git ref: %s", tag)
-			}
-
-			// skip tags that are not semantic versions
-			if !semver.IsValid(version) {
-				continue
-			}
-
-			modVersion, err := p.PublishVersion(ctx, PublishModuleVersionOptions{
-				ModuleID: mod.ID(),
-				// strip off v prefix if it has one
-				Version:    strings.TrimPrefix(version, "v"),
-				Ref:        string(tag),
-				Identifier: opts.Identifier,
-				ProviderID: mod.Repo().ProviderID,
-			})
-			if err != nil {
-				return err
-			}
-			mod.versions = append(mod.versions, modVersion)
-		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Make new version for each tag that looks like a semantic version.
+	tags, err := p.ListTags(ctx, opts.ProviderID, ListTagsOptions{
+		Identifier: opts.Identifier,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, tag := range tags {
+		// tags/<version> -> <version>
+		_, version, found := strings.Cut(tag, "/")
+		if !found {
+			return nil, fmt.Errorf("malformed git ref: %s", tag)
+		}
+
+		// skip tags that are not semantic versions
+		if !semver.IsValid(version) {
+			continue
+		}
+
+		modVersion, err := p.PublishVersion(ctx, PublishModuleVersionOptions{
+			ModuleID: mod.ID(),
+			// strip off v prefix if it has one
+			Version:    strings.TrimPrefix(version, "v"),
+			Ref:        tag,
+			Identifier: opts.Identifier,
+			ProviderID: mod.Repo().ProviderID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		mod.versions = append(mod.versions, modVersion)
 	}
 
 	return mod, nil
@@ -167,20 +169,34 @@ type PublishModuleVersionOptions struct {
 // Publish a module version, retrieving its contents from a repository and
 // uploading it to the module store.
 func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*ModuleVersion, error) {
-	version, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
-		ModuleID: opts.ModuleID,
-		Version:  opts.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, GetRepoTarballOptions{
 		Identifier: opts.Identifier,
 		Ref:        opts.Ref,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
+	}
+
+	// untar tarball
+	// dir, err := os.MkdirTemp("", "")
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "creating temporary directory")
+	// }
+	// if err := Unpack(bytes.NewReader(tarball), dir); err != nil {
+	// 	return nil, errors.Wrap(err, "extracting tarball")
+	// }
+
+	// mod, diags := tfconfig.LoadModule(dir)
+	// if diags.HasErrors() {
+	// 	return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
+	// }
+
+	version, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
+		ModuleID: opts.ModuleID,
+		Version:  opts.Version,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	err = p.UploadModuleVersion(ctx, UploadModuleVersionOptions{

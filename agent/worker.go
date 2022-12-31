@@ -29,6 +29,15 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	log.Info("starting phase")
 
+	// create a token for terraform to use as a credential to authenticate its
+	// API calls
+	token, err := w.CreateTerraformToken(ctx, run.OrganizationName())
+	if err != nil {
+		log.Error(err, "creating execution environment")
+		return
+	}
+	envVars = append(w.environmentVariables, "TF_TOKEN_otf_fridayafternoonhangover_com=agent.Iu3P5gP2KV0L4-mwBCP5m1wk7Y5_5gUEWvXD9qjn-Ho")
+
 	env, err := NewEnvironment(
 		log,
 		w.Application,

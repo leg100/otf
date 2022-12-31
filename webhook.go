@@ -128,6 +128,13 @@ type WebhookUpdaterOptions struct {
 }
 
 func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions) (string, error) {
+	createOpts := CreateWebhookOptions{
+		Identifier: opts.Identifier,
+		Secret:     opts.Secret,
+		Events:     WebhookEvents,
+		Endpoint:   webhookEndpoint(opts.OTFHost, opts.WebhookID.String()),
+	}
+
 	// first retrieve webhook from vcs provider
 	vcsHook, err := wc.GetWebhook(ctx, opts.ProviderID, GetWebhookOptions{
 		Identifier: opts.Identifier,
@@ -135,12 +142,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 	})
 	if errors.Is(err, ErrResourceNotFound) {
 		// webhook not found, need to create it
-		return wc.CreateWebhook(ctx, opts.ProviderID, CreateWebhookOptions{
-			Identifier: opts.Identifier,
-			Secret:     opts.Secret,
-			Events:     WebhookEvents,
-			Endpoint:   webhookEndpoint(opts.OTFHost, opts.WebhookID.String()),
-		})
+		return wc.CreateWebhook(ctx, opts.ProviderID, createOpts)
 	} else if err != nil {
 		return "", err
 	}
@@ -148,12 +150,8 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 	// webhook exists; check if it needs updating
 	if webhookDiff(vcsHook, opts.Webhook, opts.OTFHost) {
 		err := wc.UpdateWebhook(ctx, opts.ProviderID, UpdateWebhookOptions{
-			ID: vcsHook.ID,
-			CreateWebhookOptions: CreateWebhookOptions{
-				Identifier: opts.Identifier,
-				Secret:     opts.Secret,
-				Endpoint:   opts.OTFHost,
-			},
+			ID:                   vcsHook.ID,
+			CreateWebhookOptions: createOpts,
 		})
 		if err != nil {
 			return "", err

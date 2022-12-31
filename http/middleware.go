@@ -55,6 +55,8 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Su
 		return m.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
 	case strings.HasPrefix(token, "agent."):
 		return m.GetAgentToken(ctx, token)
+	case strings.HasPrefix(token, "job."):
+		return m.GetJobToken(ctx, token)
 	default:
 		return nil, fmt.Errorf("unknown auth token format")
 	}

@@ -47,6 +47,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		Run: func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.SetOut(out)
+	cmd.AddCommand(RegistrySessionsCommand)
 
 	var help, version bool
 	var dbConnStr, hostname string
@@ -230,6 +231,7 @@ func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
 func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	cfg := http.ServerConfig{}
 
+	// TODO: rename --address to --listen
 	flags.StringVar(&cfg.Addr, "address", DefaultAddress, "Listening address")
 	flags.BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")

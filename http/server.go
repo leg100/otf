@@ -105,11 +105,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
-	// Optionally enable HTTP request logging
-	if cfg.EnableRequestLogging {
-		r.Use(s.loggingMiddleware)
-	}
-
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/healthz", GetHealthz)
@@ -132,6 +127,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
 		signed.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
+		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
 	})
 
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
@@ -222,7 +218,25 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		})
 	})
 
-	http.Handle("/", r)
+	// module registry
+	r.PathPrefix("/api/registry/v1/modules").Sub(func(r *Router) {
+		// Ensure request has valid API bearer token
+		r.Use((&authTokenMiddleware{
+			UserService:       app,
+			AgentTokenService: app,
+			siteToken:         cfg.SiteToken,
+		}).handler)
+
+		r.GET("/{organization}/{name}/{provider}/versions", s.listModuleVersions)
+		r.GET("/{organization}/{name}/{provider}/{version}/download", s.getModuleVersionDownloadLink)
+	})
+
+	// Optionally log all HTTP requests
+	if cfg.EnableRequestLogging {
+		http.Handle("/", s.loggingMiddleware(r))
+	} else {
+		http.Handle("/", r)
+	}
 
 	return s, nil
 }

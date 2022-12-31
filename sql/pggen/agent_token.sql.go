@@ -377,6 +377,27 @@ type Querier interface {
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
 	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertRegistrySession(ctx context.Context, params InsertRegistrySessionParams) (pgconn.CommandTag, error)
+	// InsertRegistrySessionBatch enqueues a InsertRegistrySession query into batch to be executed
+	// later by the batch.
+	InsertRegistrySessionBatch(batch genericBatch, params InsertRegistrySessionParams)
+	// InsertRegistrySessionScan scans the result of an executed InsertRegistrySessionBatch query.
+	InsertRegistrySessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindRegistrySession(ctx context.Context, token pgtype.Text) (FindRegistrySessionRow, error)
+	// FindRegistrySessionBatch enqueues a FindRegistrySession query into batch to be executed
+	// later by the batch.
+	FindRegistrySessionBatch(batch genericBatch, token pgtype.Text)
+	// FindRegistrySessionScan scans the result of an executed FindRegistrySessionBatch query.
+	FindRegistrySessionScan(results pgx.BatchResults) (FindRegistrySessionRow, error)
+
+	DeleteExpiredRegistrySessions(ctx context.Context) (pgtype.Text, error)
+	// DeleteExpiredRegistrySessionsBatch enqueues a DeleteExpiredRegistrySessions query into batch to be executed
+	// later by the batch.
+	DeleteExpiredRegistrySessionsBatch(batch genericBatch)
+	// DeleteExpiredRegistrySessionsScan scans the result of an executed DeleteExpiredRegistrySessionsBatch query.
+	DeleteExpiredRegistrySessionsScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
 	// later by the batch.
@@ -1193,6 +1214,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updatePlanJSONByIDSQL, updatePlanJSONByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanJSONByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertRegistrySessionSQL, insertRegistrySessionSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRegistrySession': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRegistrySessionSQL, findRegistrySessionSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRegistrySession': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteExpiredRegistrySessionsSQL, deleteExpiredRegistrySessionsSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteExpiredRegistrySessions': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRun': %w", err)

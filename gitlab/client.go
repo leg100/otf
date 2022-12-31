@@ -135,7 +135,7 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 	}, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.TagRef, error) {
+func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]string, error) {
 	results, _, err := g.client.Tags.ListTags(opts.Identifier, &gitlab.ListTagsOptions{
 		Search: otf.String("^" + opts.Prefix),
 	})
@@ -143,9 +143,9 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.
 		return nil, err
 	}
 
-	var tags []otf.TagRef
+	var tags []string
 	for _, ref := range results {
-		tags = append(tags, otf.TagRef(fmt.Sprintf("tags/%s", ref.Name)))
+		tags = append(tags, fmt.Sprintf("tags/%s", ref.Name))
 	}
 	return tags, nil
 }

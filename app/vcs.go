@@ -54,7 +54,7 @@ func (a *Application) ListRepositories(ctx context.Context, providerID string, o
 	return client.ListRepositories(ctx, opts)
 }
 
-func (a *Application) ListTags(ctx context.Context, providerID string, opts otf.ListTagsOptions) ([]otf.TagRef, error) {
+func (a *Application) ListTags(ctx context.Context, providerID string, opts otf.ListTagsOptions) ([]string, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err

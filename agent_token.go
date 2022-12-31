@@ -9,7 +9,7 @@ import (
 	jsonapi "github.com/leg100/otf/http/dto"
 )
 
-// AgentToken is an authentication token for an agent.
+// AgentToken is an long-lived authentication token for an external agent.
 type AgentToken struct {
 	id               string
 	createdAt        time.Time

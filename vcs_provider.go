@@ -101,7 +101,7 @@ type VCSProviderService interface {
 	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
 	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
-	ListTags(ctx context.Context, providerID string, opts ListTagsOptions) ([]TagRef, error)
+	ListTags(ctx context.Context, providerID string, opts ListTagsOptions) ([]string, error)
 
 	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error

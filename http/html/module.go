@@ -40,19 +40,29 @@ func (app *Application) listModules(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("module_id", r)
-	if err != nil {
+	type parameters struct {
+		ID      string `schema:"module_id,required"`
+		Version string `schema:"version"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	module, err := app.GetModule(r.Context(), id)
+	module, err := app.GetModuleByID(r.Context(), params.ID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	app.render("module_get.tmpl", w, r, module)
+	app.render("module_get.tmpl", w, r, struct {
+		*otf.Module
+		CurrentVersion *otf.ModuleVersion
+	}{
+		Module:         module,
+		CurrentVersion: module.Version(params.Version),
+	})
 }
 
 func (app *Application) newModule(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +185,7 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = app.PublishModule(r.Context(), otf.PublishModuleOptions{
+	module, err := app.PublishModule(r.Context(), otf.PublishModuleOptions{
 		Identifier:   params.Identifier,
 		ProviderID:   params.VCSProviderID,
 		OTFHost:      otfhttp.ExternalHost(r),
@@ -185,6 +195,9 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	flashSuccess(w, "published module: "+module.Name())
+	http.Redirect(w, r, paths.Module(module.ID()), http.StatusFound)
 }
 
 func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +207,7 @@ func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := app.GetModule(r.Context(), id)
+	module, err := app.GetModuleByID(r.Context(), id)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

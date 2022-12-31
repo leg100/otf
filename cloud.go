@@ -58,7 +58,9 @@ type CloudClient interface {
 
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
 
-	ListTags(ctx context.Context, opts ListTagsOptions) ([]TagRef, error)
+	// ListTags lists git tags on a repository. Each tag should be prefixed with
+	// 'tags/'.
+	ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
 }
 
 type VCSWebhook struct {

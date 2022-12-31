@@ -571,3 +571,9 @@ button.delete:hover {
   font-weight: 600;
   line-height: 1.5rem;
 }
+
+.horizontal {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+}

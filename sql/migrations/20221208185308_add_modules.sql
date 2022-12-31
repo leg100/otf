@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS modules (
     name            TEXT        NOT NULL,
     provider        TEXT        NOT NULL,
     organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
-                    PRIMARY KEY (module_id)
+                    PRIMARY KEY (module_id),
+                    UNIQUE (provider, name)
 );
 
 CREATE TABLE IF NOT EXISTS module_versions (
@@ -35,7 +36,15 @@ CREATE TABLE IF NOT EXISTS module_repos (
                       UNIQUE (module_id)
 );
 
+CREATE TABLE IF NOT EXISTS registry_sessions (
+    token               TEXT,
+    expiry              TIMESTAMPTZ NOT NULL,
+    organization_name   TEXT REFERENCES organizations (name) ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
+                        PRIMARY KEY (token)
+);
+
 -- +goose Down
+DROP TABLE IF EXISTS registry_sessions;
 DROP TABLE IF EXISTS module_repos;
 DROP TABLE IF EXISTS module_tarballs;
 DROP TABLE IF EXISTS module_versions;

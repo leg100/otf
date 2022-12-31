@@ -158,7 +158,7 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 	}, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.TagRef, error) {
+func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]string, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -171,9 +171,10 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]otf.
 		return nil, err
 	}
 
-	var tags []otf.TagRef
+	// return tags with the format 'tags/<tag_value>'
+	var tags []string
 	for _, ref := range results {
-		tags = append(tags, otf.TagRef(ref.GetRef()))
+		tags = append(tags, strings.TrimPrefix(ref.GetRef(), "refs/"))
 	}
 	return tags, nil
 }

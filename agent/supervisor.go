@@ -48,6 +48,7 @@ func NewSupervisor(spooler Spooler, app otf.Application, logger logr.Logger, cfg
 	s.environmentVariables = append(os.Environ(), fmt.Sprint("TF_PLUGIN_CACHE_DIR=", PluginCacheDir))
 	s.environmentVariables = append(s.environmentVariables, "TF_IN_AUTOMATION=true")
 	s.environmentVariables = append(s.environmentVariables, "CHECKPOINT_DISABLE=true")
+	s.environmentVariables = append(s.environmentVariables, "TF_TOKEN_otf_fridayafternoonhangover_com=agent.Iu3P5gP2KV0L4-mwBCP5m1wk7Y5_5gUEWvXD9qjn-Ho")
 
 	return s
 }

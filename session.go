@@ -12,7 +12,7 @@ const (
 	DefaultSessionExpiry = 24 * time.Hour
 )
 
-// Session is a user session
+// Session is a user session for the UI
 type Session struct {
 	token     string
 	expiry    time.Time
@@ -23,6 +23,7 @@ type Session struct {
 	userID string
 }
 
+// NewSession constructs a new Session
 func NewSession(uid, address string) (*Session, error) {
 	token, err := GenerateToken()
 	if err != nil {

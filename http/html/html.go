@@ -23,3 +23,12 @@ func mergeQuery(u string, q string) (string, error) {
 	parsedURL.RawQuery = existingQuery.Encode()
 	return parsedURL.String(), nil
 }
+
+// selected returns the string "selected" if the given strings are equal -
+// intended for use with the select options in an HTML template.
+func selected(a, b string) string {
+	if a == b {
+		return "selected"
+	}
+	return ""
+}

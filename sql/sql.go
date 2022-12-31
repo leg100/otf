@@ -33,7 +33,7 @@ func databaseError(err error) error {
 	var pgErr *pgconn.PgError
 	switch {
 	case noRowsInResultError(err):
-		return otf.ErrResourceNotFound
+		return errors.Wrap(otf.ErrResourceNotFound, err.Error())
 	case errors.As(err, &pgErr):
 		switch pgErr.Code {
 		case "23503": // foreign key violation
