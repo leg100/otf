@@ -28,6 +28,7 @@ type Application struct {
 	*otf.WorkspaceConnector
 	*otf.RunStarter
 	*otf.Publisher
+	*otf.ModuleVersionUploader
 	Mapper
 	otf.CloudService
 	otf.PubSubService
@@ -64,17 +65,11 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 			VCSProviderService: app,
 		},
 	}
-	app.Publisher = &otf.Publisher{
-		Application: app,
-		WebhookCreator: &otf.WebhookCreator{
-			VCSProviderService: app,
-			CloudService:       opts.CloudService,
-		},
-		WebhookUpdater: &otf.WebhookUpdater{
-			VCSProviderService: app,
-		},
-	}
+	app.Publisher = otf.NewPublisher(app)
 	app.RunStarter = &otf.RunStarter{
+		Application: app,
+	}
+	app.ModuleVersionUploader = &otf.ModuleVersionUploader{
 		Application: app,
 	}
 

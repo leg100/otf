@@ -38,27 +38,27 @@ func (a *Application) CreateModule(ctx context.Context, opts otf.CreateModuleOpt
 	return module, nil
 }
 
-func (a *Application) CreateModuleVersion(ctx context.Context, opts otf.CreateModuleVersionOptions) (*otf.ModuleVersion, error) {
+func (a *Application) UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) (*otf.Module, error) {
 	// retrieve module first in order to get organization for authorization
-	module, err := a.db.GetModuleByID(ctx, opts.ModuleID)
+	module, err := a.db.GetModuleByID(ctx, opts.ID)
 	if err != nil {
 		return nil, err
 	}
 	organization := module.Organization().Name()
 
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateModuleAction, organization)
+	subject, err := a.CanAccessOrganization(ctx, otf.UpdateModuleAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	version := otf.NewModuleVersion(opts)
+	module.UpdateStatus(opts.Status)
 
-	if err := a.db.CreateModuleVersion(ctx, version); err != nil {
-		a.Error(err, "creating module version", "organization", organization, "subject", subject, "module_version", version)
+	if err := a.db.UpdateModuleStatus(ctx, opts); err != nil {
+		a.Error(err, "updating module status", "subject", subject, "module", module, "status", opts.Status)
 		return nil, err
 	}
-	a.V(0).Info("created module version", "organization", organization, "subject", subject, "module_version", version)
-	return version, nil
+	a.V(0).Info("updated module status", "subject", subject, "module", module, "status", opts.Status)
+	return module, nil
 }
 
 func (a *Application) ListModules(ctx context.Context, opts otf.ListModulesOptions) ([]*otf.Module, error) {
@@ -112,39 +112,23 @@ func (a *Application) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*
 	return a.db.GetModuleByWebhookID(ctx, id)
 }
 
-func (a *Application) UploadModuleVersion(ctx context.Context, opts otf.UploadModuleVersionOptions) error {
-	return a.db.UploadModuleVersion(ctx, opts)
-}
-
-// DownloadModuleVersion should be accessed via signed URL
-func (a *Application) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModuleOptions) ([]byte, error) {
-	tarball, err := a.db.DownloadModuleVersion(ctx, opts)
-	if err != nil {
-		a.Error(err, "downloading module", "module_version_id", opts.ModuleVersionID)
-		return nil, err
-	}
-	a.V(2).Info("downloaded module", "module_version_id", opts.ModuleVersionID)
-	return tarball, nil
-}
-
-func (a *Application) DeleteModule(ctx context.Context, id string) error {
+func (a *Application) DeleteModule(ctx context.Context, id string) (*otf.Module, error) {
 	module, err := a.db.GetModuleByID(ctx, id)
 	if err != nil {
 		a.Error(err, "retrieving module", "id", id)
-		return err
+		return nil, err
 	}
 
 	subject, err := a.CanAccessOrganization(ctx, otf.DeleteModuleAction, module.Organization().Name())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = a.db.DeleteModule(ctx, id)
-	if err != nil {
+	if err = a.db.DeleteModule(ctx, id); err != nil {
 		a.Error(err, "deleting module", "subject", subject, "module", module)
-		return err
+		return nil, err
 	}
 
 	a.V(2).Info("deleted module", "subject", subject, "module", module)
-	return nil
+	return module, nil
 }

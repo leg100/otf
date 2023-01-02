@@ -27,9 +27,8 @@ func TestTriggerer(t *testing.T) {
 		Logger:      logr.Discard(),
 	}
 
-	err := triggerer.handle(context.Background(), VCSEvent{
-		OnDefaultBranch: true,
-		IsPullRequest:   true,
+	err := triggerer.handle(context.Background(), VCSPushEvent{
+		Branch: "main",
 	})
 	require.NoError(t, err)
 

@@ -13,7 +13,9 @@
         <label>Version</label>
         <select name="version" id="version" onchange="this.form.submit()">
           {{ range .Content.Versions }}
-            <option value="{{ .Version }}" {{ selected .Version $.Content.CurrentVersion.Version }}>{{ .Version }}</option>
+            {{ if eq .Status "ok" }}
+              <option value="{{ .Version }}" {{ selected .Version $.Content.CurrentVersion.Version }}>{{ .Version }}</option>
+            {{ end }}
           {{ end }}
         </select>
       </div>
@@ -22,11 +24,7 @@
       Source <span class="data">{{ .Content.Repo.Identifier }}</span>
     </div>
   </div>
-  <div class="content-menu">
-    {{ range .Content.Versions }}
-      <div>
-        {{ .Version }}
-      </div>
-    {{ end }}
-  </div>
+  <form class="module-delete-button" action="{{ deleteModulePath .Content.ID }}" method="POST">
+    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+  </form>
 {{ end }}

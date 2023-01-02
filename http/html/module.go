@@ -3,6 +3,7 @@ package html
 import (
 	"net/http"
 
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -56,12 +57,31 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var tfmod *tfconfig.Module
+	switch module.Status() {
+	case otf.ModuleStatusSetupComplete:
+		tarball, err := app.DownloadModuleVersion(r.Context(), otf.DownloadModuleOptions{
+			ModuleVersionID: module.Latest().ID(),
+		})
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tfmod, err = otf.UnmarshalTerraformModule(tarball)
+		if err != nil {
+			writeError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	app.render("module_get.tmpl", w, r, struct {
 		*otf.Module
-		CurrentVersion *otf.ModuleVersion
+		TerraformModule *tfconfig.Module
+		CurrentVersion  *otf.ModuleVersion
 	}{
-		Module:         module,
-		CurrentVersion: module.Version(params.Version),
+		Module:          module,
+		TerraformModule: tfmod,
+		CurrentVersion:  module.Version(params.Version),
 	})
 }
 
@@ -207,18 +227,12 @@ func (app *Application) deleteModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := app.GetModuleByID(r.Context(), id)
+	deleted, err := app.DeleteModule(r.Context(), id)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = app.DeleteModule(r.Context(), id)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	flashSuccess(w, "deleted module: "+module.Name())
-	http.Redirect(w, r, paths.Modules(module.Organization().Name()), http.StatusFound)
+	flashSuccess(w, "deleted module: "+deleted.Name())
+	http.Redirect(w, r, paths.Modules(deleted.Organization().Name()), http.StatusFound)
 }

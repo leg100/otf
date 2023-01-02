@@ -207,6 +207,13 @@ type Querier interface {
 	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
 	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
 
+	UpdateModuleStatus(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
+	// UpdateModuleStatusBatch enqueues a UpdateModuleStatus query into batch to be executed
+	// later by the batch.
+	UpdateModuleStatusBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text)
+	// UpdateModuleStatusScan scans the result of an executed UpdateModuleStatusBatch query.
+	UpdateModuleStatusScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
 	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
 	// later by the batch.
@@ -220,6 +227,13 @@ type Querier interface {
 	FindModuleTarballBatch(batch genericBatch, moduleVersionID pgtype.Text)
 	// FindModuleTarballScan scans the result of an executed FindModuleTarballBatch query.
 	FindModuleTarballScan(results pgx.BatchResults) ([]byte, error)
+
+	UpdateModuleVersionStatus(ctx context.Context, params UpdateModuleVersionStatusParams) (UpdateModuleVersionStatusRow, error)
+	// UpdateModuleVersionStatusBatch enqueues a UpdateModuleVersionStatus query into batch to be executed
+	// later by the batch.
+	UpdateModuleVersionStatusBatch(batch genericBatch, params UpdateModuleVersionStatusParams)
+	// UpdateModuleVersionStatusScan scans the result of an executed UpdateModuleVersionStatusBatch query.
+	UpdateModuleVersionStatusScan(results pgx.BatchResults) (UpdateModuleVersionStatusRow, error)
 
 	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
 	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
@@ -1143,11 +1157,17 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, updateModuleStatusSQL, updateModuleStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleStatus': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findModuleTarballSQL, findModuleTarballSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindModuleTarball': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateModuleVersionStatusSQL, updateModuleVersionStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleVersionStatus': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
@@ -1506,6 +1526,8 @@ type ModuleVersions struct {
 	Version         pgtype.Text        `json:"version"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Status          pgtype.Text        `json:"status"`
+	StatusError     pgtype.Text        `json:"status_error"`
 	ModuleID        pgtype.Text        `json:"module_id"`
 }
 
@@ -1735,6 +1757,8 @@ func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
 		compositeField{"version", "text", &pgtype.Text{}},
 		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
 		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"status_error", "text", &pgtype.Text{}},
 		compositeField{"module_id", "text", &pgtype.Text{}},
 	)
 }

@@ -139,9 +139,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		api.Sub(func(r *Router) {
 			// Ensure request has valid API bearer token
 			r.Use((&authTokenMiddleware{
-				UserService:       app,
-				AgentTokenService: app,
-				siteToken:         cfg.SiteToken,
+				UserService:            app,
+				AgentTokenService:      app,
+				RegistrySessionService: app,
+				siteToken:              cfg.SiteToken,
 			}).handler)
 
 			// Organization routes
@@ -222,9 +223,10 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	r.PathPrefix("/api/registry/v1/modules").Sub(func(r *Router) {
 		// Ensure request has valid API bearer token
 		r.Use((&authTokenMiddleware{
-			UserService:       app,
-			AgentTokenService: app,
-			siteToken:         cfg.SiteToken,
+			UserService:            app,
+			AgentTokenService:      app,
+			RegistrySessionService: app,
+			siteToken:              cfg.SiteToken,
 		}).handler)
 
 		r.GET("/{organization}/{name}/{provider}/versions", s.listModuleVersions)

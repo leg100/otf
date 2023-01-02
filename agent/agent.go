@@ -39,6 +39,8 @@ type Config struct {
 	Sandbox bool
 	// Concurrency determines number of runs that can be handled concurrently
 	Concurrency int
+	// RegistryHostname is the hostname of the otf registry
+	RegistryHostname string
 }
 
 // NewAgent is the constructor for an Agent

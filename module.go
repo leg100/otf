@@ -13,6 +13,15 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+type ModuleStatus string
+
+const (
+	ModuleStatusPending       ModuleStatus = "pending"
+	ModuleStatusNoVersionTags ModuleStatus = "no_version_tags"
+	ModuleStatusSetupFailed   ModuleStatus = "setup_failed"
+	ModuleStatusSetupComplete ModuleStatus = "setup_complete"
+)
+
 type Module struct {
 	id           string
 	createdAt    time.Time
@@ -21,7 +30,8 @@ type Module struct {
 	provider     string
 	organization *Organization // Module belongs to an organization
 	repo         *ModuleRepo   // Module optionally connected to vcs repo
-	versions     []*ModuleVersion
+	status       ModuleStatus
+	versions     SortedModuleVersions
 }
 
 func NewModule(opts CreateModuleOptions) *Module {
@@ -31,26 +41,28 @@ func NewModule(opts CreateModuleOptions) *Module {
 		updatedAt:    CurrentTimestamp(),
 		name:         opts.Name,
 		provider:     opts.Provider,
+		status:       ModuleStatusPending,
 		organization: opts.Organization,
 		repo:         opts.Repo,
 	}
 }
 
-func (m *Module) ID() string                  { return m.id }
-func (m *Module) CreatedAt() time.Time        { return m.createdAt }
-func (m *Module) UpdatedAt() time.Time        { return m.updatedAt }
-func (m *Module) Name() string                { return m.name }
-func (m *Module) Provider() string            { return m.provider }
-func (m *Module) Repo() *ModuleRepo           { return m.repo }
-func (m *Module) Versions() []*ModuleVersion  { return m.versions }
-func (m *Module) Organization() *Organization { return m.organization }
+func (m *Module) ID() string                     { return m.id }
+func (m *Module) CreatedAt() time.Time           { return m.createdAt }
+func (m *Module) UpdatedAt() time.Time           { return m.updatedAt }
+func (m *Module) Name() string                   { return m.name }
+func (m *Module) Provider() string               { return m.provider }
+func (m *Module) Repo() *ModuleRepo              { return m.repo }
+func (m *Module) Status() ModuleStatus           { return m.status }
+func (m *Module) Versions() SortedModuleVersions { return m.versions }
+func (m *Module) Latest() *ModuleVersion         { return m.versions.latest() }
+func (m *Module) Organization() *Organization    { return m.organization }
 
-func (m *Module) LatestVersion() *ModuleVersion {
-	if len(m.versions) == 0 {
-		return nil
-	}
-	sort.Sort(ByModuleVersion(m.versions))
-	return m.versions[len(m.versions)-1]
+func (m *Module) UpdateStatus(status ModuleStatus) { m.status = status }
+
+// Add adds a version to a module's list of versions
+func (m *Module) Add(modver *ModuleVersion) {
+	m.versions = m.versions.add(modver)
 }
 
 // Version returns the specified module version. If the empty string, then the
@@ -58,7 +70,7 @@ func (m *Module) LatestVersion() *ModuleVersion {
 // all then nil is returned.
 func (m *Module) Version(version string) *ModuleVersion {
 	if version == "" {
-		return m.LatestVersion()
+		return m.versions.latest()
 	}
 	for _, v := range m.versions {
 		if v.version == version {
@@ -68,14 +80,40 @@ func (m *Module) Version(version string) *ModuleVersion {
 	return nil
 }
 
-func (v *Module) MarshalLog() any {
+func (m *Module) MarshalLog() any {
 	return struct {
 		ID, Organization, Name, Provider string
 	}{
-		ID:           v.id,
-		Organization: v.organization.name,
-		Name:         v.name,
-		Provider:     v.provider,
+		ID:           m.id,
+		Organization: m.organization.name,
+		Name:         m.name,
+		Provider:     m.provider,
+	}
+}
+
+// NewModuleStatus determines a new module status based on current module status
+// and the version status (effectively a finite state machine calculating the next
+// state to transition to).
+func NewModuleStatus(current ModuleStatus, versionStatus ModuleVersionStatus) ModuleStatus {
+	switch current {
+	case ModuleStatusSetupComplete:
+		// once setup is complete, it's complete
+		return current
+	case ModuleStatusPending, ModuleStatusNoVersionTags, ModuleStatusSetupFailed:
+		switch versionStatus {
+		case ModuleVersionStatusOk:
+			// A single ok module version is sufficient to deem a module's setup "complete".
+			return ModuleStatusSetupComplete
+		case ModuleVersionStatusPending:
+			return current
+		default:
+			// assume all other module version statuses are failures
+			return ModuleStatusSetupFailed
+		}
+	default:
+		// shouldn't reach here but we'll return current status rather than make the
+		// caller have to deal with an error
+		return current
 	}
 }
 
@@ -91,25 +129,21 @@ type ModuleService interface {
 	PublishModule(context.Context, PublishModuleOptions) (*Module, error)
 	// CreateModule creates a module without a connection to a VCS repository.
 	CreateModule(context.Context, CreateModuleOptions) (*Module, error)
-	CreateModuleVersion(context.Context, CreateModuleVersionOptions) (*ModuleVersion, error)
+	UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) (*Module, error)
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
 	GetModuleByID(ctx context.Context, id string) (*Module, error)
 	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
-	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
-	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
-	DeleteModule(ctx context.Context, id string) error
+	DeleteModule(ctx context.Context, id string) (*Module, error)
 }
 
 type ModuleStore interface {
 	CreateModule(context.Context, *Module) error
-	CreateModuleVersion(context.Context, *ModuleVersion) error
-	UploadModuleVersion(ctx context.Context, opts UploadModuleVersionOptions) error
+	UpdateModuleStatus(ctx context.Context, opts UpdateModuleStatusOptions) error
 	ListModules(context.Context, ListModulesOptions) ([]*Module, error)
 	GetModule(ctx context.Context, opts GetModuleOptions) (*Module, error)
 	GetModuleByID(ctx context.Context, id string) (*Module, error)
 	GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*Module, error)
-	DownloadModuleVersion(ctx context.Context, opts DownloadModuleOptions) ([]byte, error)
 	DeleteModule(ctx context.Context, id string) error
 }
 
@@ -126,9 +160,18 @@ type (
 		Organization *Organization
 		Repo         *ModuleRepo
 	}
+	UpdateModuleStatusOptions struct {
+		ID     string
+		Status ModuleStatus
+	}
 	CreateModuleVersionOptions struct {
 		ModuleID string
 		Version  string
+	}
+	UpdateModuleVersionStatusOptions struct {
+		ID     string
+		Status ModuleVersionStatus
+		Error  string
 	}
 	GetModuleOptions struct {
 		Name         string
@@ -151,15 +194,33 @@ type (
 	}
 )
 
-// ByModuleVersion implements sort.Interface for sorting module versions.
-type ByModuleVersion []*ModuleVersion
+// SortedModuleVersions is a list of module versions belonging to module, sorted
+// by their semantic version, oldest version first
+type SortedModuleVersions []*ModuleVersion
 
-func (l ByModuleVersion) Len() int { return len(l) }
-func (l ByModuleVersion) Swap(i, j int) {
+// add adds a module version and returns the new list in sorted order
+func (l SortedModuleVersions) add(modver *ModuleVersion) SortedModuleVersions {
+	newl := append(l, modver)
+	sort.Sort(newl)
+	return newl
+}
+
+// LatestVersion returns the latest ok version
+func (l SortedModuleVersions) latest() *ModuleVersion {
+	for i := len(l) - 1; i > 0; i-- {
+		if l[i].Status() == ModuleVersionStatusOk {
+			return l[i]
+		}
+	}
+	return nil
+}
+
+func (l SortedModuleVersions) Len() int { return len(l) }
+func (l SortedModuleVersions) Swap(i, j int) {
 	l[i], l[j] = l[j], l[i]
 }
 
-func (l ByModuleVersion) Less(i, j int) bool {
+func (l SortedModuleVersions) Less(i, j int) bool {
 	cmp := semver.Compare(l[i].version, l[j].version)
 	if cmp != 0 {
 		return cmp < 0
@@ -174,6 +235,7 @@ type ModuleRow struct {
 	UpdatedAt    pgtype.Timestamptz     `json:"updated_at"`
 	Name         pgtype.Text            `json:"name"`
 	Provider     pgtype.Text            `json:"provider"`
+	Status       pgtype.Text            `json:"status"`
 	Organization *pggen.Organizations   `json:"organization"`
 	ModuleRepo   *pggen.ModuleRepos     `json:"module_repo"`
 	Webhook      *pggen.Webhooks        `json:"webhook"`
@@ -188,6 +250,7 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 		updatedAt:    row.UpdatedAt.Time.UTC(),
 		name:         row.Name.String,
 		provider:     row.Provider.String,
+		status:       ModuleStatus(row.Status.String),
 		organization: UnmarshalOrganizationRow(*row.Organization),
 	}
 	if row.ModuleRepo != nil {
@@ -199,13 +262,7 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 		}
 	}
 	for _, version := range row.Versions {
-		module.versions = append(module.versions, &ModuleVersion{
-			id:        version.ModuleVersionID.String,
-			version:   version.Version.String,
-			createdAt: row.CreatedAt.Time.UTC(),
-			updatedAt: row.UpdatedAt.Time.UTC(),
-			moduleID:  row.ModuleID.String,
-		})
+		module.Add(UnmarshalModuleVersionRow(ModuleVersionRow(version)))
 	}
 	return module
 }

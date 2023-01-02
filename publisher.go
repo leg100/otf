@@ -12,8 +12,25 @@ import (
 // Publisher publishes terraform modules.
 type Publisher struct {
 	Application
+	*ModuleVersionUploader
 	*WebhookCreator
 	*WebhookUpdater
+}
+
+func NewPublisher(app Application) *Publisher {
+	return &Publisher{
+		Application: app,
+		ModuleVersionUploader: &ModuleVersionUploader{
+			Application: app,
+		},
+		WebhookCreator: &WebhookCreator{
+			VCSProviderService: app,
+			CloudService:       app,
+		},
+		WebhookUpdater: &WebhookUpdater{
+			VCSProviderService: app,
+		},
+	}
 }
 
 // PublishModule publishes a new module from a VCS repository, enumerating through
@@ -85,6 +102,13 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	if err != nil {
 		return nil, err
 	}
+	if len(tags) == 0 {
+		return p.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
+			ID:     mod.ID(),
+			Status: ModuleStatusNoVersionTags,
+		})
+	}
+
 	for _, tag := range tags {
 		// tags/<version> -> <version>
 		_, version, found := strings.Cut(tag, "/")
@@ -97,7 +121,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			continue
 		}
 
-		modVersion, err := p.PublishVersion(ctx, PublishModuleVersionOptions{
+		mod, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
 			ModuleID: mod.ID(),
 			// strip off v prefix if it has one
 			Version:    strings.TrimPrefix(version, "v"),
@@ -108,13 +132,11 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 		if err != nil {
 			return nil, err
 		}
-		mod.versions = append(mod.versions, modVersion)
 	}
-
 	return mod, nil
 }
 
-// Publish a module version in response to a vcs event.
+// PublishFromEvent publishes a module version in response to a vcs event.
 func (p *Publisher) PublishFromEvent(ctx context.Context, event VCSEvent) error {
 	// only publish when new tag is created
 	tag, ok := event.(*VCSTagEvent)
@@ -138,12 +160,12 @@ func (p *Publisher) PublishFromEvent(ctx context.Context, event VCSEvent) error 
 	}
 
 	// skip older or equal versions
-	currentVersion := module.LatestVersion().Version()
-	if n := semver.Compare(tag.Tag, currentVersion); n <= 0 {
+	latestVersion := module.Latest().Version()
+	if n := semver.Compare(tag.Tag, latestVersion); n <= 0 {
 		return nil
 	}
 
-	_, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
+	_, _, err = p.PublishVersion(ctx, PublishModuleVersionOptions{
 		ModuleID: module.ID(),
 		// strip off v prefix if it has one
 		Version:    strings.TrimPrefix(tag.Tag, "v"),
@@ -166,45 +188,31 @@ type PublishModuleVersionOptions struct {
 	ProviderID string
 }
 
-// Publish a module version, retrieving its contents from a repository and
+// PublishVersion publishes a module version, retrieving its contents from a repository and
 // uploading it to the module store.
-func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*ModuleVersion, error) {
+func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersionOptions) (*Module, *ModuleVersion, error) {
+	modver, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
+		ModuleID: opts.ModuleID,
+		Version:  opts.Version,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, GetRepoTarballOptions{
 		Identifier: opts.Identifier,
 		Ref:        opts.Ref,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("retrieving repository tarball: %w", err)
+		return UpdateModuleVersionStatus(ctx, p, UpdateModuleVersionStatusOptions{
+			ID:     modver.ID(),
+			Status: ModuleVersionStatusCloneFailed,
+			Error:  err.Error(),
+		})
 	}
 
-	// untar tarball
-	// dir, err := os.MkdirTemp("", "")
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "creating temporary directory")
-	// }
-	// if err := Unpack(bytes.NewReader(tarball), dir); err != nil {
-	// 	return nil, errors.Wrap(err, "extracting tarball")
-	// }
-
-	// mod, diags := tfconfig.LoadModule(dir)
-	// if diags.HasErrors() {
-	// 	return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
-	// }
-
-	version, err := p.CreateModuleVersion(ctx, CreateModuleVersionOptions{
-		ModuleID: opts.ModuleID,
-		Version:  opts.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	err = p.UploadModuleVersion(ctx, UploadModuleVersionOptions{
-		ModuleVersionID: version.ID(),
+	return p.Upload(ctx, UploadModuleVersionOptions{
+		ModuleVersionID: modver.ID(),
 		Tarball:         tarball,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return version, nil
 }

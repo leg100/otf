@@ -9,6 +9,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
+	"github.com/leg100/otf/cmd"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
@@ -43,54 +44,53 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		Long:          "otfd is the daemon component of the open terraforming framework.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		// Define run func in order to enable cobra's default help functionality
-		Run: func(cmd *cobra.Command, args []string) {},
+		Version:       otf.Version,
 	}
 	cmd.SetOut(out)
-	cmd.AddCommand(RegistrySessionsCommand)
 
-	var help, version bool
-	var dbConnStr, hostname string
+	d := &daemon{
+		ServerConfig:       newServerConfigFromFlags(cmd.Flags()),
+		CacheConfig:        newCacheConfigFromFlags(cmd.Flags()),
+		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
+		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
+		Config:             agent.NewConfigFromFlags(cmd.Flags()),
+		cloudConfigs:       cloudFlags(cmd.Flags()),
+	}
+	cmd.RunE = d.run
 
-	cmd.Flags().StringVar(&dbConnStr, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&hostname, "hostname", DefaultAddress, "Hostname via which otfd is accessed")
-	cmd.Flags().BoolVarP(&version, "version", "v", false, "Print version of otfd")
-	cmd.Flags().BoolVarP(&help, "help", "h", false, "Print usage information")
-
-	loggerCfg := cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
-	cacheCfg := newCacheConfigFromFlags(cmd.Flags())
-	serverCfg := newServerConfigFromFlags(cmd.Flags())
-	htmlCfg := newHTMLConfigFromFlags(cmd.Flags())
-	agentCfg := agent.NewConfigFromFlags(cmd.Flags())
-	cloudCfgs := cloudFlags(cmd.Flags())
+	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
+	cmd.Flags().StringVar(&d.hostname, "hostname", DefaultAddress, "User-facing hostname for otf")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
-	if err := cmd.ParseFlags(args); err != nil {
-		return err
-	}
+	cmd.SetArgs(args)
+	return cmd.ExecuteContext(ctx)
+}
 
-	if help {
-		if err := cmd.Help(); err != nil {
-			return err
-		}
-		return nil
-	}
+type daemon struct {
+	hostname string
+	database string
 
-	if version {
-		fmt.Fprintln(cmd.OutOrStdout(), otf.Version)
-		return nil
-	}
+	*http.ServerConfig
+	*inmem.CacheConfig
+	*cmd.LoggerConfig
+	*html.ApplicationOptions
+	*agent.Config
+	cloudConfigs []*cloudConfig
+}
+
+func (d *daemon) run(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
 
 	// create oauth clients
 	var oauthClients []*html.OAuthClient
-	for _, cfg := range cloudCfgs {
+	for _, cfg := range d.cloudConfigs {
 		if cfg.ClientID == "" && cfg.ClientSecret == "" {
 			// skip creating oauth client where creds are unspecified
 			continue
 		}
 		client, err := html.NewOAuthClient(html.OAuthClientConfig{
-			OTFHost:     hostname,
+			OTFHost:     d.hostname,
 			CloudConfig: cfg.CloudConfig,
 			Config:      cfg.Config,
 		})
@@ -102,7 +102,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 
 	// populate cloud service with cloud configurations
 	var cloudServiceConfigs []otf.CloudConfig
-	for _, cc := range cloudCfgs {
+	for _, cc := range d.cloudConfigs {
 		cloudServiceConfigs = append(cloudServiceConfigs, cc.CloudConfig)
 	}
 	cloudService, err := inmem.NewCloudService(cloudServiceConfigs...)
@@ -111,17 +111,17 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	}
 
 	// Setup logger
-	logger, err := cmdutil.NewLogger(loggerCfg)
+	logger, err := cmdutil.NewLogger(d.LoggerConfig)
 	if err != nil {
 		return err
 	}
 
 	// Setup cache
-	cache, err := inmem.NewCache(*cacheCfg)
+	cache, err := inmem.NewCache(*d.CacheConfig)
 	if err != nil {
 		return err
 	}
-	logger.Info("started cache", "max_size", cacheCfg.Size, "ttl", cacheCfg.TTL.String())
+	logger.Info("started cache", "max_size", d.CacheConfig.Size, "ttl", d.CacheConfig.TTL.String())
 
 	// Group several daemons and if any one of them errors then terminate them
 	// all
@@ -135,7 +135,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// Setup database(s)
 	db, err := sql.New(ctx, sql.Options{
 		Logger:          logger,
-		ConnString:      dbConnStr,
+		ConnString:      d.database,
 		Cache:           cache,
 		CleanupInterval: sql.DefaultSessionCleanupInterval,
 		CloudService:    cloudService,
@@ -174,15 +174,17 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	// Run PR reporter - if there is another reporter running already then
 	// this'll wait until the other reporter exits.
 	g.Go(func() error {
-		return otf.ExclusiveReporter(ctx, logger, hostname, app)
+		return otf.ExclusiveReporter(ctx, logger, d.hostname, app)
 	})
 
 	// Run local agent in background
 	g.Go(func() error {
+		d.Config.RegistryHostname = d.hostname
+
 		agent, err := agent.NewAgent(
 			logger.WithValues("component", "agent"),
 			app,
-			*agentCfg)
+			*d.Config)
 		if err != nil {
 			return fmt.Errorf("initializing agent: %w", err)
 		}
@@ -194,16 +196,15 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {
-		server, err := http.NewServer(logger, *serverCfg, app, db, cache)
+		server, err := http.NewServer(logger, *d.ServerConfig, app, db, cache)
 		if err != nil {
 			return fmt.Errorf("setting up http server: %w", err)
 		}
-		// add Web App routes
-		htmlCfg.ServerConfig = serverCfg
-		htmlCfg.Application = app
-		htmlCfg.Router = server.Router
-		htmlCfg.OAuthClients = oauthClients
-		if err := html.AddRoutes(logger, *htmlCfg); err != nil {
+		d.ApplicationOptions.ServerConfig = d.ServerConfig
+		d.ApplicationOptions.Application = app
+		d.ApplicationOptions.Router = server.Router
+		d.ApplicationOptions.OAuthClients = oauthClients
+		if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
 			return err
 		}
 

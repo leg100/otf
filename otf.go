@@ -53,6 +53,7 @@ type Application interface {
 	LockableApplication
 	CloudService
 	ModuleService
+	ModuleVersionService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -82,6 +83,7 @@ type DB interface {
 	VCSProviderStore
 	WebhookStore
 	ModuleStore
+	ModuleVersionStore
 }
 
 // Unmarshaler unmarshals database rows

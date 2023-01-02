@@ -20,6 +20,7 @@ const (
 
 	CreateModuleAction        Action = "create_module"
 	CreateModuleVersionAction Action = "create_module_version"
+	UpdateModuleAction        Action = "update_module"
 	ListModulesAction         Action = "list_modules"
 	GetModuleAction           Action = "get_module"
 	DeleteModuleAction        Action = "delete_modules"

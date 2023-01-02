@@ -22,9 +22,9 @@ type RegistrySession struct {
 }
 
 func NewRegistrySession(organization string) (*RegistrySession, error) {
-	token, err := GenerateToken()
+	token, err := GenerateAuthToken("registry")
 	if err != nil {
-		return nil, fmt.Errorf("generating session token: %w", err)
+		return nil, fmt.Errorf("generating token: %w", err)
 	}
 	return &RegistrySession{
 		token:        token,

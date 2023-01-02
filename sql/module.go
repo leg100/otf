@@ -16,6 +16,7 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 			UpdatedAt:      Timestamptz(mod.UpdatedAt()),
 			Name:           String(mod.Name()),
 			Provider:       String(mod.Provider()),
+			Status:         String(string(mod.Status())),
 			OrganizationID: String(mod.Organization().ID()),
 		})
 		if err != nil {
@@ -37,24 +38,10 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 	return nil
 }
 
-func (db *DB) CreateModuleVersion(ctx context.Context, version *otf.ModuleVersion) error {
-	_, err := db.InsertModuleVersion(ctx, pggen.InsertModuleVersionParams{
-		ModuleVersionID: String(version.ID()),
-		Version:         String(version.Version()),
-		CreatedAt:       Timestamptz(version.CreatedAt()),
-		UpdatedAt:       Timestamptz(version.UpdatedAt()),
-		ModuleID:        String(version.ModuleID()),
-	})
+func (db *DB) UpdateModuleStatus(ctx context.Context, opts otf.UpdateModuleStatusOptions) error {
+	_, err := db.Querier.UpdateModuleStatus(ctx, String(string(opts.Status)), String(opts.ID))
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (db *DB) UploadModuleVersion(ctx context.Context, opts otf.UploadModuleVersionOptions) error {
-	_, err := db.InsertModuleTarball(ctx, opts.Tarball, String(opts.ModuleVersionID))
-	if err != nil {
-		return err
+		return databaseError(err)
 	}
 	return nil
 }
@@ -101,14 +88,6 @@ func (db *DB) GetModuleByWebhookID(ctx context.Context, id uuid.UUID) (*otf.Modu
 	}
 
 	return otf.UnmarshalModuleRow(otf.ModuleRow(row)), nil
-}
-
-func (db *DB) DownloadModuleVersion(ctx context.Context, opts otf.DownloadModuleOptions) ([]byte, error) {
-	tarball, err := db.FindModuleTarball(ctx, String(opts.ModuleVersionID))
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	return tarball, nil
 }
 
 func (db *DB) DeleteModule(ctx context.Context, id string) error {

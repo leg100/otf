@@ -5,6 +5,7 @@ INSERT INTO modules (
     updated_at,
     name,
     provider,
+    status,
     organization_id
 ) VALUES (
     pggen.arg('id'),
@@ -12,6 +13,7 @@ INSERT INTO modules (
     pggen.arg('updated_at'),
     pggen.arg('name'),
     pggen.arg('provider'),
+    pggen.arg('status'),
     pggen.arg('organization_id')
 );
 
@@ -32,13 +34,15 @@ INSERT INTO module_versions (
     version,
     created_at,
     updated_at,
-    module_id
+    module_id,
+    status
 ) VALUES (
     pggen.arg('module_version_id'),
     pggen.arg('version'),
     pggen.arg('created_at'),
     pggen.arg('updated_at'),
-    pggen.arg('module_id')
+    pggen.arg('module_id'),
+    pggen.arg('status')
 )
 RETURNING *;
 
@@ -49,6 +53,7 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
+    m.status,
     (o.*)::"organizations" AS organization,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
@@ -70,6 +75,7 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
+    m.status,
     (o.*)::"organizations" AS organization,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
@@ -93,6 +99,7 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
+    m.status,
     (o.*)::"organizations" AS organization,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
@@ -114,6 +121,7 @@ SELECT
     m.updated_at,
     m.name,
     m.provider,
+    m.status,
     (o.*)::"organizations" AS organization,
     (r.*)::"module_repos" AS module_repo,
     (h.*)::"webhooks" AS webhook,
@@ -128,6 +136,12 @@ JOIN (module_repos r JOIN webhooks h USING (webhook_id)) USING (module_id)
 WHERE h.webhook_id = pggen.arg('webhook_id')
 ;
 
+-- name: UpdateModuleStatus :one
+UPDATE modules
+SET status = pggen.arg('status')
+WHERE module_id = pggen.arg('module_id')
+RETURNING module_id
+;
 
 -- name: InsertModuleTarball :one
 INSERT INTO module_tarballs (
@@ -143,6 +157,15 @@ RETURNING module_version_id;
 SELECT tarball
 FROM module_tarballs
 WHERE module_version_id = pggen.arg('module_version_id')
+;
+
+-- name: UpdateModuleVersionStatus :one
+UPDATE module_versions
+SET
+    status = pggen.arg('status'),
+    status_error = pggen.arg('status_error')
+WHERE module_version_id = pggen.arg('module_version_id')
+RETURNING *
 ;
 
 -- name: DeleteModuleByID :one
