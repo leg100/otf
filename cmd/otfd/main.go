@@ -9,7 +9,6 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
-	"github.com/leg100/otf/cmd"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
@@ -73,7 +72,7 @@ type daemon struct {
 
 	*http.ServerConfig
 	*inmem.CacheConfig
-	*cmd.LoggerConfig
+	*cmdutil.LoggerConfig
 	*html.ApplicationOptions
 	*agent.Config
 	cloudConfigs []*cloudConfig

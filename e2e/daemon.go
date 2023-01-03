@@ -40,6 +40,11 @@ func (d *daemon) withGithubRepo(repo *otf.Repo) {
 	d.githubOptions = append(d.githubOptions, github.WithRepo(repo))
 }
 
+func (d *daemon) withGithubRefs(refs ...string) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, github.WithRefs(refs...))
+}
+
 func (d *daemon) withGithubTarball(tarball []byte) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithArchive(tarball))

@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS modules (
     status          TEXT REFERENCES module_statuses ON UPDATE CASCADE NOT NULL,
     organization_id TEXT REFERENCES organizations ON UPDATE CASCADE ON DELETE CASCADE NOT NULL,
                     PRIMARY KEY (module_id),
-                    UNIQUE (provider, name)
+                    UNIQUE (organization_id, provider, name)
 );
 
 CREATE TABLE IF NOT EXISTS module_version_statuses (

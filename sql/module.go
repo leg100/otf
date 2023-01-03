@@ -22,13 +22,15 @@ func (db *DB) CreateModule(ctx context.Context, mod *otf.Module) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
-			WebhookID:     UUID(mod.Repo().WebhookID),
-			VCSProviderID: String(mod.Repo().ProviderID),
-			ModuleID:      String(mod.ID()),
-		})
-		if err != nil {
-			return err
+		if mod.Repo() != nil {
+			_, err = tx.InsertModuleRepo(ctx, pggen.InsertModuleRepoParams{
+				WebhookID:     UUID(mod.Repo().WebhookID),
+				VCSProviderID: String(mod.Repo().ProviderID),
+				ModuleID:      String(mod.ID()),
+			})
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

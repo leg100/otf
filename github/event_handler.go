@@ -40,7 +40,8 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 		if len(parts) != 3 || parts[0] != "refs" {
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
-		if parts[1] == "tags" {
+		switch parts[1] {
+		case "tags":
 			var action otf.VCSTagEventAction
 			switch {
 			case event.GetCreated():
@@ -58,14 +59,14 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 				Identifier: event.GetRepo().GetFullName(),
 				CommitSHA:  event.GetAfter(),
 			}, nil
-		} else if parts[2] == "heads" {
+		case "heads":
 			return &otf.VCSPushEvent{
 				WebhookID:  opts.WebhookID,
 				Branch:     parts[2],
 				Identifier: event.GetRepo().GetFullName(),
 				CommitSHA:  event.GetAfter(),
 			}, nil
-		} else {
+		default:
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:

@@ -62,7 +62,7 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 	switch module.Status() {
 	case otf.ModuleStatusSetupComplete:
 		tarball, err := app.DownloadModuleVersion(r.Context(), otf.DownloadModuleOptions{
-			ModuleVersionID: module.Latest().ID(),
+			ModuleVersionID: module.Version(params.Version).ID(),
 		})
 		if err != nil {
 			writeError(w, err.Error(), http.StatusInternalServerError)

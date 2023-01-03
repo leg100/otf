@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -106,6 +107,15 @@ func NewTestRepo() *Repo {
 	}
 }
 
+func NewTestModuleRepo(provider, name string) *Repo {
+	identifier := fmt.Sprintf("%s/terraform-%s-%s", uuid.New(), provider, name)
+	return &Repo{
+		Identifier: identifier,
+		HTTPURL:    "http://fake-cloud.org/" + identifier,
+		Branch:     "master",
+	}
+}
+
 func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 	return &Webhook{
 		WebhookID:   uuid.New(),
@@ -118,11 +128,12 @@ func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 }
 
 func NewTestModule(org *Organization) *Module {
-	return NewModule(CreateModuleOptions{
+	createOpts := CreateModuleOptions{
 		Organization: org,
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
-	})
+	}
+	return NewModule(createOpts)
 }
 
 func NewTestCloudConfig(cloud Cloud) CloudConfig {

@@ -21,6 +21,18 @@ func TestModule_Create(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestModule_Create_WithRepo(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	module := otf.NewTestModule(org)
+
+	defer db.DeleteModule(ctx, module.ID())
+
+	err := db.CreateModule(ctx, module)
+	require.NoError(t, err)
+}
+
 func TestModule_Get(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
