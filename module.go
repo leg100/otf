@@ -91,10 +91,10 @@ func (m *Module) MarshalLog() any {
 	}
 }
 
-// NewModuleStatus determines a new module status based on current module status
+// NextModuleStatus determines a new module status based on current module status
 // and the version status (effectively a finite state machine calculating the next
 // state to transition to).
-func NewModuleStatus(current ModuleStatus, versionStatus ModuleVersionStatus) ModuleStatus {
+func NextModuleStatus(current ModuleStatus, versionStatus ModuleVersionStatus) ModuleStatus {
 	switch current {
 	case ModuleStatusSetupComplete:
 		// once setup is complete, it's complete

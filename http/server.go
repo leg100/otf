@@ -127,6 +127,13 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
 	})
 
+	authMiddleware := &authTokenMiddleware{
+		UserService:            app,
+		AgentTokenService:      app,
+		RegistrySessionService: app,
+		siteToken:              cfg.SiteToken,
+	}
+
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
 		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
@@ -135,12 +142,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		// Authenticated endpoints
 		api.Sub(func(r *Router) {
 			// Ensure request has valid API bearer token
-			r.Use((&authTokenMiddleware{
-				UserService:            app,
-				AgentTokenService:      app,
-				RegistrySessionService: app,
-				siteToken:              cfg.SiteToken,
-			}).handler)
+			r.Use(authMiddleware.handler)
 
 			// Organization routes
 			r.GET("/organizations", s.ListOrganizations)
@@ -213,18 +215,16 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			// Agent token routes
 			r.GET("/agent/details", s.GetCurrentAgent)
 			r.PST("/agent/create", s.CreateAgentToken)
+
+			// Registry session routes
+			r.PST("/organizations/{organization_name}/registry/sessions/create", s.CreateRegistrySession)
 		})
 	})
 
 	// module registry
 	r.PathPrefix("/api/registry/v1/modules").Sub(func(r *Router) {
 		// Ensure request has valid API bearer token
-		r.Use((&authTokenMiddleware{
-			UserService:            app,
-			AgentTokenService:      app,
-			RegistrySessionService: app,
-			siteToken:              cfg.SiteToken,
-		}).handler)
+		r.Use(authMiddleware.handler)
 
 		r.GET("/{organization}/{name}/{provider}/versions", s.listModuleVersions)
 		r.GET("/{organization}/{name}/{provider}/{version}/download", s.getModuleVersionDownloadLink)

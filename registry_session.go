@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
+	jsonapi "github.com/leg100/otf/http/dto"
 )
 
 const (
@@ -84,5 +85,12 @@ func UnmarshalRegistrySessionRow(result RegistrySessionRow) *RegistrySession {
 		token:        result.Token.String,
 		expiry:       result.Expiry.Time.UTC(),
 		organization: result.OrganizationName.String,
+	}
+}
+
+func UnmarshalRegistrySessionJSONAPI(dto *jsonapi.RegistrySession) *RegistrySession {
+	return &RegistrySession{
+		token:        dto.Token,
+		organization: dto.OrganizationName,
 	}
 }

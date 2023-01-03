@@ -125,7 +125,7 @@ func UpdateModuleVersionStatus(ctx context.Context, app Application, opts Update
 		if err != nil {
 			return err
 		}
-		newModStatus := NewModuleStatus(mod.Status(), modver.Status())
+		newModStatus := NextModuleStatus(mod.Status(), modver.Status())
 		if newModStatus != mod.Status() {
 			mod, err = tx.UpdateModuleStatus(ctx, UpdateModuleStatusOptions{
 				ID:     mod.ID(),
