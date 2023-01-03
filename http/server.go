@@ -30,17 +30,14 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	// Listening Address in the form <ip>:<port>
-	Addr                 string
+	Addr                 string // Listening Address in the form <ip>:<port>
+	Hostname             string // user-facing hostname including port
 	SSL                  bool
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
-	// site admin token
-	SiteToken string
-	// Secret for signing
-	Secret string
-	// Maximum permitted config upload size in bytes
-	MaxConfigSize int64
+	SiteToken            string // site admin token
+	Secret               string // Secret for signing
+	MaxConfigSize        int64  // Maximum permitted config upload size in bytes
 }
 
 func (cfg *ServerConfig) Validate() error {

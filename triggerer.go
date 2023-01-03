@@ -20,6 +20,7 @@ type Triggerer struct {
 func NewTriggerer(app Application, logger logr.Logger, events <-chan VCSEvent) *Triggerer {
 	return &Triggerer{
 		Application: app,
+		Publisher:   NewPublisher(app),
 		Logger:      logger.WithValues("component", "triggerer"),
 		events:      events,
 	}

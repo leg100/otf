@@ -13,24 +13,17 @@ const DefaultPathPrefix = "/"
 
 // Application is the otf web app.
 type Application struct {
-	// Static asset server
-	staticServer http.FileSystem
-	// otf service accessors
-	otf.Application
-	// path prefix for all URLs
-	pathPrefix string
-	// view engine populates and renders templates
-	*viewEngine
-	// logger for logging messages
-	logr.Logger
-	// server-side-events server
-	*sse.Server
-	// enabled authenticators
-	authenticators []*Authenticator
-	// site admin's authentication token
-	siteToken string
-	// secret for webhook signatures
-	secret string
+	staticServer   http.FileSystem  // Static asset server
+	pathPrefix     string           // path prefix for all URLs
+	authenticators []*Authenticator // enabled authenticators
+	siteToken      string           // site admin's authentication token
+	secret         string           // secret for webhook signatures
+	hostname       string           // user-facing hostname inc port
+
+	otf.Application // otf service accessors
+	*viewEngine     // view engine populates and renders templates
+	logr.Logger     // logger for logging messages
+	*sse.Server     // server-side-events server
 }
 
 // ApplicationOptions are options for configuring the web app
@@ -48,7 +41,10 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 	if opts.DevMode {
 		logger.Info("enabled developer mode")
 	}
-	views, err := newViewEngine(opts.DevMode)
+	views, err := newViewEngine(viewEngineOptions{
+		devMode:  opts.DevMode,
+		hostname: opts.Hostname,
+	})
 	if err != nil {
 		return err
 	}
@@ -69,6 +65,7 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 		Server:       sseServer,
 		siteToken:    opts.SiteToken,
 		secret:       opts.Secret,
+		hostname:     opts.Hostname,
 	}
 
 	app.authenticators, err = newAuthenticators(opts.Application, opts.OAuthClients)

@@ -82,6 +82,8 @@ type daemon struct {
 func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
+	d.ServerConfig.Hostname = d.hostname
+
 	// create oauth clients
 	var oauthClients []*html.OAuthClient
 	for _, cfg := range d.cloudConfigs {

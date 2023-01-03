@@ -27,7 +27,42 @@
   <form class="module-delete-button" action="{{ deleteModulePath .Content.ID }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
   </form>
+  <div class="main-form">
+    <div>
+      <label for="usage">Usage</label>
+      <textarea id="usage" cols="42" rows="4" readonly wrap="off">
+  module "test" {
+    source  = "{{ .Hostname }}/automatize/test/otf"
+    version = "{{ .Content.CurrentVersion.Version }}"
+  }
+      </textarea>
+    </div>
+  </div>
   <div>
     {{ trimHTML .Content.Readme }}
+  </div>
+  <div>
+    <h3>Resources</h3>
+    {{ range $k, $v := .Content.TerraformModule.ManagedResources }}
+      <div>
+        <span class="data">{{ $k }}</span>
+      </div>
+    {{ end }}
+  </div>
+  <div>
+    <h3>Variables</h3>
+    {{ range $k, $v := .Content.TerraformModule.Variables }}
+      <div>
+        <span class="data">{{ $k }}</span>
+      </div>
+    {{ end }}
+  </div>
+  <div>
+    <h3>Outputs</h3>
+    {{ range $k, $v := .Content.TerraformModule.Outputs }}
+      <div>
+        <span class="data">{{ $k }}</span>
+      </div>
+    {{ end }}
   </div>
 {{ end }}
