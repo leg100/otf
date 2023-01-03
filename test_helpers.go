@@ -136,6 +136,16 @@ func NewTestModule(org *Organization) *Module {
 	return NewModule(createOpts)
 }
 
+func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
+	createOpts := CreateModuleVersionOptions{
+		ModuleID: mod.ID(),
+		Version:  version,
+	}
+	modver := NewModuleVersion(createOpts)
+	modver.status = status
+	return modver
+}
+
 func NewTestCloudConfig(cloud Cloud) CloudConfig {
 	return CloudConfig{
 		Name:     "fake-cloud",

@@ -58,3 +58,22 @@ func TestNextModuleStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestSortedModuleVersions(t *testing.T) {
+	org := NewTestOrganization(t)
+	mod := NewTestModule(org)
+
+	v0_1 := NewTestModuleVersion(mod, "0.1", ModuleVersionStatusOk)
+	v0_2 := NewTestModuleVersion(mod, "0.2", ModuleVersionStatusOk)
+	v0_3 := NewTestModuleVersion(mod, "0.3", ModuleVersionStatusOk)
+	v0_4 := NewTestModuleVersion(mod, "0.4", ModuleVersionStatusPending)
+
+	l := SortedModuleVersions{}
+	l = l.add(v0_1)
+	l = l.add(v0_4)
+	l = l.add(v0_3)
+	l = l.add(v0_2)
+
+	assert.Equal(t, SortedModuleVersions{v0_1, v0_2, v0_3, v0_4}, l)
+	assert.Equal(t, v0_3, l.latest())
+}

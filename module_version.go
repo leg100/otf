@@ -50,8 +50,6 @@ func (v *ModuleVersion) StatusError() string         { return v.statusError }
 func (v *ModuleVersion) CreatedAt() time.Time        { return v.createdAt }
 func (v *ModuleVersion) UpdatedAt() time.Time        { return v.updatedAt }
 
-func (v *ModuleVersion) UpdateStatus(status ModuleVersionStatus) { v.status = status }
-
 func (v *ModuleVersion) MarshalLog() any {
 	return struct {
 		ID, ModuleID, Version string
