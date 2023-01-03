@@ -27,4 +27,7 @@
   <form class="module-delete-button" action="{{ deleteModulePath .Content.ID }}" method="POST">
     <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
   </form>
+  <div>
+    {{ trimHTML .Content.Readme }}
+  </div>
 {{ end }}

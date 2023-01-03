@@ -4,12 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/pkg/errors"
 )
 
-func UnmarshalTerraformModule(tarball []byte) (*tfconfig.Module, error) {
+type TerraformModule struct {
+	*tfconfig.Module
+
+	readme []byte
+}
+
+func UnmarshalTerraformModule(tarball []byte) (*TerraformModule, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating temporary directory")
@@ -23,6 +30,16 @@ func UnmarshalTerraformModule(tarball []byte) (*tfconfig.Module, error) {
 	if diags.HasErrors() {
 		return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
 	}
+
+	tfmod := &TerraformModule{Module: mod}
+
+	// retrieve readme if there is one
+	if readme, err := os.ReadFile(path.Join(dir, "README.md")); err == nil {
+		tfmod.readme = readme
+	}
+
 	// valid module
-	return mod, nil
+	return tfmod, nil
 }
+
+func (m *TerraformModule) Readme() []byte { return m.readme }

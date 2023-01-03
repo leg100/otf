@@ -1,9 +1,9 @@
 package html
 
 import (
+	"html/template"
 	"net/http"
 
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/leg100/otf"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
@@ -57,7 +57,8 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tfmod *tfconfig.Module
+	var tfmod *otf.TerraformModule
+	var readme template.HTML
 	switch module.Status() {
 	case otf.ModuleStatusSetupComplete:
 		tarball, err := app.DownloadModuleVersion(r.Context(), otf.DownloadModuleOptions{
@@ -72,15 +73,18 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 			writeError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		readme = markdownToHTML(tfmod.Readme())
 	}
 
 	app.render("module_get.tmpl", w, r, struct {
 		*otf.Module
-		TerraformModule *tfconfig.Module
+		TerraformModule *otf.TerraformModule
+		Readme          template.HTML
 		CurrentVersion  *otf.ModuleVersion
 	}{
 		Module:          module,
 		TerraformModule: tfmod,
+		Readme:          readme,
 		CurrentVersion:  module.Version(params.Version),
 	})
 }

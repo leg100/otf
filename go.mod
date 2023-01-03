@@ -13,6 +13,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.1
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zerologr v1.2.2
+	github.com/gomarkdown/markdown v0.0.0-20221013030248-663e2500819c
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/goexpect v0.0.0-20210430020637-ab937bf7fd6f
 	github.com/google/uuid v1.3.0

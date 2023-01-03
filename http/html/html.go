@@ -3,7 +3,12 @@ Package html provides the otf web app, serving up HTML formatted pages and assoc
 */
 package html
 
-import "net/url"
+import (
+	"html/template"
+	"net/url"
+
+	"github.com/gomarkdown/markdown"
+)
 
 // mergeQuery merges the query string into the given url, replacing any existing
 // query parameters with the same name.
@@ -31,4 +36,8 @@ func selected(a, b string) string {
 		return "selected"
 	}
 	return ""
+}
+
+func markdownToHTML(md []byte) template.HTML {
+	return template.HTML(string(markdown.ToHTML(md, nil, nil)))
 }
