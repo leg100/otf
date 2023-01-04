@@ -20,7 +20,7 @@ const (
 
 func (app *Application) listModules(w http.ResponseWriter, r *http.Request) {
 	var opts otf.ListModulesOptions
-	if err := decode.Route(&opts, r); err != nil {
+	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

@@ -207,7 +207,7 @@ func (l SortedModuleVersions) add(modver *ModuleVersion) SortedModuleVersions {
 
 // LatestVersion returns the latest ok version
 func (l SortedModuleVersions) latest() *ModuleVersion {
-	for i := len(l) - 1; i > 0; i-- {
+	for i := len(l) - 1; i >= 0; i-- {
 		if l[i].Status() == ModuleVersionStatusOk {
 			return l[i]
 		}

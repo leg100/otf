@@ -127,13 +127,37 @@ func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 	}
 }
 
-func NewTestModule(org *Organization) *Module {
+func NewTestModule(org *Organization, opts ...NewTestModuleOption) *Module {
 	createOpts := CreateModuleOptions{
 		Organization: org,
 		Provider:     uuid.NewString(),
 		Name:         uuid.NewString(),
 	}
-	return NewModule(createOpts)
+	mod := NewModule(createOpts)
+	for _, o := range opts {
+		o(mod)
+	}
+	return mod
+}
+
+type NewTestModuleOption func(*Module)
+
+func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
+	return func(mod *Module) {
+		mod.status = status
+	}
+}
+
+func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
+	return func(mod *Module) {
+		mod.Add(NewTestModuleVersion(mod, version, status))
+	}
+}
+
+func WithModuleRepo() NewTestModuleOption {
+	return func(mod *Module) {
+		mod.repo = &ModuleRepo{}
+	}
 }
 
 func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {

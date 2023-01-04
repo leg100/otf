@@ -68,12 +68,21 @@ func TestSortedModuleVersions(t *testing.T) {
 	v0_3 := NewTestModuleVersion(mod, "0.3", ModuleVersionStatusOk)
 	v0_4 := NewTestModuleVersion(mod, "0.4", ModuleVersionStatusPending)
 
-	l := SortedModuleVersions{}
-	l = l.add(v0_1)
-	l = l.add(v0_4)
-	l = l.add(v0_3)
-	l = l.add(v0_2)
+	t.Run("add", func(t *testing.T) {
+		l := SortedModuleVersions{}
+		l = l.add(v0_1)
+		l = l.add(v0_4)
+		l = l.add(v0_3)
+		l = l.add(v0_2)
 
-	assert.Equal(t, SortedModuleVersions{v0_1, v0_2, v0_3, v0_4}, l)
-	assert.Equal(t, v0_3, l.latest())
+		assert.Equal(t, SortedModuleVersions{v0_1, v0_2, v0_3, v0_4}, l)
+	})
+
+	t.Run("latest", func(t *testing.T) {
+		assert.Nil(t, SortedModuleVersions{}.latest())
+		assert.Equal(t, v0_1, SortedModuleVersions{v0_1}.latest())
+		assert.Equal(t, v0_2, SortedModuleVersions{v0_1, v0_2}.latest())
+		assert.Equal(t, v0_3, SortedModuleVersions{v0_1, v0_2, v0_3}.latest())
+		assert.Equal(t, v0_3, SortedModuleVersions{v0_1, v0_2, v0_3, v0_4}.latest())
+	})
 }
