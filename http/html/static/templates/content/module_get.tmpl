@@ -31,10 +31,10 @@
       <div>
         <label for="usage">Usage</label>
         <textarea id="usage" cols="42" rows="5" readonly wrap="off">
-  module "test" {
-    source  = "{{ .Hostname }}/automatize/test/otf"
-    version = "{{ .Content.CurrentVersion.Version }}"
-  }
+module "{{ .Content.Name }}" {
+  source  = "{{ .Hostname }}/{{ .Content.Organization.Name }}/{{ .Content.Name }}/{{ .Content.Provider }}"
+  version = "{{ .Content.CurrentVersion.Version }}"
+}
         </textarea>
       </div>
     </div>

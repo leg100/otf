@@ -51,6 +51,10 @@ jobs:
         run: |
           make unit
       -
+        name: Add e2e hostname to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 devd.io" | sudo tee -a /etc/hosts
+      -
         name: E2E tests
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
@@ -58,6 +62,7 @@ jobs:
           make e2e go-tfe-tests
         env:
           OTF_SECRET: 783aaea8e77db6784c313a94d0c8efda86265de9d93677ea4b6d98c6c3e6fae4
+          OTF_E2E_HOSTNAME: devd.io
       -
         name: Archive E2E screenshots
         if: always()

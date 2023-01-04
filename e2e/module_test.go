@@ -3,7 +3,9 @@ package e2e
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/chromedp/chromedp"
@@ -22,8 +24,6 @@ func TestModule(t *testing.T) {
 
 	user := otf.NewTestUser(t)
 	org := user.Username() // we'll be using user's personal organization
-	tarball, err := os.ReadFile("../testdata/github.tar.gz")
-	require.NoError(t, err)
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
@@ -32,6 +32,10 @@ func TestModule(t *testing.T) {
 	daemon.withGithubUser(user)
 	daemon.withGithubRepo(repo)
 	daemon.withGithubRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0")
+
+	// create a tarball containing the module and seed our fake github with it
+	tarball, err := os.ReadFile("./fixtures/github.module.tar.gz")
+	require.NoError(t, err)
 	daemon.withGithubTarball(tarball)
 
 	statuses := make(chan *gogithub.StatusEvent, 10)
@@ -92,8 +96,6 @@ func TestModule(t *testing.T) {
 	push := fmt.Sprintf(string(pushTpl), "v1.0.0", repo.Identifier)
 	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.WebhookURL, *daemon.githubServer.WebhookSecret)
 
-	// TODO: need to poll for new version, reloading the browser.
-
 	// v1.0.0 should appear as latest module on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		// go to module
@@ -103,4 +105,45 @@ func TestModule(t *testing.T) {
 		screenshot(t),
 	})
 	require.NoError(t, err)
+
+	// Now run terraform with some config that sources the module. First we need
+	// a workspace...
+	workspaceName := "module-test"
+	err = chromedp.Run(ctx, createWorkspaceTasks(t, hostname, org, workspaceName))
+	require.NoError(t, err)
+
+	// generate some terraform config that sources our module
+	root := newRootModule(t, hostname, org, workspaceName)
+	config := fmt.Sprintf(`
+module "mod" {
+  source  = "%s/%s/%s/%s"
+  version = "1.0.0"
+}
+`, hostname, org, name, provider)
+	err = os.WriteFile(filepath.Join(root, "sourcing.tf"), []byte(config), 0o600)
+	require.NoError(t, err)
+
+	// run terraform locally
+	err = chromedp.Run(ctx, terraformLoginTasks(t, hostname))
+	require.NoError(t, err)
+
+	cmd := exec.Command("terraform", "init", "-no-color")
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+
+	cmd = exec.Command("terraform", "plan", "-no-color")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Plan: 2 to add, 0 to change, 0 to destroy.")
+
+	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.")
 }
