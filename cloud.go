@@ -174,11 +174,3 @@ type RepoList struct {
 	*Pagination
 	Items []*Repo
 }
-
-type VCSRef struct {
-	Ref string // heads/*, tags/*, or sha
-	SHA string
-}
-
-// TagRef is a git reference for a tag, in the format 'tags/<tag>'
-type TagRef string

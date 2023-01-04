@@ -55,7 +55,7 @@ func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
 	return nil
 }
 
-// triggerRun triggers a run upon receipt of a vcs vevent
+// triggerRun triggers a run upon receipt of a vcs event
 func (h *Triggerer) triggerRun(ctx context.Context, event VCSEvent) error {
 	var webhookID uuid.UUID
 	var isPullRequest bool

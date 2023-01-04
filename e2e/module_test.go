@@ -14,7 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestModule tests publishing a module.
+// TestModule tests publishing a module, first via the UI and then via a webhook
+// event, and then invokes a terraform run that sources the module.
 func TestModule(t *testing.T) {
 	addBuildsToPath(t)
 
