@@ -10,7 +10,9 @@ import (
 
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,14 +25,23 @@ func TestModule(t *testing.T) {
 	provider := "aws"
 	repo := otf.NewTestModuleRepo(provider, name)
 
-	user := otf.NewTestUser(t)
-	org := user.Username() // we'll be using user's personal organization
+	org := uuid.NewString()
+	user := cloud.User{
+		Name: "module-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "owners",
+				Organization: org,
+			},
+		},
+		Organizations: []string{org},
+	}
 
 	// create an otf daemon with a fake github backend, ready to sign in a user,
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
 	daemon := &daemon{}
-	daemon.withGithubUser(user)
+	daemon.withGithubUser(&user)
 	daemon.withGithubRepo(repo)
 	daemon.withGithubRefs("tags/v0.0.1", "tags/v0.0.2", "tags/v0.1.0")
 
@@ -53,7 +64,7 @@ func TestModule(t *testing.T) {
 
 	var moduleURL string // captures url for module page
 	err = chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Username()),
+		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, url, org),
 		// publish module
 		chromedp.Tasks{

@@ -20,6 +20,8 @@ import (
 
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
+	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -128,4 +130,23 @@ func sendGithubPushEvent(t *testing.T, payload []byte, url, secret string) {
 		require.NoError(t, err)
 		t.Fatal(string(response))
 	}
+}
+
+// newOrg generates an organization name with a prefix and a random suffix.
+func newOrg(prefix string) string {
+	return prefix + "-" + otf.GenerateRandomString(6)
+}
+
+func newUser(username, org string, teams ...string) cloud.User {
+	user := cloud.User{
+		Name:          username,
+		Organizations: []string{org},
+	}
+	for _, team := range teams {
+		user.Teams = append(user.Teams, cloud.Team{
+			Name:         team,
+			Organization: org,
+		})
+	}
+	return user
 }

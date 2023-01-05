@@ -10,7 +10,9 @@ import (
 
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,9 +21,19 @@ import (
 func TestConnectRepo(t *testing.T) {
 	addBuildsToPath(t)
 
-	user := otf.NewTestUser(t)
+	org := uuid.NewString()
+	user := cloud.User{
+		Name: "connect-repo-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "owners",
+				Organization: org,
+			},
+		},
+		Organizations: []string{org},
+	}
+
 	repo := otf.NewTestRepo()
-	org := user.Username() // we'll be using user's personal organization
 	tarball, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 
@@ -29,7 +41,7 @@ func TestConnectRepo(t *testing.T) {
 	// serve up a repo and its contents via tarball. And register a callback to
 	// test receipt of commit statuses
 	daemon := &daemon{}
-	daemon.withGithubUser(user)
+	daemon.withGithubUser(&user)
 	daemon.withGithubRepo(repo)
 	daemon.withGithubTarball(tarball)
 
@@ -51,7 +63,7 @@ func TestConnectRepo(t *testing.T) {
 	defer cancel()
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Username()),
+		githubLoginTasks(t, hostname, user.Name),
 		createGithubVCSProviderTasks(t, url, org),
 		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),

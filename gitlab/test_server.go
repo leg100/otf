@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 	"github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -116,21 +117,21 @@ func NewTestServer(t *testing.T, opts ...TestGitlabServerOption) *httptest.Serve
 
 type TestGitlabServerOption func(*testServerDB)
 
-func WithGitlabUser(user *otf.User) TestGitlabServerOption {
+func WithGitlabUser(user *cloud.User) TestGitlabServerOption {
 	return func(db *testServerDB) {
-		db.user = &gitlab.User{Username: user.Username(), ID: 1}
+		db.user = &gitlab.User{Username: user.Name, ID: 1}
 		db.access = make(map[int]gitlab.AccessLevelValue)
 
-		for i, org := range user.Organizations() {
+		for i, org := range user.Organizations {
 			db.groups = append(db.groups, &gitlab.Group{
 				ID:   i,
-				Path: org.Name(),
+				Path: org,
 			})
 			// find team belonging to organization and map team name to gitlab
 			// access level
-			for i, team := range user.Teams() {
-				if team.Organization().ID() == org.ID() {
-					switch team.Name() {
+			for i, team := range user.Teams {
+				if team.Organization == org {
+					switch team.Name {
 					case "maintainers":
 						db.access[i] = gitlab.MaintainerPermissions
 					}

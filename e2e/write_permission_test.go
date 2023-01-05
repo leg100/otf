@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf"
+	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,29 +15,43 @@ import (
 func TestWritePermission(t *testing.T) {
 	addBuildsToPath(t)
 
+	workspaceName := "write-perms"
+
 	// First we need to setup an organization with a user who is both in the
 	// owners team and the devops team.
-	org := otf.NewTestOrganization(t)
-	workspaceName := "write-perms"
-	owners := otf.NewTeam("owners", org)
-	devops := otf.NewTeam("devops", org)
-	boss := otf.NewUser("boss", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
+	org := uuid.NewString()
+	owners := cloud.Team{Name: "owners", Organization: org}
+	devops := cloud.Team{Name: "devops", Organization: org}
 
 	// Build and start a daemon specifically for the boss
+	boss := cloud.User{
+		Name:          "boss",
+		Organizations: []string{org},
+		Teams: []cloud.Team{
+			owners,
+			devops,
+		},
+	}
 	bossDaemon := &daemon{}
-	bossDaemon.withGithubUser(boss)
+	bossDaemon.withGithubUser(&boss)
 	bossHostname := bossDaemon.start(t)
 	bossURL := "https://" + bossHostname
 
 	// setup non-owner user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
-	engineer := otf.NewUser("engineer", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(devops))
+	engineer := cloud.User{
+		Name:          "engineer",
+		Organizations: []string{org},
+		Teams: []cloud.Team{
+			devops,
+		},
+	}
 	engineerDaemon := &daemon{}
-	engineerDaemon.withGithubUser(engineer)
+	engineerDaemon.withGithubUser(&engineer)
 	engineerHostname := engineerDaemon.start(t)
 
 	// create terraform config
-	config := newRootModule(t, engineerHostname, org.Name(), workspaceName)
+	config := newRootModule(t, engineerHostname, org, workspaceName)
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -44,11 +59,11 @@ func TestWritePermission(t *testing.T) {
 
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		// login to UI as boss
-		githubLoginTasks(t, bossHostname, boss.Username()),
+		githubLoginTasks(t, bossHostname, boss.Name),
 		// create workspace via UI
-		createWorkspaceTasks(t, bossHostname, org.Name(), workspaceName),
+		createWorkspaceTasks(t, bossHostname, org, workspaceName),
 		// assign write permissions to devops team
-		addWorkspacePermissionTasks(t, bossURL, org.Name(), workspaceName, devops.Name(), "write"),
+		addWorkspacePermissionTasks(t, bossURL, org, workspaceName, devops.Name, "write"),
 		// run terraform login as engineer
 		terraformLoginTasks(t, engineerHostname),
 	})
@@ -86,21 +101,21 @@ func TestWritePermission(t *testing.T) {
 	require.Contains(t, string(out), "Apply complete! Resources: 0 added, 0 changed, 1 destroyed.")
 
 	// lock workspace
-	cmd = exec.Command("otf", "workspaces", "lock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
+	cmd = exec.Command("otf", "workspaces", "lock", workspaceName, "--organization", org, "--address", engineerHostname)
 	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// unlock workspace
-	cmd = exec.Command("otf", "workspaces", "unlock", workspaceName, "--organization", org.Name(), "--address", engineerHostname)
+	cmd = exec.Command("otf", "workspaces", "unlock", workspaceName, "--organization", org, "--address", engineerHostname)
 	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
 
 	// list workspaces
-	cmd = exec.Command("otf", "workspaces", "list", "--organization", org.Name(), "--address", engineerHostname)
+	cmd = exec.Command("otf", "workspaces", "list", "--organization", org, "--address", engineerHostname)
 	cmd.Dir = config
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))

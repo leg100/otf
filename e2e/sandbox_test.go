@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf"
+	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,11 +21,20 @@ func TestSandbox(t *testing.T) {
 
 	addBuildsToPath(t)
 
-	user := otf.NewTestUser(t)
-	org := user.Username() // use user's personal organization
+	org := uuid.NewString()
+	user := cloud.User{
+		Name: "sandbox-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "owners",
+				Organization: org,
+			},
+		},
+		Organizations: []string{org},
+	}
 
 	daemon := &daemon{}
-	daemon.withGithubUser(user)
+	daemon.withGithubUser(&user)
 	daemon.withFlags("--sandbox")
 	hostname := daemon.start(t)
 
@@ -37,7 +47,7 @@ func TestSandbox(t *testing.T) {
 
 	// create api token and pass token to terraform login
 	err := chromedp.Run(ctx, chromedp.Tasks{
-		githubLoginTasks(t, hostname, user.Username()),
+		githubLoginTasks(t, hostname, user.Name),
 		terraformLoginTasks(t, hostname),
 	})
 	require.NoError(t, err)

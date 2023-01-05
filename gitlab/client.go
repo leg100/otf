@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -44,55 +45,50 @@ func NewClient(ctx context.Context, cfg otf.CloudClientOptions) (*Client, error)
 // groups and the user's teams map to their access level on the groups, e.g. a
 // user with maintainer access level on group acme maps to a user in the
 // maintainer team in the acme organization.
-func (g *Client) GetUser(ctx context.Context) (*otf.User, error) {
+func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	guser, _, err := g.client.Users.CurrentUser()
 	if err != nil {
 		return nil, err
 	}
-
 	groups, _, err := g.client.Groups.ListGroups(&gitlab.ListGroupsOptions{
 		TopLevelOnly: otf.Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
-	var orgs []*otf.Organization
-	var teams []*otf.Team
+
+	user := cloud.User{Name: guser.Username}
 	for _, group := range groups {
 		// Create org for each top-level group
-		org, err := otf.NewOrganization(otf.OrganizationCreateOptions{
-			Name: otf.String(group.Path),
-		})
-		if err != nil {
-			return nil, err
-		}
-		orgs = append(orgs, org)
+		user.Organizations = append(user.Organizations, group.Path)
 
 		// Get group membership info
 		membership, _, err := g.client.GroupMembers.GetGroupMember(group.ID, guser.ID)
 		if err != nil {
 			return nil, err
 		}
-		var teamName string
+		var team string
 		switch membership.AccessLevel {
 		case gitlab.OwnerPermissions:
-			teamName = "owners"
+			team = "owners"
 		case gitlab.DeveloperPermissions:
-			teamName = "developers"
+			team = "developers"
 		case gitlab.MaintainerPermissions:
-			teamName = "maintainers"
+			team = "maintainers"
 		case gitlab.ReporterPermissions:
-			teamName = "reporters"
+			team = "reporters"
 		case gitlab.GuestPermissions:
-			teamName = "guests"
+			team = "guests"
 		default:
 			// TODO: skip unknown access levels without error
 			return nil, fmt.Errorf("unknown gitlab access level: %d", membership.AccessLevel)
 		}
-		teams = append(teams, otf.NewTeam(teamName, org))
+		user.Teams = append(user.Teams, cloud.Team{
+			Name:         team,
+			Organization: group.Path,
+		})
 	}
-	user := otf.NewUser(guser.Username, otf.WithOrganizationMemberships(orgs...), otf.WithTeamMemberships(teams...))
-	return user, nil
+	return &user, nil
 }
 
 func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {

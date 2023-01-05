@@ -11,6 +11,7 @@ import (
 
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/mitchellh/iochan"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func (d *daemon) withFlags(flags ...string) {
 	d.flags = append(d.flags, flags...)
 }
 
-func (d *daemon) withGithubUser(user *otf.User) {
+func (d *daemon) withGithubUser(user *cloud.User) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithUser(user))
 }

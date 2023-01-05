@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf"
+	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,10 +15,19 @@ import (
 func TestStartRunUI(t *testing.T) {
 	addBuildsToPath(t)
 
-	user := otf.NewTestUser(t)
-	org := user.Username() // use user's personal organization
+	org := uuid.NewString()
+	user := cloud.User{
+		Name: "start-run-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "owners",
+				Organization: org,
+			},
+		},
+		Organizations: []string{org},
+	}
 	daemon := &daemon{}
-	daemon.withGithubUser(user)
+	daemon.withGithubUser(&user)
 	hostname := daemon.start(t)
 	workspaceName := "workspace-start-run"
 	root := newRootModule(t, hostname, org, workspaceName)
@@ -28,7 +38,7 @@ func TestStartRunUI(t *testing.T) {
 
 	// in browser, login and create workspace
 	err := chromedp.Run(ctx,
-		githubLoginTasks(t, hostname, user.Username()),
+		githubLoginTasks(t, hostname, user.Name),
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		terraformLoginTasks(t, hostname),
 	)

@@ -20,7 +20,7 @@ func TestSiteAdmin(t *testing.T) {
 	daemon.withFlags("--site-token", "abc123")
 	hostname := daemon.start(t)
 
-	orgName := uuid.NewString()
+	org := uuid.NewString()
 
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
@@ -48,7 +48,7 @@ func TestSiteAdmin(t *testing.T) {
 		chromedp.Click("#new-organization-button", chromedp.NodeVisible),
 		screenshot(t),
 		chromedp.Focus("input#name", chromedp.NodeVisible),
-		input.InsertText(orgName),
+		input.InsertText(org),
 		screenshot(t),
 		chromedp.Submit("input#name"),
 		screenshot(t),
@@ -59,6 +59,6 @@ func TestSiteAdmin(t *testing.T) {
 
 	assert.Equal(t, "site admin", footerLoginText)
 	assert.Equal(t, "You are logged in as site-admin", strings.TrimSpace(loginConfirmation))
-	assert.Equal(t, "https://"+hostname+"/organizations/"+orgName, orgLocation)
-	assert.Equal(t, "created organization: "+orgName, strings.TrimSpace(orgCreated))
+	assert.Equal(t, "https://"+hostname+"/organizations/"+org, orgLocation)
+	assert.Equal(t, "created organization: "+org, strings.TrimSpace(orgCreated))
 }

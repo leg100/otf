@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf"
+	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,30 +17,43 @@ import (
 func TestPlanPermission(t *testing.T) {
 	addBuildsToPath(t)
 
-	// First we need to setup an organization with a user who is both in the
-	// owners team and the devops team.
-	org := otf.NewTestOrganization(t)
 	workspaceName := "plan-perms"
 
-	owners := otf.NewTeam("owners", org)
-	devops := otf.NewTeam("devops", org)
+	// First we need to setup an organization with a user who is both in the
+	// owners team and the devops team.
+	org := uuid.NewString()
+	owners := cloud.Team{Name: "owners", Organization: org}
+	devops := cloud.Team{Name: "devops", Organization: org}
 
 	// Build and start a daemon specifically for the boss
-	boss := otf.NewUser("boss", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(owners, devops))
+	boss := cloud.User{
+		Name:          "boss",
+		Organizations: []string{org},
+		Teams: []cloud.Team{
+			owners,
+			devops,
+		},
+	}
 	bossDaemon := &daemon{}
-	bossDaemon.withGithubUser(boss)
+	bossDaemon.withGithubUser(&boss)
 	bossHostname := bossDaemon.start(t)
 	bossURL := "https://" + bossHostname
 
 	// setup non-owner engineer user - note we start another daemon because this is the
 	// only way at present that an additional user can be seeded for testing.
-	engineer := otf.NewUser("engineer", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(devops))
+	engineer := cloud.User{
+		Name:          "engineer",
+		Organizations: []string{org},
+		Teams: []cloud.Team{
+			devops,
+		},
+	}
 	engineerDaemon := &daemon{}
-	engineerDaemon.withGithubUser(engineer)
+	engineerDaemon.withGithubUser(&engineer)
 	engineerHostname := engineerDaemon.start(t)
 
 	// create terraform configPath
-	configPath := newRootModule(t, engineerHostname, org.Name(), workspaceName)
+	configPath := newRootModule(t, engineerHostname, org, workspaceName)
 
 	// create browser
 	ctx, cancel := chromedp.NewContext(allocator)
@@ -47,15 +61,15 @@ func TestPlanPermission(t *testing.T) {
 
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		// login to UI as boss
-		githubLoginTasks(t, bossHostname, boss.Username()),
+		githubLoginTasks(t, bossHostname, boss.Name),
 		// create workspace via UI
-		createWorkspaceTasks(t, bossHostname, org.Name(), workspaceName),
+		createWorkspaceTasks(t, bossHostname, org, workspaceName),
 		// assign plan permissions to devops team
-		addWorkspacePermissionTasks(t, bossURL, org.Name(), workspaceName, devops.Name(), "plan"),
+		addWorkspacePermissionTasks(t, bossURL, org, workspaceName, devops.Name, "plan"),
 		// logout of UI (as boss)
 		logoutTasks(t, bossHostname),
 		// login to UI as engineer
-		githubLoginTasks(t, engineerHostname, engineer.Username()),
+		githubLoginTasks(t, engineerHostname, engineer.Name),
 		// create api token and run terraform login (as engineer)
 		terraformLoginTasks(t, engineerHostname),
 		// terraform init (as engineer)
