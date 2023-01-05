@@ -37,6 +37,7 @@ func (u *Team) IsOwners() bool {
 func (u *Team) Update(opts UpdateTeamOptions) error {
 	u.access.ManageWorkspaces = opts.ManageWorkspaces
 	u.access.ManageVCS = opts.ManageVCS
+	u.access.ManageRegistry = opts.ManageRegistry
 	return nil
 }
 
@@ -79,6 +80,7 @@ type TeamSpec struct {
 type OrganizationAccess struct {
 	ManageWorkspaces bool `schema:"manage_workspaces"` // admin access on all workspaces
 	ManageVCS        bool `schema:"manage_vcs"`        // manage VCS providers
+	ManageRegistry   bool `schema:"manage_registry"`   // manage module and provider registry
 }
 
 type CreateTeamOptions struct {

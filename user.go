@@ -92,19 +92,20 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 				// owner team members can perform all actions on organization
 				return true
 			}
-
-			switch action {
-			case GetOrganizationAction, GetEntitlementsAction:
-				// members can retrieve info about their organization
+			if OrganizationGuestRole.IsAllowed(action) {
 				return true
 			}
-
 			if team.access.ManageWorkspaces {
 				if WorkspaceManagerRole.IsAllowed(action) {
 					return true
 				}
 			}
 			if team.access.ManageVCS {
+				if VCSManagerRole.IsAllowed(action) {
+					return true
+				}
+			}
+			if team.access.ManageRegistry {
 				if VCSManagerRole.IsAllowed(action) {
 					return true
 				}

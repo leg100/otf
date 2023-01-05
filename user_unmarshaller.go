@@ -28,6 +28,8 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) *User {
 	// Unmarshal team requires finding the team's corresponding
 	// organization...pggen doesn't permit two layers of embedding table rows
 	// (i.e. user -> team -> org)
+	//
+	// TODO: remove duplication with the unmarshalling in ./team_unmarshaller.go
 	for _, tr := range row.Teams {
 		for _, or := range row.Organizations {
 			if tr.OrganizationID == or.OrganizationID {
@@ -38,6 +40,7 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) *User {
 					OrganizationID:             tr.OrganizationID,
 					PermissionManageWorkspaces: tr.PermissionManageWorkspaces,
 					PermissionManageVCS:        tr.PermissionManageVCS,
+					PermissionManageRegistry:   tr.PermissionManageRegistry,
 					Organization:               &or,
 				}))
 			}
