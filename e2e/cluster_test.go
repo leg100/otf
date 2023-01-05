@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/chromedp/chromedp"
-	"github.com/leg100/otf"
+	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,13 +24,21 @@ import (
 func TestCluster(t *testing.T) {
 	addBuildsToPath(t)
 
-	org := otf.NewTestOrganization(t)
-	team := otf.NewTeam("owners", org)
-	user := otf.NewTestUser(t, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+	org := uuid.NewString()
+	user := cloud.User{
+		Name: "cluster-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "owners",
+				Organization: org,
+			},
+		},
+		Organizations: []string{org},
+	}
 
 	// start two daemons
 	daemon := &daemon{}
-	daemon.withGithubUser(user)
+	daemon.withGithubUser(&user)
 	userHostname := daemon.start(t)
 	agentHostname := daemon.start(t)
 
@@ -40,19 +49,19 @@ func TestCluster(t *testing.T) {
 	// carry out browser tasks
 	err := chromedp.Run(ctx,
 		// login to UI, which synchronises user's organization
-		githubLoginTasks(t, userHostname, user.Username()),
+		githubLoginTasks(t, userHostname, user.Name),
 		// create and save API token
 		terraformLoginTasks(t, userHostname),
 	)
 	require.NoError(t, err)
 
 	// org now sync'd, so we can create agent token via CLI
-	agentToken := createAgentToken(t, org.Name(), userHostname)
+	agentToken := createAgentToken(t, org, userHostname)
 	// start agent, instructing it to connect to otfd2
 	startAgent(t, agentToken, agentHostname)
 
 	// create root module, setting otfd1 as hostname
-	root := newRootModule(t, userHostname, org.Name(), "dev")
+	root := newRootModule(t, userHostname, org, "dev")
 
 	// terraform init automatically creates a workspace named dev
 	cmd := exec.Command("terraform", "init", "-no-color")
@@ -62,7 +71,7 @@ func TestCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	// edit workspace to use agent
-	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org.Name(), "--execution-mode", "agent", "--address", userHostname)
+	cmd = exec.Command("otf", "workspaces", "edit", "dev", "--organization", org, "--execution-mode", "agent", "--address", userHostname)
 	cmd.Dir = root
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
