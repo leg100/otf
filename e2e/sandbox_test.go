@@ -23,7 +23,7 @@ func TestSandbox(t *testing.T) {
 
 	org := uuid.NewString()
 	user := cloud.User{
-		Name: "cluster-user",
+		Name: "sandbox-user",
 		Teams: []cloud.Team{
 			{
 				Name:         "owners",

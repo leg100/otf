@@ -17,9 +17,10 @@ import (
 func TestPlanPermission(t *testing.T) {
 	addBuildsToPath(t)
 
+	workspaceName := "plan-perms"
+
 	// First we need to setup an organization with a user who is both in the
 	// owners team and the devops team.
-	workspaceName := "plan-perms"
 	org := uuid.NewString()
 	owners := cloud.Team{Name: "owners", Organization: org}
 	devops := cloud.Team{Name: "devops", Organization: org}

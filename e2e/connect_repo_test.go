@@ -10,6 +10,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
+	"github.com/google/uuid"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,7 @@ import (
 func TestConnectRepo(t *testing.T) {
 	addBuildsToPath(t)
 
-	org := "connect-repo-user" // use user's personal org
+	org := uuid.NewString()
 	user := cloud.User{
 		Name: "connect-repo-user",
 		Teams: []cloud.Team{
