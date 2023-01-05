@@ -135,6 +135,8 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 			Page:    opts.SanitizedPageNumber(),
 			PerPage: opts.SanitizedPageSize(),
 		},
+		// retrieve repositories in order of most recently pushed to
+		Sort: "pushed",
 	})
 	if err != nil {
 		return nil, err
@@ -154,6 +156,27 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 		Items:      items,
 		Pagination: otf.NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
 	}, nil
+}
+
+func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]string, error) {
+	owner, name, found := strings.Cut(opts.Identifier, "/")
+	if !found {
+		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+	}
+
+	results, _, err := g.client.Git.ListMatchingRefs(ctx, owner, name, &github.ReferenceListOptions{
+		Ref: "tags/" + opts.Prefix,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// return tags with the format 'tags/<tag_value>'
+	var tags []string
+	for _, ref := range results {
+		tags = append(tags, strings.TrimPrefix(ref.GetRef(), "refs/"))
+	}
+	return tags, nil
 }
 
 func (g *Client) GetRepoTarball(ctx context.Context, topts otf.GetRepoTarballOptions) ([]byte, error) {

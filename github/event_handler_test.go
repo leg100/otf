@@ -21,7 +21,7 @@ func TestEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSEvent{
+		want := otf.VCSPushEvent{
 			Branch: "master",
 		}
 		assert.Equal(t, &want, got)
@@ -34,9 +34,8 @@ func TestEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSEvent{
-			Branch:        "pr-1",
-			IsPullRequest: true,
+		want := otf.VCSPullEvent{
+			Branch: "pr-1",
 		}
 		assert.Equal(t, &want, got)
 	})

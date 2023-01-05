@@ -8,7 +8,7 @@ type AgentToken struct {
 	OrganizationName string  `jsonapi:"attr,organization_name"`
 }
 
-// AgentTokenCreateOptions represents the options for creating a new run.
+// AgentTokenCreateOptions represents the options for creating a new otf agent token.
 type AgentTokenCreateOptions struct {
 	// Type is a public field utilized by JSON:API to set the resource type via
 	// the field tag.  It is not a user-defined value and does not need to be

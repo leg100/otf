@@ -27,6 +27,7 @@ func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
 func (t *VCSProvider) Name() string             { return t.name }
 func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 func (t *VCSProvider) CloudConfig() CloudConfig { return t.cloudConfig }
+func (t *VCSProvider) VCSProviderID() string    { return t.id } // implement html.vcsProviderResource
 
 func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
 	return t.cloudConfig.NewClient(ctx, CloudCredentials{
@@ -100,6 +101,7 @@ type VCSProviderService interface {
 	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
 	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
 	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
+	ListTags(ctx context.Context, providerID string, opts ListTagsOptions) ([]string, error)
 
 	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error

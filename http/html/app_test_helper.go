@@ -18,7 +18,7 @@ func withFakeSiteToken(token string) fakeAppOption {
 }
 
 func newFakeWebApp(t *testing.T, app otf.Application, opts ...fakeAppOption) *Application {
-	views, err := newViewEngine(false)
+	views, err := newViewEngine(viewEngineOptions{})
 	require.NoError(t, err)
 
 	a := &Application{

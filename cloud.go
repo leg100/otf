@@ -57,6 +57,10 @@ type CloudClient interface {
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
 
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
+
+	// ListTags lists git tags on a repository. Each tag should be prefixed with
+	// 'tags/'.
+	ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
 }
 
 type VCSWebhook struct {
@@ -70,6 +74,12 @@ type VCSWebhook struct {
 type GetRepoTarballOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Ref        string // branch/tag/SHA ref
+}
+
+// ListTagsOptions are options for listing tags on a vcs repository
+type ListTagsOptions struct {
+	Identifier string // repo identifier, <owner>/<repo>
+	Prefix     string // only list tags that start with this string
 }
 
 type CreateWebhookOptions struct {

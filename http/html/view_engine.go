@@ -9,17 +9,23 @@ import (
 
 // viewEngine is responsible for populating and rendering views
 type viewEngine struct {
-	// render templates
-	renderer
+	renderer // render templates
+	hostname string
 }
 
-func newViewEngine(dev bool) (*viewEngine, error) {
-	renderer, err := newRenderer(dev)
+type viewEngineOptions struct {
+	devMode  bool
+	hostname string
+}
+
+func newViewEngine(opts viewEngineOptions) (*viewEngine, error) {
+	renderer, err := newRenderer(opts.devMode)
 	if err != nil {
 		return nil, err
 	}
 	return &viewEngine{
 		renderer: renderer,
+		hostname: opts.hostname,
 	}, nil
 }
 
@@ -32,6 +38,7 @@ func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request
 		flashPopper: popFlashFunc(w, r),
 		request:     r,
 		Version:     otf.Version,
+		Hostname:    ve.hostname,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -40,14 +47,11 @@ func (ve *viewEngine) render(name string, w http.ResponseWriter, r *http.Request
 
 // view provides data and methods to a template
 type view struct {
-	// arbitary data made available to the template
-	Content interface{}
-	// info regarding current request
-	request *http.Request
-	// pop flash message in template
-	flashPopper func() *flash
-	// otf version string in footer
-	Version string
+	Content     interface{}   // arbitary data made available to the template
+	request     *http.Request // info regarding current request
+	flashPopper func() *flash // pop flash message in template
+	Version     string        // otf version string in footer
+	Hostname    string        // user-facing hostname
 }
 
 func (v *view) PopFlash() *flash {

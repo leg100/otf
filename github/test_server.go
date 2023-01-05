@@ -27,6 +27,7 @@ type testServerDB struct {
 	user    *otf.User
 	repo    *otf.Repo
 	tarball []byte
+	refs    []string
 }
 
 type statusCallback func(*github.StatusEvent)
@@ -120,6 +121,16 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		w.Write(out)
 	})
 	if srv.repo != nil {
+		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/git/matching-refs/", func(w http.ResponseWriter, r *http.Request) {
+			var refs []*github.Reference
+			for _, ref := range srv.refs {
+				refs = append(refs, &github.Reference{Ref: otf.String(ref)})
+			}
+			out, err := json.Marshal(refs)
+			require.NoError(t, err)
+			w.Header().Add("Content-Type", "application/json")
+			w.Write(out)
+		})
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier, func(w http.ResponseWriter, r *http.Request) {
 			repo := &github.Repository{
 				FullName:      otf.String(srv.repo.Identifier),
@@ -205,6 +216,12 @@ func WithUser(user *otf.User) TestServerOption {
 func WithRepo(repo *otf.Repo) TestServerOption {
 	return func(srv *TestServer) {
 		srv.repo = repo
+	}
+}
+
+func WithRefs(refs ...string) TestServerOption {
+	return func(srv *TestServer) {
+		srv.refs = refs
 	}
 }
 

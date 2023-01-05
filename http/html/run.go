@@ -2,6 +2,7 @@ package html
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net/http"
 
@@ -85,7 +86,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		RunID: run.ID(),
 		Phase: otf.PlanPhase,
 	})
-	if err != nil && err != otf.ErrResourceNotFound {
+	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -93,7 +94,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		RunID: run.ID(),
 		Phase: otf.ApplyPhase,
 	})
-	if err != nil && err != otf.ErrResourceNotFound {
+	if err != nil && !errors.Is(err, otf.ErrResourceNotFound) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

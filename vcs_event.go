@@ -13,12 +13,46 @@ const (
 
 // VCSEvent is an event received from a VCS provider, e.g. a commit event from
 // github
-type VCSEvent struct {
-	// Repo identifier, <owner>/<repo>
-	Identifier      string
-	Branch          string
-	CommitSHA       string
-	IsPullRequest   bool
-	OnDefaultBranch bool
-	WebhookID       uuid.UUID
+type VCSEvent any
+
+// VCSPullEvent occurs when an action is carried out on a pull request
+type VCSPullEvent struct {
+	WebhookID  uuid.UUID
+	Action     VCSPullEventAction
+	Identifier string // repo identifier, <owner>/<repo>
+	CommitSHA  string
+	Branch     string // head branch
 }
+
+type VCSPullEventAction string
+
+const (
+	VCSPullEventOpened  VCSPullEventAction = "opened"
+	VCSPullEventClosed  VCSPullEventAction = "closed" // closed without merging
+	VCSPullEventMerged  VCSPullEventAction = "merged"
+	VCSPullEventUpdated VCSPullEventAction = "updated"
+)
+
+// VCSPushEvent occurs when a commit is pushed to a repo.
+type VCSPushEvent struct {
+	WebhookID  uuid.UUID
+	Identifier string // repo identifier, <owner>/<repo>
+	CommitSHA  string
+	Branch     string
+}
+
+// VCSTagEvent occurs when a tag is created or deleted on a repo.
+type VCSTagEvent struct {
+	WebhookID  uuid.UUID
+	Identifier string // repo identifier, <owner>/<repo>
+	CommitSHA  string
+	Tag        string
+	Action     VCSTagEventAction
+}
+
+type VCSTagEventAction string
+
+const (
+	VCSTagEventCreatedAction VCSTagEventAction = "created"
+	VCSTagEventDeletedAction VCSTagEventAction = "deleted"
+)

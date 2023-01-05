@@ -30,17 +30,14 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	// Listening Address in the form <ip>:<port>
-	Addr                 string
+	Addr                 string // Listening Address in the form <ip>:<port>
+	Hostname             string // user-facing hostname including port
 	SSL                  bool
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
-	// site admin token
-	SiteToken string
-	// Secret for signing
-	Secret string
-	// Maximum permitted config upload size in bytes
-	MaxConfigSize int64
+	SiteToken            string // site admin token
+	Secret               string // Secret for signing
+	MaxConfigSize        int64  // Maximum permitted config upload size in bytes
 }
 
 func (cfg *ServerConfig) Validate() error {
@@ -105,11 +102,6 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	// Catch panics and return 500s
 	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
 
-	// Optionally enable HTTP request logging
-	if cfg.EnableRequestLogging {
-		r.Use(s.loggingMiddleware)
-	}
-
 	r.GET("/.well-known/terraform.json", s.WellKnown)
 	r.GET("/metrics", promhttp.Handler().ServeHTTP)
 	r.GET("/healthz", GetHealthz)
@@ -132,7 +124,15 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 		signed.GET("/runs/{run_id}/logs/{phase}", s.getLogs)
 		signed.PUT("/configuration-versions/{id}/upload", s.UploadConfigurationVersion())
+		signed.GET("/modules/download/{module_version_id}.tar.gz", s.downloadModuleVersion)
 	})
+
+	authMiddleware := &authTokenMiddleware{
+		UserService:            app,
+		AgentTokenService:      app,
+		RegistrySessionService: app,
+		siteToken:              cfg.SiteToken,
+	}
 
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
 		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -142,11 +142,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 		// Authenticated endpoints
 		api.Sub(func(r *Router) {
 			// Ensure request has valid API bearer token
-			r.Use((&authTokenMiddleware{
-				UserService:       app,
-				AgentTokenService: app,
-				siteToken:         cfg.SiteToken,
-			}).handler)
+			r.Use(authMiddleware.handler)
 
 			// Organization routes
 			r.GET("/organizations", s.ListOrganizations)
@@ -219,10 +215,27 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 			// Agent token routes
 			r.GET("/agent/details", s.GetCurrentAgent)
 			r.PST("/agent/create", s.CreateAgentToken)
+
+			// Registry session routes
+			r.PST("/organizations/{organization_name}/registry/sessions/create", s.CreateRegistrySession)
 		})
 	})
 
-	http.Handle("/", r)
+	// module registry
+	r.PathPrefix("/api/registry/v1/modules").Sub(func(r *Router) {
+		// Ensure request has valid API bearer token
+		r.Use(authMiddleware.handler)
+
+		r.GET("/{organization}/{name}/{provider}/versions", s.listModuleVersions)
+		r.GET("/{organization}/{name}/{provider}/{version}/download", s.getModuleVersionDownloadLink)
+	})
+
+	// Optionally log all HTTP requests
+	if cfg.EnableRequestLogging {
+		http.Handle("/", s.loggingMiddleware(r))
+	} else {
+		http.Handle("/", r)
+	}
 
 	return s, nil
 }

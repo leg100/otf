@@ -13,6 +13,7 @@ import (
 type authTokenMiddleware struct {
 	otf.UserService
 	otf.AgentTokenService
+	otf.RegistrySessionService
 	siteToken string
 }
 
@@ -55,6 +56,8 @@ func (m *authTokenMiddleware) isValid(ctx context.Context, token string) (otf.Su
 		return m.GetUser(ctx, otf.UserSpec{AuthenticationToken: &token})
 	case strings.HasPrefix(token, "agent."):
 		return m.GetAgentToken(ctx, token)
+	case strings.HasPrefix(token, "registry."):
+		return m.GetRegistrySession(ctx, token)
 	default:
 		return nil, fmt.Errorf("unknown auth token format")
 	}

@@ -51,7 +51,7 @@ func (db *DB) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
-func (db *DB) startCleanup(ctx context.Context, interval time.Duration) {
+func (db *DB) startSessionExpirer(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	for {
 		select {

@@ -1,0 +1,32 @@
+{{ template "layout" . }}
+
+{{ define "title" }}modules{{ end }}
+
+{{ define "container-header" }}modules{{ end }}
+
+{{ define "container-header-actions" }}
+  <form action="{{ newModulePath .Content.Organization }}" method="GET">
+    <button id="list-module-vcs-providers-button" type="submit">Publish</button>
+  </form>
+{{ end }}
+
+
+{{ define "content" }}
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      {{ block "content-list-item" . }}{{ end }}
+    {{ else }}
+      No published modules.
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "content-list-item" }}
+  <div class="item">
+    <div class="item-heading">
+      <a class="status" href="{{ modulePath .ID }}">{{ .Name }}</a>
+      <span class="status-ago">{{ durationRound .CreatedAt }} ago</span>
+    </div>
+    {{ template "identifier" . }}
+  </div>
+{{ end }}

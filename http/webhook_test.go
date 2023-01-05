@@ -14,7 +14,7 @@ import (
 
 func TestWebhookHandler(t *testing.T) {
 	got := make(chan otf.VCSEvent, 1)
-	want := otf.VCSEvent{}
+	want := otf.VCSPushEvent{}
 	handler := webhookHandler{
 		events: got,
 		Logger: logr.Discard(),
@@ -30,7 +30,7 @@ func TestWebhookHandler(t *testing.T) {
 	handler.ServeHTTP(w, r)
 	assert.Equal(t, 200, w.Code)
 
-	assert.Equal(t, want, <-got)
+	assert.Equal(t, &want, <-got)
 }
 
 type fakeWebhookHandlerApp struct {
@@ -54,11 +54,11 @@ func (f *fakeWebhookHandlerDB) GetWebhook(ctx context.Context, id uuid.UUID) (*o
 }
 
 type fakeCloud struct {
-	event *otf.VCSEvent
+	event otf.VCSEvent
 
 	otf.Cloud
 }
 
-func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) *otf.VCSEvent {
+func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
 	return f.event
 }

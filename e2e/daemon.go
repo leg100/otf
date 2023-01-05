@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,6 +41,11 @@ func (d *daemon) withGithubRepo(repo *otf.Repo) {
 	d.githubOptions = append(d.githubOptions, github.WithRepo(repo))
 }
 
+func (d *daemon) withGithubRefs(refs ...string) {
+	d.enableGithub = true
+	d.githubOptions = append(d.githubOptions, github.WithRefs(refs...))
+}
+
 func (d *daemon) withGithubTarball(tarball []byte) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithArchive(tarball))
@@ -55,8 +61,14 @@ func (d *daemon) start(t *testing.T) string {
 	database, ok := os.LookupEnv("OTF_TEST_DATABASE_URL")
 	require.True(t, ok, "OTF_TEST_DATABASE_URL not set")
 
+	hostname, ok := os.LookupEnv("OTF_E2E_HOSTNAME")
+	require.True(t, ok, "OTF_E2E_HOSTNAME not set")
+	if !strings.Contains(hostname, ".") {
+		t.Fatalf("hostname %s is missing a dot (.) - terraform mandates that a module registry hostname must include a dot", hostname)
+	}
+
 	flags := append(d.flags,
-		"--address", ":0",
+		"--address", hostname+":0", // listen on random, available port
 		"--ssl", "true",
 		"--secret", "fe56cd2eae641f73687349ee32af43048805a9624eb3fcd0bdaf5d5dc8ffd5bc",
 		"--cert-file", "./fixtures/cert.crt",
@@ -120,7 +132,7 @@ func (d *daemon) start(t *testing.T) string {
 			switch len(matches) {
 			case 2:
 				port := matches[1]
-				url = "localhost:" + port
+				url = hostname + ":" + port
 				goto STARTED
 			case 0:
 				// keep waiting

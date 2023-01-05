@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 )
 
-// Triggerer triggers runs in response to incoming VCS events.
+// Triggerer triggers jobs in response to incoming VCS events.
 type Triggerer struct {
 	Application
+	*Publisher
 	logr.Logger
 
 	events <-chan VCSEvent
@@ -18,19 +20,19 @@ type Triggerer struct {
 func NewTriggerer(app Application, logger logr.Logger, events <-chan VCSEvent) *Triggerer {
 	return &Triggerer{
 		Application: app,
+		Publisher:   NewPublisher(app),
 		Logger:      logger.WithValues("component", "triggerer"),
 		events:      events,
 	}
 }
 
-// Start handling VCS events and triggering runs
+// Start handling VCS events and triggering jobs
 func (h *Triggerer) Start(ctx context.Context) {
 	h.V(2).Info("started")
 
 	for {
 		select {
 		case event := <-h.events:
-			h.Info("handling event", "webhook", event.WebhookID)
 			if err := h.handle(ctx, event); err != nil {
 				h.Error(err, "handling event")
 			}
@@ -42,13 +44,44 @@ func (h *Triggerer) Start(ctx context.Context) {
 
 // handle triggers a run upon receiving an event
 func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
-	// Ignore events for non-default branches that are not a PR.
-	if !event.OnDefaultBranch && !event.IsPullRequest {
-		h.Info("skipping event on non-default branch")
-		return nil
+	if err := h.triggerRun(ctx, event); err != nil {
+		return err
 	}
 
-	workspaces, err := h.ListWorkspacesByWebhookID(ctx, event.WebhookID)
+	if err := h.PublishFromEvent(ctx, event); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// triggerRun triggers a run upon receipt of a vcs event
+func (h *Triggerer) triggerRun(ctx context.Context, event VCSEvent) error {
+	var webhookID uuid.UUID
+	var isPullRequest bool
+	var identifier string
+	var branch string
+	var sha string
+
+	switch event := event.(type) {
+	case *VCSPushEvent:
+		webhookID = event.WebhookID
+		identifier = event.Identifier
+		sha = event.CommitSHA
+		branch = event.Branch
+	case *VCSPullEvent:
+		if event.Action != VCSPullEventUpdated {
+			// ignore all other pull events
+			return nil
+		}
+		webhookID = event.WebhookID
+		identifier = event.Identifier
+		sha = event.CommitSHA
+		branch = event.Branch
+		isPullRequest = true
+	}
+
+	workspaces, err := h.ListWorkspacesByWebhookID(ctx, webhookID)
 	if err != nil {
 		return err
 	}
@@ -66,8 +99,8 @@ func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
 	providerID := workspaces[0].Repo().ProviderID
 
 	tarball, err := h.GetRepoTarball(ctx, providerID, GetRepoTarballOptions{
-		Identifier: event.Identifier,
-		Ref:        event.CommitSHA,
+		Identifier: identifier,
+		Ref:        sha,
 	})
 	if err != nil {
 		return fmt.Errorf("retrieving repository tarball: %w", err)
@@ -80,18 +113,18 @@ func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
 		}
 
 		cv, err := h.CreateConfigurationVersion(ctx, ws.ID(), ConfigurationVersionCreateOptions{
-			Speculative: Bool(event.Branch != ws.Repo().Branch),
+			Speculative: Bool(isPullRequest),
 			IngressAttributes: &IngressAttributes{
 				// ID     string
-				Branch: event.Branch,
+				Branch: branch,
 				// CloneURL          string
 				// CommitMessage     string
-				CommitSHA: event.CommitSHA,
+				CommitSHA: sha,
 				// CommitURL         string
 				// CompareURL        string
-				Identifier:      event.Identifier,
-				IsPullRequest:   event.IsPullRequest,
-				OnDefaultBranch: event.OnDefaultBranch,
+				Identifier:      identifier,
+				IsPullRequest:   isPullRequest,
+				OnDefaultBranch: (ws.Repo().Branch == branch),
 			},
 		})
 		if err != nil {

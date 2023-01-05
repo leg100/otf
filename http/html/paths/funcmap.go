@@ -98,6 +98,14 @@ func init() {
 	funcmap["editVCSProviderPath"] = EditVCSProvider
 	funcmap["updateVCSProviderPath"] = UpdateVCSProvider
 	funcmap["deleteVCSProviderPath"] = DeleteVCSProvider
+
+	funcmap["modulesPath"] = Modules
+	funcmap["createModulePath"] = CreateModule
+	funcmap["newModulePath"] = NewModule
+	funcmap["modulePath"] = Module
+	funcmap["editModulePath"] = EditModule
+	funcmap["updateModulePath"] = UpdateModule
+	funcmap["deleteModulePath"] = DeleteModule
 }
 
 func FuncMap() template.FuncMap { return funcmap }

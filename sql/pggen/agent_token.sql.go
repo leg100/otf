@@ -158,6 +158,90 @@ type Querier interface {
 	// InsertIngressAttributesScan scans the result of an executed InsertIngressAttributesBatch query.
 	InsertIngressAttributesScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
+	InsertModule(ctx context.Context, params InsertModuleParams) (pgconn.CommandTag, error)
+	// InsertModuleBatch enqueues a InsertModule query into batch to be executed
+	// later by the batch.
+	InsertModuleBatch(batch genericBatch, params InsertModuleParams)
+	// InsertModuleScan scans the result of an executed InsertModuleBatch query.
+	InsertModuleScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertModuleRepo(ctx context.Context, params InsertModuleRepoParams) (pgconn.CommandTag, error)
+	// InsertModuleRepoBatch enqueues a InsertModuleRepo query into batch to be executed
+	// later by the batch.
+	InsertModuleRepoBatch(batch genericBatch, params InsertModuleRepoParams)
+	// InsertModuleRepoScan scans the result of an executed InsertModuleRepoBatch query.
+	InsertModuleRepoScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	InsertModuleVersion(ctx context.Context, params InsertModuleVersionParams) (InsertModuleVersionRow, error)
+	// InsertModuleVersionBatch enqueues a InsertModuleVersion query into batch to be executed
+	// later by the batch.
+	InsertModuleVersionBatch(batch genericBatch, params InsertModuleVersionParams)
+	// InsertModuleVersionScan scans the result of an executed InsertModuleVersionBatch query.
+	InsertModuleVersionScan(results pgx.BatchResults) (InsertModuleVersionRow, error)
+
+	ListModulesByOrganization(ctx context.Context, organizationName pgtype.Text) ([]ListModulesByOrganizationRow, error)
+	// ListModulesByOrganizationBatch enqueues a ListModulesByOrganization query into batch to be executed
+	// later by the batch.
+	ListModulesByOrganizationBatch(batch genericBatch, organizationName pgtype.Text)
+	// ListModulesByOrganizationScan scans the result of an executed ListModulesByOrganizationBatch query.
+	ListModulesByOrganizationScan(results pgx.BatchResults) ([]ListModulesByOrganizationRow, error)
+
+	FindModuleByName(ctx context.Context, params FindModuleByNameParams) (FindModuleByNameRow, error)
+	// FindModuleByNameBatch enqueues a FindModuleByName query into batch to be executed
+	// later by the batch.
+	FindModuleByNameBatch(batch genericBatch, params FindModuleByNameParams)
+	// FindModuleByNameScan scans the result of an executed FindModuleByNameBatch query.
+	FindModuleByNameScan(results pgx.BatchResults) (FindModuleByNameRow, error)
+
+	FindModuleByID(ctx context.Context, id pgtype.Text) (FindModuleByIDRow, error)
+	// FindModuleByIDBatch enqueues a FindModuleByID query into batch to be executed
+	// later by the batch.
+	FindModuleByIDBatch(batch genericBatch, id pgtype.Text)
+	// FindModuleByIDScan scans the result of an executed FindModuleByIDBatch query.
+	FindModuleByIDScan(results pgx.BatchResults) (FindModuleByIDRow, error)
+
+	FindModuleByWebhookID(ctx context.Context, webhookID pgtype.UUID) (FindModuleByWebhookIDRow, error)
+	// FindModuleByWebhookIDBatch enqueues a FindModuleByWebhookID query into batch to be executed
+	// later by the batch.
+	FindModuleByWebhookIDBatch(batch genericBatch, webhookID pgtype.UUID)
+	// FindModuleByWebhookIDScan scans the result of an executed FindModuleByWebhookIDBatch query.
+	FindModuleByWebhookIDScan(results pgx.BatchResults) (FindModuleByWebhookIDRow, error)
+
+	UpdateModuleStatus(ctx context.Context, status pgtype.Text, moduleID pgtype.Text) (pgtype.Text, error)
+	// UpdateModuleStatusBatch enqueues a UpdateModuleStatus query into batch to be executed
+	// later by the batch.
+	UpdateModuleStatusBatch(batch genericBatch, status pgtype.Text, moduleID pgtype.Text)
+	// UpdateModuleStatusScan scans the result of an executed UpdateModuleStatusBatch query.
+	UpdateModuleStatusScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	InsertModuleTarball(ctx context.Context, tarball []byte, moduleVersionID pgtype.Text) (pgtype.Text, error)
+	// InsertModuleTarballBatch enqueues a InsertModuleTarball query into batch to be executed
+	// later by the batch.
+	InsertModuleTarballBatch(batch genericBatch, tarball []byte, moduleVersionID pgtype.Text)
+	// InsertModuleTarballScan scans the result of an executed InsertModuleTarballBatch query.
+	InsertModuleTarballScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	FindModuleTarball(ctx context.Context, moduleVersionID pgtype.Text) ([]byte, error)
+	// FindModuleTarballBatch enqueues a FindModuleTarball query into batch to be executed
+	// later by the batch.
+	FindModuleTarballBatch(batch genericBatch, moduleVersionID pgtype.Text)
+	// FindModuleTarballScan scans the result of an executed FindModuleTarballBatch query.
+	FindModuleTarballScan(results pgx.BatchResults) ([]byte, error)
+
+	UpdateModuleVersionStatus(ctx context.Context, params UpdateModuleVersionStatusParams) (UpdateModuleVersionStatusRow, error)
+	// UpdateModuleVersionStatusBatch enqueues a UpdateModuleVersionStatus query into batch to be executed
+	// later by the batch.
+	UpdateModuleVersionStatusBatch(batch genericBatch, params UpdateModuleVersionStatusParams)
+	// UpdateModuleVersionStatusScan scans the result of an executed UpdateModuleVersionStatusBatch query.
+	UpdateModuleVersionStatusScan(results pgx.BatchResults) (UpdateModuleVersionStatusRow, error)
+
+	DeleteModuleByID(ctx context.Context, id pgtype.Text) (pgtype.Text, error)
+	// DeleteModuleByIDBatch enqueues a DeleteModuleByID query into batch to be executed
+	// later by the batch.
+	DeleteModuleByIDBatch(batch genericBatch, id pgtype.Text)
+	// DeleteModuleByIDScan scans the result of an executed DeleteModuleByIDBatch query.
+	DeleteModuleByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	FindOrganizationNameByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) (pgtype.Text, error)
 	// FindOrganizationNameByWorkspaceIDBatch enqueues a FindOrganizationNameByWorkspaceID query into batch to be executed
 	// later by the batch.
@@ -306,6 +390,27 @@ type Querier interface {
 	UpdatePlanJSONByIDBatch(batch genericBatch, planJSON []byte, runID pgtype.Text)
 	// UpdatePlanJSONByIDScan scans the result of an executed UpdatePlanJSONByIDBatch query.
 	UpdatePlanJSONByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	InsertRegistrySession(ctx context.Context, params InsertRegistrySessionParams) (pgconn.CommandTag, error)
+	// InsertRegistrySessionBatch enqueues a InsertRegistrySession query into batch to be executed
+	// later by the batch.
+	InsertRegistrySessionBatch(batch genericBatch, params InsertRegistrySessionParams)
+	// InsertRegistrySessionScan scans the result of an executed InsertRegistrySessionBatch query.
+	InsertRegistrySessionScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindRegistrySession(ctx context.Context, token pgtype.Text) (FindRegistrySessionRow, error)
+	// FindRegistrySessionBatch enqueues a FindRegistrySession query into batch to be executed
+	// later by the batch.
+	FindRegistrySessionBatch(batch genericBatch, token pgtype.Text)
+	// FindRegistrySessionScan scans the result of an executed FindRegistrySessionBatch query.
+	FindRegistrySessionScan(results pgx.BatchResults) (FindRegistrySessionRow, error)
+
+	DeleteExpiredRegistrySessions(ctx context.Context) (pgtype.Text, error)
+	// DeleteExpiredRegistrySessionsBatch enqueues a DeleteExpiredRegistrySessions query into batch to be executed
+	// later by the batch.
+	DeleteExpiredRegistrySessionsBatch(batch genericBatch)
+	// DeleteExpiredRegistrySessionsScan scans the result of an executed DeleteExpiredRegistrySessionsBatch query.
+	DeleteExpiredRegistrySessionsScan(results pgx.BatchResults) (pgtype.Text, error)
 
 	InsertRun(ctx context.Context, params InsertRunParams) (pgconn.CommandTag, error)
 	// InsertRunBatch enqueues a InsertRun query into batch to be executed
@@ -1031,6 +1136,42 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertIngressAttributesSQL, insertIngressAttributesSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertIngressAttributes': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertModuleSQL, insertModuleSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModule': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleRepoSQL, insertModuleRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleRepo': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleVersionSQL, insertModuleVersionSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleVersion': %w", err)
+	}
+	if _, err := p.Prepare(ctx, listModulesByOrganizationSQL, listModulesByOrganizationSQL); err != nil {
+		return fmt.Errorf("prepare query 'ListModulesByOrganization': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleByNameSQL, findModuleByNameSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleByIDSQL, findModuleByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleByWebhookIDSQL, findModuleByWebhookIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleByWebhookID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateModuleStatusSQL, updateModuleStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertModuleTarballSQL, insertModuleTarballSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertModuleTarball': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findModuleTarballSQL, findModuleTarballSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindModuleTarball': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateModuleVersionStatusSQL, updateModuleVersionStatusSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateModuleVersionStatus': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteModuleByIDSQL, deleteModuleByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteModuleByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, findOrganizationNameByWorkspaceIDSQL, findOrganizationNameByWorkspaceIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationNameByWorkspaceID': %w", err)
 	}
@@ -1093,6 +1234,15 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, updatePlanJSONByIDSQL, updatePlanJSONByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpdatePlanJSONByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertRegistrySessionSQL, insertRegistrySessionSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRegistrySession': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRegistrySessionSQL, findRegistrySessionSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRegistrySession': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteExpiredRegistrySessionsSQL, deleteExpiredRegistrySessionsSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteExpiredRegistrySessions': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertRunSQL, insertRunSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertRun': %w", err)
@@ -1363,6 +1513,24 @@ type IngressAttributes struct {
 	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 }
 
+// ModuleRepos represents the Postgres composite type "module_repos".
+type ModuleRepos struct {
+	WebhookID     pgtype.UUID `json:"webhook_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	ModuleID      pgtype.Text `json:"module_id"`
+}
+
+// ModuleVersions represents the Postgres composite type "module_versions".
+type ModuleVersions struct {
+	ModuleVersionID pgtype.Text        `json:"module_version_id"`
+	Version         pgtype.Text        `json:"version"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Status          pgtype.Text        `json:"status"`
+	StatusError     pgtype.Text        `json:"status_error"`
+	ModuleID        pgtype.Text        `json:"module_id"`
+}
+
 // Organizations represents the Postgres composite type "organizations".
 type Organizations struct {
 	OrganizationID  pgtype.Text        `json:"organization_id"`
@@ -1569,6 +1737,32 @@ func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 	)
 }
 
+// newModuleRepos creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'module_repos'.
+func (tr *typeResolver) newModuleRepos() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"module_repos",
+		compositeField{"webhook_id", "uuid", &pgtype.UUID{}},
+		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{"module_id", "text", &pgtype.Text{}},
+	)
+}
+
+// newModuleVersions creates a new pgtype.ValueTranscoder for the Postgres
+// composite type 'module_versions'.
+func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
+	return tr.newCompositeValue(
+		"module_versions",
+		compositeField{"module_version_id", "text", &pgtype.Text{}},
+		compositeField{"version", "text", &pgtype.Text{}},
+		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{"status", "text", &pgtype.Text{}},
+		compositeField{"status_error", "text", &pgtype.Text{}},
+		compositeField{"module_id", "text", &pgtype.Text{}},
+	)
+}
+
 // newOrganizations creates a new pgtype.ValueTranscoder for the Postgres
 // composite type 'organizations'.
 func (tr *typeResolver) newOrganizations() pgtype.ValueTranscoder {
@@ -1708,6 +1902,12 @@ func (tr *typeResolver) newWorkspaceRepos() pgtype.ValueTranscoder {
 // '_configuration_version_status_timestamps' array type.
 func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_configuration_version_status_timestamps", "configuration_version_status_timestamps", tr.newConfigurationVersionStatusTimestamps)
+}
+
+// newModuleVersionsArray creates a new pgtype.ValueTranscoder for the Postgres
+// '_module_versions' array type.
+func (tr *typeResolver) newModuleVersionsArray() pgtype.ValueTranscoder {
+	return tr.newArrayValue("_module_versions", "module_versions", tr.newModuleVersions)
 }
 
 // newOrganizationsArray creates a new pgtype.ValueTranscoder for the Postgres

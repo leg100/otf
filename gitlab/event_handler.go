@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -18,12 +19,13 @@ type EventHandler struct {
 	logr.Logger
 }
 
-func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
 	if err := h.handle(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil
 	}
 	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
 func (h *EventHandler) handle(r *http.Request) error {
@@ -36,25 +38,25 @@ func (h *EventHandler) handle(r *http.Request) error {
 		return errors.New("error reading request body")
 	}
 
-	event, err := gitlab.ParseWebhook(gitlab.HookEventType(r), payload)
+	rawEvent, err := gitlab.ParseWebhook(gitlab.HookEventType(r), payload)
 	if err != nil {
 		return err
 	}
 
 	// Filter out non-push events
-	push, ok := event.(*gitlab.PushEvent)
-	if !ok {
-		return nil
-	}
+	switch event := rawEvent.(type) {
+	case *gitlab.PushEvent:
+		refParts := strings.Split(event.Ref, "/")
+		if len(refParts) != 3 {
+			return fmt.Errorf("malformed ref: %s", event.Ref)
+		}
+		h.events <- &otf.VCSPushEvent{}
 
-	refParts := strings.Split(push.Ref, "/")
-	if len(refParts) != 3 {
-		return errors.New("expected ref to be in the format <string>/<string>/<string>")
-	}
-
-	h.events <- otf.VCSEvent{
-		Identifier: push.Project.PathWithNamespace,
-		Branch:     refParts[2],
+		//	Identifier: push.Project.PathWithNamespace,
+		//	Branch:     refParts[2],
+		//}
+	case *gitlab.TagEvent:
+	case *gitlab.MergeEvent:
 	}
 
 	return nil

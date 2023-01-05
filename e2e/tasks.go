@@ -185,3 +185,26 @@ func terraformPlanTasks(t *testing.T, root string) chromedp.Action {
 		return nil
 	})
 }
+
+func createGithubVCSProviderTasks(t *testing.T, url, org string) chromedp.Tasks {
+	return chromedp.Tasks{
+		// go to org
+		chromedp.Navigate(path.Join(url, "organizations", org)),
+		// go to vcs providers
+		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		screenshot(t),
+		// click 'New Github VCS Provider' button
+		chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
+		screenshot(t),
+		// enter fake github token and name
+		chromedp.Focus("input#token", chromedp.NodeVisible),
+		input.InsertText("fake-github-personal-token"),
+		chromedp.Focus("input#name"),
+		input.InsertText("github"),
+		screenshot(t),
+		// submit form to create provider
+		chromedp.Submit("input#token"),
+		screenshot(t),
+		matchText(t, ".flash-success", "created provider: github"),
+	}
+}

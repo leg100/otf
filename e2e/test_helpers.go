@@ -1,8 +1,14 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -99,5 +105,27 @@ func matchText(t *testing.T, selector, want string) chromedp.ActionFunc {
 		require.NoError(t, err)
 		require.Equal(t, want, strings.TrimSpace(got))
 		return nil
+	}
+}
+
+func sendGithubPushEvent(t *testing.T, payload []byte, url, secret string) {
+	// generate signature for push event
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	sig := mac.Sum(nil)
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("X-GitHub-Event", "push")
+	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
+		response, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		t.Fatal(string(response))
 	}
 }

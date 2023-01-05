@@ -539,3 +539,41 @@ button.delete:hover {
   gap: 1em;
   margin-bottom: 1em;
 }
+
+.new-module-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2em;
+}
+
+.new-module-tab {
+  color: grey;
+}
+
+.selected {
+  color: black;
+}
+
+/* style anchors like a button */
+.button {
+  display: block;
+  width: 115px;
+  height: 25px;
+  background: #4E9CAF;
+  padding: 10px;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.horizontal {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+}

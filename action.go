@@ -18,6 +18,13 @@ const (
 	ListAgentTokensAction  Action = "list_agent_tokens"
 	DeleteAgentTokenAction Action = "delete_agent_token"
 
+	CreateModuleAction        Action = "create_module"
+	CreateModuleVersionAction Action = "create_module_version"
+	UpdateModuleAction        Action = "update_module"
+	ListModulesAction         Action = "list_modules"
+	GetModuleAction           Action = "get_module"
+	DeleteModuleAction        Action = "delete_modules"
+
 	GetRunAction      Action = "get_run"
 	ListRunsAction    Action = "list_runs"
 	ApplyRunAction    Action = "apply_run"

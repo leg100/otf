@@ -27,6 +27,8 @@ type Application struct {
 	*otf.WorkspaceFactory
 	*otf.WorkspaceConnector
 	*otf.RunStarter
+	*otf.Publisher
+	*otf.ModuleVersionUploader
 	Mapper
 	otf.CloudService
 	otf.PubSubService
@@ -63,7 +65,11 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 			VCSProviderService: app,
 		},
 	}
+	app.Publisher = otf.NewPublisher(app)
 	app.RunStarter = &otf.RunStarter{
+		Application: app,
+	}
+	app.ModuleVersionUploader = &otf.ModuleVersionUploader{
 		Application: app,
 	}
 

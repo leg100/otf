@@ -1,3 +1,4 @@
+// Package github provides github related code
 package github
 
 import (

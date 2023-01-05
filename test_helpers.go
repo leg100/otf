@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -106,6 +107,15 @@ func NewTestRepo() *Repo {
 	}
 }
 
+func NewTestModuleRepo(provider, name string) *Repo {
+	identifier := fmt.Sprintf("%s/terraform-%s-%s", uuid.New(), provider, name)
+	return &Repo{
+		Identifier: identifier,
+		HTTPURL:    "http://fake-cloud.org/" + identifier,
+		Branch:     "master",
+	}
+}
+
 func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 	return &Webhook{
 		WebhookID:   uuid.New(),
@@ -115,6 +125,49 @@ func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 		HTTPURL:     repo.HTTPURL,
 		cloudConfig: cloudConfig,
 	}
+}
+
+func NewTestModule(org *Organization, opts ...NewTestModuleOption) *Module {
+	createOpts := CreateModuleOptions{
+		Organization: org,
+		Provider:     uuid.NewString(),
+		Name:         uuid.NewString(),
+	}
+	mod := NewModule(createOpts)
+	for _, o := range opts {
+		o(mod)
+	}
+	return mod
+}
+
+type NewTestModuleOption func(*Module)
+
+func WithModuleStatus(status ModuleStatus) NewTestModuleOption {
+	return func(mod *Module) {
+		mod.status = status
+	}
+}
+
+func WithModuleVersion(version string, status ModuleVersionStatus) NewTestModuleOption {
+	return func(mod *Module) {
+		mod.Add(NewTestModuleVersion(mod, version, status))
+	}
+}
+
+func WithModuleRepo() NewTestModuleOption {
+	return func(mod *Module) {
+		mod.repo = &ModuleRepo{}
+	}
+}
+
+func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatus) *ModuleVersion {
+	createOpts := CreateModuleVersionOptions{
+		ModuleID: mod.ID(),
+		Version:  version,
+	}
+	modver := NewModuleVersion(createOpts)
+	modver.status = status
+	return modver
 }
 
 func NewTestCloudConfig(cloud Cloud) CloudConfig {

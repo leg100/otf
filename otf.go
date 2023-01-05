@@ -44,6 +44,7 @@ type Application interface {
 	EventService
 	UserService
 	SessionService
+	RegistrySessionService
 	TokenService
 	TeamService
 	AgentTokenService
@@ -51,6 +52,8 @@ type Application interface {
 	VCSProviderService
 	LockableApplication
 	CloudService
+	ModuleService
+	ModuleVersionService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -71,6 +74,7 @@ type DB interface {
 	WorkspaceStore
 	RunStore
 	SessionStore
+	RegistrySessionStore
 	StateVersionStore
 	TokenStore
 	ConfigurationVersionStore
@@ -78,6 +82,8 @@ type DB interface {
 	AgentTokenStore
 	VCSProviderStore
 	WebhookStore
+	ModuleStore
+	ModuleVersionStore
 }
 
 // Unmarshaler unmarshals database rows

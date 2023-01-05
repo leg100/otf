@@ -1,0 +1,72 @@
+{{ template "layout" . }}
+
+{{ define "title" }}module: {{ .Content.Name }}{{ end }}
+
+{{ define "container-header" }}
+  <a href="{{ modulesPath .Content.Organization.Name }}">modules</a> / {{ .Content.Name }}
+{{ end }}
+
+{{ define "content" }}
+  {{ if eq .Content.Status "no_version_tags" }}
+    Module source repository has no tags.
+  {{ else }}
+    <div class="horizontal">
+      <form action="{{ modulePath .Content.ID }}" method="GET">
+        <div>
+          <label>Version</label>
+          <select name="version" id="version" onchange="this.form.submit()">
+            {{ range reverse .Content.Versions }}
+              {{ if eq .Status "ok" }}
+                <option value="{{ .Version }}" {{ selected .Version $.Content.CurrentVersion.Version }}>{{ .Version }}</option>
+              {{ end }}
+            {{ end }}
+          </select>
+        </div>
+      </form>
+      <div>
+        Source <span class="data">{{ .Content.Repo.Identifier }}</span>
+      </div>
+    </div>
+    <div class="main-form">
+      <div>
+        <label for="usage">Usage</label>
+        <textarea id="usage" cols="42" rows="5" readonly wrap="off">
+module "{{ .Content.Name }}" {
+  source  = "{{ .Hostname }}/{{ .Content.Organization.Name }}/{{ .Content.Name }}/{{ .Content.Provider }}"
+  version = "{{ .Content.CurrentVersion.Version }}"
+}
+        </textarea>
+      </div>
+    </div>
+    <div>
+      {{ trimHTML .Content.Readme }}
+    </div>
+    <div>
+      <h3>Resources</h3>
+      {{ range $k, $v := .Content.TerraformModule.ManagedResources }}
+        <div>
+          <span class="data">{{ $k }}</span>
+        </div>
+      {{ end }}
+    </div>
+    <div>
+      <h3>Variables</h3>
+      {{ range $k, $v := .Content.TerraformModule.Variables }}
+        <div>
+          <span class="data">{{ $k }}</span>
+        </div>
+      {{ end }}
+    </div>
+    <div>
+      <h3>Outputs</h3>
+      {{ range $k, $v := .Content.TerraformModule.Outputs }}
+        <div>
+          <span class="data">{{ $k }}</span>
+        </div>
+      {{ end }}
+    </div>
+  {{ end }}
+  <form class="module-delete-button" action="{{ deleteModulePath .Content.ID }}" method="POST">
+    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete module</button>
+  </form>
+{{ end }}

@@ -2,23 +2,15 @@ package e2e
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,29 +51,8 @@ func TestConnectRepo(t *testing.T) {
 	defer cancel()
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
-		// login
 		githubLoginTasks(t, hostname, user.Username()),
-		// create github vcs provider
-		chromedp.Tasks{
-			// go to org
-			chromedp.Navigate(path.Join(url, "organizations", org)),
-			// go to vcs providers
-			chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
-			screenshot(t),
-			// click 'New Github VCS Provider' button
-			chromedp.Click(`//button[text()='New Github VCS Provider']`, chromedp.NodeVisible),
-			screenshot(t),
-			// enter fake github token and name
-			chromedp.Focus("input#token", chromedp.NodeVisible),
-			input.InsertText("fake-github-personal-token"),
-			chromedp.Focus("input#name"),
-			input.InsertText("github"),
-			screenshot(t),
-			// submit form to create provider
-			chromedp.Submit("input#token"),
-			screenshot(t),
-			matchText(t, ".flash-success", "created provider: github"),
-		},
+		createGithubVCSProviderTasks(t, url, org),
 		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		// connect workspace to vcs repo
@@ -123,25 +94,8 @@ func TestConnectRepo(t *testing.T) {
 	require.NoError(t, err)
 	push := fmt.Sprintf(string(pushTpl), repo.Identifier)
 
-	// generate signature for push event
-	mac := hmac.New(sha256.New, []byte(*daemon.githubServer.WebhookSecret))
-	mac.Write([]byte(push))
-	sig := mac.Sum(nil)
-
-	req, err := http.NewRequest("POST", *daemon.githubServer.WebhookURL, strings.NewReader(push))
-	require.NoError(t, err)
-	req.Header.Add("Content-type", "application/json")
-	req.Header.Add("X-GitHub-Event", "push")
-	req.Header.Add("X-Hub-Signature-256", "sha256="+hex.EncodeToString(sig))
-
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	if !assert.Equal(t, http.StatusAccepted, res.StatusCode) {
-		response, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-		t.Fatal(string(response))
-	}
+	// send push event
+	sendGithubPushEvent(t, []byte(push), *daemon.githubServer.WebhookURL, *daemon.githubServer.WebhookSecret)
 
 	// commit-triggered run should appear as latest run on workspace
 	err = chromedp.Run(ctx, chromedp.Tasks{

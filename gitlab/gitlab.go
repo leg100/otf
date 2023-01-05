@@ -1,3 +1,4 @@
+// Package gitlab provides gitlab related code
 package gitlab
 
 import (
