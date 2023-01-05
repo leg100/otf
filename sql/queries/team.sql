@@ -53,7 +53,8 @@ FOR UPDATE OF t
 UPDATE teams
 SET
     permission_manage_workspaces = pggen.arg('permission_manage_workspaces'),
-    permission_manage_vcs = pggen.arg('permission_manage_vcs')
+    permission_manage_vcs = pggen.arg('permission_manage_vcs'),
+    permission_manage_registry = pggen.arg('permission_manage_registry')
 WHERE team_id = pggen.arg('team_id')
 RETURNING team_id;
 

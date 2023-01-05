@@ -33,6 +33,7 @@ func TestTeam_Update_ByID(t *testing.T) {
 			OrganizationAccess: otf.OrganizationAccess{
 				ManageWorkspaces: true,
 				ManageVCS:        true,
+				ManageRegistry:   true,
 			},
 		})
 	})
@@ -43,6 +44,7 @@ func TestTeam_Update_ByID(t *testing.T) {
 
 	assert.True(t, got.OrganizationAccess().ManageWorkspaces)
 	assert.True(t, got.OrganizationAccess().ManageVCS)
+	assert.True(t, got.OrganizationAccess().ManageRegistry)
 }
 
 func TestTeam_Get(t *testing.T) {
