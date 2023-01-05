@@ -19,6 +19,10 @@
         <input type="checkbox" name="manage_vcs" id="manage_vcs" value="true" {{ if .Content.OrganizationAccess.ManageVCS }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
         <label for="manage_vcs">Manage VCS Settings: Allows members to manage the set of VCS providers available within the organization.</label>
       </div>
+      <div class="field">
+        <input type="checkbox" name="manage_registry" id="manage_registry" value="true" {{ if .Content.OrganizationAccess.ManageRegistry }}checked{{ end }} {{ if .Content.IsOwners }}disabled checked{{ end }}>
+        <label for="manage_registry">Manage Registry: Allows members to publish and delete modules within the organization.</label>
+      </div>
       {{ if not .Content.IsOwners }}
         <div class="field">
           <button>Save changes</button>

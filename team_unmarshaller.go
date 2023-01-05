@@ -13,6 +13,7 @@ type TeamResult struct {
 	OrganizationID             pgtype.Text          `json:"organization_id"`
 	PermissionManageWorkspaces bool                 `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool                 `json:"permission_manage_vcs"`
+	PermissionManageRegistry   bool                 `json:"permission_manage_registry"`
 	Organization               *pggen.Organizations `json:"organization"`
 }
 
@@ -25,6 +26,7 @@ func UnmarshalTeamResult(row TeamResult, opts ...NewTeamOption) *Team {
 		access: OrganizationAccess{
 			ManageWorkspaces: row.PermissionManageWorkspaces,
 			ManageVCS:        row.PermissionManageVCS,
+			ManageRegistry:   row.PermissionManageRegistry,
 		},
 	}
 }

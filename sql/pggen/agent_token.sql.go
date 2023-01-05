@@ -1598,6 +1598,7 @@ type Teams struct {
 	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
+	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
 }
 
 // Users represents the Postgres composite type "users".
@@ -1857,6 +1858,7 @@ func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 		compositeField{"organization_id", "text", &pgtype.Text{}},
 		compositeField{"permission_manage_workspaces", "bool", &pgtype.Bool{}},
 		compositeField{"permission_manage_vcs", "bool", &pgtype.Bool{}},
+		compositeField{"permission_manage_registry", "bool", &pgtype.Bool{}},
 	)
 }
 

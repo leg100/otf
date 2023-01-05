@@ -38,6 +38,7 @@ func (db *DB) UpdateTeam(ctx context.Context, teamID string, fn func(*otf.Team) 
 		_, err = tx.UpdateTeamByID(ctx, pggen.UpdateTeamByIDParams{
 			PermissionManageWorkspaces: team.OrganizationAccess().ManageWorkspaces,
 			PermissionManageVCS:        team.OrganizationAccess().ManageVCS,
+			PermissionManageRegistry:   team.OrganizationAccess().ManageRegistry,
 			TeamID:                     String(teamID),
 		})
 		if err != nil {
