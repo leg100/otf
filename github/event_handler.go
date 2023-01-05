@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
-	"github.com/pkg/errors"
 )
 
 // HandleEvent handles incoming events from github
@@ -24,7 +23,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOpt
 func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
-		return nil, errors.Wrapf(err, "secret: %s", opts.Secret)
+		return nil, err
 	}
 
 	rawEvent, err := github.ParseWebHook(github.WebHookType(r), payload)
