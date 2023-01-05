@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
@@ -24,7 +25,7 @@ type TestServer struct {
 }
 
 type testServerDB struct {
-	user    *otf.User
+	user    *cloud.User
 	repo    *otf.Repo
 	tarball []byte
 	refs    []string
@@ -66,23 +67,23 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 	})
 	if srv.user != nil {
 		mux.HandleFunc("/api/v3/user", func(w http.ResponseWriter, r *http.Request) {
-			out, err := json.Marshal(&github.User{Login: otf.String(srv.user.Username())})
+			out, err := json.Marshal(&github.User{Login: otf.String(srv.user.Name)})
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
 		mux.HandleFunc("/api/v3/user/orgs", func(w http.ResponseWriter, r *http.Request) {
 			var orgs []*github.Organization
-			for _, org := range srv.user.Organizations() {
-				orgs = append(orgs, &github.Organization{Login: otf.String(org.Name())})
+			for _, org := range srv.user.Organizations {
+				orgs = append(orgs, &github.Organization{Login: otf.String(org)})
 			}
 			out, err := json.Marshal(orgs)
 			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/json")
 			w.Write(out)
 		})
-		for _, org := range srv.user.Organizations() {
-			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org.Name(), func(w http.ResponseWriter, r *http.Request) {
+		for _, org := range srv.user.Organizations {
+			mux.HandleFunc("/api/v3/user/memberships/orgs/"+org, func(w http.ResponseWriter, r *http.Request) {
 				out, err := json.Marshal(&github.Membership{
 					Role: otf.String("member"),
 				})
@@ -93,11 +94,11 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		}
 		mux.HandleFunc("/api/v3/user/teams", func(w http.ResponseWriter, r *http.Request) {
 			var teams []*github.Team
-			for _, team := range srv.user.Teams() {
+			for _, team := range srv.user.Teams {
 				teams = append(teams, &github.Team{
-					Name: otf.String(team.Name()),
+					Name: otf.String(team.Name),
 					Organization: &github.Organization{
-						Login: otf.String(team.OrganizationName()),
+						Login: otf.String(team.Organization),
 					},
 				})
 			}
@@ -207,7 +208,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 
 type TestServerOption func(*TestServer)
 
-func WithUser(user *otf.User) TestServerOption {
+func WithUser(user *cloud.User) TestServerOption {
 	return func(srv *TestServer) {
 		srv.user = user
 	}

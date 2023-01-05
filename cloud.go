@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 
+	"github.com/leg100/otf/cloud"
 	"golang.org/x/oauth2"
 )
 
@@ -40,7 +41,7 @@ type CloudCredentials struct {
 }
 
 type CloudClient interface {
-	GetUser(ctx context.Context) (*User, error)
+	GetUser(ctx context.Context) (*cloud.User, error)
 	// ListRepositories lists repositories accessible to the current user.
 	//
 	// TODO: add optional filters

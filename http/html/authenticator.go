@@ -88,7 +88,7 @@ func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient)
 	}
 
 	// Get otf user; if not exist, create user
-	user, err := a.EnsureCreatedUser(ctx, cuser.Username())
+	user, err := a.EnsureCreatedUser(ctx, cuser.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +98,10 @@ func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient)
 	// teams to be synchronised
 	var teams []*otf.Team
 
-	// Create user's organizations as necessary
-	for _, org := range cuser.Organizations() {
-		org, err = a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
-			Name: otf.String(org.Name()),
+	// Create organization for each cloud organization
+	for _, corg := range cuser.Organizations {
+		org, err := a.EnsureCreatedOrganization(ctx, otf.OrganizationCreateOptions{
+			Name: otf.String(corg),
 		})
 		if err != nil {
 			return nil, err
@@ -118,11 +118,11 @@ func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient)
 	}
 	organizations = append(organizations, personal)
 
-	// Create user's teams as necessary
-	for _, team := range cuser.Teams() {
-		team, err = a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
-			Name:         team.Name(),
-			Organization: team.Organization().Name(),
+	// Create team for each cloud team
+	for _, cteam := range cuser.Teams {
+		team, err := a.EnsureCreatedTeam(ctx, otf.CreateTeamOptions{
+			Name:         cteam.Name,
+			Organization: cteam.Organization,
 		})
 		if err != nil {
 			return nil, err

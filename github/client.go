@@ -82,15 +82,15 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	user := cloud.User{Name: guser.GetLogin()}
 
 	for _, gorg := range gorgs {
-		user.AddOrganization(gorg.GetLogin())
+		user.Organizations = append(user.Organizations, gorg.GetLogin())
 
 		// Determine if they are an admin; if so, add them to the owners team.
-		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", gorg.GetName())
+		membership, _, err := g.client.Organizations.GetOrgMembership(ctx, "", gorg.GetLogin())
 		if err != nil {
 			return nil, err
 		}
 		if membership.GetRole() == "admin" {
-			user.AddTeam(cloud.Team{
+			user.Teams = append(user.Teams, cloud.Team{
 				Name:         "owners",
 				Organization: gorg.GetLogin(),
 			})
@@ -98,7 +98,7 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	}
 
 	for _, gteam := range gteams {
-		user.AddTeam(cloud.Team{
+		user.Teams = append(user.Teams, cloud.Team{
 			Name:         gteam.GetName(),
 			Organization: gteam.GetOrganization().GetLogin(),
 		})

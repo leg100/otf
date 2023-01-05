@@ -4,16 +4,8 @@ package cloud
 type User struct {
 	Name string
 
-	organizations []string // org memberships
-	teams         []Team   // team memberships
-}
-
-func (u *User) AddOrganization(org string) {
-	u.organizations = append(u.organizations, org)
-}
-
-func (u *User) AddTeam(team Team) {
-	u.teams = append(u.teams, team)
+	Organizations []string // org memberships
+	Teams         []Team   // team memberships
 }
 
 // Team is a team account on a cloud provider.

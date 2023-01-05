@@ -7,65 +7,70 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-func TestAuthenticator_ResponseHandler(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	team := otf.NewTeam("fake-team", org)
-	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
-
-	authenticator := &Authenticator{
-		Application: &fakeAuthenticatorApp{},
-		oauthClient: &fakeOAuthClient{user: user},
+func TestAuthenticator(t *testing.T) {
+	cuser := cloud.User{
+		Name: "fake-user",
+		Teams: []cloud.Team{
+			{
+				Name:         "fake-team",
+				Organization: "fake-org",
+			},
+		},
+		Organizations: []string{"fake-org"},
 	}
 
-	r := httptest.NewRequest("GET", "/auth?state=state", nil)
-	r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
-	w := httptest.NewRecorder()
-	authenticator.responseHandler(w, r)
+	t.Run("response_handler", func(t *testing.T) {
+		authenticator := &Authenticator{
+			Application: &fakeAuthenticatorApp{},
+			oauthClient: &fakeOAuthClient{user: &cuser},
+		}
 
-	assert.Equal(t, http.StatusFound, w.Result().StatusCode)
+		r := httptest.NewRequest("GET", "/auth?state=state", nil)
+		r.AddCookie(&http.Cookie{Name: oauthCookieName, Value: "state"})
+		w := httptest.NewRecorder()
+		authenticator.responseHandler(w, r)
 
-	loc, err := w.Result().Location()
-	require.NoError(t, err)
-	assert.Equal(t, "/profile", loc.Path)
+		assert.Equal(t, http.StatusFound, w.Result().StatusCode)
 
-	if assert.Equal(t, 1, len(w.Result().Cookies())) {
-		session := w.Result().Cookies()[0]
-		assert.Equal(t, sessionCookie, session.Name)
-	}
-}
+		loc, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, "/profile", loc.Path)
 
-func TestAuthenticator_Synchronise(t *testing.T) {
-	org := otf.NewTestOrganization(t)
-	team := otf.NewTeam("fake-team", org)
-	user := otf.NewUser("fake-user", otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+		if assert.Equal(t, 1, len(w.Result().Cookies())) {
+			session := w.Result().Cookies()[0]
+			assert.Equal(t, sessionCookie, session.Name)
+		}
+	})
 
-	authenticator := &Authenticator{
-		Application: &fakeAuthenticatorApp{},
-		oauthClient: &fakeOAuthClient{user: user},
-	}
+	t.Run("synchronise", func(t *testing.T) {
+		authenticator := &Authenticator{
+			Application: &fakeAuthenticatorApp{},
+		}
 
-	user, err := authenticator.synchronise(context.Background(), &fakeCloudClient{user: user})
-	require.NoError(t, err)
+		user, err := authenticator.synchronise(context.Background(), &fakeCloudClient{user: &cuser})
+		require.NoError(t, err)
 
-	assert.Equal(t, "fake-user", user.Username())
+		assert.Equal(t, "fake-user", user.Username())
 
-	if assert.Equal(t, 2, len(user.Organizations())) {
-		assert.Equal(t, org.Name(), user.Organizations()[0].Name())
-		assert.Equal(t, "fake-user", user.Organizations()[1].Name())
-	}
+		if assert.Equal(t, 2, len(user.Organizations())) {
+			assert.Equal(t, "fake-org", user.Organizations()[0].Name())
+			assert.Equal(t, "fake-user", user.Organizations()[1].Name())
+		}
 
-	if assert.Equal(t, 2, len(user.Teams())) {
-		assert.Equal(t, "fake-team", user.Teams()[0].Name())
-		assert.Equal(t, org.Name(), user.Teams()[0].Organization().Name())
+		if assert.Equal(t, 2, len(user.Teams())) {
+			assert.Equal(t, "fake-team", user.Teams()[0].Name())
+			assert.Equal(t, "fake-org", user.Teams()[0].Organization().Name())
 
-		assert.Equal(t, "owners", user.Teams()[1].Name())
-		assert.Equal(t, "fake-user", user.Teams()[1].Organization().Name())
-	}
+			assert.Equal(t, "owners", user.Teams()[1].Name())
+			assert.Equal(t, "fake-user", user.Teams()[1].Organization().Name())
+		}
+	})
 }
 
 type fakeAuthenticatorApp struct {
@@ -116,7 +121,7 @@ func (f *fakeUserStore) RemoveTeamMembership(ctx context.Context, id, teamID str
 }
 
 type fakeOAuthClient struct {
-	user *otf.User
+	user *cloud.User
 	oauthClient
 }
 
@@ -129,10 +134,10 @@ func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (otf.CloudCl
 }
 
 type fakeCloudClient struct {
-	user *otf.User
+	user *cloud.User
 	otf.CloudClient
 }
 
-func (f *fakeCloudClient) GetUser(context.Context) (*otf.User, error) {
+func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {
 	return f.user, nil
 }
