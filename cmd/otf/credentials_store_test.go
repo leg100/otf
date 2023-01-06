@@ -52,3 +52,13 @@ func TestCredentialsStoreWithExistingCredentials(t *testing.T) {
 
 	assert.Equal(t, want, string(got))
 }
+
+func TestCredentialsStore_EnvironmentVariable(t *testing.T) {
+	store := CredentialsStore("")
+	t.Setenv("TF_TOKEN_example_com", "secret-token")
+
+	token, err := store.Load("example.com")
+	require.NoError(t, err)
+
+	assert.Equal(t, "secret-token", token)
+}
