@@ -135,6 +135,17 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	}
 
 	r.PathPrefix("/api/v2").Sub(func(api *Router) {
+		// Add tfp api version header to every response
+		api.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Version 2.5 is the minimum version terraform requires for the
+				// newer 'cloud' configuration block:
+				// https://developer.hashicorp.com/terraform/cli/cloud/settings#the-cloud-block
+				w.Header().Set("TFP-API-Version", "2.5")
+				next.ServeHTTP(w, r)
+			})
+		})
+
 		api.GET("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
