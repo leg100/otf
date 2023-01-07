@@ -145,6 +145,6 @@ func (u *fakeApp) ListAgentTokens(ctx context.Context, _ string) ([]*otf.AgentTo
 	return []*otf.AgentToken{u.fakeAgentToken}, nil
 }
 
-func (u *fakeApp) DeleteAgentToken(ctx context.Context, id string, organizationName string) error {
-	return nil
+func (u *fakeApp) DeleteAgentToken(context.Context, string) (*otf.AgentToken, error) {
+	return u.fakeAgentToken, nil
 }

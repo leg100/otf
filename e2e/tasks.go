@@ -186,7 +186,7 @@ func terraformPlanTasks(t *testing.T, root string) chromedp.Action {
 	})
 }
 
-func createGithubVCSProviderTasks(t *testing.T, url, org string) chromedp.Tasks {
+func createGithubVCSProviderTasks(t *testing.T, url, org, name string) chromedp.Tasks {
 	return chromedp.Tasks{
 		// go to org
 		chromedp.Navigate(path.Join(url, "organizations", org)),
@@ -200,7 +200,7 @@ func createGithubVCSProviderTasks(t *testing.T, url, org string) chromedp.Tasks 
 		chromedp.Focus("input#token", chromedp.NodeVisible),
 		input.InsertText("fake-github-personal-token"),
 		chromedp.Focus("input#name"),
-		input.InsertText("github"),
+		input.InsertText(name),
 		screenshot(t),
 		// submit form to create provider
 		chromedp.Submit("input#token"),

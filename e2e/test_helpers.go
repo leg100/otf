@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	expect "github.com/google/goexpect"
 	"github.com/leg100/otf"
@@ -58,8 +59,8 @@ func startAgent(t *testing.T, token, address string) {
 }
 
 // createAgentToken creates an agent token via the CLI
-func createAgentToken(t *testing.T, organization, hostname string) string {
-	cmd := exec.Command("otf", "agents", "tokens", "new", "testing", "--organization", organization, "--address", hostname)
+func createAgentToken(t *testing.T, organization, hostname, description string) string {
+	cmd := exec.Command("otf", "agents", "tokens", "new", description, "--organization", organization, "--address", hostname)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
@@ -149,4 +150,17 @@ func newUser(username, org string, teams ...string) cloud.User {
 		})
 	}
 	return user
+}
+
+// okDialog - Click OK on any browser javascript dialog boxes that pop up
+func okDialog(t *testing.T, ctx context.Context) {
+	chromedp.ListenTarget(ctx, func(ev any) {
+		switch ev.(type) {
+		case *page.EventJavascriptDialogOpening:
+			go func() {
+				err := chromedp.Run(ctx, page.HandleJavaScriptDialog(true))
+				require.NoError(t, err)
+			}()
+		}
+	})
 }

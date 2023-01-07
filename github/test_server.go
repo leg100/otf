@@ -173,6 +173,10 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 			w.WriteHeader(http.StatusCreated)
 			w.Write(out)
 		})
+		// https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#delete-a-repository-webhook
+		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/hooks/123", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
 		// https://docs.github.com/en/rest/commits/statuses?apiVersion=2022-11-28#create-a-commit-status
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
 			var commit github.StatusEvent

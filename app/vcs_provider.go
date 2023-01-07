@@ -39,7 +39,7 @@ func (a *Application) GetVCSProvider(ctx context.Context, id string) (*otf.VCSPr
 	if err != nil {
 		return nil, err
 	}
-	a.V(2).Info("retrieved vcs provider", "id", id, "organization", provider.OrganizationName(), "subject", subject)
+	a.V(2).Info("retrieved vcs provider", "provider", provider, "subject", subject)
 
 	return provider, nil
 }
@@ -59,16 +59,23 @@ func (a *Application) ListVCSProviders(ctx context.Context, organization string)
 	return providers, nil
 }
 
-func (a *Application) DeleteVCSProvider(ctx context.Context, id, organization string) error {
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteVCSProviderAction, organization)
+func (a *Application) DeleteVCSProvider(ctx context.Context, id string) (*otf.VCSProvider, error) {
+	// retrieve vcs provider first in order to get organization for authorization
+	provider, err := a.db.GetVCSProvider(ctx, id)
 	if err != nil {
-		return err
+		a.Error(err, "retrieving vcs provider", "id", id)
+		return nil, err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteVCSProviderAction, provider.OrganizationName())
+	if err != nil {
+		return nil, err
 	}
 
 	if err := a.db.DeleteVCSProvider(ctx, id); err != nil {
-		a.Error(err, "deleting vcs provider", "id", id, "subject", subject)
-		return err
+		a.Error(err, "deleting vcs provider", "provider", provider, "subject", subject)
+		return nil, err
 	}
-	a.V(0).Info("deleted vcs provider", "id", id, "subject", subject)
-	return nil
+	a.V(0).Info("deleted vcs provider", "provider", provider, "subject", subject)
+	return provider, nil
 }

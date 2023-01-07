@@ -99,20 +99,6 @@ func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, op
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
-	path, err := getWorkspacePath(spec)
-	if err != nil {
-		return err
-	}
-
-	req, err := c.newRequest("DELETE", path, nil)
-	if err != nil {
-		return err
-	}
-
-	return c.do(ctx, req, nil)
-}
-
 func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	var path string
 	if spec.ID != nil {

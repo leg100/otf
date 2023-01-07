@@ -167,28 +167,27 @@ func (a *Application) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) 
 	return ws, nil
 }
 
-func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error {
+func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	subject, err := a.CanAccessWorkspace(ctx, otf.DeleteWorkspaceAction, spec)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Get workspace so we can publish it in an event after we delete it
 	ws, err := a.db.GetWorkspace(ctx, spec)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := a.db.DeleteWorkspace(ctx, spec); err != nil {
 		a.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
-		return err
+		return nil, err
 	}
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceDeleted, Payload: ws})
 
 	a.V(0).Info("deleted workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
 
-	return nil
+	return ws, nil
 }
 
 func (a *Application) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {

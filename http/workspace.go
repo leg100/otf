@@ -262,7 +262,8 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := s.Application.DeleteWorkspace(r.Context(), spec); err != nil {
+	_, err := s.Application.DeleteWorkspace(r.Context(), spec)
+	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}

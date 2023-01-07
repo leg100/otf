@@ -64,7 +64,7 @@ func TestConnectRepo(t *testing.T) {
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org),
+		createGithubVCSProviderTasks(t, url, org, "github"),
 		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		// connect workspace to vcs repo
@@ -149,4 +149,40 @@ func TestConnectRepo(t *testing.T) {
 		require.Equal(t, "success", *status.State)
 		require.Equal(t, "no changes", *status.Description)
 	}
+
+	// Clean up after ourselves by disconnecting the workspace and deleting the
+	// workspace and vcs provider
+	okDialog(t, ctx)
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+		screenshot(t),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
+		// click disconnect button
+		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`, chromedp.NodeVisible),
+		screenshot(t),
+		// confirm disconnected
+		matchText(t, ".flash-success", "disconnected workspace from repo"),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		// delete workspace
+		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
+		// confirm deletion
+		matchText(t, ".flash-success", "deleted workspace: "+workspaceName),
+		//
+		// delete vcs provider
+		//
+		// go to org
+		chromedp.Navigate(path.Join(url, "organizations", org)),
+		// go to vcs providers
+		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		screenshot(t),
+		// click delete button for one and only vcs provider
+		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "deleted provider: github"),
+	})
+	require.NoError(t, err)
 }

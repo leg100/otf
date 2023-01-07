@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,6 +92,22 @@ func TestListWorkspacesHandler(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "Previous Page")
 		assert.NotContains(t, w.Body.String(), "Next Page")
 	})
+}
+
+func TestDeleteWorkspace(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+
+	q := "/?workspace_id=ws-123"
+	r := httptest.NewRequest("GET", q, nil)
+	w := httptest.NewRecorder()
+	app.deleteWorkspace(w, r)
+	if assert.Equal(t, 302, w.Code) {
+		redirect, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, paths.Workspaces(org.Name()), redirect.Path)
+	}
 }
 
 func TestListWorkspaceProvidersHandler(t *testing.T) {
@@ -259,6 +276,10 @@ func (f *fakeWorkspaceHandlerApp) GetOrganization(ctx context.Context, name stri
 }
 
 func (f *fakeWorkspaceHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
+}
+
+func (f *fakeWorkspaceHandlerApp) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 

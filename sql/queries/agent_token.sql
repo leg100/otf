@@ -13,7 +13,13 @@ INSERT INTO agent_tokens (
     pggen.arg('organization_name')
 );
 
--- name: FindAgentToken :one
+-- name: FindAgentTokenByID :one
+SELECT *
+FROM agent_tokens
+WHERE token_id = pggen.arg('token_id')
+;
+
+-- name: FindAgentTokenByToken :one
 SELECT *
 FROM agent_tokens
 WHERE token = pggen.arg('token')

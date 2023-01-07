@@ -12,7 +12,7 @@ import (
 )
 
 // TestSiteAdmin demonstrates signing into the web app as a site admin, using
-// their super powers to create an organization.
+// their super powers to create and delete an organization.
 func TestSiteAdmin(t *testing.T) {
 	addBuildsToPath(t)
 
@@ -26,6 +26,9 @@ func TestSiteAdmin(t *testing.T) {
 	defer cancel()
 
 	var footerLoginText, loginConfirmation, orgCreated, orgLocation string
+
+	// Click OK on any browser javascript dialog boxes that pop up
+	okDialog(t, ctx)
 
 	err := chromedp.Run(ctx, chromedp.Tasks{
 		// login as site admin
@@ -54,6 +57,12 @@ func TestSiteAdmin(t *testing.T) {
 		screenshot(t),
 		chromedp.Location(&orgLocation),
 		chromedp.Text(".flash-success", &orgCreated, chromedp.NodeVisible),
+		// return to the list of organizations
+		chromedp.Navigate("https://" + hostname + "/organizations"),
+		// delete the organization
+		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "deleted organization: "+org),
 	})
 	require.NoError(t, err)
 

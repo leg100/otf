@@ -39,10 +39,9 @@ func (a *Application) ListAgentTokens(ctx context.Context, organizationName stri
 	return tokens, nil
 }
 
-// GetAgentToken retrieves the agent token metadata corresponding to the given
-// token.
+// GetAgentToken retrieves an agent token using the given token.
 func (a *Application) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
-	at, err := a.db.GetAgentToken(ctx, token)
+	at, err := a.db.GetAgentTokenByToken(ctx, token)
 	if err != nil {
 		// we can't reveal any info because all we have is the
 		// authentication token which is sensitive.
@@ -53,16 +52,25 @@ func (a *Application) GetAgentToken(ctx context.Context, token string) (*otf.Age
 	return at, nil
 }
 
-func (a *Application) DeleteAgentToken(ctx context.Context, id string, organizationName string) error {
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteAgentTokenAction, organizationName)
+func (a *Application) DeleteAgentToken(ctx context.Context, id string) (*otf.AgentToken, error) {
+	// retrieve agent token first in order to get organization for authorization
+	at, err := a.db.GetAgentTokenByID(ctx, id)
 	if err != nil {
-		return err
+		// we can't reveal any info because all we have is the
+		// authentication token which is sensitive.
+		a.Error(err, "retrieving agent token", "token", "******")
+		return nil, err
+	}
+
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteAgentTokenAction, at.OrganizationName())
+	if err != nil {
+		return nil, err
 	}
 
 	if err := a.db.DeleteAgentToken(ctx, id); err != nil {
-		a.Error(err, "deleting agent token", "id", id, "subject", subject)
-		return err
+		a.Error(err, "deleting agent token", "agent token", at, "subject", subject)
+		return nil, err
 	}
-	a.V(0).Info("deleted agent token", "id", id, "subject", subject)
-	return nil
+	a.V(0).Info("deleted agent token", "agent token", at, "subject", subject)
+	return at, nil
 }

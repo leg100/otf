@@ -56,7 +56,7 @@ func TestCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	// org now sync'd, so we can create agent token via CLI
-	agentToken := createAgentToken(t, org, userHostname)
+	agentToken := createAgentToken(t, org, userHostname, "test-agent-token")
 	// start agent, instructing it to connect to otfd2
 	startAgent(t, agentToken, agentHostname)
 
@@ -93,4 +93,19 @@ func TestCluster(t *testing.T) {
 	t.Log(string(out))
 	require.NoError(t, err)
 	require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
+
+	// delete agent token using UI
+	okDialog(t, ctx)
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		// go to org main menu
+		chromedp.Navigate("https://" + userHostname + "/organizations/" + org),
+		// go to list of agent tokens
+		chromedp.Click("#agent_tokens > a", chromedp.NodeVisible),
+		screenshot(t),
+		// delete the token
+		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "Deleted token: "+"test-agent-token"),
+	})
+	require.NoError(t, err)
 }

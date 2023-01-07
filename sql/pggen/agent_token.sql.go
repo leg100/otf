@@ -24,12 +24,19 @@ type Querier interface {
 	// InsertAgentTokenScan scans the result of an executed InsertAgentTokenBatch query.
 	InsertAgentTokenScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	FindAgentToken(ctx context.Context, token pgtype.Text) (FindAgentTokenRow, error)
-	// FindAgentTokenBatch enqueues a FindAgentToken query into batch to be executed
+	FindAgentTokenByID(ctx context.Context, tokenID pgtype.Text) (FindAgentTokenByIDRow, error)
+	// FindAgentTokenByIDBatch enqueues a FindAgentTokenByID query into batch to be executed
 	// later by the batch.
-	FindAgentTokenBatch(batch genericBatch, token pgtype.Text)
-	// FindAgentTokenScan scans the result of an executed FindAgentTokenBatch query.
-	FindAgentTokenScan(results pgx.BatchResults) (FindAgentTokenRow, error)
+	FindAgentTokenByIDBatch(batch genericBatch, tokenID pgtype.Text)
+	// FindAgentTokenByIDScan scans the result of an executed FindAgentTokenByIDBatch query.
+	FindAgentTokenByIDScan(results pgx.BatchResults) (FindAgentTokenByIDRow, error)
+
+	FindAgentTokenByToken(ctx context.Context, token pgtype.Text) (FindAgentTokenByTokenRow, error)
+	// FindAgentTokenByTokenBatch enqueues a FindAgentTokenByToken query into batch to be executed
+	// later by the batch.
+	FindAgentTokenByTokenBatch(batch genericBatch, token pgtype.Text)
+	// FindAgentTokenByTokenScan scans the result of an executed FindAgentTokenByTokenBatch query.
+	FindAgentTokenByTokenScan(results pgx.BatchResults) (FindAgentTokenByTokenRow, error)
 
 	FindAgentTokens(ctx context.Context, organizationName pgtype.Text) ([]FindAgentTokensRow, error)
 	// FindAgentTokensBatch enqueues a FindAgentTokens query into batch to be executed
@@ -1082,8 +1089,11 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, insertAgentTokenSQL, insertAgentTokenSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertAgentToken': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findAgentTokenSQL, findAgentTokenSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindAgentToken': %w", err)
+	if _, err := p.Prepare(ctx, findAgentTokenByIDSQL, findAgentTokenByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentTokenByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findAgentTokenByTokenSQL, findAgentTokenByTokenSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindAgentTokenByToken': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findAgentTokensSQL, findAgentTokensSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindAgentTokens': %w", err)
@@ -1988,12 +1998,12 @@ func (q *DBQuerier) InsertAgentTokenScan(results pgx.BatchResults) (pgconn.Comma
 	return cmdTag, err
 }
 
-const findAgentTokenSQL = `SELECT *
+const findAgentTokenByIDSQL = `SELECT *
 FROM agent_tokens
-WHERE token = $1
+WHERE token_id = $1
 ;`
 
-type FindAgentTokenRow struct {
+type FindAgentTokenByIDRow struct {
 	TokenID          pgtype.Text        `json:"token_id"`
 	Token            pgtype.Text        `json:"token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
@@ -2001,28 +2011,67 @@ type FindAgentTokenRow struct {
 	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
-// FindAgentToken implements Querier.FindAgentToken.
-func (q *DBQuerier) FindAgentToken(ctx context.Context, token pgtype.Text) (FindAgentTokenRow, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentToken")
-	row := q.conn.QueryRow(ctx, findAgentTokenSQL, token)
-	var item FindAgentTokenRow
+// FindAgentTokenByID implements Querier.FindAgentTokenByID.
+func (q *DBQuerier) FindAgentTokenByID(ctx context.Context, tokenID pgtype.Text) (FindAgentTokenByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentTokenByID")
+	row := q.conn.QueryRow(ctx, findAgentTokenByIDSQL, tokenID)
+	var item FindAgentTokenByIDRow
 	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.OrganizationName); err != nil {
-		return item, fmt.Errorf("query FindAgentToken: %w", err)
+		return item, fmt.Errorf("query FindAgentTokenByID: %w", err)
 	}
 	return item, nil
 }
 
-// FindAgentTokenBatch implements Querier.FindAgentTokenBatch.
-func (q *DBQuerier) FindAgentTokenBatch(batch genericBatch, token pgtype.Text) {
-	batch.Queue(findAgentTokenSQL, token)
+// FindAgentTokenByIDBatch implements Querier.FindAgentTokenByIDBatch.
+func (q *DBQuerier) FindAgentTokenByIDBatch(batch genericBatch, tokenID pgtype.Text) {
+	batch.Queue(findAgentTokenByIDSQL, tokenID)
 }
 
-// FindAgentTokenScan implements Querier.FindAgentTokenScan.
-func (q *DBQuerier) FindAgentTokenScan(results pgx.BatchResults) (FindAgentTokenRow, error) {
+// FindAgentTokenByIDScan implements Querier.FindAgentTokenByIDScan.
+func (q *DBQuerier) FindAgentTokenByIDScan(results pgx.BatchResults) (FindAgentTokenByIDRow, error) {
 	row := results.QueryRow()
-	var item FindAgentTokenRow
+	var item FindAgentTokenByIDRow
 	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.OrganizationName); err != nil {
-		return item, fmt.Errorf("scan FindAgentTokenBatch row: %w", err)
+		return item, fmt.Errorf("scan FindAgentTokenByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
+const findAgentTokenByTokenSQL = `SELECT *
+FROM agent_tokens
+WHERE token = $1
+;`
+
+type FindAgentTokenByTokenRow struct {
+	TokenID          pgtype.Text        `json:"token_id"`
+	Token            pgtype.Text        `json:"token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Description      pgtype.Text        `json:"description"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+}
+
+// FindAgentTokenByToken implements Querier.FindAgentTokenByToken.
+func (q *DBQuerier) FindAgentTokenByToken(ctx context.Context, token pgtype.Text) (FindAgentTokenByTokenRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindAgentTokenByToken")
+	row := q.conn.QueryRow(ctx, findAgentTokenByTokenSQL, token)
+	var item FindAgentTokenByTokenRow
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("query FindAgentTokenByToken: %w", err)
+	}
+	return item, nil
+}
+
+// FindAgentTokenByTokenBatch implements Querier.FindAgentTokenByTokenBatch.
+func (q *DBQuerier) FindAgentTokenByTokenBatch(batch genericBatch, token pgtype.Text) {
+	batch.Queue(findAgentTokenByTokenSQL, token)
+}
+
+// FindAgentTokenByTokenScan implements Querier.FindAgentTokenByTokenScan.
+func (q *DBQuerier) FindAgentTokenByTokenScan(results pgx.BatchResults) (FindAgentTokenByTokenRow, error) {
+	row := results.QueryRow()
+	var item FindAgentTokenByTokenRow
+	if err := row.Scan(&item.TokenID, &item.Token, &item.CreatedAt, &item.Description, &item.OrganizationName); err != nil {
+		return item, fmt.Errorf("scan FindAgentTokenByTokenBatch row: %w", err)
 	}
 	return item, nil
 }

@@ -13,14 +13,32 @@
 {{ end }}
 
 {{ define "content" }}
-  {{ template "content-list" . }}
-{{ end }}
-
-{{ define "content-list-item" }}
-  <div id="item-organization-{{ .Name }}" class="item">
-    <div class="item-heading">
-    <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+  <div id="content-list" class="content-list">
+    {{ range .Content.Items }}
+      <div class="item">
+        <div class="item-heading">
+        <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
+        </div>
+        <div class="item-content">
+          {{ template "identifier" . }}
+          {{ if and $.CurrentUser $.CurrentUser.IsSiteAdmin }}
+            <form action="{{ deleteOrganizationPath .OrganizationName }}" method="POST">
+              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+              <input type="hidden" name="id" value="{{ .ID }}">
+            </form>
+          {{ end }}
+        </div>
+      </div>
+    {{ else }}
+      No organizations found.
+    {{ end }}
+    <div class="content-list-footer">
+      {{ if .Content.PrevPage }}
+      <a href="{{ urlJoin (dict "path" .CurrentPath "query" .Content.PrevPageQuery) }}">Previous Page</a>
+      {{ end }}
+      {{ if .Content.NextPage }}
+      <a href="{{ urlJoin (dict "path" .CurrentPath "query" .Content.NextPageQuery) }}">Next Page</a>
+      {{ end }}
     </div>
-    {{ template "identifier" . }}
   </div>
 {{ end }}
