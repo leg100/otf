@@ -19,45 +19,57 @@ type EventHandler struct {
 	logr.Logger
 }
 
-func (h *EventHandler) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
-	if err := h.handle(r); err != nil {
+func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
+	event, err := handle(r, opts)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil
 	}
 	w.WriteHeader(http.StatusNoContent)
-	return nil
+	return event
 }
 
-func (h *EventHandler) handle(r *http.Request) error {
-	if token := r.Header.Get("X-Gitlab-Token"); token != h.token {
-		return errors.New("token validation failed")
+func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) {
+	if token := r.Header.Get("X-Gitlab-Token"); token != opts.Secret {
+		return nil, errors.New("token validation failed")
 	}
 
 	payload, err := io.ReadAll(r.Body)
 	if err != nil || len(payload) == 0 {
-		return errors.New("error reading request body")
+		return nil, errors.New("error reading request body")
 	}
 
 	rawEvent, err := gitlab.ParseWebhook(gitlab.HookEventType(r), payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Filter out non-push events
 	switch event := rawEvent.(type) {
 	case *gitlab.PushEvent:
 		refParts := strings.Split(event.Ref, "/")
 		if len(refParts) != 3 {
-			return fmt.Errorf("malformed ref: %s", event.Ref)
+			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		h.events <- &otf.VCSPushEvent{}
-
-		//	Identifier: push.Project.PathWithNamespace,
-		//	Branch:     refParts[2],
-		//}
+		return &otf.VCSPushEvent{
+			WebhookID:  opts.WebhookID,
+			Branch:     refParts[2],
+			Identifier: event.Project.PathWithNamespace,
+			CommitSHA:  event.After,
+		}, nil
 	case *gitlab.TagEvent:
+		refParts := strings.Split(event.Ref, "/")
+		if len(refParts) != 3 {
+			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
+		}
+		return &otf.VCSTagEvent{
+			WebhookID: opts.WebhookID,
+			Tag:       refParts[2],
+			// Action:     action,
+			Identifier: event.Project.PathWithNamespace,
+			CommitSHA:  event.After,
+		}, nil
 	case *gitlab.MergeEvent:
 	}
 
-	return nil
+	return nil, nil
 }

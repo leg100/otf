@@ -110,6 +110,9 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 			Page:    lopts.PageNumber,
 			PerPage: lopts.PageSize,
 		},
+		// limit results to those repos the authenticated user is a member of,
+		// otherwise we'll get *all* accessible repos, public and private.
+		Membership: otf.Bool(true),
 	}
 	projects, resp, err := g.client.Projects.ListProjects(opts, nil)
 	if err != nil {

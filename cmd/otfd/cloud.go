@@ -8,8 +8,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// cloudConfig bundles together cloud config and oauth config for populating via
-// flags
+// cloudConfig populates cloud config and oauth config via CLI flags.
 type cloudConfig struct {
 	otf.CloudConfig
 	*oauth2.Config

@@ -1,0 +1,18 @@
+{{ define "create_vcs_provider_form" }}
+  <form class="main-form" action="{{ createVCSProviderPath .Organization }}" method="POST">
+    <input type="hidden" name="cloud" id="cloud" value="{{ .Cloud }}">
+    <ul>
+      <li class="field">
+        <label for="token">Token</label>
+        <input type="text" name="token" id="token" required>
+      </li>
+      <li class="field">
+        <label for="name">Name</label>
+        <input type="text" name="name" id="name" required placeholder="{{ .Cloud }}">
+      </li>
+      <li>
+        <button>Create VCS Provider</button>
+      </li>
+    </ul>
+  </form>
+{{ end }}
