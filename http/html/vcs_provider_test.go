@@ -17,12 +17,15 @@ func TestNewVCSProviderHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	app := newFakeWebApp(t, &fakeVCSProviderApp{org: org})
 
-	q := "/?organization_name=acme-corp&cloud=github"
-	r := httptest.NewRequest("GET", q, nil)
-	w := httptest.NewRecorder()
-	app.newVCSProvider(w, r)
-	if !assert.Equal(t, 200, w.Code) {
-		t.Log(w.Body.String())
+	for _, cloud := range []string{"github", "gitlab"} {
+		t.Run(cloud, func(t *testing.T) {
+			q := "/?organization_name=acme-corp&cloud=" + cloud
+			r := httptest.NewRequest("GET", q, nil)
+			w := httptest.NewRecorder()
+			app.newVCSProvider(w, r)
+			t.Log(w.Body.String())
+			assert.Equal(t, 200, w.Code)
+		})
 	}
 }
 
