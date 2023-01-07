@@ -32,13 +32,6 @@
     {{ else }}
       No organizations found.
     {{ end }}
-    <div class="content-list-footer">
-      {{ if .Content.PrevPage }}
-      <a href="{{ urlJoin (dict "path" .CurrentPath "query" .Content.PrevPageQuery) }}">Previous Page</a>
-      {{ end }}
-      {{ if .Content.NextPage }}
-      <a href="{{ urlJoin (dict "path" .CurrentPath "query" .Content.NextPageQuery) }}">Next Page</a>
-      {{ end }}
-    </div>
+    {{ template "page-navigation-links" . }}
   </div>
 {{ end }}

@@ -1,9 +1,0 @@
-{{ define "header-links" }}
-  {{ range $txt, $link := . }}
-    {{ if eq $.CurrentPath $link }}
-    <li><a class="active" href="{{ $link }}">{{ $txt }}</a></li>
-    {{ else }}
-    <li><a href="{{ $link }}">{{ $txt }}</a></li>
-    {{ end }}
-  {{ end }}
-{{ end }}
