@@ -149,4 +149,19 @@ func TestConnectRepo(t *testing.T) {
 		require.Equal(t, "success", *status.State)
 		require.Equal(t, "no changes", *status.Description)
 	}
+
+	// Clean up after ourselves by deleting the vcs provider
+	okDialog(t, ctx)
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		// go to org
+		chromedp.Navigate(path.Join(url, "organizations", org)),
+		// go to vcs providers
+		chromedp.Click("#vcs_providers > a", chromedp.NodeVisible),
+		screenshot(t),
+		// click delete button for one and only vcs provider
+		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
+		screenshot(t),
+		matchText(t, ".flash-success", "deleted provider"),
+	})
+	require.NoError(t, err)
 }

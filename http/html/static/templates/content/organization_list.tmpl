@@ -21,6 +21,12 @@
     <div class="item-heading">
     <a class="status" href="{{ organizationPath .Name }}">{{ .Name }}</a>
     </div>
-    {{ template "identifier" . }}
+    <div class="item-content">
+      {{ template "identifier" . }}
+      <form action="{{ deleteOrganizationPath .OrganizationName }}" method="POST">
+        <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
+        <input type="hidden" name="id" value="{{ .ID }}">
+      </form>
+    </div>
   </div>
 {{ end }}

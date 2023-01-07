@@ -31,8 +31,16 @@ func (db *DB) ListAgentTokens(ctx context.Context, organizationName string) ([]*
 	return unmarshalled, nil
 }
 
-func (db *DB) GetAgentToken(ctx context.Context, token string) (*otf.AgentToken, error) {
-	r, err := db.FindAgentToken(ctx, String(token))
+func (db *DB) GetAgentTokenByID(ctx context.Context, id string) (*otf.AgentToken, error) {
+	r, err := db.FindAgentTokenByID(ctx, String(id))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalAgentTokenResult(otf.AgentTokenRow(r)), nil
+}
+
+func (db *DB) GetAgentTokenByToken(ctx context.Context, token string) (*otf.AgentToken, error) {
+	r, err := db.FindAgentTokenByToken(ctx, String(token))
 	if err != nil {
 		return nil, databaseError(err)
 	}

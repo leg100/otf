@@ -45,6 +45,16 @@ func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) 
 	return t.organizationName == policy.OrganizationName
 }
 
+func (t *AgentToken) MarshalLog() any {
+	return struct {
+		ID, Organization, Description string
+	}{
+		ID:           t.id,
+		Organization: t.organizationName,
+		Description:  t.description,
+	}
+}
+
 type CreateAgentTokenOptions struct {
 	OrganizationName string `schema:"organization_name,required"`
 	Description      string `schema:"description,required"`
@@ -107,16 +117,18 @@ type AgentTokenService interface {
 	// GetAgentToken retrieves AgentToken using its cryptographic
 	// authentication token.
 	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
-	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
-	DeleteAgentToken(ctx context.Context, id string, organizationName string) error
+	ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
+	DeleteAgentToken(ctx context.Context, id string) (*AgentToken, error)
 }
 
 // AgentTokenStore persists agent authentication tokens.
 type AgentTokenStore interface {
 	CreateAgentToken(ctx context.Context, at *AgentToken) error
-	// GetAgentToken retrieves agent token using its cryptographic
+	// GetAgentTokenByID retrieves agent token using its ID.
+	GetAgentTokenByID(ctx context.Context, id string) (*AgentToken, error)
+	// GetAgentTokenByToken retrieves agent token using its cryptographic
 	// authentication token.
-	GetAgentToken(ctx context.Context, token string) (*AgentToken, error)
-	ListAgentTokens(ctx context.Context, organizationName string) ([]*AgentToken, error)
+	GetAgentTokenByToken(ctx context.Context, token string) (*AgentToken, error)
+	ListAgentTokens(ctx context.Context, organization string) ([]*AgentToken, error)
 	DeleteAgentToken(ctx context.Context, id string) error
 }

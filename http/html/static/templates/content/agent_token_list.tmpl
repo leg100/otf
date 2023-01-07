@@ -22,9 +22,8 @@
     </div>
     <div class="item-content">
       {{ template "identifier" . }}
-      <form action="{{ deleteAgentTokenPath .OrganizationName }}" method="POST">
+      <form action="{{ deleteAgentTokenPath .ID }}" method="POST">
         <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
-        <input type="hidden" name="id" value="{{ .ID }}">
       </form>
     </div>
   </div>

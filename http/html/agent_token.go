@@ -72,20 +72,18 @@ func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Organization string `schema:"organization_name,required"`
-		ID           string `schema:"id,required"`
-	}
-	var params parameters
-	if err := decode.All(&params, r); err != nil {
+	id, err := decode.Param("agent_token_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := app.DeleteAgentToken(r.Context(), params.ID, params.Organization); err != nil {
+	at, err := app.DeleteAgentToken(r.Context(), id)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "Deleted token")
-	http.Redirect(w, r, paths.AgentTokens(params.Organization), http.StatusFound)
+
+	flashSuccess(w, "Deleted token: "+at.Description())
+	http.Redirect(w, r, paths.AgentTokens(at.OrganizationName()), http.StatusFound)
 }
