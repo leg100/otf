@@ -7,17 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/xanzy/go-gitlab"
 )
-
-// EventHandler handles incoming VCS events from gitlab
-type EventHandler struct {
-	token  string
-	events chan<- otf.VCSEvent
-	logr.Logger
-}
 
 func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
 	event, err := handle(r, opts)

@@ -86,11 +86,3 @@ type fakeAdminLoginHandlerApp struct {
 func (f *fakeAdminLoginHandlerApp) CreateSession(ctx context.Context, uid string, addr string) (*otf.Session, error) {
 	return otf.NewSession(uid, addr)
 }
-
-type fakeLoginHandlerApp struct {
-	otf.Application
-}
-
-func (f *fakeLoginHandlerApp) CreateSession(ctx context.Context, uid string, addr string) (*otf.Session, error) {
-	return otf.NewSession(uid, addr)
-}
