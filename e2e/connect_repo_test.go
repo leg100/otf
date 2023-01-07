@@ -64,7 +64,7 @@ func TestConnectRepo(t *testing.T) {
 
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org),
+		createGithubVCSProviderTasks(t, url, org, "github"),
 		// create workspace via UI
 		createWorkspaceTasks(t, hostname, org, workspaceName),
 		// connect workspace to vcs repo
@@ -161,7 +161,7 @@ func TestConnectRepo(t *testing.T) {
 		// click delete button for one and only vcs provider
 		chromedp.Click(`//button[text()='delete']`, chromedp.NodeVisible),
 		screenshot(t),
-		matchText(t, ".flash-success", "deleted provider"),
+		matchText(t, ".flash-success", "deleted provider: github"),
 	})
 	require.NoError(t, err)
 }

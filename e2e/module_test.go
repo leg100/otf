@@ -65,7 +65,7 @@ func TestModule(t *testing.T) {
 	var moduleURL string // captures url for module page
 	err = chromedp.Run(ctx, chromedp.Tasks{
 		githubLoginTasks(t, hostname, user.Name),
-		createGithubVCSProviderTasks(t, url, org),
+		createGithubVCSProviderTasks(t, url, org, "github"),
 		// publish module
 		chromedp.Tasks{
 			// go to org

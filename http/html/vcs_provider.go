@@ -76,25 +76,17 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request) {
-	type deleteOptions struct {
-		ID               string `schema:"id,required"`
-		OrganizationName string `schema:"organization_name,required"`
-	}
-	var opts deleteOptions
-	if err := decode.All(&opts, r); err != nil {
+	id, err := decode.Param("vcs_provider_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	org, err := app.GetOrganization(r.Context(), opts.OrganizationName)
+
+	provider, err := app.DeleteVCSProvider(r.Context(), id)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.DeleteVCSProvider(r.Context(), opts.ID, opts.OrganizationName)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "deleted provider")
-	http.Redirect(w, r, paths.VCSProviders(org.Name()), http.StatusFound)
+	flashSuccess(w, "deleted provider: "+provider.Name())
+	http.Redirect(w, r, paths.VCSProviders(provider.OrganizationName()), http.StatusFound)
 }

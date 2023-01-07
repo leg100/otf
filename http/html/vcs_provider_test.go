@@ -70,16 +70,17 @@ func TestListVCSProvidersHandler(t *testing.T) {
 }
 
 func TestDeleteVCSProvidersHandler(t *testing.T) {
+	org := otf.NewTestOrganization(t)
 	app := newFakeWebApp(t, &fakeVCSProviderApp{
-		org: otf.NewTestOrganization(t),
+		org:      org,
+		provider: otf.NewTestVCSProvider(t, org),
 	})
 
 	form := strings.NewReader(url.Values{
-		"organization_name": {"acme-corp"},
-		"id":                {"fake-id"},
+		"vcs_provider_id": {"fake-id"},
 	}.Encode())
 
-	r := httptest.NewRequest("POST", "/organization/acme-corp/vcs-providers/delete", form)
+	r := httptest.NewRequest("POST", "/?", form)
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	w := httptest.NewRecorder()
@@ -107,8 +108,8 @@ func (f *fakeVCSProviderApp) ListVCSProviders(context.Context, string) ([]*otf.V
 	return []*otf.VCSProvider{f.provider}, nil
 }
 
-func (f *fakeVCSProviderApp) DeleteVCSProvider(context.Context, string, string) error {
-	return nil
+func (f *fakeVCSProviderApp) DeleteVCSProvider(context.Context, string) (*otf.VCSProvider, error) {
+	return f.provider, nil
 }
 
 func (f *fakeVCSProviderApp) ListCloudConfigs() []otf.CloudConfig {

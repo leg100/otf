@@ -35,6 +35,17 @@ func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
 	})
 }
 
+func (t *VCSProvider) MarshalLog() any {
+	return struct {
+		ID, Organization, Name, Cloud string
+	}{
+		ID:           t.id,
+		Organization: t.organizationName,
+		Name:         t.name,
+		Cloud:        t.cloudConfig.Name,
+	}
+}
+
 // VCSProviderFactory makes vcs providers
 type VCSProviderFactory struct {
 	CloudService
@@ -95,7 +106,7 @@ type VCSProviderService interface {
 	CreateVCSProvider(ctx context.Context, opts VCSProviderCreateOptions) (*VCSProvider, error)
 	GetVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
-	DeleteVCSProvider(ctx context.Context, id, organization string) error
+	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 	SetStatus(ctx context.Context, providerID string, opts SetStatusOptions) error
 	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
