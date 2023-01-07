@@ -194,24 +194,19 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	org, err := app.GetOrganization(r.Context(), *spec.OrganizationName)
+	ws, err := app.DeleteWorkspace(r.Context(), otf.WorkspaceSpec{ID: otf.String(id)})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.DeleteWorkspace(r.Context(), spec)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	flashSuccess(w, "deleted workspace: "+*spec.Name)
-	http.Redirect(w, r, paths.Workspaces(org.Name()), http.StatusFound)
+	flashSuccess(w, "deleted workspace: "+ws.Name())
+	http.Redirect(w, r, paths.Workspaces(ws.OrganizationName()), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {

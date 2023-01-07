@@ -150,9 +150,30 @@ func TestConnectRepo(t *testing.T) {
 		require.Equal(t, "no changes", *status.Description)
 	}
 
-	// Clean up after ourselves by deleting the vcs provider
+	// Clean up after ourselves by disconnecting the workspace and deleting the
+	// workspace and vcs provider
 	okDialog(t, ctx)
 	err = chromedp.Run(ctx, chromedp.Tasks{
+		// go to workspace
+		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+		screenshot(t),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
+		// click disconnect button
+		chromedp.Click(`//button[@id='disconnect-workspace-repo-button']`, chromedp.NodeVisible),
+		screenshot(t),
+		// confirm disconnected
+		matchText(t, ".flash-success", "disconnected workspace from repo"),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		// delete workspace
+		chromedp.Click(`//button[text()='Delete workspace']`, chromedp.NodeVisible),
+		// confirm deletion
+		matchText(t, ".flash-success", "deleted workspace: "+workspaceName),
+		//
+		// delete vcs provider
+		//
 		// go to org
 		chromedp.Navigate(path.Join(url, "organizations", org)),
 		// go to vcs providers
