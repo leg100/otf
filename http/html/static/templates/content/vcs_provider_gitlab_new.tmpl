@@ -8,22 +8,7 @@
 
 {{ define "content" }}
   <div>
-    Create a Gitlab VCS provider using a <a class="show-underline" href="https://gitlab.com/-/profile/personal_access_tokens">personal token.</a>
+    Create a Gitlab VCS provider using a <a class="show-underline" href="https://gitlab.com/-/profile/personal_access_tokens">personal token</a> with the <span class="data">api</span> scope. Enter the created token below along with a descriptive name.
   </div>
-  <form class="main-form" action="{{ createVCSProviderPath .Content.Name "github" }}" method="POST">
-    <input type="hidden" name="cloud_name" id="cloud_name" value="gitlab">
-    <ul>
-      <li class="field">
-        <label for="token">Token</label>
-        <input type="text" name="token" id="token" required>
-      </li>
-      <li class="field">
-        <label for="name">Name</label>
-        <input type="text" name="name" id="name" required>
-      </li>
-      <li>
-        <button>Create VCS Provider</button>
-      </li>
-    </ul>
-  </form>
+  {{ template "create_vcs_provider_form" .Content }}
 {{ end }}

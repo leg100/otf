@@ -21,17 +21,8 @@ func (app *Application) newVCSProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := app.GetOrganization(r.Context(), params.Organization)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	tmpl := fmt.Sprintf("vcs_provider_%s_new.tmpl", params.Cloud)
-	app.render(tmpl, w, r, struct {
-		*otf.Organization
-	}{
-		Organization: org,
-	})
+	app.render(tmpl, w, r, params)
 }
 
 func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +95,6 @@ func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "deleted provider: "+opts.ID)
+	flashSuccess(w, "deleted provider")
 	http.Redirect(w, r, paths.VCSProviders(org.Name()), http.StatusFound)
 }
