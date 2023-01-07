@@ -17,6 +17,12 @@ func withFakeSiteToken(token string) fakeAppOption {
 	}
 }
 
+func withAuthenticators(authenticators []*Authenticator) fakeAppOption {
+	return func(app *Application) {
+		app.authenticators = authenticators
+	}
+}
+
 func newFakeWebApp(t *testing.T, app otf.Application, opts ...fakeAppOption) *Application {
 	views, err := newViewEngine(viewEngineOptions{})
 	require.NoError(t, err)

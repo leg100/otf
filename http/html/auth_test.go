@@ -51,10 +51,46 @@ func TestAdminLoginHandler(t *testing.T) {
 	}
 }
 
+// TestLoginHandler tests the login page handler, testing for the presence of a
+// login button for each configured cloud.
+func TestLoginHandler(t *testing.T) {
+	authenticators, err := newAuthenticators(nil, []*OAuthClient{
+		{
+			CloudConfig: otf.CloudConfig{
+				Name: "cloud1",
+			},
+		},
+		{
+			CloudConfig: otf.CloudConfig{
+				Name: "cloud2",
+			},
+		},
+	})
+	require.NoError(t, err)
+	app := newFakeWebApp(t, nil, withAuthenticators(authenticators))
+
+	r := httptest.NewRequest("GET", "/?", nil)
+	w := httptest.NewRecorder()
+	app.loginHandler(w, r)
+	body := w.Body.String()
+	if assert.Equal(t, 200, w.Code) {
+		assert.Contains(t, body, "Login with Cloud1")
+		assert.Contains(t, body, "Login with Cloud2")
+	}
+}
+
 type fakeAdminLoginHandlerApp struct {
 	otf.Application
 }
 
 func (f *fakeAdminLoginHandlerApp) CreateSession(ctx context.Context, uid string, addr string) (*otf.Session, error) {
+	return otf.NewSession(uid, addr)
+}
+
+type fakeLoginHandlerApp struct {
+	otf.Application
+}
+
+func (f *fakeLoginHandlerApp) CreateSession(ctx context.Context, uid string, addr string) (*otf.Session, error) {
 	return otf.NewSession(uid, addr)
 }

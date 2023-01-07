@@ -83,6 +83,12 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	d.ServerConfig.Hostname = d.hostname
 
+	// Setup logger
+	logger, err := cmdutil.NewLogger(d.LoggerConfig)
+	if err != nil {
+		return err
+	}
+
 	// create oauth clients
 	var oauthClients []*html.OAuthClient
 	for _, cfg := range d.cloudConfigs {
@@ -99,6 +105,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 		oauthClients = append(oauthClients, client)
+		logger.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}
 
 	// populate cloud service with cloud configurations
@@ -107,12 +114,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		cloudServiceConfigs = append(cloudServiceConfigs, cc.CloudConfig)
 	}
 	cloudService, err := inmem.NewCloudService(cloudServiceConfigs...)
-	if err != nil {
-		return err
-	}
-
-	// Setup logger
-	logger, err := cmdutil.NewLogger(d.LoggerConfig)
 	if err != nil {
 		return err
 	}
