@@ -30,7 +30,6 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	Addr                 string // Listening Address in the form <ip>:<port>
 	Hostname             string // user-facing hostname including port
 	SSL                  bool
 	CertFile, KeyFile    string
@@ -251,21 +250,14 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	return s, nil
 }
 
-// Open begins listening on the bind address and waits until server exits due to
+// Start starts serving http traffic on the given listener and waits until the server exits due to
 // error or the context is cancelled.
-func (s *Server) Open(ctx context.Context) (err error) {
-	if s.ln, err = net.Listen("tcp", s.Addr); err != nil {
-		return err
-	}
-
+func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 	// start handling incoming VCS events
 	go s.vcsEventsHandler.Start(ctx)
 
 	errch := make(chan error)
 
-	// Begin serving requests on the listener. We use Serve() instead of
-	// ListenAndServe() because it allows us to check for listen errors (such as
-	// trying to use an already open port) synchronously.
 	go func() {
 		if s.SSL {
 			errch <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
@@ -284,22 +276,16 @@ func (s *Server) Open(ctx context.Context) (err error) {
 		}
 		return err
 	case <-ctx.Done():
-		return s.shutdown()
+		s.Info("gracefully shutting down server...")
+
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := s.server.Shutdown(ctx); err != nil {
+			return s.server.Close()
+		}
+
+		return nil
 	}
-}
-
-// shutdown attempts to gracefully shuts down the server before a timeout
-// expires at which point it forcefully closes the server.
-func (s *Server) shutdown() error {
-	s.Info("gracefully shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer cancel()
-	if err := s.server.Shutdown(ctx); err != nil {
-		return s.server.Close()
-	}
-
-	return nil
 }
 
 // newLoggingMiddleware returns middleware that logs HTTP requests
