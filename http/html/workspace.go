@@ -104,46 +104,14 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get existing perms as well as all teams in org
-	perms, err := app.ListWorkspacePermissions(r.Context(), spec)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	teams, err := app.ListTeams(r.Context(), ws.OrganizationName())
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// Filter teams, removing those already assigned perms
-	for _, p := range perms {
-		for it, t := range teams {
-			if t.ID() == p.Team.ID() {
-				teams = append(teams[:it], teams[it+1:]...)
-				break
-			}
-		}
-	}
-
 	app.render("workspace_get.tmpl", w, r, struct {
 		*otf.Workspace
 		LatestRun      *otf.Run
 		LatestStreamID string
-		Permissions    []*otf.WorkspacePermission
-		Teams          []*otf.Team
-		Roles          []otf.Role
 	}{
 		Workspace:      ws,
 		LatestRun:      latest,
 		LatestStreamID: "latest-" + otf.GenerateRandomString(5),
-		Permissions:    perms,
-		Teams:          teams,
-		Roles: []otf.Role{
-			otf.WorkspaceReadRole,
-			otf.WorkspacePlanRole,
-			otf.WorkspaceWriteRole,
-			otf.WorkspaceAdminRole,
-		},
 	})
 }
 
@@ -158,7 +126,43 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	app.render("workspace_edit.tmpl", w, r, workspace)
+	// Get existing perms as well as all teams in org
+	perms, err := app.ListWorkspacePermissions(r.Context(), spec)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	teams, err := app.ListTeams(r.Context(), workspace.OrganizationName())
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Filter teams, removing those already assigned perms
+	for _, p := range perms {
+		for it, t := range teams {
+			if t.ID() == p.Team.ID() {
+				teams = append(teams[:it], teams[it+1:]...)
+				break
+			}
+		}
+	}
+
+	app.render("workspace_edit.tmpl", w, r, struct {
+		*otf.Workspace
+		Permissions []*otf.WorkspacePermission
+		Teams       []*otf.Team
+		Roles       []otf.Role
+	}{
+		Workspace:   workspace,
+		Permissions: perms,
+		Teams:       teams,
+		Roles: []otf.Role{
+			otf.WorkspaceReadRole,
+			otf.WorkspacePlanRole,
+			otf.WorkspaceWriteRole,
+			otf.WorkspaceAdminRole,
+		},
+	})
 }
 
 func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) {

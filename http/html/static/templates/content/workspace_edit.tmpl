@@ -55,7 +55,77 @@
       <button>Save changes</button>
     </div>
   </form>
-  <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content.ID }}" method="POST">
-    <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
-  </form>
+  <div class="permissions-container">
+    <div class="container-header-title">Permissions</div>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th colspan="2">Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="permissions-owners">
+              <td>owners</td>
+              <td>admin</td>
+            </tr>
+            {{ range .Content.Permissions }}
+              {{ if eq .Team.Name "owners" }}
+                {{continue}}
+              {{ end }}
+              <tr>
+                <td>{{ .Team.Name }}</td>
+                <td>
+                  <form class="horizontal-form" action="{{ setPermissionWorkspacePath $.Content.ID }}" method="POST">
+                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <select name="role" id="role-select">
+                      {{ $currentRole := .Role.String }}
+                      {{ range $.Content.Roles }}
+                        {{ if eq .String $currentRole }}
+                          <option value="{{ . }}" selected>{{ . }}</option>
+                        {{ else }}
+                          <option value="{{ . }}">{{ . }}</option>
+                        {{ end }}
+                      {{ end }}
+                    </select>
+                    <button>Update</button>
+                  </form>
+                </td>
+                <td>
+                  <form class="horizontal-form" action="{{ unsetPermissionWorkspacePath $.Content.ID }}" method="POST">
+                    <input name="team_name" value="{{ .Team.Name }}" type="hidden">
+                    <button class="delete">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            {{ end }}
+            <tr>
+              <form id="permissions-add-form" class="horizontal-form" action="{{ setPermissionWorkspacePath .Content.ID }}" method="POST"></form>
+              <td>
+                <select form="permissions-add-form" name="team_name" id="permissions-add-select-team">
+                  <option value="">--team--</option>
+                  {{ range .Content.Teams }}
+                    <option value="{{ .Name }}">{{ .Name }}</option>
+                  {{ end }}
+                </select>
+              </td>
+              <td class="permissions-add-role-container">
+                <select form="permissions-add-form" name="role" id="permissions-add-select-role">
+                  <option value="">--role--</option>
+                  {{ range .Content.Roles }}
+                    <option value="{{ . }}">{{ . }}</option>
+                  {{ end }}
+                </select>
+                <button id="permissions-add-button" form="permissions-add-form" >Add</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <form class="workspace-delete-button" action="{{ deleteWorkspacePath .Content.ID }}" method="POST">
+      <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete workspace</button>
+    </form>
+  </div>
 {{ end }}

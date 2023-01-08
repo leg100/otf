@@ -152,6 +152,9 @@ func addWorkspacePermissionTasks(t *testing.T, url, org, workspaceName, team, ro
 		// go to workspace
 		chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
 		screenshot(t),
+		// go to workspace settings
+		chromedp.Click(`//a[text()='settings']`, chromedp.NodeVisible),
+		screenshot(t),
 		// confirm builtin admin permission for owners team
 		matchText(t, "#permissions-owners td:first-child", "owners"),
 		matchText(t, "#permissions-owners td:last-child", "admin"),
