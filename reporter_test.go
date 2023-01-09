@@ -39,16 +39,22 @@ func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan Se
 		ws:            ws,
 		cv:            cv,
 		statusUpdates: statusUpdates,
-	}, "otf-host.com")
+		hostname:      "fake-host.org",
+	})
 	return reporter, run, statusUpdates
 }
 
 type fakeReporterApp struct {
+	hostname      string
 	ws            *Workspace
 	cv            *ConfigurationVersion
 	statusUpdates chan SetStatusOptions
 
 	Application
+}
+
+func (f *fakeReporterApp) Hostname() string {
+	return f.hostname
 }
 
 func (f *fakeReporterApp) GetWorkspace(context.Context, WorkspaceSpec) (*Workspace, error) {

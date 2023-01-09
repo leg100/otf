@@ -54,6 +54,7 @@ type Application interface {
 	CloudService
 	ModuleService
 	ModuleVersionService
+	HostnameService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.

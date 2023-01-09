@@ -5,10 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +26,7 @@ func TestCloudBlock(t *testing.T) {
 	hostname := daemon.start(t)
 
 	// use site-admin for CLI auth (for both 'otf' and 'terraform')
-	t.Setenv("TF_TOKEN_"+strings.ReplaceAll(hostname, ".", "_"), token)
+	t.Setenv(otf.HostnameCredentialEnv(hostname), token)
 
 	// create org via CLI
 	org := uuid.NewString()

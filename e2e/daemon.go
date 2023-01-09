@@ -98,6 +98,7 @@ func (d *daemon) start(t *testing.T) string {
 	require.NoError(t, err)
 	stdout := iochan.DelimReader(out, '\n')
 	stderr := iochan.DelimReader(errout, '\n')
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
 
 	require.NoError(t, cmd.Start())
 

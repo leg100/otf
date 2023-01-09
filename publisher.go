@@ -26,9 +26,11 @@ func NewPublisher(app Application) *Publisher {
 		WebhookCreator: &WebhookCreator{
 			VCSProviderService: app,
 			CloudService:       app,
+			HostnameService:    app,
 		},
 		WebhookUpdater: &WebhookUpdater{
 			VCSProviderService: app,
+			HostnameService:    app,
 		},
 	}
 }
@@ -63,7 +65,6 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			Identifier:        opts.Identifier,
 			HTTPURL:           repo.HTTPURL,
 			ProviderID:        opts.ProviderID,
-			OTFHost:           opts.OTFHost,
 			Cloud:             vcsProvider.cloudConfig.Name,
 			CreateWebhookFunc: p.Create,
 			UpdateWebhookFunc: p.Update,

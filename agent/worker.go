@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/leg100/otf"
 )
@@ -41,7 +40,7 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		log.Error(err, "creating registry session")
 		return
 	}
-	tokenEnvVar := fmt.Sprintf("TF_TOKEN_%s=%s", strings.ReplaceAll(w.RegistryHostname, ".", "_"), session.Token())
+	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(w.Hostname()), session.Token())
 	environmentVariables := append(w.environmentVariables, tokenEnvVar)
 
 	env, err := NewEnvironment(

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
@@ -433,9 +432,6 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
-	// extract externally-accessible host from request
-	opts.OTFHost = otfhttp.ExternalHost(r)
 
 	provider, err := app.GetVCSProvider(r.Context(), opts.ProviderID)
 	if err != nil {

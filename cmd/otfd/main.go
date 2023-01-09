@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
 
 	"github.com/leg100/otf"
@@ -53,12 +54,14 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
 		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
 		Config:             agent.NewConfigFromFlags(cmd.Flags()),
-		cloudConfigs:       cloudFlags(cmd.Flags()),
+		CloudOAuthConfigs:  cloudFlags(cmd.Flags()),
 	}
 	cmd.RunE = d.run
 
+	// TODO: rename --address to --listen
+	cmd.Flags().StringVar(&d.address, "address", DefaultAddress, "Listening address")
 	cmd.Flags().StringVar(&d.database, "database", DefaultDatabase, "Postgres connection string")
-	cmd.Flags().StringVar(&d.hostname, "hostname", DefaultAddress, "User-facing hostname for otf")
+	cmd.Flags().StringVar(&d.hostname, "hostname", "", "User-facing hostname for otf")
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
@@ -67,21 +70,18 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 }
 
 type daemon struct {
-	hostname string
-	database string
+	address, hostname, database string
 
 	*http.ServerConfig
 	*inmem.CacheConfig
 	*cmdutil.LoggerConfig
 	*html.ApplicationOptions
 	*agent.Config
-	cloudConfigs []*cloudConfig
+	otf.CloudOAuthConfigs
 }
 
 func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
-
-	d.ServerConfig.Hostname = d.hostname
 
 	// Setup logger
 	logger, err := cmdutil.NewLogger(d.LoggerConfig)
@@ -89,31 +89,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// create oauth clients
-	var oauthClients []*html.OAuthClient
-	for _, cfg := range d.cloudConfigs {
-		if cfg.ClientID == "" && cfg.ClientSecret == "" {
-			// skip creating oauth client where creds are unspecified
-			continue
-		}
-		client, err := html.NewOAuthClient(html.OAuthClientConfig{
-			OTFHost:     d.hostname,
-			CloudConfig: cfg.CloudConfig,
-			Config:      cfg.Config,
-		})
-		if err != nil {
-			return err
-		}
-		oauthClients = append(oauthClients, client)
-		logger.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
-	}
-
 	// populate cloud service with cloud configurations
-	var cloudServiceConfigs []otf.CloudConfig
-	for _, cc := range d.cloudConfigs {
-		cloudServiceConfigs = append(cloudServiceConfigs, cc.CloudConfig)
-	}
-	cloudService, err := inmem.NewCloudService(cloudServiceConfigs...)
+	cloudService, err := inmem.NewCloudService(d.CloudOAuthConfigs.CloudConfigs()...)
 	if err != nil {
 		return err
 	}
@@ -165,6 +142,40 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up services: %w", err)
 	}
 
+	// Setup http server and web app
+	server, err := http.NewServer(logger, *d.ServerConfig, app, db, cache)
+	if err != nil {
+		return fmt.Errorf("setting up http server: %w", err)
+	}
+	ln, err := net.Listen("tcp", d.address)
+	if err != nil {
+		return err
+	}
+	defer ln.Close()
+
+	// Set system hostname
+	if err := app.SetHostname(d.hostname, ln.Addr().(*net.TCPAddr)); err != nil {
+		return err
+	}
+
+	d.ApplicationOptions.ServerConfig = d.ServerConfig
+	d.ApplicationOptions.Application = app
+	d.ApplicationOptions.Router = server.Router
+	d.ApplicationOptions.CloudConfigs = d.CloudOAuthConfigs
+	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
+		return err
+	}
+
+	// Setup agent
+	agent, err := agent.NewAgent(
+		logger.WithValues("component", "agent"),
+		app,
+		*d.Config)
+	if err != nil {
+		return fmt.Errorf("initializing agent: %w", err)
+	}
+
+	// Run pubsub broker
 	g.Go(func() error { return pubsub.Start(ctx) })
 
 	// Run scheduler - if there is another scheduler running already then
@@ -181,15 +192,6 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	// Run local agent in background
 	g.Go(func() error {
-		d.Config.RegistryHostname = d.hostname
-
-		agent, err := agent.NewAgent(
-			logger.WithValues("component", "agent"),
-			app,
-			*d.Config)
-		if err != nil {
-			return fmt.Errorf("initializing agent: %w", err)
-		}
 		if err := agent.Start(agentCtx); err != nil {
 			return fmt.Errorf("agent terminated: %w", err)
 		}
@@ -198,20 +200,8 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 
 	// Run HTTP/JSON-API server and web app
 	g.Go(func() error {
-		server, err := http.NewServer(logger, *d.ServerConfig, app, db, cache)
-		if err != nil {
-			return fmt.Errorf("setting up http server: %w", err)
-		}
-		d.ApplicationOptions.ServerConfig = d.ServerConfig
-		d.ApplicationOptions.Application = app
-		d.ApplicationOptions.Router = server.Router
-		d.ApplicationOptions.OAuthClients = oauthClients
-		if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
-			return err
-		}
-
-		if err := server.Open(ctx); err != nil {
-			return fmt.Errorf("web server terminated: %w", err)
+		if err := server.Start(ctx, ln); err != nil {
+			return fmt.Errorf("http server terminated: %w", err)
 		}
 		return nil
 	})
@@ -234,8 +224,6 @@ func newCacheConfigFromFlags(flags *pflag.FlagSet) *inmem.CacheConfig {
 func newServerConfigFromFlags(flags *pflag.FlagSet) *http.ServerConfig {
 	cfg := http.ServerConfig{}
 
-	// TODO: rename --address to --listen
-	flags.StringVar(&cfg.Addr, "address", DefaultAddress, "Listening address")
 	flags.BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
 	flags.StringVar(&cfg.CertFile, "cert-file", "", "Path to SSL certificate (required if enabling SSL)")
 	flags.StringVar(&cfg.KeyFile, "key-file", "", "Path to SSL key (required if enabling SSL)")

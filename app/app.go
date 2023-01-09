@@ -18,9 +18,10 @@ var _ otf.Application = (*Application)(nil)
 // Application encompasses services for interacting between components of the
 // otf server
 type Application struct {
-	db    otf.DB
-	cache otf.Cache
-	proxy otf.ChunkStore
+	db       otf.DB
+	cache    otf.Cache
+	proxy    otf.ChunkStore
+	hostname string
 
 	*otf.RunFactory
 	*otf.VCSProviderFactory
@@ -60,9 +61,11 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		WebhookCreator: &otf.WebhookCreator{
 			VCSProviderService: app,
 			CloudService:       opts.CloudService,
+			HostnameService:    app,
 		},
 		WebhookUpdater: &otf.WebhookUpdater{
 			VCSProviderService: app,
+			HostnameService:    app,
 		},
 	}
 	app.Publisher = otf.NewPublisher(app)

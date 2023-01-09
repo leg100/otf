@@ -18,7 +18,6 @@ type ConnectWorkspaceOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Cloud      string // cloud host of the repo
-	OTFHost    string // externally-facing host[:port], the destination for VCS events
 }
 
 func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, opts ConnectWorkspaceOptions) (*Workspace, error) {
@@ -36,7 +35,6 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 			Identifier:        opts.Identifier,
 			HTTPURL:           repo.HTTPURL,
 			ProviderID:        opts.ProviderID,
-			OTFHost:           opts.OTFHost,
 			Cloud:             opts.Cloud,
 			CreateWebhookFunc: wc.Create,
 			UpdateWebhookFunc: wc.Update,

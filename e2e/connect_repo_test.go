@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestConnectRepo tests VCS integration, creating a VCS provider and connecting
-// a workspace to a VCS repo.
+// TestConnectRepo tests connecting a workspace to a VCS repository, pushing a
+// git commit which should trigger a run on the workspace.
 func TestConnectRepo(t *testing.T) {
 	addBuildsToPath(t)
 

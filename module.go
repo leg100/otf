@@ -151,7 +151,6 @@ type (
 	PublishModuleOptions struct {
 		Identifier   string
 		ProviderID   string
-		OTFHost      string
 		Organization *Organization
 	}
 	CreateModuleOptions struct {

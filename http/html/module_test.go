@@ -151,6 +151,8 @@ type fakeModulesApp struct {
 	otf.Application
 }
 
+func (f *fakeModulesApp) Hostname() string { return "fake-host.org" }
+
 func (f *fakeModulesApp) PublishModule(context.Context, otf.PublishModuleOptions) (*otf.Module, error) {
 	return f.mod, nil
 }

@@ -30,7 +30,6 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					ProviderID: opts.ProviderID,
 					Identifier: opts.Identifier,
 					HTTPURL:    opts.HTTPURL,
-					OTFHost:    opts.OTFHost,
 					Cloud:      opts.Cloud,
 				})
 				if err != nil {
@@ -59,7 +58,6 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 
 			id, err := opts.UpdateWebhookFunc(ctx, otf.WebhookUpdaterOptions{
 				ProviderID: opts.ProviderID,
-				OTFHost:    opts.OTFHost,
 				Webhook:    hook,
 			})
 			if err != nil {

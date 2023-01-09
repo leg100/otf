@@ -62,7 +62,6 @@ type SyncWebhookOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
-	OTFHost    string // otf host
 	Cloud      string // cloud that the webhook belongs to
 
 	CreateWebhookFunc func(context.Context, WebhookCreatorOptions) (*Webhook, error)
@@ -73,13 +72,13 @@ type WebhookCreatorOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
 	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
-	OTFHost    string
 	Cloud      string // cloud providing webhook
 }
 
 type WebhookCreator struct {
 	VCSProviderService // for creating webhook on vcs provider
 	CloudService       // for retrieving event handler
+	HostnameService    // for retrieving system hostname
 }
 
 func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions) (*Webhook, error) {
@@ -100,7 +99,7 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 		Identifier: opts.Identifier,
 		Secret:     secret,
 		Events:     WebhookEvents,
-		Endpoint:   webhookEndpoint(opts.OTFHost, webhookID.String()),
+		Endpoint:   webhookEndpoint(wc.Hostname(), webhookID.String()),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "creating webhook")
@@ -118,11 +117,11 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 
 type WebhookUpdater struct {
 	VCSProviderService // for creating webhook on vcs provider
+	HostnameService    // for retrieving system hostname
 }
 
 type WebhookUpdaterOptions struct {
 	ProviderID string `schema:"vcs_provider_id,required"`
-	OTFHost    string
 
 	*Webhook
 }
@@ -132,7 +131,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 		Identifier: opts.Identifier,
 		Secret:     opts.Secret,
 		Events:     WebhookEvents,
-		Endpoint:   webhookEndpoint(opts.OTFHost, opts.WebhookID.String()),
+		Endpoint:   webhookEndpoint(wc.Hostname(), opts.WebhookID.String()),
 	}
 
 	// first retrieve webhook from vcs provider
@@ -148,7 +147,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 	}
 
 	// webhook exists; check if it needs updating
-	if webhookDiff(vcsHook, opts.Webhook, opts.OTFHost) {
+	if webhookDiff(vcsHook, opts.Webhook, wc.Hostname()) {
 		err := wc.UpdateWebhook(ctx, opts.ProviderID, UpdateWebhookOptions{
 			ID:                   vcsHook.ID,
 			CreateWebhookOptions: createOpts,
@@ -190,12 +189,12 @@ func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
 //
 // NOTE: we cannot determine whether secret has changed because cloud APIs tend
 // not to expose it
-func webhookDiff(vcs *VCSWebhook, db *Webhook, otfHost string) bool {
+func webhookDiff(vcs *VCSWebhook, db *Webhook, hostname string) bool {
 	if !reflect.DeepEqual(vcs.Events, WebhookEvents) {
 		return true
 	}
 
-	endpoint := webhookEndpoint(otfHost, db.WebhookID.String())
+	endpoint := webhookEndpoint(hostname, db.WebhookID.String())
 	return vcs.Endpoint != endpoint
 }
 

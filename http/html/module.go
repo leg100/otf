@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
-	otfhttp "github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
 )
@@ -81,11 +80,13 @@ func (app *Application) getModule(w http.ResponseWriter, r *http.Request) {
 		TerraformModule *otf.TerraformModule
 		Readme          template.HTML
 		CurrentVersion  *otf.ModuleVersion
+		Hostname        string
 	}{
 		Module:          module,
 		TerraformModule: tfmod,
 		Readme:          readme,
 		CurrentVersion:  module.Version(params.Version),
+		Hostname:        app.Hostname(),
 	})
 }
 
@@ -212,7 +213,6 @@ func (app *Application) createModule(w http.ResponseWriter, r *http.Request) {
 	module, err := app.PublishModule(r.Context(), otf.PublishModuleOptions{
 		Identifier:   params.Identifier,
 		ProviderID:   params.VCSProviderID,
-		OTFHost:      otfhttp.ExternalHost(r),
 		Organization: org,
 	})
 	if err != nil {

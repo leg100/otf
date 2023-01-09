@@ -18,7 +18,6 @@ type Application struct {
 	authenticators []*Authenticator // enabled authenticators
 	siteToken      string           // site admin's authentication token
 	secret         string           // secret for webhook signatures
-	hostname       string           // user-facing hostname inc port
 
 	otf.Application // otf service accessors
 	*viewEngine     // view engine populates and renders templates
@@ -29,7 +28,7 @@ type Application struct {
 // ApplicationOptions are options for configuring the web app
 type ApplicationOptions struct {
 	DevMode      bool
-	OAuthClients []*OAuthClient
+	CloudConfigs []*otf.CloudOAuthConfig // for configuring authenticators
 
 	*otfhttp.ServerConfig
 	*otfhttp.Router
@@ -42,8 +41,7 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 		logger.Info("enabled developer mode")
 	}
 	views, err := newViewEngine(viewEngineOptions{
-		devMode:  opts.DevMode,
-		hostname: opts.Hostname,
+		devMode: opts.DevMode,
 	})
 	if err != nil {
 		return err
@@ -65,10 +63,9 @@ func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
 		Server:       sseServer,
 		siteToken:    opts.SiteToken,
 		secret:       opts.Secret,
-		hostname:     opts.Hostname,
 	}
 
-	app.authenticators, err = newAuthenticators(opts.Application, opts.OAuthClients)
+	app.authenticators, err = newAuthenticators(logger, opts.Application, opts.CloudConfigs)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/http/html/paths"
 	"golang.org/x/oauth2"
@@ -29,13 +30,26 @@ type oauthClient interface {
 	String() string
 }
 
-func newAuthenticators(app otf.Application, clients []*OAuthClient) ([]*Authenticator, error) {
+func newAuthenticators(logger logr.Logger, app otf.Application, configs []*otf.CloudOAuthConfig) ([]*Authenticator, error) {
 	var authenticators []*Authenticator
-	for _, client := range clients {
+
+	for _, cfg := range configs {
+		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+			// skip creating oauth client when creds are unspecified
+			continue
+		}
+		client, err := NewOAuthClient(NewOAuthClientConfig{
+			CloudOAuthConfig: cfg,
+			hostname:         app.Hostname(),
+		})
+		if err != nil {
+			return nil, err
+		}
 		authenticators = append(authenticators, &Authenticator{
 			oauthClient: client,
 			Application: app,
 		})
+		logger.V(2).Info("activated oauth client", "name", cfg, "hostname", cfg.Hostname)
 	}
 	return authenticators, nil
 }
