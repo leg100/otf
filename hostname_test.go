@@ -12,7 +12,7 @@ func TestHostnameService(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string
-		listen   string
+		listen   *net.TCPAddr
 		want     string
 	}{
 		{
@@ -22,21 +22,25 @@ func TestHostnameService(t *testing.T) {
 		},
 		{
 			name:   "hardcoded listening address",
-			listen: "127.0.0.1:8080",
+			listen: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8080},
 			want:   "127.0.0.1:8080",
 		},
 		{
-			name:   "only port provided",
-			listen: ":8888",
+			name:   "ipv6 unspecified",
+			listen: &net.TCPAddr{IP: net.IPv6unspecified, Port: 8888},
+			want:   "127.0.0.1:8888",
+		},
+		{
+			name:   "ipv4 unspecified",
+			listen: &net.TCPAddr{IP: net.IPv4zero, Port: 8888},
 			want:   "127.0.0.1:8888",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := &HostnameService{}
-			err := svc.SetHostname(tt.hostname, tt.listen)
+			got, err := SetHostname(tt.hostname, tt.listen)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, svc.hostname)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

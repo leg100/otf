@@ -54,20 +54,18 @@ func TestAdminLoginHandler(t *testing.T) {
 // TestLoginHandler tests the login page handler, testing for the presence of a
 // login button for each configured cloud.
 func TestLoginHandler(t *testing.T) {
-	authenticators, err := newAuthenticators(nil, []*OAuthClient{
+	app := newFakeWebApp(t, nil, withAuthenticators([]*Authenticator{
 		{
-			CloudConfig: otf.CloudConfig{
-				Name: "cloud1",
+			oauthClient: &OAuthClient{
+				CloudConfig: otf.CloudConfig{Name: "cloud1"},
 			},
 		},
 		{
-			CloudConfig: otf.CloudConfig{
-				Name: "cloud2",
+			oauthClient: &OAuthClient{
+				CloudConfig: otf.CloudConfig{Name: "cloud2"},
 			},
 		},
-	})
-	require.NoError(t, err)
-	app := newFakeWebApp(t, nil, withAuthenticators(authenticators))
+	}))
 
 	r := httptest.NewRequest("GET", "/?", nil)
 	w := httptest.NewRecorder()

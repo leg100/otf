@@ -30,7 +30,6 @@ type WebRoute string
 
 // ServerConfig is the http server config
 type ServerConfig struct {
-	Hostname             string // user-facing hostname including port
 	SSL                  bool
 	CertFile, KeyFile    string
 	EnableRequestLogging bool
@@ -56,7 +55,6 @@ type Server struct {
 	ServerConfig
 
 	server *http.Server
-	ln     net.Listener
 
 	logr.Logger
 
@@ -260,13 +258,13 @@ func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 
 	go func() {
 		if s.SSL {
-			errch <- s.server.ServeTLS(s.ln, s.CertFile, s.KeyFile)
+			errch <- s.server.ServeTLS(ln, s.CertFile, s.KeyFile)
 		} else {
-			errch <- s.server.Serve(s.ln)
+			errch <- s.server.Serve(ln)
 		}
 	}()
 
-	s.Info("started server", "address", s.ln.Addr().String(), "ssl", s.SSL)
+	s.Info("started server", "address", ln.Addr().String(), "ssl", s.SSL)
 
 	// Block until server stops listening or context is cancelled.
 	select {

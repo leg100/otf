@@ -19,16 +19,13 @@ const ReporterLockID int64 = 179366396344335597
 type Reporter struct {
 	Application
 	logr.Logger
-
-	otfHost string // otfd host:[port]
 }
 
 // NewReporter constructs and initialises the reporter.
-func NewReporter(logger logr.Logger, app Application, hostname string) *Reporter {
+func NewReporter(logger logr.Logger, app Application) *Reporter {
 	s := &Reporter{
 		Application: app,
 		Logger:      logger.WithValues("component", "reporter"),
-		otfHost:     hostname,
 	}
 	s.V(2).Info("started")
 
@@ -139,7 +136,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		Description: description,
 		TargetURL: (&url.URL{
 			Scheme: "https",
-			Host:   r.otfHost,
+			Host:   r.Hostname(),
 			Path:   paths.Run(run.ID()),
 		}).String(),
 	})
@@ -151,7 +148,7 @@ func ExclusiveReporter(ctx context.Context, logger logr.Logger, hostname string,
 	op := func() error {
 		for {
 			err := app.WithLock(ctx, ReporterLockID, func(app Application) error {
-				return NewReporter(logger, app, hostname).Start(ctx)
+				return NewReporter(logger, app).Start(ctx)
 			})
 			select {
 			case <-ctx.Done():

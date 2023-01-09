@@ -27,7 +27,7 @@ func TestNewCloudConfigsFromFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := []*cloudConfig{
+	want := otf.CloudOAuthConfigs{
 		{
 			CloudConfig: otf.CloudConfig{
 				Name:     "github",

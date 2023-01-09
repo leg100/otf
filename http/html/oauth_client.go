@@ -25,15 +25,13 @@ type OAuthClient struct {
 	*oauth2.Config
 }
 
-// OAuthClientConfig is configuration for constructing an OAuth client
-type OAuthClientConfig struct {
-	OTFHost string
-
-	otf.CloudConfig
-	*oauth2.Config
+// NewOAuthClientConfig is configuration for constructing an OAuth client
+type NewOAuthClientConfig struct {
+	*otf.CloudOAuthConfig
+	hostname string // otf system hostname
 }
 
-func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
+func NewOAuthClient(cfg NewOAuthClientConfig) (*OAuthClient, error) {
 	if cfg.ClientID == "" && cfg.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
@@ -41,11 +39,11 @@ func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
 
-	authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.Hostname)
+	authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.CloudConfig.Hostname)
 	if err != nil {
 		return nil, err
 	}
-	tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.Hostname)
+	tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.CloudConfig.Hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +51,7 @@ func NewOAuthClient(cfg OAuthClientConfig) (*OAuthClient, error) {
 	cfg.Endpoint.TokenURL = tokenURL
 
 	client := &OAuthClient{Config: cfg.Config, CloudConfig: cfg.CloudConfig}
-	cfg.RedirectURL = (&url.URL{Scheme: "https", Host: cfg.OTFHost, Path: client.CallbackPath()}).String()
+	cfg.RedirectURL = (&url.URL{Scheme: "https", Host: cfg.hostname, Path: client.CallbackPath()}).String()
 
 	return client, nil
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/leg100/otf"
 	"github.com/leg100/otf/http"
 )
 
@@ -53,8 +53,7 @@ func (c CredentialsStore) Load(hostname string) (string, error) {
 	// https://developer.hashicorp.com/terraform/cli/config/config-file#environment-variable-credentials
 	//
 	// They take precendence over reading from file.
-	key := fmt.Sprintf("TF_TOKEN_%s", strings.ReplaceAll(hostname, ".", "_"))
-	if token, ok := os.LookupEnv(key); ok {
+	if token, ok := os.LookupEnv(otf.HostnameCredentialEnv(hostname)); ok {
 		return token, nil
 	}
 

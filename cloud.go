@@ -25,6 +25,25 @@ type CloudConfig struct {
 	Cloud
 }
 
+// CloudOAuthConfig is the configuration for a cloud provider and its OAuth
+// configuration.
+type CloudOAuthConfig struct {
+	CloudConfig
+	*oauth2.Config
+}
+
+type CloudOAuthConfigs []*CloudOAuthConfig
+
+// CloudConfigs returns the list of cloud configs from a list of cloud oauth
+// configs
+func (c CloudOAuthConfigs) CloudConfigs() []CloudConfig {
+	var configs []CloudConfig
+	for _, cc := range c {
+		configs = append(configs, cc.CloudConfig)
+	}
+	return configs
+}
+
 // CloudClientOptions are options for constructing a cloud client
 type CloudClientOptions struct {
 	Hostname            string

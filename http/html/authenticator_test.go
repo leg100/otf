@@ -6,12 +6,36 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
+
+func TestNewAuthenticators(t *testing.T) {
+	got, err := newAuthenticators(logr.Discard(), &fakeAuthenticatorApp{}, []*otf.CloudOAuthConfig{
+		{
+			Config: &oauth2.Config{
+				ClientID:     "id-1",
+				ClientSecret: "secret-1",
+			},
+		},
+		{
+			Config: &oauth2.Config{
+				ClientID:     "id-2",
+				ClientSecret: "secret-2",
+			},
+		},
+		{
+			// should be skipped
+			Config: &oauth2.Config{},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(got))
+}
 
 func TestAuthenticator(t *testing.T) {
 	cuser := cloud.User{
@@ -76,6 +100,8 @@ func TestAuthenticator(t *testing.T) {
 type fakeAuthenticatorApp struct {
 	otf.Application
 }
+
+func (f *fakeAuthenticatorApp) Hostname() string { return "fake-host.org" }
 
 func (f *fakeAuthenticatorApp) EnsureCreatedUser(context.Context, string) (*otf.User, error) {
 	return otf.NewUser("fake-user"), nil

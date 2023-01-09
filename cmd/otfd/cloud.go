@@ -5,18 +5,11 @@ import (
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
 	"github.com/spf13/pflag"
-	"golang.org/x/oauth2"
 )
 
-// cloudConfig populates cloud config and oauth config via CLI flags.
-type cloudConfig struct {
-	otf.CloudConfig
-	*oauth2.Config
-}
-
 // newCloudConfigsFromFlags binds flags to cloud configs
-func cloudFlags(flags *pflag.FlagSet) []*cloudConfig {
-	configs := []*cloudConfig{
+func cloudFlags(flags *pflag.FlagSet) otf.CloudOAuthConfigs {
+	configs := otf.CloudOAuthConfigs{
 		// github
 		{
 			CloudConfig: github.Defaults(),
