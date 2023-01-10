@@ -112,7 +112,6 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		repos := []*github.Repository{
 			{
 				FullName:      otf.String(srv.repo.Identifier),
-				URL:           otf.String(srv.repo.HTTPURL),
 				DefaultBranch: otf.String(srv.repo.Branch),
 			},
 		}
@@ -135,7 +134,6 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) *TestServer {
 		mux.HandleFunc("/api/v3/repos/"+srv.repo.Identifier, func(w http.ResponseWriter, r *http.Request) {
 			repo := &github.Repository{
 				FullName:      otf.String(srv.repo.Identifier),
-				URL:           otf.String(srv.repo.HTTPURL),
 				DefaultBranch: otf.String(srv.repo.Branch),
 			}
 			out, err := json.Marshal(repo)

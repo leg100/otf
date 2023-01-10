@@ -86,7 +86,6 @@ type CloudClient interface {
 type VCSWebhook struct {
 	ID         string // vcs' ID
 	Identifier string // identifier is <repo_owner>/<repo_name>
-	HTTPURL    string // HTTPURL is the web url for the repo
 	Events     []VCSEventType
 	Endpoint   string
 }
@@ -181,8 +180,6 @@ func (cfg *CloudConfig) HTTPClient() *http.Client {
 type Repo struct {
 	// Identifier is <repo_owner>/<repo_name>
 	Identifier string `schema:"identifier,required"`
-	// HTTPURL is the web url for the repo
-	HTTPURL string `schema:"http_url,required"`
 	// Branch is the default master Branch for a repo
 	Branch string `schema:"branch,required"`
 }

@@ -26,7 +26,6 @@ type Webhook struct {
 	VCSID      string    // vcs provider's webhook ID
 	Secret     string    // secret token
 	Identifier string    // identifier is <repo_owner>/<repo_name>
-	HTTPURL    string    // HTTPURL is the web url for the repo
 
 	cloudConfig CloudConfig // provides handler for webhook's events
 }
@@ -60,7 +59,6 @@ type WebhookStore interface {
 
 type SyncWebhookOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Cloud      string // cloud that the webhook belongs to
 
@@ -70,7 +68,6 @@ type SyncWebhookOptions struct {
 
 type WebhookCreatorOptions struct {
 	Identifier string `schema:"identifier,required"` // repo id: <owner>/<repo>
-	HTTPURL    string `schema:"http_url,required"`   // complete HTTP/S URL for repo
 	ProviderID string `schema:"vcs_provider_id,required"`
 	Cloud      string // cloud providing webhook
 }
@@ -110,7 +107,6 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 		VCSID:       id,
 		Secret:      secret,
 		Identifier:  opts.Identifier,
-		HTTPURL:     opts.HTTPURL,
 		cloudConfig: cloudConfig,
 	}, nil
 }
@@ -164,7 +160,6 @@ type WebhookRow struct {
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
-	HTTPURL    pgtype.Text `json:"http_url"`
 	Cloud      pgtype.Text `json:"cloud"`
 }
 
@@ -179,7 +174,6 @@ func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
 		VCSID:       row.VCSID.String,
 		Secret:      row.Secret.String,
 		Identifier:  row.Identifier.String,
-		HTTPURL:     row.HTTPURL.String,
 		cloudConfig: cloudConfig,
 	}, nil
 }

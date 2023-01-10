@@ -209,7 +209,6 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 		Branch:     "master",
 		WebhookID:  hook.WebhookID,
 		Identifier: hook.Identifier,
-		HTTPURL:    hook.HTTPURL,
 	})
 	require.NoError(t, err)
 
@@ -242,7 +241,6 @@ func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 		VCSID:      String(hook.VCSID),
 		Secret:     String(hook.Secret),
 		Identifier: String(hook.Identifier),
-		HTTPURL:    String(hook.HTTPURL),
 		Cloud:      String(hook.CloudName()),
 	})
 	require.NoError(t, err)

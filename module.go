@@ -121,7 +121,6 @@ type ModuleRepo struct {
 	ProviderID string
 	WebhookID  uuid.UUID
 	Identifier string // identifier is <repo_owner>/<repo_name>
-	HTTPURL    string // HTTPURL is the web url for the repo
 }
 
 type ModuleService interface {
@@ -257,7 +256,6 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 			ProviderID: row.ModuleRepo.VCSProviderID.String,
 			WebhookID:  row.Webhook.WebhookID.Bytes,
 			Identifier: row.Webhook.Identifier.String,
-			HTTPURL:    row.Webhook.HTTPURL.String,
 		}
 	}
 	for _, version := range row.Versions {

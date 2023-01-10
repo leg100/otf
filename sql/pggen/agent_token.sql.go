@@ -807,12 +807,12 @@ type Querier interface {
 	// FindWebhookByIDScan scans the result of an executed FindWebhookByIDBatch query.
 	FindWebhookByIDScan(results pgx.BatchResults) (FindWebhookByIDRow, error)
 
-	FindWebhookByURL(ctx context.Context, httpURL pgtype.Text) (FindWebhookByURLRow, error)
-	// FindWebhookByURLBatch enqueues a FindWebhookByURL query into batch to be executed
+	FindWebhookByRepo(ctx context.Context, identifier pgtype.Text, cloud pgtype.Text) (FindWebhookByRepoRow, error)
+	// FindWebhookByRepoBatch enqueues a FindWebhookByRepo query into batch to be executed
 	// later by the batch.
-	FindWebhookByURLBatch(batch genericBatch, httpURL pgtype.Text)
-	// FindWebhookByURLScan scans the result of an executed FindWebhookByURLBatch query.
-	FindWebhookByURLScan(results pgx.BatchResults) (FindWebhookByURLRow, error)
+	FindWebhookByRepoBatch(batch genericBatch, identifier pgtype.Text, cloud pgtype.Text)
+	// FindWebhookByRepoScan scans the result of an executed FindWebhookByRepoBatch query.
+	FindWebhookByRepoScan(results pgx.BatchResults) (FindWebhookByRepoRow, error)
 
 	DeleteWebhook(ctx context.Context, webhookID pgtype.UUID) (pgconn.CommandTag, error)
 	// DeleteWebhookBatch enqueues a DeleteWebhook query into batch to be executed
@@ -1419,8 +1419,8 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, findWebhookByIDSQL, findWebhookByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindWebhookByID': %w", err)
 	}
-	if _, err := p.Prepare(ctx, findWebhookByURLSQL, findWebhookByURLSQL); err != nil {
-		return fmt.Errorf("prepare query 'FindWebhookByURL': %w", err)
+	if _, err := p.Prepare(ctx, findWebhookByRepoSQL, findWebhookByRepoSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindWebhookByRepo': %w", err)
 	}
 	if _, err := p.Prepare(ctx, deleteWebhookSQL, deleteWebhookSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWebhook': %w", err)
@@ -1625,7 +1625,6 @@ type Webhooks struct {
 	VCSID      pgtype.Text `json:"vcs_id"`
 	Secret     pgtype.Text `json:"secret"`
 	Identifier pgtype.Text `json:"identifier"`
-	HTTPURL    pgtype.Text `json:"http_url"`
 	Cloud      pgtype.Text `json:"cloud"`
 }
 
@@ -1893,7 +1892,6 @@ func (tr *typeResolver) newWebhooks() pgtype.ValueTranscoder {
 		compositeField{"vcs_id", "text", &pgtype.Text{}},
 		compositeField{"secret", "text", &pgtype.Text{}},
 		compositeField{"identifier", "text", &pgtype.Text{}},
-		compositeField{"http_url", "text", &pgtype.Text{}},
 		compositeField{"cloud", "text", &pgtype.Text{}},
 	)
 }

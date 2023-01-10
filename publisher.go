@@ -63,7 +63,6 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	err = p.Tx(ctx, func(app Application) (err error) {
 		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
 			Identifier:        opts.Identifier,
-			HTTPURL:           repo.HTTPURL,
 			ProviderID:        opts.ProviderID,
 			Cloud:             vcsProvider.cloudConfig.Name,
 			CreateWebhookFunc: p.Create,
@@ -80,7 +79,6 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 			Repo: &ModuleRepo{
 				WebhookID:  webhook.WebhookID,
 				ProviderID: opts.ProviderID,
-				HTTPURL:    repo.HTTPURL,
 				Identifier: repo.Identifier,
 			},
 		})

@@ -7,14 +7,12 @@ INSERT INTO webhooks (
     vcs_id,
     secret,
     identifier,
-    http_url,
     cloud
 ) VALUES (
     pggen.arg('webhook_id'),
     pggen.arg('vcs_id'),
     pggen.arg('secret'),
     pggen.arg('identifier'),
-    pggen.arg('http_url'),
     pggen.arg('cloud')
 );
 
@@ -28,10 +26,11 @@ SELECT *
 FROM webhooks
 WHERE webhook_id = pggen.arg('webhook_id');
 
--- name: FindWebhookByURL :one
+-- name: FindWebhookByRepo :one
 SELECT *
 FROM webhooks
-WHERE http_url = pggen.arg('http_url');
+WHERE identifier = pggen.arg('identifier')
+AND   cloud = pggen.arg('cloud');
 
 -- name: DeleteWebhook :exec
 DELETE

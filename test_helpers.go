@@ -94,7 +94,6 @@ func NewTestWorkspaceRepo(provider *VCSProvider, hook *Webhook) *WorkspaceRepo {
 		ProviderID: provider.ID(),
 		Branch:     "master",
 		Identifier: hook.Identifier,
-		HTTPURL:    hook.HTTPURL,
 	}
 }
 
@@ -102,7 +101,6 @@ func NewTestRepo() *Repo {
 	identifier := uuid.NewString() + "/" + uuid.NewString()
 	return &Repo{
 		Identifier: identifier,
-		HTTPURL:    "http://fake-cloud.org/" + identifier,
 		Branch:     "master",
 	}
 }
@@ -111,7 +109,6 @@ func NewTestModuleRepo(provider, name string) *Repo {
 	identifier := fmt.Sprintf("%s/terraform-%s-%s", uuid.New(), provider, name)
 	return &Repo{
 		Identifier: identifier,
-		HTTPURL:    "http://fake-cloud.org/" + identifier,
 		Branch:     "master",
 	}
 }
@@ -122,7 +119,6 @@ func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
 		VCSID:       "123",
 		Secret:      "secret",
 		Identifier:  repo.Identifier,
-		HTTPURL:     repo.HTTPURL,
 		cloudConfig: cloudConfig,
 	}
 }

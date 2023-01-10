@@ -33,7 +33,6 @@ func (wc *WorkspaceConnector) Connect(ctx context.Context, spec WorkspaceSpec, o
 	err = wc.Tx(ctx, func(app Application) (err error) {
 		webhook, err := app.DB().SyncWebhook(ctx, SyncWebhookOptions{
 			Identifier:        opts.Identifier,
-			HTTPURL:           repo.HTTPURL,
 			ProviderID:        opts.ProviderID,
 			Cloud:             opts.Cloud,
 			CreateWebhookFunc: wc.Create,
