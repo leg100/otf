@@ -14,7 +14,7 @@ import (
 func TestTriggerer(t *testing.T) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
-	hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+	hook := NewTestWebhook(cloud.NewTestRepo(), NewTestCloudConfig(nil))
 	repo := NewTestWorkspaceRepo(provider, hook)
 	app := &fakeTriggererApp{
 		workspaces: []*Workspace{

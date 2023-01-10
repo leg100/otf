@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
 	"github.com/leg100/otf/sql/pggen"
 )
@@ -270,14 +271,14 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 //
 // NOTE: no pagination is performed, only matching results from the first page
 // are retrieved
-func ListModuleRepositories(ctx context.Context, app Application, providerID string) ([]*Repo, error) {
+func ListModuleRepositories(ctx context.Context, app Application, providerID string) ([]cloud.Repo, error) {
 	list, err := app.ListRepositories(ctx, providerID, ListOptions{
 		PageSize: MaxPageSize,
 	})
 	if err != nil {
 		return nil, err
 	}
-	var filtered []*Repo
+	var filtered []cloud.Repo
 	for _, repo := range list.Items {
 		_, name, found := strings.Cut(repo.Identifier, "/")
 		if !found {

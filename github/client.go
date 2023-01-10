@@ -107,17 +107,17 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
 	owner, name, found := strings.Cut(identifier, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", identifier)
+		return cloud.Repo{}, fmt.Errorf("malformed identifier: %s", identifier)
 	}
 	repo, _, err := g.client.Repositories.Get(ctx, owner, name)
 	if err != nil {
-		return nil, err
+		return cloud.Repo{}, err
 	}
 
-	return &otf.Repo{
+	return cloud.Repo{
 		Identifier: repo.GetFullName(),
 		Branch:     repo.GetDefaultBranch(),
 	}, nil
@@ -137,9 +137,9 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 	}
 
 	// convert to common repo type before returning
-	var items []*otf.Repo
+	var items []cloud.Repo
 	for _, repo := range repos {
-		items = append(items, &otf.Repo{
+		items = append(items, cloud.Repo{
 			Identifier: repo.GetFullName(),
 			Branch:     repo.GetDefaultBranch(),
 		})

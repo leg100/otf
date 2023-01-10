@@ -110,7 +110,7 @@ type VCSProviderService interface {
 	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
 	SetStatus(ctx context.Context, providerID string, opts SetStatusOptions) error
-	GetRepository(ctx context.Context, providerID string, identifier string) (*Repo, error)
+	GetRepository(ctx context.Context, providerID string, identifier string) (cloud.Repo, error)
 	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
 	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
 	ListTags(ctx context.Context, providerID string, opts ListTagsOptions) ([]string, error)

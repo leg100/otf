@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,9 +71,9 @@ func TestNewModule_Repo(t *testing.T) {
 	provider := otf.NewTestVCSProvider(t, org)
 	app := newFakeWebApp(t, &fakeModulesApp{
 		provider: provider,
-		repos: []*otf.Repo{
-			otf.NewTestModuleRepo("aws", "vpc"),
-			otf.NewTestModuleRepo("aws", "s3"),
+		repos: []cloud.Repo{
+			cloud.NewTestModuleRepo("aws", "vpc"),
+			cloud.NewTestModuleRepo("aws", "s3"),
 		},
 	})
 
@@ -146,7 +147,7 @@ type fakeModulesApp struct {
 	mod      *otf.Module
 	provider *otf.VCSProvider
 	tarball  []byte
-	repos    []*otf.Repo
+	repos    []cloud.Repo
 
 	otf.Application
 }

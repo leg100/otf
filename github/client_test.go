@@ -45,7 +45,7 @@ func TestGetRepoTarball(t *testing.T) {
 	want, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 	client := newTestServerClient(t,
-		WithRepo(&otf.Repo{Identifier: "acme/terraform", Branch: "master"}),
+		WithRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
 		WithArchive(want),
 	)
 
@@ -64,7 +64,7 @@ func TestCreateWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	client := newTestServerClient(t,
-		WithRepo(&otf.Repo{Identifier: "acme/terraform", Branch: "master"}),
+		WithRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
 	)
 
 	_, err := client.CreateWebhook(ctx, otf.CreateWebhookOptions{

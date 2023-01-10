@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
 )
@@ -153,7 +154,7 @@ func (app *Application) newModuleRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.render("module_new.tmpl", w, r, struct {
-		Items []*otf.Repo
+		Items []cloud.Repo
 		parameters
 		Step newModuleStep
 	}{

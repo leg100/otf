@@ -31,14 +31,14 @@ func (a *Application) GetRepoTarball(ctx context.Context, providerID string, opt
 	return client.GetRepoTarball(ctx, opts)
 }
 
-func (a *Application) GetRepository(ctx context.Context, providerID string, identifier string) (*otf.Repo, error) {
+func (a *Application) GetRepository(ctx context.Context, providerID string, identifier string) (cloud.Repo, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
-		return nil, err
+		return cloud.Repo{}, err
 	}
 	client, err := provider.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return cloud.Repo{}, err
 	}
 	return client.GetRepository(ctx, identifier)
 }

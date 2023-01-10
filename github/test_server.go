@@ -26,7 +26,7 @@ type TestServer struct {
 
 type testServerDB struct {
 	user    *cloud.User
-	repo    *otf.Repo
+	repo    *cloud.Repo
 	tarball []byte
 	refs    []string
 }
@@ -216,9 +216,9 @@ func WithUser(user *cloud.User) TestServerOption {
 	}
 }
 
-func WithRepo(repo *otf.Repo) TestServerOption {
+func WithRepo(repo cloud.Repo) TestServerOption {
 	return func(srv *TestServer) {
-		srv.repo = repo
+		srv.repo = &repo
 	}
 }
 

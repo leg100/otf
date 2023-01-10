@@ -4,10 +4,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,23 +97,7 @@ func NewTestWorkspaceRepo(provider *VCSProvider, hook *Webhook) *WorkspaceRepo {
 	}
 }
 
-func NewTestRepo() *Repo {
-	identifier := uuid.NewString() + "/" + uuid.NewString()
-	return &Repo{
-		Identifier: identifier,
-		Branch:     "master",
-	}
-}
-
-func NewTestModuleRepo(provider, name string) *Repo {
-	identifier := fmt.Sprintf("%s/terraform-%s-%s", uuid.New(), provider, name)
-	return &Repo{
-		Identifier: identifier,
-		Branch:     "master",
-	}
-}
-
-func NewTestWebhook(repo *Repo, cloudConfig CloudConfig) *Webhook {
+func NewTestWebhook(repo cloud.Repo, cloudConfig CloudConfig) *Webhook {
 	return &Webhook{
 		WebhookID:   uuid.New(),
 		VCSID:       "123",

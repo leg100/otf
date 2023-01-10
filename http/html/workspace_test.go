@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -141,12 +142,12 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 		workspaces: []*otf.Workspace{
 			otf.NewTestWorkspace(t, org),
 		},
-		repos: []*otf.Repo{
-			otf.NewTestRepo(),
-			otf.NewTestRepo(),
-			otf.NewTestRepo(),
-			otf.NewTestRepo(),
-			otf.NewTestRepo(),
+		repos: []cloud.Repo{
+			cloud.NewTestRepo(),
+			cloud.NewTestRepo(),
+			cloud.NewTestRepo(),
+			cloud.NewTestRepo(),
+			cloud.NewTestRepo(),
 		},
 	})
 
@@ -266,7 +267,7 @@ type fakeWorkspaceHandlerApp struct {
 	workspaces     []*otf.Workspace
 	configVersions []*otf.ConfigurationVersion
 	providers      []*otf.VCSProvider
-	repos          []*otf.Repo
+	repos          []cloud.Repo
 
 	otf.Application
 }

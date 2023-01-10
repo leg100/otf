@@ -20,7 +20,7 @@ func TestWebhookHandler(t *testing.T) {
 		events: got,
 		Logger: logr.Discard(),
 		Application: &fakeWebhookHandlerApp{
-			hook: otf.NewTestWebhook(otf.NewTestRepo(), otf.CloudConfig{
+			hook: otf.NewTestWebhook(cloud.NewTestRepo(), otf.CloudConfig{
 				Cloud: &fakeCloud{event: &want},
 			}),
 		},

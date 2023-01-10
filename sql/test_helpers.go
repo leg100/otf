@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/inmem"
 	"github.com/leg100/otf/sql/pggen"
@@ -233,7 +234,7 @@ func createTestModule(t *testing.T, db *DB, org *otf.Organization) *otf.Module {
 
 func createTestWebhook(t *testing.T, db *DB) *otf.Webhook {
 	ctx := context.Background()
-	repo := otf.NewTestRepo()
+	repo := cloud.NewTestRepo()
 	hook := otf.NewTestWebhook(repo, github.Defaults())
 
 	_, err := db.InsertWebhook(ctx, pggen.InsertWebhookParams{

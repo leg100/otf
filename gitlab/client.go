@@ -91,13 +91,13 @@ func (g *Client) GetUser(ctx context.Context) (*cloud.User, error) {
 	return &user, nil
 }
 
-func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Repo, error) {
+func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Repo, error) {
 	proj, _, err := g.client.Projects.GetProject(identifier, nil)
 	if err != nil {
-		return nil, err
+		return cloud.Repo{}, err
 	}
 
-	return &otf.Repo{
+	return cloud.Repo{
 		Identifier: proj.PathWithNamespace,
 		Branch:     proj.DefaultBranch,
 	}, nil
@@ -119,9 +119,9 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 	}
 
 	// convert to common repo type before returning
-	var items []*otf.Repo
+	var items []cloud.Repo
 	for _, proj := range projects {
-		items = append(items, &otf.Repo{
+		items = append(items, cloud.Repo{
 			Identifier: proj.PathWithNamespace,
 			Branch:     proj.DefaultBranch,
 		})

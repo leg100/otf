@@ -65,7 +65,7 @@ type CloudClient interface {
 	//
 	// TODO: add optional filters
 	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
-	GetRepository(ctx context.Context, identifier string) (*Repo, error)
+	GetRepository(ctx context.Context, identifier string) (cloud.Repo, error)
 	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
 	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
 
@@ -166,22 +166,8 @@ func (cfg *CloudConfig) HTTPClient() *http.Client {
 	}
 }
 
-// Repo is a VCS repository belonging to a cloud
-//
-type Repo struct {
-	// Identifier is <repo_owner>/<repo_name>
-	//
-	// TODO: needs renaming - identifier is far too generic a name, which we use without the
-	// context of the repo in far too many places.
-	Identifier string `schema:"identifier,required"`
-	// Branch is the default master Branch for a repo
-	Branch string `schema:"branch,required"`
-}
-
-func (r Repo) ID() string { return r.Identifier }
-
 // RepoList is a paginated list of cloud repositories.
 type RepoList struct {
 	*Pagination
-	Items []*Repo
+	Items []cloud.Repo
 }

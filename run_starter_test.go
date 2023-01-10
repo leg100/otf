@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +32,7 @@ func TestStartRun(t *testing.T) {
 
 	t.Run("connected to repo", func(t *testing.T) {
 		provider := NewTestVCSProvider(t, org)
-		hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+		hook := NewTestWebhook(cloud.NewTestRepo(), NewTestCloudConfig(nil))
 		repo := NewTestWorkspaceRepo(provider, hook)
 		ws := NewTestWorkspace(t, org, WithRepo(repo))
 		cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})

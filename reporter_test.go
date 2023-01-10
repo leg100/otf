@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +26,7 @@ func TestReporter_HandleRun(t *testing.T) {
 func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan SetStatusOptions) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
-	hook := NewTestWebhook(NewTestRepo(), NewTestCloudConfig(nil))
+	hook := NewTestWebhook(cloud.NewTestRepo(), NewTestCloudConfig(nil))
 	repo := NewTestWorkspaceRepo(provider, hook)
 	ws := NewTestWorkspace(t, org, WithRepo(repo))
 	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
