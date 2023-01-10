@@ -55,6 +55,7 @@ type OrganizationService interface {
 type OrganizationStore interface {
 	CreateOrganization(ctx context.Context, org *Organization) error
 	GetOrganization(ctx context.Context, name string) (*Organization, error)
+	GetOrganizationByID(ctx context.Context, id string) (*Organization, error)
 	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
 	UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error

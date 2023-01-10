@@ -256,14 +256,19 @@ type Querier interface {
 	// FindOrganizationNameByWorkspaceIDScan scans the result of an executed FindOrganizationNameByWorkspaceIDBatch query.
 	FindOrganizationNameByWorkspaceIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	// FindOrganizationByName finds an organization by name.
-	//
 	FindOrganizationByName(ctx context.Context, name pgtype.Text) (FindOrganizationByNameRow, error)
 	// FindOrganizationByNameBatch enqueues a FindOrganizationByName query into batch to be executed
 	// later by the batch.
 	FindOrganizationByNameBatch(batch genericBatch, name pgtype.Text)
 	// FindOrganizationByNameScan scans the result of an executed FindOrganizationByNameBatch query.
 	FindOrganizationByNameScan(results pgx.BatchResults) (FindOrganizationByNameRow, error)
+
+	FindOrganizationByID(ctx context.Context, organizationID pgtype.Text) (FindOrganizationByIDRow, error)
+	// FindOrganizationByIDBatch enqueues a FindOrganizationByID query into batch to be executed
+	// later by the batch.
+	FindOrganizationByIDBatch(batch genericBatch, organizationID pgtype.Text)
+	// FindOrganizationByIDScan scans the result of an executed FindOrganizationByIDBatch query.
+	FindOrganizationByIDScan(results pgx.BatchResults) (FindOrganizationByIDRow, error)
 
 	FindOrganizationByNameForUpdate(ctx context.Context, name pgtype.Text) (FindOrganizationByNameForUpdateRow, error)
 	// FindOrganizationByNameForUpdateBatch enqueues a FindOrganizationByNameForUpdate query into batch to be executed
@@ -1187,6 +1192,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameSQL, findOrganizationByNameSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByName': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findOrganizationByIDSQL, findOrganizationByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationByID': %w", err)
 	}
 	if _, err := p.Prepare(ctx, findOrganizationByNameForUpdateSQL, findOrganizationByNameForUpdateSQL); err != nil {
 		return fmt.Errorf("prepare query 'FindOrganizationByNameForUpdate': %w", err)

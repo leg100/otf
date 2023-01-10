@@ -42,14 +42,25 @@ func TestOrganization_Update(t *testing.T) {
 }
 
 func TestOrganization_Get(t *testing.T) {
+	ctx := context.Background()
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
 
-	got, err := db.GetOrganization(context.Background(), org.Name())
-	require.NoError(t, err)
+	t.Run("by name", func(t *testing.T) {
+		got, err := db.GetOrganization(ctx, org.Name())
+		require.NoError(t, err)
 
-	assert.Equal(t, org.Name(), got.Name())
-	assert.Equal(t, org.ID(), got.ID())
+		assert.Equal(t, org.Name(), got.Name())
+		assert.Equal(t, org.ID(), got.ID())
+	})
+
+	t.Run("by id", func(t *testing.T) {
+		got, err := db.GetOrganizationByID(ctx, org.ID())
+		require.NoError(t, err)
+
+		assert.Equal(t, org.Name(), got.Name())
+		assert.Equal(t, org.ID(), got.ID())
+	})
 }
 
 func TestOrganization_List(t *testing.T) {

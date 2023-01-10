@@ -97,6 +97,14 @@ func (db *DB) GetOrganization(ctx context.Context, name string) (*otf.Organizati
 	return otf.UnmarshalOrganizationRow(pggen.Organizations(r)), nil
 }
 
+func (db *DB) GetOrganizationByID(ctx context.Context, id string) (*otf.Organization, error) {
+	r, err := db.FindOrganizationByID(ctx, String(id))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalOrganizationRow(pggen.Organizations(r)), nil
+}
+
 func (db *DB) DeleteOrganization(ctx context.Context, name string) error {
 	_, err := db.Querier.DeleteOrganization(ctx, String(name))
 	if err != nil {

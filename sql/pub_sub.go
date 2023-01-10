@@ -157,14 +157,16 @@ func (ps *PubSub) Subscribe(ctx context.Context, name string) (<-chan otf.Event,
 }
 
 // reassemble a postgres message into an otf event
-//
-// TODO: return pointer to event to indicate there is no event to public but no
-// error occured (?)
 func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error) {
 	var payload any
 	var err error
 
 	switch msg.Table {
+	case "organization":
+		payload, err = ps.db.GetOrganizationByID(ctx, msg.ID)
+		if err != nil {
+			return otf.Event{}, err
+		}
 	case "run":
 		payload, err = ps.db.GetRun(ctx, msg.ID)
 		if err != nil {

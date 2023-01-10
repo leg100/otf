@@ -5,10 +5,11 @@ JOIN workspaces w USING (organization_id)
 WHERE w.workspace_id = pggen.arg('workspace_id')
 ;
 
--- FindOrganizationByName finds an organization by name.
---
 -- name: FindOrganizationByName :one
 SELECT * FROM organizations WHERE name = pggen.arg('name');
+
+-- name: FindOrganizationByID :one
+SELECT * FROM organizations WHERE organization_id = pggen.arg('organization_id');
 
 -- name: FindOrganizationByNameForUpdate :one
 SELECT *

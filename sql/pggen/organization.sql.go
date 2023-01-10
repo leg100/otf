@@ -80,6 +80,43 @@ func (q *DBQuerier) FindOrganizationByNameScan(results pgx.BatchResults) (FindOr
 	return item, nil
 }
 
+const findOrganizationByIDSQL = `SELECT * FROM organizations WHERE organization_id = $1;`
+
+type FindOrganizationByIDRow struct {
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
+}
+
+// FindOrganizationByID implements Querier.FindOrganizationByID.
+func (q *DBQuerier) FindOrganizationByID(ctx context.Context, organizationID pgtype.Text) (FindOrganizationByIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationByID")
+	row := q.conn.QueryRow(ctx, findOrganizationByIDSQL, organizationID)
+	var item FindOrganizationByIDRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("query FindOrganizationByID: %w", err)
+	}
+	return item, nil
+}
+
+// FindOrganizationByIDBatch implements Querier.FindOrganizationByIDBatch.
+func (q *DBQuerier) FindOrganizationByIDBatch(batch genericBatch, organizationID pgtype.Text) {
+	batch.Queue(findOrganizationByIDSQL, organizationID)
+}
+
+// FindOrganizationByIDScan implements Querier.FindOrganizationByIDScan.
+func (q *DBQuerier) FindOrganizationByIDScan(results pgx.BatchResults) (FindOrganizationByIDRow, error) {
+	row := results.QueryRow()
+	var item FindOrganizationByIDRow
+	if err := row.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+		return item, fmt.Errorf("scan FindOrganizationByIDBatch row: %w", err)
+	}
+	return item, nil
+}
+
 const findOrganizationByNameForUpdateSQL = `SELECT *
 FROM organizations
 WHERE name = $1
