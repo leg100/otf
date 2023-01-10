@@ -11,7 +11,6 @@ import (
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +22,7 @@ func TestModule(t *testing.T) {
 
 	name := "mod"
 	provider := "aws"
-	repo := otf.NewTestModuleRepo(provider, name)
+	repo := cloud.NewTestModuleRepo(provider, name)
 
 	org := uuid.NewString()
 	user := cloud.User{

@@ -11,7 +11,6 @@ import (
 	"github.com/chromedp/chromedp"
 	gogithub "github.com/google/go-github/v41/github"
 	"github.com/google/uuid"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +32,7 @@ func TestConnectRepo(t *testing.T) {
 		Organizations: []string{org},
 	}
 
-	repo := otf.NewTestRepo()
+	repo := cloud.NewTestRepo()
 	tarball, err := os.ReadFile("../testdata/github.tar.gz")
 	require.NoError(t, err)
 

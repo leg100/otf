@@ -10,7 +10,6 @@ import (
 	"time"
 
 	gogithub "github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/mitchellh/iochan"
@@ -37,7 +36,7 @@ func (d *daemon) withGithubUser(user *cloud.User) {
 	d.githubOptions = append(d.githubOptions, github.WithUser(user))
 }
 
-func (d *daemon) withGithubRepo(repo *otf.Repo) {
+func (d *daemon) withGithubRepo(repo cloud.Repo) {
 	d.enableGithub = true
 	d.githubOptions = append(d.githubOptions, github.WithRepo(repo))
 }
