@@ -14,5 +14,6 @@ func (a *Application) SetHostname(hostname string, listen *net.TCPAddr) error {
 		return err
 	}
 	a.hostname = hostname
+	a.V(0).Info("set system hostname", "hostname", a.hostname)
 	return nil
 }

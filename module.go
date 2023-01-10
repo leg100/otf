@@ -83,7 +83,10 @@ func (m *Module) Version(version string) *ModuleVersion {
 
 func (m *Module) MarshalLog() any {
 	return struct {
-		ID, Organization, Name, Provider string
+		ID           string `json:"id"`
+		Organization string `json:"organization"`
+		Name         string `json:"name"`
+		Provider     string `json:"provider"`
 	}{
 		ID:           m.id,
 		Organization: m.organization.name,

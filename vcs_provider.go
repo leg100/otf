@@ -38,7 +38,10 @@ func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
 
 func (t *VCSProvider) MarshalLog() any {
 	return struct {
-		ID, Organization, Name, Cloud string
+		ID           string `json:"id"`
+		Organization string `json:"organization"`
+		Name         string `json:"name"`
+		Cloud        string `json:"cloud"`
 	}{
 		ID:           t.id,
 		Organization: t.organizationName,

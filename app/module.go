@@ -104,7 +104,7 @@ func (a *Application) GetModuleByID(ctx context.Context, id string) (*otf.Module
 		return nil, err
 	}
 
-	a.V(2).Info("listed modules", "subject", subject, "module", module)
+	a.V(2).Info("retrieved module", "subject", subject, "module", module)
 	return module, nil
 }
 
