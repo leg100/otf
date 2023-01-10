@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/semver"
 	"github.com/pkg/errors"
 )
@@ -136,13 +137,13 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 }
 
 // PublishFromEvent publishes a module version in response to a vcs event.
-func (p *Publisher) PublishFromEvent(ctx context.Context, event VCSEvent) error {
+func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) error {
 	// only publish when new tag is created
-	tag, ok := event.(*VCSTagEvent)
+	tag, ok := event.(*cloud.VCSTagEvent)
 	if !ok {
 		return nil
 	}
-	if tag.Action != VCSTagEventCreatedAction {
+	if tag.Action != cloud.VCSTagEventCreatedAction {
 		return nil
 	}
 	// only interested in tags that look like semantic versions

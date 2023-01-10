@@ -226,9 +226,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOption
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case otf.VCSPushEventType:
+		case cloud.VCSPushEventType:
 			events = append(events, "push")
-		case otf.VCSPullEventType:
+		case cloud.VCSPullEventType:
 			events = append(events, "pull_request")
 		}
 	}
@@ -262,9 +262,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	var events []string
 	for _, event := range opts.Events {
 		switch event {
-		case otf.VCSPushEventType:
+		case cloud.VCSPushEventType:
 			events = append(events, "push")
-		case otf.VCSPullEventType:
+		case cloud.VCSPullEventType:
 			events = append(events, "pull_request")
 		}
 	}
@@ -283,36 +283,36 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
-		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
+		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Identifier)
 	}
 
 	intID, err := strconv.ParseInt(opts.ID, 10, 64)
 	if err != nil {
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 
 	hook, resp, err := g.client.Repositories.GetHook(ctx, owner, name, intID)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, otf.ErrResourceNotFound
+			return cloud.Webhook{}, otf.ErrResourceNotFound
 		}
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 
-	var events []otf.VCSEventType
+	var events []cloud.VCSEventType
 	for _, event := range hook.Events {
 		switch event {
 		case "push":
-			events = append(events, otf.VCSPushEventType)
+			events = append(events, cloud.VCSPushEventType)
 		case "pull_request":
-			events = append(events, otf.VCSPullEventType)
+			events = append(events, cloud.VCSPullEventType)
 		}
 	}
 
-	return &otf.VCSWebhook{
+	return cloud.Webhook{
 		ID:         strconv.FormatInt(hook.GetID(), 10),
 		Identifier: opts.Identifier,
 		Events:     events,

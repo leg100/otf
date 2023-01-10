@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ func TestTriggerer(t *testing.T) {
 		Logger:      logr.Discard(),
 	}
 
-	err := triggerer.handle(context.Background(), VCSPushEvent{
+	err := triggerer.handle(context.Background(), cloud.VCSPushEvent{
 		Branch: "main",
 	})
 	require.NoError(t, err)

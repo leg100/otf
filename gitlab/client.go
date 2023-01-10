@@ -168,9 +168,9 @@ func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOption
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case otf.VCSPushEventType:
+		case cloud.VCSPushEventType:
 			addOpts.PushEvents = otf.Bool(true)
-		case otf.VCSPullEventType:
+		case cloud.VCSPullEventType:
 			addOpts.MergeRequestsEvents = otf.Bool(true)
 		}
 	}
@@ -195,9 +195,9 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	}
 	for _, event := range opts.Events {
 		switch event {
-		case otf.VCSPushEventType:
+		case cloud.VCSPushEventType:
 			editOpts.PushEvents = otf.Bool(true)
-		case otf.VCSPullEventType:
+		case cloud.VCSPullEventType:
 			editOpts.MergeRequestsEvents = otf.Bool(true)
 		}
 	}
@@ -209,29 +209,29 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 
 	hook, resp, err := g.client.Projects.GetProjectHook(opts.Identifier, id)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, otf.ErrResourceNotFound
+			return cloud.Webhook{}, otf.ErrResourceNotFound
 		}
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 
-	var events []otf.VCSEventType
+	var events []cloud.VCSEventType
 	if hook.PushEvents {
-		events = append(events, otf.VCSPushEventType)
+		events = append(events, cloud.VCSPushEventType)
 	}
 	if hook.MergeRequestsEvents {
-		events = append(events, otf.VCSPullEventType)
+		events = append(events, cloud.VCSPullEventType)
 	}
 
-	return &otf.VCSWebhook{
+	return cloud.Webhook{
 		ID:         strconv.Itoa(id),
 		Identifier: opts.Identifier,
 		Events:     events,

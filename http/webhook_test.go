@@ -9,12 +9,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWebhookHandler(t *testing.T) {
-	got := make(chan otf.VCSEvent, 1)
-	want := otf.VCSPushEvent{}
+	got := make(chan cloud.VCSEvent, 1)
+	want := cloud.VCSPushEvent{}
 	handler := webhookHandler{
 		events: got,
 		Logger: logr.Discard(),
@@ -54,11 +55,11 @@ func (f *fakeWebhookHandlerDB) GetWebhook(ctx context.Context, id uuid.UUID) (*o
 }
 
 type fakeCloud struct {
-	event otf.VCSEvent
+	event cloud.VCSEvent
 
 	otf.Cloud
 }
 
-func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
+func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) cloud.VCSEvent {
 	return f.event
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 )
 
 func (a *Application) SetStatus(ctx context.Context, providerID string, opts otf.SetStatusOptions) error {
@@ -90,14 +91,14 @@ func (a *Application) UpdateWebhook(ctx context.Context, providerID string, opts
 	return client.UpdateWebhook(ctx, opts)
 }
 
-func (a *Application) GetWebhook(ctx context.Context, providerID string, opts otf.GetWebhookOptions) (*otf.VCSWebhook, error) {
+func (a *Application) GetWebhook(ctx context.Context, providerID string, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 	client, err := provider.NewClient(ctx)
 	if err != nil {
-		return nil, err
+		return cloud.Webhook{}, err
 	}
 	return client.GetWebhook(ctx, opts)
 }

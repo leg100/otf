@@ -7,10 +7,11 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 )
 
 // HandleEvent handles incoming events from github
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) cloud.VCSEvent {
 	event, err := handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -20,7 +21,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOpt
 	return event
 }
 
-func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) {
+func handle(r *http.Request, opts otf.HandleEventOptions) (cloud.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
 		return nil, err
@@ -41,17 +42,17 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 		}
 		switch parts[1] {
 		case "tags":
-			var action otf.VCSTagEventAction
+			var action cloud.VCSTagEventAction
 			switch {
 			case event.GetCreated():
-				action = otf.VCSTagEventCreatedAction
+				action = cloud.VCSTagEventCreatedAction
 			case event.GetDeleted():
-				action = otf.VCSTagEventDeletedAction
+				action = cloud.VCSTagEventDeletedAction
 			default:
 				return nil, fmt.Errorf("no action specified for tag event")
 			}
 
-			return &otf.VCSTagEvent{
+			return cloud.VCSTagEvent{
 				WebhookID:  opts.WebhookID,
 				Tag:        parts[2],
 				Action:     action,
@@ -59,7 +60,7 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 				CommitSHA:  event.GetAfter(),
 			}, nil
 		case "heads":
-			return &otf.VCSPushEvent{
+			return cloud.VCSPushEvent{
 				WebhookID:  opts.WebhookID,
 				Branch:     parts[2],
 				Identifier: event.GetRepo().GetFullName(),
@@ -69,21 +70,21 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 			return nil, fmt.Errorf("malformed ref: %s", event.GetRef())
 		}
 	case *github.PullRequestEvent:
-		var action otf.VCSPullEventAction
+		var action cloud.VCSPullEventAction
 		switch event.GetAction() {
 		case "opened":
-			action = otf.VCSPullEventOpened
+			action = cloud.VCSPullEventOpened
 		case "closed":
 			if event.PullRequest.GetMerged() {
-				action = otf.VCSPullEventMerged
+				action = cloud.VCSPullEventMerged
 			} else {
-				action = otf.VCSPullEventClosed
+				action = cloud.VCSPullEventClosed
 			}
 		case "synchronised":
-			action = otf.VCSPullEventUpdated
+			action = cloud.VCSPullEventUpdated
 		}
 
-		return &otf.VCSPullEvent{
+		return cloud.VCSPullEvent{
 			WebhookID:  opts.WebhookID,
 			Action:     action,
 			Identifier: event.GetRepo().GetFullName(),

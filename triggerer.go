@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/leg100/otf/cloud"
 )
 
 // Triggerer triggers jobs in response to incoming VCS events.
@@ -14,10 +15,10 @@ type Triggerer struct {
 	*Publisher
 	logr.Logger
 
-	events <-chan VCSEvent
+	events <-chan cloud.VCSEvent
 }
 
-func NewTriggerer(app Application, logger logr.Logger, events <-chan VCSEvent) *Triggerer {
+func NewTriggerer(app Application, logger logr.Logger, events <-chan cloud.VCSEvent) *Triggerer {
 	return &Triggerer{
 		Application: app,
 		Publisher:   NewPublisher(app),
@@ -43,7 +44,7 @@ func (h *Triggerer) Start(ctx context.Context) {
 }
 
 // handle triggers a run upon receiving an event
-func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
+func (h *Triggerer) handle(ctx context.Context, event cloud.VCSEvent) error {
 	if err := h.triggerRun(ctx, event); err != nil {
 		return err
 	}
@@ -56,7 +57,7 @@ func (h *Triggerer) handle(ctx context.Context, event VCSEvent) error {
 }
 
 // triggerRun triggers a run upon receipt of a vcs event
-func (h *Triggerer) triggerRun(ctx context.Context, event VCSEvent) error {
+func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error {
 	var webhookID uuid.UUID
 	var isPullRequest bool
 	var identifier string
@@ -64,13 +65,13 @@ func (h *Triggerer) triggerRun(ctx context.Context, event VCSEvent) error {
 	var sha string
 
 	switch event := event.(type) {
-	case *VCSPushEvent:
+	case cloud.VCSPushEvent:
 		webhookID = event.WebhookID
 		identifier = event.Identifier
 		sha = event.CommitSHA
 		branch = event.Branch
-	case *VCSPullEvent:
-		if event.Action != VCSPullEventUpdated {
+	case cloud.VCSPullEvent:
+		if event.Action != cloud.VCSPullEventUpdated {
 			// ignore all other pull events
 			return nil
 		}
