@@ -74,7 +74,6 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 			ProviderID: result.WorkspaceRepo.VCSProviderID.String,
 			WebhookID:  result.Webhook.WebhookID.Bytes,
 			Identifier: result.Webhook.Identifier.String,
-			HTTPURL:    result.Webhook.HTTPURL.String,
 		}
 	}
 

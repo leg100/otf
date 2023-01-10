@@ -22,7 +22,8 @@ func TestWebhook_Sync_Create(t *testing.T) {
 
 	got, err := db.SyncWebhook(ctx, otf.SyncWebhookOptions{
 		CreateWebhookFunc: createFunc,
-		HTTPURL:           want.HTTPURL,
+		Identifier:        want.Identifier,
+		Cloud:             want.CloudName(),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
@@ -31,14 +32,15 @@ func TestWebhook_Sync_Create(t *testing.T) {
 func TestWebhook_Sync_Update(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	want := createTestWebhook(t, db)
+	webhook := createTestWebhook(t, db)
 
 	updateFunc := func(context.Context, otf.WebhookUpdaterOptions) (string, error) {
 		return "updated-vcs-id", nil
 	}
 	opts := otf.SyncWebhookOptions{
 		UpdateWebhookFunc: updateFunc,
-		HTTPURL:           want.HTTPURL,
+		Identifier:        webhook.Identifier,
+		Cloud:             webhook.CloudName(),
 	}
 
 	got, err := db.SyncWebhook(ctx, opts)
@@ -56,7 +58,8 @@ func TestWebhook_Sync_NoChange(t *testing.T) {
 	}
 	opts := otf.SyncWebhookOptions{
 		UpdateWebhookFunc: updateFunc,
-		HTTPURL:           want.HTTPURL,
+		Identifier:        want.Identifier,
+		Cloud:             want.CloudName(),
 	}
 
 	got, err := db.SyncWebhook(ctx, opts)

@@ -75,7 +75,6 @@ func TestWorkspace_CreateRepo(t *testing.T) {
 		Branch:     "master",
 		WebhookID:  hook.WebhookID,
 		Identifier: hook.Identifier,
-		HTTPURL:    hook.HTTPURL,
 	}
 
 	_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)

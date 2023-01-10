@@ -10,6 +10,8 @@ import (
 	"github.com/leg100/otf/sql/pggen"
 )
 
+// SyncWebhook synchronises a webhook, creating it if it doesn't exist already,
+// or if it does exist it'll check for differences and update if necessary.
 func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*otf.Webhook, error) {
 	var hook *otf.Webhook
 	err := db.tx(ctx, func(tx *DB) error {
@@ -21,7 +23,7 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 		if err != nil {
 			return errors.Wrap(err, "locking webhook table")
 		}
-		result, err := tx.FindWebhookByURL(ctx, String(opts.HTTPURL))
+		result, err := tx.FindWebhookByRepo(ctx, String(opts.Identifier), String(opts.Cloud))
 		if err != nil {
 			err = databaseError(err)
 			if errors.Is(err, otf.ErrResourceNotFound) {
@@ -29,7 +31,6 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 				hook, err = opts.CreateWebhookFunc(ctx, otf.WebhookCreatorOptions{
 					ProviderID: opts.ProviderID,
 					Identifier: opts.Identifier,
-					HTTPURL:    opts.HTTPURL,
 					Cloud:      opts.Cloud,
 				})
 				if err != nil {
@@ -41,7 +42,6 @@ func (db *DB) SyncWebhook(ctx context.Context, opts otf.SyncWebhookOptions) (*ot
 					VCSID:      String(hook.VCSID),
 					Secret:     String(hook.Secret),
 					Identifier: String(hook.Identifier),
-					HTTPURL:    String(hook.HTTPURL),
 					Cloud:      String(hook.CloudName()),
 				})
 				if err != nil {

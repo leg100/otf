@@ -99,7 +99,6 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Rep
 
 	return &otf.Repo{
 		Identifier: proj.PathWithNamespace,
-		HTTPURL:    proj.WebURL,
 		Branch:     proj.DefaultBranch,
 	}, nil
 }
@@ -124,7 +123,6 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 	for _, proj := range projects {
 		items = append(items, &otf.Repo{
 			Identifier: proj.PathWithNamespace,
-			HTTPURL:    proj.WebURL,
 			Branch:     proj.DefaultBranch,
 		})
 	}

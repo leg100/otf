@@ -119,7 +119,6 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (*otf.Rep
 
 	return &otf.Repo{
 		Identifier: repo.GetFullName(),
-		HTTPURL:    repo.GetURL(),
 		Branch:     repo.GetDefaultBranch(),
 	}, nil
 }
@@ -142,7 +141,6 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 	for _, repo := range repos {
 		items = append(items, &otf.Repo{
 			Identifier: repo.GetFullName(),
-			HTTPURL:    repo.GetURL(),
 			Branch:     repo.GetDefaultBranch(),
 		})
 	}
