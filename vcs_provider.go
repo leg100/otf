@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/cloud"
 )
 
 // VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
@@ -116,7 +117,7 @@ type VCSProviderService interface {
 
 	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error
-	GetWebhook(ctx context.Context, providerID string, opts GetWebhookOptions) (*VCSWebhook, error)
+	GetWebhook(ctx context.Context, providerID string, opts GetWebhookOptions) (cloud.Webhook, error)
 	DeleteWebhook(ctx context.Context, providerID string, opts DeleteWebhookOptions) error
 }
 

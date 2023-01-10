@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/xanzy/go-gitlab"
 )
 
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) otf.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) cloud.VCSEvent {
 	event, err := handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -21,7 +22,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOpt
 	return event
 }
 
-func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) {
+func handle(r *http.Request, opts otf.HandleEventOptions) (cloud.VCSEvent, error) {
 	if token := r.Header.Get("X-Gitlab-Token"); token != opts.Secret {
 		return nil, errors.New("token validation failed")
 	}
@@ -42,7 +43,7 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &otf.VCSPushEvent{
+		return &cloud.VCSPushEvent{
 			WebhookID:  opts.WebhookID,
 			Branch:     refParts[2],
 			Identifier: event.Project.PathWithNamespace,
@@ -53,7 +54,7 @@ func handle(r *http.Request, opts otf.HandleEventOptions) (otf.VCSEvent, error) 
 		if len(refParts) != 3 {
 			return nil, fmt.Errorf("malformed ref: %s", event.Ref)
 		}
-		return &otf.VCSTagEvent{
+		return &cloud.VCSTagEvent{
 			WebhookID: opts.WebhookID,
 			Tag:       refParts[2],
 			// Action:     action,

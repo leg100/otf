@@ -73,7 +73,7 @@ type CloudClient interface {
 	// provider's unique ID for the webhook.
 	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error)
 	UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error
-	GetWebhook(ctx context.Context, opts GetWebhookOptions) (*VCSWebhook, error)
+	GetWebhook(ctx context.Context, opts GetWebhookOptions) (cloud.Webhook, error)
 	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
 
 	SetStatus(ctx context.Context, opts SetStatusOptions) error
@@ -81,13 +81,6 @@ type CloudClient interface {
 	// ListTags lists git tags on a repository. Each tag should be prefixed with
 	// 'tags/'.
 	ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
-}
-
-type VCSWebhook struct {
-	ID         string // vcs' ID
-	Identifier string // identifier is <repo_owner>/<repo_name>
-	Events     []VCSEventType
-	Endpoint   string
 }
 
 type GetRepoTarballOptions struct {
@@ -105,7 +98,7 @@ type CreateWebhookOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Secret     string // secret string for generating signature
 	Endpoint   string // otf's external-facing host[:port]
-	Events     []VCSEventType
+	Events     []cloud.VCSEventType
 }
 
 type UpdateWebhookOptions struct {
@@ -175,10 +168,11 @@ func (cfg *CloudConfig) HTTPClient() *http.Client {
 
 // Repo is a VCS repository belonging to a cloud
 //
-// TODO: remove or do something to this because there is too much overlap with
-// VCSRepo
 type Repo struct {
 	// Identifier is <repo_owner>/<repo_name>
+	//
+	// TODO: needs renaming - identifier is far too generic a name, which we use without the
+	// context of the repo in far too many places.
 	Identifier string `schema:"identifier,required"`
 	// Branch is the default master Branch for a repo
 	Branch string `schema:"branch,required"`

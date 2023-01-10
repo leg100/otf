@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v41/github"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +22,10 @@ func TestEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSPushEvent{
+		want := cloud.VCSPushEvent{
 			Branch: "master",
 		}
-		assert.Equal(t, &want, got)
+		assert.Equal(t, want, got)
 	})
 
 	t.Run("pr event", func(t *testing.T) {
@@ -34,10 +35,10 @@ func TestEventHandler(t *testing.T) {
 
 		assert.Equal(t, 202, w.Code)
 
-		want := otf.VCSPullEvent{
+		want := cloud.VCSPullEvent{
 			Branch: "pr-1",
 		}
-		assert.Equal(t, &want, got)
+		assert.Equal(t, want, got)
 	})
 }
 

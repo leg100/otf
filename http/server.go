@@ -15,6 +15,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/surl"
 )
 
@@ -106,7 +107,7 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 	//
 	// VCS event handling
 	//
-	events := make(chan otf.VCSEvent, 100)
+	events := make(chan cloud.VCSEvent, 100)
 	r.Handle("/webhooks/vcs/{webhook_id}", &webhookHandler{
 		events:      events,
 		Logger:      logger,

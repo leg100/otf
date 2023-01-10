@@ -6,13 +6,14 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 )
 
 // webhookHandler is the point of entry for incoming VCS events, relaying them onto
 // a cloud-specific handler.
 type webhookHandler struct {
-	events chan<- otf.VCSEvent
+	events chan<- cloud.VCSEvent
 
 	logr.Logger
 	otf.Application

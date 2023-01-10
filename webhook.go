@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/leg100/otf/cloud"
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -16,9 +17,9 @@ import (
 )
 
 // WebhookEvents are those events webhooks should subscribe to.
-var WebhookEvents = []VCSEventType{
-	VCSPushEventType,
-	VCSPullEventType,
+var WebhookEvents = []cloud.VCSEventType{
+	cloud.VCSPushEventType,
+	cloud.VCSPullEventType,
 }
 
 type Webhook struct {
@@ -35,7 +36,7 @@ func (h *Webhook) Owner() string     { return strings.Split(h.Identifier, "/")[0
 func (h *Webhook) Repo() string      { return strings.Split(h.Identifier, "/")[1] }
 func (h *Webhook) CloudName() string { return h.cloudConfig.Name }
 
-func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) VCSEvent {
+func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) cloud.VCSEvent {
 	return h.cloudConfig.HandleEvent(w, r, HandleEventOptions{
 		WebhookID: h.WebhookID,
 		Secret:    h.Secret,
@@ -183,7 +184,7 @@ func (u *Unmarshaler) UnmarshalWebhookRow(row WebhookRow) (*Webhook, error) {
 //
 // NOTE: we cannot determine whether secret has changed because cloud APIs tend
 // not to expose it
-func webhookDiff(vcs *VCSWebhook, db *Webhook, hostname string) bool {
+func webhookDiff(vcs cloud.Webhook, db *Webhook, hostname string) bool {
 	if !reflect.DeepEqual(vcs.Events, WebhookEvents) {
 		return true
 	}
