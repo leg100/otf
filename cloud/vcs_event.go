@@ -11,7 +11,7 @@ const (
 	VCSPushEventType
 )
 
-// VCSEvent is an event received from a VCS provider, e.g. a commit event from
+// VCSEvent is a VCS event received from a cloud, e.g. a commit event from
 // github
 type VCSEvent any
 

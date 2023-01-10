@@ -168,10 +168,11 @@ func (cfg *CloudConfig) HTTPClient() *http.Client {
 
 // Repo is a VCS repository belonging to a cloud
 //
-// TODO: remove or do something to this because there is too much overlap with
-// VCSRepo
 type Repo struct {
 	// Identifier is <repo_owner>/<repo_name>
+	//
+	// TODO: needs renaming - identifier is far too generic a name, which we use without the
+	// context of the repo in far too many places.
 	Identifier string `schema:"identifier,required"`
 	// Branch is the default master Branch for a repo
 	Branch string `schema:"branch,required"`

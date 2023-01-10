@@ -139,7 +139,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 // PublishFromEvent publishes a module version in response to a vcs event.
 func (p *Publisher) PublishFromEvent(ctx context.Context, event cloud.VCSEvent) error {
 	// only publish when new tag is created
-	tag, ok := event.(*cloud.VCSTagEvent)
+	tag, ok := event.(cloud.VCSTagEvent)
 	if !ok {
 		return nil
 	}
