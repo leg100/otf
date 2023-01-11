@@ -17,7 +17,7 @@ func TestWeb(t *testing.T) {
 
 	org := uuid.NewString()
 	user := cloud.User{
-		Name: "web-user",
+		Name: uuid.NewString(),
 		Teams: []cloud.Team{
 			{
 				Name:         "owners",

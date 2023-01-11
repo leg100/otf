@@ -26,7 +26,7 @@ func TestCluster(t *testing.T) {
 
 	org := uuid.NewString()
 	user := cloud.User{
-		Name: "cluster-user",
+		Name: uuid.NewString(),
 		Teams: []cloud.Team{
 			{
 				Name:         "owners",

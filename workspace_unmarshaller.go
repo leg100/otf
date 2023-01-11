@@ -65,7 +65,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		terraformVersion:           result.TerraformVersion.String,
 		triggerPrefixes:            result.TriggerPrefixes,
 		workingDirectory:           result.WorkingDirectory.String,
-		organization:               UnmarshalOrganizationRow(*result.Organization),
+		organization:               result.Organization.String,
 	}
 
 	if result.WorkspaceRepo != nil {

@@ -17,7 +17,7 @@ func TestStartRunUI(t *testing.T) {
 
 	org := uuid.NewString()
 	user := cloud.User{
-		Name: "start-run-user",
+		Name: uuid.NewString(),
 		Teams: []cloud.Team{
 			{
 				Name:         "owners",
