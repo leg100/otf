@@ -8,8 +8,9 @@ OTF is an open-source alternative to Terraform Enterprise, sharing many of its f
 * Remote state backend: state stored in PostgreSQL
 * SSO: sign in using Github and gitlab
 * Organization and team synchronisation from Github and gitlab
+* Module registry (provider registry coming soon)
 * Authorization: control team access to workspaces
-* VCS integration: start runs from your git repository
+* VCS integration: trigger runs and publish modules from git commits
 * Compatible with much of the Terraform Enterprise/Cloud API
 * Minimal dependencies: requires only PostgreSQL
 * Stateless: horizontally scale servers in pods on Kubernetes, etc
@@ -305,7 +306,7 @@ And enter the token when prompted. It'll be persisted to a local credentials fil
 
 ## VCS Providers
 
-VCS providers allow you to connect workspaces to git repositories. Once connected , you can trigger runs that source their configuration from a repository.
+To connect workspaces and modules to git repositories containing Terraform configurations, you need to provide OTF with access to your VCS provider.
 
 Firstly, create a provider for your organization. On your organization's main menu, select 'VCS providers'.
 
@@ -316,10 +317,7 @@ Select the provider you would like to create. You will then be prompted to enter
 !!! note
     Be sure to restrict the permissions on the token according to the instructions.
 
-!!! note
-    Other options for credentials will be offered in future, including OAuth access tokens.
-
-Create the provider and it'll appear on the list of providers. You can now proceed to connecting workspaces to the provider.
+Create the provider and it'll appear on the list of providers. You can now proceed to connecting workspaces and publishing modules.
 
 ### Connecting a workspace
 
@@ -336,6 +334,28 @@ You'll then be presented with a list of repositories. Select the repository cont
 Once connected you can start a run via the web UI. On the workspace page select the 'start run' drop-down box and select an option to either start a plan or both a plan and an apply.
 
 That will start a run, retrieving the configuration from the repository, and you will see the progress of its plan and apply.
+
+## Module Registry
+
+OTF includes a registry of terraform modules. You can publish modules to the registry from a git repository and source the modules in your terraform configuration.
+
+### Publish module
+
+To publish a module, go to the organization main menu, select 'modules' and click 'publish'.
+
+You then need to select a VCS provider. If none are visible you need to first create a [provider](#vcs-providers).
+
+Connect to the provider and you are presented with a list of git repositories. Select the repository that contains the module you want to publish. If the repository is not visible you can enter its path instead.
+
+!!! note
+    Only the first 100 repositories found on your provider are shown.
+
+Once you select a repository, you are asked to confirm your selection. OTF then retrieves the repository's git tags. For each tag that looks like a semantic version, e.g. `v1.0.0` or `0.10.3`, it'll download the contents of the repository for each tag and publish a module with that version. You should then be redirected to the module's page, containing information regarding its resources, inputs and outputs, along with usage instructions.
+
+!!! note
+    Ensure your repository has at least one tag that looks like a semantic version. Otherwise OTF will fail to publish the module.
+
+A webhook is also added to the repository. Any tags pushed to the repository will trigger the webhook and new module versions will be published.
 
 ## Agents
 
@@ -418,11 +438,3 @@ terraform login <otfd_hostname>
 
 !!! note
     Functionality is presently limited, restricted to a subset of what is available via the web app.
-
-## Roadmap
-
-A list of missing features planned for the near future:
-
-* Workspace webhooks: commits and pull requests to connected repositories automatically trigger runs. Currently, a user has to manually start a run from the web UI.
-* Module registry: a database of terraform modules. Leverages a webhook similar to the workspace webhook described above to trigger uploads when a commit is pushed to a connected repository.
-* Provider registry: a database of terraform providers.
