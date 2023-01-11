@@ -123,11 +123,10 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Re
 	}, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*otf.RepoList, error) {
-	repos, resp, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
+func (g *Client) ListRepositories(ctx context.Context, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+	repos, _, err := g.client.Repositories.List(ctx, "", &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
-			Page:    opts.SanitizedPageNumber(),
-			PerPage: opts.SanitizedPageSize(),
+			PerPage: opts.PageSize,
 		},
 		// retrieve repositories in order of most recently pushed to
 		Sort: "pushed",
@@ -145,13 +144,10 @@ func (g *Client) ListRepositories(ctx context.Context, opts otf.ListOptions) (*o
 		})
 	}
 
-	return &otf.RepoList{
-		Items:      items,
-		Pagination: otf.NewPagination(opts, resp.LastPage*opts.SanitizedPageSize()),
-	}, nil
+	return items, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]string, error) {
+func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -172,7 +168,7 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]stri
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, topts otf.GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, topts cloud.GetRepoTarballOptions) ([]byte, error) {
 	owner, name, found := strings.Cut(topts.Identifier, "/")
 	if !found {
 		return nil, fmt.Errorf("malformed identifier: %s", topts.Identifier)
@@ -217,7 +213,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, topts otf.GetRepoTarballOpt
 }
 
 // CreateWebhook creates a webhook on a github repository.
-func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return "", fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -248,7 +244,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOption
 	return strconv.FormatInt(hook.GetID(), 10), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -283,7 +279,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return cloud.Webhook{}, fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -320,7 +316,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cl
 	}, nil
 }
 
-func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -335,7 +331,7 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOption
 	return err
 }
 
-func (g *Client) SetStatus(ctx context.Context, opts otf.SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
 	owner, name, found := strings.Cut(opts.Identifier, "/")
 	if !found {
 		return fmt.Errorf("malformed identifier: %s", opts.Identifier)
@@ -343,13 +339,13 @@ func (g *Client) SetStatus(ctx context.Context, opts otf.SetStatusOptions) error
 
 	var status string
 	switch opts.Status {
-	case otf.VCSPendingStatus, otf.VCSRunningStatus:
+	case cloud.VCSPendingStatus, cloud.VCSRunningStatus:
 		status = "pending"
-	case otf.VCSSuccessStatus:
+	case cloud.VCSSuccessStatus:
 		status = "success"
-	case otf.VCSErrorStatus:
+	case cloud.VCSErrorStatus:
 		status = "error"
-	case otf.VCSFailureStatus:
+	case cloud.VCSFailureStatus:
 		status = "failure"
 	default:
 		return fmt.Errorf("invalid vcs status: %s", opts.Status)

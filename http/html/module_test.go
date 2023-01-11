@@ -186,9 +186,6 @@ func (f *fakeModulesApp) ListVCSProviders(context.Context, string) ([]*otf.VCSPr
 	return []*otf.VCSProvider{f.provider}, nil
 }
 
-func (f *fakeModulesApp) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
-	return &otf.RepoList{
-		Items:      f.repos,
-		Pagination: otf.NewPagination(opts, len(f.repos)),
-	}, nil
+func (f *fakeModulesApp) ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+	return f.repos, nil
 }

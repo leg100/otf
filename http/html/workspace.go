@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
 	"github.com/r3labs/sse/v2"
@@ -405,18 +406,20 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, opts.ListOptions)
+	repos, err := app.ListRepositories(r.Context(), opts.VCSProviderID, cloud.ListRepositoriesOptions{
+		PageSize: 100,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	app.render("workspace_vcs_repo_list.tmpl", w, r, struct {
-		*otf.RepoList
+		Items []cloud.Repo
 		*otf.Workspace
 		Provider *otf.VCSProvider
 	}{
-		RepoList:  repos,
+		Items:     repos,
 		Workspace: ws,
 		Provider:  provider,
 	})

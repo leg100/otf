@@ -155,13 +155,13 @@ func (f *fakeOAuthClient) CallbackHandler(*http.Request) (*oauth2.Token, error) 
 	return &oauth2.Token{}, nil
 }
 
-func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (otf.CloudClient, error) {
+func (f *fakeOAuthClient) NewClient(context.Context, *oauth2.Token) (cloud.Client, error) {
 	return &fakeCloudClient{user: f.user}, nil
 }
 
 type fakeCloudClient struct {
 	user *cloud.User
-	otf.CloudClient
+	cloud.Client
 }
 
 func (f *fakeCloudClient) GetUser(context.Context) (*cloud.User, error) {

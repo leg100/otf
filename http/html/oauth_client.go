@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"golang.org/x/oauth2"
 )
@@ -121,7 +122,7 @@ func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 	return a.Exchange(ctx, resp.AuthCode)
 }
 
-func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (otf.CloudClient, error) {
+func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error) {
 	return a.CloudConfig.NewClient(ctx, otf.CloudCredentials{
 		OAuthToken: token,
 	})

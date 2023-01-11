@@ -3,6 +3,7 @@ package otf
 import (
 	"context"
 
+	"github.com/leg100/otf/cloud"
 	"github.com/pkg/errors"
 )
 
@@ -88,7 +89,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, spec WorkspaceSpec
 			return err
 		}
 
-		err = app.DeleteWebhook(ctx, repo.ProviderID, DeleteWebhookOptions{
+		err = app.DeleteWebhook(ctx, repo.ProviderID, cloud.DeleteWebhookOptions{
 			Identifier: repo.Identifier,
 			ID:         hook.VCSID,
 		})

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/leg100/otf/cloud"
 )
 
 // RunStarter starts a run triggered via the UI (whereas the terraform CLI takes
@@ -20,7 +22,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, spec WorkspaceSpec, opts Con
 
 	var cv *ConfigurationVersion
 	if ws.Repo() != nil {
-		tarball, err := rs.GetRepoTarball(ctx, ws.Repo().ProviderID, GetRepoTarballOptions{
+		tarball, err := rs.GetRepoTarball(ctx, ws.Repo().ProviderID, cloud.GetRepoTarballOptions{
 			Identifier: ws.Repo().Identifier,
 			Ref:        ws.Repo().Branch,
 		})

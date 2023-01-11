@@ -49,7 +49,7 @@ func TestGetRepoTarball(t *testing.T) {
 		WithArchive(want),
 	)
 
-	got, err := client.GetRepoTarball(ctx, otf.GetRepoTarballOptions{
+	got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 		Identifier: "acme/terraform",
 		Ref:        "master",
 	})
@@ -67,7 +67,7 @@ func TestCreateWebhook(t *testing.T) {
 		WithRepo(cloud.Repo{Identifier: "acme/terraform", Branch: "master"}),
 	)
 
-	_, err := client.CreateWebhook(ctx, otf.CreateWebhookOptions{
+	_, err := client.CreateWebhook(ctx, cloud.CreateWebhookOptions{
 		Identifier: "acme/terraform",
 		Secret:     "me-secret",
 	})

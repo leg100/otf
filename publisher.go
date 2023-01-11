@@ -96,7 +96,7 @@ func (p *Publisher) PublishModule(ctx context.Context, opts PublishModuleOptions
 	}
 
 	// Make new version for each tag that looks like a semantic version.
-	tags, err := p.ListTags(ctx, opts.ProviderID, ListTagsOptions{
+	tags, err := p.ListTags(ctx, opts.ProviderID, cloud.ListTagsOptions{
 		Identifier: opts.Identifier,
 	})
 	if err != nil {
@@ -199,7 +199,7 @@ func (p *Publisher) PublishVersion(ctx context.Context, opts PublishModuleVersio
 		return nil, nil, err
 	}
 
-	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, GetRepoTarballOptions{
+	tarball, err := p.GetRepoTarball(ctx, opts.ProviderID, cloud.GetRepoTarballOptions{
 		Identifier: opts.Identifier,
 		Ref:        opts.Ref,
 	})

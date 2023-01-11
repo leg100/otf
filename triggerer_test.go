@@ -47,7 +47,7 @@ func (f *fakeTriggererApp) ListWorkspacesByWebhookID(ctx context.Context, id uui
 	return f.workspaces, nil
 }
 
-func (f *fakeTriggererApp) GetRepoTarball(context.Context, string, GetRepoTarballOptions) ([]byte, error) {
+func (f *fakeTriggererApp) GetRepoTarball(context.Context, string, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
 }
 

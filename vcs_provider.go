@@ -30,7 +30,7 @@ func (t *VCSProvider) OrganizationName() string { return t.organizationName }
 func (t *VCSProvider) CloudConfig() CloudConfig { return t.cloudConfig }
 func (t *VCSProvider) VCSProviderID() string    { return t.id } // implement html.vcsProviderResource
 
-func (t *VCSProvider) NewClient(ctx context.Context) (CloudClient, error) {
+func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
 	return t.cloudConfig.NewClient(ctx, CloudCredentials{
 		PersonalToken: &t.token,
 	})
@@ -112,16 +112,16 @@ type VCSProviderService interface {
 	ListVCSProviders(ctx context.Context, organization string) ([]*VCSProvider, error)
 	DeleteVCSProvider(ctx context.Context, id string) (*VCSProvider, error)
 
-	SetStatus(ctx context.Context, providerID string, opts SetStatusOptions) error
+	SetStatus(ctx context.Context, providerID string, opts cloud.SetStatusOptions) error
 	GetRepository(ctx context.Context, providerID string, identifier string) (cloud.Repo, error)
-	GetRepoTarball(ctx context.Context, providerID string, opts GetRepoTarballOptions) ([]byte, error)
-	ListRepositories(ctx context.Context, providerID string, opts ListOptions) (*RepoList, error)
-	ListTags(ctx context.Context, providerID string, opts ListTagsOptions) ([]string, error)
+	GetRepoTarball(ctx context.Context, providerID string, opts cloud.GetRepoTarballOptions) ([]byte, error)
+	ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error)
+	ListTags(ctx context.Context, providerID string, opts cloud.ListTagsOptions) ([]string, error)
 
-	CreateWebhook(ctx context.Context, providerID string, opts CreateWebhookOptions) (string, error)
-	UpdateWebhook(ctx context.Context, providerID string, opts UpdateWebhookOptions) error
-	GetWebhook(ctx context.Context, providerID string, opts GetWebhookOptions) (cloud.Webhook, error)
-	DeleteWebhook(ctx context.Context, providerID string, opts DeleteWebhookOptions) error
+	CreateWebhook(ctx context.Context, providerID string, opts cloud.CreateWebhookOptions) (string, error)
+	UpdateWebhook(ctx context.Context, providerID string, opts cloud.UpdateWebhookOptions) error
+	GetWebhook(ctx context.Context, providerID string, opts cloud.GetWebhookOptions) (cloud.Webhook, error)
+	DeleteWebhook(ctx context.Context, providerID string, opts cloud.DeleteWebhookOptions) error
 }
 
 // VCSProviderStore persists vcs providers

@@ -103,17 +103,16 @@ func (g *Client) GetRepository(ctx context.Context, identifier string) (cloud.Re
 	}, nil
 }
 
-func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*otf.RepoList, error) {
+func (g *Client) ListRepositories(ctx context.Context, lopts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
 	opts := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
-			Page:    lopts.PageNumber,
 			PerPage: lopts.PageSize,
 		},
 		// limit results to those repos the authenticated user is a member of,
 		// otherwise we'll get *all* accessible repos, public and private.
 		Membership: otf.Bool(true),
 	}
-	projects, resp, err := g.client.Projects.ListProjects(opts, nil)
+	projects, _, err := g.client.Projects.ListProjects(opts, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,13 +125,10 @@ func (g *Client) ListRepositories(ctx context.Context, lopts otf.ListOptions) (*
 			Branch:     proj.DefaultBranch,
 		})
 	}
-	return &otf.RepoList{
-		Items:      items,
-		Pagination: otf.NewPagination(lopts, resp.TotalItems),
-	}, nil
+	return items, nil
 }
 
-func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]string, error) {
+func (g *Client) ListTags(ctx context.Context, opts cloud.ListTagsOptions) ([]string, error) {
 	results, _, err := g.client.Tags.ListTags(opts.Identifier, &gitlab.ListTagsOptions{
 		Search: otf.String("^" + opts.Prefix),
 	})
@@ -147,7 +143,7 @@ func (g *Client) ListTags(ctx context.Context, opts otf.ListTagsOptions) ([]stri
 	return tags, nil
 }
 
-func (g *Client) GetRepoTarball(ctx context.Context, opts otf.GetRepoTarballOptions) ([]byte, error) {
+func (g *Client) GetRepoTarball(ctx context.Context, opts cloud.GetRepoTarballOptions) ([]byte, error) {
 	tarball, _, err := g.client.Repositories.Archive(opts.Identifier, &gitlab.ArchiveOptions{
 		Format: otf.String("tar.gz"),
 		SHA:    otf.String(opts.Ref),
@@ -159,7 +155,7 @@ func (g *Client) GetRepoTarball(ctx context.Context, opts otf.GetRepoTarballOpti
 	return tarball, nil
 }
 
-func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOptions) (string, error) {
+func (g *Client) CreateWebhook(ctx context.Context, opts cloud.CreateWebhookOptions) (string, error) {
 	addOpts := &gitlab.AddProjectHookOptions{
 		EnableSSLVerification: otf.Bool(true),
 		PushEvents:            otf.Bool(true),
@@ -182,7 +178,7 @@ func (g *Client) CreateWebhook(ctx context.Context, opts otf.CreateWebhookOption
 	return strconv.Itoa(hook.ID), nil
 }
 
-func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOptions) error {
+func (g *Client) UpdateWebhook(ctx context.Context, opts cloud.UpdateWebhookOptions) error {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return err
@@ -209,7 +205,7 @@ func (g *Client) UpdateWebhook(ctx context.Context, opts otf.UpdateWebhookOption
 	return nil
 }
 
-func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
+func (g *Client) GetWebhook(ctx context.Context, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return cloud.Webhook{}, err
@@ -239,7 +235,7 @@ func (g *Client) GetWebhook(ctx context.Context, opts otf.GetWebhookOptions) (cl
 	}, nil
 }
 
-func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOptions) error {
+func (g *Client) DeleteWebhook(ctx context.Context, opts cloud.DeleteWebhookOptions) error {
 	id, err := strconv.Atoi(opts.ID)
 	if err != nil {
 		return err
@@ -249,6 +245,6 @@ func (g *Client) DeleteWebhook(ctx context.Context, opts otf.DeleteWebhookOption
 	return err
 }
 
-func (g *Client) SetStatus(ctx context.Context, opts otf.SetStatusOptions) error {
+func (g *Client) SetStatus(ctx context.Context, opts cloud.SetStatusOptions) error {
 	return nil
 }

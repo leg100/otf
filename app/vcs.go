@@ -3,11 +3,10 @@ package app
 import (
 	"context"
 
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
-func (a *Application) SetStatus(ctx context.Context, providerID string, opts otf.SetStatusOptions) error {
+func (a *Application) SetStatus(ctx context.Context, providerID string, opts cloud.SetStatusOptions) error {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return err
@@ -19,7 +18,7 @@ func (a *Application) SetStatus(ctx context.Context, providerID string, opts otf
 	return client.SetStatus(ctx, opts)
 }
 
-func (a *Application) GetRepoTarball(ctx context.Context, providerID string, opts otf.GetRepoTarballOptions) ([]byte, error) {
+func (a *Application) GetRepoTarball(ctx context.Context, providerID string, opts cloud.GetRepoTarballOptions) ([]byte, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -43,7 +42,7 @@ func (a *Application) GetRepository(ctx context.Context, providerID string, iden
 	return client.GetRepository(ctx, identifier)
 }
 
-func (a *Application) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
+func (a *Application) ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,7 @@ func (a *Application) ListRepositories(ctx context.Context, providerID string, o
 	return client.ListRepositories(ctx, opts)
 }
 
-func (a *Application) ListTags(ctx context.Context, providerID string, opts otf.ListTagsOptions) ([]string, error) {
+func (a *Application) ListTags(ctx context.Context, providerID string, opts cloud.ListTagsOptions) ([]string, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return nil, err
@@ -67,7 +66,7 @@ func (a *Application) ListTags(ctx context.Context, providerID string, opts otf.
 	return client.ListTags(ctx, opts)
 }
 
-func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts otf.CreateWebhookOptions) (string, error) {
+func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts cloud.CreateWebhookOptions) (string, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return "", err
@@ -79,7 +78,7 @@ func (a *Application) CreateWebhook(ctx context.Context, providerID string, opts
 	return client.CreateWebhook(ctx, opts)
 }
 
-func (a *Application) UpdateWebhook(ctx context.Context, providerID string, opts otf.UpdateWebhookOptions) error {
+func (a *Application) UpdateWebhook(ctx context.Context, providerID string, opts cloud.UpdateWebhookOptions) error {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return err
@@ -91,7 +90,7 @@ func (a *Application) UpdateWebhook(ctx context.Context, providerID string, opts
 	return client.UpdateWebhook(ctx, opts)
 }
 
-func (a *Application) GetWebhook(ctx context.Context, providerID string, opts otf.GetWebhookOptions) (cloud.Webhook, error) {
+func (a *Application) GetWebhook(ctx context.Context, providerID string, opts cloud.GetWebhookOptions) (cloud.Webhook, error) {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return cloud.Webhook{}, err
@@ -103,7 +102,7 @@ func (a *Application) GetWebhook(ctx context.Context, providerID string, opts ot
 	return client.GetWebhook(ctx, opts)
 }
 
-func (a *Application) DeleteWebhook(ctx context.Context, providerID string, opts otf.DeleteWebhookOptions) error {
+func (a *Application) DeleteWebhook(ctx context.Context, providerID string, opts cloud.DeleteWebhookOptions) error {
 	provider, err := a.db.GetVCSProvider(ctx, providerID)
 	if err != nil {
 		return err

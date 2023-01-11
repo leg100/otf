@@ -93,7 +93,7 @@ func (wc *WebhookCreator) Create(ctx context.Context, opts WebhookCreatorOptions
 	}
 
 	// create webhook on vcs provider
-	id, err := wc.CreateWebhook(ctx, opts.ProviderID, CreateWebhookOptions{
+	id, err := wc.CreateWebhook(ctx, opts.ProviderID, cloud.CreateWebhookOptions{
 		Identifier: opts.Identifier,
 		Secret:     secret,
 		Events:     WebhookEvents,
@@ -124,7 +124,7 @@ type WebhookUpdaterOptions struct {
 }
 
 func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions) (string, error) {
-	createOpts := CreateWebhookOptions{
+	createOpts := cloud.CreateWebhookOptions{
 		Identifier: opts.Identifier,
 		Secret:     opts.Secret,
 		Events:     WebhookEvents,
@@ -132,7 +132,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 	}
 
 	// first retrieve webhook from vcs provider
-	vcsHook, err := wc.GetWebhook(ctx, opts.ProviderID, GetWebhookOptions{
+	vcsHook, err := wc.GetWebhook(ctx, opts.ProviderID, cloud.GetWebhookOptions{
 		Identifier: opts.Identifier,
 		ID:         opts.VCSID,
 	})
@@ -145,7 +145,7 @@ func (wc *WebhookUpdater) Update(ctx context.Context, opts WebhookUpdaterOptions
 
 	// webhook exists; check if it needs updating
 	if webhookDiff(vcsHook, opts.Webhook, wc.Hostname()) {
-		err := wc.UpdateWebhook(ctx, opts.ProviderID, UpdateWebhookOptions{
+		err := wc.UpdateWebhook(ctx, opts.ProviderID, cloud.UpdateWebhookOptions{
 			ID:                   vcsHook.ID,
 			CreateWebhookOptions: createOpts,
 		})

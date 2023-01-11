@@ -18,12 +18,12 @@ func TestReporter_HandleRun(t *testing.T) {
 	err := reporter.handleRun(context.Background(), run)
 	require.NoError(t, err)
 	got := <-updates
-	assert.Equal(t, VCSPendingStatus, got.Status)
+	assert.Equal(t, cloud.VCSPendingStatus, got.Status)
 }
 
 // newTestReporter creates a reporter for testing purposes, returning a run
 // with the given status and a channel of status updates.
-func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan SetStatusOptions) {
+func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan cloud.SetStatusOptions) {
 	org := NewTestOrganization(t)
 	provider := NewTestVCSProvider(t, org)
 	hook := NewTestWebhook(cloud.NewTestRepo(), NewTestCloudConfig(nil))
@@ -35,7 +35,7 @@ func newTestReporter(t *testing.T, status RunStatus) (*Reporter, *Run, <-chan Se
 
 	run := NewRun(cv, ws, RunCreateOptions{})
 	run.status = status
-	statusUpdates := make(chan SetStatusOptions, 1)
+	statusUpdates := make(chan cloud.SetStatusOptions, 1)
 	reporter := NewReporter(logr.Discard(), &fakeReporterApp{
 		ws:            ws,
 		cv:            cv,
@@ -49,7 +49,7 @@ type fakeReporterApp struct {
 	hostname      string
 	ws            *Workspace
 	cv            *ConfigurationVersion
-	statusUpdates chan SetStatusOptions
+	statusUpdates chan cloud.SetStatusOptions
 
 	Application
 }
@@ -66,7 +66,7 @@ func (f *fakeReporterApp) GetConfigurationVersion(context.Context, string) (*Con
 	return f.cv, nil
 }
 
-func (f *fakeReporterApp) SetStatus(ctx context.Context, id string, opts SetStatusOptions) error {
+func (f *fakeReporterApp) SetStatus(ctx context.Context, id string, opts cloud.SetStatusOptions) error {
 	f.statusUpdates <- opts
 	return nil
 }

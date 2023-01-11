@@ -63,7 +63,7 @@ func (f *fakeStartRunApp) GetWorkspace(ctx context.Context, spec WorkspaceSpec) 
 	return f.workspace, nil
 }
 
-func (f *fakeStartRunApp) GetRepoTarball(context.Context, string, GetRepoTarballOptions) ([]byte, error) {
+func (f *fakeStartRunApp) GetRepoTarball(context.Context, string, cloud.GetRepoTarballOptions) ([]byte, error) {
 	return nil, nil
 }
 

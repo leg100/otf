@@ -275,14 +275,14 @@ func UnmarshalModuleRow(row ModuleRow) *Module {
 // NOTE: no pagination is performed, only matching results from the first page
 // are retrieved
 func ListModuleRepositories(ctx context.Context, app Application, providerID string) ([]cloud.Repo, error) {
-	list, err := app.ListRepositories(ctx, providerID, ListOptions{
+	list, err := app.ListRepositories(ctx, providerID, cloud.ListRepositoriesOptions{
 		PageSize: MaxPageSize,
 	})
 	if err != nil {
 		return nil, err
 	}
 	var filtered []cloud.Repo
-	for _, repo := range list.Items {
+	for _, repo := range list {
 		_, name, found := strings.Cut(repo.Identifier, "/")
 		if !found {
 			return nil, fmt.Errorf("malformed identifier: %s", repo.Identifier)

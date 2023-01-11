@@ -99,7 +99,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 	}
 	providerID := workspaces[0].Repo().ProviderID
 
-	tarball, err := h.GetRepoTarball(ctx, providerID, GetRepoTarballOptions{
+	tarball, err := h.GetRepoTarball(ctx, providerID, cloud.GetRepoTarballOptions{
 		Identifier: identifier,
 		Ref:        sha,
 	})

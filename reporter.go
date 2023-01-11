@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -96,25 +97,25 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 	// VCS client
 	// we then use VCS client to talk to relevant status API
 
-	var status VCSStatus
+	var status cloud.VCSStatus
 	var description string
 	switch run.Status() {
 	case RunPending, RunPlanQueued, RunApplyQueued:
-		status = VCSPendingStatus
+		status = cloud.VCSPendingStatus
 	case RunPlanning, RunApplying, RunPlanned, RunConfirmed:
-		status = VCSRunningStatus
+		status = cloud.VCSRunningStatus
 	case RunPlannedAndFinished:
-		status = VCSSuccessStatus
+		status = cloud.VCSSuccessStatus
 		if run.HasChanges() {
 			description = fmt.Sprintf("planned: %s", run.Plan().ResourceReport)
 		} else {
 			description = "no changes"
 		}
 	case RunApplied:
-		status = VCSSuccessStatus
+		status = cloud.VCSSuccessStatus
 		description = fmt.Sprintf("applied: %s", run.Apply().ResourceReport)
 	case RunErrored, RunCanceled, RunForceCanceled, RunDiscarded:
-		status = VCSErrorStatus
+		status = cloud.VCSErrorStatus
 		description = run.Status().String()
 	default:
 		return fmt.Errorf("unknown run status: %s", run.Status())
@@ -128,7 +129,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return fmt.Errorf("workspace not connected to repo: %s", ws.ID())
 	}
 
-	return r.SetStatus(ctx, ws.Repo().ProviderID, SetStatusOptions{
+	return r.SetStatus(ctx, ws.Repo().ProviderID, cloud.SetStatusOptions{
 		Workspace:   ws.Name(),
 		Ref:         cv.IngressAttributes().CommitSHA,
 		Identifier:  ws.Repo().Identifier,

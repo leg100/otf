@@ -10,7 +10,7 @@ import (
 
 type Cloud struct{}
 
-func (g *Cloud) NewClient(ctx context.Context, opts otf.CloudClientOptions) (otf.CloudClient, error) {
+func (g *Cloud) NewClient(ctx context.Context, opts otf.CloudClientOptions) (cloud.Client, error) {
 	return NewClient(ctx, opts)
 }
 

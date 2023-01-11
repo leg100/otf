@@ -12,7 +12,7 @@ import (
 // Cloud is an external provider of various cloud services e.g. identity provider, VCS
 // repositories etc.
 type Cloud interface {
-	NewClient(context.Context, CloudClientOptions) (CloudClient, error)
+	NewClient(context.Context, CloudClientOptions) (cloud.Client, error)
 	EventHandler
 }
 
@@ -59,86 +59,6 @@ type CloudCredentials struct {
 	PersonalToken *string
 }
 
-type CloudClient interface {
-	GetUser(ctx context.Context) (*cloud.User, error)
-	// ListRepositories lists repositories accessible to the current user.
-	//
-	// TODO: add optional filters
-	ListRepositories(ctx context.Context, opts ListOptions) (*RepoList, error)
-	GetRepository(ctx context.Context, identifier string) (cloud.Repo, error)
-	// GetRepoTarball retrieves a .tar.gz tarball of a git repository
-	GetRepoTarball(ctx context.Context, opts GetRepoTarballOptions) ([]byte, error)
-
-	// CreateWebhook creates a webhook on the cloud provider, returning the
-	// provider's unique ID for the webhook.
-	CreateWebhook(ctx context.Context, opts CreateWebhookOptions) (string, error)
-	UpdateWebhook(ctx context.Context, opts UpdateWebhookOptions) error
-	GetWebhook(ctx context.Context, opts GetWebhookOptions) (cloud.Webhook, error)
-	DeleteWebhook(ctx context.Context, opts DeleteWebhookOptions) error
-
-	SetStatus(ctx context.Context, opts SetStatusOptions) error
-
-	// ListTags lists git tags on a repository. Each tag should be prefixed with
-	// 'tags/'.
-	ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
-}
-
-type GetRepoTarballOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Ref        string // branch/tag/SHA ref
-}
-
-// ListTagsOptions are options for listing tags on a vcs repository
-type ListTagsOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Prefix     string // only list tags that start with this string
-}
-
-type CreateWebhookOptions struct {
-	Identifier string // repo identifier, <owner>/<repo>
-	Secret     string // secret string for generating signature
-	Endpoint   string // otf's external-facing host[:port]
-	Events     []cloud.VCSEventType
-}
-
-type UpdateWebhookOptions struct {
-	ID string // vcs' webhook ID
-
-	CreateWebhookOptions
-}
-
-// GetWebhookOptions are options for retrieving a webhook.
-type GetWebhookOptions struct {
-	Identifier string // Repository identifier, <owner>/<repo>
-	ID         string // vcs' webhook ID
-}
-
-// DeleteWebhookOptions are options for deleting a webhook.
-type DeleteWebhookOptions struct {
-	Identifier string // Repository identifier, <owner>/<repo>
-	ID         string // vcs' webhook ID
-}
-
-// SetStatusOptions are options for setting a status on a VCS repo
-type SetStatusOptions struct {
-	Workspace   string
-	Identifier  string // <owner>/<repo>
-	Ref         string // git ref
-	Status      VCSStatus
-	TargetURL   string
-	Description string
-}
-
-type VCSStatus string
-
-const (
-	VCSPendingStatus VCSStatus = "pending"
-	VCSRunningStatus VCSStatus = "running"
-	VCSSuccessStatus VCSStatus = "success"
-	VCSErrorStatus   VCSStatus = "error"
-	VCSFailureStatus VCSStatus = "failure"
-)
-
 type CloudService interface {
 	GetCloudConfig(name string) (CloudConfig, error)
 	ListCloudConfigs() []CloudConfig
@@ -148,7 +68,7 @@ func (cfg CloudConfig) String() string {
 	return string(cfg.Name)
 }
 
-func (cfg *CloudConfig) NewClient(ctx context.Context, creds CloudCredentials) (CloudClient, error) {
+func (cfg *CloudConfig) NewClient(ctx context.Context, creds CloudCredentials) (cloud.Client, error) {
 	return cfg.Cloud.NewClient(ctx, CloudClientOptions{
 		Hostname:            cfg.Hostname,
 		SkipTLSVerification: cfg.SkipTLSVerification,
@@ -164,10 +84,4 @@ func (cfg *CloudConfig) HTTPClient() *http.Client {
 			},
 		},
 	}
-}
-
-// RepoList is a paginated list of cloud repositories.
-type RepoList struct {
-	*Pagination
-	Items []cloud.Repo
 }

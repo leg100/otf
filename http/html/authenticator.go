@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/html/paths"
 	"golang.org/x/oauth2"
 )
@@ -24,7 +25,7 @@ type Authenticator struct {
 type oauthClient interface {
 	RequestHandler(w http.ResponseWriter, r *http.Request)
 	CallbackHandler(*http.Request) (*oauth2.Token, error)
-	NewClient(ctx context.Context, token *oauth2.Token) (otf.CloudClient, error)
+	NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error)
 	RequestPath() string
 	CallbackPath() string
 	String() string
@@ -91,7 +92,7 @@ func (a *Authenticator) responseHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (a *Authenticator) synchronise(ctx context.Context, client otf.CloudClient) (*otf.User, error) {
+func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*otf.User, error) {
 	// give authenticator unlimited access to services
 	ctx = otf.AddSubjectToContext(ctx, &otf.Superuser{Username: "authenticator"})
 

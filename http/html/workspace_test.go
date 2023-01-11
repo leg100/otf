@@ -158,33 +158,6 @@ func TestListWorkspaceReposHandler(t *testing.T) {
 	if !assert.Equal(t, 200, w.Code) {
 		t.Log(t, w.Body.String())
 	}
-
-	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", q+"&page[number]=1&page[size]=2", nil)
-		w := httptest.NewRecorder()
-		app.listWorkspaceVCSRepos(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.NotContains(t, w.Body.String(), "Previous Page")
-		assert.Contains(t, w.Body.String(), "Next Page")
-	})
-
-	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", q+"&page[number]=2&page[size]=2", nil)
-		w := httptest.NewRecorder()
-		app.listWorkspaceVCSRepos(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.Contains(t, w.Body.String(), "Previous Page")
-		assert.Contains(t, w.Body.String(), "Next Page")
-	})
-
-	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", q+"&page[number]=3&page[size]=2", nil)
-		w := httptest.NewRecorder()
-		app.listWorkspaceVCSRepos(w, r)
-		assert.Equal(t, 200, w.Code)
-		assert.Contains(t, w.Body.String(), "Previous Page")
-		assert.NotContains(t, w.Body.String(), "Next Page")
-	})
 }
 
 func TestConnectWorkspaceHandler(t *testing.T) {
@@ -339,9 +312,6 @@ func (f *fakeWorkspaceHandlerApp) ListTeams(context.Context, string) ([]*otf.Tea
 	return nil, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts otf.ListOptions) (*otf.RepoList, error) {
-	return &otf.RepoList{
-		Items:      f.repos,
-		Pagination: otf.NewPagination(opts, len(f.repos)),
-	}, nil
+func (f *fakeWorkspaceHandlerApp) ListRepositories(ctx context.Context, providerID string, opts cloud.ListRepositoriesOptions) ([]cloud.Repo, error) {
+	return f.repos, nil
 }

@@ -52,15 +52,11 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("ListRepositories", func(t *testing.T) {
-		// TODO: test pagination - our test server doesn't currently implement it
-		want := &otf.RepoList{
-			Items:      []cloud.Repo{{Identifier: "acme/terraform", Branch: "master"}},
-			Pagination: &otf.Pagination{},
-		}
+		want := []cloud.Repo{{Identifier: "acme/terraform", Branch: "master"}}
 
-		provider := newTestClient(t, WithGitlabRepo(want.Items[0]))
+		provider := newTestClient(t, WithGitlabRepo(want[0]))
 
-		got, err := provider.ListRepositories(ctx, otf.ListOptions{})
+		got, err := provider.ListRepositories(ctx, cloud.ListRepositoriesOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, want, got)
@@ -72,7 +68,7 @@ func TestClient(t *testing.T) {
 			WithGitlabTarball(want),
 		)
 
-		got, err := client.GetRepoTarball(ctx, otf.GetRepoTarballOptions{
+		got, err := client.GetRepoTarball(ctx, cloud.GetRepoTarballOptions{
 			Identifier: "acme/terraform",
 			Ref:        "master",
 		})
