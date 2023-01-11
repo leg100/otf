@@ -12,7 +12,7 @@ import (
 const (
 	DefaultAllowDestroyPlan    = true
 	DefaultFileTriggersEnabled = true
-	DefaultTerraformVersion    = "1.0.10"
+	DefaultTerraformVersion    = "1.3.7"
 
 	RemoteExecutionMode ExecutionMode = "remote"
 	LocalExecutionMode  ExecutionMode = "local"
