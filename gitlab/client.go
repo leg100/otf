@@ -16,7 +16,7 @@ type Client struct {
 	client *gitlab.Client
 }
 
-func NewClient(ctx context.Context, cfg otf.CloudClientOptions) (*Client, error) {
+func NewClient(ctx context.Context, cfg cloud.ClientOptions) (*Client, error) {
 	var err error
 	var client *gitlab.Client
 

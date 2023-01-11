@@ -10,6 +10,7 @@ import (
 	"github.com/allegro/bigcache"
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/inmem"
 )
 
@@ -31,7 +32,7 @@ type Application struct {
 	*otf.Publisher
 	*otf.ModuleVersionUploader
 	Mapper
-	otf.CloudService
+	cloud.Service
 	otf.PubSubService
 	logr.Logger
 	Authorizer
@@ -45,7 +46,7 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		cache:         opts.Cache,
 		db:            opts.DB,
 		Logger:        opts.Logger,
-		CloudService:  opts.CloudService,
+		Service:  opts.CloudService,
 	}
 	app.Authorizer = &authorizer{opts.DB, opts.Logger}
 	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
@@ -54,13 +55,13 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		ConfigurationVersionService: app,
 	}
 	app.VCSProviderFactory = &otf.VCSProviderFactory{
-		CloudService: opts.CloudService,
+		Service: opts.CloudService,
 	}
 	app.WorkspaceConnector = &otf.WorkspaceConnector{
 		Application: app,
 		WebhookCreator: &otf.WebhookCreator{
 			VCSProviderService: app,
-			CloudService:       opts.CloudService,
+			Service:       opts.CloudService,
 			HostnameService:    app,
 		},
 		WebhookUpdater: &otf.WebhookUpdater{
@@ -104,7 +105,7 @@ type Options struct {
 	DB           otf.DB
 	Cache        *bigcache.BigCache
 	PubSub       otf.PubSubService
-	CloudService otf.CloudService
+	CloudService cloud.Service
 }
 
 func (a *Application) DB() otf.DB { return a.db }

@@ -2,7 +2,7 @@
 package github
 
 import (
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"
 )
@@ -11,8 +11,8 @@ const (
 	DefaultGithubHostname string = "github.com"
 )
 
-func Defaults() otf.CloudConfig {
-	return otf.CloudConfig{
+func Defaults() cloud.Config {
+	return cloud.Config{
 		Name:     "github",
 		Hostname: DefaultGithubHostname,
 		Cloud:    &Cloud{},

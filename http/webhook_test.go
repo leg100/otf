@@ -20,7 +20,7 @@ func TestWebhookHandler(t *testing.T) {
 		events: got,
 		Logger: logr.Discard(),
 		Application: &fakeWebhookHandlerApp{
-			hook: otf.NewTestWebhook(cloud.NewTestRepo(), otf.CloudConfig{
+			hook: otf.NewTestWebhook(cloud.NewTestRepo(), cloud.Config{
 				Cloud: &fakeCloud{event: &want},
 			}),
 		},
@@ -57,9 +57,9 @@ func (f *fakeWebhookHandlerDB) GetWebhook(ctx context.Context, id uuid.UUID) (*o
 type fakeCloud struct {
 	event cloud.VCSEvent
 
-	otf.Cloud
+	cloud.Cloud
 }
 
-func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) cloud.VCSEvent {
+func (f *fakeCloud) HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
 	return f.event
 }

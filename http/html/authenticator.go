@@ -31,11 +31,11 @@ type oauthClient interface {
 	String() string
 }
 
-func newAuthenticators(logger logr.Logger, app otf.Application, configs []*otf.CloudOAuthConfig) ([]*Authenticator, error) {
+func newAuthenticators(logger logr.Logger, app otf.Application, configs []*cloud.CloudOAuthConfig) ([]*Authenticator, error) {
 	var authenticators []*Authenticator
 
 	for _, cfg := range configs {
-		if cfg.ClientID == "" && cfg.ClientSecret == "" {
+		if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret == "" {
 			// skip creating oauth client when creds are unspecified
 			continue
 		}

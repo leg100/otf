@@ -28,7 +28,7 @@ type Webhook struct {
 	Secret     string    // secret token
 	Identifier string    // identifier is <repo_owner>/<repo_name>
 
-	cloudConfig CloudConfig // provides handler for webhook's events
+	cloudConfig cloud.Config // provides handler for webhook's events
 }
 
 func (h *Webhook) ID() string        { return h.WebhookID.String() }
@@ -37,7 +37,7 @@ func (h *Webhook) Repo() string      { return strings.Split(h.Identifier, "/")[1
 func (h *Webhook) CloudName() string { return h.cloudConfig.Name }
 
 func (h *Webhook) HandleEvent(w http.ResponseWriter, r *http.Request) cloud.VCSEvent {
-	return h.cloudConfig.HandleEvent(w, r, HandleEventOptions{
+	return h.cloudConfig.HandleEvent(w, r, cloud.HandleEventOptions{
 		WebhookID: h.WebhookID,
 		Secret:    h.Secret,
 	})
@@ -75,7 +75,7 @@ type WebhookCreatorOptions struct {
 
 type WebhookCreator struct {
 	VCSProviderService // for creating webhook on vcs provider
-	CloudService       // for retrieving event handler
+	cloud.Service      // for retrieving event handler
 	HostnameService    // for retrieving system hostname
 }
 

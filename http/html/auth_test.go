@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,12 +58,12 @@ func TestLoginHandler(t *testing.T) {
 	app := newFakeWebApp(t, nil, withAuthenticators([]*Authenticator{
 		{
 			oauthClient: &OAuthClient{
-				CloudConfig: otf.CloudConfig{Name: "cloud1"},
+				cloudConfig: cloud.Config{Name: "cloud1"},
 			},
 		},
 		{
 			oauthClient: &OAuthClient{
-				CloudConfig: otf.CloudConfig{Name: "cloud2"},
+				cloudConfig: cloud.Config{Name: "cloud2"},
 			},
 		},
 	}))

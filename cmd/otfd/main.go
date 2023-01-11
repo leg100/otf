@@ -10,6 +10,7 @@ import (
 	"github.com/leg100/otf"
 	"github.com/leg100/otf/agent"
 	"github.com/leg100/otf/app"
+	"github.com/leg100/otf/cloud"
 	cmdutil "github.com/leg100/otf/cmd"
 	"github.com/leg100/otf/http"
 	"github.com/leg100/otf/http/html"
@@ -54,7 +55,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
 		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
 		Config:             agent.NewConfigFromFlags(cmd.Flags()),
-		CloudOAuthConfigs:  cloudFlags(cmd.Flags()),
+		OAuthConfigs:  cloudFlags(cmd.Flags()),
 	}
 	cmd.RunE = d.run
 
@@ -77,7 +78,7 @@ type daemon struct {
 	*cmdutil.LoggerConfig
 	*html.ApplicationOptions
 	*agent.Config
-	otf.CloudOAuthConfigs
+	cloud.OAuthConfigs
 }
 
 func (d *daemon) run(cmd *cobra.Command, _ []string) error {
@@ -90,7 +91,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	// populate cloud service with cloud configurations
-	cloudService, err := inmem.NewCloudService(d.CloudOAuthConfigs.CloudConfigs()...)
+	cloudService, err := inmem.NewCloudService(d.OAuthConfigs.Configs()...)
 	if err != nil {
 		return err
 	}
@@ -161,7 +162,7 @@ func (d *daemon) run(cmd *cobra.Command, _ []string) error {
 	d.ApplicationOptions.ServerConfig = d.ServerConfig
 	d.ApplicationOptions.Application = app
 	d.ApplicationOptions.Router = server.Router
-	d.ApplicationOptions.CloudConfigs = d.CloudOAuthConfigs
+	d.ApplicationOptions.CloudConfigs = d.OAuthConfigs
 	if err := html.AddRoutes(logger, *d.ApplicationOptions); err != nil {
 		return err
 	}

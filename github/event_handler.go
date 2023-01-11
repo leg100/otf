@@ -6,12 +6,11 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v41/github"
-	"github.com/leg100/otf"
 	"github.com/leg100/otf/cloud"
 )
 
 // HandleEvent handles incoming events from github
-func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOptions) cloud.VCSEvent {
+func HandleEvent(w http.ResponseWriter, r *http.Request, opts cloud.HandleEventOptions) cloud.VCSEvent {
 	event, err := handle(r, opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -21,7 +20,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, opts otf.HandleEventOpt
 	return event
 }
 
-func handle(r *http.Request, opts otf.HandleEventOptions) (cloud.VCSEvent, error) {
+func handle(r *http.Request, opts cloud.HandleEventOptions) (cloud.VCSEvent, error) {
 	payload, err := github.ValidatePayload(r, []byte(opts.Secret))
 	if err != nil {
 		return nil, err

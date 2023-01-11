@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -112,6 +113,6 @@ func (f *fakeVCSProviderApp) DeleteVCSProvider(context.Context, string) (*otf.VC
 	return f.provider, nil
 }
 
-func (f *fakeVCSProviderApp) ListCloudConfigs() []otf.CloudConfig {
+func (f *fakeVCSProviderApp) ListCloudConfigs() []cloud.Config {
 	return nil
 }

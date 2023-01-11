@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/http/decode"
 	"github.com/leg100/otf/http/html/paths"
 )
@@ -66,7 +67,7 @@ func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request)
 
 	app.render("vcs_provider_list.tmpl", w, r, struct {
 		Items        []*otf.VCSProvider
-		CloudConfigs []otf.CloudConfig
+		CloudConfigs []cloud.Config
 		*otf.Organization
 	}{
 		Items:        providers,

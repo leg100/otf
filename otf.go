@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/leg100/otf/cloud"
 )
 
 const (
@@ -51,7 +53,7 @@ type Application interface {
 	CurrentRunService
 	VCSProviderService
 	LockableApplication
-	CloudService
+	cloud.Service
 	ModuleService
 	ModuleVersionService
 	HostnameService
@@ -89,7 +91,7 @@ type DB interface {
 
 // Unmarshaler unmarshals database rows
 type Unmarshaler struct {
-	CloudService
+	cloud.Service
 }
 
 // Identity is an identifiable otf entity.

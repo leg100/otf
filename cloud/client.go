@@ -23,6 +23,14 @@ type Client interface {
 	ListTags(ctx context.Context, opts ListTagsOptions) ([]string, error)
 }
 
+// ClientOptions are options for constructing a cloud client
+type ClientOptions struct {
+	Hostname            string
+	SkipTLSVerification bool
+
+	Credentials
+}
+
 type GetRepoTarballOptions struct {
 	Identifier string // repo identifier, <owner>/<repo>
 	Ref        string // branch/tag/SHA ref

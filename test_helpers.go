@@ -82,7 +82,7 @@ func NewTestVCSProvider(t *testing.T, organization *Organization) *VCSProvider {
 		name:             uuid.NewString(),
 		token:            uuid.NewString(),
 		organizationName: organization.Name(),
-		cloudConfig: CloudConfig{
+		cloudConfig: cloud.Config{
 			Name:     "fake-cloud",
 			Hostname: "fake-cloud.org",
 		},
@@ -97,7 +97,7 @@ func NewTestWorkspaceRepo(provider *VCSProvider, hook *Webhook) *WorkspaceRepo {
 	}
 }
 
-func NewTestWebhook(repo cloud.Repo, cloudConfig CloudConfig) *Webhook {
+func NewTestWebhook(repo cloud.Repo, cloudConfig cloud.Config) *Webhook {
 	return &Webhook{
 		WebhookID:   uuid.New(),
 		VCSID:       "123",
@@ -150,11 +150,11 @@ func NewTestModuleVersion(mod *Module, version string, status ModuleVersionStatu
 	return modver
 }
 
-func NewTestCloudConfig(cloud Cloud) CloudConfig {
-	return CloudConfig{
+func NewTestCloudConfig(c cloud.Cloud) cloud.Config {
+	return cloud.Config{
 		Name:     "fake-cloud",
 		Hostname: "fake-cloud.org",
-		Cloud:    cloud,
+		Cloud:    c,
 	}
 }
 

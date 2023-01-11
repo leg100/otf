@@ -22,47 +22,47 @@ var ErrOAuthCredentialsIncomplete = errors.New("must specify both client ID and 
 // authorization from the user to access their account details on a particular
 // cloud.
 type OAuthClient struct {
-	otf.CloudConfig
+	cloudConfig cloud.Config
 	*oauth2.Config
 }
 
 // NewOAuthClientConfig is configuration for constructing an OAuth client
 type NewOAuthClientConfig struct {
-	*otf.CloudOAuthConfig
+	*cloud.CloudOAuthConfig
 	hostname string // otf system hostname
 }
 
 func NewOAuthClient(cfg NewOAuthClientConfig) (*OAuthClient, error) {
-	if cfg.ClientID == "" && cfg.ClientSecret != "" {
+	if cfg.OAuthConfig.ClientID == "" && cfg.OAuthConfig.ClientSecret != "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
-	if cfg.ClientID != "" && cfg.ClientSecret == "" {
+	if cfg.OAuthConfig.ClientID != "" && cfg.OAuthConfig.ClientSecret == "" {
 		return nil, ErrOAuthCredentialsIncomplete
 	}
 
-	authURL, err := updateHost(cfg.Endpoint.AuthURL, cfg.CloudConfig.Hostname)
+	authURL, err := updateHost(cfg.OAuthConfig.Endpoint.AuthURL, cfg.Hostname)
 	if err != nil {
 		return nil, err
 	}
-	tokenURL, err := updateHost(cfg.Endpoint.TokenURL, cfg.CloudConfig.Hostname)
+	tokenURL, err := updateHost(cfg.OAuthConfig.Endpoint.TokenURL, cfg.Hostname)
 	if err != nil {
 		return nil, err
 	}
-	cfg.Endpoint.AuthURL = authURL
-	cfg.Endpoint.TokenURL = tokenURL
+	cfg.OAuthConfig.Endpoint.AuthURL = authURL
+	cfg.OAuthConfig.Endpoint.TokenURL = tokenURL
 
-	client := &OAuthClient{Config: cfg.Config, CloudConfig: cfg.CloudConfig}
-	cfg.RedirectURL = (&url.URL{Scheme: "https", Host: cfg.hostname, Path: client.CallbackPath()}).String()
+	client := &OAuthClient{cloudConfig: cfg.Config, Config: cfg.OAuthConfig}
+	cfg.OAuthConfig.RedirectURL = (&url.URL{Scheme: "https", Host: cfg.hostname, Path: client.CallbackPath()}).String()
 
 	return client, nil
 }
 
 // String provides a human-readable identifier for the oauth client, using the
 // name of its underlying cloud provider
-func (a *OAuthClient) String() string { return a.Name }
+func (a *OAuthClient) String() string { return a.cloudConfig.Name }
 
 func (a *OAuthClient) RequestPath() string {
-	return path.Join("/oauth", a.Name, "login")
+	return path.Join("/oauth", a.cloudConfig.Name, "login")
 }
 
 // RequestHandler initiates the oauth flow, redirecting user to the auth server
@@ -87,7 +87,7 @@ func (a *OAuthClient) RequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *OAuthClient) CallbackPath() string {
-	return path.Join("/oauth", a.Name, "callback")
+	return path.Join("/oauth", a.cloudConfig.Name, "callback")
 }
 
 func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
@@ -116,14 +116,14 @@ func (a *OAuthClient) CallbackHandler(r *http.Request) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("state mismatch between cookie and callback response")
 	}
 
-	ctx := context.WithValue(r.Context(), oauth2.HTTPClient, a.HTTPClient())
+	ctx := context.WithValue(r.Context(), oauth2.HTTPClient, a.cloudConfig.HTTPClient())
 
 	// Exchange code for an access token
 	return a.Exchange(ctx, resp.AuthCode)
 }
 
 func (a *OAuthClient) NewClient(ctx context.Context, token *oauth2.Token) (cloud.Client, error) {
-	return a.CloudConfig.NewClient(ctx, otf.CloudCredentials{
+	return a.cloudConfig.NewClient(ctx, cloud.Credentials{
 		OAuthToken: token,
 	})
 }

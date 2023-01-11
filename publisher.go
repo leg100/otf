@@ -26,7 +26,7 @@ func NewPublisher(app Application) *Publisher {
 		},
 		WebhookCreator: &WebhookCreator{
 			VCSProviderService: app,
-			CloudService:       app,
+			Service:       app,
 			HostnameService:    app,
 		},
 		WebhookUpdater: &WebhookUpdater{

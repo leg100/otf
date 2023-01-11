@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/github"
 	"github.com/leg100/otf/gitlab"
 	"github.com/spf13/pflag"
@@ -27,14 +27,14 @@ func TestNewCloudConfigsFromFlags(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := otf.CloudOAuthConfigs{
+	want := cloud.OAuthConfigs{
 		{
-			CloudConfig: otf.CloudConfig{
+			Config: cloud.Config{
 				Name:     "github",
 				Hostname: "my-own-github.com",
 				Cloud:    &github.Cloud{},
 			},
-			Config: &oauth2.Config{
+			OAuthConfig: &oauth2.Config{
 				Scopes: []string{"user:email", "read:org"},
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://github.com/login/oauth/authorize",
@@ -45,13 +45,13 @@ func TestNewCloudConfigsFromFlags(t *testing.T) {
 			},
 		},
 		{
-			CloudConfig: otf.CloudConfig{
+			Config: cloud.Config{
 				Name:                "gitlab",
 				Hostname:            "my-own-gitlab.com",
 				Cloud:               &gitlab.Cloud{},
 				SkipTLSVerification: true,
 			},
-			Config: &oauth2.Config{
+			OAuthConfig: &oauth2.Config{
 				Scopes: []string{"read_user", "read_api"},
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://gitlab.com/oauth/authorize",

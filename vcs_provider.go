@@ -14,24 +14,24 @@ import (
 type VCSProvider struct {
 	id          string
 	createdAt   time.Time
-	name        string      // TODO: rename to description (?)
-	cloudConfig CloudConfig // cloud config for creating client
-	token       string      // credential for creating client
+	name        string       // TODO: rename to description (?)
+	cloudConfig cloud.Config // cloud config for creating client
+	token       string       // credential for creating client
 
 	organizationName string // vcs provider belongs to an organization
 }
 
-func (t *VCSProvider) ID() string               { return t.id }
-func (t *VCSProvider) String() string           { return t.name }
-func (t *VCSProvider) Token() string            { return t.token }
-func (t *VCSProvider) CreatedAt() time.Time     { return t.createdAt }
-func (t *VCSProvider) Name() string             { return t.name }
-func (t *VCSProvider) OrganizationName() string { return t.organizationName }
-func (t *VCSProvider) CloudConfig() CloudConfig { return t.cloudConfig }
-func (t *VCSProvider) VCSProviderID() string    { return t.id } // implement html.vcsProviderResource
+func (t *VCSProvider) ID() string                { return t.id }
+func (t *VCSProvider) String() string            { return t.name }
+func (t *VCSProvider) Token() string             { return t.token }
+func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
+func (t *VCSProvider) Name() string              { return t.name }
+func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
+func (t *VCSProvider) CloudConfig() cloud.Config { return t.cloudConfig }
+func (t *VCSProvider) VCSProviderID() string     { return t.id } // implement html.vcsProviderResource
 
 func (t *VCSProvider) NewClient(ctx context.Context) (cloud.Client, error) {
-	return t.cloudConfig.NewClient(ctx, CloudCredentials{
+	return t.cloudConfig.NewClient(ctx, cloud.Credentials{
 		PersonalToken: &t.token,
 	})
 }
@@ -52,7 +52,7 @@ func (t *VCSProvider) MarshalLog() any {
 
 // VCSProviderFactory makes vcs providers
 type VCSProviderFactory struct {
-	CloudService
+	cloud.Service
 }
 
 func (f *VCSProviderFactory) NewVCSProvider(opts VCSProviderCreateOptions) (*VCSProvider, error) {

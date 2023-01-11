@@ -82,10 +82,10 @@ func newTestServerClient(t *testing.T, opts ...TestServerOption) *Client {
 	u, err := url.Parse(srv.URL)
 	require.NoError(t, err)
 
-	client, err := NewClient(context.Background(), otf.CloudClientOptions{
+	client, err := NewClient(context.Background(), cloud.ClientOptions{
 		Hostname:            u.Host,
 		SkipTLSVerification: true,
-		CloudCredentials: otf.CloudCredentials{
+		Credentials: cloud.Credentials{
 			OAuthToken: &oauth2.Token{AccessToken: "fake-token"},
 		},
 	})

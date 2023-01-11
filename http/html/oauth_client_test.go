@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -55,14 +55,14 @@ func newTestOAuthServerClient(t *testing.T) *OAuthClient {
 	require.NoError(t, err)
 
 	client, err := NewOAuthClient(NewOAuthClientConfig{
-		CloudOAuthConfig: &otf.CloudOAuthConfig{
-			Config: &oauth2.Config{
+		CloudOAuthConfig: &cloud.CloudOAuthConfig{
+			OAuthConfig: &oauth2.Config{
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  srv.URL,
 					TokenURL: srv.URL,
 				},
 			},
-			CloudConfig: otf.CloudConfig{
+			Config: cloud.Config{
 				SkipTLSVerification: true,
 				Hostname:            u.Host,
 				Name:                "fake-cloud",

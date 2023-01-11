@@ -15,22 +15,22 @@ import (
 )
 
 func TestNewAuthenticators(t *testing.T) {
-	got, err := newAuthenticators(logr.Discard(), &fakeAuthenticatorApp{}, []*otf.CloudOAuthConfig{
+	got, err := newAuthenticators(logr.Discard(), &fakeAuthenticatorApp{}, []*cloud.CloudOAuthConfig{
 		{
-			Config: &oauth2.Config{
+			OAuthConfig: &oauth2.Config{
 				ClientID:     "id-1",
 				ClientSecret: "secret-1",
 			},
 		},
 		{
-			Config: &oauth2.Config{
+			OAuthConfig: &oauth2.Config{
 				ClientID:     "id-2",
 				ClientSecret: "secret-2",
 			},
 		},
 		{
 			// should be skipped
-			Config: &oauth2.Config{},
+			OAuthConfig: &oauth2.Config{},
 		},
 	})
 	require.NoError(t, err)

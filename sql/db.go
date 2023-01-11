@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	"github.com/leg100/otf/sql/pggen"
 )
 
@@ -48,7 +49,7 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		conn:    conn,
 		Querier: pggen.NewQuerier(conn),
 		Unmarshaler: otf.Unmarshaler{
-			CloudService: opts.CloudService,
+			Service: opts.CloudService,
 		},
 	}
 
@@ -68,7 +69,7 @@ type Options struct {
 	ConnString      string
 	Cache           otf.Cache
 	CleanupInterval time.Duration
-	CloudService    otf.CloudService
+	CloudService    cloud.Service
 }
 
 // Close closes the DB's connections. If the DB has wrapped a transaction then

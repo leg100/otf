@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/leg100/otf"
+	"github.com/leg100/otf/cloud"
 	otfhttp "github.com/leg100/otf/http"
 	"github.com/r3labs/sse/v2"
 )
@@ -28,7 +29,7 @@ type Application struct {
 // ApplicationOptions are options for configuring the web app
 type ApplicationOptions struct {
 	DevMode      bool
-	CloudConfigs []*otf.CloudOAuthConfig // for configuring authenticators
+	CloudConfigs []*cloud.CloudOAuthConfig // for configuring authenticators
 
 	*otfhttp.ServerConfig
 	*otfhttp.Router
