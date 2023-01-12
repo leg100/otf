@@ -48,20 +48,6 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(w.Hostname()), session.Token())
 	environmentVariables := append(w.environmentVariables, tokenEnvVar)
 
-	// retrieve workspace variables and add them to the environment
-	variables, err := w.ListVariables(ctx, run.WorkspaceID())
-	if err != nil {
-		log.Error(err, "retrieving variables")
-		return
-	}
-	for _, v := range variables {
-		switch v.Category() {
-		case otf.CategoryEnv:
-			ev := fmt.Sprintf("%s=%s", v.Key(), v.Value())
-			environmentVariables = append(w.environmentVariables, ev)
-		}
-	}
-
 	env, err := NewEnvironment(
 		log,
 		w.Application,

@@ -7,11 +7,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/go-logr/logr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/leg100/otf"
+	"github.com/pkg/errors"
 )
 
 // Environment is an implementation of an execution environment
@@ -66,7 +69,8 @@ func NewEnvironment(
 	downloader otf.Downloader,
 	cfg Config,
 ) (*Environment, error) {
-	path, err := os.MkdirTemp("", "otf-plan")
+	// create dedicated directory for environment
+	root, err := os.MkdirTemp("", "otf-plan")
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +78,21 @@ func NewEnvironment(
 	ws, err := app.GetWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(run.WorkspaceID())})
 	if err != nil {
 		return nil, err
+	}
+
+	// retrieve workspace variables and add them to the environment
+	variables, err := app.ListVariables(ctx, run.WorkspaceID())
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving workspace variables")
+	}
+	for _, v := range variables {
+		if v.Category() == otf.CategoryEnv {
+			ev := fmt.Sprintf("%s=%s", v.Key(), v.Value())
+			environmentVariables = append(environmentVariables, ev)
+		}
+	}
+	if err := writeTerraformVariables(root, variables); err != nil {
+		return nil, errors.Wrap(err, "writing terraform variables")
 	}
 
 	// Create and store cancel func so func's context can be canceled
@@ -86,7 +105,7 @@ func NewEnvironment(
 		Terraform:            &TerraformPathFinder{},
 		version:              ws.TerraformVersion(),
 		out:                  otf.NewJobWriter(ctx, app, logger, run),
-		path:                 path,
+		path:                 root,
 		environmentVariables: environmentVariables,
 		cancel:               cancel,
 		ctx:                  ctx,
@@ -249,4 +268,38 @@ type Doer interface {
 	// TODO: environment is excessive; can we pass in something that exposes
 	// fewer methods like an 'executor'?
 	Do(otf.Environment) error
+}
+
+// writeTerraformVariables writes workspace variables to a file named
+// terraform.tfvars located in the given path. If the file already exists it'll
+// be appended to.
+func writeTerraformVariables(dir string, vars []*otf.Variable) error {
+	path := path.Join(dir, "terraform.tfvars")
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var b strings.Builder
+	// lazily start with a new line in case user uploaded terraform.tfvars with
+	// content already
+	b.WriteRune('\n')
+	for _, v := range vars {
+		if v.Category() == otf.CategoryTerraform {
+			b.WriteString(v.Key())
+			b.WriteString(" = ")
+			if v.HCL() {
+				b.WriteString(v.Value())
+			} else {
+				b.WriteString(`"`)
+				b.WriteString(v.Value())
+				b.WriteString(`"`)
+			}
+			b.WriteRune('\n')
+		}
+	}
+	f.WriteString(b.String())
+
+	return nil
 }

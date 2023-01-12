@@ -3,6 +3,8 @@ package otf
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgtype"
 )
@@ -13,7 +15,14 @@ type VariableCategory string
 const (
 	CategoryTerraform VariableCategory = "terraform"
 	CategoryEnv       VariableCategory = "env"
+
+	// https://developer.hashicorp.com/terraform/cloud-docs/workspaces/variables/managing-variables#character-limits
+	VariableDescriptionMaxChars = 512
+	VariableKeyMaxChars         = 128
+	VariableValueMaxKB          = 256 // 256*1024 bytes
 )
+
+var ErrVariableValueMaxExceeded = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
 
 // VariableCategoryPtr returns a pointer to the given category type.
 func VariableCategoryPtr(v VariableCategory) *VariableCategory {
@@ -123,7 +132,9 @@ func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, err
 
 	// Optional fields
 	if opts.Value != nil {
-		v.value = *opts.Value
+		if err := v.setValue(*opts.Value); err != nil {
+			return nil, err
+		}
 	}
 	if opts.Description != nil {
 		if err := validateVariableDescription(*opts.Description); err != nil {
@@ -146,7 +157,9 @@ func (v *Variable) Update(opts UpdateVariableOptions) error {
 		v.key = *opts.Key
 	}
 	if opts.Value != nil {
-		v.value = *opts.Value
+		if err := v.setValue(*opts.Value); err != nil {
+			return err
+		}
 	}
 	if opts.Description != nil {
 		if err := validateVariableDescription(*opts.Description); err != nil {
@@ -167,6 +180,14 @@ func (v *Variable) Update(opts UpdateVariableOptions) error {
 		v.category = *opts.Category
 	}
 
+	return nil
+}
+
+func (v *Variable) setValue(value string) error {
+	if len([]byte(value)) > (VariableValueMaxKB * 1024) {
+		return ErrVariableValueMaxExceeded
+	}
+	v.value = strings.TrimSpace(value)
 	return nil
 }
 

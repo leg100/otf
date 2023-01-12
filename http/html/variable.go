@@ -8,11 +8,6 @@ import (
 	"github.com/leg100/otf/http/html/paths"
 )
 
-type variableForm struct {
-	Action string
-	*otf.Variable
-}
-
 func (app *Application) newVariable(w http.ResponseWriter, r *http.Request) {
 	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {

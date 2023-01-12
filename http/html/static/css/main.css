@@ -158,6 +158,11 @@ header nav {
   display: block;
 }
 
+/* Sanitize sets `resize: vertical` for some reason... */
+textarea {
+  resize: both
+}
+
 /*
  * Workspace permissions
  */

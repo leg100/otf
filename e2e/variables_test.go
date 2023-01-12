@@ -1,7 +1,10 @@
 package e2e
 
 import (
+	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/chromedp/cdproto/input"
@@ -12,7 +15,7 @@ import (
 )
 
 // TestVariables tests adding, updating and deleting workspace variables via the
-// UI.
+// UI, and tests that variables are made available to runs.
 func TestVariables(t *testing.T) {
 	addBuildsToPath(t)
 
@@ -36,12 +39,10 @@ func TestVariables(t *testing.T) {
 	// Click OK on any browser javascript dialog boxes that pop up
 	okDialog(t, ctx)
 
+	// Create variable in browser
 	err := chromedp.Run(ctx, chromedp.Tasks{
-		// login
 		githubLoginTasks(t, hostname, user.Name),
-		// create workspace
 		createWorkspaceTasks(t, hostname, org, workspaceName),
-		// assign workspace manager role to devops team
 		chromedp.Tasks{
 			// go to workspace
 			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
@@ -57,7 +58,7 @@ func TestVariables(t *testing.T) {
 			input.InsertText("foo"),
 			screenshot(t),
 			// enter value
-			chromedp.Focus("input#value", chromedp.NodeVisible),
+			chromedp.Focus("textarea#value", chromedp.NodeVisible),
 			input.InsertText("bar"),
 			screenshot(t),
 			// select terraform variable category
@@ -68,6 +69,57 @@ func TestVariables(t *testing.T) {
 			screenshot(t),
 			// confirm variable added
 			matchText(t, ".flash-success", "added variable: foo"),
+			screenshot(t),
+		},
+	})
+	require.NoError(t, err)
+
+	// write some terraform config that declares and outputs the variable
+	root := newRootModule(t, hostname, org, workspaceName)
+	config := `
+variable "foo" {
+  default = "overwrite_this"
+}
+
+output "foo" {
+  value = var.foo
+}
+`
+	err = os.WriteFile(filepath.Join(root, "foo.tf"), []byte(config), 0o600)
+	require.NoError(t, err)
+
+	// run terraform locally
+	err = chromedp.Run(ctx, terraformLoginTasks(t, hostname))
+	require.NoError(t, err)
+
+	cmd := exec.Command("terraform", "init", "-no-color")
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+
+	cmd = exec.Command("terraform", "plan", "-no-color")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), `+ foo = "bar"`)
+
+	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
+	cmd.Dir = root
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	require.NoError(t, err)
+	require.Contains(t, string(out), `foo = "bar"`)
+
+	// Edit variable and delete it
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		chromedp.Tasks{
+			// go to workspace
+			chromedp.Navigate(path.Join(url, "organizations", org, "workspaces", workspaceName)),
+			screenshot(t),
+			// go to variables
+			chromedp.Click(`//a[text()='variables']`, chromedp.NodeVisible),
 			screenshot(t),
 			// edit variable
 			chromedp.Click(`//a[text()='foo']`, chromedp.NodeVisible),
