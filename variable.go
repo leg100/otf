@@ -22,18 +22,15 @@ const (
 	VariableValueMaxKB          = 256 // 256*1024 bytes
 )
 
-var ErrVariableValueMaxExceeded = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
+var (
+	ErrVariableDescriptionMaxExceeded = fmt.Errorf("maximum variable description size (%d chars) exceeded", VariableDescriptionMaxChars)
+	ErrVariableKeyMaxExceeded         = fmt.Errorf("maximum variable key size (%d chars) exceeded", VariableKeyMaxChars)
+	ErrVariableValueMaxExceeded       = fmt.Errorf("maximum variable value size of %d KB exceeded", VariableValueMaxKB)
+)
 
 // VariableCategoryPtr returns a pointer to the given category type.
 func VariableCategoryPtr(v VariableCategory) *VariableCategory {
 	return &v
-}
-
-func validateCategory(cat VariableCategory) error {
-	if cat != CategoryEnv && cat != CategoryTerraform {
-		return errors.New("invalid variable category")
-	}
-	return nil
 }
 
 type Variable struct {
@@ -74,6 +71,69 @@ func (v *Variable) MarshalLog() any {
 		log.Value = "*****"
 	}
 	return log
+}
+
+func (v *Variable) Update(opts UpdateVariableOptions) error {
+	if opts.Key != nil {
+		if err := v.setKey(*opts.Key); err != nil {
+			return err
+		}
+	}
+	if opts.Value != nil {
+		if err := v.setValue(*opts.Value); err != nil {
+			return err
+		}
+	}
+	if opts.Description != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
+			return err
+		}
+	}
+	if opts.Sensitive != nil {
+		v.sensitive = *opts.Sensitive
+	}
+	if opts.HCL != nil {
+		v.hcl = *opts.HCL
+	}
+	if opts.Category != nil {
+		if err := v.setCategory(*opts.Category); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (v *Variable) setKey(key string) error {
+	if len(key) > VariableKeyMaxChars {
+		return ErrVariableKeyMaxExceeded
+	}
+	v.key = strings.TrimSpace(key)
+	return nil
+}
+
+func (v *Variable) setValue(value string) error {
+	if len([]byte(value)) > (VariableValueMaxKB * 1024) {
+		return ErrVariableValueMaxExceeded
+	}
+	v.value = strings.TrimSpace(value)
+	return nil
+}
+
+func (v *Variable) setDescription(desc string) error {
+	if len(desc) > VariableDescriptionMaxChars {
+		return ErrVariableDescriptionMaxExceeded
+	}
+	v.description = desc
+	return nil
+}
+
+func (v *Variable) setCategory(cat VariableCategory) error {
+	if cat != CategoryEnv && cat != CategoryTerraform {
+		return errors.New("invalid variable category")
+	}
+	v.category = cat
+	return nil
 }
 
 type VariableService interface {
@@ -121,14 +181,15 @@ func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, err
 	if opts.Key == nil {
 		return nil, errors.New("missing key")
 	}
-	v.key = *opts.Key
+	if err := v.setKey(*opts.Key); err != nil {
+		return nil, err
+	}
 	if opts.Category == nil {
 		return nil, errors.New("missing category")
 	}
-	if err := validateCategory(*opts.Category); err != nil {
+	if err := v.setCategory(*opts.Category); err != nil {
 		return nil, err
 	}
-	v.category = *opts.Category
 
 	// Optional fields
 	if opts.Value != nil {
@@ -150,45 +211,6 @@ func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, err
 	}
 
 	return &v, nil
-}
-
-func (v *Variable) Update(opts UpdateVariableOptions) error {
-	if opts.Key != nil {
-		v.key = *opts.Key
-	}
-	if opts.Value != nil {
-		if err := v.setValue(*opts.Value); err != nil {
-			return err
-		}
-	}
-	if opts.Description != nil {
-		if err := validateVariableDescription(*opts.Description); err != nil {
-			return err
-		}
-		v.description = *opts.Description
-	}
-	if opts.Sensitive != nil {
-		v.sensitive = *opts.Sensitive
-	}
-	if opts.HCL != nil {
-		v.hcl = *opts.HCL
-	}
-	if opts.Category != nil {
-		if err := validateCategory(*opts.Category); err != nil {
-			return err
-		}
-		v.category = *opts.Category
-	}
-
-	return nil
-}
-
-func (v *Variable) setValue(value string) error {
-	if len([]byte(value)) > (VariableValueMaxKB * 1024) {
-		return ErrVariableValueMaxExceeded
-	}
-	v.value = strings.TrimSpace(value)
-	return nil
 }
 
 type VariableRow struct {
