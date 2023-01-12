@@ -55,7 +55,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		LoggerConfig:       cmdutil.NewLoggerConfigFromFlags(cmd.Flags()),
 		ApplicationOptions: newHTMLConfigFromFlags(cmd.Flags()),
 		Config:             agent.NewConfigFromFlags(cmd.Flags()),
-		OAuthConfigs:  cloudFlags(cmd.Flags()),
+		OAuthConfigs:       cloudFlags(cmd.Flags()),
 	}
 	cmd.RunE = d.run
 
