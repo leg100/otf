@@ -111,6 +111,7 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs["trimHTML"] = func(tmpl template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(tmpl))) }
 	funcs["mergeQuery"] = mergeQuery
 	funcs["selected"] = selected
+	funcs["checked"] = checked
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

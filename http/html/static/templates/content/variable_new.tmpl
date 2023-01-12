@@ -1,0 +1,13 @@
+{{ template "layout" . }}
+
+{{ define "title" }}new variable{{ end }}
+
+{{ define "container-header" }}
+  {{ template "variables-breadcrumb" . }} / new
+{{ end }}
+
+{{ define "content" }}
+  Add a new workspace variable.
+
+  {{ template "variable-form" . }}
+{{ end }}

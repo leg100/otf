@@ -1,0 +1,11 @@
+{{ define "workspace-breadcrumb" }}
+  {{ with .Content.Workspace }}
+    <a href="{{ workspacesPath .OrganizationName }}">workspaces</a>
+    /
+    <a href="{{ workspacePath .ID }}">{{ .Name }}</a>
+  {{ end }}
+{{ end }}
+
+{{ define "variables-breadcrumb" }}
+  {{ template "workspace-breadcrumb" . }} / <a href="{{ variablesPath .Content.Workspace.ID }}">variables</a>
+{{ end }}

@@ -135,6 +135,17 @@ func (ws *Workspace) Unlock(iden Identity, force bool) error {
 	return nil
 }
 
+func (ws *Workspace) MarshalLog() any {
+	log := struct {
+		Name         string `json:"name"`
+		Organization string `json:"organization"`
+	}{
+		Name:         ws.name,
+		Organization: ws.organization.Name(),
+	}
+	return log
+}
+
 // UpdateWithOptions updates the workspace with the given options.
 //
 // TODO: validate options

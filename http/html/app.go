@@ -160,6 +160,13 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.PST("/workspaces/{workspace_id}/disconnect", app.disconnectWorkspace)
 		r.PST("/workspaces/{workspace_id}/start-run", app.startRun)
 
+		r.GET("/workspaces/{workspace_id}/variables", app.listVariables)
+		r.GET("/workspaces/{workspace_id}/variables/new", app.newVariable)
+		r.PST("/workspaces/{workspace_id}/variables/create", app.createVariable)
+		r.GET("/variables/{variable_id}/edit", app.editVariable)
+		r.PST("/variables/{variable_id}/update", app.updateVariable)
+		r.PST("/variables/{variable_id}/delete", app.deleteVariable)
+
 		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
 		r.GET("/workspaces/{workspace_id}/runs", app.listRuns)
 		r.GET("/workspaces/{workspace_id}/runs/new", app.newRun)

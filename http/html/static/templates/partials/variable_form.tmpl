@@ -1,0 +1,42 @@
+{{ define "variable-form" }}
+  <form class="main-form" action="{{ .Content.FormAction }}" method="POST">
+    {{ with .Content.Variable }}
+      <div class="field">
+        <label for="key">Key</label>
+        <input type="text" name="key" id="key" value="{{ .Key }}" required placeholder="key">
+      </div>
+      <div class="field">
+        <label for="value">Value</label>
+        <input type="text" name="value" id="value" value="{{ .Value }}" placeholder="value">
+      </div>
+      <div class="field">
+        <fieldset>
+          <legend>Category</legend>
+          <div class="radio">
+            <div>
+              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }}><label for="category">Terraform</label>
+            </div>
+            <div>
+              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }}><label for="env">Environment variable</label>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+      <div class="checkbox-group">
+        <div class="checkbox">
+          <input type="checkbox" name="hcl" id="hcl" {{ checked .HCL }}><label for="hcl">HCL</label>
+        </div>
+        <div class="checkbox">
+          <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }}><label for="sensitive">Sensitive</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <input type="text" class="freeform" name="description" id="description" value="{{ .Description }}" placeholder="description (optional)">
+      </div>
+      <div>
+        <button id="create-variable-button">Save variable</button>
+      </div>
+    {{ end }}
+  </form>
+{{ end }}

@@ -760,6 +760,48 @@ type Querier interface {
 	// DeleteUserByUsernameScan scans the result of an executed DeleteUserByUsernameBatch query.
 	DeleteUserByUsernameScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertVariable(ctx context.Context, params InsertVariableParams) (pgconn.CommandTag, error)
+	// InsertVariableBatch enqueues a InsertVariable query into batch to be executed
+	// later by the batch.
+	InsertVariableBatch(batch genericBatch, params InsertVariableParams)
+	// InsertVariableScan scans the result of an executed InsertVariableBatch query.
+	InsertVariableScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindVariables(ctx context.Context, workspaceID pgtype.Text) ([]FindVariablesRow, error)
+	// FindVariablesBatch enqueues a FindVariables query into batch to be executed
+	// later by the batch.
+	FindVariablesBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindVariablesScan scans the result of an executed FindVariablesBatch query.
+	FindVariablesScan(results pgx.BatchResults) ([]FindVariablesRow, error)
+
+	FindVariable(ctx context.Context, variableID pgtype.Text) (FindVariableRow, error)
+	// FindVariableBatch enqueues a FindVariable query into batch to be executed
+	// later by the batch.
+	FindVariableBatch(batch genericBatch, variableID pgtype.Text)
+	// FindVariableScan scans the result of an executed FindVariableBatch query.
+	FindVariableScan(results pgx.BatchResults) (FindVariableRow, error)
+
+	FindVariableForUpdate(ctx context.Context, variableID pgtype.Text) (FindVariableForUpdateRow, error)
+	// FindVariableForUpdateBatch enqueues a FindVariableForUpdate query into batch to be executed
+	// later by the batch.
+	FindVariableForUpdateBatch(batch genericBatch, variableID pgtype.Text)
+	// FindVariableForUpdateScan scans the result of an executed FindVariableForUpdateBatch query.
+	FindVariableForUpdateScan(results pgx.BatchResults) (FindVariableForUpdateRow, error)
+
+	UpdateVariable(ctx context.Context, params UpdateVariableParams) (pgtype.Text, error)
+	// UpdateVariableBatch enqueues a UpdateVariable query into batch to be executed
+	// later by the batch.
+	UpdateVariableBatch(batch genericBatch, params UpdateVariableParams)
+	// UpdateVariableScan scans the result of an executed UpdateVariableBatch query.
+	UpdateVariableScan(results pgx.BatchResults) (pgtype.Text, error)
+
+	DeleteVariable(ctx context.Context, variableID pgtype.Text) (DeleteVariableRow, error)
+	// DeleteVariableBatch enqueues a DeleteVariable query into batch to be executed
+	// later by the batch.
+	DeleteVariableBatch(batch genericBatch, variableID pgtype.Text)
+	// DeleteVariableScan scans the result of an executed DeleteVariableBatch query.
+	DeleteVariableScan(results pgx.BatchResults) (DeleteVariableRow, error)
+
 	InsertVCSProvider(ctx context.Context, params InsertVCSProviderParams) (pgconn.CommandTag, error)
 	// InsertVCSProviderBatch enqueues a InsertVCSProvider query into batch to be executed
 	// later by the batch.
@@ -1405,6 +1447,24 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteUserByUsernameSQL, deleteUserByUsernameSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteUserByUsername': %w", err)
+	}
+	if _, err := p.Prepare(ctx, insertVariableSQL, insertVariableSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertVariable': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVariablesSQL, findVariablesSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariables': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVariableSQL, findVariableSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariable': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findVariableForUpdateSQL, findVariableForUpdateSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindVariableForUpdate': %w", err)
+	}
+	if _, err := p.Prepare(ctx, updateVariableSQL, updateVariableSQL); err != nil {
+		return fmt.Errorf("prepare query 'UpdateVariable': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteVariableSQL, deleteVariableSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteVariable': %w", err)
 	}
 	if _, err := p.Prepare(ctx, insertVCSProviderSQL, insertVCSProviderSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertVCSProvider': %w", err)

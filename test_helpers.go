@@ -167,6 +167,12 @@ func NewTestAgentToken(t *testing.T, org *Organization) *AgentToken {
 	return token
 }
 
+func NewTestVariable(t *testing.T, ws *Workspace, opts CreateVariableOptions) *Variable {
+	v, err := NewVariable(ws.ID(), opts)
+	require.NoError(t, err)
+	return v
+}
+
 // NewTestTarball creates a tarball (.tar.gz) consisting of files respectively populated with the
 // given contents. The files are assigned random names with the terraform file
 // extension appended (.tf)

@@ -28,7 +28,12 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
 
-	log.Info("starting phase")
+	// Start the job before proceeding in case another agent has started it.
+	run, err := w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	if err != nil {
+		log.Error(err, "starting phase")
+		return
+	}
 
 	// create token for terraform for it to authenticate with the otf registry
 	// when retrieving modules and providers
@@ -42,6 +47,20 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	}
 	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(w.Hostname()), session.Token())
 	environmentVariables := append(w.environmentVariables, tokenEnvVar)
+
+	// retrieve workspace variables and add them to the environment
+	variables, err := w.ListVariables(ctx, run.WorkspaceID())
+	if err != nil {
+		log.Error(err, "retrieving variables")
+		return
+	}
+	for _, v := range variables {
+		switch v.Category() {
+		case otf.CategoryEnv:
+			ev := fmt.Sprintf("%s=%s", v.Key(), v.Value())
+			environmentVariables = append(w.environmentVariables, ev)
+		}
+	}
 
 	env, err := NewEnvironment(
 		log,
@@ -57,13 +76,6 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		return
 	}
 	defer env.Close()
-
-	// Start the job before proceeding in case another agent has started it.
-	run, err = w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
-	if err != nil {
-		log.Error(err, "starting phase")
-		return
-	}
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives
