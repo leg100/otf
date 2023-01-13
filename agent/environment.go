@@ -76,6 +76,18 @@ func NewEnvironment(
 		return nil, err
 	}
 
+	// create token for terraform for it to authenticate with the otf registry
+	// when retrieving modules and providers
+	//
+	// TODO: TF_TOKEN_* environment variables are only supported from terraform
+	// v1.20 onwards. We should set that as the min version for use with otf.
+	session, err := app.CreateRegistrySession(ctx, ws.OrganizationName())
+	if err != nil {
+		return nil, err
+	}
+	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(app.Hostname()), session.Token())
+	environmentVariables = append(environmentVariables, tokenEnvVar)
+
 	// Create and store cancel func so func's context can be canceled
 	ctx, cancel := context.WithCancel(ctx)
 

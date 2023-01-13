@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/leg100/otf"
 )
@@ -30,25 +29,12 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 
 	log.Info("starting phase")
 
-	// create token for terraform for it to authenticate with the otf registry
-	// when retrieving modules and providers
-	//
-	// TODO: TF_TOKEN_* environment variables are only supported from terraform
-	// v1.20 onwards. We should set that as the min version for use with otf.
-	session, err := w.CreateRegistrySession(ctx, run.OrganizationName())
-	if err != nil {
-		log.Error(err, "creating registry session")
-		return
-	}
-	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(w.Hostname()), session.Token())
-	environmentVariables := append(w.environmentVariables, tokenEnvVar)
-
 	env, err := NewEnvironment(
 		log,
 		w.Application,
 		run,
 		ctx,
-		environmentVariables,
+		w.environmentVariables,
 		w.Downloader,
 		w.Config,
 	)

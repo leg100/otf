@@ -43,3 +43,94 @@ func TestSpooler(t *testing.T) {
 	cancel()
 	assert.NoError(t, <-errch)
 }
+
+func TestSpooler_handleEvent(t *testing.T) {
+	tests := []struct {
+		name                 string
+		event                otf.Event
+		config               Config
+		wantRun              bool
+		wantCancelation      bool
+		wantForceCancelation bool
+	}{
+		{
+			name: "handle run",
+			event: otf.Event{
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					Status: otf.RunPlanQueued,
+				}),
+			},
+			wantRun: true,
+		},
+		{
+			name: "internal agents skip agent-mode runs",
+			event: otf.Event{
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
+					Status:        otf.RunPlanQueued,
+				}),
+			},
+			wantRun: false,
+		},
+		{
+			name:   "external agents handle agent-mode runs",
+			config: Config{External: true},
+			event: otf.Event{
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					ExecutionMode: otf.ExecutionModePtr(otf.AgentExecutionMode),
+					Status:        otf.RunPlanQueued,
+				}),
+			},
+			wantRun: true,
+		},
+		{
+			name: "ignore runs not in queued state",
+			event: otf.Event{
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					Status: otf.RunPlanned,
+				}),
+			},
+			wantRun: false,
+		},
+		{
+			name: "handle cancelation",
+			event: otf.Event{
+				Type: otf.EventRunCancel,
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					Status: otf.RunPlanning,
+				}),
+			},
+			wantCancelation: true,
+		},
+		{
+			name: "handle forceful cancelation",
+			event: otf.Event{
+				Type: otf.EventRunForceCancel,
+				Payload: otf.NewTestRun(t, otf.TestRunCreateOptions{
+					Status: otf.RunPlanning,
+				}),
+			},
+			wantForceCancelation: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spooler := NewSpooler(nil, logr.Discard(), tt.config)
+			spooler.handleEvent(tt.event)
+
+			if tt.wantRun {
+				assert.NotNil(t, <-spooler.GetRun())
+			} else if tt.wantCancelation {
+				assert.NotNil(t, <-spooler.GetCancelation())
+			} else if tt.wantForceCancelation {
+				if assert.Equal(t, 1, len(spooler.cancelations)) {
+					got := <-spooler.GetCancelation()
+					assert.True(t, got.Forceful)
+				}
+			} else {
+				assert.Equal(t, 0, len(spooler.queue))
+				assert.Equal(t, 0, len(spooler.cancelations))
+			}
+		})
+	}
+}

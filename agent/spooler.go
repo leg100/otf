@@ -132,16 +132,30 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 func (s *SpoolerDaemon) handleEvent(ev otf.Event) {
 	switch obj := ev.Payload.(type) {
 	case *otf.Run:
-		if obj.ExecutionMode() == otf.LocalExecutionMode {
-			// agent never handles runs in local execution mode (a run, let alone
-			// a run event, should never be created in local execution mode...)
+		switch obj.ExecutionMode() {
+		case otf.LocalExecutionMode:
+			// agents never handle runs belonging to workspaces configured to
+			// use local execution (it shouldn't be possible for such a run to
+			// be created in the first place...)
+			s.V(2).Info("ignoring run event", "run", obj.ID(), "execution-mode", obj.ExecutionMode())
 			return
-		}
-		if s.External {
-			// external agent only handles runs in agent execution mode
-			if obj.ExecutionMode() != otf.AgentExecutionMode {
+		case otf.RemoteExecutionMode:
+			if s.External {
+				// external agents only handle runs belonging to workspaces
+				// configured to use agent mode
+				s.V(2).Info("ignoring run event", "run", obj.ID(), "execution-mode", obj.ExecutionMode())
 				return
 			}
+		case otf.AgentExecutionMode:
+			if !s.External {
+				// internal agents only handle runs belonging to workspaces
+				// configured to use remote mode.
+				s.V(2).Info("ignoring run event", "run", obj.ID(), "execution-mode", obj.ExecutionMode())
+				return
+			}
+		default:
+			// unknown execution mode
+			return
 		}
 
 		if obj.Queued() {
