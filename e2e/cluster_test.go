@@ -85,6 +85,7 @@ func TestCluster(t *testing.T) {
 	t.Log(string(out))
 	require.NoError(t, err)
 	require.Contains(t, string(out), "Plan: 1 to add, 0 to change, 0 to destroy.")
+	require.Contains(t, string(out), "External agent: true") // confirm run was handled by external agent
 
 	// terraform apply
 	cmd = exec.Command("terraform", "apply", "-no-color", "-auto-approve")
