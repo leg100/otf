@@ -27,6 +27,12 @@ const (
 	GetModuleAction           Action = "get_module"
 	DeleteModuleAction        Action = "delete_modules"
 
+	CreateVariableAction Action = "create_variable"
+	UpdateVariableAction Action = "update_variable"
+	ListVariablesAction  Action = "list_variables"
+	GetVariableAction    Action = "get_variable"
+	DeleteVariableAction Action = "delete_variables"
+
 	GetRunAction      Action = "get_run"
 	ListRunsAction    Action = "list_runs"
 	ApplyRunAction    Action = "apply_run"

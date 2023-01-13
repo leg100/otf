@@ -193,6 +193,10 @@ var specs = []controllerSpec{
 							},
 						},
 					},
+					{
+						Name:           "variable",
+						controllerType: resourcePath,
+					},
 				},
 			},
 			{

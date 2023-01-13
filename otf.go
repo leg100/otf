@@ -57,6 +57,7 @@ type Application interface {
 	ModuleService
 	ModuleVersionService
 	HostnameService
+	VariableService
 }
 
 // LockableApplication is an application that holds an exclusive lock with the given ID.
@@ -87,6 +88,7 @@ type DB interface {
 	WebhookStore
 	ModuleStore
 	ModuleVersionStore
+	VariableStore
 }
 
 // Unmarshaler unmarshals database rows

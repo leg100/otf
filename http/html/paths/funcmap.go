@@ -67,6 +67,14 @@ func init() {
 	funcmap["cancelRunPath"] = CancelRun
 	funcmap["tailRunPath"] = TailRun
 
+	funcmap["variablesPath"] = Variables
+	funcmap["createVariablePath"] = CreateVariable
+	funcmap["newVariablePath"] = NewVariable
+	funcmap["variablePath"] = Variable
+	funcmap["editVariablePath"] = EditVariable
+	funcmap["updateVariablePath"] = UpdateVariable
+	funcmap["deleteVariablePath"] = DeleteVariable
+
 	funcmap["agentTokensPath"] = AgentTokens
 	funcmap["createAgentTokenPath"] = CreateAgentToken
 	funcmap["newAgentTokenPath"] = NewAgentToken

@@ -175,6 +175,21 @@ func createTestToken(t *testing.T, db otf.DB, userID, description string) *otf.T
 	return token
 }
 
+func createTestVariable(t *testing.T, db otf.DB, ws *otf.Workspace, opts otf.CreateVariableOptions) *otf.Variable {
+	ctx := context.Background()
+
+	v, err := otf.NewVariable(ws.ID(), opts)
+	require.NoError(t, err)
+
+	err = db.CreateVariable(ctx, v)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		db.DeleteToken(ctx, v.ID())
+	})
+	return v
+}
+
 func newTestVCSProvider(t *testing.T, org *otf.Organization) *otf.VCSProvider {
 	factory := &otf.VCSProviderFactory{inmem.NewTestCloudService()}
 	provider, err := factory.NewVCSProvider(otf.VCSProviderCreateOptions{

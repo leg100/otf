@@ -1,0 +1,45 @@
+{{ template "layout" . }}
+
+{{ define "title" }}variables{{ end }}
+
+{{ define "container-header" }}
+  {{ template "variables-breadcrumb" . }}
+{{ end }}
+
+{{ define "container-header-links" }}
+  {{ template "workspace-header-links" . }}
+{{ end }}
+
+{{ define "content" }}
+  <table class="variables">
+    <thead>
+      <tr>
+        <th>Key</th>
+        <th>Value</th>
+        <th>Category</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Content.Variables }}
+        <tr>
+          <td><a class="show-underline" href="{{ editVariablePath .ID }}">{{ .Key }}</a></td>
+          <td>{{ if .Sensitive }}<span class="data">hidden</span>{{ else }}{{ .Value }}{{ end }}</td>
+          <td>{{ .Category }}</td>
+          <td>
+            <form class="variable-delete-button" action="{{ deleteVariablePath .ID }}" method="POST">
+              <button class="delete" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {{ else }}
+        <tr>
+          <td>No variables currently exist.</td>
+        </tr>
+      {{ end }}
+    </tbody>
+  </table>
+  <form action="{{ newVariablePath $.Content.Workspace.ID }}" method="GET">
+    <button type="submit">Add variable</button>
+  </form>
+{{ end }}

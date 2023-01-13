@@ -158,6 +158,11 @@ header nav {
   display: block;
 }
 
+/* Sanitize sets `resize: vertical` for some reason... */
+textarea {
+  resize: both
+}
+
 /*
  * Workspace permissions
  */
@@ -212,6 +217,34 @@ header nav {
   gap: 1em;
 }
 
+/*
+ * Variables table
+ */
+table.variables {
+  text-align: left;
+  font-size: 0.9em;
+  border-collapse: collapse;
+}
+
+table.variables thead {
+  background-color: var(--faint-grey);
+  border-top: 1px solid #bac1cc;
+  border-bottom: 1px solid #bac1cc;
+}
+
+table.variables td, th {
+  padding: 10px;
+}
+
+/* Push delete button to far right of table row */
+table.variables td:last-child {
+  text-align: right;
+}
+
+table.variables tbody tr {
+  border-bottom: 1px solid #dce0e6;
+}
+
 .horizontal-form {
   display: flex;
   flex-direction: row;
@@ -230,13 +263,30 @@ input.freeform {
   gap: 2em;
 }
 
-/* Radio labels are placed alongside the option */
+/* Radio labels are placed alongside the input */
 .radio label {
   display: inline;
 }
 
 /* Add some space between radio input and label */
 .radio input {
+  margin-right: .75em;
+}
+
+/* Checkbox group is a horizontal arrangement of checkboxes */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2em;
+}
+
+/* Checkbox labels are placed alongside the input */
+.checkbox label {
+  display: inline;
+}
+
+/* Add some space between checkbox input and label */
+.checkbox input {
   margin-right: .75em;
 }
 

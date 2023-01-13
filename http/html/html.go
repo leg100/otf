@@ -6,6 +6,7 @@ package html
 import (
 	"html/template"
 	"net/url"
+	"reflect"
 
 	"github.com/gomarkdown/markdown"
 )
@@ -29,13 +30,45 @@ func mergeQuery(u string, q string) (string, error) {
 	return parsedURL.String(), nil
 }
 
-// selected returns the string "selected" if the given strings are equal -
-// intended for use with the select options in an HTML template.
-func selected(a, b string) string {
-	if a == b {
-		return "selected"
+func disabled(arg any, args ...any) (string, error) {
+	return printIf("disabled", arg, args...)
+}
+
+func selected(arg any, args ...any) (string, error) {
+	return printIf("selected", arg, args...)
+}
+
+func checked(arg any, args ...any) (string, error) {
+	return printIf("checked", arg, args...)
+}
+
+// printIf prints a string if:
+// (a) single arg provided, it is a boolean, and it is true.
+// (b) multiple args provided, they are all strings, and they are all equal.
+// otherwise it outputs an empty string
+// This is useful for printing various strings in templates or not.
+func printIf(s string, arg any, args ...any) (string, error) {
+	if len(args) == 0 {
+		if reflect.ValueOf(arg).Kind() == reflect.Bool {
+			if reflect.ValueOf(arg).Bool() {
+				return s, nil
+			}
+		}
+		return "", nil
 	}
-	return ""
+	if reflect.ValueOf(arg).Kind() != reflect.String {
+		return "", nil
+	}
+	lastarg := reflect.ValueOf(arg).String()
+	for _, a := range args {
+		if reflect.ValueOf(a).Kind() != reflect.String {
+			return "", nil
+		}
+		if reflect.ValueOf(a).String() != lastarg {
+			return "", nil
+		}
+	}
+	return s, nil
 }
 
 func markdownToHTML(md []byte) template.HTML {

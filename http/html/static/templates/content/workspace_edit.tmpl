@@ -41,7 +41,7 @@
         <div class="radio">
         {{ range $mode := .Content.ExecutionModes }}
           <div>
-            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ if eq $.Content.ExecutionMode $mode }}checked{{ end }}/><label for="{{ $mode }}">{{ title $mode }}</label>
+            <input type="radio" name="execution_mode" id="{{ $mode }}" value="{{ $mode }}" {{ checked $.Content.ExecutionMode $mode }}/><label for="{{ $mode }}">{{ title $mode }}</label>
           </div>
         {{ end }}
         </div>
@@ -82,11 +82,7 @@
                     <select name="role" id="role-select">
                       {{ $currentRole := .Role.String }}
                       {{ range $.Content.Roles }}
-                        {{ if eq .String $currentRole }}
-                          <option value="{{ . }}" selected>{{ . }}</option>
-                        {{ else }}
-                          <option value="{{ . }}">{{ . }}</option>
-                        {{ end }}
+                        <option value="{{ . }}" {{ selected .String $currentRole }}>{{ . }}</option>
                       {{ end }}
                     </select>
                     <button>Update</button>
