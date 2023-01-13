@@ -25,11 +25,7 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	var loggerCfg *cmdutil.LoggerConfig
-	cfg := &agent.Config{
-		// otf-agent is an 'external' agent, as opposed to the internal agent in
-		// otfd.
-		External: true,
-	}
+	var cfg *agent.Config
 
 	clientCfg, err := http.NewConfig()
 	if err != nil {
@@ -79,6 +75,9 @@ func run(ctx context.Context, args []string) error {
 
 	loggerCfg = cmdutil.NewLoggerConfigFromFlags(cmd.Flags())
 	cfg = agent.NewConfigFromFlags(cmd.Flags())
+	// otf-agent is an 'external' agent, as opposed to the internal agent in
+	// otfd.
+	cfg.External = true
 
 	cmdutil.SetFlagsFromEnvVariables(cmd.Flags())
 
