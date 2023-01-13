@@ -7,8 +7,7 @@
       </div>
       <div class="field">
         <label for="value">Value</label>
-        <textarea type="text" name="value" id="value" value="{{ .Value }}" placeholder="value">
-        </textarea>
+        <textarea type="text" name="value" id="value" {{ if .Sensitive }}placeholder="hidden"{{ end }}>{{ if not .Sensitive }}{{ .Value }}{{ end }}</textarea>
       </div>
       <div class="field">
         <fieldset>

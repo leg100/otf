@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgtype"
+	"github.com/leg100/otf/http/dto"
 )
 
 // VariableCategory is the category of variable
@@ -198,10 +199,9 @@ func NewVariable(workspaceID string, opts CreateVariableOptions) (*Variable, err
 		}
 	}
 	if opts.Description != nil {
-		if err := validateVariableDescription(*opts.Description); err != nil {
+		if err := v.setDescription(*opts.Description); err != nil {
 			return nil, err
 		}
-		v.description = *opts.Description
 	}
 	if opts.Sensitive != nil {
 		v.sensitive = *opts.Sensitive
@@ -237,9 +237,24 @@ func UnmarshalVariableRow(result VariableRow) *Variable {
 	}
 }
 
-func validateVariableDescription(description string) error {
-	if len(description) > 500 {
-		return errors.New("invalid variable category")
+func UnmarshalVariableJSONAPI(json *dto.Variable) *Variable {
+	return &Variable{
+		id:          json.ID,
+		key:         json.Key,
+		value:       json.Value,
+		description: json.Description,
+		category:    VariableCategory(json.Category),
+		sensitive:   json.Sensitive,
+		hcl:         json.HCL,
+		workspaceID: json.Workspace.ID,
 	}
-	return nil
+}
+
+// UnmarshalVariableListJSONAPI converts a DTO into a workspace list
+func UnmarshalVariableListJSONAPI(json *dto.VariableList) []*Variable {
+	var list []*Variable
+	for _, i := range json.Items {
+		list = append(list, UnmarshalVariableJSONAPI(i))
+	}
+	return list
 }
