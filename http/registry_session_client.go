@@ -11,7 +11,9 @@ import (
 // CreateRegistrySession creates a registry session via HTTP/JSONAPI
 func (c *client) CreateRegistrySession(ctx context.Context, organization string) (*otf.RegistrySession, error) {
 	path := path.Join("organizations", organization, "registry/sessions/create")
-	req, err := c.newRequest("POST", path, nil)
+	req, err := c.newRequest("POST", path, &dto.RegistrySessionCreateOptions{
+		OrganizationName: organization,
+	})
 	if err != nil {
 		return nil, err
 	}

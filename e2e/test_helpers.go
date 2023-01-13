@@ -32,7 +32,7 @@ func startAgent(t *testing.T, token, address string) {
 	require.NoError(t, err)
 
 	e, res, err := expect.Spawn(
-		fmt.Sprintf("%s --token %s --address %s", "otf-agent", token, address),
+		fmt.Sprintf("%s --token %s --address %s --log-level trace", "otf-agent", token, address),
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.Verbose(testing.Verbose()),

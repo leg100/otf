@@ -64,6 +64,6 @@ func TestSandbox(t *testing.T) {
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	require.NoError(t, err)
-	assert.Contains(t, string(out), "Running within sandbox...")
+	assert.Contains(t, string(out), "Sandbox mode: true")
 	assert.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
 }

@@ -27,18 +27,11 @@ type Agent struct {
 
 // Config configures the agent.
 type Config struct {
-	// Organization if non-nil restricts the agent to processing runs belonging
-	// to the specified organization.
-	Organization *string
-	// External indicates whether the agent is running as a separate process,
-	// otf-agent, thus whether it handles runs for workspaces in remote mode
-	// (external=false) or workspaces in agent mode (external=true).
-	External bool
-	// Sandbox determines whether terraform is invoked within an isolated
-	// environment, restricting its access to various host resources
-	Sandbox bool
-	// Concurrency determines number of runs that can be handled concurrently
-	Concurrency int
+	Organization *string // only process runs belonging to org
+	External     bool    // dedicated agent (true) or otfd (false)
+	Concurrency  int     // number of workers
+	Sandbox      bool    // isolate privileged ops within sandbox
+	Debug        bool    // toggle debug mode
 }
 
 // NewAgent is the constructor for an Agent
@@ -48,6 +41,12 @@ func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, erro
 			return nil, fmt.Errorf("sandbox requires bubblewrap: %w", err)
 		}
 		logger.Info("sandbox mode enabled")
+	}
+
+	// Enable debug mode if log level = trace
+	if logger.GetSink().Enabled(2) {
+		logger.V(0).Info("enabled debug mode")
+		cfg.Debug = true
 	}
 
 	spooler := NewSpooler(app, logger, cfg)

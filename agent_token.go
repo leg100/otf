@@ -45,16 +45,6 @@ func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) 
 	return t.organizationName == policy.OrganizationName
 }
 
-func (t *AgentToken) MarshalLog() any {
-	return struct {
-		ID, Organization, Description string
-	}{
-		ID:           t.id,
-		Organization: t.organizationName,
-		Description:  t.description,
-	}
-}
-
 type CreateAgentTokenOptions struct {
 	OrganizationName string `schema:"organization_name,required"`
 	Description      string `schema:"description,required"`
