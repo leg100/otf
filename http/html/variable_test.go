@@ -92,7 +92,6 @@ func TestVariable_Update(t *testing.T) {
 }
 
 type fakeVariableHandlerApp struct {
-	org       *otf.Organization
 	workspace *otf.Workspace
 	variable  *otf.Variable
 
