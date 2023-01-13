@@ -24,17 +24,24 @@ func (app *Application) newVariable(w http.ResponseWriter, r *http.Request) {
 	app.render("variable_new.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
 		Variable   *otf.Variable
+		EditMode   bool
 		FormAction string
 	}{
 		Workspace:  ws,
 		Variable:   &otf.Variable{},
+		EditMode:   false,
 		FormAction: paths.CreateVariable(workspaceID),
 	})
 }
 
 func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		otf.CreateVariableOptions
+		Key         *string `schema:"key,required"`
+		Value       *string
+		Description *string
+		Category    *otf.VariableCategory `schema:"category,required"`
+		Sensitive   bool
+		HCL         bool
 		WorkspaceID string `schema:"workspace_id,required"`
 	}
 	var params parameters
@@ -43,7 +50,14 @@ func (app *Application) createVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := app.CreateVariable(r.Context(), params.WorkspaceID, params.CreateVariableOptions)
+	variable, err := app.CreateVariable(r.Context(), params.WorkspaceID, otf.CreateVariableOptions{
+		Key:         params.Key,
+		Value:       params.Value,
+		Description: params.Description,
+		Category:    params.Category,
+		Sensitive:   &params.Sensitive,
+		HCL:         &params.HCL,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,18 +115,25 @@ func (app *Application) editVariable(w http.ResponseWriter, r *http.Request) {
 	app.render("variable_edit.tmpl", w, r, struct {
 		Workspace  *otf.Workspace
 		Variable   *otf.Variable
+		EditMode   bool
 		FormAction string
 	}{
 		Workspace:  ws,
 		Variable:   variable,
+		EditMode:   true,
 		FormAction: paths.UpdateVariable(variable.ID()),
 	})
 }
 
 func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		otf.UpdateVariableOptions
-		VariableID string `schema:"variable_id,required"`
+		Key         *string `schema:"key,required"`
+		Value       *string
+		Description *string
+		Category    *otf.VariableCategory `schema:"category,required"`
+		Sensitive   bool
+		HCL         bool
+		VariableID  string `schema:"variable_id,required"`
 	}
 	var params parameters
 	if err := decode.All(&params, r); err != nil {
@@ -120,7 +141,22 @@ func (app *Application) updateVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	variable, err := app.UpdateVariable(r.Context(), params.VariableID, params.UpdateVariableOptions)
+	// sensitive variable's value form field is deliberately empty, so avoid
+	// updating value with empty string (this does mean users cannot set
+	// a sensitive variable's value to an empty string but there unlikely to be
+	// a valid reason to want to do that...)
+	if params.Sensitive && params.Value != nil && *params.Value == "" {
+		params.Value = nil
+	}
+
+	variable, err := app.UpdateVariable(r.Context(), params.VariableID, otf.UpdateVariableOptions{
+		Key:         params.Key,
+		Value:       params.Value,
+		Description: params.Description,
+		Category:    params.Category,
+		Sensitive:   &params.Sensitive,
+		HCL:         &params.HCL,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

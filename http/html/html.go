@@ -30,22 +30,14 @@ func mergeQuery(u string, q string) (string, error) {
 	return parsedURL.String(), nil
 }
 
-// selected returns the string "selected" if:
-// (a) single arg provided, it is a boolean, and it is true
-// (b) multiple args provided, they are all strings, and they are all equal.
-// otherwise it outputs an empty string
-//
-// intended for use with the select options in an HTML template.
+func disabled(arg any, args ...any) (string, error) {
+	return printIf("disabled", arg, args...)
+}
+
 func selected(arg any, args ...any) (string, error) {
 	return printIf("selected", arg, args...)
 }
 
-// checked returns the string "checked" if:
-// (a) single arg provided, it is a boolean, and it is true
-// (b) multiple args provided, they are all strings, and they are all equal.
-// otherwise it outputs an empty string
-//
-// intended for use with radio and checkbox inputs in an HTML template.
 func checked(arg any, args ...any) (string, error) {
 	return printIf("checked", arg, args...)
 }

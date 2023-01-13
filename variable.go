@@ -76,6 +76,9 @@ func (v *Variable) MarshalLog() any {
 
 func (v *Variable) Update(opts UpdateVariableOptions) error {
 	if opts.Key != nil {
+		if v.sensitive {
+			return errors.New("changing the key of a sensitive variable is not allowed")
+		}
 		if err := v.setKey(*opts.Key); err != nil {
 			return err
 		}
@@ -90,18 +93,25 @@ func (v *Variable) Update(opts UpdateVariableOptions) error {
 			return err
 		}
 	}
-	if opts.Sensitive != nil {
-		v.sensitive = *opts.Sensitive
-	}
-	if opts.HCL != nil {
-		v.hcl = *opts.HCL
-	}
 	if opts.Category != nil {
+		if v.sensitive {
+			return errors.New("changing the category of a sensitive variable is not allowed")
+		}
 		if err := v.setCategory(*opts.Category); err != nil {
 			return err
 		}
 	}
-
+	if opts.HCL != nil {
+		if v.sensitive {
+			return errors.New("toggling HCL mode on a sensitive variable is not allowed")
+		}
+		v.hcl = *opts.HCL
+	}
+	if opts.Sensitive != nil {
+		if err := v.setSensitive(*opts.Sensitive); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -133,7 +143,16 @@ func (v *Variable) setCategory(cat VariableCategory) error {
 	if cat != CategoryEnv && cat != CategoryTerraform {
 		return errors.New("invalid variable category")
 	}
+
 	v.category = cat
+	return nil
+}
+
+func (v *Variable) setSensitive(sensitive bool) error {
+	if v.sensitive && !sensitive {
+		return errors.New("cannot change a sensitive variable to a non-sensitive variable")
+	}
+	v.sensitive = sensitive
 	return nil
 }
 
@@ -155,7 +174,7 @@ type VariableStore interface {
 
 type (
 	CreateVariableOptions struct {
-		Key         *string `schema:"key,required"`
+		Key         *string
 		Value       *string
 		Description *string
 		Category    *VariableCategory

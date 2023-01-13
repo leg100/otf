@@ -112,6 +112,7 @@ func newTemplateCache(templates fs.FS, buster *cacheBuster) (map[string]*templat
 	funcs["mergeQuery"] = mergeQuery
 	funcs["selected"] = selected
 	funcs["checked"] = checked
+	funcs["disabled"] = disabled
 	// make path helpers available to templates
 	for k, v := range paths.FuncMap() {
 		funcs[k] = v

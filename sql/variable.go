@@ -15,6 +15,7 @@ func (db *DB) CreateVariable(ctx context.Context, ws *otf.Variable) error {
 		Description: String(ws.Description()),
 		Category:    String(string(ws.Category())),
 		Sensitive:   ws.Sensitive(),
+		HCL:         ws.HCL(),
 		WorkspaceID: String(ws.WorkspaceID()),
 	})
 	if err != nil {
@@ -46,6 +47,7 @@ func (db *DB) UpdateVariable(ctx context.Context, variableID string, fn func(*ot
 			Description: String(variable.Description()),
 			Category:    String(string(variable.Category())),
 			Sensitive:   variable.Sensitive(),
+			HCL:         variable.HCL(),
 		})
 		return err
 	})

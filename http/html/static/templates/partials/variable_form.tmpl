@@ -3,7 +3,7 @@
     {{ with .Content.Variable }}
       <div class="field">
         <label for="key">Key</label>
-        <input type="text" name="key" id="key" value="{{ .Key }}" required placeholder="key">
+        <input type="text" name="key" id="key" value="{{ .Key }}" required placeholder="key" {{ disabled (and .Sensitive $.Content.EditMode) }}>
       </div>
       <div class="field">
         <label for="value">Value</label>
@@ -14,20 +14,20 @@
           <legend>Category</legend>
           <div class="radio">
             <div>
-              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }}><label for="category">Terraform</label>
+              <input type="radio" name="category" id="terraform" value="terraform" {{ checked .Category "terraform" }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="category">Terraform</label>
             </div>
             <div>
-              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }}><label for="env">Environment variable</label>
+              <input type="radio" name="category" id="env" value="env" {{ checked .Category "env" }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="env">Environment variable</label>
             </div>
           </div>
         </fieldset>
       </div>
       <div class="checkbox-group">
         <div class="checkbox">
-          <input type="checkbox" name="hcl" id="hcl" {{ checked .HCL }}><label for="hcl">HCL</label>
+          <input type="checkbox" name="hcl" id="hcl" {{ checked .HCL }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="hcl">HCL</label>
         </div>
         <div class="checkbox">
-          <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }}><label for="sensitive">Sensitive</label>
+          <input type="checkbox" name="sensitive" id="sensitive" {{ checked .Sensitive }} {{ disabled (and .Sensitive $.Content.EditMode) }}><label for="sensitive">Sensitive</label>
         </div>
       </div>
       <div class="field">
@@ -39,4 +39,8 @@
       </div>
     {{ end }}
   </form>
+  <div>
+  <h4>Sensitive variables</h4>
+  Sensitive variables are never shown in the UI or API. Other than changing its value, you cannot make changes to a sensitive variable; you'll need to delete and re-create the variable.
+  </div>
 {{ end }}
