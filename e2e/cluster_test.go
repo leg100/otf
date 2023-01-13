@@ -36,7 +36,7 @@ func TestCluster(t *testing.T) {
 		Organizations: []string{org},
 	}
 
-	// start two daemons
+	// start two daemons, one for user, one for agent
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
 	userHostname := daemon.start(t)
@@ -46,7 +46,7 @@ func TestCluster(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(allocator)
 	defer cancel()
 
-	// carry out browser tasks
+	// carry out browser tasks against user daemon
 	err := chromedp.Run(ctx,
 		// login to UI, which synchronises user's organization
 		githubLoginTasks(t, userHostname, user.Name),
@@ -93,6 +93,7 @@ func TestCluster(t *testing.T) {
 	t.Log(string(out))
 	require.NoError(t, err)
 	require.Contains(t, string(out), "Apply complete! Resources: 1 added, 0 changed, 0 destroyed.")
+	require.Contains(t, string(out), "External agent: true") // confirm run was handled by external agent
 
 	// delete agent token using UI
 	okDialog(t, ctx)

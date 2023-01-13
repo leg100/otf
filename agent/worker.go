@@ -27,7 +27,12 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 	log := w.Logger.WithValues("run", run.ID(), "phase", run.Phase())
 
-	log.Info("starting phase")
+	// Claim run job
+	run, err := w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
+	if err != nil {
+		log.Error(err, "starting phase")
+		return
+	}
 
 	env, err := NewEnvironment(
 		log,
@@ -43,13 +48,6 @@ func (w *Worker) handle(ctx context.Context, run *otf.Run) {
 		return
 	}
 	defer env.Close()
-
-	// Start the job before proceeding in case another agent has started it.
-	run, err = w.StartPhase(ctx, run.ID(), run.Phase(), otf.PhaseStartOptions{AgentID: DefaultID})
-	if err != nil {
-		log.Error(err, "starting phase")
-		return
-	}
 
 	// Check run in with the supervisor so that it can cancel the run if a
 	// cancelation request arrives

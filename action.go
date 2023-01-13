@@ -18,6 +18,8 @@ const (
 	ListAgentTokensAction  Action = "list_agent_tokens"
 	DeleteAgentTokenAction Action = "delete_agent_token"
 
+	CreateRegistrySessionAction Action = "create_registry_session_token"
+
 	CreateModuleAction        Action = "create_module"
 	CreateModuleVersionAction Action = "create_module_version"
 	UpdateModuleAction        Action = "update_module"
