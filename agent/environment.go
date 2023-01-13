@@ -55,9 +55,7 @@ type Environment struct {
 	// services
 	ctx context.Context
 
-	// sandbox determines whether processes are isolated within a sandbox to
-	// prevent access to host filesystem etc
-	sandbox bool
+	Config
 }
 
 func NewEnvironment(
@@ -77,8 +75,20 @@ func NewEnvironment(
 
 	ws, err := app.GetWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(run.WorkspaceID())})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "retrieving workspace")
 	}
+
+	// create token for terraform for it to authenticate with the otf registry
+	// when retrieving modules and providers
+	//
+	// TODO: TF_TOKEN_* environment variables are only supported from terraform
+	// v1.20 onwards. We should set that as the min version for use with otf.
+	session, err := app.CreateRegistrySession(ctx, ws.OrganizationName())
+	if err != nil {
+		return nil, errors.Wrap(err, "creating registry session")
+	}
+	tokenEnvVar := fmt.Sprintf("%s=%s", otf.HostnameCredentialEnv(app.Hostname()), session.Token())
+	environmentVariables = append(environmentVariables, tokenEnvVar)
 
 	// retrieve workspace variables and add them to the environment
 	variables, err := app.ListVariables(ctx, run.WorkspaceID())
@@ -109,7 +119,7 @@ func NewEnvironment(
 		environmentVariables: environmentVariables,
 		cancel:               cancel,
 		ctx:                  ctx,
-		sandbox:              cfg.Sandbox,
+		Config:               cfg,
 	}, nil
 }
 
@@ -151,9 +161,24 @@ func (e *Environment) Cancel(force bool) {
 
 // RunTerraform runs a terraform command in the environment
 func (e *Environment) RunTerraform(cmd string, args ...string) error {
+	// Dump info if in debug mode
+	if e.Debug && (cmd == "plan" || cmd == "apply") {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(e.out)
+		fmt.Fprintln(e.out, "Debug mode enabled")
+		fmt.Fprintln(e.out, "------------------")
+		fmt.Fprintf(e.out, "Hostname: %s\n", hostname)
+		fmt.Fprintf(e.out, "External agent: %t\n", e.External)
+		fmt.Fprintf(e.out, "Sandbox mode: %t\n", e.Sandbox)
+		fmt.Fprintln(e.out, "------------------")
+		fmt.Fprintln(e.out)
+	}
+
 	// optionally sandbox terraform apply using bubblewrap
-	if e.sandbox && cmd == "apply" {
-		fmt.Fprintln(e.out, "Running within sandbox...")
+	if e.Sandbox && cmd == "apply" {
 		return e.RunCLI("bwrap", append([]string{
 			"--ro-bind", e.TerraformPath(), "/bin/terraform",
 			"--bind", e.path, "/workspace",

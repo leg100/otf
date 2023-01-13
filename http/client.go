@@ -47,7 +47,12 @@ type client struct {
 	// for testing purposes. NOTE: Only takes effect on SSE connections.
 	insecure bool
 
-	otf.Application
+	otf.Application // client is an implementation of the otf app
+}
+
+// Hostname returns the server host:port.
+func (c *client) Hostname() string {
+	return c.baseURL.Host
 }
 
 func (c *client) getRawAPIMetadata() (rawAPIMetadata, error) {

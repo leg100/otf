@@ -41,18 +41,21 @@ func (t *RegistrySession) Organization() string { return t.organization }
 func (t *RegistrySession) Expiry() time.Time    { return t.expiry }
 
 func (*RegistrySession) CanAccessSite(action Action) bool {
-	// terraform cannot carry out site-level actions
 	return false
 }
 
 func (t *RegistrySession) CanAccessOrganization(action Action, name string) bool {
-	// terraform is allowed to carry out actions on the given organization.
-	return t.organization == name
+	// registry session is only allowed read-access to its organization's module registry
+	switch action {
+	case GetModuleAction, ListModulesAction:
+		return t.organization == name
+	default:
+		return false
+	}
 }
 
 func (t *RegistrySession) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
-	// terraform can access anything within the organization
-	return t.organization == policy.OrganizationName
+	return false
 }
 
 func (t *RegistrySession) MarshalLog() any {

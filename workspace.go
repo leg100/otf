@@ -28,6 +28,11 @@ func ValidateExecutionMode(m ExecutionMode) error {
 	return fmt.Errorf("invalid execution mode: %s", m)
 }
 
+// ExecutionModePtr returns a pointer to an execution mode.
+func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
+	return &m
+}
+
 var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
 // Workspace represents a Terraform Enterprise workspace.

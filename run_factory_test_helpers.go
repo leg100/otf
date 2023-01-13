@@ -9,9 +9,9 @@ import (
 
 // TestRunCreateOptions is for testing purposes only.
 type TestRunCreateOptions struct {
-	// override ID of run
-	ID                *string
+	ID                *string // override ID of run
 	Speculative       bool
+	ExecutionMode     *ExecutionMode
 	Status            RunStatus
 	AutoApply         bool
 	Repo              *WorkspaceRepo
@@ -42,6 +42,9 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	}
 	if opts.ID != nil {
 		run.id = *opts.ID
+	}
+	if opts.ExecutionMode != nil {
+		run.executionMode = *opts.ExecutionMode
 	}
 	return run
 }
