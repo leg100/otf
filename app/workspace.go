@@ -8,7 +8,7 @@ import (
 )
 
 func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateWorkspaceAction, opts.OrganizationName)
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateWorkspaceAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -20,11 +20,11 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 	}
 
 	if err := a.db.CreateWorkspace(ctx, ws); err != nil {
-		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.OrganizationID(), "subject", subject)
+		a.Error(err, "creating workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
 		return nil, err
 	}
 
-	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.OrganizationID(), "subject", subject)
+	a.V(0).Info("created workspace", "id", ws.ID(), "name", ws.Name(), "organization", ws.Organization(), "subject", subject)
 
 	a.Publish(otf.Event{Type: otf.EventWorkspaceCreated, Payload: ws})
 

@@ -61,7 +61,7 @@ SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -88,9 +88,8 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE
-    organizations.name                       LIKE ANY(pggen.arg('organization_names'))
+    workspaces.organization_name             LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
 AND runs.status                              LIKE ANY(pggen.arg('statuses'))
@@ -104,9 +103,8 @@ SELECT count(*)
 FROM runs
 JOIN workspaces             USING(workspace_id)
 JOIN configuration_versions USING(configuration_version_id)
-JOIN organizations          USING(organization_id)
 WHERE
-    organizations.name                       LIKE ANY(pggen.arg('organization_names'))
+    workspaces.organization_name             LIKE ANY(pggen.arg('organization_names'))
 AND workspaces.workspace_id                  LIKE ANY(pggen.arg('workspace_ids'))
 AND workspaces.name                          LIKE ANY(pggen.arg('workspace_names'))
 AND runs.status                              LIKE ANY(pggen.arg('statuses'))
@@ -138,7 +136,7 @@ SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -165,7 +163,6 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
 ;
 
@@ -194,7 +191,7 @@ SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -221,7 +218,6 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE runs.run_id = pggen.arg('run_id')
 FOR UPDATE of runs, plans, applies
 ;

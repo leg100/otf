@@ -1,8 +1,8 @@
 package http
 
 import (
-	"context"
 	"net/http"
+	"strings"
 
 	"github.com/leg100/jsonapi"
 	"github.com/leg100/otf"
@@ -12,22 +12,22 @@ import (
 
 // Workspace assembles a workspace JSONAPI DTO
 type Workspace struct {
-	ctx context.Context
+	r *http.Request
 	otf.Application
 	*otf.Workspace
 }
 
 func (ws *Workspace) ToJSONAPI() any {
-	subject, err := otf.SubjectFromContext(ws.ctx)
+	subject, err := otf.SubjectFromContext(ws.r.Context())
 	if err != nil {
 		panic(err.Error())
 	}
-	perms, err := ws.ListWorkspacePermissions(ws.ctx, ws.SpecID())
+	perms, err := ws.ListWorkspacePermissions(ws.r.Context(), ws.SpecID())
 	if err != nil {
 		panic(err.Error())
 	}
 	policy := &otf.WorkspacePolicy{
-		OrganizationName: ws.OrganizationName(),
+		OrganizationName: ws.Organization(),
 		WorkspaceID:      ws.ID(),
 		Permissions:      perms,
 	}
@@ -73,19 +73,36 @@ func (ws *Workspace) ToJSONAPI() any {
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
 	}
-	// TODO: there should always be an full organization object, so this
-	// condition should not be necessary
-	if ws.Organization() != nil {
-		obj.Organization = (&Organization{ws.Organization()}).ToJSONAPI().(*dto.Organization)
-	} else {
-		obj.Organization = &dto.Organization{ExternalID: ws.OrganizationID()}
+
+	// Support including related resources:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#available-related-resources
+	//
+	// NOTE: limit support to organization, since that's what the go-tfe tests
+	// for, and we want to run the full barrage of go-tfe workspace tests
+	// without error
+	if includes := ws.r.URL.Query().Get("include"); includes != "" {
+		for _, inc := range strings.Split(includes, ",") {
+			switch inc {
+			case "organization":
+				org, err := ws.GetOrganization(ws.r.Context(), ws.Organization())
+				if err != nil {
+					panic(err.Error()) // throws HTTP500
+				}
+				obj.Organization = (&Organization{org}).ToJSONAPI().(*dto.Organization)
+			}
+		}
+	}
+	// If related resource is not included then at a minimum set its primary ID
+	if obj.Organization == nil {
+		obj.Organization = &dto.Organization{Name: ws.Organization()}
 	}
 	return obj
 }
 
 // WorkspaceList assembles a workspace list JSONAPI DTO
 type WorkspaceList struct {
-	ctx context.Context
+	r *http.Request
 	otf.Application
 	*otf.WorkspaceList
 }
@@ -95,7 +112,7 @@ func (l *WorkspaceList) ToJSONAPI() any {
 		Pagination: l.Pagination.ToJSONAPI(),
 	}
 	for _, item := range l.Items {
-		obj.Items = append(obj.Items, (&Workspace{l.ctx, l.Application, item}).ToJSONAPI().(*dto.Workspace))
+		obj.Items = append(obj.Items, (&Workspace{l.r, l.Application, item}).ToJSONAPI().(*dto.Workspace))
 	}
 	return obj
 }
@@ -123,7 +140,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		MigrationEnvironment:       opts.MigrationEnvironment,
 		Name:                       *opts.Name,
-		OrganizationName:           *opts.Organization,
+		Organization:               *opts.Organization,
 		QueueAllRuns:               opts.QueueAllRuns,
 		SpeculativeEnabled:         opts.SpeculativeEnabled,
 		SourceName:                 opts.SourceName,
@@ -137,7 +154,7 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r.Context(), s.Application, ws}, withCode(http.StatusCreated))
+	writeResponse(w, r, &Workspace{r, s.Application, ws}, withCode(http.StatusCreated))
 }
 
 func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +172,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r.Context(), s.Application, ws})
+	writeResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +190,7 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &WorkspaceList{r.Context(), s.Application, wsl})
+	writeResponse(w, r, &WorkspaceList{r, s.Application, wsl})
 }
 
 // UpdateWorkspace updates a workspace.
@@ -213,7 +230,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r.Context(), s.Application, ws})
+	writeResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -235,7 +252,7 @@ func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r.Context(), s.Application, ws})
+	writeResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -253,7 +270,7 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r.Context(), s.Application, ws})
+	writeResponse(w, r, &Workspace{r, s.Application, ws})
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {

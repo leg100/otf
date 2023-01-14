@@ -341,7 +341,7 @@ func (r *Run) ToJSONAPI() any {
 		},
 	}
 	if r.Workspace() != nil {
-		obj.Workspace = (&Workspace{r.req.Context(), r.Application, r.Workspace()}).ToJSONAPI().(*dto.Workspace)
+		obj.Workspace = (&Workspace{r.req, r.Application, r.Workspace()}).ToJSONAPI().(*dto.Workspace)
 	} else {
 		obj.Workspace = &dto.Workspace{
 			ID: r.WorkspaceID(),

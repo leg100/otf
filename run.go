@@ -100,6 +100,7 @@ func (r *Run) IsDestroy() bool                        { return r.isDestroy }
 func (r *Run) ForceCancelAvailableAt() *time.Time     { return r.forceCancelAvailableAt }
 func (r *Run) Message() string                        { return r.message }
 func (r *Run) OrganizationName() string               { return r.organizationName }
+func (r *Run) Organization() string                   { return r.organizationName }
 func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }

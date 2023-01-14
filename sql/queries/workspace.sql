@@ -21,7 +21,7 @@ INSERT INTO workspaces (
     terraform_version,
     trigger_prefixes,
     working_directory,
-    organization_id
+    organization_name
 ) VALUES (
     pggen.arg('ID'),
     pggen.arg('CreatedAt'),
@@ -44,24 +44,22 @@ INSERT INTO workspaces (
     pggen.arg('TerraformVersion'),
     pggen.arg('TriggerPrefixes'),
     pggen.arg('WorkingDirectory'),
-    pggen.arg('OrganizationID')
+    pggen.arg('OrganizationName')
 );
 
 -- name: FindWorkspaces :many
 SELECT
     w.*,
-    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
-WHERE w.name LIKE pggen.arg('prefix') || '%'
-AND   o.name LIKE ANY(pggen.arg('organization_names'))
+WHERE w.name                LIKE pggen.arg('prefix') || '%'
+AND   w.organization_name   LIKE ANY(pggen.arg('organization_names'))
 ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -69,22 +67,19 @@ OFFSET pggen.arg('offset')
 
 -- name: CountWorkspaces :one
 SELECT count(*)
-FROM workspaces w
-JOIN organizations o USING (organization_id)
-WHERE w.name LIKE pggen.arg('prefix') || '%'
-AND   o.name LIKE ANY(pggen.arg('organization_names'))
+FROM workspaces
+WHERE name LIKE pggen.arg('prefix') || '%'
+AND   organization_name LIKE ANY(pggen.arg('organization_names'))
 ;
 
 -- name: FindWorkspacesByWebhookID :many
 SELECT
     w.*,
-    (o.*)::"organizations" AS organization,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
 JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
@@ -94,13 +89,11 @@ WHERE h.webhook_id = pggen.arg('webhook_id')
 -- name: FindWorkspacesByUserID :many
 SELECT
     w.*,
-    (o.*)::"organizations" AS organization,
     (ul.*)::"users" AS user_lock,
     (rl.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
 LEFT JOIN users ul ON w.lock_user_id = ul.user_id
 LEFT JOIN runs rl ON w.lock_run_id = rl.run_id
@@ -108,8 +101,8 @@ LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u ON tm.user_id = u.user_id
-WHERE o.name = pggen.arg('organization_name')
-AND   u.user_id = pggen.arg('user_id')
+WHERE w.organization_name  = pggen.arg('organization_name')
+AND   u.user_id            = pggen.arg('user_id')
 ORDER BY w.updated_at DESC
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -118,12 +111,11 @@ OFFSET pggen.arg('offset')
 -- name: CountWorkspacesByUserID :one
 SELECT count(*)
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 JOIN workspace_permissions p USING (workspace_id)
 JOIN teams t USING (team_id)
 JOIN team_memberships tm USING (team_id)
 JOIN users u USING (user_id)
-WHERE o.name = pggen.arg('organization_name')
+WHERE w.organization_name = pggen.arg('organization_name')
 AND   u.user_id = pggen.arg('user_id')
 ;
 
@@ -149,37 +141,32 @@ WHERE configuration_version_id = pggen.arg('configuration_version_id')
 -- name: FindWorkspaceIDByName :one
 SELECT workspaces.workspace_id
 FROM workspaces
-JOIN organizations USING (organization_id)
 WHERE workspaces.name = pggen.arg('name')
-AND organizations.name = pggen.arg('organization_name');
+AND workspaces.organization_name = pggen.arg('organization_name');
 
 -- FindWorkspaceByName finds a workspace by name and organization name.
 --
 -- name: FindWorkspaceByName :one
 SELECT w.*,
-    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
-WHERE w.name = pggen.arg('name')
-AND   o.name = pggen.arg('organization_name')
+WHERE w.name              = pggen.arg('name')
+AND   w.organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindWorkspaceByID :one
 SELECT w.*,
-    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
@@ -188,13 +175,11 @@ WHERE w.workspace_id = pggen.arg('id')
 
 -- name: FindWorkspaceByIDForUpdate :one
 SELECT w.*,
-    (o.*)::"organizations" AS organization,
     (u.*)::"users" AS user_lock,
     (r.*)::"runs" AS run_lock,
     (vr.*)::"workspace_repos" AS workspace_repo,
     (h.*)::"webhooks" AS webhook
 FROM workspaces w
-JOIN organizations o USING (organization_id)
 LEFT JOIN users u ON w.lock_user_id = u.user_id
 LEFT JOIN runs r ON w.lock_run_id = r.run_id
 LEFT JOIN (workspace_repos vr JOIN webhooks h USING (webhook_id)) ON w.workspace_id = vr.workspace_id
@@ -243,7 +228,5 @@ WHERE workspace_id = pggen.arg('workspace_id');
 -- name: DeleteWorkspaceByName :exec
 DELETE
 FROM workspaces
-USING organizations
-WHERE workspaces.organization_id = organizations.organization_id
-AND workspaces.name = pggen.arg('name')
-AND organizations.name = pggen.arg('organization_name');
+WHERE name = pggen.arg('name')
+AND organization_name = pggen.arg('organization_name');

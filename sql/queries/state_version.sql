@@ -19,10 +19,9 @@ SELECT
     array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
 JOIN workspaces USING (workspace_id)
-JOIN organizations USING (organization_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE workspaces.name = pggen.arg('workspace_name')
-AND organizations.name = pggen.arg('organization_name')
+WHERE workspaces.name               = pggen.arg('workspace_name')
+AND   workspaces.organization_name  = pggen.arg('organization_name')
 GROUP BY state_versions.state_version_id
 LIMIT pggen.arg('limit')
 OFFSET pggen.arg('offset')
@@ -32,9 +31,8 @@ OFFSET pggen.arg('offset')
 SELECT count(*)
 FROM state_versions
 JOIN workspaces USING (workspace_id)
-JOIN organizations USING (organization_id)
-WHERE workspaces.name = pggen.arg('workspace_name')
-AND organizations.name = pggen.arg('organization_name')
+WHERE workspaces.name                 = pggen.arg('workspace_name')
+AND   workspaces.organization_name    = pggen.arg('organization_name')
 ;
 
 -- name: FindStateVersionByID :one

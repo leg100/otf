@@ -40,7 +40,7 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 		createdAt:        CurrentTimestamp(),
 		refresh:          DefaultRefresh,
 		workspaceName:    ws.Name(),
-		organizationName: ws.OrganizationName(),
+		organizationName: ws.Organization(),
 	}
 	run.configurationVersionID = cv.ID()
 	run.workspaceID = ws.ID()
