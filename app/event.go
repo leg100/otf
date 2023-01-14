@@ -62,7 +62,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 				} else if res, ok := ev.Payload.(interface{ WorkspaceID() string }); ok {
 					// apply workspace filter
 					if opts.WorkspaceID != nil {
-						if ws.Name() != *opts.WorkspaceID {
+						if res.WorkspaceID() != *opts.WorkspaceID {
 							continue
 						}
 					}
