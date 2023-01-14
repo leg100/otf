@@ -55,7 +55,7 @@ func (m *workspaceMapper) add(ws *otf.Workspace) {
 }
 
 func (m *workspaceMapper) addWithoutLock(ws *otf.Workspace) {
-	m.idOrgMap[ws.ID()] = ws.OrganizationName()
+	m.idOrgMap[ws.ID()] = ws.Organization()
 	m.nameIDMap[ws.QualifiedName()] = ws.ID()
 }
 

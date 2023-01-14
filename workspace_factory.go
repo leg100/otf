@@ -9,7 +9,7 @@ type WorkspaceFactory struct {
 }
 
 func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	org, err := f.OrganizationService.GetOrganization(ctx, opts.OrganizationName)
+	org, err := f.OrganizationService.GetOrganization(ctx, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
-		organization:        organization,
+		organization:        organization.Name(),
 	}
 	// TODO: ExecutionMode and Operations are mututally exclusive options, this
 	// should be enforced.
@@ -102,7 +102,7 @@ type WorkspaceCreateOptions struct {
 	TerraformVersion           *string
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	OrganizationName           string `schema:"organization_name"`
+	Organization               string `schema:"organization_name"`
 	Repo                       *WorkspaceRepo
 
 	// Options for testing purposes only
@@ -118,4 +118,3 @@ func (o WorkspaceCreateOptions) Valid() error {
 	}
 	return nil
 }
-

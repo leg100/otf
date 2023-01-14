@@ -6,27 +6,20 @@ import (
 	"github.com/leg100/otf"
 )
 
-// WorkspaceResource is a resource that belongs to a workspace and organization, or is a
-// workspace
-type WorkspaceResource interface {
-	OrganizationName() string
-	WorkspaceName() string
-}
-
 // Watch provides authenticated access to a stream of events.
 //
-// TODO: apply watch options
+// NOTE: only events for workspaces and workspace related resources such as runs
+// are watched.
 func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan otf.Event, error) {
 	var err error
-	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
 		_, err = a.CanAccessWorkspace(ctx, otf.WatchAction, otf.WorkspaceSpec{
-			Name:             opts.WorkspaceName,
-			OrganizationName: opts.OrganizationName,
+			ID: opts.WorkspaceID,
 		})
-	} else if opts.OrganizationName != nil {
+	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
-		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.OrganizationName)
+		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.Organization)
 	}
 	if err != nil {
 		return nil, err
@@ -49,24 +42,48 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					close(ch)
 					return
 				}
-				res, ok := ev.Payload.(WorkspaceResource)
-				if !ok {
-					// skip events that contain payloads that cannot be related
-					// back to a workspace, including log updates which are
-					// very noisy
+
+				// watch only items that are either:
+				// (a) workspaces
+				// (b) resources that belong to a workspace (e.g. a run)
+				if ws, ok := ev.Payload.(*otf.Workspace); ok {
+					// apply workspace filter
+					if opts.WorkspaceID != nil {
+						if ws.Name() != *opts.WorkspaceID {
+							continue
+						}
+					}
+					// apply organization filter
+					if opts.Organization != nil {
+						if ws.Organization() != *opts.Organization {
+							continue
+						}
+					}
+				} else if res, ok := ev.Payload.(interface{ WorkspaceID() string }); ok {
+					// apply workspace filter
+					if opts.WorkspaceID != nil {
+						if res.WorkspaceID() != *opts.WorkspaceID {
+							continue
+						}
+					}
+					// apply organization filter
+					if opts.Organization != nil {
+						// fetch workspace first in order to get organization
+						// name
+						ws, err := a.GetWorkspace(ctx, otf.WorkspaceSpec{
+							ID: otf.String(res.WorkspaceID()),
+						})
+						if err != nil {
+							a.Error(err, "retrieving workspace for watch event")
+							continue
+						}
+						if ws.Organization() != *opts.Organization {
+							continue
+						}
+					}
+				} else {
+					// skip all other events
 					continue
-				}
-				// apply optional organization filter
-				if opts.OrganizationName != nil {
-					if res.OrganizationName() != *opts.OrganizationName {
-						continue
-					}
-				}
-				// apply optional workspace filter
-				if opts.WorkspaceName != nil {
-					if res.WorkspaceName() != *opts.WorkspaceName {
-						continue
-					}
 				}
 
 				ch <- ev

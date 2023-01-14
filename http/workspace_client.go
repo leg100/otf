@@ -15,7 +15,7 @@ func (c *client) CreateWorkspace(ctx context.Context, options otf.WorkspaceCreat
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.Organization))
 	req, err := c.newRequest("POST", u, &options)
 	if err != nil {
 		return nil, err

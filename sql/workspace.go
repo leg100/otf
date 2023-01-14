@@ -35,7 +35,7 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 			QueueAllRuns:               ws.QueueAllRuns(),
 			AutoApply:                  ws.AutoApply(),
 			WorkingDirectory:           String(ws.WorkingDirectory()),
-			OrganizationID:             String(ws.OrganizationID()),
+			OrganizationName:           String(ws.Organization()),
 		})
 		if err != nil {
 			return databaseError(err)

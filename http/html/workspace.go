@@ -63,7 +63,7 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	org, err := app.GetOrganization(r.Context(), opts.OrganizationName)
+	org, err := app.GetOrganization(r.Context(), opts.Organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -132,7 +132,7 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	teams, err := app.ListTeams(r.Context(), workspace.OrganizationName())
+	teams, err := app.ListTeams(r.Context(), workspace.Organization())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -210,7 +210,7 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	flashSuccess(w, "deleted workspace: "+ws.Name())
-	http.Redirect(w, r, paths.Workspaces(ws.OrganizationName()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspaces(ws.Organization()), http.StatusFound)
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -258,8 +258,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	events, err := app.Watch(r.Context(), otf.WatchOptions{
-		WorkspaceName:    otf.String(ws.Name()),
-		OrganizationName: otf.String(ws.OrganizationName()),
+		WorkspaceID: otf.String(ws.ID()),
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -368,7 +367,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	providers, err := app.ListVCSProviders(r.Context(), ws.OrganizationName())
+	providers, err := app.ListVCSProviders(r.Context(), ws.Organization())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
