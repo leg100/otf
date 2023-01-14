@@ -61,12 +61,9 @@ type EventService interface {
 type WatchOptions struct {
 	// Name to uniquely describe the watcher. If not provided then a
 	// name will be auto generated.
-	Name *string
-	// Filter by organization name
-	OrganizationName *string `schema:"organization_name"`
-	// Filter by workspace name. Must be specified in tandem with
-	// OrganizationName.
-	WorkspaceName *string `schema:"workspace_name"`
+	Name         *string
+	Organization *string `schema:"organization_name"` // filter by organization name
+	WorkspaceID  *string `schema:"workspace_id"`      // filter by workspace ID; mutually exclusive with organization filter
 }
 
 // WatchLogsOptions filters logs returned by the WatchLogs endpoint.
