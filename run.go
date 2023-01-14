@@ -105,6 +105,7 @@ func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
 func (r *Run) TargetAddrs() []string                  { return r.targetAddrs }
+func (r *Run) AutoApply() bool                        { return r.autoApply }
 func (r *Run) Speculative() bool                      { return r.speculative }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }

@@ -1656,6 +1656,7 @@ type Runs struct {
 	Status                 pgtype.Text        `json:"status"`
 	WorkspaceID            pgtype.Text        `json:"workspace_id"`
 	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
+	AutoApply              bool               `json:"auto_apply"`
 }
 
 // StateVersionOutputs represents the Postgres composite type "state_version_outputs".
@@ -1907,6 +1908,7 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 		compositeField{"status", "text", &pgtype.Text{}},
 		compositeField{"workspace_id", "text", &pgtype.Text{}},
 		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
+		compositeField{"auto_apply", "bool", &pgtype.Bool{}},
 	)
 }
 

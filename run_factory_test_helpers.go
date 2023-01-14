@@ -13,7 +13,7 @@ type TestRunCreateOptions struct {
 	Speculative       bool
 	ExecutionMode     *ExecutionMode
 	Status            RunStatus
-	AutoApply         bool
+	AutoApply         *bool
 	Repo              *WorkspaceRepo
 	IngressAttributes *IngressAttributes
 }
@@ -24,9 +24,8 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	require.NoError(t, err)
 
 	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
-		Name:      "test-ws",
-		AutoApply: Bool(opts.AutoApply),
-		Repo:      opts.Repo,
+		Name: "test-ws",
+		Repo: opts.Repo,
 	})
 	require.NoError(t, err)
 
@@ -36,7 +35,9 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	})
 	require.NoError(t, err)
 
-	run := NewRun(cv, ws, RunCreateOptions{})
+	run := NewRun(cv, ws, RunCreateOptions{
+		AutoApply: opts.AutoApply,
+	})
 	if opts.Status != RunStatus("") {
 		run.updateStatus(opts.Status)
 	}

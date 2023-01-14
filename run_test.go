@@ -72,7 +72,7 @@ func TestRun_States(t *testing.T) {
 	t.Run("finish plan with changes on run with autoapply enabled", func(t *testing.T) {
 		run := NewTestRun(t, TestRunCreateOptions{
 			Status:    RunPlanning,
-			AutoApply: true,
+			AutoApply: Bool(true),
 		})
 
 		run.plan.ResourceReport = &ResourceReport{Additions: 1}
