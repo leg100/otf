@@ -25,12 +25,6 @@ func (t *AgentToken) CreatedAt() time.Time { return t.createdAt }
 func (t *AgentToken) Description() string  { return t.description }
 func (t *AgentToken) Organization() string { return t.organization }
 
-// HideToken nullifies the authentication token contained within, rendering
-// AgentToken suitable for exposure outside of otfd.
-func (t *AgentToken) HideToken() {
-	t.token = nil
-}
-
 func (*AgentToken) CanAccessSite(action Action) bool {
 	// agent cannot carry out site-level actions
 	return false
@@ -74,7 +68,7 @@ func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {
 func UnmarshalAgentTokenJSONAPI(dto *jsonapi.AgentToken) *AgentToken {
 	at := &AgentToken{
 		id:           dto.ID,
-		organization: dto.OrganizationName,
+		organization: dto.Organization,
 	}
 	if dto.Token != nil {
 		at.token = dto.Token

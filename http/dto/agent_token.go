@@ -4,8 +4,8 @@ package dto
 type AgentToken struct {
 	ID string `jsonapi:"primary,agent_tokens"`
 	// Only set upon creation and never thereafter
-	Token            *string `jsonapi:"attr,token,omitempty"`
-	OrganizationName string  `jsonapi:"attr,organization_name"`
+	Token        *string `jsonapi:"attr,token,omitempty"`
+	Organization string  `jsonapi:"attr,organization_name"`
 }
 
 // AgentTokenCreateOptions represents the options for creating a new otf agent token.
@@ -19,7 +19,7 @@ type AgentTokenCreateOptions struct {
 	// token.
 	Description string `jsonapi:"attr,description"`
 
-	// OrganizationName is the name of the organization in which to create the
+	// Organization is the name of the organization in which to create the
 	// token.
-	OrganizationName string `jsonapi:"attr,organization_name"`
+	Organization string `jsonapi:"attr,organization_name"`
 }

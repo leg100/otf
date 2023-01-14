@@ -10,8 +10,8 @@ import (
 // CreateOrganization creates a new organization with the given options.
 func (c *client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	req, err := c.newRequest("POST", "agent/create", &dto.AgentTokenCreateOptions{
-		Description:      options.Description,
-		OrganizationName: options.Organization,
+		Description:  options.Description,
+		Organization: options.Organization,
 	})
 	if err != nil {
 		return nil, err
