@@ -34,6 +34,7 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
 	run, err := s.Application.CreateRun(r.Context(), workspace, otf.RunCreateOptions{
+		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
 		RefreshOnly:            opts.RefreshOnly,

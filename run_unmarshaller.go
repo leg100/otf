@@ -20,12 +20,12 @@ type RunResult struct {
 	ApplyStatus            pgtype.Text                   `json:"apply_status"`
 	ReplaceAddrs           []string                      `json:"replace_addrs"`
 	TargetAddrs            []string                      `json:"target_addrs"`
+	AutoApply              bool                          `json:"auto_apply"`
 	PlannedChanges         *pggen.Report                 `json:"planned_changes"`
 	AppliedChanges         *pggen.Report                 `json:"applied_changes"`
 	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
-	AutoApply              bool                          `json:"auto_apply"`
 	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
 	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 	Latest                 bool                          `json:"latest"`

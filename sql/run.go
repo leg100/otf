@@ -22,6 +22,7 @@ func (db *DB) CreateRun(ctx context.Context, run *otf.Run) error {
 			Status:                 String(string(run.Status())),
 			ReplaceAddrs:           run.ReplaceAddrs(),
 			TargetAddrs:            run.TargetAddrs(),
+			AutoApply:              run.AutoApply(),
 			ConfigurationVersionID: String(run.ConfigurationVersionID()),
 			WorkspaceID:            String(run.WorkspaceID()),
 		})

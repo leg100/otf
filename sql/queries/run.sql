@@ -9,6 +9,7 @@ INSERT INTO runs (
     status,
     replace_addrs,
     target_addrs,
+    auto_apply,
     configuration_version_id,
     workspace_id
 ) VALUES (
@@ -21,6 +22,7 @@ INSERT INTO runs (
     pggen.arg('Status'),
     pggen.arg('ReplaceAddrs'),
     pggen.arg('TargetAddrs'),
+    pggen.arg('AutoApply'),
     pggen.arg('ConfigurationVersionID'),
     pggen.arg('WorkspaceID')
 );
@@ -50,12 +52,12 @@ SELECT
     applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.auto_apply,
     plans.report AS planned_changes,
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
@@ -125,12 +127,12 @@ SELECT
     applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.auto_apply,
     plans.report AS planned_changes,
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
@@ -180,12 +182,12 @@ SELECT
     applies.status      AS apply_status,
     runs.replace_addrs,
     runs.target_addrs,
+    runs.auto_apply,
     plans.report AS planned_changes,
     applies.report AS applied_changes,
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.auto_apply,
     workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true

@@ -10,11 +10,7 @@ import (
 func TestRunFactory(t *testing.T) {
 	org := NewTestOrganization(t)
 	ws := NewTestWorkspace(t, org)
-	autoApplyWS := NewTestWorkspace(t, org, AutoApply())
 	cv := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{})
-	speculativeCV := NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
-		Speculative: Bool(true),
-	})
 
 	tests := []struct {
 		name string
@@ -39,17 +35,28 @@ func TestRunFactory(t *testing.T) {
 		{
 			name: "speculative",
 			ws:   ws,
-			cv:   speculativeCV,
+			cv: NewTestConfigurationVersion(t, ws, ConfigurationVersionCreateOptions{
+				Speculative: Bool(true),
+			}),
 			opts: RunCreateOptions{},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.speculative)
 			},
 		},
 		{
-			name: "auto-apply",
-			ws:   autoApplyWS,
+			name: "workspace auto-apply",
+			ws:   NewTestWorkspace(t, org, AutoApply()),
 			cv:   cv,
 			opts: RunCreateOptions{},
+			want: func(t *testing.T, run *Run, err error) {
+				assert.True(t, run.autoApply)
+			},
+		},
+		{
+			name: "run auto-apply",
+			ws:   NewTestWorkspace(t, org),
+			cv:   cv,
+			opts: RunCreateOptions{AutoApply: Bool(true)},
 			want: func(t *testing.T, run *Run, err error) {
 				assert.True(t, run.autoApply)
 			},
