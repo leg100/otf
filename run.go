@@ -79,7 +79,6 @@ type Run struct {
 	replaceAddrs           []string
 	targetAddrs            []string
 	organization           string
-	workspaceName          string
 	workspaceID            string
 	configurationVersionID string
 	latest                 bool
@@ -108,7 +107,6 @@ func (r *Run) AutoApply() bool                        { return r.autoApply }
 func (r *Run) Speculative() bool                      { return r.speculative }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
-func (r *Run) WorkspaceName() string                  { return r.workspaceName }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
 func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }

@@ -26,7 +26,6 @@ type RunResult struct {
 	ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 	Speculative            bool                          `json:"speculative"`
-	WorkspaceName          pgtype.Text                   `json:"workspace_name"`
 	ExecutionMode          pgtype.Text                   `json:"execution_mode"`
 	Latest                 bool                          `json:"latest"`
 	OrganizationName       pgtype.Text                   `json:"organization_name"`
@@ -50,10 +49,9 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 		targetAddrs:            result.TargetAddrs,
 		autoApply:              result.AutoApply,
 		speculative:            result.Speculative,
-		workspaceName:          result.WorkspaceName.String,
 		executionMode:          ExecutionMode(result.ExecutionMode.String),
 		latest:                 result.Latest,
-		organization:       result.OrganizationName.String,
+		organization:           result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
 		configurationVersionID: result.ConfigurationVersionID.String,
 		plan: &Plan{
@@ -97,7 +95,6 @@ func UnmarshalRunJSONAPI(d *dto.Run) *Run {
 		// TODO: unmarshal timestamps
 		replaceAddrs:           d.ReplaceAddrs,
 		targetAddrs:            d.TargetAddrs,
-		workspaceName:          d.Workspace.Name,
 		workspaceID:            d.Workspace.ID,
 		configurationVersionID: d.ConfigurationVersion.ID,
 		// TODO: unmarshal plan and apply relations

@@ -36,21 +36,22 @@ func (f *RunFactory) getConfigurationVersion(ctx context.Context, workspaceID st
 // NewRun creates a new run with defaults.
 func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run {
 	run := Run{
-		id:            NewID("run"),
-		createdAt:     CurrentTimestamp(),
-		refresh:       DefaultRefresh,
-		workspaceName: ws.Name(),
-		organization:  ws.Organization(),
+		id:                     NewID("run"),
+		createdAt:              CurrentTimestamp(),
+		refresh:                DefaultRefresh,
+		organization:           ws.Organization(),
+		configurationVersionID: cv.ID(),
+		workspaceID:            ws.ID(),
+		speculative:            cv.Speculative(),
+		replaceAddrs:           opts.ReplaceAddrs,
+		targetAddrs:            opts.TargetAddrs,
+		executionMode:          ws.ExecutionMode(),
+		autoApply:              ws.AutoApply(),
 	}
-	run.configurationVersionID = cv.ID()
-	run.workspaceID = ws.ID()
 	run.plan = newPlan(&run)
 	run.apply = newApply(&run)
-	run.speculative = cv.Speculative()
 	run.updateStatus(RunPending)
-	run.replaceAddrs = opts.ReplaceAddrs
-	run.targetAddrs = opts.TargetAddrs
-	run.executionMode = ws.ExecutionMode()
+
 	if opts.IsDestroy != nil {
 		run.isDestroy = *opts.IsDestroy
 	}
@@ -62,8 +63,6 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	}
 	if opts.AutoApply != nil {
 		run.autoApply = *opts.AutoApply
-	} else {
-		run.autoApply = ws.AutoApply()
 	}
 	if cv.ingressAttributes != nil {
 		run.commit = &cv.ingressAttributes.CommitSHA

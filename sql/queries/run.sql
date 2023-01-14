@@ -58,7 +58,6 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -133,7 +132,6 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
@@ -188,7 +186,6 @@ SELECT
     runs.configuration_version_id,
     runs.workspace_id,
     configuration_versions.speculative,
-    workspaces.name AS workspace_name,
     workspaces.execution_mode AS execution_mode,
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false

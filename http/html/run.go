@@ -80,6 +80,13 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{
+		ID: otf.String(run.WorkspaceID()),
+	})
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// Get existing logs thus far received for each phase. If none are found then don't treat
 	// that as an error because it merely means no logs have yet been received.
 	planLogs, err := app.GetChunk(r.Context(), otf.GetChunkOptions{
@@ -100,10 +107,12 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 	}
 	app.render("run_get.tmpl", w, r, struct {
 		*otf.Run
+		Workspace *otf.Workspace
 		PlanLogs  *htmlLogChunk
 		ApplyLogs *htmlLogChunk
 	}{
 		Run:       run,
+		Workspace: ws,
 		PlanLogs:  &htmlLogChunk{planLogs},
 		ApplyLogs: &htmlLogChunk{applyLogs},
 	})
