@@ -81,7 +81,11 @@ func (a *Application) ListOrganizations(ctx context.Context, opts otf.Organizati
 		return nil, err
 	}
 	if user, ok := subj.(*otf.User); ok && !user.IsSiteAdmin() {
-		return newOrganizationList(opts, user.Organizations()), nil
+		orgs, err := a.db.ListOrganizationsByUser(ctx, user.ID())
+		if err != nil {
+			return nil, err
+		}
+		return newOrganizationList(opts, orgs), nil
 	}
 	return a.db.ListOrganizations(ctx, opts)
 }

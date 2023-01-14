@@ -21,7 +21,7 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 			return err
 		}
 		for _, org := range user.Organizations() {
-			_, err = tx.InsertOrganizationMembership(ctx, String(user.ID()), String(org.ID()))
+			_, err = tx.InsertOrganizationMembership(ctx, String(user.ID()), String(org))
 			if err != nil {
 				return err
 			}

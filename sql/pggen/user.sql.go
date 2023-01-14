@@ -55,10 +55,10 @@ func (q *DBQuerier) InsertUserScan(results pgx.BatchResults) (pgconn.CommandTag,
 }
 
 const findUsersSQL = `SELECT u.*,
-    array_remove(array_agg(o), NULL) AS organizations,
+    array_remove(array_agg(o.name), NULL) AS organizations,
     array_remove(array_agg(teams), NULL) AS teams
 FROM users u
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o ON om.organization_name = o.name) ON u.user_id = om.user_id
 LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
 GROUP BY u.user_id
 ;`
@@ -68,7 +68,7 @@ type FindUsersRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -81,15 +81,11 @@ func (q *DBQuerier) FindUsers(ctx context.Context) ([]FindUsersRow, error) {
 	}
 	defer rows.Close()
 	items := []FindUsersRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsers row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
@@ -115,15 +111,11 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 	}
 	defer rows.Close()
 	items := []FindUsersRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersBatch row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsers row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsers row: %w", err)
@@ -138,14 +130,14 @@ func (q *DBQuerier) FindUsersScan(results pgx.BatchResults) ([]FindUsersRow, err
 
 const findUsersByOrganizationSQL = `SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     array_remove(array_agg(teams), NULL) AS teams
 FROM users u
-JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+JOIN (organization_memberships om JOIN organizations o ON om.organization_name = o.name) ON u.user_id = om.user_id
 LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
 WHERE o.name = $1
 GROUP BY u.user_id
@@ -156,7 +148,7 @@ type FindUsersByOrganizationRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -169,15 +161,11 @@ func (q *DBQuerier) FindUsersByOrganization(ctx context.Context, organizationNam
 	}
 	defer rows.Close()
 	items := []FindUsersByOrganizationRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByOrganizationRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByOrganization row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByOrganization row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByOrganization row: %w", err)
@@ -203,15 +191,11 @@ func (q *DBQuerier) FindUsersByOrganizationScan(results pgx.BatchResults) ([]Fin
 	}
 	defer rows.Close()
 	items := []FindUsersByOrganizationRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByOrganizationRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByOrganizationBatch row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByOrganization row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByOrganization row: %w", err)
@@ -226,7 +210,7 @@ func (q *DBQuerier) FindUsersByOrganizationScan(results pgx.BatchResults) ([]Fin
 
 const findUsersByTeamSQL = `SELECT
     u.*,
-    array_remove(array_agg(o), NULL) AS organizations,
+    array_remove(array_agg(o.name), NULL) AS organizations,
     array_remove(array_agg(t), NULL) AS teams
 FROM users u
 JOIN team_memberships tm USING (user_id)
@@ -242,7 +226,7 @@ type FindUsersByTeamRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -255,15 +239,11 @@ func (q *DBQuerier) FindUsersByTeam(ctx context.Context, organizationName pgtype
 	}
 	defer rows.Close()
 	items := []FindUsersByTeamRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeam row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByTeam row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByTeam row: %w", err)
@@ -289,15 +269,11 @@ func (q *DBQuerier) FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersBy
 	}
 	defer rows.Close()
 	items := []FindUsersByTeamRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeamBatch row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByTeam row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByTeam row: %w", err)
@@ -313,9 +289,9 @@ func (q *DBQuerier) FindUsersByTeamScan(results pgx.BatchResults) ([]FindUsersBy
 const findUsersByTeamIDSQL = `SELECT
     u.*,
     (
-        SELECT array_agg(o)
+        SELECT array_agg(o.name)
         FROM organizations o
-        JOIN organization_memberships om USING (organization_id)
+        JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -336,7 +312,7 @@ type FindUsersByTeamIDRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -349,15 +325,11 @@ func (q *DBQuerier) FindUsersByTeamID(ctx context.Context, teamID pgtype.Text) (
 	}
 	defer rows.Close()
 	items := []FindUsersByTeamIDRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamIDRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeamID row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
@@ -383,15 +355,11 @@ func (q *DBQuerier) FindUsersByTeamIDScan(results pgx.BatchResults) ([]FindUsers
 	}
 	defer rows.Close()
 	items := []FindUsersByTeamIDRow{}
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
 	for rows.Next() {
 		var item FindUsersByTeamIDRow
-		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+		if err := rows.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 			return nil, fmt.Errorf("scan FindUsersByTeamIDBatch row: %w", err)
-		}
-		if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
 		}
 		if err := teamsArray.AssignTo(&item.Teams); err != nil {
 			return nil, fmt.Errorf("assign FindUsersByTeamID row: %w", err)
@@ -406,9 +374,9 @@ func (q *DBQuerier) FindUsersByTeamIDScan(results pgx.BatchResults) ([]FindUsers
 
 const findUserByIDSQL = `SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -427,7 +395,7 @@ type FindUserByIDRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -436,13 +404,9 @@ func (q *DBQuerier) FindUserByID(ctx context.Context, userID pgtype.Text) (FindU
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByID")
 	row := q.conn.QueryRow(ctx, findUserByIDSQL, userID)
 	var item FindUserByIDRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByID: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
@@ -459,13 +423,9 @@ func (q *DBQuerier) FindUserByIDBatch(batch genericBatch, userID pgtype.Text) {
 func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow, error) {
 	row := results.QueryRow()
 	var item FindUserByIDRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByIDBatch row: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByID row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByID row: %w", err)
@@ -475,9 +435,9 @@ func (q *DBQuerier) FindUserByIDScan(results pgx.BatchResults) (FindUserByIDRow,
 
 const findUserByUsernameSQL = `SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -496,7 +456,7 @@ type FindUserByUsernameRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -505,13 +465,9 @@ func (q *DBQuerier) FindUserByUsername(ctx context.Context, username pgtype.Text
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByUsername")
 	row := q.conn.QueryRow(ctx, findUserByUsernameSQL, username)
 	var item FindUserByUsernameRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByUsername: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
@@ -528,13 +484,9 @@ func (q *DBQuerier) FindUserByUsernameBatch(batch genericBatch, username pgtype.
 func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserByUsernameRow, error) {
 	row := results.QueryRow()
 	var item FindUserByUsernameRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByUsernameBatch row: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByUsername row: %w", err)
@@ -544,9 +496,9 @@ func (q *DBQuerier) FindUserByUsernameScan(results pgx.BatchResults) (FindUserBy
 
 const findUserBySessionTokenSQL = `SELECT u.*,
     (
-        SELECT array_agg(o)
+        SELECT array_agg(o.name)
         FROM organizations o
-        JOIN organization_memberships om USING (organization_id)
+        JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -566,7 +518,7 @@ type FindUserBySessionTokenRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -575,13 +527,9 @@ func (q *DBQuerier) FindUserBySessionToken(ctx context.Context, token pgtype.Tex
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserBySessionToken")
 	row := q.conn.QueryRow(ctx, findUserBySessionTokenSQL, token)
 	var item FindUserBySessionTokenRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserBySessionToken: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
@@ -598,13 +546,9 @@ func (q *DBQuerier) FindUserBySessionTokenBatch(batch genericBatch, token pgtype
 func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUserBySessionTokenRow, error) {
 	row := results.QueryRow()
 	var item FindUserBySessionTokenRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserBySessionTokenBatch row: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserBySessionToken row: %w", err)
@@ -614,9 +558,9 @@ func (q *DBQuerier) FindUserBySessionTokenScan(results pgx.BatchResults) (FindUs
 
 const findUserByAuthenticationTokenSQL = `SELECT u.*,
     (
-        select array_remove(array_agg(o), null)
+        select array_remove(array_agg(o.name), null)
         from organizations o
-        left join organization_memberships om using (organization_id)
+        left join organization_memberships om ON om.organization_name = o.name
         where om.user_id = u.user_id
     ) as organizations,
     (
@@ -636,7 +580,7 @@ type FindUserByAuthenticationTokenRow struct {
 	Username      pgtype.Text        `json:"username"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Organizations []Organizations    `json:"organizations"`
+	Organizations []string           `json:"organizations"`
 	Teams         []Teams            `json:"teams"`
 }
 
@@ -645,13 +589,9 @@ func (q *DBQuerier) FindUserByAuthenticationToken(ctx context.Context, token pgt
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindUserByAuthenticationToken")
 	row := q.conn.QueryRow(ctx, findUserByAuthenticationTokenSQL, token)
 	var item FindUserByAuthenticationTokenRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("query FindUserByAuthenticationToken: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
@@ -668,13 +608,9 @@ func (q *DBQuerier) FindUserByAuthenticationTokenBatch(batch genericBatch, token
 func (q *DBQuerier) FindUserByAuthenticationTokenScan(results pgx.BatchResults) (FindUserByAuthenticationTokenRow, error) {
 	row := results.QueryRow()
 	var item FindUserByAuthenticationTokenRow
-	organizationsArray := q.types.newOrganizationsArray()
 	teamsArray := q.types.newTeamsArray()
-	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, organizationsArray, teamsArray); err != nil {
+	if err := row.Scan(&item.UserID, &item.Username, &item.CreatedAt, &item.UpdatedAt, &item.Organizations, teamsArray); err != nil {
 		return item, fmt.Errorf("scan FindUserByAuthenticationTokenBatch row: %w", err)
-	}
-	if err := organizationsArray.AssignTo(&item.Organizations); err != nil {
-		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)
 	}
 	if err := teamsArray.AssignTo(&item.Teams); err != nil {
 		return item, fmt.Errorf("assign FindUserByAuthenticationToken row: %w", err)

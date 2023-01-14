@@ -108,8 +108,8 @@ func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*
 		return nil, err
 	}
 
-	// organizations to be synchronised
-	var organizations []*otf.Organization
+	// organization names to be synchronised
+	var organizations []string
 	// teams to be synchronised
 	var teams []*otf.Team
 
@@ -121,7 +121,7 @@ func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*
 		if err != nil {
 			return nil, err
 		}
-		organizations = append(organizations, org)
+		organizations = append(organizations, org.Name())
 	}
 
 	// A user also gets their own personal organization matching their username
@@ -131,7 +131,7 @@ func (a *Authenticator) synchronise(ctx context.Context, client cloud.Client) (*
 	if err != nil {
 		return nil, err
 	}
-	organizations = append(organizations, personal)
+	organizations = append(organizations, personal.Name())
 
 	// Create team for each cloud team
 	for _, cteam := range cuser.Teams {

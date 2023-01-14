@@ -150,24 +150,14 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
-// IsOwner determines if user is a member of an organization
-func (u *User) IsOrgMember(organization string) bool {
-	for _, membership := range u.organizations {
-		if membership == organization {
-			return true
-		}
-	}
-	return false
-}
-
 // SyncMemberships synchronises the user's organization and team memberships to
 // match those given, adding and removing memberships in the persistence store accordingly.
-func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Organization, teams []*Team) error {
+func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []string, teams []*Team) error {
 	// Iterate through orgs and check if already a member; if not then
 	// add membership to store
 	for _, org := range orgs {
-		if !inOrganizationList(u.organizations, org.ID()) {
-			if err := store.AddOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
+		if !Contains(u.organizations, org) {
+			if err := store.AddOrganizationMembership(ctx, u.ID(), org); err != nil {
 				if errors.Is(err, ErrResourceAlreadyExists) {
 					// ignore conflicts - sometimes the caller may provide
 					// duplicate orgs
@@ -181,8 +171,8 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Org
 	// Iterate thru receiver's orgs and check if in the given orgs; if not then
 	// remove membership from store
 	for _, org := range u.organizations {
-		if !inOrganizationList(orgs, org.ID()) {
-			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org.ID()); err != nil {
+		if !inOrganizationList(orgs, org) {
+			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org); err != nil {
 				return err
 			}
 		}
@@ -252,7 +242,7 @@ type UserService interface {
 	GetUser(ctx context.Context, spec UserSpec) (*User, error)
 	// SyncUserMemberships makes the user a member of the specified organizations
 	// and teams and removes any existing memberships not specified.
-	SyncUserMemberships(ctx context.Context, user *User, orgs []*Organization, teams []*Team) (*User, error)
+	SyncUserMemberships(ctx context.Context, user *User, orgs []string, teams []*Team) (*User, error)
 	// ListUsers lists users.
 	ListUsers(ctx context.Context, opts UserListOptions) ([]*User, error)
 }
@@ -320,9 +310,9 @@ func NewUser(username string, opts ...NewUserOption) *User {
 
 type NewUserOption func(*User)
 
-func WithOrganizationMemberships(memberships ...*Organization) NewUserOption {
+func WithOrganizationMemberships(organizations ...string) NewUserOption {
 	return func(user *User) {
-		user.organizations = memberships
+		user.organizations = organizations
 	}
 }
 
@@ -332,9 +322,9 @@ func WithTeamMemberships(memberships ...*Team) NewUserOption {
 	}
 }
 
-func inOrganizationList(orgs []*Organization, orgID string) bool {
+func inOrganizationList(orgs []string, organization string) bool {
 	for _, org := range orgs {
-		if org.ID() == orgID {
+		if org == organization {
 			return true
 		}
 	}
