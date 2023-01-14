@@ -19,24 +19,21 @@ var (
 
 // User represents an otf user account.
 type User struct {
-	// ID uniquely identifies users
-	id        string
-	createdAt time.Time
-	updatedAt time.Time
-	username  string
-	// A user belongs to many organizations
-	organizations []*Organization
-	// A user belongs to many teams
-	teams []*Team
+	id            string // ID uniquely identifies users
+	createdAt     time.Time
+	updatedAt     time.Time
+	username      string   // username is globally unique
+	organizations []string // user belongs to many organizations
+	teams         []*Team  // user belongs to many teams
 }
 
-func (u *User) ID() string                     { return u.id }
-func (u *User) Username() string               { return u.username }
-func (u *User) CreatedAt() time.Time           { return u.createdAt }
-func (u *User) UpdatedAt() time.Time           { return u.updatedAt }
-func (u *User) String() string                 { return u.username }
-func (u *User) Organizations() []*Organization { return u.organizations }
-func (u *User) Teams() []*Team                 { return u.teams }
+func (u *User) ID() string              { return u.id }
+func (u *User) Username() string        { return u.username }
+func (u *User) CreatedAt() time.Time    { return u.createdAt }
+func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
+func (u *User) String() string          { return u.username }
+func (u *User) Organizations() []string { return u.organizations }
+func (u *User) Teams() []*Team          { return u.teams }
 
 // TeamsByOrganization return a user's teams filtered by organization name
 func (u *User) TeamsByOrganization(organization string) []*Team {
@@ -141,7 +138,7 @@ func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 	return false
 }
 
-// IsOwner determines if the user is an owner of an organization
+// IsOwner determines if user is an owner of an organization
 func (u *User) IsOwner(organization string) bool {
 	for _, team := range u.teams {
 		if team.Organization() == organization {
@@ -153,10 +150,20 @@ func (u *User) IsOwner(organization string) bool {
 	return false
 }
 
+// IsOwner determines if user is a member of an organization
+func (u *User) IsOrgMember(organization string) bool {
+	for _, membership := range u.organizations {
+		if membership == organization {
+			return true
+		}
+	}
+	return false
+}
+
 // SyncMemberships synchronises the user's organization and team memberships to
 // match those given, adding and removing memberships in the persistence store accordingly.
 func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []*Organization, teams []*Team) error {
-	// Iterate thru orgs and check if already member; if not then
+	// Iterate through orgs and check if already a member; if not then
 	// add membership to store
 	for _, org := range orgs {
 		if !inOrganizationList(u.organizations, org.ID()) {
