@@ -248,6 +248,69 @@ func (q *DBQuerier) CountOrganizationsScan(results pgx.BatchResults) (*int, erro
 	return &item, nil
 }
 
+const findOrganizationsByUserIDSQL = `SELECT o.*
+FROM organizations o
+JOIN organization_memberships om ON o.name = om.organization_name
+WHERE om.user_id = $1
+;`
+
+type FindOrganizationsByUserIDRow struct {
+	OrganizationID  pgtype.Text        `json:"organization_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Name            pgtype.Text        `json:"name"`
+	SessionRemember int                `json:"session_remember"`
+	SessionTimeout  int                `json:"session_timeout"`
+}
+
+// FindOrganizationsByUserID implements Querier.FindOrganizationsByUserID.
+func (q *DBQuerier) FindOrganizationsByUserID(ctx context.Context, userID pgtype.Text) ([]FindOrganizationsByUserIDRow, error) {
+	ctx = context.WithValue(ctx, "pggen_query_name", "FindOrganizationsByUserID")
+	rows, err := q.conn.Query(ctx, findOrganizationsByUserIDSQL, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizationsByUserID: %w", err)
+	}
+	defer rows.Close()
+	items := []FindOrganizationsByUserIDRow{}
+	for rows.Next() {
+		var item FindOrganizationsByUserIDRow
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizationsByUserID row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizationsByUserID rows: %w", err)
+	}
+	return items, err
+}
+
+// FindOrganizationsByUserIDBatch implements Querier.FindOrganizationsByUserIDBatch.
+func (q *DBQuerier) FindOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text) {
+	batch.Queue(findOrganizationsByUserIDSQL, userID)
+}
+
+// FindOrganizationsByUserIDScan implements Querier.FindOrganizationsByUserIDScan.
+func (q *DBQuerier) FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]FindOrganizationsByUserIDRow, error) {
+	rows, err := results.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query FindOrganizationsByUserIDBatch: %w", err)
+	}
+	defer rows.Close()
+	items := []FindOrganizationsByUserIDRow{}
+	for rows.Next() {
+		var item FindOrganizationsByUserIDRow
+		if err := rows.Scan(&item.OrganizationID, &item.CreatedAt, &item.UpdatedAt, &item.Name, &item.SessionRemember, &item.SessionTimeout); err != nil {
+			return nil, fmt.Errorf("scan FindOrganizationsByUserIDBatch row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("close FindOrganizationsByUserIDBatch rows: %w", err)
+	}
+	return items, err
+}
+
 const insertOrganizationSQL = `INSERT INTO organizations (
     organization_id,
     created_at,

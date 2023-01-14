@@ -13,10 +13,10 @@ INSERT INTO users (
 
 -- name: FindUsers :many
 SELECT u.*,
-    array_remove(array_agg(o), NULL) AS organizations,
+    array_remove(array_agg(o.name), NULL) AS organizations,
     array_remove(array_agg(teams), NULL) AS teams
 FROM users u
-LEFT JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+LEFT JOIN (organization_memberships om JOIN organizations o ON om.organization_name = o.name) ON u.user_id = om.user_id
 LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
 GROUP BY u.user_id
 ;
@@ -24,14 +24,14 @@ GROUP BY u.user_id
 -- name: FindUsersByOrganization :many
 SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     array_remove(array_agg(teams), NULL) AS teams
 FROM users u
-JOIN (organization_memberships om JOIN organizations o USING (organization_id)) ON u.user_id = om.user_id
+JOIN (organization_memberships om JOIN organizations o ON om.organization_name = o.name) ON u.user_id = om.user_id
 LEFT JOIN (team_memberships tm JOIN teams USING (team_id)) ON u.user_id = tm.user_id
 WHERE o.name = pggen.arg('organization_name')
 GROUP BY u.user_id
@@ -40,7 +40,7 @@ GROUP BY u.user_id
 -- name: FindUsersByTeam :many
 SELECT
     u.*,
-    array_remove(array_agg(o), NULL) AS organizations,
+    array_remove(array_agg(o.name), NULL) AS organizations,
     array_remove(array_agg(t), NULL) AS teams
 FROM users u
 JOIN team_memberships tm USING (user_id)
@@ -55,9 +55,9 @@ GROUP BY u.user_id
 SELECT
     u.*,
     (
-        SELECT array_agg(o)
+        SELECT array_agg(o.name)
         FROM organizations o
-        JOIN organization_memberships om USING (organization_id)
+        JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -76,9 +76,9 @@ GROUP BY u.user_id
 -- name: FindUserByID :one
 SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -95,9 +95,9 @@ GROUP BY u.user_id
 -- name: FindUserByUsername :one
 SELECT u.*,
     (
-        SELECT array_remove(array_agg(o), NULL)
+        SELECT array_remove(array_agg(o.name), NULL)
         FROM organizations o
-        LEFT JOIN organization_memberships om USING (organization_id)
+        LEFT JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -114,9 +114,9 @@ GROUP BY u.user_id
 -- name: FindUserBySessionToken :one
 SELECT u.*,
     (
-        SELECT array_agg(o)
+        SELECT array_agg(o.name)
         FROM organizations o
-        JOIN organization_memberships om USING (organization_id)
+        JOIN organization_memberships om ON om.organization_name = o.name
         WHERE om.user_id = u.user_id
     ) AS organizations,
     (
@@ -134,9 +134,9 @@ GROUP BY u.user_id
 -- name: FindUserByAuthenticationToken :one
 SELECT u.*,
     (
-        select array_remove(array_agg(o), null)
+        select array_remove(array_agg(o.name), null)
         from organizations o
-        left join organization_memberships om using (organization_id)
+        left join organization_memberships om ON om.organization_name = o.name
         where om.user_id = u.user_id
     ) as organizations,
     (

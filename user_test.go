@@ -20,10 +20,10 @@ func TestUserSyncMemberships(t *testing.T) {
 	team3 := NewTeam("team-2", org3)
 
 	user := NewUser("test-user",
-		WithOrganizationMemberships(org1, org2),
+		WithOrganizationMemberships(org1.Name(), org2.Name()),
 		WithTeamMemberships(team1, team2))
 
-	wantOrgMemberships := []*Organization{org2, org3}
+	wantOrgMemberships := []string{org2.Name(), org3.Name()}
 	wantTeamMemberships := []*Team{team2, team3}
 
 	store := &fakeUserStore{}
@@ -35,11 +35,11 @@ func TestUserSyncMemberships(t *testing.T) {
 
 	// expect membership to have been added to org3
 	if assert.Equal(t, 1, len(store.addedOrgs)) {
-		assert.Equal(t, org3.ID(), store.addedOrgs[0])
+		assert.Equal(t, org3.Name(), store.addedOrgs[0])
 	}
 	// expect membership to have been removed from org1
 	if assert.Equal(t, 1, len(store.removedOrgs)) {
-		assert.Equal(t, org1.ID(), store.removedOrgs[0])
+		assert.Equal(t, org1.Name(), store.removedOrgs[0])
 	}
 	// expect membership to have been added to team3
 	if assert.Equal(t, 1, len(store.addedTeams)) {

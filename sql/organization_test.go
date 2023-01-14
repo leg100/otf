@@ -100,6 +100,20 @@ func TestOrganization_ListWithPagination(t *testing.T) {
 	})
 }
 
+func TestListUserOrganizations(t *testing.T) {
+	db := newTestDB(t)
+	org1 := createTestOrganization(t, db)
+	org2 := createTestOrganization(t, db)
+	user := createTestUser(t, db,
+		otf.WithOrganizationMemberships(org1.Name(), org2.Name()))
+
+	got, err := db.ListOrganizationsByUser(context.Background(), user.ID())
+	require.NoError(t, err)
+
+	assert.Contains(t, got, org1)
+	assert.Contains(t, got, org2)
+}
+
 func TestOrganization_Delete(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)

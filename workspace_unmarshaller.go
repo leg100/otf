@@ -182,15 +182,6 @@ func UnmarshalWorkspacePermissionResult(row WorkspacePermissionResult) (*Workspa
 	}
 	return &WorkspacePermission{
 		Role: role,
-		// TODO: remove duplication with team and user unmarshaller
-		Team: &Team{
-			id:           row.Team.TeamID.String,
-			name:         row.Team.Name.String,
-			createdAt:    row.Team.CreatedAt.Time.UTC(),
-			organization: row.Organization.Name.String,
-			access: OrganizationAccess{
-				ManageWorkspaces: row.Team.PermissionManageWorkspaces,
-			},
-		},
+		Team: UnmarshalTeamResult(TeamResult(*row.Team)),
 	}, nil
 }

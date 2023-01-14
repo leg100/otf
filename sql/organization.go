@@ -81,6 +81,19 @@ func (db *DB) ListOrganizations(ctx context.Context, opts otf.OrganizationListOp
 	}, nil
 }
 
+func (db *DB) ListOrganizationsByUser(ctx context.Context, userID string) ([]*otf.Organization, error) {
+	result, err := db.FindOrganizationsByUserID(ctx, String(userID))
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*otf.Organization
+	for _, r := range result {
+		items = append(items, otf.UnmarshalOrganizationRow(pggen.Organizations(r)))
+	}
+	return items, nil
+}
+
 func (db *DB) GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error) {
 	name, err := db.FindOrganizationNameByWorkspaceID(ctx, String(workspaceID))
 	if err != nil {

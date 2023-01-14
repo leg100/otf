@@ -291,6 +291,13 @@ type Querier interface {
 	// CountOrganizationsScan scans the result of an executed CountOrganizationsBatch query.
 	CountOrganizationsScan(results pgx.BatchResults) (*int, error)
 
+	FindOrganizationsByUserID(ctx context.Context, userID pgtype.Text) ([]FindOrganizationsByUserIDRow, error)
+	// FindOrganizationsByUserIDBatch enqueues a FindOrganizationsByUserID query into batch to be executed
+	// later by the batch.
+	FindOrganizationsByUserIDBatch(batch genericBatch, userID pgtype.Text)
+	// FindOrganizationsByUserIDScan scans the result of an executed FindOrganizationsByUserIDBatch query.
+	FindOrganizationsByUserIDScan(results pgx.BatchResults) ([]FindOrganizationsByUserIDRow, error)
+
 	InsertOrganization(ctx context.Context, params InsertOrganizationParams) (pgconn.CommandTag, error)
 	// InsertOrganizationBatch enqueues a InsertOrganization query into batch to be executed
 	// later by the batch.
@@ -312,17 +319,17 @@ type Querier interface {
 	// DeleteOrganizationScan scans the result of an executed DeleteOrganizationBatch query.
 	DeleteOrganizationScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (pgconn.CommandTag, error)
+	InsertOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
 	// InsertOrganizationMembershipBatch enqueues a InsertOrganizationMembership query into batch to be executed
 	// later by the batch.
-	InsertOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationID pgtype.Text)
+	InsertOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text)
 	// InsertOrganizationMembershipScan scans the result of an executed InsertOrganizationMembershipBatch query.
 	InsertOrganizationMembershipScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationID pgtype.Text) (pgtype.Text, error)
+	DeleteOrganizationMembership(ctx context.Context, userID pgtype.Text, organizationName pgtype.Text) (pgtype.Text, error)
 	// DeleteOrganizationMembershipBatch enqueues a DeleteOrganizationMembership query into batch to be executed
 	// later by the batch.
-	DeleteOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationID pgtype.Text)
+	DeleteOrganizationMembershipBatch(batch genericBatch, userID pgtype.Text, organizationName pgtype.Text)
 	// DeleteOrganizationMembershipScan scans the result of an executed DeleteOrganizationMembershipBatch query.
 	DeleteOrganizationMembershipScan(results pgx.BatchResults) (pgtype.Text, error)
 
@@ -1240,6 +1247,9 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, countOrganizationsSQL, countOrganizationsSQL); err != nil {
 		return fmt.Errorf("prepare query 'CountOrganizations': %w", err)
 	}
+	if _, err := p.Prepare(ctx, findOrganizationsByUserIDSQL, findOrganizationsByUserIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindOrganizationsByUserID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertOrganizationSQL, insertOrganizationSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertOrganization': %w", err)
 	}
@@ -1981,12 +1991,6 @@ func (tr *typeResolver) newConfigurationVersionStatusTimestampsArray() pgtype.Va
 // '_module_versions' array type.
 func (tr *typeResolver) newModuleVersionsArray() pgtype.ValueTranscoder {
 	return tr.newArrayValue("_module_versions", "module_versions", tr.newModuleVersions)
-}
-
-// newOrganizationsArray creates a new pgtype.ValueTranscoder for the Postgres
-// '_organizations' array type.
-func (tr *typeResolver) newOrganizationsArray() pgtype.ValueTranscoder {
-	return tr.newArrayValue("_organizations", "organizations", tr.newOrganizations)
 }
 
 // newPhaseStatusTimestampsArray creates a new pgtype.ValueTranscoder for the Postgres

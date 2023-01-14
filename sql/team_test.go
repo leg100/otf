@@ -91,7 +91,7 @@ func TestTeam_ListTeamMembers(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	memberships := []otf.NewUserOption{
-		otf.WithOrganizationMemberships(org),
+		otf.WithOrganizationMemberships(org.Name()),
 		otf.WithTeamMemberships(team),
 	}
 	user1 := createTestUser(t, db, memberships...)

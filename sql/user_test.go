@@ -26,13 +26,13 @@ func TestUser_AddOrganizationMembership(t *testing.T) {
 	org := createTestOrganization(t, db)
 	user := createTestUser(t, db)
 
-	err := db.AddOrganizationMembership(ctx, user.ID(), org.ID())
+	err := db.AddOrganizationMembership(ctx, user.ID(), org.Name())
 	require.NoError(t, err)
 
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
 	require.NoError(t, err)
 
-	assert.Contains(t, got.Organizations(), org)
+	assert.Contains(t, got.Organizations(), org.Name())
 }
 
 func TestUser_RemoveOrganizationMembership(t *testing.T) {
@@ -40,9 +40,9 @@ func TestUser_RemoveOrganizationMembership(t *testing.T) {
 	ctx := context.Background()
 
 	org := createTestOrganization(t, db)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org))
+	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
-	err := db.RemoveOrganizationMembership(ctx, user.ID(), org.ID())
+	err := db.RemoveOrganizationMembership(ctx, user.ID(), org.Name())
 	require.NoError(t, err)
 
 	got, err := db.GetUser(ctx, otf.UserSpec{Username: otf.String(user.Username())})
@@ -57,7 +57,7 @@ func TestUser_AddTeamMembership(t *testing.T) {
 
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org))
+	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
 
 	err := db.AddTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestUser_RemoveTeamMembership(t *testing.T) {
 
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
-	user := createTestUser(t, db, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+	user := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
 
 	err := db.RemoveTeamMembership(ctx, user.ID(), team.ID())
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestUser_Get(t *testing.T) {
 	team2 := createTestTeam(t, db, org2)
 
 	user := createTestUser(t, db,
-		otf.WithOrganizationMemberships(org1, org2),
+		otf.WithOrganizationMemberships(org1.Name(), org2.Name()),
 		otf.WithTeamMemberships(team1, team2))
 
 	session1 := createTestSession(t, db, user.ID())
@@ -152,14 +152,14 @@ func TestUser_List(t *testing.T) {
 	org := createTestOrganization(t, db)
 	team := createTestTeam(t, db, org)
 	user1 := createTestUser(t, db)
-	user2 := createTestUser(t, db, otf.WithOrganizationMemberships(org))
-	user3 := createTestUser(t, db, otf.WithOrganizationMemberships(org), otf.WithTeamMemberships(team))
+	user2 := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()))
+	user3 := createTestUser(t, db, otf.WithOrganizationMemberships(org.Name()), otf.WithTeamMemberships(team))
 
 	// Retrieve all users
 	users, err := db.ListUsers(ctx, otf.UserListOptions{})
 	require.NoError(t, err)
 
-	assert.Contains(t, users, user1)
+	require.Contains(t, users, user1)
 	assert.Contains(t, users, user2)
 	assert.Contains(t, users, user3)
 

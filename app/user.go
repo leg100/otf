@@ -66,7 +66,7 @@ func (a *Application) ListUsers(ctx context.Context, opts otf.UserListOptions) (
 	return a.db.ListUsers(ctx, opts)
 }
 
-func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
+func (a *Application) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []string, teams []*otf.Team) (*otf.User, error) {
 	if err := user.SyncMemberships(ctx, a.db, orgs, teams); err != nil {
 		return nil, err
 	}

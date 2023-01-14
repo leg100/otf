@@ -83,8 +83,8 @@ func TestAuthenticator(t *testing.T) {
 		assert.Equal(t, "fake-user", user.Username())
 
 		if assert.Equal(t, 2, len(user.Organizations())) {
-			assert.Equal(t, "fake-org", user.Organizations()[0].Name())
-			assert.Equal(t, "fake-user", user.Organizations()[1].Name())
+			assert.Equal(t, "fake-org", user.Organizations()[0])
+			assert.Equal(t, "fake-user", user.Organizations()[1])
 		}
 
 		if assert.Equal(t, 2, len(user.Teams())) {
@@ -115,7 +115,7 @@ func (f *fakeAuthenticatorApp) EnsureCreatedOrganization(ctx context.Context, op
 	return otf.NewOrganization(opts)
 }
 
-func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []*otf.Organization, teams []*otf.Team) (*otf.User, error) {
+func (f *fakeAuthenticatorApp) SyncUserMemberships(ctx context.Context, user *otf.User, orgs []string, teams []*otf.Team) (*otf.User, error) {
 	err := user.SyncMemberships(ctx, &fakeUserStore{}, orgs, teams)
 	return user, err
 }

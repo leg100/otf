@@ -57,6 +57,7 @@ type OrganizationStore interface {
 	GetOrganization(ctx context.Context, name string) (*Organization, error)
 	GetOrganizationByID(ctx context.Context, id string) (*Organization, error)
 	ListOrganizations(ctx context.Context, opts OrganizationListOptions) (*OrganizationList, error)
+	ListOrganizationsByUser(ctx context.Context, userID string) ([]*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, fn func(*Organization) error) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	GetOrganizationNameByWorkspaceID(ctx context.Context, workspaceID string) (string, error)
