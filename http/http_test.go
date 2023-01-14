@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,6 +62,43 @@ func TestSanitizeAddress(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, tt.want, got)
 			}
+		})
+	}
+}
+
+func TestGetClientIP(t *testing.T) {
+	tests := []struct {
+		name      string
+		forwarded string
+		remote    string
+		want      string
+	}{
+		{
+			name:   "no forwarded header",
+			remote: "1.2.3.4:1234",
+			want:   "1.2.3.4",
+		},
+		{
+			name:      "forwarded header",
+			remote:    "1.2.3.4:1234",
+			forwarded: "5.6.7.8",
+			want:      "5.6.7.8",
+		},
+		{
+			name:      "forwarded header with multiple ips",
+			remote:    "1.2.3.4:1234",
+			forwarded: "5.6.7.8, 9.0.1.2",
+			want:      "5.6.7.8",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("", "/", nil)
+			r.Header.Add("X-Forwarded-For", tt.forwarded)
+			r.RemoteAddr = tt.remote
+			got, err := GetClientIP(r)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
