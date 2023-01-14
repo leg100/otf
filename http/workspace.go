@@ -28,8 +28,8 @@ func (ws *Workspace) ToJSONAPI() any {
 	}
 	policy := &otf.WorkspacePolicy{
 		Organization: ws.Organization(),
-		WorkspaceID:      ws.ID(),
-		Permissions:      perms,
+		WorkspaceID:  ws.ID(),
+		Permissions:  perms,
 	}
 
 	obj := &dto.Workspace{
@@ -72,6 +72,7 @@ func (ws *Workspace) ToJSONAPI() any {
 		TriggerPrefixes:            ws.TriggerPrefixes(),
 		WorkingDirectory:           ws.WorkingDirectory(),
 		UpdatedAt:                  ws.UpdatedAt(),
+		Organization:               &dto.Organization{Name: ws.Organization()},
 	}
 
 	// Support including related resources:
@@ -92,10 +93,6 @@ func (ws *Workspace) ToJSONAPI() any {
 				obj.Organization = (&Organization{org}).ToJSONAPI().(*dto.Organization)
 			}
 		}
-	}
-	// If related resource is not included then at a minimum set its primary ID
-	if obj.Organization == nil {
-		obj.Organization = &dto.Organization{Name: ws.Organization()}
 	}
 	return obj
 }

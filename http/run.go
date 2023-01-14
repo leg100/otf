@@ -122,23 +122,6 @@ func (s *Server) listRuns(w http.ResponseWriter, r *http.Request, opts otf.RunLi
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	if opts.Include != nil {
-		for _, include := range strings.Split(*opts.Include, ",") {
-			if include == "workspace" {
-				ws, err := s.Application.GetWorkspace(r.Context(), otf.WorkspaceSpec{
-					ID: opts.WorkspaceID,
-				})
-				if err != nil {
-					writeError(w, http.StatusNotFound, err)
-					return
-				}
-				for _, run := range rl.Items {
-					// TODO: move this to RunList constructor below
-					run.IncludeWorkspace(ws)
-				}
-			}
-		}
-	}
 	writeResponse(w, r, &RunList{rl, r, s})
 }
 
@@ -296,8 +279,8 @@ func (r *Run) ToJSONAPI() any {
 	}
 	policy := &otf.WorkspacePolicy{
 		Organization: r.Organization(),
-		WorkspaceID:      r.WorkspaceID(),
-		Permissions:      perms,
+		WorkspaceID:  r.WorkspaceID(),
+		Permissions:  perms,
 	}
 
 	obj := &dto.Run{
@@ -340,12 +323,28 @@ func (r *Run) ToJSONAPI() any {
 		ConfigurationVersion: &dto.ConfigurationVersion{
 			ID: r.ConfigurationVersionID(),
 		},
+		Workspace: &dto.Workspace{ID: r.WorkspaceID()},
 	}
-	if r.Workspace() != nil {
-		obj.Workspace = (&Workspace{r.req, r.Application, r.Workspace()}).ToJSONAPI().(*dto.Workspace)
-	} else {
-		obj.Workspace = &dto.Workspace{
-			ID: r.WorkspaceID(),
+
+	// Support including related resources:
+	//
+	// https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#available-related-resources
+	//
+	// NOTE: limit support to workspace, since that's what the go-tfe tests
+	// for, and we want to run the full barrage of go-tfe workspace tests
+	// without error
+	if includes := r.req.URL.Query().Get("include"); includes != "" {
+		for _, inc := range strings.Split(includes, ",") {
+			switch inc {
+			case "workspace":
+				ws, err := r.Application.GetWorkspace(r.req.Context(), otf.WorkspaceSpec{
+					ID: otf.String(r.WorkspaceID()),
+				})
+				if err != nil {
+					panic(err.Error()) // throws HTTP500
+				}
+				obj.Workspace = (&Workspace{r.req, r.Application, ws}).ToJSONAPI().(*dto.Workspace)
+			}
 		}
 	}
 

@@ -81,14 +81,10 @@ type Run struct {
 	organization           string
 	workspaceID            string
 	configurationVersionID string
-	latest                 bool
-
-	commit *string // commit sha that triggered this run
-
-	// Relations
-	plan      *Plan
-	apply     *Apply
-	workspace *Workspace
+	latest                 bool    // is latest run for workspace
+	commit                 *string // commit sha that triggered this run
+	plan                   *Plan
+	apply                  *Apply
 }
 
 func (r *Run) ID() string                             { return r.id }
@@ -108,7 +104,6 @@ func (r *Run) Speculative() bool                      { return r.speculative }
 func (r *Run) Status() RunStatus                      { return r.status }
 func (r *Run) StatusTimestamps() []RunStatusTimestamp { return r.statusTimestamps }
 func (r *Run) WorkspaceID() string                    { return r.workspaceID }
-func (r *Run) Workspace() *Workspace                  { return r.workspace }
 func (r *Run) ConfigurationVersionID() string         { return r.configurationVersionID }
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
@@ -337,13 +332,6 @@ func (r *Run) Finish(phase PhaseType, opts PhaseFinishOptions) error {
 	default:
 		return fmt.Errorf("unknown phase")
 	}
-}
-
-// IncludeWorkspace adds a workspace for inclusion in the run's JSON-API object.
-//
-// TODO: remove; instead retrieve JSON-API inclusions in the http pkg
-func (r *Run) IncludeWorkspace(ws *Workspace) {
-	r.workspace = ws
 }
 
 func (r *Run) startPlan() error {
