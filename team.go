@@ -10,15 +10,11 @@ var ErrInvalidTeamSpec = errors.New("invalid team spec options")
 
 // Team is a group of users sharing a level of authorization.
 type Team struct {
-	// ID uniquely identifies team
-	id        string
-	createdAt time.Time
-	name      string
-
-	// A team belongs to an organization
-	organization *Organization
-
-	access OrganizationAccess
+	id           string // ID uniquely identifies team
+	createdAt    time.Time
+	name         string
+	organization string // name of team's organization
+	access       OrganizationAccess
 }
 
 func (u *Team) ID() string                             { return u.id }
@@ -26,8 +22,7 @@ func (u *Team) Name() string                           { return u.name }
 func (u *Team) TeamName() string                       { return u.name }
 func (u *Team) CreatedAt() time.Time                   { return u.createdAt }
 func (u *Team) String() string                         { return u.name }
-func (u *Team) Organization() *Organization            { return u.organization }
-func (u *Team) OrganizationName() string               { return u.organization.name }
+func (u *Team) Organization() string                   { return u.organization }
 func (u *Team) OrganizationAccess() OrganizationAccess { return u.access }
 
 func (u *Team) IsOwners() bool {
@@ -97,7 +92,7 @@ func NewTeam(name string, org *Organization, opts ...NewTeamOption) *Team {
 		id:           NewID("team"),
 		name:         name,
 		createdAt:    CurrentTimestamp(),
-		organization: org,
+		organization: org.Name(),
 	}
 	for _, o := range opts {
 		o(&team)

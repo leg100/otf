@@ -3,49 +3,37 @@ INSERT INTO teams (
     team_id,
     name,
     created_at,
-    organization_id
+    organization_name
 ) VALUES (
     pggen.arg('id'),
     pggen.arg('name'),
     pggen.arg('created_at'),
-    pggen.arg('organization_id')
+    pggen.arg('organization_name')
 );
 
 -- name: FindTeamsByOrg :many
-SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE o.name = pggen.arg('organization_name')
+SELECT *
+FROM teams
+WHERE organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindTeamByName :one
-SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.name = pggen.arg('name')
-AND   o.name = pggen.arg('organization_name')
+SELECT *
+FROM teams
+WHERE name              = pggen.arg('name')
+AND   organization_name = pggen.arg('organization_name')
 ;
 
 -- name: FindTeamByID :one
-SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.team_id = pggen.arg('team_id')
+SELECT *
+FROM teams
+WHERE team_id = pggen.arg('team_id')
 ;
 
 -- name: FindTeamByIDForUpdate :one
-SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
+SELECT *
 FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.team_id = pggen.arg('team_id')
+WHERE team_id = pggen.arg('team_id')
 FOR UPDATE OF t
 ;
 

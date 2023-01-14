@@ -89,10 +89,10 @@ func TestAuthenticator(t *testing.T) {
 
 		if assert.Equal(t, 2, len(user.Teams())) {
 			assert.Equal(t, "fake-team", user.Teams()[0].Name())
-			assert.Equal(t, "fake-org", user.Teams()[0].Organization().Name())
+			assert.Equal(t, "fake-org", user.Teams()[0].Organization())
 
 			assert.Equal(t, "owners", user.Teams()[1].Name())
-			assert.Equal(t, "fake-user", user.Teams()[1].Organization().Name())
+			assert.Equal(t, "fake-user", user.Teams()[1].Organization())
 		}
 	})
 }

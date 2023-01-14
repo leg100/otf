@@ -15,7 +15,7 @@ const insertTeamSQL = `INSERT INTO teams (
     team_id,
     name,
     created_at,
-    organization_id
+    organization_name
 ) VALUES (
     $1,
     $2,
@@ -24,16 +24,16 @@ const insertTeamSQL = `INSERT INTO teams (
 );`
 
 type InsertTeamParams struct {
-	ID             pgtype.Text
-	Name           pgtype.Text
-	CreatedAt      pgtype.Timestamptz
-	OrganizationID pgtype.Text
+	ID               pgtype.Text
+	Name             pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+	OrganizationName pgtype.Text
 }
 
 // InsertTeam implements Querier.InsertTeam.
 func (q *DBQuerier) InsertTeam(ctx context.Context, params InsertTeamParams) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertTeam")
-	cmdTag, err := q.conn.Exec(ctx, insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationID)
+	cmdTag, err := q.conn.Exec(ctx, insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName)
 	if err != nil {
 		return cmdTag, fmt.Errorf("exec query InsertTeam: %w", err)
 	}
@@ -42,7 +42,7 @@ func (q *DBQuerier) InsertTeam(ctx context.Context, params InsertTeamParams) (pg
 
 // InsertTeamBatch implements Querier.InsertTeamBatch.
 func (q *DBQuerier) InsertTeamBatch(batch genericBatch, params InsertTeamParams) {
-	batch.Queue(insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationID)
+	batch.Queue(insertTeamSQL, params.ID, params.Name, params.CreatedAt, params.OrganizationName)
 }
 
 // InsertTeamScan implements Querier.InsertTeamScan.
@@ -54,23 +54,19 @@ func (q *DBQuerier) InsertTeamScan(results pgx.BatchResults) (pgconn.CommandTag,
 	return cmdTag, err
 }
 
-const findTeamsByOrgSQL = `SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE o.name = $1
+const findTeamsByOrgSQL = `SELECT *
+FROM teams
+WHERE organization_name = $1
 ;`
 
 type FindTeamsByOrgRow struct {
 	TeamID                     pgtype.Text        `json:"team_id"`
 	Name                       pgtype.Text        `json:"name"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
 	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	Organization               *Organizations     `json:"organization"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 // FindTeamsByOrg implements Querier.FindTeamsByOrg.
@@ -82,14 +78,10 @@ func (q *DBQuerier) FindTeamsByOrg(ctx context.Context, organizationName pgtype.
 	}
 	defer rows.Close()
 	items := []FindTeamsByOrgRow{}
-	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindTeamsByOrgRow
-		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindTeamsByOrg row: %w", err)
-		}
-		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindTeamsByOrg row: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -112,14 +104,10 @@ func (q *DBQuerier) FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByO
 	}
 	defer rows.Close()
 	items := []FindTeamsByOrgRow{}
-	organizationRow := q.types.newOrganizations()
 	for rows.Next() {
 		var item FindTeamsByOrgRow
-		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+		if err := rows.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 			return nil, fmt.Errorf("scan FindTeamsByOrgBatch row: %w", err)
-		}
-		if err := organizationRow.AssignTo(&item.Organization); err != nil {
-			return nil, fmt.Errorf("assign FindTeamsByOrg row: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -129,24 +117,20 @@ func (q *DBQuerier) FindTeamsByOrgScan(results pgx.BatchResults) ([]FindTeamsByO
 	return items, err
 }
 
-const findTeamByNameSQL = `SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.name = $1
-AND   o.name = $2
+const findTeamByNameSQL = `SELECT *
+FROM teams
+WHERE name              = $1
+AND   organization_name = $2
 ;`
 
 type FindTeamByNameRow struct {
 	TeamID                     pgtype.Text        `json:"team_id"`
 	Name                       pgtype.Text        `json:"name"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
 	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	Organization               *Organizations     `json:"organization"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 // FindTeamByName implements Querier.FindTeamByName.
@@ -154,12 +138,8 @@ func (q *DBQuerier) FindTeamByName(ctx context.Context, name pgtype.Text, organi
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByName")
 	row := q.conn.QueryRow(ctx, findTeamByNameSQL, name, organizationName)
 	var item FindTeamByNameRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindTeamByName: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByName row: %w", err)
 	}
 	return item, nil
 }
@@ -173,33 +153,25 @@ func (q *DBQuerier) FindTeamByNameBatch(batch genericBatch, name pgtype.Text, or
 func (q *DBQuerier) FindTeamByNameScan(results pgx.BatchResults) (FindTeamByNameRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByNameRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindTeamByNameBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByName row: %w", err)
 	}
 	return item, nil
 }
 
-const findTeamByIDSQL = `SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
-FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.team_id = $1
+const findTeamByIDSQL = `SELECT *
+FROM teams
+WHERE team_id = $1
 ;`
 
 type FindTeamByIDRow struct {
 	TeamID                     pgtype.Text        `json:"team_id"`
 	Name                       pgtype.Text        `json:"name"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
 	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	Organization               *Organizations     `json:"organization"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 // FindTeamByID implements Querier.FindTeamByID.
@@ -207,12 +179,8 @@ func (q *DBQuerier) FindTeamByID(ctx context.Context, teamID pgtype.Text) (FindT
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByID")
 	row := q.conn.QueryRow(ctx, findTeamByIDSQL, teamID)
 	var item FindTeamByIDRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindTeamByID: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByID row: %w", err)
 	}
 	return item, nil
 }
@@ -226,22 +194,15 @@ func (q *DBQuerier) FindTeamByIDBatch(batch genericBatch, teamID pgtype.Text) {
 func (q *DBQuerier) FindTeamByIDScan(results pgx.BatchResults) (FindTeamByIDRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByIDRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindTeamByIDBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByID row: %w", err)
 	}
 	return item, nil
 }
 
-const findTeamByIDForUpdateSQL = `SELECT
-    t.*,
-    (o.*)::"organizations" AS organization
+const findTeamByIDForUpdateSQL = `SELECT *
 FROM teams t
-JOIN organizations o USING (organization_id)
-WHERE t.team_id = $1
+WHERE team_id = $1
 FOR UPDATE OF t
 ;`
 
@@ -249,11 +210,10 @@ type FindTeamByIDForUpdateRow struct {
 	TeamID                     pgtype.Text        `json:"team_id"`
 	Name                       pgtype.Text        `json:"name"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
-	OrganizationID             pgtype.Text        `json:"organization_id"`
 	PermissionManageWorkspaces bool               `json:"permission_manage_workspaces"`
 	PermissionManageVCS        bool               `json:"permission_manage_vcs"`
 	PermissionManageRegistry   bool               `json:"permission_manage_registry"`
-	Organization               *Organizations     `json:"organization"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 // FindTeamByIDForUpdate implements Querier.FindTeamByIDForUpdate.
@@ -261,12 +221,8 @@ func (q *DBQuerier) FindTeamByIDForUpdate(ctx context.Context, teamID pgtype.Tex
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTeamByIDForUpdate")
 	row := q.conn.QueryRow(ctx, findTeamByIDForUpdateSQL, teamID)
 	var item FindTeamByIDForUpdateRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("query FindTeamByIDForUpdate: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByIDForUpdate row: %w", err)
 	}
 	return item, nil
 }
@@ -280,12 +236,8 @@ func (q *DBQuerier) FindTeamByIDForUpdateBatch(batch genericBatch, teamID pgtype
 func (q *DBQuerier) FindTeamByIDForUpdateScan(results pgx.BatchResults) (FindTeamByIDForUpdateRow, error) {
 	row := results.QueryRow()
 	var item FindTeamByIDForUpdateRow
-	organizationRow := q.types.newOrganizations()
-	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.OrganizationID, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, organizationRow); err != nil {
+	if err := row.Scan(&item.TeamID, &item.Name, &item.CreatedAt, &item.PermissionManageWorkspaces, &item.PermissionManageVCS, &item.PermissionManageRegistry, &item.OrganizationName); err != nil {
 		return item, fmt.Errorf("scan FindTeamByIDForUpdateBatch row: %w", err)
-	}
-	if err := organizationRow.AssignTo(&item.Organization); err != nil {
-		return item, fmt.Errorf("assign FindTeamByIDForUpdate row: %w", err)
 	}
 	return item, nil
 }

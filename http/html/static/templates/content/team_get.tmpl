@@ -3,12 +3,12 @@
 {{ define "title" }}team: {{ .Content.Name }}{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ teamsPath .Content.OrganizationName }}">teams</a>
+  <a href="{{ teamsPath .Content.Organization }}">teams</a>
   /
 {{ .Content.Name }}{{ end }}
 
 {{ define "content" }}
-  {{ if .CurrentUser.IsOwner .Content.Team.OrganizationName }}
+  {{ if .CurrentUser.IsOwner .Content.Team.Organization }}
     <h3>Permissions</h3>
     <form class="permissions-form" action="{{ updateTeamPath .Content.ID }}" method="POST">
       <div class="field">

@@ -32,16 +32,15 @@ func UnmarshalUserResult(row UserResult, opts ...NewUserOption) *User {
 	// TODO: remove duplication with the unmarshalling in ./team_unmarshaller.go
 	for _, tr := range row.Teams {
 		for _, or := range row.Organizations {
-			if tr.OrganizationID == or.OrganizationID {
+			if tr.OrganizationName == or.Name {
 				user.teams = append(user.teams, UnmarshalTeamResult(TeamResult{
 					TeamID:                     tr.TeamID,
 					Name:                       tr.Name,
 					CreatedAt:                  tr.CreatedAt,
-					OrganizationID:             tr.OrganizationID,
 					PermissionManageWorkspaces: tr.PermissionManageWorkspaces,
 					PermissionManageVCS:        tr.PermissionManageVCS,
 					PermissionManageRegistry:   tr.PermissionManageRegistry,
-					Organization:               &or,
+					OrganizationName:           or.Name,
 				}))
 			}
 		}
