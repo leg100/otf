@@ -54,10 +54,10 @@ func run(ctx context.Context, args []string) error {
 			if err != nil {
 				return fmt.Errorf("attempted authentication: %w", err)
 			}
-			logger.Info("successfully authenticated", "organization", at.OrganizationName(), "token_id", at.ID())
+			logger.Info("successfully authenticated", "organization", at.Organization(), "token_id", at.ID())
 
 			// Ensure agent only process runs for this org
-			cfg.Organization = otf.String(at.OrganizationName())
+			cfg.Organization = otf.String(at.Organization())
 
 			agent, err := agent.NewAgent(logger, client, *cfg)
 			if err != nil {

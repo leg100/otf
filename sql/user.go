@@ -38,16 +38,16 @@ func (db *DB) CreateUser(ctx context.Context, user *otf.User) error {
 
 func (db *DB) ListUsers(ctx context.Context, opts otf.UserListOptions) ([]*otf.User, error) {
 	var users []*otf.User
-	if opts.OrganizationName != nil && opts.TeamName != nil {
-		result, err := db.FindUsersByTeam(ctx, String(*opts.OrganizationName), String(*opts.TeamName))
+	if opts.Organization != nil && opts.TeamName != nil {
+		result, err := db.FindUsersByTeam(ctx, String(*opts.Organization), String(*opts.TeamName))
 		if err != nil {
 			return nil, err
 		}
 		for _, r := range result {
 			users = append(users, otf.UnmarshalUserResult(otf.UserResult(r)))
 		}
-	} else if opts.OrganizationName != nil {
-		result, err := db.FindUsersByOrganization(ctx, String(*opts.OrganizationName))
+	} else if opts.Organization != nil {
+		result, err := db.FindUsersByOrganization(ctx, String(*opts.Organization))
 		if err != nil {
 			return nil, err
 		}

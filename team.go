@@ -68,7 +68,7 @@ type TeamStore interface {
 
 type TeamSpec struct {
 	Name             string `schema:"team_name,required"`
-	OrganizationName string `schema:"organization_name,required"`
+	Organization string `schema:"organization_name,required"`
 }
 
 // OrganizationAccess defines a team's organization access.

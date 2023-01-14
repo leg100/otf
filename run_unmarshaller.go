@@ -53,7 +53,7 @@ func UnmarshalRunResult(result RunResult) (*Run, error) {
 		workspaceName:          result.WorkspaceName.String,
 		executionMode:          ExecutionMode(result.ExecutionMode.String),
 		latest:                 result.Latest,
-		organizationName:       result.OrganizationName.String,
+		organization:       result.OrganizationName.String,
 		workspaceID:            result.WorkspaceID.String,
 		configurationVersionID: result.ConfigurationVersionID.String,
 		plan: &Plan{

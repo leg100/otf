@@ -22,7 +22,7 @@
         <div class="item-content">
           {{ template "identifier" . }}
           {{ if and $.CurrentUser $.CurrentUser.IsSiteAdmin }}
-            <form action="{{ deleteOrganizationPath .OrganizationName }}" method="POST">
+            <form action="{{ deleteOrganizationPath .Name }}" method="POST">
               <button class="delete" onclick="return confirm('Are you sure you want to delete?')">delete</button>
               <input type="hidden" name="id" value="{{ .ID }}">
             </form>

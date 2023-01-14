@@ -18,7 +18,7 @@ func (app *Application) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	org, err := app.GetOrganization(r.Context(), *opts.OrganizationName)
+	org, err := app.GetOrganization(r.Context(), *opts.Organization)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

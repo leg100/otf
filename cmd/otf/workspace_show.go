@@ -42,7 +42,7 @@ func WorkspaceShowCommand(factory http.ClientFactory) *cobra.Command {
 		},
 	}
 
-	spec.OrganizationName = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	spec.Organization = cmd.Flags().String("organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

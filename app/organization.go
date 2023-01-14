@@ -125,13 +125,13 @@ func (a *Application) DeleteOrganization(ctx context.Context, name string) error
 	return nil
 }
 
-func (a *Application) GetEntitlements(ctx context.Context, organizationName string) (*otf.Entitlements, error) {
-	_, err := a.CanAccessOrganization(ctx, otf.GetEntitlementsAction, organizationName)
+func (a *Application) GetEntitlements(ctx context.Context, organization string) (*otf.Entitlements, error) {
+	_, err := a.CanAccessOrganization(ctx, otf.GetEntitlementsAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	org, err := a.GetOrganization(ctx, organizationName)
+	org, err := a.GetOrganization(ctx, organization)
 	if err != nil {
 		return nil, err
 	}

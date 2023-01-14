@@ -100,8 +100,8 @@ func (m *Mapper) Populate(ctx context.Context, ws otf.WorkspaceService, rs otf.R
 func (m *Mapper) LookupWorkspaceID(spec otf.WorkspaceSpec) string {
 	if spec.ID != nil {
 		return *spec.ID
-	} else if spec.OrganizationName != nil && spec.Name != nil {
-		return m.workspaces.lookupID(*spec.OrganizationName, *spec.Name)
+	} else if spec.Organization != nil && spec.Name != nil {
+		return m.workspaces.lookupID(*spec.Organization, *spec.Name)
 	} else {
 		return ""
 	}

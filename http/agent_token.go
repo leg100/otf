@@ -16,7 +16,7 @@ func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 	}
 	at, err := s.Application.CreateAgentToken(r.Context(), otf.CreateAgentTokenOptions{
 		Description:      opts.Description,
-		OrganizationName: opts.OrganizationName,
+		Organization: opts.OrganizationName,
 	})
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
@@ -44,6 +44,6 @@ func (t *AgentToken) ToJSONAPI() any {
 	return &dto.AgentToken{
 		ID:               t.ID(),
 		Token:            t.Token(),
-		OrganizationName: t.OrganizationName(),
+		OrganizationName: t.Organization(),
 	}
 }

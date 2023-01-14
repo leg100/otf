@@ -11,7 +11,7 @@ import (
 func (c *client) CreateAgentToken(ctx context.Context, options otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
 	req, err := c.newRequest("POST", "agent/create", &dto.AgentTokenCreateOptions{
 		Description:      options.Description,
-		OrganizationName: options.OrganizationName,
+		OrganizationName: options.Organization,
 	})
 	if err != nil {
 		return nil, err

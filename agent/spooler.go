@@ -88,7 +88,7 @@ func (s *SpoolerDaemon) reinitialize(ctx context.Context) error {
 
 	listOpts := otf.RunListOptions{
 		Statuses:         []otf.RunStatus{otf.RunPlanQueued, otf.RunApplyQueued},
-		OrganizationName: s.Organization,
+		Organization: s.Organization,
 	}
 
 	// retrieve existing runs, page by page

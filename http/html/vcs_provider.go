@@ -40,7 +40,7 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 	}
 
 	provider, err := app.CreateVCSProvider(r.Context(), otf.VCSProviderCreateOptions{
-		OrganizationName: params.OrganizationName,
+		Organization: params.OrganizationName,
 		Token:            params.Token,
 		Name:             params.Name,
 		Cloud:            params.Cloud,
@@ -50,7 +50,7 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 	flashSuccess(w, "created provider: "+provider.Name())
-	http.Redirect(w, r, paths.VCSProviders(provider.OrganizationName()), http.StatusFound)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
 }
 
 func (app *Application) listVCSProviders(w http.ResponseWriter, r *http.Request) {
@@ -89,5 +89,5 @@ func (app *Application) deleteVCSProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 	flashSuccess(w, "deleted provider: "+provider.Name())
-	http.Redirect(w, r, paths.VCSProviders(provider.OrganizationName()), http.StatusFound)
+	http.Redirect(w, r, paths.VCSProviders(provider.Organization()), http.StatusFound)
 }

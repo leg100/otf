@@ -14,7 +14,7 @@ func (db *DB) CreateVCSProvider(ctx context.Context, provider *otf.VCSProvider) 
 		Token:            String(provider.Token()),
 		Name:             String(provider.Name()),
 		Cloud:            String(provider.CloudConfig().Name),
-		OrganizationName: String(provider.OrganizationName()),
+		OrganizationName: String(provider.Organization()),
 		CreatedAt:        Timestamptz(provider.CreatedAt()),
 	})
 	return err

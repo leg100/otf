@@ -148,8 +148,8 @@ func (db *DB) CreateApplyReport(ctx context.Context, runID string, report otf.Re
 func (db *DB) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	batch := &pgx.Batch{}
 	organizationName := "%"
-	if opts.OrganizationName != nil {
-		organizationName = *opts.OrganizationName
+	if opts.Organization != nil {
+		organizationName = *opts.Organization
 	}
 	workspaceName := "%"
 	if opts.WorkspaceName != nil {

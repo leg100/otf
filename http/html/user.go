@@ -9,7 +9,7 @@ import (
 
 func (app *Application) listUsers(w http.ResponseWriter, r *http.Request) {
 	opts := otf.UserListOptions{
-		OrganizationName: otf.String(mux.Vars(r)["organization_name"]),
+		Organization: otf.String(mux.Vars(r)["organization_name"]),
 	}
 	users, err := app.ListUsers(r.Context(), opts)
 	if err != nil {

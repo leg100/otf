@@ -7,7 +7,7 @@ import (
 )
 
 func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProviderCreateOptions) (*otf.VCSProvider, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateVCSProviderAction, opts.OrganizationName)
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateVCSProviderAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -18,10 +18,10 @@ func (a *Application) CreateVCSProvider(ctx context.Context, opts otf.VCSProvide
 	}
 
 	if err := a.db.CreateVCSProvider(ctx, provider); err != nil {
-		a.Error(err, "creating vcs provider", "organization", opts.OrganizationName, "id", provider.ID(), "subject", subject)
+		a.Error(err, "creating vcs provider", "organization", opts.Organization, "id", provider.ID(), "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created vcs provider", "organization", opts.OrganizationName, "id", provider.ID(), "subject", subject)
+	a.V(0).Info("created vcs provider", "organization", opts.Organization, "id", provider.ID(), "subject", subject)
 	return provider, nil
 }
 
@@ -35,7 +35,7 @@ func (a *Application) GetVCSProvider(ctx context.Context, id string) (*otf.VCSPr
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.GetVCSProviderAction, provider.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.GetVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (a *Application) DeleteVCSProvider(ctx context.Context, id string) (*otf.VC
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteVCSProviderAction, provider.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteVCSProviderAction, provider.Organization())
 	if err != nil {
 		return nil, err
 	}
