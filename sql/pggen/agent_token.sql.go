@@ -938,8 +938,6 @@ type Querier interface {
 	// FindWorkspaceIDByNameScan scans the result of an executed FindWorkspaceIDByNameBatch query.
 	FindWorkspaceIDByNameScan(results pgx.BatchResults) (pgtype.Text, error)
 
-	// FindWorkspaceByName finds a workspace by name and organization name.
-	//
 	FindWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (FindWorkspaceByNameRow, error)
 	// FindWorkspaceByNameBatch enqueues a FindWorkspaceByName query into batch to be executed
 	// later by the batch.
@@ -982,9 +980,6 @@ type Querier interface {
 	// UpdateWorkspaceLatestRunScan scans the result of an executed UpdateWorkspaceLatestRunBatch query.
 	UpdateWorkspaceLatestRunScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	// DeleteOrganization deletes an organization by id.
-	// DeleteWorkspaceByID deletes a workspace by id.
-	//
 	DeleteWorkspaceByID(ctx context.Context, workspaceID pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspaceByIDBatch enqueues a DeleteWorkspaceByID query into batch to be executed
 	// later by the batch.
@@ -992,8 +987,6 @@ type Querier interface {
 	// DeleteWorkspaceByIDScan scans the result of an executed DeleteWorkspaceByIDBatch query.
 	DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	// DeleteWorkspaceByName deletes a workspace by name and organization name.
-	//
 	DeleteWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
 	// DeleteWorkspaceByNameBatch enqueues a DeleteWorkspaceByName query into batch to be executed
 	// later by the batch.

@@ -23,28 +23,28 @@ INSERT INTO workspaces (
     working_directory,
     organization_name
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('UpdatedAt'),
-    pggen.arg('AllowDestroyPlan'),
-    pggen.arg('AutoApply'),
-    pggen.arg('CanQueueDestroyPlan'),
-    pggen.arg('Description'),
-    pggen.arg('Environment'),
-    pggen.arg('ExecutionMode'),
-    pggen.arg('FileTriggersEnabled'),
-    pggen.arg('GlobalRemoteState'),
-    pggen.arg('MigrationEnvironment'),
-    pggen.arg('Name'),
-    pggen.arg('QueueAllRuns'),
-    pggen.arg('SpeculativeEnabled'),
-    pggen.arg('SourceName'),
-    pggen.arg('SourceUrl'),
-    pggen.arg('StructuredRunOutputEnabled'),
-    pggen.arg('TerraformVersion'),
-    pggen.arg('TriggerPrefixes'),
-    pggen.arg('WorkingDirectory'),
-    pggen.arg('OrganizationName')
+    pggen.arg('id'),
+    pggen.arg('created_at'),
+    pggen.arg('updated_at'),
+    pggen.arg('allow_destroy_plan'),
+    pggen.arg('auto_apply'),
+    pggen.arg('can_queue_destroy_plan'),
+    pggen.arg('description'),
+    pggen.arg('environment'),
+    pggen.arg('execution_mode'),
+    pggen.arg('file_triggers_enabled'),
+    pggen.arg('global_remote_state'),
+    pggen.arg('migration_environment'),
+    pggen.arg('name'),
+    pggen.arg('queue_all_runs'),
+    pggen.arg('speculative_enabled'),
+    pggen.arg('source_name'),
+    pggen.arg('source_url'),
+    pggen.arg('structured_run_output_enabled'),
+    pggen.arg('terraform_version'),
+    pggen.arg('trigger_prefixes'),
+    pggen.arg('working_directory'),
+    pggen.arg('organization_name')
 );
 
 -- name: FindWorkspaces :many
@@ -144,8 +144,6 @@ FROM workspaces
 WHERE workspaces.name = pggen.arg('name')
 AND workspaces.organization_name = pggen.arg('organization_name');
 
--- FindWorkspaceByName finds a workspace by name and organization name.
---
 -- name: FindWorkspaceByName :one
 SELECT w.*,
     (u.*)::"users" AS user_lock,
@@ -215,16 +213,11 @@ UPDATE workspaces
 SET latest_run_id = pggen.arg('run_id')
 WHERE workspace_id = pggen.arg('workspace_id');
 
--- DeleteOrganization deletes an organization by id.
--- DeleteWorkspaceByID deletes a workspace by id.
---
 -- name: DeleteWorkspaceByID :exec
 DELETE
 FROM workspaces
 WHERE workspace_id = pggen.arg('workspace_id');
 
--- DeleteWorkspaceByName deletes a workspace by name and organization name.
---
 -- name: DeleteWorkspaceByName :exec
 DELETE
 FROM workspaces

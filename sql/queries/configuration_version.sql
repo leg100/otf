@@ -8,13 +8,13 @@ INSERT INTO configuration_versions (
     status,
     workspace_id
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('AutoQueueRuns'),
-    pggen.arg('Source'),
-    pggen.arg('Speculative'),
-    pggen.arg('Status'),
-    pggen.arg('WorkspaceID')
+    pggen.arg('id'),
+    pggen.arg('created_at'),
+    pggen.arg('auto_queue_runs'),
+    pggen.arg('source'),
+    pggen.arg('speculative'),
+    pggen.arg('status'),
+    pggen.arg('workspace_id')
 );
 
 -- name: InsertConfigurationVersionStatusTimestamp :one
@@ -23,9 +23,9 @@ INSERT INTO configuration_version_status_timestamps (
     status,
     timestamp
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Status'),
-    pggen.arg('Timestamp')
+    pggen.arg('id'),
+    pggen.arg('status'),
+    pggen.arg('timestamp')
 )
 RETURNING *;
 

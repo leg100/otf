@@ -7,10 +7,10 @@ INSERT INTO state_version_outputs (
     value,
     state_version_id
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Name'),
-    pggen.arg('Sensitive'),
-    pggen.arg('Type'),
-    pggen.arg('Value'),
-    pggen.arg('StateVersionID')
+    pggen.arg('id'),
+    pggen.arg('name'),
+    pggen.arg('sensitive'),
+    pggen.arg('type'),
+    pggen.arg('value'),
+    pggen.arg('state_version_id')
 );

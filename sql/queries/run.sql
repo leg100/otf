@@ -13,18 +13,18 @@ INSERT INTO runs (
     configuration_version_id,
     workspace_id
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('IsDestroy'),
-    pggen.arg('PositionInQueue'),
-    pggen.arg('Refresh'),
-    pggen.arg('RefreshOnly'),
-    pggen.arg('Status'),
-    pggen.arg('ReplaceAddrs'),
-    pggen.arg('TargetAddrs'),
-    pggen.arg('AutoApply'),
-    pggen.arg('ConfigurationVersionID'),
-    pggen.arg('WorkspaceID')
+    pggen.arg('id'),
+    pggen.arg('created_at'),
+    pggen.arg('is_destroy'),
+    pggen.arg('position_in_queue'),
+    pggen.arg('refresh'),
+    pggen.arg('refresh_only'),
+    pggen.arg('status'),
+    pggen.arg('replace_addrs'),
+    pggen.arg('target_addrs'),
+    pggen.arg('auto_apply'),
+    pggen.arg('configuration_version_id'),
+    pggen.arg('workspace_id')
 );
 
 -- name: InsertRunStatusTimestamp :exec
@@ -33,9 +33,9 @@ INSERT INTO run_status_timestamps (
     status,
     timestamp
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('Status'),
-    pggen.arg('Timestamp')
+    pggen.arg('id'),
+    pggen.arg('status'),
+    pggen.arg('timestamp')
 );
 
 -- name: FindRuns :many

@@ -6,11 +6,11 @@ INSERT INTO tokens (
     description,
     user_id
 ) VALUES (
-    pggen.arg('TokenID'),
-    pggen.arg('Token'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('Description'),
-    pggen.arg('UserID')
+    pggen.arg('token_id'),
+    pggen.arg('token'),
+    pggen.arg('created_at'),
+    pggen.arg('description'),
+    pggen.arg('user_id')
 );
 
 -- name: FindTokensByUserID :many

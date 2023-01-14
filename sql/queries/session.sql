@@ -6,11 +6,11 @@ INSERT INTO sessions (
     expiry,
     user_id
 ) VALUES (
-    pggen.arg('Token'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('Address'),
-    pggen.arg('Expiry'),
-    pggen.arg('UserID')
+    pggen.arg('token'),
+    pggen.arg('created_at'),
+    pggen.arg('address'),
+    pggen.arg('expiry'),
+    pggen.arg('user_id')
 );
 
 -- name: FindSessionsByUserID :many

@@ -36,12 +36,12 @@ INSERT INTO organizations (
     session_remember,
     session_timeout
 ) VALUES (
-    pggen.arg('ID'),
-    pggen.arg('CreatedAt'),
-    pggen.arg('UpdatedAt'),
-    pggen.arg('Name'),
-    pggen.arg('SessionRemember'),
-    pggen.arg('SessionTimeout')
+    pggen.arg('id'),
+    pggen.arg('created_at'),
+    pggen.arg('updated_at'),
+    pggen.arg('name'),
+    pggen.arg('session_remember'),
+    pggen.arg('session_timeout')
 );
 
 -- name: UpdateOrganizationByName :one
