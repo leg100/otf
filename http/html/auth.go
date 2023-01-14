@@ -74,10 +74,14 @@ func (app *Application) adminLoginHandler(w http.ResponseWriter, r *http.Request
 
 // createSession creates a session for the user with the given user ID
 func createSession(app otf.Application, w http.ResponseWriter, r *http.Request, uid string) error {
-	// get admin's source IP address
-	addr, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return err
+	// record user's IP; reverse proxy adds their IP to the X-Forwarded-For header
+	addr := r.Header.Get("X-Forwarded-For")
+	if addr == "" {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			return err
+		}
+		addr = host
 	}
 
 	session, err := app.CreateSession(r.Context(), uid, addr)

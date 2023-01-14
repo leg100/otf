@@ -16,17 +16,19 @@
       <div class="item">
         <div class="item-heading">
           <span>{{ .Address }}</span>
-          {{ if eq .ID $.Content.Active.ID }} &#10004; {{ end }}
-          <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
-        </div>
-        <div class="item-content">
-          {{ template "identifier" . }}
           {{ if ne .ID $.Content.Active.ID }}
           <form action="{{ revokeSessionPath }}" method="POST">
             <button class="delete">Revoke</button>
             <input type="hidden" name="token" value="{{ .Token }}">
           </form>
           {{ end }}
+          {{ if eq .ID $.Content.Active.ID }}
+            <span>|</span>
+            <span>current</span>
+          {{ end }}
+          <span class="status-ago">Created {{ durationRound .CreatedAt }} ago</span>
+        </div>
+        <div class="item-content">
         </div>
       </div>
     {{ else }}
