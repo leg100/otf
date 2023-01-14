@@ -35,7 +35,7 @@ func AgentTokenNewCommand(factory http.ClientFactory) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&opts.OrganizationName, "organization", "", "Organization in which to create agent token.")
+	cmd.Flags().StringVar(&opts.Organization, "organization", "", "Organization in which to create agent token.")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

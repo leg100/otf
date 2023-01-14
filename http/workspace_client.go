@@ -57,7 +57,7 @@ func (c *client) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf
 }
 
 func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.OrganizationName))
+	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(*options.Organization))
 	req, err := c.newRequest("GET", u, &options)
 	if err != nil {
 		return nil, err
@@ -103,8 +103,8 @@ func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts
 	var path string
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
-	} else if spec.OrganizationName != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+	} else if spec.Organization != nil && spec.Name != nil {
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
@@ -126,8 +126,8 @@ func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ 
 	var path string
 	if spec.ID != nil {
 		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
-	} else if spec.OrganizationName != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.OrganizationName), url.QueryEscape(*spec.Name))
+	} else if spec.Organization != nil && spec.Name != nil {
+		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
 	} else {
 		return nil, otf.ErrInvalidWorkspaceSpec
 	}
@@ -164,10 +164,10 @@ func getWorkspacePath(spec otf.WorkspaceSpec) (string, error) {
 		return fmt.Sprintf("workspaces/%s", url.QueryEscape(*spec.ID)), nil
 	}
 
-	if spec.Name != nil && spec.OrganizationName != nil {
+	if spec.Name != nil && spec.Organization != nil {
 		return fmt.Sprintf(
 			"organizations/%s/workspaces/%s",
-			url.QueryEscape(*spec.OrganizationName),
+			url.QueryEscape(*spec.Organization),
 			url.QueryEscape(*spec.Name),
 		), nil
 	}

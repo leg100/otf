@@ -119,7 +119,7 @@ func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 	}
 	// user must be a member of a team with perms
 	for _, team := range u.teams {
-		if team.Organization() == policy.OrganizationName {
+		if team.Organization() == policy.Organization {
 			if team.IsOwners() {
 				// owner team members can perform all actions on all workspaces
 				return true
@@ -268,8 +268,8 @@ type UserStore interface {
 
 // UserListOptions are options for the ListUsers endpoint.
 type UserListOptions struct {
-	OrganizationName *string
-	TeamName         *string
+	Organization *string
+	TeamName     *string
 }
 
 type UserSpec struct {

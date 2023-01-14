@@ -38,8 +38,8 @@ func (db *DB) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSp
 			}
 			perms = append(perms, perm)
 		}
-	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := db.FindWorkspacePermissionsByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+	} else if spec.Name != nil && spec.Organization != nil {
+		result, err := db.FindWorkspacePermissionsByName(ctx, String(*spec.Name), String(*spec.Organization))
 		if err != nil {
 			return nil, databaseError(err)
 		}

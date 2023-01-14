@@ -42,7 +42,7 @@ func (app *Application) createAgentToken(w http.ResponseWriter, r *http.Request)
 	}
 	flashSuccess(w, buf.String())
 
-	http.Redirect(w, r, paths.AgentTokens(opts.OrganizationName), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(opts.Organization), http.StatusFound)
 }
 
 func (app *Application) listAgentTokens(w http.ResponseWriter, r *http.Request) {
@@ -85,5 +85,5 @@ func (app *Application) deleteAgentToken(w http.ResponseWriter, r *http.Request)
 	}
 
 	flashSuccess(w, "Deleted token: "+at.Description())
-	http.Redirect(w, r, paths.AgentTokens(at.OrganizationName()), http.StatusFound)
+	http.Redirect(w, r, paths.AgentTokens(at.Organization()), http.StatusFound)
 }

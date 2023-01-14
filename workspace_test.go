@@ -21,7 +21,7 @@ func TestWorkspaceSpec_Valid(t *testing.T) {
 		},
 		{
 			name: "valid organization and workspace name",
-			spec: WorkspaceSpec{OrganizationName: String("org-123"), Name: String("default")},
+			spec: WorkspaceSpec{Organization: String("org-123"), Name: String("default")},
 		},
 		{
 			name:    "nothing specified",
@@ -35,7 +35,7 @@ func TestWorkspaceSpec_Valid(t *testing.T) {
 		},
 		{
 			name:    "organization name but no workspace name",
-			spec:    WorkspaceSpec{OrganizationName: String("org-123")},
+			spec:    WorkspaceSpec{Organization: String("org-123")},
 			invalid: true,
 		},
 		{

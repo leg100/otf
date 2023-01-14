@@ -118,7 +118,7 @@ func (a *Application) DisconnectWorkspace(ctx context.Context, spec otf.Workspac
 }
 
 func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions) (*otf.WorkspaceList, error) {
-	if opts.OrganizationName == nil {
+	if opts.Organization == nil {
 		// subject needs perms on site to list workspaces across site
 		_, err := a.CanAccessSite(ctx, otf.ListWorkspacesAction)
 		if err != nil {
@@ -126,7 +126,7 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 		}
 	} else {
 		// check if subject has perms to list workspaces in organization
-		_, err := a.CanAccessOrganization(ctx, otf.ListWorkspacesAction, *opts.OrganizationName)
+		_, err := a.CanAccessOrganization(ctx, otf.ListWorkspacesAction, *opts.Organization)
 		if err == otf.ErrAccessNotPermitted {
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
@@ -135,7 +135,7 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 				return nil, err
 			}
 			if user, ok := subject.(*otf.User); ok {
-				return a.db.ListWorkspacesByUserID(ctx, user.ID(), *opts.OrganizationName, opts.ListOptions)
+				return a.db.ListWorkspacesByUserID(ctx, user.ID(), *opts.Organization, opts.ListOptions)
 			}
 		} else if err != nil {
 			return nil, err

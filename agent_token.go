@@ -11,19 +11,19 @@ import (
 
 // AgentToken is an long-lived authentication token for an external agent.
 type AgentToken struct {
-	id               string
-	createdAt        time.Time
-	token            *string
-	description      string
-	organizationName string
+	id           string
+	createdAt    time.Time
+	token        *string
+	description  string
+	organization string
 }
 
-func (t *AgentToken) ID() string               { return t.id }
-func (t *AgentToken) String() string           { return t.id }
-func (t *AgentToken) Token() *string           { return t.token }
-func (t *AgentToken) CreatedAt() time.Time     { return t.createdAt }
-func (t *AgentToken) Description() string      { return t.description }
-func (t *AgentToken) OrganizationName() string { return t.organizationName }
+func (t *AgentToken) ID() string           { return t.id }
+func (t *AgentToken) String() string       { return t.id }
+func (t *AgentToken) Token() *string       { return t.token }
+func (t *AgentToken) CreatedAt() time.Time { return t.createdAt }
+func (t *AgentToken) Description() string  { return t.description }
+func (t *AgentToken) Organization() string { return t.organization }
 
 // HideToken nullifies the authentication token contained within, rendering
 // AgentToken suitable for exposure outside of otfd.
@@ -37,21 +37,21 @@ func (*AgentToken) CanAccessSite(action Action) bool {
 }
 
 func (t *AgentToken) CanAccessOrganization(action Action, name string) bool {
-	return t.organizationName == name
+	return t.organization == name
 }
 
 func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 	// agent can access anything within its organization
-	return t.organizationName == policy.OrganizationName
+	return t.organization == policy.Organization
 }
 
 type CreateAgentTokenOptions struct {
-	OrganizationName string `schema:"organization_name,required"`
+	Organization string `schema:"organization_name,required"`
 	Description      string `schema:"description,required"`
 }
 
 func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {
-	if opts.OrganizationName == "" {
+	if opts.Organization == "" {
 		return nil, fmt.Errorf("organization name cannot be an empty string")
 	}
 	if opts.Description == "" {
@@ -62,19 +62,19 @@ func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {
 		return nil, fmt.Errorf("generating token: %w", err)
 	}
 	token := AgentToken{
-		id:               NewID("at"),
-		createdAt:        CurrentTimestamp(),
-		token:            &t,
-		description:      opts.Description,
-		organizationName: opts.OrganizationName,
+		id:           NewID("at"),
+		createdAt:    CurrentTimestamp(),
+		token:        &t,
+		description:  opts.Description,
+		organization: opts.Organization,
 	}
 	return &token, nil
 }
 
 func UnmarshalAgentTokenJSONAPI(dto *jsonapi.AgentToken) *AgentToken {
 	at := &AgentToken{
-		id:               dto.ID,
-		organizationName: dto.OrganizationName,
+		id:           dto.ID,
+		organization: dto.OrganizationName,
 	}
 	if dto.Token != nil {
 		at.token = dto.Token
@@ -93,11 +93,11 @@ type AgentTokenRow struct {
 // UnmarshalAgentTokenResult unmarshals a row from the database.
 func UnmarshalAgentTokenResult(row AgentTokenRow) *AgentToken {
 	return &AgentToken{
-		id:               row.TokenID.String,
-		createdAt:        row.CreatedAt.Time,
-		token:            String(row.Token.String),
-		description:      row.Description.String,
-		organizationName: row.OrganizationName.String,
+		id:           row.TokenID.String,
+		createdAt:    row.CreatedAt.Time,
+		token:        String(row.Token.String),
+		description:  row.Description.String,
+		organization: row.OrganizationName.String,
 	}
 }
 

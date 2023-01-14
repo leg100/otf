@@ -53,20 +53,20 @@ func (a *Application) GetRun(ctx context.Context, runID string) (*otf.Run, error
 func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*otf.RunList, error) {
 	var subject otf.Subject
 	var err error
-	if opts.OrganizationName != nil && opts.WorkspaceName != nil {
+	if opts.Organization != nil && opts.WorkspaceName != nil {
 		// subject needs perms on workspace to list runs in workspace
 		subject, err = a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
 			Name:             opts.WorkspaceName,
-			OrganizationName: opts.OrganizationName,
+			Organization: opts.Organization,
 		})
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
 		subject, err = a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
 			ID: opts.WorkspaceID,
 		})
-	} else if opts.OrganizationName != nil {
+	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
-		subject, err = a.CanAccessOrganization(ctx, otf.ListRunsAction, *opts.OrganizationName)
+		subject, err = a.CanAccessOrganization(ctx, otf.ListRunsAction, *opts.Organization)
 	} else {
 		// subject needs to be site admin to list runs across site
 		subject, err = a.CanAccessSite(ctx, otf.ListRunsAction)

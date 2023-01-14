@@ -7,7 +7,7 @@
 {{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Content.WorkspaceID }}">{{ .Content.WorkspaceName }}</a>
   /

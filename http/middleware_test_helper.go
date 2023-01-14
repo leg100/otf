@@ -33,7 +33,7 @@ func (f *fakeAgentTokenService) GetAgentToken(ctx context.Context, token string)
 	}
 
 	return otf.NewAgentToken(otf.CreateAgentTokenOptions{
-		OrganizationName: "fake-org",
+		Organization: "fake-org",
 		Description:      "fake token",
 	})
 }

@@ -78,7 +78,7 @@ type Run struct {
 	statusTimestamps       []RunStatusTimestamp
 	replaceAddrs           []string
 	targetAddrs            []string
-	organizationName       string
+	organization           string
 	workspaceName          string
 	workspaceID            string
 	configurationVersionID string
@@ -99,8 +99,7 @@ func (r *Run) String() string                         { return r.id }
 func (r *Run) IsDestroy() bool                        { return r.isDestroy }
 func (r *Run) ForceCancelAvailableAt() *time.Time     { return r.forceCancelAvailableAt }
 func (r *Run) Message() string                        { return r.message }
-func (r *Run) OrganizationName() string               { return r.organizationName }
-func (r *Run) Organization() string                   { return r.organizationName }
+func (r *Run) Organization() string                   { return r.organization }
 func (r *Run) Refresh() bool                          { return r.refresh }
 func (r *Run) RefreshOnly() bool                      { return r.refreshOnly }
 func (r *Run) ReplaceAddrs() []string                 { return r.replaceAddrs }
@@ -773,7 +772,7 @@ type RunListOptions struct {
 	// Filter by workspace ID
 	WorkspaceID *string `schema:"workspace_id,omitempty"`
 	// Filter by organization name
-	OrganizationName *string `schema:"organization_name,omitempty"`
+	Organization *string `schema:"organization_name,omitempty"`
 	// Filter by workspace name
 	WorkspaceName *string `schema:"workspace_name,omitempty"`
 	// Filter by speculative or non-speculative
@@ -793,8 +792,8 @@ func (opts RunListOptions) LogFields() (fields []interface{}) {
 	if opts.WorkspaceName != nil {
 		fields = append(fields, "name", *opts.WorkspaceName)
 	}
-	if opts.OrganizationName != nil {
-		fields = append(fields, "organization", *opts.OrganizationName)
+	if opts.Organization != nil {
+		fields = append(fields, "organization", *opts.Organization)
 	}
 	if len(opts.Statuses) > 0 {
 		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))

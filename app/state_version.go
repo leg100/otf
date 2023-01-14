@@ -35,7 +35,7 @@ func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string
 
 func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
 	subject, err := a.CanAccessWorkspace(ctx, otf.ListStateVersionsAction, otf.WorkspaceSpec{
-		OrganizationName: &opts.Organization,
+		Organization: &opts.Organization,
 		Name:             &opts.Workspace,
 	})
 	if err != nil {

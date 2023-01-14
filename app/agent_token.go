@@ -7,7 +7,7 @@ import (
 )
 
 func (a *Application) CreateAgentToken(ctx context.Context, opts otf.CreateAgentTokenOptions) (*otf.AgentToken, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateAgentTokenAction, opts.OrganizationName)
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateAgentTokenAction, opts.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -17,25 +17,25 @@ func (a *Application) CreateAgentToken(ctx context.Context, opts otf.CreateAgent
 		return nil, err
 	}
 	if err := a.db.CreateAgentToken(ctx, token); err != nil {
-		a.Error(err, "creating agent token", "organization", opts.OrganizationName, "id", token.ID(), "subject", subject)
+		a.Error(err, "creating agent token", "organization", opts.Organization, "id", token.ID(), "subject", subject)
 		return nil, err
 	}
-	a.V(0).Info("created agent token", "organization", opts.OrganizationName, "id", token.ID(), "subject", subject)
+	a.V(0).Info("created agent token", "organization", opts.Organization, "id", token.ID(), "subject", subject)
 	return token, nil
 }
 
-func (a *Application) ListAgentTokens(ctx context.Context, organizationName string) ([]*otf.AgentToken, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.ListAgentTokensAction, organizationName)
+func (a *Application) ListAgentTokens(ctx context.Context, organization string) ([]*otf.AgentToken, error) {
+	subject, err := a.CanAccessOrganization(ctx, otf.ListAgentTokensAction, organization)
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, err := a.db.ListAgentTokens(ctx, organizationName)
+	tokens, err := a.db.ListAgentTokens(ctx, organization)
 	if err != nil {
-		a.Error(err, "listing agent tokens", "organization", organizationName, "subject", subject)
+		a.Error(err, "listing agent tokens", "organization", organization, "subject", subject)
 		return nil, err
 	}
-	a.V(2).Info("listed agent tokens", "organization", organizationName, "subject", subject)
+	a.V(2).Info("listed agent tokens", "organization", organization, "subject", subject)
 	return tokens, nil
 }
 
@@ -48,7 +48,7 @@ func (a *Application) GetAgentToken(ctx context.Context, token string) (*otf.Age
 		a.Error(err, "retrieving agent token", "token", "******")
 		return nil, err
 	}
-	a.V(2).Info("retrieved agent token", "organization", at.OrganizationName(), "id", at.ID())
+	a.V(2).Info("retrieved agent token", "organization", at.Organization(), "id", at.ID())
 	return at, nil
 }
 
@@ -62,7 +62,7 @@ func (a *Application) DeleteAgentToken(ctx context.Context, id string) (*otf.Age
 		return nil, err
 	}
 
-	subject, err := a.CanAccessOrganization(ctx, otf.DeleteAgentTokenAction, at.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.DeleteAgentTokenAction, at.Organization())
 	if err != nil {
 		return nil, err
 	}

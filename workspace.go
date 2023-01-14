@@ -111,7 +111,7 @@ func (ws *Workspace) SpecID() WorkspaceSpec {
 }
 
 func (ws *Workspace) SpecName() WorkspaceSpec {
-	return WorkspaceSpec{Name: &ws.name, OrganizationName: &ws.organization}
+	return WorkspaceSpec{Name: &ws.name, Organization: &ws.organization}
 }
 
 // Locked determines whether workspace is locked.
@@ -375,8 +375,8 @@ type WorkspaceListOptions struct {
 	ListOptions
 	// Filter workspaces with name matching prefix.
 	Prefix string `schema:"search[name],omitempty"`
-	// OrganizationName filters workspaces by organization name.
-	OrganizationName *string `schema:"organization_name,omitempty"`
+	// Organization filters workspaces by organization name.
+	Organization *string `schema:"organization_name,omitempty"`
 	// Filter by those for which user has workspace-level permissions.
 	UserID *string
 }
@@ -388,8 +388,8 @@ type WorkspaceSpec struct {
 	ID *string `schema:"workspace_id"`
 
 	// Specify workspace using its name and organization
-	Name             *string `schema:"workspace_name"`
-	OrganizationName *string `schema:"organization_name"`
+	Name         *string `schema:"workspace_name"`
+	Organization *string `schema:"organization_name"`
 }
 
 // LogFields provides fields for logging
@@ -399,8 +399,8 @@ func (spec WorkspaceSpec) LogFields() (fields []interface{}) {
 	if spec.ID != nil {
 		fields = append(fields, "id", *spec.ID)
 	}
-	if spec.Name != nil && spec.OrganizationName != nil {
-		fields = append(fields, "name", *spec.Name, "organization", *spec.OrganizationName)
+	if spec.Name != nil && spec.Organization != nil {
+		fields = append(fields, "name", *spec.Name, "organization", *spec.Organization)
 	}
 	return fields
 }
@@ -409,8 +409,8 @@ func (spec *WorkspaceSpec) String() string {
 	switch {
 	case spec.ID != nil:
 		return *spec.ID
-	case spec.Name != nil && spec.OrganizationName != nil:
-		return *spec.OrganizationName + "/" + *spec.Name
+	case spec.Name != nil && spec.Organization != nil:
+		return *spec.Organization + "/" + *spec.Name
 	default:
 		panic("invalid workspace spec")
 	}
@@ -430,7 +430,7 @@ func (spec *WorkspaceSpec) Valid() error {
 		return fmt.Errorf("workspace name nor id specified")
 	}
 
-	if spec.OrganizationName == nil {
+	if spec.Organization == nil {
 		return fmt.Errorf("must specify both organization and workspace")
 	}
 
@@ -438,7 +438,7 @@ func (spec *WorkspaceSpec) Valid() error {
 		return fmt.Errorf("workspace name is an empty string")
 	}
 
-	if *spec.OrganizationName == "" {
+	if *spec.Organization == "" {
 		return fmt.Errorf("organization name is an empty string")
 	}
 

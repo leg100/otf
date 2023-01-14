@@ -27,7 +27,7 @@ func (ws *Workspace) ToJSONAPI() any {
 		panic(err.Error())
 	}
 	policy := &otf.WorkspacePolicy{
-		OrganizationName: ws.Organization(),
+		Organization: ws.Organization(),
 		WorkspaceID:      ws.ID(),
 		Permissions:      perms,
 	}

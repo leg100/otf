@@ -219,8 +219,8 @@ func (db *DB) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOptions)
 	// Organization name filter is optional - if not provided use a % which in
 	// SQL means match any organization.
 	var organizationName string
-	if opts.OrganizationName != nil {
-		organizationName = *opts.OrganizationName
+	if opts.Organization != nil {
+		organizationName = *opts.Organization
 	} else {
 		organizationName = "%"
 	}
@@ -342,8 +342,8 @@ func (db *DB) GetWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (strin
 	if spec.ID != nil {
 		return *spec.ID, nil
 	}
-	if spec.Name != nil && spec.OrganizationName != nil {
-		id, err := db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+	if spec.Name != nil && spec.Organization != nil {
+		id, err := db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.Organization))
 		if err != nil {
 			return "", err
 		}
@@ -359,8 +359,8 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 			return nil, databaseError(err)
 		}
 		return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
-	} else if spec.Name != nil && spec.OrganizationName != nil {
-		result, err := db.FindWorkspaceByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+	} else if spec.Name != nil && spec.Organization != nil {
+		result, err := db.FindWorkspaceByName(ctx, String(*spec.Name), String(*spec.Organization))
 		if err != nil {
 			return nil, databaseError(err)
 		}
@@ -376,8 +376,8 @@ func (db *DB) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) error
 	var err error
 	if spec.ID != nil {
 		_, err = db.DeleteWorkspaceByID(ctx, String(*spec.ID))
-	} else if spec.Name != nil && spec.OrganizationName != nil {
-		_, err = db.DeleteWorkspaceByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+	} else if spec.Name != nil && spec.Organization != nil {
+		_, err = db.DeleteWorkspaceByName(ctx, String(*spec.Name), String(*spec.Organization))
 	} else {
 		return fmt.Errorf("no workspace spec provided")
 	}
@@ -403,8 +403,8 @@ func (db *DB) getWorkspaceID(ctx context.Context, spec otf.WorkspaceSpec) (pgtyp
 	if spec.ID != nil {
 		return String(*spec.ID), nil
 	}
-	if spec.Name != nil && spec.OrganizationName != nil {
-		return db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.OrganizationName))
+	if spec.Name != nil && spec.Organization != nil {
+		return db.FindWorkspaceIDByName(ctx, String(*spec.Name), String(*spec.Organization))
 	}
 	return pgtype.Text{}, otf.ErrInvalidWorkspaceSpec
 }

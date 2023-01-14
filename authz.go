@@ -21,7 +21,7 @@ type Subject interface {
 
 // WorkspacePolicy binds workspace permissions to a workspace
 type WorkspacePolicy struct {
-	OrganizationName string
+	Organization string
 	WorkspaceID      string
 	Permissions      []*WorkspacePermission
 }

@@ -164,7 +164,7 @@ func TestUser_List(t *testing.T) {
 	assert.Contains(t, users, user3)
 
 	// Retrieve users in org
-	users, err = db.ListUsers(ctx, otf.UserListOptions{OrganizationName: otf.String(org.Name())})
+	users, err = db.ListUsers(ctx, otf.UserListOptions{Organization: otf.String(org.Name())})
 	require.NoError(t, err)
 
 	assert.NotContains(t, users, user1)
@@ -173,7 +173,7 @@ func TestUser_List(t *testing.T) {
 
 	// Retrieve users in org belonging to team
 	users, err = db.ListUsers(ctx, otf.UserListOptions{
-		OrganizationName: otf.String(org.Name()),
+		Organization: otf.String(org.Name()),
 		TeamName:         otf.String(team.Name()),
 	})
 	require.NoError(t, err)

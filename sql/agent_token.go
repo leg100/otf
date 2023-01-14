@@ -13,7 +13,7 @@ func (db *DB) CreateAgentToken(ctx context.Context, token *otf.AgentToken) error
 		TokenID:          String(token.ID()),
 		Token:            String(*token.Token()),
 		Description:      String(token.Description()),
-		OrganizationName: String(token.OrganizationName()),
+		OrganizationName: String(token.Organization()),
 		CreatedAt:        Timestamptz(token.CreatedAt()),
 	})
 	return err

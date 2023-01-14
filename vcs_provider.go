@@ -12,13 +12,12 @@ import (
 // VCSProvider provides authenticated access to a VCS. Equivalent to an OAuthClient in
 // TFE.
 type VCSProvider struct {
-	id          string
-	createdAt   time.Time
-	name        string       // TODO: rename to description (?)
-	cloudConfig cloud.Config // cloud config for creating client
-	token       string       // credential for creating client
-
-	organizationName string // vcs provider belongs to an organization
+	id           string
+	createdAt    time.Time
+	name         string       // TODO: rename to description (?)
+	cloudConfig  cloud.Config // cloud config for creating client
+	token        string       // credential for creating client
+	organization string       // vcs provider belongs to an organization
 }
 
 func (t *VCSProvider) ID() string                { return t.id }
@@ -26,7 +25,7 @@ func (t *VCSProvider) String() string            { return t.name }
 func (t *VCSProvider) Token() string             { return t.token }
 func (t *VCSProvider) CreatedAt() time.Time      { return t.createdAt }
 func (t *VCSProvider) Name() string              { return t.name }
-func (t *VCSProvider) OrganizationName() string  { return t.organizationName }
+func (t *VCSProvider) Organization() string      { return t.organization }
 func (t *VCSProvider) CloudConfig() cloud.Config { return t.cloudConfig }
 func (t *VCSProvider) VCSProviderID() string     { return t.id } // implement html.vcsProviderResource
 
@@ -44,7 +43,7 @@ func (t *VCSProvider) MarshalLog() any {
 		Cloud        string `json:"cloud"`
 	}{
 		ID:           t.id,
-		Organization: t.organizationName,
+		Organization: t.organization,
 		Name:         t.name,
 		Cloud:        t.cloudConfig.Name,
 	}
@@ -62,17 +61,17 @@ func (f *VCSProviderFactory) NewVCSProvider(opts VCSProviderCreateOptions) (*VCS
 	}
 
 	return &VCSProvider{
-		id:               NewID("vcs"),
-		createdAt:        CurrentTimestamp(),
-		name:             opts.Name,
-		organizationName: opts.OrganizationName,
-		cloudConfig:      cloudConfig,
-		token:            opts.Token,
+		id:           NewID("vcs"),
+		createdAt:    CurrentTimestamp(),
+		name:         opts.Name,
+		organization: opts.Organization,
+		cloudConfig:  cloudConfig,
+		token:        opts.Token,
 	}, nil
 }
 
 type VCSProviderCreateOptions struct {
-	OrganizationName string
+	Organization string
 	Token            string
 	Name             string
 	Cloud            string
@@ -96,12 +95,12 @@ func (u *Unmarshaler) UnmarshalVCSProviderRow(row VCSProviderRow) (*VCSProvider,
 	}
 
 	return &VCSProvider{
-		id:               row.VCSProviderID.String,
-		createdAt:        row.CreatedAt.Time.UTC(),
-		name:             row.Name.String,
-		organizationName: row.OrganizationName.String,
-		cloudConfig:      cloudConfig,
-		token:            row.Token.String,
+		id:           row.VCSProviderID.String,
+		createdAt:    row.CreatedAt.Time.UTC(),
+		name:         row.Name.String,
+		organization: row.OrganizationName.String,
+		cloudConfig:  cloudConfig,
+		token:        row.Token.String,
 	}, nil
 }
 
