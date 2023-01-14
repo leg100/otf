@@ -94,8 +94,8 @@ func (a *authorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.Acti
 	}
 	if subj.CanAccessWorkspace(action, &otf.WorkspacePolicy{
 		Organization: organization,
-		WorkspaceID:      workspaceID,
-		Permissions:      perms,
+		WorkspaceID:  workspaceID,
+		Permissions:  perms,
 	}) {
 		return subj, nil
 	}

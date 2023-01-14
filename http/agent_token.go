@@ -15,7 +15,7 @@ func (s *Server) CreateAgentToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	at, err := s.Application.CreateAgentToken(r.Context(), otf.CreateAgentTokenOptions{
-		Description:      opts.Description,
+		Description:  opts.Description,
 		Organization: opts.OrganizationName,
 	})
 	if err != nil {

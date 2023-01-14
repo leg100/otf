@@ -67,7 +67,7 @@ type TeamStore interface {
 }
 
 type TeamSpec struct {
-	Name             string `schema:"team_name,required"`
+	Name         string `schema:"team_name,required"`
 	Organization string `schema:"organization_name,required"`
 }
 

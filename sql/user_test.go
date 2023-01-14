@@ -174,7 +174,7 @@ func TestUser_List(t *testing.T) {
 	// Retrieve users in org belonging to team
 	users, err = db.ListUsers(ctx, otf.UserListOptions{
 		Organization: otf.String(org.Name()),
-		TeamName:         otf.String(team.Name()),
+		TeamName:     otf.String(team.Name()),
 	})
 	require.NoError(t, err)
 

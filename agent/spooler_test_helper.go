@@ -7,8 +7,8 @@ import (
 )
 
 type fakeSpoolerApp struct {
-	runs []*otf.Run
-	events   chan otf.Event
+	runs   []*otf.Run
+	events chan otf.Event
 
 	otf.Application
 }

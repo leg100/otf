@@ -56,7 +56,7 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 	if opts.Organization != nil && opts.WorkspaceName != nil {
 		// subject needs perms on workspace to list runs in workspace
 		subject, err = a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
-			Name:             opts.WorkspaceName,
+			Name:         opts.WorkspaceName,
 			Organization: opts.Organization,
 		})
 	} else if opts.WorkspaceID != nil {

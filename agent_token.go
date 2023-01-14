@@ -47,7 +47,7 @@ func (t *AgentToken) CanAccessWorkspace(action Action, policy *WorkspacePolicy) 
 
 type CreateAgentTokenOptions struct {
 	Organization string `schema:"organization_name,required"`
-	Description      string `schema:"description,required"`
+	Description  string `schema:"description,required"`
 }
 
 func NewAgentToken(opts CreateAgentTokenOptions) (*AgentToken, error) {

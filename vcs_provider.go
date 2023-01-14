@@ -72,9 +72,9 @@ func (f *VCSProviderFactory) NewVCSProvider(opts VCSProviderCreateOptions) (*VCS
 
 type VCSProviderCreateOptions struct {
 	Organization string
-	Token            string
-	Name             string
-	Cloud            string
+	Token        string
+	Name         string
+	Cloud        string
 }
 
 // VCSProviderRow represents a database row for a vcs provider

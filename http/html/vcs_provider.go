@@ -41,9 +41,9 @@ func (app *Application) createVCSProvider(w http.ResponseWriter, r *http.Request
 
 	provider, err := app.CreateVCSProvider(r.Context(), otf.VCSProviderCreateOptions{
 		Organization: params.OrganizationName,
-		Token:            params.Token,
-		Name:             params.Name,
-		Cloud:            params.Cloud,
+		Token:        params.Token,
+		Name:         params.Name,
+		Cloud:        params.Cloud,
 	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
