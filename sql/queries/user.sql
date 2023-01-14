@@ -45,7 +45,7 @@ SELECT
 FROM users u
 JOIN team_memberships tm USING (user_id)
 JOIN teams t USING (team_id)
-JOIN organizations o USING (organization_id)
+JOIN organizations o ON o.name = t.organization_name
 WHERE o.name = pggen.arg('organization_name')
 AND   t.name = pggen.arg('team_name')
 GROUP BY u.user_id

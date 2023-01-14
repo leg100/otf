@@ -42,7 +42,7 @@ func (u *User) Teams() []*Team                 { return u.teams }
 func (u *User) TeamsByOrganization(organization string) []*Team {
 	var orgTeams []*Team
 	for _, t := range u.teams {
-		if t.OrganizationName() == organization {
+		if t.Organization() == organization {
 			orgTeams = append(orgTeams, t)
 		}
 	}
@@ -52,7 +52,7 @@ func (u *User) TeamsByOrganization(organization string) []*Team {
 // Team retrieves the named team in the given organization.
 func (u *User) Team(name, organization string) (*Team, error) {
 	for _, t := range u.teams {
-		if t.Name() == name && t.OrganizationName() == organization {
+		if t.Name() == name && t.Organization() == organization {
 			return t, nil
 		}
 	}
@@ -87,7 +87,7 @@ func (u *User) CanAccessOrganization(action Action, name string) bool {
 	}
 
 	for _, team := range u.teams {
-		if team.OrganizationName() == name {
+		if team.Organization() == name {
 			if team.IsOwners() {
 				// owner team members can perform all actions on organization
 				return true
@@ -122,7 +122,7 @@ func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 	}
 	// user must be a member of a team with perms
 	for _, team := range u.teams {
-		if team.OrganizationName() == policy.OrganizationName {
+		if team.Organization() == policy.OrganizationName {
 			if team.IsOwners() {
 				// owner team members can perform all actions on all workspaces
 				return true
@@ -144,7 +144,7 @@ func (u *User) CanAccessWorkspace(action Action, policy *WorkspacePolicy) bool {
 // IsOwner determines if the user is an owner of an organization
 func (u *User) IsOwner(organization string) bool {
 	for _, team := range u.teams {
-		if team.OrganizationName() == organization {
+		if team.Organization() == organization {
 			if team.IsOwners() {
 				return true
 			}

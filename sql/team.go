@@ -10,10 +10,10 @@ import (
 // CreateTeam persists a team to the DB.
 func (db *DB) CreateTeam(ctx context.Context, team *otf.Team) error {
 	_, err := db.InsertTeam(ctx, pggen.InsertTeamParams{
-		ID:             String(team.ID()),
-		Name:           String(team.Name()),
-		CreatedAt:      Timestamptz(team.CreatedAt()),
-		OrganizationID: String(team.Organization().ID()),
+		ID:               String(team.ID()),
+		Name:             String(team.Name()),
+		CreatedAt:        Timestamptz(team.CreatedAt()),
+		OrganizationName: String(team.Organization()),
 	})
 	return databaseError(err)
 }

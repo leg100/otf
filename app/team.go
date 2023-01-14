@@ -47,7 +47,7 @@ func (a *Application) UpdateTeam(ctx context.Context, teamID string, opts otf.Up
 		a.Error(err, "retrieving team", "team_id", teamID)
 		return nil, err
 	}
-	subject, err := a.CanAccessOrganization(ctx, otf.UpdateTeamAction, team.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.UpdateTeamAction, team.Organization())
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +56,11 @@ func (a *Application) UpdateTeam(ctx context.Context, teamID string, opts otf.Up
 		return team.Update(opts)
 	})
 	if err != nil {
-		a.Error(err, "updating team", "name", team.Name(), "organization", team.OrganizationName(), "subject", subject)
+		a.Error(err, "updating team", "name", team.Name(), "organization", team.Organization(), "subject", subject)
 		return nil, err
 	}
 
-	a.V(2).Info("updated team", "name", team.Name(), "organization", team.OrganizationName(), "subject", subject)
+	a.V(2).Info("updated team", "name", team.Name(), "organization", team.Organization(), "subject", subject)
 
 	return team, nil
 }
@@ -76,7 +76,7 @@ func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, er
 	}
 
 	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, otf.GetTeamAction, team.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.GetTeamAction, team.Organization())
 	if err != nil {
 		// Fallback to checking if they are member of the team
 		if user, ok := subject.(*otf.User); ok {
@@ -90,7 +90,7 @@ func (a *Application) GetTeam(ctx context.Context, teamID string) (*otf.Team, er
 		}
 	}
 
-	a.V(2).Info("retrieved team", "team", team.Name(), "organization", team.OrganizationName(), "subject", subject)
+	a.V(2).Info("retrieved team", "team", team.Name(), "organization", team.Organization(), "subject", subject)
 
 	return team, nil
 }
@@ -129,7 +129,7 @@ func (a *Application) ListTeamMembers(ctx context.Context, teamID string) ([]*ot
 	}
 
 	// Check organization-wide authority
-	subject, err := a.CanAccessOrganization(ctx, otf.ListTeamsAction, team.OrganizationName())
+	subject, err := a.CanAccessOrganization(ctx, otf.ListTeamsAction, team.Organization())
 	if err != nil {
 		// Fallback to checking if they are member of the team
 		if user, ok := subject.(*otf.User); ok {

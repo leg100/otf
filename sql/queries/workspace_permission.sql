@@ -5,7 +5,7 @@ INSERT INTO workspace_permissions (
     role
 ) SELECT w.workspace_id, t.team_id, pggen.arg('role')
     FROM teams t
-    JOIN organizations o ON t.organization_id = o.organization_id
+    JOIN organizations o ON t.organization_name = o.name
     JOIN workspaces w ON w.organization_name = o.name
     WHERE t.name = pggen.arg('team_name')
     AND w.workspace_id = pggen.arg('workspace_id')
@@ -19,7 +19,7 @@ SELECT
     (o.*)::"organizations" AS organization
 FROM workspace_permissions p
 JOIN teams t USING (team_id)
-JOIN organizations o USING (organization_id)
+JOIN organizations o ON t.organization_name = o.name
 WHERE p.workspace_id = pggen.arg('workspace_id')
 ;
 
@@ -31,7 +31,7 @@ SELECT
 FROM workspace_permissions p
 JOIN teams t USING (team_id)
 JOIN workspaces w USING (workspace_id)
-JOIN organizations o USING (organization_id)
+JOIN organizations o ON w.organization_name = o.name
 WHERE w.name = pggen.arg('workspace_name')
 AND o.name = pggen.arg('organization_name')
 ;

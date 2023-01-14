@@ -17,7 +17,7 @@ const upsertWorkspacePermissionSQL = `INSERT INTO workspace_permissions (
     role
 ) SELECT w.workspace_id, t.team_id, $1
     FROM teams t
-    JOIN organizations o ON t.organization_id = o.organization_id
+    JOIN organizations o ON t.organization_name = o.name
     JOIN workspaces w ON w.organization_name = o.name
     WHERE t.name = $2
     AND w.workspace_id = $3
@@ -60,7 +60,7 @@ const findWorkspacePermissionsByIDSQL = `SELECT
     (o.*)::"organizations" AS organization
 FROM workspace_permissions p
 JOIN teams t USING (team_id)
-JOIN organizations o USING (organization_id)
+JOIN organizations o ON t.organization_name = o.name
 WHERE p.workspace_id = $1
 ;`
 
@@ -141,7 +141,7 @@ const findWorkspacePermissionsByNameSQL = `SELECT
 FROM workspace_permissions p
 JOIN teams t USING (team_id)
 JOIN workspaces w USING (workspace_id)
-JOIN organizations o USING (organization_id)
+JOIN organizations o ON w.organization_name = o.name
 WHERE w.name = $1
 AND o.name = $2
 ;`
