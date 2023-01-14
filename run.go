@@ -713,6 +713,7 @@ type RunCreateOptions struct {
 	ConfigurationVersionID *string
 	TargetAddrs            []string
 	ReplaceAddrs           []string
+	AutoApply              *bool
 }
 
 // RunApplyOptions represents the options for applying a run.

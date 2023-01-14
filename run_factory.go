@@ -46,7 +46,6 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	run.workspaceID = ws.ID()
 	run.plan = newPlan(&run)
 	run.apply = newApply(&run)
-	run.autoApply = ws.AutoApply()
 	run.speculative = cv.Speculative()
 	run.updateStatus(RunPending)
 	run.replaceAddrs = opts.ReplaceAddrs
@@ -60,6 +59,11 @@ func NewRun(cv *ConfigurationVersion, ws *Workspace, opts RunCreateOptions) *Run
 	}
 	if opts.Refresh != nil {
 		run.refresh = *opts.Refresh
+	}
+	if opts.AutoApply != nil {
+		run.autoApply = *opts.AutoApply
+	} else {
+		run.autoApply = ws.AutoApply()
 	}
 	if cv.ingressAttributes != nil {
 		run.commit = &cv.ingressAttributes.CommitSHA
