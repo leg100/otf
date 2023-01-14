@@ -11,10 +11,9 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-const findOrganizationNameByWorkspaceIDSQL = `SELECT o.name
-FROM organizations o
-JOIN workspaces w USING (organization_id)
-WHERE w.workspace_id = $1
+const findOrganizationNameByWorkspaceIDSQL = `SELECT organization_name
+FROM workspaces
+WHERE workspace_id = $1
 ;`
 
 // FindOrganizationNameByWorkspaceID implements Querier.FindOrganizationNameByWorkspaceID.

@@ -151,7 +151,7 @@ function watchRuns(path, stream) {
     source.addEventListener('run_created', (e) => {
         const obj = JSON.parse(e.data);
 
-        listElem.insertAdjacentHTML("afterbegin", obj.html);
+        listElem.insertAdjacentHTML("afterbegin", obj['run-item-html']);
     });
 
     source.addEventListener('run_status_update', (e) => {

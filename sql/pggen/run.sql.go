@@ -139,7 +139,7 @@ const findRunsSQL = `SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -166,9 +166,8 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE
-    organizations.name                       LIKE ANY($1)
+    workspaces.organization_name             LIKE ANY($1)
 AND workspaces.workspace_id                  LIKE ANY($2)
 AND workspaces.name                          LIKE ANY($3)
 AND runs.status                              LIKE ANY($4)
@@ -316,9 +315,8 @@ const countRunsSQL = `SELECT count(*)
 FROM runs
 JOIN workspaces             USING(workspace_id)
 JOIN configuration_versions USING(configuration_version_id)
-JOIN organizations          USING(organization_id)
 WHERE
-    organizations.name                       LIKE ANY($1)
+    workspaces.organization_name             LIKE ANY($1)
 AND workspaces.workspace_id                  LIKE ANY($2)
 AND workspaces.name                          LIKE ANY($3)
 AND runs.status                              LIKE ANY($4)
@@ -383,7 +381,7 @@ const findRunByIDSQL = `SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -410,7 +408,6 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE runs.run_id = $1
 ;`
 
@@ -541,7 +538,7 @@ const findRunByIDForUpdateSQL = `SELECT
     CASE WHEN workspaces.latest_run_id = runs.run_id THEN true
          ELSE false
     END AS latest,
-    organizations.name AS organization_name,
+    workspaces.organization_name,
     (ia.*)::"ingress_attributes" AS ingress_attributes,
     (
         SELECT array_agg(rst.*) AS run_status_timestamps
@@ -568,7 +565,6 @@ JOIN plans USING (run_id)
 JOIN applies USING (run_id)
 JOIN (configuration_versions LEFT JOIN ingress_attributes ia USING (configuration_version_id)) USING (configuration_version_id)
 JOIN workspaces ON runs.workspace_id = workspaces.workspace_id
-JOIN organizations USING(organization_id)
 WHERE runs.run_id = $1
 FOR UPDATE of runs, plans, applies
 ;`

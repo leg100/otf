@@ -31,11 +31,10 @@ type WorkspaceResult struct {
 	TerraformVersion           pgtype.Text           `json:"terraform_version"`
 	TriggerPrefixes            []string              `json:"trigger_prefixes"`
 	WorkingDirectory           pgtype.Text           `json:"working_directory"`
-	OrganizationID             pgtype.Text           `json:"organization_id"`
 	LockRunID                  pgtype.Text           `json:"lock_run_id"`
 	LockUserID                 pgtype.Text           `json:"lock_user_id"`
 	LatestRunID                pgtype.Text           `json:"latest_run_id"`
-	Organization               *pggen.Organizations  `json:"organization"`
+	OrganizationName           pgtype.Text           `json:"organization_name"`
 	UserLock                   *pggen.Users          `json:"user_lock"`
 	RunLock                    *pggen.Runs           `json:"run_lock"`
 	WorkspaceRepo              *pggen.WorkspaceRepos `json:"workspace_repo"`
@@ -65,7 +64,7 @@ func UnmarshalWorkspaceResult(result WorkspaceResult) (*Workspace, error) {
 		terraformVersion:           result.TerraformVersion.String,
 		triggerPrefixes:            result.TriggerPrefixes,
 		workingDirectory:           result.WorkingDirectory.String,
-		organization:               UnmarshalOrganizationRow(*result.Organization),
+		organization:               result.OrganizationName.String,
 	}
 
 	if result.WorkspaceRepo != nil {
@@ -144,7 +143,7 @@ func UnmarshalWorkspaceJSONAPI(w *dto.Workspace) *Workspace {
 		terraformVersion:           w.TerraformVersion,
 		workingDirectory:           w.WorkingDirectory,
 		triggerPrefixes:            w.TriggerPrefixes,
-		organization:               UnmarshalOrganizationJSONAPI(w.Organization),
+		organization:               w.Organization.Name,
 	}
 
 	// The DTO only encodes whether lock is unlocked or locked, whereas our

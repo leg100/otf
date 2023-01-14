@@ -83,7 +83,7 @@ func NewEnvironment(
 	//
 	// TODO: TF_TOKEN_* environment variables are only supported from terraform
 	// v1.20 onwards. We should set that as the min version for use with otf.
-	session, err := app.CreateRegistrySession(ctx, ws.OrganizationName())
+	session, err := app.CreateRegistrySession(ctx, ws.Organization())
 	if err != nil {
 		return nil, errors.Wrap(err, "creating registry session")
 	}

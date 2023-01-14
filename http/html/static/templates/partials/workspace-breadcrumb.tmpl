@@ -1,6 +1,6 @@
 {{ define "workspace-breadcrumb" }}
   {{ with .Content.Workspace }}
-    <a href="{{ workspacesPath .OrganizationName }}">workspaces</a>
+    <a href="{{ workspacesPath .Organization }}">workspaces</a>
     /
     <a href="{{ workspacePath .ID }}">{{ .Name }}</a>
   {{ end }}

@@ -62,10 +62,9 @@ const findStateVersionsByWorkspaceNameSQL = `SELECT
     array_remove(array_agg(state_version_outputs), NULL) AS state_version_outputs
 FROM state_versions
 JOIN workspaces USING (workspace_id)
-JOIN organizations USING (organization_id)
 LEFT JOIN state_version_outputs USING (state_version_id)
-WHERE workspaces.name = $1
-AND organizations.name = $2
+WHERE workspaces.name               = $1
+AND   workspaces.organization_name  = $2
 GROUP BY state_versions.state_version_id
 LIMIT $3
 OFFSET $4
@@ -146,9 +145,8 @@ func (q *DBQuerier) FindStateVersionsByWorkspaceNameScan(results pgx.BatchResult
 const countStateVersionsByWorkspaceNameSQL = `SELECT count(*)
 FROM state_versions
 JOIN workspaces USING (workspace_id)
-JOIN organizations USING (organization_id)
-WHERE workspaces.name = $1
-AND organizations.name = $2
+WHERE workspaces.name                 = $1
+AND   workspaces.organization_name    = $2
 ;`
 
 // CountStateVersionsByWorkspaceName implements Querier.CountStateVersionsByWorkspaceName.

@@ -3,7 +3,7 @@
 {{ define "title" }}Edit Workspace{{ end }}
 
 {{ define "container-header" }}
-  <a href="{{ workspacesPath .Content.OrganizationName }}">workspaces</a>
+  <a href="{{ workspacesPath .Content.Organization }}">workspaces</a>
   /
   <a href="{{ workspacePath .Content.ID }}">{{ .Content.Name }}</a>
   /

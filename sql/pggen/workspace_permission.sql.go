@@ -18,7 +18,7 @@ const upsertWorkspacePermissionSQL = `INSERT INTO workspace_permissions (
 ) SELECT w.workspace_id, t.team_id, $1
     FROM teams t
     JOIN organizations o ON t.organization_id = o.organization_id
-    JOIN workspaces w ON w.organization_id = o.organization_id
+    JOIN workspaces w ON w.organization_name = o.name
     WHERE t.name = $2
     AND w.workspace_id = $3
 ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = $1
@@ -141,7 +141,7 @@ const findWorkspacePermissionsByNameSQL = `SELECT
 FROM workspace_permissions p
 JOIN teams t USING (team_id)
 JOIN workspaces w USING (workspace_id)
-JOIN organizations o ON o.organization_id = w.organization_id
+JOIN organizations o USING (organization_id)
 WHERE w.name = $1
 AND o.name = $2
 ;`
@@ -220,8 +220,7 @@ const deleteWorkspacePermissionByIDSQL = `DELETE
 FROM workspace_permissions p
 USING workspaces w, teams t
 WHERE p.team_id = t.team_id
-AND w.workspace_id = $1
-AND t.organization_id = w.organization_id
+AND p.workspace_id = $1
 AND t.name = $2
 ;`
 
