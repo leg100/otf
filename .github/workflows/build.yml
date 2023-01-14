@@ -51,10 +51,6 @@ jobs:
         run: |
           make unit
       -
-        name: Add e2e hostname to /etc/hosts
-        run: |
-          sudo echo "127.0.0.1 devd.io" | sudo tee -a /etc/hosts
-      -
         name: E2E tests
         run: |
           sudo cp e2e/fixtures/cert.crt /usr/local/share/ca-certificates
