@@ -47,6 +47,10 @@
         </div>
       </fieldset>
     </div>
+    <div class="field checkbox">
+      <input type="checkbox" name="auto_apply" id="auto_apply" {{ checked .Content.AutoApply }}>
+      <label for="auto_apply">Auto apply</label>
+    </div>
     <div class="field">
       <label for="terraform_version">Terraform Version</label>
       <input type="text" name="terraform_version" id="terraform_version" value="{{ .Content.TerraformVersion }}" required>

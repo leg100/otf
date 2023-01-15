@@ -166,32 +166,34 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	type parameters struct {
+		AutoApply        bool `schema:"auto_apply"`
+		Name             *string
+		Description      *string
+		ExecutionMode    *otf.ExecutionMode `schema:"execution_mode"`
+		TerraformVersion *string            `schema:"terraform_version"`
+		WorkspaceID      string             `schema:"workspace_id,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	var opts otf.WorkspaceUpdateOptions
-	if err := decode.Form(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-	}
-	ws, err := app.GetWorkspace(r.Context(), spec)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := opts.Valid(); err != nil {
-		flashError(w, err.Error())
-		http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
 		return
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err = app.UpdateWorkspace(r.Context(), spec, opts)
+	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
+	ws, err := app.UpdateWorkspace(r.Context(), spec, otf.WorkspaceUpdateOptions{
+		AutoApply:        &params.AutoApply,
+		Name:             params.Name,
+		Description:      params.Description,
+		ExecutionMode:    params.ExecutionMode,
+		TerraformVersion: params.TerraformVersion,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	flashSuccess(w, "updated workspace")
 	// User may have updated workspace name so path references updated workspace
 	http.Redirect(w, r, paths.EditWorkspace(ws.ID()), http.StatusFound)
