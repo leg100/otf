@@ -6,6 +6,6 @@ type FakeWorkspaceLockService struct {
 	WorkspaceLockService
 }
 
-func (f *FakeWorkspaceLockService) LockWorkspace(context.Context, WorkspaceSpec, WorkspaceLockOptions) (*Workspace, error) {
+func (f *FakeWorkspaceLockService) LockWorkspace(context.Context, string, WorkspaceLockOptions) (*Workspace, error) {
 	return nil, nil
 }

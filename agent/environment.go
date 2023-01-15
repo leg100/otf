@@ -73,7 +73,7 @@ func NewEnvironment(
 		return nil, err
 	}
 
-	ws, err := app.GetWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(run.WorkspaceID())})
+	ws, err := app.GetWorkspaceByID(ctx, run.WorkspaceID())
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving workspace")
 	}

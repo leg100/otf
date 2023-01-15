@@ -25,13 +25,12 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
-	ws, err := app.GetWorkspace(r.Context(), spec)
+	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.SetWorkspacePermission(r.Context(), spec, params.TeamName, role)
+	err = app.SetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName, role)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,13 +50,12 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 		return
 	}
 
-	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
-	ws, err := app.GetWorkspace(r.Context(), spec)
+	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.UnsetWorkspacePermission(r.Context(), spec, params.TeamName)
+	err = app.UnsetWorkspacePermission(r.Context(), params.WorkspaceID, params.TeamName)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

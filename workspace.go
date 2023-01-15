@@ -303,6 +303,8 @@ type WorkspaceList struct {
 type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	GetWorkspaceByID(ctx context.Context, workspaceID string) (*Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
 	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
@@ -315,26 +317,28 @@ type WorkspaceService interface {
 }
 
 type WorkspaceConnectionService interface {
-	ConnectWorkspace(ctx context.Context, spec WorkspaceSpec, opts ConnectWorkspaceOptions) (*Workspace, error)
-	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
-	DisconnectWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	ConnectWorkspace(ctx context.Context, workspaceID string, opts ConnectWorkspaceOptions) (*Workspace, error)
+	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
+	DisconnectWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 }
 
 type WorkspacePermissionService interface {
-	SetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string, role Role) error
-	ListWorkspacePermissions(ctx context.Context, spec WorkspaceSpec) ([]*WorkspacePermission, error)
-	UnsetWorkspacePermission(ctx context.Context, spec WorkspaceSpec, team string) error
+	SetWorkspacePermission(ctx context.Context, workspaceID, team string, role Role) error
+	ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*WorkspacePermission, error)
+	UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error
 }
 
 type WorkspaceLockService interface {
-	LockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceLockOptions) (*Workspace, error)
-	UnlockWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUnlockOptions) (*Workspace, error)
+	LockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceLockOptions) (*Workspace, error)
+	UnlockWorkspace(ctx context.Context, workspaceID string, opts WorkspaceUnlockOptions) (*Workspace, error)
 }
 
 // WorkspaceStore is a persistence store for workspaces.
 type WorkspaceStore interface {
 	CreateWorkspace(ctx context.Context, ws *Workspace) error
 	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	GetWorkspaceByID(ctx context.Context, workspaceID string) (*Workspace, error)
+	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
@@ -346,13 +350,13 @@ type WorkspaceStore interface {
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
 
 	// CreateWorkspaceRepo creates a workspace repo in the persistence store.
-	CreateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
+	CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
 	// UpdateWorkspaceRepo updates a workspace's repo in the persistence store.
-	UpdateWorkspaceRepo(ctx context.Context, spec WorkspaceSpec, repo WorkspaceRepo) (*Workspace, error)
+	UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo WorkspaceRepo) (*Workspace, error)
 	// DeleteWorkspaceRepo deletes a workspace's repo from the persistence
 	// store, returning the workspace without the repo as well the original repo, or an
 	// error.
-	DeleteWorkspaceRepo(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*Workspace, error)
 
 	WorkspaceLockService
 	CurrentRunService

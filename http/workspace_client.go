@@ -99,15 +99,8 @@ func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, op
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	var path string
-	if spec.ID != nil {
-		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
-	} else if spec.Organization != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
-	} else {
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
+func (c *client) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.newRequest("POST", path, &opts)
 	if err != nil {
 		return nil, err
@@ -122,15 +115,8 @@ func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	var path string
-	if spec.ID != nil {
-		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
-	} else if spec.Organization != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
-	} else {
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
+func (c *client) UnlockWorkspace(ctx context.Context, workspaceID string, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
 	req, err := c.newRequest("POST", path, nil)
 	if err != nil {
 		return nil, err

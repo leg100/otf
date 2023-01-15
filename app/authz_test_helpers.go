@@ -26,6 +26,10 @@ func (a *fakeAuthorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.
 	return a.subject, nil
 }
 
+func (a *fakeAuthorizer) CanAccessWorkspaceByName(ctx context.Context, action otf.Action, organization, workspace string) (otf.Subject, error) {
+	return a.subject, nil
+}
+
 func (a *fakeAuthorizer) CanAccessRun(ctx context.Context, action otf.Action, runID string) (otf.Subject, error) {
 	return a.subject, nil
 }

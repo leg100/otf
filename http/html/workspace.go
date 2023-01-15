@@ -83,13 +83,13 @@ func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.All(&spec, r); err != nil {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), spec)
+	ws, err := app.GetWorkspaceByID(r.Context(), id)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -115,19 +115,40 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+func (app *Application) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Name         string `schema:"workspace_name,required"`
+		Organization string `schema:"organization_name,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	workspace, err := app.GetWorkspace(r.Context(), spec)
+
+	ws, err := app.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+}
+
+func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	workspace, err := app.GetWorkspaceByID(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Get existing perms as well as all teams in org
-	perms, err := app.ListWorkspacePermissions(r.Context(), spec)
+	perms, err := app.ListWorkspacePermissions(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -216,12 +237,13 @@ func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.LockWorkspace(r.Context(), spec, otf.WorkspaceLockOptions{})
+
+	ws, err := app.LockWorkspace(r.Context(), id, otf.WorkspaceLockOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -230,12 +252,13 @@ func (app *Application) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	id, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.UnlockWorkspace(r.Context(), spec, otf.WorkspaceUnlockOptions{})
+
+	ws, err := app.UnlockWorkspace(r.Context(), id, otf.WorkspaceUnlockOptions{})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -427,24 +450,24 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 }
 
 func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request) {
-	type options struct {
-		otf.WorkspaceSpec
+	type parameters struct {
+		WorkspaceID     string `schema:"workspace_id,required"`
 		otf.ConnectWorkspaceOptions
 	}
-	var opts options
-	if err := decode.All(&opts, r); err != nil {
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	provider, err := app.GetVCSProvider(r.Context(), opts.ProviderID)
+	provider, err := app.GetVCSProvider(r.Context(), params.ProviderID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	opts.Cloud = provider.CloudConfig().Name
+	params.Cloud = provider.CloudConfig().Name
 
-	ws, err := app.ConnectWorkspace(r.Context(), opts.WorkspaceSpec, opts.ConnectWorkspaceOptions)
+	ws, err := app.ConnectWorkspace(r.Context(), params.WorkspaceID, params.ConnectWorkspaceOptions)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -455,13 +478,13 @@ func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) disconnectWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.All(&spec, r); err != nil {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.DisconnectWorkspace(r.Context(), spec)
+	ws, err := app.DisconnectWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -271,9 +271,7 @@ func (r *Run) ToJSONAPI() any {
 	if err != nil {
 		panic(err.Error())
 	}
-	perms, err := r.ListWorkspacePermissions(r.req.Context(), otf.WorkspaceSpec{
-		ID: otf.String(r.WorkspaceID()),
-	})
+	perms, err := r.ListWorkspacePermissions(r.req.Context(), r.WorkspaceID())
 	if err != nil {
 		panic(err.Error())
 	}

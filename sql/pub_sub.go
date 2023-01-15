@@ -173,7 +173,7 @@ func (ps *PubSub) reassemble(ctx context.Context, msg message) (otf.Event, error
 			return otf.Event{}, err
 		}
 	case "workspace":
-		payload, err = ps.db.GetWorkspace(ctx, otf.WorkspaceSpec{ID: &msg.ID})
+		payload, err = ps.db.GetWorkspaceByID(ctx, msg.ID)
 		if err != nil {
 			return otf.Event{}, err
 		}

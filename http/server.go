@@ -163,12 +163,11 @@ func NewServer(logger logr.Logger, cfg ServerConfig, app otf.Application, db otf
 
 			// Workspace routes
 			r.GET("/organizations/{organization_name}/workspaces", s.ListWorkspaces)
-			r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspace)
 			r.PST("/organizations/{organization_name}/workspaces", s.CreateWorkspace)
+			r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", s.GetWorkspaceByName)
 			r.PTC("/organizations/{organization_name}/workspaces/{workspace_name}", s.UpdateWorkspace)
 			r.DEL("/organizations/{organization_name}/workspaces/{workspace_name}", s.DeleteWorkspace)
-			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/lock", s.LockWorkspace)
-			r.PST("/organizations/{organization_name}/workspaces/{workspace_name}/actions/unlock", s.UnlockWorkspace)
+
 			r.PTC("/workspaces/{workspace_id}", s.UpdateWorkspace)
 			r.GET("/workspaces/{workspace_id}", s.GetWorkspace)
 			r.DEL("/workspaces/{workspace_id}", s.DeleteWorkspace)

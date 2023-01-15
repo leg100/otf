@@ -34,20 +34,26 @@ func (l *htmlLogChunk) NextOffset() int {
 }
 
 func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
-	opts := otf.RunListOptions{
-		// We don't list speculative runs on the UI
-		Speculative: otf.Bool(false),
+	type parameters struct {
+		WorkspaceID string `schema:"workspace_id,required"`
+		otf.ListOptions
 	}
-	if err := decode.All(&opts, r); err != nil {
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: opts.WorkspaceID})
+
+	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	runs, err := app.ListRuns(r.Context(), opts)
+	runs, err := app.ListRuns(r.Context(), otf.RunListOptions{
+		ListOptions: params.ListOptions,
+		Speculative: otf.Bool(false), // we don't list speculative runs on the UI
+		WorkspaceID: &params.WorkspaceID,
+	})
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,25 +70,19 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (app *Application) newRun(w http.ResponseWriter, r *http.Request) {
-	app.render("run_new.tmpl", w, r, struct {
-		Organization string
-		Workspace    string
-	}{
-		Organization: mux.Vars(r)["organization_name"],
-		Workspace:    mux.Vars(r)["workspace_name"],
-	})
-}
-
 func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
-	run, err := app.GetRun(r.Context(), mux.Vars(r)["run_id"])
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+
+	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{
-		ID: otf.String(run.WorkspaceID()),
-	})
+	ws, err := app.GetWorkspaceByID(r.Context(), run.WorkspaceID())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,22 +119,23 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteRun(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.All(&spec, r); err != nil {
+	runID, err := decode.Param("run_id", r)
+	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), spec)
+
+	run, err := app.GetRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = app.DeleteRun(r.Context(), mux.Vars(r)["run_id"])
+	err = app.DeleteRun(r.Context(), runID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
+	http.Redirect(w, r, paths.Workspace(run.WorkspaceID()), http.StatusFound)
 }
 
 func (app *Application) cancelRun(w http.ResponseWriter, r *http.Request) {

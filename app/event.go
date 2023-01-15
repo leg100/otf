@@ -70,9 +70,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					if opts.Organization != nil {
 						// fetch workspace first in order to get organization
 						// name
-						ws, err := a.GetWorkspace(ctx, otf.WorkspaceSpec{
-							ID: otf.String(res.WorkspaceID()),
-						})
+						ws, err := a.GetWorkspaceByID(ctx, res.WorkspaceID())
 						if err != nil {
 							a.Error(err, "retrieving workspace for watch event")
 							continue

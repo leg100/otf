@@ -93,52 +93,40 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 	return ws, err
 }
 
-func (db *DB) CreateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	_, err = db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
+func (db *DB) CreateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
+	_, err := db.InsertWorkspaceRepo(ctx, pggen.InsertWorkspaceRepoParams{
 		Branch:        String(repo.Branch),
 		WebhookID:     UUID(repo.WebhookID),
 		VCSProviderID: String(repo.ProviderID),
-		WorkspaceID:   workspaceID,
+		WorkspaceID:   String(workspaceID),
 	})
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	ws, err := db.GetWorkspace(ctx, spec)
+	ws, err := db.GetWorkspaceByID(ctx, workspaceID)
 	return ws, databaseError(err)
 }
 
-func (db *DB) UpdateWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
-	workspaceID, err := db.getWorkspaceID(ctx, spec)
+func (db *DB) UpdateWorkspaceRepo(ctx context.Context, workspaceID string, repo otf.WorkspaceRepo) (*otf.Workspace, error) {
+	_, err := db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), String(workspaceID))
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	_, err = db.UpdateWorkspaceRepoByID(ctx, String(repo.Branch), workspaceID)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	ws, err := db.GetWorkspace(ctx, spec)
+	ws, err := db.GetWorkspaceByID(ctx, workspaceID)
 	return ws, databaseError(err)
 }
 
-func (db *DB) DeleteWorkspaceRepo(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	id, err := db.getWorkspaceID(ctx, spec)
+func (db *DB) DeleteWorkspaceRepo(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+	_, err := db.Querier.DeleteWorkspaceRepo(ctx, String(workspaceID))
 	if err != nil {
 		return nil, databaseError(err)
 	}
-	_, err = db.Querier.DeleteWorkspaceRepo(ctx, id)
-	if err != nil {
-		return nil, databaseError(err)
-	}
-	ws, err := db.GetWorkspace(ctx, spec)
+	ws, err := db.GetWorkspaceByID(ctx, workspaceID)
 	return ws, databaseError(err)
 }
 
 // LockWorkspace locks the specified workspace.
-func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -147,9 +135,13 @@ func (db *DB) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts ot
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		ws, err = tx.getWorkspaceForUpdate(ctx, spec)
+		result, err := db.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
-			return databaseError(err)
+			return err
+		}
+		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+		if err != nil {
+			return err
 		}
 		// lock the workspace
 		if err := ws.Lock(subj); err != nil {
@@ -182,7 +174,7 @@ func (db *DB) SetCurrentRun(ctx context.Context, workspaceID, runID string) erro
 // UnlockWorkspace unlocks the specified workspace; the caller has the
 // opportunity to check the current locker passed into the provided callback. If
 // an error is returned the unlock will not go ahead.
-func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
 	subj, err := otf.LockFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -191,9 +183,13 @@ func (db *DB) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts 
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		ws, err = db.getWorkspaceForUpdate(ctx, spec)
+		result, err := db.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
-			return databaseError(err)
+			return err
+		}
+		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+		if err != nil {
+			return err
 		}
 		// unlock workspace
 		if err := ws.Unlock(subj, opts.Force); err != nil {
@@ -369,6 +365,22 @@ func (db *DB) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Wo
 	} else {
 		return nil, fmt.Errorf("no workspace spec provided")
 	}
+}
+
+func (db *DB) GetWorkspaceByID(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+	result, err := db.FindWorkspaceByID(ctx, String(workspaceID))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+}
+
+func (db *DB) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+	result, err := db.FindWorkspaceByName(ctx, String(workspace), String(organization))
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	return otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 }
 
 // DeleteWorkspace deletes a specific workspace, along with its child records

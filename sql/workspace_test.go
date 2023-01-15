@@ -77,11 +77,11 @@ func TestWorkspace_CreateRepo(t *testing.T) {
 		Identifier: hook.Identifier,
 	}
 
-	_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+	_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+		_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
@@ -99,7 +99,7 @@ func TestWorkspace_UpdateRepo(t *testing.T) {
 	repo.Branch = "dev"
 
 	var err error
-	ws, err = db.UpdateWorkspaceRepo(ctx, ws.SpecID(), *repo)
+	ws, err = db.UpdateWorkspaceRepo(ctx, ws.ID(), *repo)
 	require.NoError(t, err)
 
 	assert.Equal(t, "dev", ws.Repo().Branch)
@@ -115,7 +115,7 @@ func TestWorkspace_DeleteRepo(t *testing.T) {
 	_ = createTestWorkspaceRepo(t, db, ws, provider, hook)
 
 	var err error
-	ws, err = db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+	ws, err = db.DeleteWorkspaceRepo(ctx, ws.ID())
 	require.NoError(t, err)
 
 	assert.Nil(t, ws.Repo())
@@ -149,6 +149,26 @@ func TestWorkspace_Get(t *testing.T) {
 	}
 }
 
+func TestWorkspace_GetByID(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	want := createTestWorkspace(t, db, org)
+
+	got, err := db.GetWorkspaceByID(context.Background(), want.ID())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+func TestWorkspace_GetByName(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	want := createTestWorkspace(t, db, org)
+
+	got, err := db.GetWorkspaceByName(context.Background(), org.Name(), want.Name())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestWorkspace_Lock(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
@@ -157,32 +177,32 @@ func TestWorkspace_Lock(t *testing.T) {
 
 	t.Run("lock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
+		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("lock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
+		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
+		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
+		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
 
 	t.Run("unlock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
+		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
+		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})

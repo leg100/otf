@@ -77,6 +77,6 @@ func (f *fakeEventsApp) Watch(context.Context, otf.WatchOptions) (<-chan otf.Eve
 	return f.ch, nil
 }
 
-func (f *fakeEventsApp) ListWorkspacePermissions(context.Context, otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+func (f *fakeEventsApp) ListWorkspacePermissions(context.Context, string) ([]*otf.WorkspacePermission, error) {
 	return nil, nil
 }

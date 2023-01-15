@@ -87,7 +87,7 @@ func (u *fakeApp) ListOrganizations(ctx context.Context, opts otf.OrganizationLi
 	}, nil
 }
 
-func (u *fakeApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (u *fakeApp) GetWorkspaceByID(context.Context, string) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 
@@ -106,15 +106,15 @@ func (u *fakeApp) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateO
 	return u.fakeWorkspace, nil
 }
 
-func (u *fakeApp) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
+func (u *fakeApp) ListWorkspacePermissions(context.Context, string) ([]*otf.WorkspacePermission, error) {
 	return nil, nil
 }
 
-func (u *fakeApp) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string, role otf.Role) error {
+func (u *fakeApp) SetWorkspacePermission(context.Context, string, string, otf.Role) error {
 	return nil
 }
 
-func (u *fakeApp) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, teamID string) error {
+func (u *fakeApp) UnsetWorkspacePermission(context.Context, string, string) error {
 	return nil
 }
 

@@ -240,7 +240,7 @@ func (r *Run) EnqueuePlan(ctx context.Context, svc WorkspaceLockService) error {
 	if !r.Speculative() {
 		// Lock the workspace on behalf of the run
 		ctx = AddSubjectToContext(ctx, r)
-		_, err := svc.LockWorkspace(ctx, WorkspaceSpec{ID: String(r.WorkspaceID())}, WorkspaceLockOptions{})
+		_, err := svc.LockWorkspace(ctx, r.WorkspaceID(), WorkspaceLockOptions{})
 		if err != nil {
 			return err
 		}
