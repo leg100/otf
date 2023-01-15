@@ -108,8 +108,7 @@ func (r *Run) ConfigurationVersionID() string         { return r.configurationVe
 func (r *Run) Plan() *Plan                            { return r.plan }
 func (r *Run) Apply() *Apply                          { return r.apply }
 func (r *Run) ExecutionMode() ExecutionMode           { return r.executionMode }
-
-func (r *Run) Commit() *string { return r.commit }
+func (r *Run) Commit() *string                        { return r.commit }
 
 // Latest determines whether run is the latest run for a workspace, i.e.
 // its current run, or the most recent current run.
@@ -785,13 +784,4 @@ func (opts RunListOptions) LogFields() (fields []interface{}) {
 		fields = append(fields, "status", fmt.Sprintf("%v", opts.Statuses))
 	}
 	return fields
-}
-
-func ContainsRunStatus(statuses []RunStatus, status RunStatus) bool {
-	for _, s := range statuses {
-		if s == status {
-			return true
-		}
-	}
-	return false
 }

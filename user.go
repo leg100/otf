@@ -171,7 +171,7 @@ func (u *User) SyncMemberships(ctx context.Context, store UserStore, orgs []stri
 	// Iterate thru receiver's orgs and check if in the given orgs; if not then
 	// remove membership from store
 	for _, org := range u.organizations {
-		if !inOrganizationList(orgs, org) {
+		if !Contains(orgs, org) {
 			if err := store.RemoveOrganizationMembership(ctx, u.ID(), org); err != nil {
 				return err
 			}
@@ -320,15 +320,6 @@ func WithTeamMemberships(memberships ...*Team) NewUserOption {
 	return func(user *User) {
 		user.teams = memberships
 	}
-}
-
-func inOrganizationList(orgs []string, organization string) bool {
-	for _, org := range orgs {
-		if org == organization {
-			return true
-		}
-	}
-	return false
 }
 
 func inTeamList(teams []*Team, teamID string) bool {
