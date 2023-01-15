@@ -1011,22 +1011,24 @@ func (q *DBQuerier) FindWorkspaceByIDForUpdateScan(results pgx.BatchResults) (Fi
 
 const updateWorkspaceByIDSQL = `UPDATE workspaces
 SET
-    allow_destroy_plan = $1,
-    description = $2,
-    execution_mode = $3,
-    name = $4,
-    queue_all_runs = $5,
-    speculative_enabled = $6,
-    structured_run_output_enabled = $7,
-    terraform_version = $8,
-    trigger_prefixes = $9,
-    working_directory = $10,
-    updated_at = $11
-WHERE workspace_id = $12
+    allow_destroy_plan              = $1,
+    auto_apply                      = $2,
+    description                     = $3,
+    execution_mode                  = $4,
+    name                            = $5,
+    queue_all_runs                  = $6,
+    speculative_enabled             = $7,
+    structured_run_output_enabled   = $8,
+    terraform_version               = $9,
+    trigger_prefixes                = $10,
+    working_directory               = $11,
+    updated_at                      = $12
+WHERE workspace_id = $13
 RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
 	AllowDestroyPlan           bool
+	AutoApply                  bool
 	Description                pgtype.Text
 	ExecutionMode              pgtype.Text
 	Name                       pgtype.Text
@@ -1043,7 +1045,7 @@ type UpdateWorkspaceByIDParams struct {
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
 func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorkspaceByIDParams) (pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "UpdateWorkspaceByID")
-	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	row := q.conn.QueryRow(ctx, updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
 	var item pgtype.Text
 	if err := row.Scan(&item); err != nil {
 		return item, fmt.Errorf("query UpdateWorkspaceByID: %w", err)
@@ -1053,7 +1055,7 @@ func (q *DBQuerier) UpdateWorkspaceByID(ctx context.Context, params UpdateWorksp
 
 // UpdateWorkspaceByIDBatch implements Querier.UpdateWorkspaceByIDBatch.
 func (q *DBQuerier) UpdateWorkspaceByIDBatch(batch genericBatch, params UpdateWorkspaceByIDParams) {
-	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
+	batch.Queue(updateWorkspaceByIDSQL, params.AllowDestroyPlan, params.AutoApply, params.Description, params.ExecutionMode, params.Name, params.QueueAllRuns, params.SpeculativeEnabled, params.StructuredRunOutputEnabled, params.TerraformVersion, params.TriggerPrefixes, params.WorkingDirectory, params.UpdatedAt, params.ID)
 }
 
 // UpdateWorkspaceByIDScan implements Querier.UpdateWorkspaceByIDScan.

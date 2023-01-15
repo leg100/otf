@@ -19,6 +19,7 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
 			Name:                       String(ws.Name()),
 			AllowDestroyPlan:           ws.AllowDestroyPlan(),
+			AutoApply:                  ws.AutoApply(),
 			CanQueueDestroyPlan:        ws.CanQueueDestroyPlan(),
 			Environment:                String(ws.Environment()),
 			Description:                String(ws.Description()),
@@ -33,7 +34,6 @@ func (db *DB) CreateWorkspace(ctx context.Context, ws *otf.Workspace) error {
 			TerraformVersion:           String(ws.TerraformVersion()),
 			TriggerPrefixes:            ws.TriggerPrefixes(),
 			QueueAllRuns:               ws.QueueAllRuns(),
-			AutoApply:                  ws.AutoApply(),
 			WorkingDirectory:           String(ws.WorkingDirectory()),
 			OrganizationName:           String(ws.Organization()),
 		})
@@ -77,6 +77,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, fn fu
 			ID:                         String(ws.ID()),
 			UpdatedAt:                  Timestamptz(ws.UpdatedAt()),
 			AllowDestroyPlan:           ws.AllowDestroyPlan(),
+			AutoApply:                  ws.AutoApply(),
 			Description:                String(ws.Description()),
 			ExecutionMode:              String(string(ws.ExecutionMode())),
 			Name:                       String(ws.Name()),
