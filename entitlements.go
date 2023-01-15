@@ -21,8 +21,13 @@ type Entitlements struct {
 // supported entitlements.
 func DefaultEntitlements(organizationID string) *Entitlements {
 	return &Entitlements{
-		ID:           organizationID,
-		StateStorage: true,
-		Operations:   true,
+		ID:                    organizationID,
+		Agents:                true,
+		Operations:            true,
+		PrivateModuleRegistry: true,
+		SSO:                   true,
+		StateStorage:          true,
+		Teams:                 true,
+		VCSIntegrations:       true,
 	}
 }
