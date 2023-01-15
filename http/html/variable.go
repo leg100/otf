@@ -79,7 +79,7 @@ func (app *Application) listVariables(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: otf.String(workspaceID)})
+	ws, err := app.GetWorkspaceByID(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

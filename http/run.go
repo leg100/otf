@@ -28,12 +28,11 @@ func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, fmt.Errorf("missing workspace"))
 		return
 	}
-	workspace := otf.WorkspaceSpec{ID: &opts.Workspace.ID}
 	var configurationVersionID *string
 	if opts.ConfigurationVersion != nil {
 		configurationVersionID = &opts.ConfigurationVersion.ID
 	}
-	run, err := s.Application.CreateRun(r.Context(), workspace, otf.RunCreateOptions{
+	run, err := s.Application.CreateRun(r.Context(), opts.Workspace.ID, otf.RunCreateOptions{
 		AutoApply:              opts.AutoApply,
 		IsDestroy:              opts.IsDestroy,
 		Refresh:                opts.Refresh,
@@ -335,9 +334,7 @@ func (r *Run) ToJSONAPI() any {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				ws, err := r.Application.GetWorkspace(r.req.Context(), otf.WorkspaceSpec{
-					ID: otf.String(r.WorkspaceID()),
-				})
+				ws, err := r.Application.GetWorkspaceByID(r.req.Context(), r.WorkspaceID())
 				if err != nil {
 					panic(err.Error()) // throws HTTP500
 				}

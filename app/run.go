@@ -8,13 +8,13 @@ import (
 )
 
 // CreateRun creates a run. Caller needs to have created a config version first.
-func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.CreateRunAction, spec)
+func (a *Application) CreateRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.NewRun(ctx, spec, opts)
+	run, err := a.NewRun(ctx, workspaceID, opts)
 	if err != nil {
 		a.Error(err, "constructing new run", "subject", subject)
 		return nil, err

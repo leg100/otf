@@ -277,7 +277,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID})
+	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -387,7 +387,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &workspaceID})
+	ws, err := app.GetWorkspaceByID(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -420,7 +420,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &opts.WorkspaceID})
+	ws, err := app.GetWorkspaceByID(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -451,7 +451,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 
 func (app *Application) connectWorkspace(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		WorkspaceID     string `schema:"workspace_id,required"`
+		WorkspaceID string `schema:"workspace_id,required"`
 		otf.ConnectWorkspaceOptions
 	}
 	var params parameters
@@ -516,12 +516,12 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspace(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID})
+	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	run, err := app.StartRun(r.Context(), otf.WorkspaceSpec{ID: &params.WorkspaceID}, otf.ConfigurationVersionCreateOptions{
+	run, err := app.StartRun(r.Context(), params.WorkspaceID, otf.ConfigurationVersionCreateOptions{
 		Speculative: otf.Bool(speculative),
 	})
 	if err != nil {

@@ -370,11 +370,11 @@ func (f *fakeWorkspaceHandlerApp) CloneConfigurationVersion(context.Context, str
 	return f.configVersions[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) CreateRun(context.Context, otf.WorkspaceSpec, otf.RunCreateOptions) (*otf.Run, error) {
+func (f *fakeWorkspaceHandlerApp) CreateRun(context.Context, string, otf.RunCreateOptions) (*otf.Run, error) {
 	return f.runs[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, otf.WorkspaceSpec, otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
+func (f *fakeWorkspaceHandlerApp) StartRun(context.Context, string, otf.ConfigurationVersionCreateOptions) (*otf.Run, error) {
 	return f.runs[0], nil
 }
 
