@@ -54,11 +54,11 @@ func newTestDB(t *testing.T, sessionCleanupIntervalOverride ...time.Duration) *D
 
 func createTestWorkspacePermission(t *testing.T, db otf.DB, ws *otf.Workspace, team *otf.Team, role otf.Role) *otf.WorkspacePermission {
 	ctx := context.Background()
-	err := db.SetWorkspacePermission(ctx, ws.SpecName(), team.Name(), role)
+	err := db.SetWorkspacePermission(ctx, ws.ID(), team.Name(), role)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.UnsetWorkspacePermission(ctx, ws.SpecName(), team.Name())
+		db.UnsetWorkspacePermission(ctx, ws.ID(), team.Name())
 	})
 	return &otf.WorkspacePermission{Team: team, Role: role}
 }
@@ -92,7 +92,7 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ..
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.DeleteWorkspace(ctx, ws.ID())
 	})
 	return ws
 }
@@ -220,7 +220,7 @@ func createTestVCSProvider(t *testing.T, db otf.DB, organization *otf.Organizati
 func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *otf.VCSProvider, hook *otf.Webhook) *otf.WorkspaceRepo {
 	ctx := context.Background()
 
-	ws, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), otf.WorkspaceRepo{
+	ws, err := db.CreateWorkspaceRepo(ctx, ws.ID(), otf.WorkspaceRepo{
 		ProviderID: provider.ID(),
 		Branch:     "master",
 		WebhookID:  hook.WebhookID,
@@ -229,7 +229,7 @@ func createTestWorkspaceRepo(t *testing.T, db *DB, ws *otf.Workspace, provider *
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+		db.DeleteWorkspaceRepo(ctx, ws.ID())
 	})
 	return ws.Repo()
 }

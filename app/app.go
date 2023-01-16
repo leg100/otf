@@ -31,7 +31,6 @@ type Application struct {
 	*otf.RunStarter
 	*otf.Publisher
 	*otf.ModuleVersionUploader
-	Mapper
 	cloud.Service
 	otf.PubSubService
 	logr.Logger
@@ -77,15 +76,6 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		Application: app,
 	}
 
-	// Setup ID mapper and start
-	mapper := inmem.NewMapper(app)
-	go func() {
-		if err := mapper.Start(ctx); ctx.Err() == nil {
-			app.Error(err, "mapper unexpectedly terminated")
-		}
-	}()
-	app.Mapper = mapper
-
 	proxy, err := inmem.NewChunkProxy(app, opts.Logger, opts.Cache, opts.DB)
 	if err != nil {
 		return nil, fmt.Errorf("constructing chunk proxy: %w", err)
@@ -117,7 +107,6 @@ func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) 
 		// make a copy of the app and assign a db tx wrapper
 		appTx := &Application{
 			PubSubService:    a.PubSubService,
-			Mapper:           a.Mapper,
 			cache:            a.cache,
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,
@@ -140,7 +129,6 @@ func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Applic
 		// make a copy of the app and assign a db wrapped with a session-lock
 		appWithLock := &Application{
 			PubSubService:    a.PubSubService,
-			Mapper:           a.Mapper,
 			cache:            a.cache,
 			Logger:           a.Logger,
 			WorkspaceFactory: a.WorkspaceFactory,

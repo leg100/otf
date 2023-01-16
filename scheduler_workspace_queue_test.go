@@ -163,7 +163,7 @@ func (f *fakeWorkspaceQueueApp) EnqueuePlan(ctx context.Context, runID string) (
 	return &Run{id: runID}, nil
 }
 
-func (f *fakeWorkspaceQueueApp) UnlockWorkspace(context.Context, WorkspaceSpec, WorkspaceUnlockOptions) (*Workspace, error) {
+func (f *fakeWorkspaceQueueApp) UnlockWorkspace(context.Context, string, WorkspaceUnlockOptions) (*Workspace, error) {
 	f.ws.lock = &Unlocked{}
 	return f.ws, nil
 }

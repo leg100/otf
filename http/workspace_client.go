@@ -30,14 +30,31 @@ func (c *client) CreateWorkspace(ctx context.Context, options otf.WorkspaceCreat
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-// GetWorkspace retrieves a workspace either by its ID, or by organization and
-// workspace name.
-func (c *client) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	path, err := getWorkspacePath(spec)
+// GetWorkspaceByName retrieves a workspace by organization and
+// name.
+func (c *client) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
+	path := fmt.Sprintf("organizations/%s/workspaces/%s", organization, workspace)
+	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	w := &dto.Workspace{}
+	err = c.do(ctx, req, w)
+	if err != nil {
+		return nil, err
+	}
+
+	// durations come over in ms
+	w.ApplyDurationAverage *= time.Millisecond
+	w.PlanDurationAverage *= time.Millisecond
+
+	return otf.UnmarshalWorkspaceJSONAPI(w), nil
+}
+
+// GetWorkspace retrieves a workspace by its ID
+func (c *client) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
@@ -73,16 +90,12 @@ func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOp
 }
 
 // UpdateWorkspace updates the settings of an existing workspace.
-func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}
 
-	path, err := getWorkspacePath(spec)
-	if err != nil {
-		return nil, err
-	}
-
+	path := fmt.Sprintf("workspaces/%s", workspaceID)
 	req, err := c.newRequest("PATCH", path, &dto.WorkspaceUpdateOptions{
 		ExecutionMode: (*string)(options.ExecutionMode),
 	})
@@ -99,15 +112,8 @@ func (c *client) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, op
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
-	var path string
-	if spec.ID != nil {
-		path = fmt.Sprintf("workspaces/%s/actions/lock", url.QueryEscape(*spec.ID))
-	} else if spec.Organization != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/lock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
-	} else {
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
+func (c *client) LockWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceLockOptions) (*otf.Workspace, error) {
+	path := fmt.Sprintf("workspaces/%s/actions/lock", workspaceID)
 	req, err := c.newRequest("POST", path, &opts)
 	if err != nil {
 		return nil, err
@@ -122,15 +128,8 @@ func (c *client) LockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts
 	return otf.UnmarshalWorkspaceJSONAPI(w), nil
 }
 
-func (c *client) UnlockWorkspace(ctx context.Context, spec otf.WorkspaceSpec, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
-	var path string
-	if spec.ID != nil {
-		path = fmt.Sprintf("workspaces/%s/actions/unlock", url.QueryEscape(*spec.ID))
-	} else if spec.Organization != nil && spec.Name != nil {
-		path = fmt.Sprintf("organizations/%s/workspaces/%s/actions/unlock", url.QueryEscape(*spec.Organization), url.QueryEscape(*spec.Name))
-	} else {
-		return nil, otf.ErrInvalidWorkspaceSpec
-	}
+func (c *client) UnlockWorkspace(ctx context.Context, workspaceID string, _ otf.WorkspaceUnlockOptions) (*otf.Workspace, error) {
+	path := fmt.Sprintf("workspaces/%s/actions/unlock", workspaceID)
 	req, err := c.newRequest("POST", path, nil)
 	if err != nil {
 		return nil, err
@@ -155,22 +154,4 @@ func (c *client) UpdateWorkspaceQueue(run *otf.Run) error {
 
 func (c *client) SetLatestRun(ctx context.Context, workspaceID, runID string) error {
 	return fmt.Errorf("unimplemented")
-}
-
-// getWorkspacePath generates a URL path for a workspace according to whether
-// the spec specifies an ID, or an organization and workspace name.
-func getWorkspacePath(spec otf.WorkspaceSpec) (string, error) {
-	if spec.ID != nil {
-		return fmt.Sprintf("workspaces/%s", url.QueryEscape(*spec.ID)), nil
-	}
-
-	if spec.Name != nil && spec.Organization != nil {
-		return fmt.Sprintf(
-			"organizations/%s/workspaces/%s",
-			url.QueryEscape(*spec.Organization),
-			url.QueryEscape(*spec.Name),
-		), nil
-	}
-
-	return "", fmt.Errorf("invalid workspace spec")
 }

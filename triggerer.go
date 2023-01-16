@@ -134,7 +134,7 @@ func (h *Triggerer) triggerRun(ctx context.Context, event cloud.VCSEvent) error 
 		if err := h.UploadConfig(ctx, cv.ID(), tarball); err != nil {
 			return err
 		}
-		_, err = h.CreateRun(ctx, WorkspaceSpec{ID: String(ws.ID())}, RunCreateOptions{
+		_, err = h.CreateRun(ctx, ws.ID(), RunCreateOptions{
 			ConfigurationVersionID: String(cv.ID()),
 		})
 		if err != nil {

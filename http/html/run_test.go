@@ -30,7 +30,7 @@ func TestListRunsHandler(t *testing.T) {
 	app := newFakeWebApp(t, &fakeRunsHandlerApp{ws: ws, runs: runs})
 
 	t.Run("first page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=1&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=1&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listRuns(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -39,7 +39,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("second page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=2&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=2&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listRuns(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -48,7 +48,7 @@ func TestListRunsHandler(t *testing.T) {
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/?page[number]=3&page[size]=2", nil)
+		r := httptest.NewRequest("GET", "/?workspace_id=ws-123&page[number]=3&page[size]=2", nil)
 		w := httptest.NewRecorder()
 		app.listRuns(w, r)
 		assert.Equal(t, 200, w.Code)
@@ -131,7 +131,11 @@ type fakeRunsHandlerApp struct {
 	otf.Application
 }
 
-func (f *fakeRunsHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeRunsHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
+	return f.ws, nil
+}
+
+func (f *fakeRunsHandlerApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 

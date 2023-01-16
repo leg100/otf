@@ -25,7 +25,7 @@ func TestStartRun(t *testing.T) {
 			},
 		}
 
-		got, err := app.StartRun(ctx, ws.SpecName(), ConfigurationVersionCreateOptions{})
+		got, err := app.StartRun(ctx, ws.ID(), ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -45,7 +45,7 @@ func TestStartRun(t *testing.T) {
 			},
 		}
 
-		got, err := app.StartRun(ctx, ws.SpecName(), ConfigurationVersionCreateOptions{})
+		got, err := app.StartRun(ctx, ws.ID(), ConfigurationVersionCreateOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
 	})
@@ -59,7 +59,7 @@ type fakeStartRunApp struct {
 	Application
 }
 
-func (f *fakeStartRunApp) GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error) {
+func (f *fakeStartRunApp) GetWorkspace(context.Context, string) (*Workspace, error) {
 	return f.workspace, nil
 }
 
@@ -83,6 +83,6 @@ func (f *fakeStartRunApp) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeStartRunApp) CreateRun(ctx context.Context, spec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
+func (f *fakeStartRunApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	return f.run, nil
 }

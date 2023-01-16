@@ -14,8 +14,8 @@ type RunStarter struct {
 	Application
 }
 
-func (rs *RunStarter) StartRun(ctx context.Context, spec WorkspaceSpec, opts ConfigurationVersionCreateOptions) (*Run, error) {
-	ws, err := rs.GetWorkspace(ctx, spec)
+func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error) {
+	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (rs *RunStarter) StartRun(ctx context.Context, spec WorkspaceSpec, opts Con
 		}
 	}
 
-	return rs.CreateRun(ctx, spec, RunCreateOptions{
+	return rs.CreateRun(ctx, workspaceID, RunCreateOptions{
 		ConfigurationVersionID: String(cv.ID()),
 	})
 }

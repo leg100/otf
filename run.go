@@ -240,7 +240,7 @@ func (r *Run) EnqueuePlan(ctx context.Context, svc WorkspaceLockService) error {
 	if !r.Speculative() {
 		// Lock the workspace on behalf of the run
 		ctx = AddSubjectToContext(ctx, r)
-		_, err := svc.LockWorkspace(ctx, WorkspaceSpec{ID: String(r.WorkspaceID())}, WorkspaceLockOptions{})
+		_, err := svc.LockWorkspace(ctx, r.WorkspaceID(), WorkspaceLockOptions{})
 		if err != nil {
 			return err
 		}
@@ -518,7 +518,7 @@ func (r *Run) deleteBackendConfig(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadTerraform(ctx context.Context, env Environment) error {
-	ws, err := env.GetWorkspace(ctx, WorkspaceSpec{ID: &r.workspaceID})
+	ws, err := env.GetWorkspace(ctx, r.workspaceID)
 	if err != nil {
 		return err
 	}
@@ -644,7 +644,7 @@ type RunStatusTimestamp struct {
 // RunService implementations allow interactions with runs
 type RunService interface {
 	// Create a new run with the given options.
-	CreateRun(ctx context.Context, ws WorkspaceSpec, opts RunCreateOptions) (*Run, error)
+	CreateRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error)
 	// Get retrieves a run with the given ID.
 	GetRun(ctx context.Context, id string) (*Run, error)
 	// List lists runs according to the given options.
@@ -686,7 +686,7 @@ type RunService interface {
 	// Tail logs of a run phase
 	Tail(ctx context.Context, opts GetChunkOptions) (<-chan Chunk, error)
 	// StartRun creates and starts a run.
-	StartRun(ctx context.Context, spec WorkspaceSpec, opts ConfigurationVersionCreateOptions) (*Run, error)
+	StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error)
 }
 
 // RunCreateOptions represents the options for creating a new run. See

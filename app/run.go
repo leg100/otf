@@ -8,13 +8,13 @@ import (
 )
 
 // CreateRun creates a run. Caller needs to have created a config version first.
-func (a *Application) CreateRun(ctx context.Context, spec otf.WorkspaceSpec, opts otf.RunCreateOptions) (*otf.Run, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.CreateRunAction, spec)
+func (a *Application) CreateRun(ctx context.Context, workspaceID string, opts otf.RunCreateOptions) (*otf.Run, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateRunAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	run, err := a.NewRun(ctx, spec, opts)
+	run, err := a.NewRun(ctx, workspaceID, opts)
 	if err != nil {
 		a.Error(err, "constructing new run", "subject", subject)
 		return nil, err
@@ -55,15 +55,13 @@ func (a *Application) ListRuns(ctx context.Context, opts otf.RunListOptions) (*o
 	var err error
 	if opts.Organization != nil && opts.WorkspaceName != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, err = a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
-			Name:         opts.WorkspaceName,
-			Organization: opts.Organization,
-		})
+		subject, err = a.CanAccessWorkspaceByName(ctx, otf.GetWorkspaceAction,
+			*opts.WorkspaceName,
+			*opts.Organization,
+		)
 	} else if opts.WorkspaceID != nil {
 		// subject needs perms on workspace to list runs in workspace
-		subject, err = a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
-			ID: opts.WorkspaceID,
-		})
+		subject, err = a.CanAccessWorkspaceByID(ctx, otf.GetWorkspaceAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// subject needs perms on org to list runs in org
 		subject, err = a.CanAccessOrganization(ctx, otf.ListRunsAction, *opts.Organization)

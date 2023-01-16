@@ -28,39 +28,21 @@ func TestWorkspace_Update(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()
 	org := createTestOrganization(t, db)
+	ws := createTestWorkspace(t, db, org)
 
-	tests := []struct {
-		name string
-		spec func(ws *otf.Workspace) otf.WorkspaceSpec
-	}{
-		{
-			name: "by id",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecID()
-			},
-		},
-		{
-			name: "by name",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecName()
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ws := createTestWorkspace(t, db, org)
-			_, err := db.UpdateWorkspace(ctx, tt.spec(ws), func(ws *otf.Workspace) error {
-				return ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
-					Description: otf.String("updated description"),
-				})
-			})
-			require.NoError(t, err)
-			got, err := db.GetWorkspace(ctx, tt.spec(ws))
-			require.NoError(t, err)
-			assert.Equal(t, "updated description", got.Description())
+	got, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
+		return ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
+			Description: otf.String("updated description"),
 		})
-	}
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "updated description", got.Description())
+
+	// assert too that the WS returned by UpdateWorkspace is identical to one
+	// returned by GetWorkspace
+	want, err := db.GetWorkspace(ctx, ws.ID())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
 }
 
 func TestWorkspace_CreateRepo(t *testing.T) {
@@ -77,11 +59,11 @@ func TestWorkspace_CreateRepo(t *testing.T) {
 		Identifier: hook.Identifier,
 	}
 
-	_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+	_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
 	require.NoError(t, err)
 
 	t.Run("Duplicate", func(t *testing.T) {
-		_, err := db.CreateWorkspaceRepo(ctx, ws.SpecID(), repo)
+		_, err := db.CreateWorkspaceRepo(ctx, ws.ID(), repo)
 		require.Equal(t, otf.ErrResourceAlreadyExists, err)
 	})
 }
@@ -99,7 +81,7 @@ func TestWorkspace_UpdateRepo(t *testing.T) {
 	repo.Branch = "dev"
 
 	var err error
-	ws, err = db.UpdateWorkspaceRepo(ctx, ws.SpecID(), *repo)
+	ws, err = db.UpdateWorkspaceRepo(ctx, ws.ID(), *repo)
 	require.NoError(t, err)
 
 	assert.Equal(t, "dev", ws.Repo().Branch)
@@ -115,38 +97,30 @@ func TestWorkspace_DeleteRepo(t *testing.T) {
 	_ = createTestWorkspaceRepo(t, db, ws, provider, hook)
 
 	var err error
-	ws, err = db.DeleteWorkspaceRepo(ctx, ws.SpecID())
+	ws, err = db.DeleteWorkspaceRepo(ctx, ws.ID())
 	require.NoError(t, err)
 
 	assert.Nil(t, ws.Repo())
 }
 
-func TestWorkspace_Get(t *testing.T) {
+func TestWorkspace_GetByID(t *testing.T) {
 	db := newTestDB(t)
 	org := createTestOrganization(t, db)
-	ws := createTestWorkspace(t, db, org)
+	want := createTestWorkspace(t, db, org)
 
-	tests := []struct {
-		name string
-		spec otf.WorkspaceSpec
-	}{
-		{
-			name: "by id",
-			spec: ws.SpecID(),
-		},
-		{
-			name: "by name",
-			spec: ws.SpecName(),
-		},
-	}
+	got, err := db.GetWorkspace(context.Background(), want.ID())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetWorkspace(context.Background(), tt.spec)
-			require.NoError(t, err)
-			assert.Equal(t, ws, got)
-		})
-	}
+func TestWorkspace_GetByName(t *testing.T) {
+	db := newTestDB(t)
+	org := createTestOrganization(t, db)
+	want := createTestWorkspace(t, db, org)
+
+	got, err := db.GetWorkspaceByName(context.Background(), org.Name(), want.Name())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
 }
 
 func TestWorkspace_Lock(t *testing.T) {
@@ -157,32 +131,32 @@ func TestWorkspace_Lock(t *testing.T) {
 
 	t.Run("lock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
+		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("lock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		got, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
+		got, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
 		assert.True(t, got.Locked())
 	})
 
 	t.Run("unlock by id", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecID(), otf.WorkspaceLockOptions{})
+		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
+		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
 
 	t.Run("unlock by name", func(t *testing.T) {
 		ws := createTestWorkspace(t, db, org)
-		_, err := db.LockWorkspace(ctx, ws.SpecName(), otf.WorkspaceLockOptions{})
+		_, err := db.LockWorkspace(ctx, ws.ID(), otf.WorkspaceLockOptions{})
 		require.NoError(t, err)
-		got, err := db.UnlockWorkspace(ctx, ws.SpecID(), otf.WorkspaceUnlockOptions{})
+		got, err := db.UnlockWorkspace(ctx, ws.ID(), otf.WorkspaceUnlockOptions{})
 		require.NoError(t, err)
 		assert.False(t, got.Locked())
 	})
@@ -375,49 +349,27 @@ func TestWorkspace_Delete(t *testing.T) {
 	ctx := context.Background()
 	org := createTestOrganization(t, db)
 
-	tests := []struct {
-		name string
-		spec func(ws *otf.Workspace) otf.WorkspaceSpec
-	}{
-		{
-			name: "by id",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecID()
-			},
-		},
-		{
-			name: "by name",
-			spec: func(ws *otf.Workspace) otf.WorkspaceSpec {
-				return ws.SpecName()
-			},
-		},
-	}
+	ws := createTestWorkspace(t, db, org)
+	cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
+	_ = createTestRun(t, db, ws, cv)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ws := createTestWorkspace(t, db, org)
-			cv := createTestConfigurationVersion(t, db, ws, otf.ConfigurationVersionCreateOptions{})
-			_ = createTestRun(t, db, ws, cv)
+	err := db.DeleteWorkspace(ctx, ws.ID())
+	require.NoError(t, err)
 
-			err := db.DeleteWorkspace(ctx, tt.spec(ws))
-			require.NoError(t, err)
+	results, err := db.ListWorkspaces(ctx, otf.WorkspaceListOptions{Organization: otf.String(org.Name())})
+	require.NoError(t, err)
 
-			results, err := db.ListWorkspaces(ctx, otf.WorkspaceListOptions{Organization: otf.String(org.Name())})
-			require.NoError(t, err)
+	assert.Equal(t, 0, len(results.Items))
 
-			assert.Equal(t, 0, len(results.Items))
+	// Test ON CASCADE DELETE functionality for runs
+	rl, err := db.ListRuns(ctx, otf.RunListOptions{WorkspaceID: otf.String(ws.ID())})
+	require.NoError(t, err)
 
-			// Test ON CASCADE DELETE functionality for runs
-			rl, err := db.ListRuns(ctx, otf.RunListOptions{WorkspaceID: otf.String(ws.ID())})
-			require.NoError(t, err)
+	assert.Equal(t, 0, len(rl.Items))
 
-			assert.Equal(t, 0, len(rl.Items))
+	// Test ON CASCADE DELETE functionality for config versions
+	cvl, err := db.ListConfigurationVersions(ctx, ws.ID(), otf.ConfigurationVersionListOptions{})
+	require.NoError(t, err)
 
-			// Test ON CASCADE DELETE functionality for config versions
-			cvl, err := db.ListConfigurationVersions(ctx, ws.ID(), otf.ConfigurationVersionListOptions{})
-			require.NoError(t, err)
-
-			assert.Equal(t, 0, len(cvl.Items))
-		})
-	}
+	assert.Equal(t, 0, len(cvl.Items))
 }

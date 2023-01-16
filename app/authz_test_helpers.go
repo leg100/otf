@@ -18,11 +18,11 @@ func (a *fakeAuthorizer) CanAccessOrganization(ctx context.Context, action otf.A
 	return a.subject, nil
 }
 
-func (a *fakeAuthorizer) CanAccessWorkspace(ctx context.Context, action otf.Action, spec otf.WorkspaceSpec) (otf.Subject, error) {
+func (a *fakeAuthorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.Action, id string) (otf.Subject, error) {
 	return a.subject, nil
 }
 
-func (a *fakeAuthorizer) CanAccessWorkspaceByID(ctx context.Context, action otf.Action, id string) (otf.Subject, error) {
+func (a *fakeAuthorizer) CanAccessWorkspaceByName(ctx context.Context, action otf.Action, organization, workspace string) (otf.Subject, error) {
 	return a.subject, nil
 }
 

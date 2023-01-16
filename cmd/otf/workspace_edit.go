@@ -10,10 +10,9 @@ import (
 
 func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 	var (
-		spec otf.WorkspaceSpec
-		opts otf.WorkspaceUpdateOptions
-
-		mode *string
+		organization string
+		opts         otf.WorkspaceUpdateOptions
+		mode         *string
 	)
 
 	cmd := &cobra.Command{
@@ -23,7 +22,7 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec.Name = otf.String(args[0])
+			workspace := args[0]
 
 			client, err := factory.NewClient()
 			if err != nil {
@@ -34,7 +33,11 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 				opts.ExecutionMode = (*otf.ExecutionMode)(mode)
 			}
 
-			ws, err := client.UpdateWorkspace(cmd.Context(), spec, opts)
+			ws, err := client.GetWorkspaceByName(cmd.Context(), organization, workspace)
+			if err != nil {
+				return err
+			}
+			ws, err = client.UpdateWorkspace(cmd.Context(), ws.ID(), opts)
 			if err != nil {
 				return err
 			}
@@ -49,7 +52,7 @@ func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 
 	mode = cmd.Flags().StringP("execution-mode", "m", "", "Which execution mode to use. Valid values are remote, local, and agent")
 
-	spec.Organization = cmd.Flags().String("organization", "", "Organization workspace belongs to")
+	cmd.Flags().StringVar(&organization, "organization", "", "Organization workspace belongs to")
 	cmd.MarkFlagRequired("organization")
 
 	return cmd

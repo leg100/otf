@@ -55,7 +55,7 @@ type fakeRunFactoryWorkspaceService struct {
 	WorkspaceService
 }
 
-func (f *fakeRunFactoryWorkspaceService) GetWorkspace(context.Context, WorkspaceSpec) (*Workspace, error) {
+func (f *fakeRunFactoryWorkspaceService) GetWorkspace(context.Context, string) (*Workspace, error) {
 	return f.ws, nil
 }
 

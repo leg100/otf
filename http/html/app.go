@@ -145,7 +145,7 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 		r.GET("/organizations/{organization_name}/workspaces", app.listWorkspaces)
 		r.GET("/organizations/{organization_name}/workspaces/new", app.newWorkspace)
 		r.PST("/organizations/{organization_name}/workspaces/create", app.createWorkspace)
-		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspace)
+		r.GET("/organizations/{organization_name}/workspaces/{workspace_name}", app.getWorkspaceByName)
 		r.GET("/workspaces/{workspace_id}", app.getWorkspace)
 		r.GET("/workspaces/{workspace_id}/edit", app.editWorkspace)
 		r.PST("/workspaces/{workspace_id}/update", app.updateWorkspace)
@@ -169,7 +169,6 @@ func (app *Application) addRoutes(r *otfhttp.Router) {
 
 		r.GET("/workspaces/{workspace_id}/watch", app.watchWorkspace)
 		r.GET("/workspaces/{workspace_id}/runs", app.listRuns)
-		r.GET("/workspaces/{workspace_id}/runs/new", app.newRun)
 		r.GET("/runs/{run_id}", app.getRun)
 		r.GET("/runs/{run_id}/tail", app.tailRun)
 		r.PST("/runs/{run_id}/delete", app.deleteRun)

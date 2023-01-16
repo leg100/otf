@@ -128,7 +128,6 @@ func TestTail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &Application{
 				proxy:         &fakeTailProxy{chunk: tt.existing},
-				Mapper:        &fakeTailMapper{},
 				PubSubService: &fakePubSubTailService{event: tt.event},
 				Logger:        logr.Discard(),
 				Authorizer:    &fakeAuthorizer{&otf.Superuser{}},
@@ -145,12 +144,6 @@ func TestTail(t *testing.T) {
 		})
 	}
 }
-
-type fakeTailMapper struct {
-	Mapper
-}
-
-func (f *fakeTailMapper) CanAccessRun(context.Context, string) bool { return true }
 
 type fakeTailProxy struct {
 	// fake chunk to return

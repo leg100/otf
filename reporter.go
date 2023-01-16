@@ -121,7 +121,7 @@ func (r *Reporter) handleRun(ctx context.Context, run *Run) error {
 		return fmt.Errorf("unknown run status: %s", run.Status())
 	}
 
-	ws, err := r.GetWorkspace(ctx, WorkspaceSpec{ID: String(run.WorkspaceID())})
+	ws, err := r.GetWorkspace(ctx, run.WorkspaceID())
 	if err != nil {
 		return err
 	}

@@ -76,7 +76,7 @@ func (s *WorkspaceQueue) handleEvent(ctx context.Context, event Event) error {
 					// no current run & queue is empty; unlock workspace
 					s.current = nil
 					ctx = AddSubjectToContext(ctx, payload)
-					ws, err := s.UnlockWorkspace(ctx, WorkspaceSpec{ID: String(payload.WorkspaceID())}, WorkspaceUnlockOptions{})
+					ws, err := s.UnlockWorkspace(ctx, payload.WorkspaceID(), WorkspaceUnlockOptions{})
 					if err != nil {
 						return err
 					}

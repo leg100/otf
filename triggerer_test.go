@@ -64,6 +64,6 @@ func (f *fakeTriggererApp) UploadConfig(context.Context, string, []byte) error {
 	return nil
 }
 
-func (f *fakeTriggererApp) CreateRun(ctx context.Context, spec WorkspaceSpec, opts RunCreateOptions) (*Run, error) {
+func (f *fakeTriggererApp) CreateRun(context.Context, string, RunCreateOptions) (*Run, error) {
 	return nil, nil
 }

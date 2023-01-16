@@ -8,9 +8,7 @@ import (
 )
 
 func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string, opts otf.StateVersionCreateOptions) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.CreateStateVersionAction, otf.WorkspaceSpec{
-		ID: otf.String(workspaceID),
-	})
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.CreateStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -34,10 +32,7 @@ func (a *Application) CreateStateVersion(ctx context.Context, workspaceID string
 }
 
 func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersionListOptions) (*otf.StateVersionList, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.ListStateVersionsAction, otf.WorkspaceSpec{
-		Organization: &opts.Organization,
-		Name:         &opts.Workspace,
-	})
+	subject, err := a.CanAccessWorkspaceByName(ctx, otf.ListStateVersionsAction, opts.Organization, opts.Workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +47,7 @@ func (a *Application) ListStateVersions(ctx context.Context, opts otf.StateVersi
 }
 
 func (a *Application) CurrentStateVersion(ctx context.Context, workspaceID string) (*otf.StateVersion, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetStateVersionAction, otf.WorkspaceSpec{
-		ID: otf.String(workspaceID),
-	})
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetStateVersionAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}

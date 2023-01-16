@@ -6,36 +6,36 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) SetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string, role otf.Role) error {
-	subject, err := a.CanAccessWorkspace(ctx, otf.SetWorkspacePermissionAction, spec)
+func (a *Application) SetWorkspacePermission(ctx context.Context, workspaceID, team string, role otf.Role) error {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.SetWorkspacePermissionAction, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	if err := a.db.SetWorkspacePermission(ctx, spec, team, role); err != nil {
-		a.Error(err, "setting workspace permission", append(spec.LogFields(), "subject", subject)...)
+	if err := a.db.SetWorkspacePermission(ctx, workspaceID, team, role); err != nil {
+		a.Error(err, "setting workspace permission", "subject", subject, "workspace", workspaceID)
 		return err
 	}
 
-	a.V(0).Info("set workspace permission", append(spec.LogFields(), "team", team, "role", role, "subject", subject)...)
+	a.V(0).Info("set workspace permission", "team", team, "role", role, "subject", subject, "workspace", workspaceID)
 
 	// TODO: publish event
 
 	return nil
 }
 
-func (a *Application) ListWorkspacePermissions(ctx context.Context, spec otf.WorkspaceSpec) ([]*otf.WorkspacePermission, error) {
-	return a.db.ListWorkspacePermissions(ctx, spec)
+func (a *Application) ListWorkspacePermissions(ctx context.Context, workspaceID string) ([]*otf.WorkspacePermission, error) {
+	return a.db.ListWorkspacePermissions(ctx, workspaceID)
 }
 
-func (a *Application) UnsetWorkspacePermission(ctx context.Context, spec otf.WorkspaceSpec, team string) error {
-	subject, err := a.CanAccessWorkspace(ctx, otf.UnsetWorkspacePermissionAction, spec)
+func (a *Application) UnsetWorkspacePermission(ctx context.Context, workspaceID, team string) error {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UnsetWorkspacePermissionAction, workspaceID)
 	if err != nil {
-		a.Error(err, "unsetting workspace permission", append(spec.LogFields(), "team", team, "subject", subject)...)
+		a.Error(err, "unsetting workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
 		return err
 	}
 
-	a.V(0).Info("unset workspace permission", append(spec.LogFields(), "team", team, "subject", subject)...)
+	a.V(0).Info("unset workspace permission", "team", team, "subject", subject, "workspace", workspaceID)
 	// TODO: publish event
-	return a.db.UnsetWorkspacePermission(ctx, spec, team)
+	return a.db.UnsetWorkspacePermission(ctx, workspaceID, team)
 }
