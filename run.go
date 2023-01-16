@@ -518,7 +518,7 @@ func (r *Run) deleteBackendConfig(ctx context.Context, env Environment) error {
 }
 
 func (r *Run) downloadTerraform(ctx context.Context, env Environment) error {
-	ws, err := env.GetWorkspaceByID(ctx, r.workspaceID)
+	ws, err := env.GetWorkspace(ctx, r.workspaceID)
 	if err != nil {
 		return err
 	}

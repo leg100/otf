@@ -89,7 +89,7 @@ func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), id)
+	ws, err := app.GetWorkspace(r.Context(), id)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -142,7 +142,7 @@ func (app *Application) editWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspace, err := app.GetWorkspaceByID(r.Context(), workspaceID)
+	workspace, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -202,8 +202,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	spec := otf.WorkspaceSpec{ID: otf.String(params.WorkspaceID)}
-	ws, err := app.UpdateWorkspace(r.Context(), spec, otf.WorkspaceUpdateOptions{
+	ws, err := app.UpdateWorkspace(r.Context(), params.WorkspaceID, otf.WorkspaceUpdateOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,
@@ -221,13 +220,13 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
+	workspaceID, err := decode.Param("workspace_id", r)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	ws, err := app.DeleteWorkspace(r.Context(), otf.WorkspaceSpec{ID: otf.String(id)})
+	ws, err := app.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -277,7 +276,7 @@ func (app *Application) watchWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -387,7 +386,7 @@ func (app *Application) listWorkspaceVCSProviders(w http.ResponseWriter, r *http
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), workspaceID)
+	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -420,7 +419,7 @@ func (app *Application) listWorkspaceVCSRepos(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), opts.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), opts.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -516,7 +515,7 @@ func (app *Application) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

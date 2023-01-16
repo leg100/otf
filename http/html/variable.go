@@ -15,7 +15,7 @@ func (app *Application) newVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), workspaceID)
+	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,7 +79,7 @@ func (app *Application) listVariables(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspaceByID(r.Context(), workspaceID)
+	ws, err := app.GetWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -106,7 +106,7 @@ func (app *Application) editVariable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspaceByID(r.Context(), variable.WorkspaceID())
+	ws, err := app.GetWorkspace(r.Context(), variable.WorkspaceID())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

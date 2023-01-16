@@ -114,7 +114,9 @@ func TestListWorkspacesHandler(t *testing.T) {
 func TestDeleteWorkspace(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org)
-	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{workspaces: []*otf.Workspace{ws}})
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
+		workspaces: []*otf.Workspace{ws},
+	})
 
 	q := "/?workspace_id=ws-123"
 	r := httptest.NewRequest("GET", q, nil)
@@ -307,11 +309,11 @@ func (f *fakeWorkspaceHandlerApp) GetOrganization(ctx context.Context, name stri
 	return f.org, nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeWorkspaceHandlerApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetWorkspaceByID(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeWorkspaceHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 
@@ -323,11 +325,7 @@ func (f *fakeWorkspaceHandlerApp) UnlockWorkspace(context.Context, string, otf.W
 	return f.workspaces[0], nil
 }
 
-func (f *fakeWorkspaceHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
-	return f.workspaces[0], nil
-}
-
-func (f *fakeWorkspaceHandlerApp) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeWorkspaceHandlerApp) DeleteWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.workspaces[0], nil
 }
 

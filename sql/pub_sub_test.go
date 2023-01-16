@@ -110,6 +110,6 @@ func (f *fakePubSubDB) GetRun(context.Context, string) (*otf.Run, error) {
 	return f.run, nil
 }
 
-func (f *fakePubSubDB) GetWorkspace(context.Context, otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakePubSubDB) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.workspace, nil
 }

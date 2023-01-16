@@ -31,25 +31,20 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 	return ws, nil
 }
 
-func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.UpdateWorkspaceAction, spec)
+func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := opts.Valid(); err != nil {
-		a.Error(err, "updating workspace", "subject", subject)
 		return nil, err
 	}
 
 	// retain ref to existing name so a name change can be detected
 	var name string
-	updated, err := a.db.UpdateWorkspace(ctx, spec, func(ws *otf.Workspace) error {
+	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *otf.Workspace) error {
 		name = ws.Name()
 		return ws.UpdateWithOptions(ctx, opts)
 	})
 	if err != nil {
-		a.Error(err, "updating workspace", append(spec.LogFields(), "subject", subject)...)
+		a.Error(err, "updating workspace", "workspace", workspaceID, "subject", subject)
 		return nil, err
 	}
 
@@ -57,7 +52,7 @@ func (a *Application) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpe
 		a.Publish(otf.Event{Type: otf.EventWorkspaceRenamed, Payload: updated})
 	}
 
-	a.V(0).Info("updated workspace", append(spec.LogFields(), "subject", subject)...)
+	a.V(0).Info("updated workspace", "workspace", workspaceID, "subject", subject)
 
 	return updated, nil
 }
@@ -145,35 +140,13 @@ func (a *Application) ListWorkspaces(ctx context.Context, opts otf.WorkspaceList
 	return a.db.ListWorkspaces(ctx, opts)
 }
 
-func (a *Application) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, spec)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := spec.Valid(); err != nil {
-		a.Error(err, "retrieving workspace", "subject", subject)
-		return nil, err
-	}
-
-	ws, err := a.db.GetWorkspace(ctx, spec)
-	if err != nil {
-		a.Error(err, "retrieving workspace", append(spec.LogFields(), "subject", subject)...)
-		return nil, err
-	}
-
-	a.V(2).Info("retrieved workspace", append(spec.LogFields(), "subject", subject)...)
-
-	return ws, nil
-}
-
-func (a *Application) GetWorkspaceByID(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+func (a *Application) GetWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, otf.GetWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	ws, err := a.db.GetWorkspaceByID(ctx, workspaceID)
+	ws, err := a.db.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		a.Error(err, "retrieving workspace", "subject", subject, "workspace", workspaceID)
 		return nil, err
@@ -185,10 +158,7 @@ func (a *Application) GetWorkspaceByID(ctx context.Context, workspaceID string) 
 }
 
 func (a *Application) GetWorkspaceByName(ctx context.Context, organization, workspace string) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.GetWorkspaceAction, otf.WorkspaceSpec{
-		Organization: otf.String(organization),
-		Name:         otf.String(workspace),
-	})
+	subject, err := a.CanAccessWorkspaceByName(ctx, otf.GetWorkspaceAction, organization, workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -204,18 +174,18 @@ func (a *Application) GetWorkspaceByName(ctx context.Context, organization, work
 	return ws, nil
 }
 
-func (a *Application) DeleteWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
-	subject, err := a.CanAccessWorkspace(ctx, otf.DeleteWorkspaceAction, spec)
+func (a *Application) DeleteWorkspace(ctx context.Context, workspaceID string) (*otf.Workspace, error) {
+	subject, err := a.CanAccessWorkspaceByID(ctx, otf.DeleteWorkspaceAction, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	ws, err := a.db.GetWorkspace(ctx, spec)
+	ws, err := a.db.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := a.db.DeleteWorkspace(ctx, spec); err != nil {
+	if err := a.db.DeleteWorkspace(ctx, ws.ID()); err != nil {
 		a.Error(err, "deleting workspace", "id", ws.ID(), "name", ws.Name(), "subject", subject)
 		return nil, err
 	}

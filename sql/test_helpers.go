@@ -92,7 +92,7 @@ func createTestWorkspace(t *testing.T, db otf.DB, org *otf.Organization, opts ..
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		db.DeleteWorkspace(ctx, otf.WorkspaceSpec{ID: otf.String(ws.ID())})
+		db.DeleteWorkspace(ctx, ws.ID())
 	})
 	return ws
 }

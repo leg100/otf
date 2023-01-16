@@ -131,11 +131,11 @@ type fakeRunsHandlerApp struct {
 	otf.Application
 }
 
-func (f *fakeRunsHandlerApp) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeRunsHandlerApp) GetWorkspaceByName(context.Context, string, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 
-func (f *fakeRunsHandlerApp) GetWorkspaceByID(context.Context, string) (*otf.Workspace, error) {
+func (f *fakeRunsHandlerApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 

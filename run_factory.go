@@ -13,7 +13,7 @@ type RunFactory struct {
 // NewRun constructs a new run at the beginning of its lifecycle using the
 // provided options.
 func (f *RunFactory) NewRun(ctx context.Context, workspaceID string, opts RunCreateOptions) (*Run, error) {
-	ws, err := f.WorkspaceService.GetWorkspaceByID(ctx, workspaceID)
+	ws, err := f.WorkspaceService.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

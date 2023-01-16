@@ -58,7 +58,7 @@ func (f *fakeReporterApp) Hostname() string {
 	return f.hostname
 }
 
-func (f *fakeReporterApp) GetWorkspaceByID(context.Context, string) (*Workspace, error) {
+func (f *fakeReporterApp) GetWorkspace(context.Context, string) (*Workspace, error) {
 	return f.ws, nil
 }
 

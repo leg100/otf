@@ -161,7 +161,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := s.Application.GetWorkspaceByID(r.Context(), id)
+	ws, err := s.Application.GetWorkspace(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
@@ -206,44 +206,40 @@ func (s *Server) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, &WorkspaceList{r, s.Application, wsl})
 }
 
-// UpdateWorkspace updates a workspace.
+// UpdateWorkspace updates a workspace using its ID.
 //
 // TODO: support updating workspace's vcs repo.
 func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
-	opts := dto.WorkspaceUpdateOptions{}
-	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := opts.Validate(); err != nil {
+
+	s.updateWorkspace(w, r, workspaceID)
+}
+
+// UpdateWorkspaceByName updates a workspace using its name and organization.
+//
+// TODO: support updating workspace's vcs repo.
+func (s *Server) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Name         string `schema:"name,required"`
+		Organization string `schema:"organization,required"`
+	}
+	var params parameters
+	if err := decode.Route(&params, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	ws, err := s.Application.UpdateWorkspace(r.Context(), spec, otf.WorkspaceUpdateOptions{
-		AllowDestroyPlan:           opts.AllowDestroyPlan,
-		AutoApply:                  opts.AutoApply,
-		Description:                opts.Description,
-		ExecutionMode:              (*otf.ExecutionMode)(opts.ExecutionMode),
-		FileTriggersEnabled:        opts.FileTriggersEnabled,
-		GlobalRemoteState:          opts.GlobalRemoteState,
-		Name:                       opts.Name,
-		QueueAllRuns:               opts.QueueAllRuns,
-		SpeculativeEnabled:         opts.SpeculativeEnabled,
-		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
-		TerraformVersion:           opts.TerraformVersion,
-		TriggerPrefixes:            opts.TriggerPrefixes,
-		WorkingDirectory:           opts.WorkingDirectory,
-	})
+
+	ws, err := s.Application.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
-	writeResponse(w, r, &Workspace{r, s.Application, ws})
+
+	s.updateWorkspace(w, r, ws.ID())
 }
 
 func (s *Server) LockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -285,15 +281,73 @@ func (s *Server) UnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	var spec otf.WorkspaceSpec
-	if err := decode.Route(&spec, r); err != nil {
+	workspaceID, err := decode.Param("workspace_id", r)
+	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	_, err := s.Application.DeleteWorkspace(r.Context(), spec)
+
+	_, err = s.Application.DeleteWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Name         string `schema:"name,required"`
+		Organization string `schema:"organization,required"`
+	}
+	var params parameters
+	if err := decode.All(&params, r); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	ws, err := s.Application.GetWorkspaceByName(r.Context(), params.Organization, params.Name)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	_, err = s.Application.DeleteWorkspace(r.Context(), ws.ID())
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
+	opts := dto.WorkspaceUpdateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	if err := opts.Validate(); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	ws, err := s.Application.UpdateWorkspace(r.Context(), workspaceID, otf.WorkspaceUpdateOptions{
+		AllowDestroyPlan:           opts.AllowDestroyPlan,
+		AutoApply:                  opts.AutoApply,
+		Description:                opts.Description,
+		ExecutionMode:              (*otf.ExecutionMode)(opts.ExecutionMode),
+		FileTriggersEnabled:        opts.FileTriggersEnabled,
+		GlobalRemoteState:          opts.GlobalRemoteState,
+		Name:                       opts.Name,
+		QueueAllRuns:               opts.QueueAllRuns,
+		SpeculativeEnabled:         opts.SpeculativeEnabled,
+		StructuredRunOutputEnabled: opts.StructuredRunOutputEnabled,
+		TerraformVersion:           opts.TerraformVersion,
+		TriggerPrefixes:            opts.TriggerPrefixes,
+		WorkingDirectory:           opts.WorkingDirectory,
+	})
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	writeResponse(w, r, &Workspace{r, s.Application, ws})
 }

@@ -25,7 +25,7 @@ func (app *Application) setWorkspacePermission(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -50,7 +50,7 @@ func (app *Application) unsetWorkspacePermission(w http.ResponseWriter, r *http.
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

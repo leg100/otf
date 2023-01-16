@@ -14,9 +14,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 	var err error
 	if opts.WorkspaceID != nil {
 		// caller must have workspace-level read permissions
-		_, err = a.CanAccessWorkspace(ctx, otf.WatchAction, otf.WorkspaceSpec{
-			ID: opts.WorkspaceID,
-		})
+		_, err = a.CanAccessWorkspaceByID(ctx, otf.WatchAction, *opts.WorkspaceID)
 	} else if opts.Organization != nil {
 		// caller must have organization-level read permissions
 		_, err = a.CanAccessOrganization(ctx, otf.WatchAction, *opts.Organization)
@@ -70,7 +68,7 @@ func (a *Application) Watch(ctx context.Context, opts otf.WatchOptions) (<-chan 
 					if opts.Organization != nil {
 						// fetch workspace first in order to get organization
 						// name
-						ws, err := a.GetWorkspaceByID(ctx, res.WorkspaceID())
+						ws, err := a.GetWorkspace(ctx, res.WorkspaceID())
 						if err != nil {
 							a.Error(err, "retrieving workspace for watch event")
 							continue

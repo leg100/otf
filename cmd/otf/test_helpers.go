@@ -26,7 +26,7 @@ func (f *fakeClient) CreateOrganization(ctx context.Context, opts otf.Organizati
 	return otf.NewOrganization(opts)
 }
 
-func (f *fakeClient) GetWorkspace(ctx context.Context, spec otf.WorkspaceSpec) (*otf.Workspace, error) {
+func (f *fakeClient) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return f.ws, nil
 }
 
@@ -41,7 +41,7 @@ func (f *fakeClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListO
 	}, nil
 }
 
-func (f *fakeClient) UpdateWorkspace(ctx context.Context, spec otf.WorkspaceSpec, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
 	f.ws.UpdateWithOptions(ctx, opts)
 	return f.ws, nil
 }

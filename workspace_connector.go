@@ -65,7 +65,7 @@ func (wc *WorkspaceConnector) Disconnect(ctx context.Context, workspaceID string
 	// 3. delete webhook from vcs provider
 	var ws *Workspace
 	err := wc.Tx(ctx, func(app Application) (err error) {
-		ws, err = app.DB().GetWorkspaceByID(ctx, workspaceID)
+		ws, err = app.DB().GetWorkspace(ctx, workspaceID)
 		if err != nil {
 			return err
 		}

@@ -106,14 +106,6 @@ func (ws *Workspace) QualifiedName() WorkspaceQualifiedName {
 	}
 }
 
-func (ws *Workspace) SpecID() WorkspaceSpec {
-	return WorkspaceSpec{ID: &ws.id}
-}
-
-func (ws *Workspace) SpecName() WorkspaceSpec {
-	return WorkspaceSpec{Name: &ws.name, Organization: &ws.organization}
-}
-
 // Locked determines whether workspace is locked.
 func (ws *Workspace) Locked() bool {
 	_, ok := ws.lock.(*Unlocked)
@@ -302,13 +294,12 @@ type WorkspaceList struct {
 
 type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
-	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
-	GetWorkspaceByID(ctx context.Context, workspaceID string) (*Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, opts WorkspaceUpdateOptions) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts WorkspaceUpdateOptions) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 	WorkspaceLockService
 	CurrentRunService
@@ -336,15 +327,13 @@ type WorkspaceLockService interface {
 // WorkspaceStore is a persistence store for workspaces.
 type WorkspaceStore interface {
 	CreateWorkspace(ctx context.Context, ws *Workspace) error
-	GetWorkspace(ctx context.Context, spec WorkspaceSpec) (*Workspace, error)
-	GetWorkspaceByID(ctx context.Context, workspaceID string) (*Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByUserID(ctx context.Context, userID string, organization string, opts ListOptions) (*WorkspaceList, error)
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, spec WorkspaceSpec, ws func(ws *Workspace) error) (*Workspace, error)
-	DeleteWorkspace(ctx context.Context, spec WorkspaceSpec) error
-	GetWorkspaceID(ctx context.Context, spec WorkspaceSpec) (string, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, ws func(ws *Workspace) error) (*Workspace, error)
+	DeleteWorkspace(ctx context.Context, workspaceID string) error
 	GetWorkspaceIDByRunID(ctx context.Context, runID string) (string, error)
 	GetWorkspaceIDByStateVersionID(ctx context.Context, svID string) (string, error)
 	GetWorkspaceIDByCVID(ctx context.Context, cvID string) (string, error)
@@ -383,68 +372,4 @@ type WorkspaceListOptions struct {
 	Organization *string `schema:"organization_name,omitempty"`
 	// Filter by those for which user has workspace-level permissions.
 	UserID *string
-}
-
-// WorkspaceSpec is used for identifying an individual workspace. Either ID *or*
-// both Name and OrganizationName must be specfiied.
-type WorkspaceSpec struct {
-	// Specify workspace using its ID
-	ID *string `schema:"workspace_id"`
-
-	// Specify workspace using its name and organization
-	Name         *string `schema:"workspace_name"`
-	Organization *string `schema:"organization_name"`
-}
-
-// LogFields provides fields for logging
-//
-// TODO: use logr marshaller instead
-func (spec WorkspaceSpec) LogFields() (fields []interface{}) {
-	if spec.ID != nil {
-		fields = append(fields, "id", *spec.ID)
-	}
-	if spec.Name != nil && spec.Organization != nil {
-		fields = append(fields, "name", *spec.Name, "organization", *spec.Organization)
-	}
-	return fields
-}
-
-func (spec *WorkspaceSpec) String() string {
-	switch {
-	case spec.ID != nil:
-		return *spec.ID
-	case spec.Name != nil && spec.Organization != nil:
-		return *spec.Organization + "/" + *spec.Name
-	default:
-		panic("invalid workspace spec")
-	}
-}
-
-func (spec *WorkspaceSpec) Valid() error {
-	if spec.ID != nil {
-		if *spec.ID == "" {
-			return fmt.Errorf("id is an empty string")
-		}
-		return nil
-	}
-
-	// No ID specified; both org and workspace name must be specified
-
-	if spec.Name == nil {
-		return fmt.Errorf("workspace name nor id specified")
-	}
-
-	if spec.Organization == nil {
-		return fmt.Errorf("must specify both organization and workspace")
-	}
-
-	if *spec.Name == "" {
-		return fmt.Errorf("workspace name is an empty string")
-	}
-
-	if *spec.Organization == "" {
-		return fmt.Errorf("organization name is an empty string")
-	}
-
-	return nil
 }

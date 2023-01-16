@@ -15,7 +15,7 @@ type RunStarter struct {
 }
 
 func (rs *RunStarter) StartRun(ctx context.Context, workspaceID string, opts ConfigurationVersionCreateOptions) (*Run, error) {
-	ws, err := rs.GetWorkspaceByID(ctx, workspaceID)
+	ws, err := rs.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

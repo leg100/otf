@@ -87,11 +87,7 @@ func (u *fakeApp) ListOrganizations(ctx context.Context, opts otf.OrganizationLi
 	}, nil
 }
 
-func (u *fakeApp) GetWorkspaceByID(context.Context, string) (*otf.Workspace, error) {
-	return u.fakeWorkspace, nil
-}
-
-func (u *fakeApp) UpdateWorkspace(context.Context, otf.WorkspaceSpec, otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (u *fakeApp) GetWorkspace(context.Context, string) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 

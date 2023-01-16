@@ -44,7 +44,7 @@ func (app *Application) listRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws, err := app.GetWorkspaceByID(r.Context(), params.WorkspaceID)
+	ws, err := app.GetWorkspace(r.Context(), params.WorkspaceID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,7 +82,7 @@ func (app *Application) getRun(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ws, err := app.GetWorkspaceByID(r.Context(), run.WorkspaceID())
+	ws, err := app.GetWorkspace(r.Context(), run.WorkspaceID())
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

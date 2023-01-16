@@ -59,7 +59,7 @@ type fakeStartRunApp struct {
 	Application
 }
 
-func (f *fakeStartRunApp) GetWorkspaceByID(context.Context, string) (*Workspace, error) {
+func (f *fakeStartRunApp) GetWorkspace(context.Context, string) (*Workspace, error) {
 	return f.workspace, nil
 }
 

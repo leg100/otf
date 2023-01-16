@@ -334,7 +334,7 @@ func (r *Run) ToJSONAPI() any {
 		for _, inc := range strings.Split(includes, ",") {
 			switch inc {
 			case "workspace":
-				ws, err := r.Application.GetWorkspaceByID(r.req.Context(), r.WorkspaceID())
+				ws, err := r.Application.GetWorkspace(r.req.Context(), r.WorkspaceID())
 				if err != nil {
 					panic(err.Error()) // throws HTTP500
 				}
