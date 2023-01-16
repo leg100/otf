@@ -262,33 +262,6 @@ type UpdateWorkspaceOptions struct {
 	*WorkspaceRepo
 }
 
-func (o UpdateWorkspaceOptions) Valid() error {
-	if o.AllowDestroyPlan == nil &&
-		o.AutoApply == nil &&
-		o.Name == nil &&
-		o.Description == nil &&
-		o.ExecutionMode == nil &&
-		o.FileTriggersEnabled == nil &&
-		o.GlobalRemoteState == nil &&
-		o.Operations == nil &&
-		o.QueueAllRuns == nil &&
-		o.SpeculativeEnabled == nil &&
-		o.StructuredRunOutputEnabled == nil &&
-		o.TerraformVersion == nil &&
-		o.TriggerPrefixes == nil &&
-		o.WorkingDirectory == nil &&
-		o.WorkspaceRepo == nil {
-		return fmt.Errorf("must set at least one option to update")
-	}
-	if o.Name != nil && !ValidStringID(o.Name) {
-		return ErrInvalidName
-	}
-	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
-		return ErrInvalidTerraformVersion
-	}
-	return nil
-}
-
 // WorkspaceLockOptions represents the options for locking a workspace.
 type WorkspaceLockOptions struct {
 	// Specifies the reason for locking the workspace.
