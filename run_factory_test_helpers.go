@@ -23,9 +23,10 @@ func NewTestRun(t *testing.T, opts TestRunCreateOptions) *Run {
 	org, err := NewOrganization(OrganizationCreateOptions{Name: String("test-org")})
 	require.NoError(t, err)
 
-	ws, err := NewWorkspace(org, WorkspaceCreateOptions{
-		Name: "test-ws",
-		Repo: opts.Repo,
+	ws, err := NewWorkspace(CreateWorkspaceOptions{
+		Name:         String("test-ws"),
+		Organization: String(org.Name()),
+		Repo:         opts.Repo,
 	})
 	require.NoError(t, err)
 

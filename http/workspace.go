@@ -135,7 +135,8 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ws, err := s.Application.CreateWorkspace(r.Context(), otf.WorkspaceCreateOptions{
+
+	ws, err := s.Application.CreateWorkspace(r.Context(), otf.CreateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,
@@ -143,8 +144,8 @@ func (s *Server) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		FileTriggersEnabled:        opts.FileTriggersEnabled,
 		GlobalRemoteState:          opts.GlobalRemoteState,
 		MigrationEnvironment:       opts.MigrationEnvironment,
-		Name:                       *opts.Name,
-		Organization:               *opts.Organization,
+		Name:                       opts.Name,
+		Organization:               opts.Organization,
 		QueueAllRuns:               opts.QueueAllRuns,
 		SpeculativeEnabled:         opts.SpeculativeEnabled,
 		SourceName:                 opts.SourceName,
@@ -325,7 +326,7 @@ func (s *Server) updateWorkspace(w http.ResponseWriter, r *http.Request, workspa
 		return
 	}
 
-	ws, err := s.Application.UpdateWorkspace(r.Context(), workspaceID, otf.WorkspaceUpdateOptions{
+	ws, err := s.Application.UpdateWorkspace(r.Context(), workspaceID, otf.UpdateWorkspaceOptions{
 		AllowDestroyPlan:           opts.AllowDestroyPlan,
 		AutoApply:                  opts.AutoApply,
 		Description:                opts.Description,

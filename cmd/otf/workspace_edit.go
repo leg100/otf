@@ -11,7 +11,7 @@ import (
 func WorkspaceEditCommand(factory http.ClientFactory) *cobra.Command {
 	var (
 		organization string
-		opts         otf.WorkspaceUpdateOptions
+		opts         otf.UpdateWorkspaceOptions
 		mode         *string
 	)
 

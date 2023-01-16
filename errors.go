@@ -40,10 +40,6 @@ var (
 	// ErrInvalidWorkspaceID is returned when the workspace ID is invalid.
 	ErrInvalidWorkspaceID = errors.New("invalid value for workspace ID")
 
-	// ErrWorkspaceInvalidSpec is returned when a workspace specification is
-	// invalid.
-	ErrWorkspaceInvalidSpec = errors.New("invalid workspace specification")
-
 	// ErrInvalidWorkspaceValue is returned when workspace value is invalid.
 	ErrInvalidWorkspaceValue = errors.New("invalid value for workspace")
 
@@ -51,4 +47,7 @@ var (
 
 	// ErrInvalidOrg is returned when the organization option has an invalid value.
 	ErrInvalidOrg = errors.New("invalid value for organization")
+
+	// ErrRequiredOrg is returned when the organization option is not present
+	ErrRequiredOrg = errors.New("organization is required")
 )

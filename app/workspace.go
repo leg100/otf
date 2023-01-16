@@ -7,15 +7,15 @@ import (
 	"github.com/leg100/otf"
 )
 
-func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	subject, err := a.CanAccessOrganization(ctx, otf.CreateWorkspaceAction, opts.Organization)
+func (a *Application) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+	ws, err := otf.NewWorkspace(opts)
 	if err != nil {
+		a.Error(err, "constructing workspace")
 		return nil, err
 	}
 
-	ws, err := a.NewWorkspace(ctx, opts)
+	subject, err := a.CanAccessOrganization(ctx, otf.CreateWorkspaceAction, ws.Organization())
 	if err != nil {
-		a.Error(err, "constructing workspace", "name", opts.Name, "subject", subject)
 		return nil, err
 	}
 
@@ -31,14 +31,9 @@ func (a *Application) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCre
 	return ws, nil
 }
 
-func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
 	subject, err := a.CanAccessWorkspaceByID(ctx, otf.UpdateWorkspaceAction, workspaceID)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := opts.Valid(); err != nil {
-		a.Error(err, "updating workspace", "subject", subject)
 		return nil, err
 	}
 
@@ -46,7 +41,7 @@ func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, o
 	var name string
 	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *otf.Workspace) error {
 		name = ws.Name()
-		return ws.UpdateWithOptions(ctx, opts)
+		return ws.Update(opts)
 	})
 	if err != nil {
 		a.Error(err, "updating workspace", "workspace", workspaceID, "subject", subject)

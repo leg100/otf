@@ -30,6 +30,28 @@ func TestNewWorkspaceHandler(t *testing.T) {
 	}
 }
 
+func TestWorkspace_Create(t *testing.T) {
+	org := otf.NewTestOrganization(t)
+	ws := otf.NewTestWorkspace(t, org)
+	app := newFakeWebApp(t, &fakeWorkspaceHandlerApp{
+		org:        org,
+		workspaces: []*otf.Workspace{ws},
+	})
+
+	form := strings.NewReader(url.Values{
+		"name": {"dev"},
+	}.Encode())
+	r := httptest.NewRequest("POST", "/?organization_name=acme-corp", form)
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	app.createWorkspace(w, r)
+	if assert.Equal(t, 302, w.Code) {
+		redirect, err := w.Result().Location()
+		require.NoError(t, err)
+		assert.Equal(t, paths.Workspace(ws.ID()), redirect.Path)
+	}
+}
+
 func TestGetWorkspaceHandler(t *testing.T) {
 	org := otf.NewTestOrganization(t)
 	ws := otf.NewTestWorkspace(t, org)
@@ -303,6 +325,10 @@ type fakeWorkspaceHandlerApp struct {
 	repos          []cloud.Repo
 
 	otf.Application
+}
+
+func (f *fakeWorkspaceHandlerApp) CreateWorkspace(context.Context, otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+	return f.workspaces[0], nil
 }
 
 func (f *fakeWorkspaceHandlerApp) GetOrganization(ctx context.Context, name string) (*otf.Organization, error) {

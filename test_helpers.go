@@ -19,29 +19,29 @@ func NewTestOrganization(t *testing.T) *Organization {
 	return org
 }
 
-type NewTestWorkspaceOption func(*WorkspaceCreateOptions)
+type NewTestWorkspaceOption func(*CreateWorkspaceOptions)
 
 func AutoApply() NewTestWorkspaceOption {
-	return func(opts *WorkspaceCreateOptions) {
+	return func(opts *CreateWorkspaceOptions) {
 		opts.AutoApply = Bool(true)
 	}
 }
 
 func WithRepo(repo *WorkspaceRepo) NewTestWorkspaceOption {
-	return func(opts *WorkspaceCreateOptions) {
+	return func(opts *CreateWorkspaceOptions) {
 		opts.Repo = repo
 	}
 }
 
 func NewTestWorkspace(t *testing.T, org *Organization, opts ...NewTestWorkspaceOption) *Workspace {
-	var createOpts WorkspaceCreateOptions
+	createOpts := CreateWorkspaceOptions{
+		Name:         String(uuid.NewString()),
+		Organization: String(org.Name()),
+	}
 	for _, o := range opts {
 		o(&createOpts)
 	}
-	if createOpts.Name == "" {
-		createOpts.Name = uuid.NewString()
-	}
-	ws, err := NewWorkspace(org, createOpts)
+	ws, err := NewWorkspace(createOpts)
 	require.NoError(t, err)
 	return ws
 }

@@ -53,33 +53,24 @@ func (app *Application) newWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var opts otf.WorkspaceCreateOptions
-	if err := decode.Route(&opts, r); err != nil {
-		writeError(w, err.Error(), http.StatusUnprocessableEntity)
-		return
-	}
-	if err := decode.Form(&opts, r); err != nil {
+	var opts otf.CreateWorkspaceOptions
+	if err := decode.All(&opts, r); err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	org, err := app.GetOrganization(r.Context(), opts.Organization)
-	if err != nil {
-		writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	workspace, err := app.CreateWorkspace(r.Context(), opts)
+	ws, err := app.CreateWorkspace(r.Context(), opts)
 	if err == otf.ErrResourceAlreadyExists {
-		flashError(w, "workspace already exists: "+opts.Name)
-		http.Redirect(w, r, paths.NewWorkspace(org.Name()), http.StatusFound)
+		flashError(w, "workspace already exists: "+*opts.Name)
+		http.Redirect(w, r, paths.NewWorkspace(*opts.Organization), http.StatusFound)
 		return
 	}
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	flashSuccess(w, "created workspace: "+workspace.Name())
-	http.Redirect(w, r, paths.Workspace(workspace.ID()), http.StatusFound)
+	flashSuccess(w, "created workspace: "+ws.Name())
+	http.Redirect(w, r, paths.Workspace(ws.ID()), http.StatusFound)
 }
 
 func (app *Application) getWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +193,7 @@ func (app *Application) updateWorkspace(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// TODO: add support for updating vcs repo, e.g. branch, etc.
-	ws, err := app.UpdateWorkspace(r.Context(), params.WorkspaceID, otf.WorkspaceUpdateOptions{
+	ws, err := app.UpdateWorkspace(r.Context(), params.WorkspaceID, otf.UpdateWorkspaceOptions{
 		AutoApply:        &params.AutoApply,
 		Name:             params.Name,
 		Description:      params.Description,

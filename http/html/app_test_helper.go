@@ -98,7 +98,7 @@ func (u *fakeApp) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListOpti
 	}, nil
 }
 
-func (u *fakeApp) CreateWorkspace(ctx context.Context, opts otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
+func (u *fakeApp) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
 	return u.fakeWorkspace, nil
 }
 
