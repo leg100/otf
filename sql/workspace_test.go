@@ -31,7 +31,7 @@ func TestWorkspace_Update(t *testing.T) {
 	ws := createTestWorkspace(t, db, org)
 
 	got, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
-		return ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
+		return ws.Update(otf.UpdateWorkspaceOptions{
 			Description: otf.String("updated description"),
 		})
 	})

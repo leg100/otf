@@ -186,9 +186,6 @@ type WorkspaceCreateOptions struct {
 }
 
 func (opts *WorkspaceCreateOptions) Validate() error {
-	if opts.Name == nil {
-		return errors.New("missing name")
-	}
 	if opts.Operations != nil && opts.ExecutionMode != nil {
 		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
 	}

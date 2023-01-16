@@ -21,19 +21,10 @@ const (
 
 type ExecutionMode string
 
-func ValidateExecutionMode(m ExecutionMode) error {
-	if m == RemoteExecutionMode || m == LocalExecutionMode || m == AgentExecutionMode {
-		return nil
-	}
-	return fmt.Errorf("invalid execution mode: %s", m)
-}
-
 // ExecutionModePtr returns a pointer to an execution mode.
 func ExecutionModePtr(m ExecutionMode) *ExecutionMode {
 	return &m
 }
-
-var ErrInvalidWorkspaceSpec = errors.New("invalid workspace spec options")
 
 // Workspace represents a Terraform Enterprise workspace.
 type Workspace struct {
@@ -141,36 +132,37 @@ func (ws *Workspace) MarshalLog() any {
 	return log
 }
 
-// UpdateWithOptions updates the workspace with the given options.
-//
-// TODO: validate options
-func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdateOptions) error {
+// Update updates the workspace with the given options.
+func (ws *Workspace) Update(opts UpdateWorkspaceOptions) error {
+	var updated bool
+
 	if opts.Name != nil {
-		ws.name = *opts.Name
-		ws.updatedAt = CurrentTimestamp()
+		if err := ws.setName(*opts.Name); err != nil {
+			return err
+		}
+		updated = true
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.allowDestroyPlan = *opts.AllowDestroyPlan
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.AutoApply != nil {
 		ws.autoApply = *opts.AutoApply
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.Description != nil {
 		ws.description = *opts.Description
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.ExecutionMode != nil {
-		if err := ValidateExecutionMode(*opts.ExecutionMode); err != nil {
+		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
 			return err
 		}
-		ws.executionMode = *opts.ExecutionMode
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.FileTriggersEnabled != nil {
 		ws.fileTriggersEnabled = *opts.FileTriggersEnabled
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.Operations != nil {
 		if *opts.Operations {
@@ -178,39 +170,69 @@ func (ws *Workspace) UpdateWithOptions(ctx context.Context, opts WorkspaceUpdate
 		} else {
 			ws.executionMode = "local"
 		}
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.QueueAllRuns != nil {
 		ws.queueAllRuns = *opts.QueueAllRuns
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.SpeculativeEnabled != nil {
 		ws.speculativeEnabled = *opts.SpeculativeEnabled
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.StructuredRunOutputEnabled != nil {
 		ws.structuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.TerraformVersion != nil {
-		ws.terraformVersion = *opts.TerraformVersion
-		ws.updatedAt = CurrentTimestamp()
+		if err := ws.setTerraformVersion(*opts.TerraformVersion); err != nil {
+			return err
+		}
+		updated = true
 	}
 	if opts.TriggerPrefixes != nil {
 		ws.triggerPrefixes = opts.TriggerPrefixes
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.WorkingDirectory != nil {
 		ws.workingDirectory = *opts.WorkingDirectory
-		ws.updatedAt = CurrentTimestamp()
+		updated = true
 	}
 	if opts.WorkspaceRepo != nil {
 		if ws.repo != nil {
 			return fmt.Errorf("updating workspace vcs repo not supported")
 		}
 		ws.repo = opts.WorkspaceRepo
+		updated = true
+	}
+	if updated {
+		ws.updatedAt = CurrentTimestamp()
 	}
 
+	return nil
+}
+
+func (ws *Workspace) setName(name string) error {
+	if !reStringID.MatchString(name) {
+		return ErrInvalidName
+	}
+	ws.name = name
+	return nil
+}
+
+func (ws *Workspace) setExecutionMode(m ExecutionMode) error {
+	if m != RemoteExecutionMode && m != LocalExecutionMode && m != AgentExecutionMode {
+		return errors.New("invalid execution mode")
+	}
+	ws.executionMode = m
+	return nil
+}
+
+func (ws *Workspace) setTerraformVersion(v string) error {
+	if !validSemanticVersion(v) {
+		return ErrInvalidTerraformVersion
+	}
+	ws.terraformVersion = v
 	return nil
 }
 
@@ -221,8 +243,8 @@ type WorkspaceQualifiedName struct {
 	Name         string
 }
 
-// WorkspaceUpdateOptions represents the options for updating a workspace.
-type WorkspaceUpdateOptions struct {
+// UpdateWorkspaceOptions represents the options for updating a workspace.
+type UpdateWorkspaceOptions struct {
 	AllowDestroyPlan           *bool
 	AutoApply                  *bool
 	Name                       *string
@@ -240,7 +262,7 @@ type WorkspaceUpdateOptions struct {
 	*WorkspaceRepo
 }
 
-func (o WorkspaceUpdateOptions) Valid() error {
+func (o UpdateWorkspaceOptions) Valid() error {
 	if o.AllowDestroyPlan == nil &&
 		o.AutoApply == nil &&
 		o.Name == nil &&
@@ -263,11 +285,6 @@ func (o WorkspaceUpdateOptions) Valid() error {
 	}
 	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
 		return ErrInvalidTerraformVersion
-	}
-	if o.ExecutionMode != nil {
-		if err := ValidateExecutionMode(*o.ExecutionMode); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -293,12 +310,12 @@ type WorkspaceList struct {
 }
 
 type WorkspaceService interface {
-	CreateWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error)
+	CreateWorkspace(ctx context.Context, opts CreateWorkspaceOptions) (*Workspace, error)
 	GetWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 	GetWorkspaceByName(ctx context.Context, organization, workspace string) (*Workspace, error)
 	ListWorkspaces(ctx context.Context, opts WorkspaceListOptions) (*WorkspaceList, error)
 	ListWorkspacesByWebhookID(ctx context.Context, id uuid.UUID) ([]*Workspace, error)
-	UpdateWorkspace(ctx context.Context, workspaceID string, opts WorkspaceUpdateOptions) (*Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceID string, opts UpdateWorkspaceOptions) (*Workspace, error)
 	DeleteWorkspace(ctx context.Context, workspaceID string) (*Workspace, error)
 
 	WorkspaceLockService

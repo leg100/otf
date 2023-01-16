@@ -1,28 +1,16 @@
 package otf
 
-import (
-	"context"
-)
-
-type WorkspaceFactory struct {
-	OrganizationService OrganizationService
-}
-
-func (f *WorkspaceFactory) NewWorkspace(ctx context.Context, opts WorkspaceCreateOptions) (*Workspace, error) {
-	org, err := f.OrganizationService.GetOrganization(ctx, opts.Organization)
-	if err != nil {
-		return nil, err
+func NewWorkspace(opts CreateWorkspaceOptions) (*Workspace, error) {
+	// required options
+	if opts.Name == nil {
+		return nil, ErrRequiredName
 	}
-	return NewWorkspace(org, opts)
-}
-
-func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Workspace, error) {
-	if err := opts.Valid(); err != nil {
-		return nil, err
+	if opts.Organization == nil {
+		return nil, ErrRequiredOrg
 	}
+
 	ws := Workspace{
 		id:                  NewID("ws"),
-		name:                opts.Name,
 		createdAt:           CurrentTimestamp(),
 		updatedAt:           CurrentTimestamp(),
 		allowDestroyPlan:    DefaultAllowDestroyPlan,
@@ -32,12 +20,16 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 		terraformVersion:    DefaultTerraformVersion,
 		speculativeEnabled:  true,
 		lock:                &Unlocked{},
-		organization:        organization.Name(),
+		organization:        *opts.Organization,
 	}
-	// TODO: ExecutionMode and Operations are mututally exclusive options, this
-	// should be enforced.
+	if err := ws.setName(*opts.Name); err != nil {
+		return nil, err
+	}
+
 	if opts.ExecutionMode != nil {
-		ws.executionMode = *opts.ExecutionMode
+		if err := ws.setExecutionMode(*opts.ExecutionMode); err != nil {
+			return nil, err
+		}
 	}
 	if opts.AllowDestroyPlan != nil {
 		ws.allowDestroyPlan = *opts.AllowDestroyPlan
@@ -67,7 +59,9 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 		ws.structuredRunOutputEnabled = *opts.StructuredRunOutputEnabled
 	}
 	if opts.TerraformVersion != nil {
-		ws.terraformVersion = *opts.TerraformVersion
+		if err := ws.setTerraformVersion(*opts.TerraformVersion); err != nil {
+			return nil, err
+		}
 	}
 	if opts.TriggerPrefixes != nil {
 		ws.triggerPrefixes = opts.TriggerPrefixes
@@ -75,17 +69,14 @@ func NewWorkspace(organization *Organization, opts WorkspaceCreateOptions) (*Wor
 	if opts.WorkingDirectory != nil {
 		ws.workingDirectory = *opts.WorkingDirectory
 	}
-	if opts.LatestRunID != nil {
-		ws.latestRunID = opts.LatestRunID
-	}
 	if opts.Repo != nil {
 		ws.repo = opts.Repo
 	}
 	return &ws, nil
 }
 
-// WorkspaceCreateOptions represents the options for creating a new workspace.
-type WorkspaceCreateOptions struct {
+// CreateWorkspaceOptions represents the options for creating a new workspace.
+type CreateWorkspaceOptions struct {
 	AllowDestroyPlan           *bool
 	AutoApply                  *bool
 	Description                *string
@@ -93,7 +84,7 @@ type WorkspaceCreateOptions struct {
 	FileTriggersEnabled        *bool
 	GlobalRemoteState          *bool
 	MigrationEnvironment       *string
-	Name                       string
+	Name                       *string `schema:"name,required"`
 	QueueAllRuns               *bool
 	SpeculativeEnabled         *bool
 	SourceName                 *string
@@ -102,19 +93,6 @@ type WorkspaceCreateOptions struct {
 	TerraformVersion           *string
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	Organization               string `schema:"organization_name"`
+	Organization               *string `schema:"organization_name,required"`
 	Repo                       *WorkspaceRepo
-
-	// Options for testing purposes only
-	LatestRunID *string
-}
-
-func (o WorkspaceCreateOptions) Valid() error {
-	if !ValidStringID(&o.Name) {
-		return ErrInvalidName
-	}
-	if o.TerraformVersion != nil && !validSemanticVersion(*o.TerraformVersion) {
-		return ErrInvalidTerraformVersion
-	}
-	return nil
 }

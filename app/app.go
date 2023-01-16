@@ -26,7 +26,6 @@ type Application struct {
 
 	*otf.RunFactory
 	*otf.VCSProviderFactory
-	*otf.WorkspaceFactory
 	*otf.WorkspaceConnector
 	*otf.RunStarter
 	*otf.Publisher
@@ -48,7 +47,6 @@ func NewApplication(ctx context.Context, opts Options) (*Application, error) {
 		Service:       opts.CloudService,
 	}
 	app.Authorizer = &authorizer{opts.DB, opts.Logger}
-	app.WorkspaceFactory = &otf.WorkspaceFactory{OrganizationService: app}
 	app.RunFactory = &otf.RunFactory{
 		WorkspaceService:            app,
 		ConfigurationVersionService: app,
@@ -106,14 +104,13 @@ func (a *Application) Tx(ctx context.Context, tx func(a otf.Application) error) 
 	return a.db.Tx(ctx, func(db otf.DB) error {
 		// make a copy of the app and assign a db tx wrapper
 		appTx := &Application{
-			PubSubService:    a.PubSubService,
-			cache:            a.cache,
-			Logger:           a.Logger,
-			WorkspaceFactory: a.WorkspaceFactory,
-			RunFactory:       a.RunFactory,
-			Authorizer:       a.Authorizer,
-			proxy:            a.proxy,
-			db:               db,
+			PubSubService: a.PubSubService,
+			cache:         a.cache,
+			Logger:        a.Logger,
+			RunFactory:    a.RunFactory,
+			Authorizer:    a.Authorizer,
+			proxy:         a.proxy,
+			db:            db,
 		}
 		return tx(appTx)
 	})
@@ -128,14 +125,13 @@ func (a *Application) WithLock(ctx context.Context, id int64, cb func(otf.Applic
 	return a.db.WaitAndLock(ctx, id, func(db otf.DB) error {
 		// make a copy of the app and assign a db wrapped with a session-lock
 		appWithLock := &Application{
-			PubSubService:    a.PubSubService,
-			cache:            a.cache,
-			Logger:           a.Logger,
-			WorkspaceFactory: a.WorkspaceFactory,
-			RunFactory:       a.RunFactory,
-			Authorizer:       a.Authorizer,
-			proxy:            a.proxy,
-			db:               db,
+			PubSubService: a.PubSubService,
+			cache:         a.cache,
+			Logger:        a.Logger,
+			RunFactory:    a.RunFactory,
+			Authorizer:    a.Authorizer,
+			proxy:         a.proxy,
+			db:            db,
 		}
 		return cb(appWithLock)
 	})

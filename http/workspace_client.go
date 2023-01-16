@@ -10,13 +10,14 @@ import (
 	"github.com/leg100/otf/http/dto"
 )
 
-func (c *client) CreateWorkspace(ctx context.Context, options otf.WorkspaceCreateOptions) (*otf.Workspace, error) {
-	if err := options.Valid(); err != nil {
+func (c *client) CreateWorkspace(ctx context.Context, opts otf.CreateWorkspaceOptions) (*otf.Workspace, error) {
+	// Pre-emptively validate options
+	if _, err := otf.NewWorkspace(opts); err != nil {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/workspaces", url.QueryEscape(options.Organization))
-	req, err := c.newRequest("POST", u, &options)
+	u := fmt.Sprintf("organizations/%s/workspaces", *opts.Organization)
+	req, err := c.newRequest("POST", u, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func (c *client) ListWorkspaces(ctx context.Context, options otf.WorkspaceListOp
 }
 
 // UpdateWorkspace updates the settings of an existing workspace.
-func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, options otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
+func (c *client) UpdateWorkspace(ctx context.Context, workspaceID string, options otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
 	if err := options.Valid(); err != nil {
 		return nil, err
 	}

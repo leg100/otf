@@ -41,8 +41,8 @@ func (f *fakeClient) ListWorkspaces(ctx context.Context, opts otf.WorkspaceListO
 	}, nil
 }
 
-func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.WorkspaceUpdateOptions) (*otf.Workspace, error) {
-	f.ws.UpdateWithOptions(ctx, opts)
+func (f *fakeClient) UpdateWorkspace(ctx context.Context, workspaceID string, opts otf.UpdateWorkspaceOptions) (*otf.Workspace, error) {
+	f.ws.Update(opts)
 	return f.ws, nil
 }
 
