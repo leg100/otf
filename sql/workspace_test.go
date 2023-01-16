@@ -30,15 +30,19 @@ func TestWorkspace_Update(t *testing.T) {
 	org := createTestOrganization(t, db)
 	ws := createTestWorkspace(t, db, org)
 
-	_, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
+	got, err := db.UpdateWorkspace(ctx, ws.ID(), func(ws *otf.Workspace) error {
 		return ws.UpdateWithOptions(context.Background(), otf.WorkspaceUpdateOptions{
 			Description: otf.String("updated description"),
 		})
 	})
 	require.NoError(t, err)
-	got, err := db.GetWorkspace(ctx, ws.ID())
-	require.NoError(t, err)
 	assert.Equal(t, "updated description", got.Description())
+
+	// assert too that the WS returned by UpdateWorkspace is identical to one
+	// returned by GetWorkspace
+	want, err := db.GetWorkspace(ctx, ws.ID())
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
 }
 
 func TestWorkspace_CreateRepo(t *testing.T) {

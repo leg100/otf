@@ -17,6 +17,13 @@ type Workspace struct {
 	*otf.Workspace
 }
 
+// workspaceNameParams are those parameters used when looking up a workspace by
+// name
+type workspaceNameParams struct {
+	Name         string `schema:"workspace_name,required"`
+	Organization string `schema:"organization_name,required"`
+}
+
 func (ws *Workspace) ToJSONAPI() any {
 	subject, err := otf.SubjectFromContext(ws.r.Context())
 	if err != nil {
@@ -170,11 +177,7 @@ func (s *Server) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetWorkspaceByName(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Name         string `schema:"name,required"`
-		Organization string `schema:"organization,required"`
-	}
-	var params parameters
+	var params workspaceNameParams
 	if err := decode.All(&params, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -223,11 +226,7 @@ func (s *Server) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 //
 // TODO: support updating workspace's vcs repo.
 func (s *Server) UpdateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Name         string `schema:"name,required"`
-		Organization string `schema:"organization,required"`
-	}
-	var params parameters
+	var params workspaceNameParams
 	if err := decode.Route(&params, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return
@@ -296,11 +295,7 @@ func (s *Server) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Name         string `schema:"name,required"`
-		Organization string `schema:"organization,required"`
-	}
-	var params parameters
+	var params workspaceNameParams
 	if err := decode.All(&params, r); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err)
 		return

@@ -37,6 +37,11 @@ func (a *Application) UpdateWorkspace(ctx context.Context, workspaceID string, o
 		return nil, err
 	}
 
+	if err := opts.Valid(); err != nil {
+		a.Error(err, "updating workspace", "subject", subject)
+		return nil, err
+	}
+
 	// retain ref to existing name so a name change can be detected
 	var name string
 	updated, err := a.db.UpdateWorkspace(ctx, workspaceID, func(ws *otf.Workspace) error {

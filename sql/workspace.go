@@ -66,7 +66,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 		if err != nil {
 			return databaseError(err)
 		}
-		ws, err := otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
+		ws, err = otf.UnmarshalWorkspaceResult(otf.WorkspaceResult(result))
 		if err != nil {
 			return err
 		}
