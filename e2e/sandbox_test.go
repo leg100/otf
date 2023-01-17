@@ -35,7 +35,7 @@ func TestSandbox(t *testing.T) {
 
 	daemon := &daemon{}
 	daemon.withGithubUser(&user)
-	daemon.withFlags("--sandbox")
+	daemon.withFlags("--sandbox", "--debug")
 	hostname := daemon.start(t)
 
 	// create terraform config

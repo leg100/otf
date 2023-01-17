@@ -27,12 +27,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func startAgent(t *testing.T, token, address string) {
+func startAgent(t *testing.T, token, address string, flags ...string) {
 	out, err := os.CreateTemp(t.TempDir(), "agent.out")
 	require.NoError(t, err)
 
-	e, res, err := expect.Spawn(
-		fmt.Sprintf("%s --token %s --address %s --log-level trace", "otf-agent", token, address),
+	args := []string{
+		"otf-agent",
+		"--token", token,
+		"--address", address,
+	}
+	args = append(args, flags...)
+
+	e, res, err := expect.SpawnWithArgs(
+		args,
 		time.Minute,
 		expect.PartialMatch(true),
 		expect.Verbose(testing.Verbose()),

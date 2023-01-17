@@ -57,8 +57,9 @@ func TestCluster(t *testing.T) {
 
 	// org now sync'd, so we can create agent token via CLI
 	agentToken := createAgentToken(t, org, userHostname, "test-agent-token")
-	// start agent, instructing it to connect to otfd2
-	startAgent(t, agentToken, agentHostname)
+	// start agent, instructing it to connect to otfd2,
+	// add --debug flag, which dumps info that test relies upon
+	startAgent(t, agentToken, agentHostname, "--debug")
 
 	// create root module, setting otfd1 as hostname
 	root := newRootModule(t, userHostname, org, "dev")
