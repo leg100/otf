@@ -31,7 +31,7 @@ func TestRun_UpdateStatus(t *testing.T) {
 	t.Run("update status", func(t *testing.T) {
 		run := createTestRun(t, db, ws, cv)
 		got, err := db.UpdateStatus(ctx, run.ID(), func(run *otf.Run) error {
-			return run.EnqueuePlan(ctx, &otf.FakeWorkspaceLockService{})
+			return run.EnqueuePlan()
 		})
 		require.NoError(t, err)
 		assert.Equal(t, otf.RunPlanQueued, got.Status())

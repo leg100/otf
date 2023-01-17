@@ -30,12 +30,11 @@ type WorkspaceQueue struct {
 type queueMaker struct{}
 
 func (queueMaker) NewWorkspaceQueue(app Application, logger logr.Logger, ws *Workspace) eventHandler {
-	q := WorkspaceQueue{
+	return &WorkspaceQueue{
 		Application: app,
 		ws:          ws,
 		Logger:      logger.WithValues("workspace", ws.ID()),
 	}
-	return &q
 }
 
 func (s *WorkspaceQueue) handleEvent(ctx context.Context, event Event) error {
@@ -75,6 +74,7 @@ func (s *WorkspaceQueue) handleEvent(ctx context.Context, event Event) error {
 				} else {
 					// no current run & queue is empty; unlock workspace
 					s.current = nil
+					// unlock workspace as run
 					ctx = AddSubjectToContext(ctx, payload)
 					ws, err := s.UnlockWorkspace(ctx, payload.WorkspaceID(), WorkspaceUnlockOptions{})
 					if err != nil {
@@ -136,8 +136,9 @@ func (s *WorkspaceQueue) scheduleRun(ctx context.Context, run *Run) error {
 		return nil
 	}
 
-	// schedule the run
-	current, err := s.EnqueuePlan(ctx, run.ID())
+	// Lock the workspace as the run
+	ctx = AddSubjectToContext(ctx, run)
+	ws, err := s.LockWorkspace(ctx, run.WorkspaceID(), WorkspaceLockOptions{})
 	if err != nil {
 		if errors.Is(err, ErrWorkspaceAlreadyLocked) {
 			// User has locked workspace in the small window of time between
@@ -145,6 +146,13 @@ func (s *WorkspaceQueue) scheduleRun(ctx context.Context, run *Run) error {
 			s.V(0).Info("workspace locked by user; cannot schedule run", "run", run.ID())
 			return nil
 		}
+		return err
+	}
+	s.ws = ws
+
+	// schedule the run
+	current, err := s.EnqueuePlan(ctx, run.ID())
+	if err != nil {
 		return err
 	}
 	s.current = current

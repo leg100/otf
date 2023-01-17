@@ -994,13 +994,6 @@ type Querier interface {
 	// DeleteWorkspaceByIDScan scans the result of an executed DeleteWorkspaceByIDBatch query.
 	DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.CommandTag, error)
 
-	DeleteWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error)
-	// DeleteWorkspaceByNameBatch enqueues a DeleteWorkspaceByName query into batch to be executed
-	// later by the batch.
-	DeleteWorkspaceByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text)
-	// DeleteWorkspaceByNameScan scans the result of an executed DeleteWorkspaceByNameBatch query.
-	DeleteWorkspaceByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error)
-
 	UpsertWorkspacePermission(ctx context.Context, params UpsertWorkspacePermissionParams) (pgconn.CommandTag, error)
 	// UpsertWorkspacePermissionBatch enqueues a UpsertWorkspacePermission query into batch to be executed
 	// later by the batch.
@@ -1546,9 +1539,6 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	}
 	if _, err := p.Prepare(ctx, deleteWorkspaceByIDSQL, deleteWorkspaceByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteWorkspaceByID': %w", err)
-	}
-	if _, err := p.Prepare(ctx, deleteWorkspaceByNameSQL, deleteWorkspaceByNameSQL); err != nil {
-		return fmt.Errorf("prepare query 'DeleteWorkspaceByName': %w", err)
 	}
 	if _, err := p.Prepare(ctx, upsertWorkspacePermissionSQL, upsertWorkspacePermissionSQL); err != nil {
 		return fmt.Errorf("prepare query 'UpsertWorkspacePermission': %w", err)

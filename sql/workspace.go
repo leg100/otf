@@ -62,7 +62,7 @@ func (db *DB) UpdateWorkspace(ctx context.Context, workspaceID string, fn func(*
 	err := db.tx(ctx, func(tx *DB) error {
 		var err error
 		// retrieve workspace
-		result, err := db.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
 			return databaseError(err)
 		}
@@ -137,7 +137,7 @@ func (db *DB) LockWorkspace(ctx context.Context, workspaceID string, opts otf.Wo
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		result, err := db.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func (db *DB) UnlockWorkspace(ctx context.Context, workspaceID string, opts otf.
 	var ws *otf.Workspace
 	err = db.tx(ctx, func(tx *DB) error {
 		// retrieve workspace
-		result, err := db.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
+		result, err := tx.FindWorkspaceByIDForUpdate(ctx, String(workspaceID))
 		if err != nil {
 			return err
 		}

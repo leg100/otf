@@ -176,23 +176,15 @@ func (a *Application) ForceCancelRun(ctx context.Context, runID string, opts otf
 
 // EnqueuePlan enqueues a plan for the run.
 //
-// NOTE: this is an internal action, invoked by the scheduler.
+// NOTE: this is an internal action, invoked by the scheduler only.
 func (a *Application) EnqueuePlan(ctx context.Context, runID string) (*otf.Run, error) {
 	subject, err := a.CanAccessRun(ctx, otf.EnqueuePlanAction, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Now follows several updates to the DB within a transaction:
-	// 1) set latest run on workspace (if non-speculative)
-	// 2) lock workspace (if non-speculative)
-	// 3) update run status
-	var run *otf.Run
-	err = a.Tx(ctx, func(tx otf.Application) (err error) {
-		run, err = tx.DB().UpdateStatus(ctx, runID, func(run *otf.Run) error {
-			return run.EnqueuePlan(ctx, tx)
-		})
-		return err
+	run, err := a.DB().UpdateStatus(ctx, runID, func(run *otf.Run) error {
+		return run.EnqueuePlan()
 	})
 	if err != nil {
 		a.Error(err, "enqueuing plan", "id", runID, "subject", subject)

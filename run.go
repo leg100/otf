@@ -230,21 +230,13 @@ func (r *Run) Done() bool {
 
 // EnqueuePlan enqueues a plan for the run. It also sets the run as the latest
 // run for its workspace (speculative runs are ignored).
-func (r *Run) EnqueuePlan(ctx context.Context, svc WorkspaceLockService) error {
+func (r *Run) EnqueuePlan() error {
 	if r.status != RunPending {
 		return fmt.Errorf("cannot enqueue run with status %s", r.status)
 	}
 	r.updateStatus(RunPlanQueued)
 	r.plan.updateStatus(PhaseQueued)
 
-	if !r.Speculative() {
-		// Lock the workspace on behalf of the run
-		ctx = AddSubjectToContext(ctx, r)
-		_, err := svc.LockWorkspace(ctx, r.WorkspaceID(), WorkspaceLockOptions{})
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

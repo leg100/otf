@@ -1159,32 +1159,3 @@ func (q *DBQuerier) DeleteWorkspaceByIDScan(results pgx.BatchResults) (pgconn.Co
 	}
 	return cmdTag, err
 }
-
-const deleteWorkspaceByNameSQL = `DELETE
-FROM workspaces
-WHERE name = $1
-AND organization_name = $2;`
-
-// DeleteWorkspaceByName implements Querier.DeleteWorkspaceByName.
-func (q *DBQuerier) DeleteWorkspaceByName(ctx context.Context, name pgtype.Text, organizationName pgtype.Text) (pgconn.CommandTag, error) {
-	ctx = context.WithValue(ctx, "pggen_query_name", "DeleteWorkspaceByName")
-	cmdTag, err := q.conn.Exec(ctx, deleteWorkspaceByNameSQL, name, organizationName)
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec query DeleteWorkspaceByName: %w", err)
-	}
-	return cmdTag, err
-}
-
-// DeleteWorkspaceByNameBatch implements Querier.DeleteWorkspaceByNameBatch.
-func (q *DBQuerier) DeleteWorkspaceByNameBatch(batch genericBatch, name pgtype.Text, organizationName pgtype.Text) {
-	batch.Queue(deleteWorkspaceByNameSQL, name, organizationName)
-}
-
-// DeleteWorkspaceByNameScan implements Querier.DeleteWorkspaceByNameScan.
-func (q *DBQuerier) DeleteWorkspaceByNameScan(results pgx.BatchResults) (pgconn.CommandTag, error) {
-	cmdTag, err := results.Exec()
-	if err != nil {
-		return cmdTag, fmt.Errorf("exec DeleteWorkspaceByNameBatch: %w", err)
-	}
-	return cmdTag, err
-}
