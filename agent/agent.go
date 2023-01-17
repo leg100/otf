@@ -40,13 +40,11 @@ func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, erro
 		if _, err := exec.LookPath("bwrap"); errors.Is(err, exec.ErrNotFound) {
 			return nil, fmt.Errorf("sandbox requires bubblewrap: %w", err)
 		}
-		logger.Info("sandbox mode enabled")
+		logger.Info("enabled sandbox mode")
 	}
 
-	// Enable debug mode if log level = trace
-	if logger.GetSink().Enabled(2) {
+	if cfg.Debug {
 		logger.V(0).Info("enabled debug mode")
-		cfg.Debug = true
 	}
 
 	spooler := NewSpooler(app, logger, cfg)
@@ -59,6 +57,7 @@ func NewAgent(logger logr.Logger, app otf.Application, cfg Config) (*Agent, erro
 func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	cfg := Config{}
 	flags.BoolVar(&cfg.Sandbox, "sandbox", false, "Isolate terraform apply within sandbox for additional security")
+	flags.BoolVar(&cfg.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
 	flags.IntVar(&cfg.Concurrency, "concurrency", DefaultConcurrency, "Number of runs that can be processed concurrently")
 	return &cfg
 }

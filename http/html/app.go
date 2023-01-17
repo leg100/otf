@@ -38,6 +38,7 @@ type ApplicationOptions struct {
 
 // AddRoutes adds routes for the html web app.
 func AddRoutes(logger logr.Logger, opts ApplicationOptions) error {
+	logger = logger.WithValues("component", "html")
 	if opts.DevMode {
 		logger.Info("enabled developer mode")
 	}
