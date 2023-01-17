@@ -3,7 +3,6 @@ package otf
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -198,13 +197,6 @@ func (ws *Workspace) Update(opts UpdateWorkspaceOptions) error {
 		ws.workingDirectory = *opts.WorkingDirectory
 		updated = true
 	}
-	if opts.WorkspaceRepo != nil {
-		if ws.repo != nil {
-			return fmt.Errorf("updating workspace vcs repo not supported")
-		}
-		ws.repo = opts.WorkspaceRepo
-		updated = true
-	}
 	if updated {
 		ws.updatedAt = CurrentTimestamp()
 	}
@@ -259,7 +251,6 @@ type UpdateWorkspaceOptions struct {
 	TerraformVersion           *string `schema:"terraform_version"`
 	TriggerPrefixes            []string
 	WorkingDirectory           *string
-	*WorkspaceRepo
 }
 
 // WorkspaceLockOptions represents the options for locking a workspace.
