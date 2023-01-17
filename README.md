@@ -49,10 +49,32 @@ terraform {
 resource "null_resource" "demo" {}
 ```
 
-Initialize and run a plan:
+Initialize terraform:
 
 ```bash
 terraform init
+```
+
+> NOTE: if you're using Mac or Windows, you may receive an error similar to the following error:
+>
+> Error: Failed to install provider from shared cache
+>
+> Error while importing hashicorp/null v3.2.1 from the shared cache
+> directory: the provider cache at .terraform/providers has a copy of
+> registry.terraform.io/hashicorp/null 3.2.1 that doesn't match any of the
+> checksums recorded in the dependency lock file.
+>
+> If so, you need to update your lockfile (`.terraform.lock.hcl`) to include hashes for the platform that the OTF demo is hosted on (linux):
+>
+> ```
+> terraform providers lock -platform=linux_amd64 
+> ```
+>
+> Then re-run `terraform init`
+
+Now create a plan:
+
+```bash
 terraform plan
 ```
 
