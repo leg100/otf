@@ -218,9 +218,3 @@ WHERE workspace_id = pggen.arg('workspace_id');
 DELETE
 FROM workspaces
 WHERE workspace_id = pggen.arg('workspace_id');
-
--- name: DeleteWorkspaceByName :exec
-DELETE
-FROM workspaces
-WHERE name = pggen.arg('name')
-AND organization_name = pggen.arg('organization_name');

@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ func TestRun_States(t *testing.T) {
 	t.Run("enqueue plan", func(t *testing.T) {
 		run := NewTestRun(t, TestRunCreateOptions{})
 
-		require.NoError(t, run.EnqueuePlan(context.Background(), &FakeWorkspaceLockService{}))
+		require.NoError(t, run.EnqueuePlan())
 
 		require.Equal(t, RunPlanQueued, run.status)
 		require.Equal(t, PhaseQueued, run.plan.status)
