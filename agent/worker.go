@@ -6,7 +6,7 @@ import (
 	"github.com/leg100/otf"
 )
 
-// Worker sequentially executes runs on behalf of a supervisor.
+// Worker sequentially executes runs.
 type Worker struct {
 	*Agent
 }
