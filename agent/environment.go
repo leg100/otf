@@ -283,10 +283,15 @@ func (e *Environment) buildSandboxArgs(args []string) []string {
 	bargs := []string{
 		"--ro-bind", e.TerraformPath(), "/bin/terraform",
 		"--bind", e.path, "/workspace",
+		// for DNS lookups
 		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
-		"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
+		// for verifying SSL connections
+		"--ro-bind", otf.SSLCertsDir(), otf.SSLCertsDir(),
 		"--chdir", "/workspace",
+		// terraform v1.0.10 (but not v1.2.2) reads /proc/self/exe.
 		"--proc", "/proc",
+		// avoids provider error "failed to read schema..."
+		"--tmpfs", "/tmp",
 	}
 	if e.PluginCache {
 		bargs = append(bargs, "--ro-bind", PluginCacheDir, PluginCacheDir)

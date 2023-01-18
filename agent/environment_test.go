@@ -90,6 +90,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
 			"--chdir", "/workspace",
 			"--proc", "/proc",
+			"--tmpfs", "/tmp",
 			"terraform", "apply",
 			"-input=false", "-no-color",
 		}
@@ -111,6 +112,7 @@ func TestBuildSandboxArgs(t *testing.T) {
 			"--ro-bind", "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt",
 			"--chdir", "/workspace",
 			"--proc", "/proc",
+			"--tmpfs", "/tmp",
 			"--ro-bind", PluginCacheDir, PluginCacheDir,
 			"terraform", "apply",
 			"-input=false", "-no-color",
